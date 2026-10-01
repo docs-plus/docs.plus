@@ -1,5 +1,5 @@
+import { twMerge } from '@utils/twMerge'
 import type { MouseEvent, ReactNode } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { TOC_CLASSES } from './tocClasses'
 
@@ -12,6 +12,8 @@ type TocRowProps = {
   /** Scroll-spy — daisyUI `menu-focus` when not also chat-open */
   isFocused?: boolean
   title: string
+  /** Accessible name when `title` is blank, so the link is never unnamed. */
+  titleLabel?: string
   density?: 'desktop' | 'mobile'
   leading?: ReactNode
   trail?: ReactNode
@@ -30,6 +32,7 @@ export function TocRow({
   isActive,
   isFocused,
   title,
+  titleLabel,
   density = 'desktop',
   leading,
   trail,
@@ -55,6 +58,7 @@ export function TocRow({
           'min-w-0 text-pretty hyphens-auto whitespace-normal text-inherit no-underline'
         )}
         href={titleHref}
+        aria-label={title.trim() ? undefined : titleLabel}
         data-id={headingId}
         onClick={onTitleClick}>
         <span className={twMerge(TOC_CLASSES.link, titleClassName)}>{title}</span>

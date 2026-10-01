@@ -14,6 +14,7 @@ import { Icons } from '@icons'
 import { useChatStore, useFocusedHeadingStore, useStore } from '@stores'
 import type { TocItem } from '@types'
 import { MOTION_OVERLAY_IN_MS, prefersReducedMotion } from '@utils/motion'
+import { twMerge } from '@utils/twMerge'
 import {
   type KeyboardEvent,
   memo,
@@ -25,7 +26,6 @@ import {
   useRef,
   useState
 } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { tocActions, useToc } from './hooks'
 

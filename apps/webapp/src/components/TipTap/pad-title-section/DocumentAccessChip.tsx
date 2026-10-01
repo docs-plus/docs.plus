@@ -1,10 +1,10 @@
 import { Icons } from '@icons'
 import { useStore } from '@stores'
+import { twMerge } from '@utils/twMerge'
 import type { ComponentType } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 const chipClassName =
-  'rounded-field p-2 ml-4 hover:border-primary transition-[border-color] flex align-middle items-center justify-center border text-base-content/50 motion-safe:animate-[doc-region-in_180ms_ease-out_both]'
+  'rounded-field border-base-300 p-2 ml-4 flex align-middle items-center justify-center border text-base-content/70 motion-safe:animate-[doc-region-in_180ms_ease-out_both]'
 
 type ChipIcon = ComponentType<{ size?: number; className?: string }>
 
@@ -23,8 +23,11 @@ export function DocumentAccessChip({
   if (!visible) return null
   return (
     <div className={twMerge(chipClassName, className)}>
-      <Icon size={13} className="text-base-content/40" />
-      <p className="ml-3 hidden text-xs font-bold antialiased sm:flex">{label}</p>
+      <span aria-hidden className="flex">
+        <Icon size={13} />
+      </span>
+      {/* Phones hide the label visually but still announce the access state. */}
+      <span className="sr-only text-xs font-bold antialiased sm:not-sr-only sm:ml-3">{label}</span>
     </div>
   )
 }

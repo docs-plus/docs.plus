@@ -1,6 +1,6 @@
 import { Icons } from '@components/icons/registry'
+import { twMerge } from '@utils/twMerge'
 import { memo, type ReactNode } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import type { SuggestionRowProps } from '../types'
 
@@ -41,18 +41,18 @@ export const SuggestionRow = memo(function SuggestionRow({
       className={twMerge(
         'hover:bg-base-200 flex min-h-11 w-full cursor-pointer items-center gap-2 py-2 text-left text-sm',
         rowPadClass,
-        selected && 'bg-base-200',
-        archived && 'opacity-60'
+        selected && 'bg-base-200'
       )}
       style={{ paddingLeft: `${rowInsetPx + indent}px` }}>
       <span className="text-base-content/70 shrink-0" aria-hidden>
         {isHeading ? <Icons.heading size={ICON_SIZE} /> : <Icons.bookmark size={ICON_SIZE} />}
       </span>
-      <span className="flex-1 truncate">{suggestion.title}</span>
+      {/* Archived dims by ink, not row opacity: opacity also sank the badge under 4.5:1. */}
+      <span className={twMerge('flex-1 truncate', archived && 'text-base-content/70')}>
+        {suggestion.title}
+      </span>
       {archived && (
-        <span
-          className="bg-base-300 text-base-content/70 shrink-0 rounded px-1.5 py-0.5 text-[10px] tracking-wide uppercase"
-          aria-label="archived bookmark">
+        <span className="badge badge-sm badge-soft shrink-0" aria-label="archived bookmark">
           Archived
         </span>
       )}

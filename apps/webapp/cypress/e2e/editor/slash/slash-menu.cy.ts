@@ -156,7 +156,7 @@ describe('Slash menu (desktop)', () => {
     cy.get('.toc__list').should('contain', 'Fresh Section')
   })
 
-  it('Picture opens the toolbar Insert Media panel', () => {
+  it('Picture opens the toolbar Insert media panel', () => {
     startIn('<h1>Doc</h1><p></p>')
     cy.get(EDITOR).realType('/picture')
     cy.get(OPTION).should('have.length', 1).first().should('have.text', 'Picture')

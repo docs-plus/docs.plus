@@ -1,6 +1,7 @@
+import { ContextMenuRow } from '@components/ui/ContextMenu'
 import type { Editor } from '@tiptap/core'
+import { twMerge } from '@utils/twMerge'
 import { useEffect, useRef } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import {
   pickSlashIndex,
@@ -44,9 +45,9 @@ export default function SlashMenuList({
       role="listbox"
       aria-label="Insert block"
       data-testid="slash-menu"
-      className={twMerge('p-1', className)}>
+      className={twMerge('p-1.5', className)}>
       {session.items.length === 0 ? (
-        <div className="text-base-content/60 px-2 py-3 text-sm">No matching blocks</div>
+        <div className="text-base-content/60 px-2.5 py-2 text-sm">No matching blocks.</div>
       ) : (
         session.items.map((item, index) => {
           const Icon = item.icon
@@ -63,12 +64,13 @@ export default function SlashMenuList({
               onMouseEnter={() => selectSlashIndex(index)}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => pickSlashIndex(index)}
-              className={twMerge(
-                'hover:bg-base-200 rounded-field flex min-h-11 w-full cursor-pointer items-center gap-2.5 px-2.5 py-1.5 text-left text-sm',
-                selected && 'bg-base-200'
-              )}>
-              <Icon size={16} className="shrink-0 opacity-70" aria-hidden />
-              <span className="truncate font-medium">{item.label}</span>
+              className="block w-full text-left">
+              <ContextMenuRow
+                active={selected}
+                icon={<Icon size={16} aria-hidden />}
+                className="pointer-coarse:min-h-11">
+                <span className="block truncate">{item.label}</span>
+              </ContextMenuRow>
             </div>
           )
         })

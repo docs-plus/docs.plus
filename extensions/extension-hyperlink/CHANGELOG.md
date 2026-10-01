@@ -29,6 +29,7 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 - `bun run docs:gif` re-records the README GIFs.
 - Source comments point at the `docs/` pages instead of README sections.
+- `styles.css` has one reduced-motion guard for `.floating-popover`. The second copy is gone. The rendered styles do not change.
 
 ## [2.0.0] — 2026-08-11
 

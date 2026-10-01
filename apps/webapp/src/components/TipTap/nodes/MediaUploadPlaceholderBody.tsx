@@ -1,3 +1,5 @@
+import { Icons } from '@icons'
+import { twMerge } from '@utils/twMerge'
 import React from 'react'
 import { HiOutlineMusicalNote, HiOutlinePhoto, HiOutlineVideoCamera } from 'react-icons/hi2'
 
@@ -18,29 +20,47 @@ const FileTypeIcon: React.FC<{ fileType: FileType }> = ({ fileType }) => {
   return <IconComponent className={ICON_CLASS} />
 }
 
-const ProgressIndicator: React.FC<{ progress: number; compact?: boolean }> = ({
+// Fixed black and white ink holds over a photo; the icon tile is themed, so it takes tokens.
+const ProgressIndicator: React.FC<{ progress: number; compact?: boolean; onMedia?: boolean }> = ({
   progress,
-  compact = false
+  compact = false,
+  onMedia = false
 }) => (
   <div
-    className={`flex items-center gap-${compact ? '1' : '2'} rounded-field bg-black/50 p-${compact ? '1' : '2'} px-${compact ? '1.5' : '3'}`}>
-    <span className={`loading loading-spinner loading-${compact ? 'xs' : 'sm'} text-white`} />
-    <span className={`text-${compact ? 'xs' : 'sm'} font-bold text-white`}>
+    className={twMerge(
+      'rounded-field flex items-center',
+      compact ? 'gap-1 p-1 px-1.5' : 'gap-2 p-2 px-3',
+      onMedia ? 'bg-black/50 text-white' : 'border-base-300 bg-base-100 text-base-content border'
+    )}>
+    <span
+      className={
+        compact ? 'loading loading-spinner loading-xs' : 'loading loading-spinner loading-sm'
+      }
+    />
+    <span className={twMerge('font-bold tabular-nums', compact ? 'text-xs' : 'text-sm')}>
       {Math.round(progress)}%
     </span>
   </div>
 )
 
-const CancelButton: React.FC<{ onCancel: () => void; compact?: boolean }> = ({
+const CancelButton: React.FC<{ onCancel: () => void; compact?: boolean; onMedia?: boolean }> = ({
   onCancel,
-  compact = false
+  compact = false,
+  onMedia = false
 }) => (
   <button
     type="button"
     onClick={onCancel}
-    className={`btn btn-xs cursor-pointer bg-black/60 text-white hover:bg-black/90 ${compact ? 'btn-circle' : ''}`}
-    title="Cancel upload">
-    {compact ? '✕' : 'Cancel'}
+    aria-label="Cancel upload"
+    title="Cancel upload"
+    className={twMerge(
+      'btn btn-xs cursor-pointer',
+      onMedia
+        ? 'bg-black/60 text-white hover:bg-black/90'
+        : 'border-base-300 bg-base-100 text-base-content hover:bg-base-200',
+      compact && 'btn-circle'
+    )}>
+    {compact ? <Icons.close size={12} aria-hidden /> : 'Cancel'}
   </button>
 )
 
@@ -57,15 +77,15 @@ const ImagePreview: React.FC<{
   if (shouldScale) {
     return (
       <div
-        className="bg-base-200 rounded-field relative w-full overflow-hidden"
+        className="bg-base-200 rounded-field relative min-h-[180px] w-full overflow-hidden"
         style={{ aspectRatio: `${width} / ${height}` }}>
         <img src={localUrl} alt={fileName} className="h-full w-full object-cover" />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="absolute top-2 right-2">
-            <CancelButton onCancel={onCancel} />
+            <CancelButton onCancel={onCancel} onMedia />
           </div>
           <div className="absolute right-2 bottom-2">
-            <ProgressIndicator progress={progress} />
+            <ProgressIndicator progress={progress} onMedia />
           </div>
         </div>
       </div>
@@ -77,17 +97,17 @@ const ImagePreview: React.FC<{
 
   return (
     <div
-      className="bg-base-200 rounded-field relative mx-auto overflow-hidden"
+      className="bg-base-200 rounded-field relative mx-auto min-h-[180px] overflow-hidden"
       style={{ width: containerSize, height: containerHeight }}>
       <img src={localUrl} alt={fileName} className="mx-auto" style={{ width, height }} />
       <div className="absolute inset-0 flex items-center justify-center">
         {progress < 100 && (
           <div className="absolute top-1 right-1">
-            <CancelButton onCancel={onCancel} compact />
+            <CancelButton onCancel={onCancel} compact onMedia />
           </div>
         )}
         <div className="absolute right-1 bottom-1 left-1">
-          <ProgressIndicator progress={progress} compact />
+          <ProgressIndicator progress={progress} compact onMedia />
         </div>
       </div>
     </div>
@@ -100,7 +120,7 @@ const IconFallback: React.FC<{
   progress: number
   onCancel: () => void
 }> = ({ fileType, fileName, progress, onCancel }) => (
-  <div className="bg-base-200 rounded-field relative my-4 overflow-hidden">
+  <div className="bg-base-200 rounded-field relative my-4 min-h-[180px] overflow-hidden">
     <div className="flex flex-col items-center justify-center px-8 py-16">
       <div className="mb-4">
         <FileTypeIcon fileType={fileType} />
@@ -108,7 +128,7 @@ const IconFallback: React.FC<{
       <p className="text-base-content/60 mb-2 max-w-xs truncate text-center text-sm">{fileName}</p>
     </div>
 
-    <div className="absolute right-4 bottom-4 flex items-center justify-center font-mono">
+    <div className="absolute right-4 bottom-4 flex items-center justify-center">
       {progress < 100 && (
         <div className="absolute top-2 right-2 z-10">
           <CancelButton onCancel={onCancel} />

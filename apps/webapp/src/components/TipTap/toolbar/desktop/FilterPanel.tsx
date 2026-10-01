@@ -2,8 +2,6 @@ import { PanelSurfaceShell } from '@components/PanelSurfaceShell'
 import { SheetPrimaryFooter } from '@components/SheetPrimaryFooter'
 import FilterBar from '@components/TipTap/pad-title-section/FilterBar'
 import Button from '@components/ui/Button'
-import CloseButton from '@components/ui/CloseButton'
-import { usePopoverState } from '@components/ui/Popover'
 import TextInput from '@components/ui/TextInput'
 import Toggle from '@components/ui/Toggle'
 import { useDismissPanel } from '@hooks/useDismissPanel'
@@ -32,16 +30,12 @@ const highlightTocSections = (sectionIds: Set<string>): void => {
 }
 
 interface FilterPanelProps {
-  className?: string
-  onClose?: () => void
   variant?: PanelSurfaceVariant
 }
 
-const FilterPanel = ({ className = '', onClose, variant = 'popover' }: FilterPanelProps) => {
+const FilterPanel = ({ variant = 'popover' }: FilterPanelProps) => {
   const isSheet = variant === 'sheet'
-  const popoverState = usePopoverState()
   const dismissPanel = useDismissPanel(variant)
-  const handleClose = onClose ?? (isSheet ? dismissPanel : popoverState.close)
   const router = useRouter()
   const editor = useStore((state) => state.settings.editor.instance)
   const sortedSlugs = useStore((state) => state.settings.editor.filterResult.sortedSlugs)
@@ -149,13 +143,101 @@ const FilterPanel = ({ className = '', onClose, variant = 'popover' }: FilterPan
     ? `${suggestions.length} section ${suggestions.length === 1 ? 'match' : 'matches'}`
     : ''
 
+  const fields = (
+    <>
+      <TextInput
+        id="filterSearchBox"
+        role="combobox"
+        aria-label="Filter sections"
+        aria-expanded={showSuggestions}
+        aria-controls={SUGGESTIONS_ID}
+        aria-autocomplete="list"
+        aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
+        autoComplete="off"
+        value={filterInput}
+        onChange={(e) => {
+          setFilterInput(e.target.value)
+          setActiveIndex(-1)
+          setIsOpen(true)
+        }}
+        onKeyDown={handleKeyDown}
+        onFocus={() => setIsOpen(true)}
+        onBlur={() => setIsOpen(false)}
+        placeholder="Filter sections..."
+        startIcon={<Icons.search size={16} className="text-base-content/50" />}
+        endIcon={
+          filterInput ? (
+            <button
+              type="button"
+              aria-label="Clear search"
+              onClick={clearForm}
+              className="text-base-content/70 hover:text-base-content inline-flex size-8 shrink-0 cursor-pointer items-center justify-center">
+              <Icons.close size={20} className="stroke-[1.75]" />
+            </button>
+          ) : undefined
+        }
+      />
+      {matchCountLabel ? (
+        <span
+          data-testid="filter-match-count"
+          aria-live="polite"
+          className="text-base-content/70 px-1 text-xs font-medium tabular-nums">
+          {matchCountLabel}
+        </span>
+      ) : null}
+
+      {showSuggestions && (
+        <FilterSuggestions
+          suggestions={suggestions}
+          query={query}
+          activeIndex={activeIndex}
+          listboxId={SUGGESTIONS_ID}
+          optionId={optionId}
+          onPick={(suggestion) => applyFilterSegment(suggestion.text)}
+          onHover={setActiveIndex}
+        />
+      )}
+
+      {sortedSlugs.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1 px-1 motion-safe:animate-[doc-region-in_160ms_ease-out_both]">
+          <FilterBar className="flex-wrap" />
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={handleClearAll}
+            startIcon={<Icons.filterX size={14} />}
+            className="text-base-content/60 hover:text-error ml-auto gap-1">
+            Reset
+          </Button>
+        </div>
+      )}
+
+      {sortedSlugs.length > 1 && (
+        <label
+          htmlFor="filter-mode-and"
+          className="flex cursor-pointer items-center justify-between gap-3 px-1 text-sm motion-safe:animate-[doc-region-in_160ms_ease-out_both]">
+          <span className="text-base-content">
+            Match all <span className="text-base-content/60">(AND)</span>
+          </span>
+          <Toggle
+            id="filter-mode-and"
+            checked={mode === 'and'}
+            onChange={() =>
+              pushShallow(setFilterMode(router.asPath, mode === 'and' ? 'or' : 'and'))
+            }
+            size="sm"
+            variant="primary"
+          />
+        </label>
+      )}
+    </>
+  )
+
   return (
     <PanelSurfaceShell
       variant={variant}
       title="Filter"
-      className={className}
-      popoverHeaderBordered={false}
-      onClose={isSheet ? handleClose : undefined}
+      body="stack"
       footer={
         isSheet ? (
           <SheetPrimaryFooter
@@ -165,102 +247,8 @@ const FilterPanel = ({ className = '', onClose, variant = 'popover' }: FilterPan
             testId="filter-sheet-apply"
           />
         ) : undefined
-      }
-      popoverHeader={
-        <div className="flex items-center justify-between px-3 pt-2.5">
-          <h2 className="text-base-content text-sm font-semibold">Filter</h2>
-          <CloseButton onClick={handleClose} size="sm" iconSize={20} aria-label="Close filter" />
-        </div>
       }>
-      <div className="flex flex-col gap-2.5 px-3 pt-1 pb-3">
-        <TextInput
-          id="filterSearchBox"
-          role="combobox"
-          aria-label="Filter sections"
-          aria-expanded={showSuggestions}
-          aria-controls={SUGGESTIONS_ID}
-          aria-autocomplete="list"
-          aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
-          autoComplete="off"
-          value={filterInput}
-          onChange={(e) => {
-            setFilterInput(e.target.value)
-            setActiveIndex(-1)
-            setIsOpen(true)
-          }}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setIsOpen(true)}
-          onBlur={() => setIsOpen(false)}
-          placeholder="Filter sections..."
-          startIcon={<Icons.search size={16} className="text-base-content/50" />}
-          endIcon={
-            filterInput ? (
-              <button
-                type="button"
-                aria-label="Clear search"
-                onClick={clearForm}
-                className="text-base-content/40 hover:text-base-content inline-flex size-8 shrink-0 cursor-pointer items-center justify-center">
-                <Icons.close size={20} className="stroke-[1.75]" />
-              </button>
-            ) : undefined
-          }
-        />
-        {matchCountLabel ? (
-          <span
-            data-testid="filter-match-count"
-            aria-live="polite"
-            className={`px-1 text-xs font-medium tabular-nums ${
-              suggestions.length > 0 ? 'text-primary' : 'text-base-content/40'
-            }`}>
-            {matchCountLabel}
-          </span>
-        ) : null}
-
-        {showSuggestions && (
-          <FilterSuggestions
-            suggestions={suggestions}
-            query={query}
-            activeIndex={activeIndex}
-            listboxId={SUGGESTIONS_ID}
-            optionId={optionId}
-            onPick={(suggestion) => applyFilterSegment(suggestion.text)}
-            onHover={setActiveIndex}
-          />
-        )}
-
-        {sortedSlugs.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1 px-1 motion-safe:animate-[doc-region-in_160ms_ease-out_both]">
-            <FilterBar className="flex-wrap" />
-            <Button
-              variant="ghost"
-              size="xs"
-              onClick={handleClearAll}
-              startIcon={<Icons.filterX size={14} />}
-              className="text-base-content/60 hover:text-error ml-auto gap-1">
-              Reset
-            </Button>
-          </div>
-        )}
-
-        {sortedSlugs.length > 1 && (
-          <label
-            htmlFor="filter-mode-and"
-            className="flex cursor-pointer items-center justify-between gap-3 px-1 text-sm motion-safe:animate-[doc-region-in_160ms_ease-out_both]">
-            <span className="text-base-content">
-              Match all <span className="text-base-content/60">(AND)</span>
-            </span>
-            <Toggle
-              id="filter-mode-and"
-              checked={mode === 'and'}
-              onChange={() =>
-                pushShallow(setFilterMode(router.asPath, mode === 'and' ? 'or' : 'and'))
-              }
-              size="sm"
-              variant="primary"
-            />
-          </label>
-        )}
-      </div>
+      {isSheet ? fields : <div className="flex flex-col gap-2.5 p-3">{fields}</div>}
     </PanelSurfaceShell>
   )
 }

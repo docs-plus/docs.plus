@@ -29,7 +29,7 @@ const SHELL_LAYOUT: Record<
     rowPad: 'px-2',
     rowInsetPx: 8,
     expanderClass:
-      'border-base-300 hover:bg-base-200 text-base-content/80 -mb-2 flex w-full items-center justify-between rounded-b-field border-t px-3 py-2 text-sm transition-colors',
+      'border-base-300 hover:bg-base-200 text-base-content/70 -mb-2 flex w-full items-center justify-between rounded-b-field border-t px-3 py-2 text-sm transition-colors',
     panelClass: undefined,
     bleedClass: horizontalPadBleedClass(2)
   },
@@ -39,7 +39,7 @@ const SHELL_LAYOUT: Record<
     rowPad: 'px-4',
     rowInsetPx: 16,
     expanderClass:
-      'border-base-300 hover:bg-base-200 text-base-content/80 flex w-full items-center justify-between border-t px-4 py-2.5 text-sm transition-colors',
+      'border-base-300 hover:bg-base-200 text-base-content/70 flex w-full items-center justify-between border-t px-4 py-2.5 text-sm transition-colors',
     panelClass: 'border-base-300 border-t pt-2',
     bleedClass: sheetBodyBleedClassName
   }
@@ -114,7 +114,7 @@ export function HyperlinkSuggestions({
             type="button"
             onClick={onBack}
             data-testid="hyperlink-suggestions-back"
-            className="text-base-content/70 hover:bg-base-200 mb-1 flex items-center gap-1 rounded px-2 py-1.5 text-xs transition-colors">
+            className="text-base-content/70 hover:bg-base-200 rounded-field text-meta mb-1 flex items-center gap-1 px-2 py-1.5 transition-colors">
             <Icons.chevronLeft size={16} aria-hidden />
             <span>Back</span>
           </button>
@@ -166,9 +166,7 @@ function Section({
 }): ReactNode {
   return (
     <div role="group" aria-label={label} className="mb-1">
-      <div
-        className={`text-base-content/60 text-xs font-semibold tracking-wide uppercase ${labelClassName}`}
-        aria-hidden>
+      <div className={`text-base-content/70 text-meta font-semibold ${labelClassName}`} aria-hidden>
         {label}
       </div>
       {children}

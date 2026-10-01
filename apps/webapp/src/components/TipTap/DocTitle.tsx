@@ -1,11 +1,10 @@
 import { Tooltip } from '@components/ui/Tooltip'
 import { canEditDocumentMetadata } from '@hooks/canEditDocumentMetadata'
 import { useAuthStore, useStore } from '@stores'
+import { twMerge } from '@utils/twMerge'
 import DOMPurify from 'dompurify'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import { IoCheckmarkCircle } from 'react-icons/io5'
-import { twMerge } from 'tailwind-merge'
 
 import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
 import { parseDocTitlePayload, plainTitle } from '../../utils/titleWrite'
@@ -153,7 +152,7 @@ const DocTitle = ({ className }: { className?: string }) => {
           contentEditable={canEdit}
           suppressContentEditableWarning
           className={twMerge(
-            'truncate rounded-sm border border-transparent px-1 py-0 text-lg font-medium',
+            'rounded-field truncate border border-transparent px-1 py-0 text-lg font-medium',
             canEdit && 'hover:border-base-300 cursor-text'
           )}
           style={{ flex: 1 }}
@@ -171,8 +170,10 @@ const DocTitle = ({ className }: { className?: string }) => {
       </Tooltip>
       <div
         className={`mx-2 flex size-4 items-center ${isPending || showSaved ? 'flex' : 'hidden'}`}>
-        <AiOutlineLoading3Quarters
-          className={`${isPending ? 'show' : 'hidden'} text-info h-4 w-4 animate-spin`}
+        {/* Status, not interaction: the spinner inherits the title ink. */}
+        <span
+          aria-hidden
+          className={`${isPending ? 'inline-block' : 'hidden'} loading loading-spinner loading-xs`}
         />
         <IoCheckmarkCircle className={`${showSaved ? 'show' : 'hidden'} text-success h-4 w-4`} />
       </div>

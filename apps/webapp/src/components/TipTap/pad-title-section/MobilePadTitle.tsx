@@ -1,11 +1,13 @@
 import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
 import { SettingsTakeover } from '@components/settings/SettingsTakeover'
 import type { TabType } from '@components/settings/types'
+import { indicatorDotClassName } from '@components/TipTap/toolbar/indicatorDot'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
+import ToolbarDivider from '@components/TipTap/toolbar/ToolbarDivider'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
+import { RenameDialog } from '@components/ui/dialogs/RenameDialog'
 import { ModalDrawerOpener } from '@components/ui/ModalDrawer'
-import TextInput from '@components/ui/TextInput'
 import UnreadBadge from '@components/ui/UnreadBadge'
 import { canEditDocumentMetadata } from '@hooks/canEditDocumentMetadata'
 import { clearOverlayHash, useHashOverlay } from '@hooks/useHashOverlay'
@@ -13,7 +15,14 @@ import { useNotificationCount } from '@hooks/useNotificationCount'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import { Icons } from '@icons'
 import { releasePadEditMode } from '@services/openHeadingChatroom'
-import { useAuthStore, useSheetStore, useStore } from '@stores'
+import {
+  selectInProgressBookmarkCount,
+  useAuthStore,
+  useChatStore,
+  useSheetStore,
+  useStore,
+  withInProgressBookmarks
+} from '@stores'
 import { onlineManager } from '@tanstack/react-query'
 import type { Editor } from '@tiptap/core'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
@@ -40,6 +49,11 @@ interface UndoRedoButtonsProps {
 }
 
 const EditableToggle = ({ isEditable, onDone }: { isEditable: boolean; onDone: () => void }) => {
+  const user = useAuthStore((state) => state.profile)
+  const inProgressBookmarks = useChatStore(selectInProgressBookmarkCount)
+  // The drawer holds the Bookmarks button, so its dot shows here before the drawer opens.
+  const showBookmarksDot = !!user && inProgressBookmarks > 0
+
   if (isEditable) {
     return (
       <ToolbarButton
@@ -55,9 +69,16 @@ const EditableToggle = ({ isEditable, onDone }: { isEditable: boolean; onDone: (
   return (
     <ModalDrawerOpener
       modalId="mobile_left_side_panel"
-      ariaLabel="Open menu"
-      className="btn btn-ghost btn-square btn-sm touch-manipulation">
+      ariaLabel={withInProgressBookmarks('Open menu', showBookmarksDot ? inProgressBookmarks : 0)}
+      className="btn btn-ghost btn-square btn-sm relative touch-manipulation">
       <Icons.menu size={20} className="text-base-content/70 stroke-[1.75]" />
+      {showBookmarksDot && (
+        <span
+          data-testid="bookmarks-in-progress-indicator-menu"
+          className={indicatorDotClassName('ring-base-100')}
+          aria-hidden
+        />
+      )}
     </ModalDrawerOpener>
   )
 }
@@ -101,12 +122,7 @@ const NotificationButton = () => {
       aria-label="Notifications"
       tooltip="Notifications"
       tooltipPlacement="bottom">
-      <Icons.notificationsActive
-        size={20}
-        className={
-          unreadCount > 0 ? 'text-primary stroke-[1.75]' : 'text-base-content/70 stroke-[1.75]'
-        }
-      />
+      <Icons.notificationsActive size={20} className="text-base-content/70 stroke-[1.75]" />
       <UnreadBadge
         count={unreadCount}
         size="xs"
@@ -128,7 +144,7 @@ const UndoRedoButtons = ({ editor, className }: UndoRedoButtonsProps) => {
           aria-label="Undo"
           className="touch-manipulation"
           size="sm">
-          <Icons.undo size={20} className="text-base-content/70 stroke-[1.75]" />
+          <Icons.undo size={20} className="stroke-[1.75]" />
         </ToolbarButton>
         <ToolbarButton
           onPress={() => editor?.commands.redo()}
@@ -137,10 +153,10 @@ const UndoRedoButtons = ({ editor, className }: UndoRedoButtonsProps) => {
           aria-label="Redo"
           className="touch-manipulation"
           size="sm">
-          <Icons.redo size={20} className="text-base-content/70 stroke-[1.75]" />
+          <Icons.redo size={20} className="stroke-[1.75]" />
         </ToolbarButton>
       </div>
-      <div className="divider divider-horizontal mx-2" />
+      <ToolbarDivider />
     </div>
   )
 }
@@ -149,19 +165,9 @@ const TitleEditContent = () => {
   const metadata = useStore((state) => state.settings.metadata)
   const closeDialog = useStore((state) => state.closeDialog)
   const { isPending, mutate } = useUpdateDocMetadata()
-  const [value, setValue] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
 
-  // Populate + auto-select on mount (dialog just opened)
-  useEffect(() => {
-    setValue(plainTitle(metadata?.title || ''))
-    const timer = setTimeout(() => inputRef.current?.select(), 120)
-    return () => clearTimeout(timer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const handleSave = () => {
-    const trimmed = plainTitle(value.trim())
+  const handleSave = (draft: string) => {
+    const trimmed = plainTitle(draft.trim())
     if (!trimmed || trimmed === plainTitle(metadata?.title ?? '')) {
       closeDialog()
       return
@@ -172,41 +178,17 @@ const TitleEditContent = () => {
       { title: trimmed, documentId: metadata.documentId, slug: metadata.slug },
       { onSuccess: () => closeDialog() }
     )
-    // Offline, the save is queued; do not leave the dialog on a disabled Saving button.
+    // Offline, the save is queued; do not leave the dialog on a busy Rename button.
     if (!onlineManager.isOnline()) closeDialog()
   }
 
   return (
-    <div className="p-5">
-      <TextInput
-        ref={inputRef}
-        id="mobile-doc-title-input"
-        label="Rename document"
-        labelPosition="above"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') handleSave()
-          if (e.key === 'Escape') closeDialog()
-        }}
-        placeholder="Document title"
-        autoComplete="off"
-        maxLength={200}
-      />
-
-      <div className="mt-4 flex justify-end gap-2">
-        <Button variant="ghost" size="sm" onClick={closeDialog}>
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={handleSave}
-          disabled={isPending || !value.trim()}>
-          {isPending ? 'Saving…' : 'Save'}
-        </Button>
-      </div>
-    </div>
+    <RenameDialog
+      initialValue={plainTitle(metadata?.title || '')}
+      onSave={handleSave}
+      busy={isPending}
+      maxLength={200}
+    />
   )
 }
 
@@ -221,7 +203,7 @@ const MobilePadTitle = () => {
   const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
   const profileId = useAuthStore((state) => state.profile?.id ?? state.session?.id)
   const canEditMetadata = useStore((state) => canEditDocumentMetadata(state.settings, profileId))
-  const { isOpen: isProfileModalOpen, setIsOpen: setProfileModalOpen } = useSettingsModal(!!user)
+  const { isOpen: isProfileModalOpen, setIsOpen: setProfileModalOpen } = useSettingsModal()
   const [settingsTab, setSettingsTab] = useState<TabType | undefined>(undefined)
   const { overlay, settingsTab: hashSettingsTab } = useHashOverlay()
 
@@ -270,7 +252,7 @@ const MobilePadTitle = () => {
   }, [hocuspocusProvider, setWorkspaceSetting])
 
   const handleTitleClick = () => {
-    openDialog(<TitleEditContent />, { size: 'sm', align: 'top', className: 'mt-14' })
+    openDialog(<TitleEditContent />, { size: 'md', align: 'top', className: 'mt-14' })
   }
 
   // Unlike the sheet path, "Done" releases edit mode unconditionally (iOS can still have the keyboard

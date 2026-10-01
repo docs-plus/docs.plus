@@ -43,7 +43,7 @@ const MediaUploadDropzone = ({ onFile }: MediaUploadDropzoneProps) => {
     <div className="flex w-full items-center justify-center">
       <label
         htmlFor={inputId}
-        className={`rounded-box flex h-36 w-full cursor-pointer flex-col items-center justify-center border-2 border-dashed transition-colors ${stateClass}`}
+        className={`rounded-box has-[:focus-visible]:ring-primary relative flex h-36 w-full cursor-pointer flex-col items-center justify-center border-2 border-dashed transition-colors has-[:focus-visible]:ring-2 ${stateClass}`}
         onDragOver={(e) => {
           e.preventDefault()
           e.stopPropagation()
@@ -64,16 +64,18 @@ const MediaUploadDropzone = ({ onFile }: MediaUploadDropzoneProps) => {
           size={30}
           className={`mb-2 ${isDragOver ? 'text-primary' : 'text-base-content/50'}`}
         />
-        <p className="text-base-content/60 text-sm">
+        {/* Both lines sit above /60: that step drops under 4.5:1 on the base-300 hover fill. */}
+        <p className="text-base-content text-sm">
           <span className="font-semibold">Click to upload</span> or drag and drop
         </p>
-        <p className={`text-xs ${invalid ? 'text-error' : 'text-base-content/50'}`}>
+        <p className={`text-xs ${invalid ? 'text-[var(--error-ink)]' : 'text-base-content/70'}`}>
           {invalid ?? `Image, video, or audio (max ${formatMediaMaxUploadSize()})`}
         </p>
+        {/* `sr-only`, not `hidden`: the input stays in the Tab order and opens on Enter or Space. */}
         <input
           id={inputId}
           type="file"
-          className="hidden"
+          className="sr-only"
           accept="image/*,video/*,audio/*"
           onChange={(e) => accept(e.target.files?.[0])}
         />

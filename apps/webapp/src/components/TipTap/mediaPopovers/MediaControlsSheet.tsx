@@ -1,6 +1,7 @@
 import { SheetLayout } from '@components/SheetLayout'
-import { SheetPrimaryFooter } from '@components/SheetPrimaryFooter'
-import Button from '@components/ui/Button'
+import Button, { segmentClassName } from '@components/ui/Button'
+import { ContextMenuDivider } from '@components/ui/ContextMenu'
+import { ContextMenuRowButton } from '@components/ui/ContextMenuRowButton'
 import Select from '@components/ui/Select'
 import Textarea from '@components/ui/Textarea'
 import {
@@ -20,11 +21,11 @@ import {
   X_EMBED_THEME_OPTIONS,
   type XEmbedTheme
 } from '@docs.plus/extension-hypermultimedia'
+import { Icons } from '@icons'
 import { type SheetDataMap, useSheetStore } from '@stores'
 import type { Editor } from '@tiptap/core'
 import type { Transaction } from '@tiptap/pm/state'
-import { sheetBodyPadClassName } from '@utils/sheetBodyPadding'
-import { useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useId, useState } from 'react'
 
 import { findMediaNodePosByKeyId } from './findMediaNodePosByKeyId'
 import { publishMediaComment } from './mediaComment'
@@ -69,6 +70,51 @@ function buildActionContext(
     wrapper: editor.view.dom as HTMLElement,
     close: closeSheet
   }
+}
+
+/** A labelled button group: the same 13/600 label as the Caption and Margin fields. */
+function ChoiceGroup({
+  label,
+  gridClassName,
+  children
+}: {
+  label: string
+  gridClassName: string
+  children: ReactNode
+}) {
+  const labelId = useId()
+  return (
+    <div role="radiogroup" aria-labelledby={labelId} className="flex flex-col gap-1.5">
+      <p id={labelId} className="text-meta text-base-content font-semibold">
+        {label}
+      </p>
+      <div className={gridClassName}>{children}</div>
+    </div>
+  )
+}
+
+/** A segment: `segmentClassName`, as in the Documents view toggle. Utilities beat a kept touch hover. */
+function ChoiceButton({
+  active,
+  onClick,
+  children
+}: {
+  active: boolean
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      role="radio"
+      aria-checked={active}
+      className={segmentClassName(active)}
+      onClick={onClick}>
+      {children}
+    </Button>
+  )
 }
 
 export default function MediaControlsSheet({ data }: { data: SheetDataMap['mediaControls'] }) {
@@ -135,126 +181,99 @@ export default function MediaControlsSheet({ data }: { data: SheetDataMap['media
     <SheetLayout
       title={isXEmbed ? 'Post layout' : 'Media layout'}
       onClose={closeSheet}
-      footer={<SheetPrimaryFooter label="Done" onClick={closeSheet} />}>
-      <div className={`flex flex-col gap-4 py-3 ${sheetBodyPadClassName}`}>
-        {isXEmbed && (
-          <>
-            <div>
-              <p className="text-base-content/70 mb-2 text-sm font-medium">Size</p>
-              <div className="grid grid-cols-3 gap-2">
-                {X_EMBED_SIZE_OPTIONS.map(({ id, label, maxwidth }) => (
-                  <Button
-                    key={id}
-                    type="button"
-                    size="sm"
-                    variant="primary"
-                    btnStyle={activeSize === id ? undefined : 'outline'}
-                    onClick={() => apply({ maxwidth })}>
-                    {label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-base-content/70 mb-2 text-sm font-medium">Theme</p>
-              <div className="grid grid-cols-2 gap-2">
-                {X_EMBED_THEME_OPTIONS.map(({ id, label }) => (
-                  <Button
-                    key={id}
-                    type="button"
-                    size="sm"
-                    variant="primary"
-                    btnStyle={activeTheme === id ? undefined : 'outline'}
-                    onClick={() => apply({ theme: id })}>
-                    {label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        <Textarea
-          label="Caption"
-          labelPosition="above"
-          size="sm"
-          rows={2}
-          placeholder="Add a caption…"
-          value={caption}
-          onChange={(e) => setCaption(e.target.value)}
-          onBlur={() => apply({ caption: caption.trim() || null })}
-        />
-
-        {showComment && (
-          <Button type="button" size="sm" variant="primary" shape="block" onClick={runComment}>
-            Comment in chat
-          </Button>
-        )}
-
-        <div className="grid grid-cols-2 gap-2">
-          {showViewOriginal && (
-            <Button
-              type="button"
-              size="sm"
-              variant="neutral"
-              btnStyle="outline"
-              onClick={() => runAction(viewOriginalMedia)}>
-              View original
-            </Button>
-          )}
-          {isDownloadable(nodeType) && (
-            <Button
-              type="button"
-              size="sm"
-              variant="neutral"
-              btnStyle="outline"
-              onClick={() => runAction(downloadMedia)}>
-              Download
-            </Button>
-          )}
-          <Button
-            type="button"
-            size="sm"
-            variant="neutral"
-            btnStyle="outline"
-            onClick={() => runAction(copyMediaNode)}>
-            Copy
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="error"
-            btnStyle="outline"
-            onClick={() => runAction(removeMediaNode)}>
-            Delete
-          </Button>
-        </div>
-
-        <div>
-          <p className="text-base-content/70 mb-2 text-sm font-medium">Placement</p>
-          <div className="grid grid-cols-2 gap-2">
-            {MEDIA_PLACEMENT_OPTIONS.map(({ id, label }) => (
-              <Button
-                key={id}
-                type="button"
-                size="sm"
-                variant="primary"
-                btnStyle={activePlacement === id ? undefined : 'outline'}
-                onClick={() => apply(getMediaPlacementAttrs(id, currentMargin))}>
+      body="stack">
+      {isXEmbed && (
+        <>
+          <ChoiceGroup label="Size" gridClassName="grid grid-cols-3 gap-2">
+            {X_EMBED_SIZE_OPTIONS.map(({ id, label, maxwidth }) => (
+              <ChoiceButton key={id} active={activeSize === id} onClick={() => apply({ maxwidth })}>
                 {label}
-              </Button>
+              </ChoiceButton>
             ))}
-          </div>
-        </div>
+          </ChoiceGroup>
 
-        <Select
-          label="Margin"
-          size="sm"
-          value={currentMargin}
-          onChange={(value) => apply({ margin: value })}
-          options={MEDIA_MARGIN_OPTIONS.map(({ value, label }) => ({ value, label }))}
-        />
+          <ChoiceGroup label="Theme" gridClassName="grid grid-cols-2 gap-2">
+            {X_EMBED_THEME_OPTIONS.map(({ id, label }) => (
+              <ChoiceButton
+                key={id}
+                active={activeTheme === id}
+                onClick={() => apply({ theme: id })}>
+                {label}
+              </ChoiceButton>
+            ))}
+          </ChoiceGroup>
+        </>
+      )}
+
+      <Textarea
+        label="Caption"
+        labelPosition="above"
+        size="sm"
+        rows={2}
+        placeholder="Add a caption…"
+        value={caption}
+        onChange={(e) => setCaption(e.target.value)}
+        onBlur={() => apply({ caption: caption.trim() || null })}
+      />
+
+      <ChoiceGroup label="Placement" gridClassName="grid grid-cols-2 gap-2">
+        {MEDIA_PLACEMENT_OPTIONS.map(({ id, label }) => (
+          <ChoiceButton
+            key={id}
+            active={activePlacement === id}
+            onClick={() => apply(getMediaPlacementAttrs(id, currentMargin))}>
+            {label}
+          </ChoiceButton>
+        ))}
+      </ChoiceGroup>
+
+      <Select
+        label="Margin"
+        size="sm"
+        value={currentMargin}
+        onChange={(value) => apply({ margin: value })}
+        options={MEDIA_MARGIN_OPTIONS.map(({ value, label }) => ({ value, label }))}
+      />
+
+      <div className="-mx-2 flex flex-col">
+        {showComment && (
+          <ContextMenuRowButton
+            rowClassName="min-h-12"
+            icon={<Icons.comment size={16} />}
+            onClick={runComment}>
+            Comment in chat
+          </ContextMenuRowButton>
+        )}
+        {showViewOriginal && (
+          <ContextMenuRowButton
+            rowClassName="min-h-12"
+            icon={<Icons.externalLink size={16} />}
+            onClick={() => runAction(viewOriginalMedia)}>
+            View original
+          </ContextMenuRowButton>
+        )}
+        {isDownloadable(nodeType) && (
+          <ContextMenuRowButton
+            rowClassName="min-h-12"
+            icon={<Icons.download size={16} />}
+            onClick={() => runAction(downloadMedia)}>
+            Download
+          </ContextMenuRowButton>
+        )}
+        <ContextMenuRowButton
+          rowClassName="min-h-12"
+          icon={<Icons.copy size={16} />}
+          onClick={() => runAction(copyMediaNode)}>
+          Copy
+        </ContextMenuRowButton>
+        <ContextMenuDivider as="div" />
+        <ContextMenuRowButton
+          icon={<Icons.trash size={16} />}
+          variant="danger"
+          rowClassName="min-h-12"
+          onClick={() => runAction(removeMediaNode)}>
+          Delete
+        </ContextMenuRowButton>
       </div>
     </SheetLayout>
   )

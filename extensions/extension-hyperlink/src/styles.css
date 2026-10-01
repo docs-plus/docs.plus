@@ -354,9 +354,8 @@
   justify-content: center;
 }
 
-/* Matches extension-hypermultimedia's reduced-motion guard for the shared surfaces. */
+/* Tooltip guard sits after the tooltip rules so it wins the cascade. The popover guard is at the top. */
 @media (prefers-reduced-motion: reduce) {
-  .floating-popover,
   .floating-tooltip {
     transition: none;
   }

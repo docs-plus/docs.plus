@@ -1,17 +1,9 @@
 import { BookmarkPanel as BookmarkPanelContent } from '@components/bookmarkPanel'
-import { twMerge } from 'tailwind-merge'
 
-interface BookmarkPanelProps {
-  className?: string
-  onClose?: () => void
-}
-
-const BookmarkPanel = ({ className = '', onClose }: BookmarkPanelProps) => {
-  return (
-    <div className={twMerge('bg-base-100 flex w-full flex-col', className)}>
-      <BookmarkPanelContent onClose={onClose} />
-    </div>
-  )
-}
+const BookmarkPanel = () => (
+  <div className="bg-base-100 flex w-full flex-col">
+    <BookmarkPanelContent />
+  </div>
+)
 
 export default BookmarkPanel

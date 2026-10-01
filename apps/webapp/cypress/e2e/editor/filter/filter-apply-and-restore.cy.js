@@ -17,7 +17,7 @@ describe('Document filter (desktop)', () => {
   })
 
   it('does not crash when the query contains regex metacharacters', () => {
-    cy.get('[aria-label="Filter Document"]').first().click({ force: true })
+    cy.get('[aria-label="Filter document"]').first().click({ force: true })
     // A lone "(" / "[" used to construct `new RegExp(userInput)` and throw;
     // with no ErrorBoundary that throw would surface as an uncaught exception
     // and fail this test. Panel still mounted => substring match, no crash.
@@ -32,7 +32,7 @@ describe('Document filter (desktop)', () => {
       w.__noReload = true
     })
 
-    cy.get('[aria-label="Filter Document"]').first().click({ force: true })
+    cy.get('[aria-label="Filter document"]').first().click({ force: true })
     cy.get('#filterSearchBox').type('apple{enter}')
 
     cy.location('pathname').should('include', 'apple') // path-segment URL model
@@ -42,7 +42,7 @@ describe('Document filter (desktop)', () => {
     cy.get('[data-testid="filter-active-indicator"]').should('exist') // toolbar shows active state
 
     // Reset restores the folded section in place (the chip-row clear-all).
-    cy.get('[aria-label="Filter Document"]').first().click({ force: true })
+    cy.get('[aria-label="Filter document"]').first().click({ force: true })
     cy.contains('button', 'Reset').click({ force: true })
     cy.contains('.docy_editor .tiptap.ProseMirror', 'banana split body').should('be.visible')
     cy.get('[data-testid="filter-active-indicator"]').should('not.exist') // indicator cleared

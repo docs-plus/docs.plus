@@ -1,5 +1,5 @@
+import { twMerge } from '@utils/twMerge'
 import type { KeyboardEvent, RefObject } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { stripUrlFieldWhitespace, urlFieldPasteValue } from '../utils/urlFieldInput'
 
@@ -18,6 +18,8 @@ export type HyperlinkUrlTextareaProps = {
   className?: string
   onKeyDown?: (event: KeyboardEvent<HTMLTextAreaElement>) => void
   combobox?: HyperlinkUrlTextareaComboboxProps
+  'aria-invalid'?: boolean
+  'aria-describedby'?: string
 }
 
 export function HyperlinkUrlTextarea({
@@ -28,11 +30,15 @@ export function HyperlinkUrlTextarea({
   placeholder = 'Paste a link or pick a target',
   className,
   onKeyDown,
-  combobox
+  combobox,
+  'aria-invalid': ariaInvalid,
+  'aria-describedby': ariaDescribedBy
 }: HyperlinkUrlTextareaProps) {
   return (
     <textarea
       ref={inputRef}
+      aria-invalid={ariaInvalid}
+      aria-describedby={ariaDescribedBy}
       rows={1}
       inputMode="url"
       autoCapitalize="off"
@@ -57,8 +63,8 @@ export function HyperlinkUrlTextarea({
       }}
       onKeyDown={onKeyDown}
       data-testid={testId}
-      aria-multiline="false"
       className={twMerge('field-sizing-content max-h-24 resize-none leading-snug', className)}
+      // A bare textarea keeps its native textbox role; axe rejects aria-multiline on it.
       {...(combobox
         ? {
             role: 'combobox' as const,

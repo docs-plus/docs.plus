@@ -1,11 +1,11 @@
 import { PanelSurfaceShell } from '@components/PanelSurfaceShell'
 import { SheetPrimaryFooter } from '@components/SheetPrimaryFooter'
 import * as toast from '@components/toast'
+import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
-import CloseButton from '@components/ui/CloseButton'
-import { usePopoverState } from '@components/ui/Popover'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import Textarea from '@components/ui/Textarea'
+import { ToggleRow } from '@components/ui/ToggleRow'
 import { canEditDocumentMetadata } from '@hooks/canEditDocumentMetadata'
 import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { useDismissPanel } from '@hooks/useDismissPanel'
@@ -14,28 +14,18 @@ import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import { Icons } from '@icons'
 import { useAuthStore, useSheetStore, useStore } from '@stores'
 import { type PanelSurfaceVariant } from '@types'
-import Image from 'next/image'
 import React, { useState } from 'react'
 
-import ToggleSection from '../ToggleSection'
 import { useDocumentFollow } from '../useDocumentFollow'
 import ImportExportSection from './ImportExportSection'
 import { KeywordTagsField } from './KeywordTagsField'
 
 interface DocumentSettingsPanelProps {
-  className?: string
-  onClose?: () => void
   variant?: PanelSurfaceVariant
 }
 
-const DocumentSettingsPanel = ({
-  className,
-  onClose,
-  variant = 'popover'
-}: DocumentSettingsPanelProps) => {
-  const popoverState = usePopoverState()
+const DocumentSettingsPanel = ({ variant = 'popover' }: DocumentSettingsPanelProps) => {
   const dismissPanel = useDismissPanel(variant)
-  const handleClose = onClose ?? (variant === 'sheet' ? dismissPanel : popoverState.close)
   const isSheet = variant === 'sheet'
   const user = useAuthStore((state) => state.profile)
   const editor = useStore((state) => state.settings.editor.instance)
@@ -93,7 +83,7 @@ const DocumentSettingsPanel = ({
   // the sheet's spring runs longer than the popover's fade.
   const handlePrint = () => {
     if (isSheet) useSheetStore.getState().closeSheet()
-    else handleClose()
+    else dismissPanel()
     setTimeout(() => window.print(), isSheet ? 320 : 100)
   }
 
@@ -101,18 +91,15 @@ const DocumentSettingsPanel = ({
     <div className="bg-base-200 border-base-300 flex flex-col border-b">
       {identity ? (
         <div className="flex items-center gap-3 px-4 py-3">
-          <Image
-            className="border-base-300 size-8 shrink-0 rounded-full border"
-            src={identity.avatar_url || identity.default_avatar_url}
-            height={32}
-            width={32}
+          <Avatar
+            face={{ ...identity, avatar_url: identity.avatar_url || identity.default_avatar_url }}
             alt={identity.full_name}
-            title={identity.full_name}
+            clickable={false}
+            size="sm"
+            className="shrink-0"
           />
           <div className="min-w-0 flex-1">
-            <p className="text-base-content/50 text-[10px] font-medium tracking-wide uppercase">
-              Owned by
-            </p>
+            <p className="text-base-content/70 text-meta font-semibold">Owned by</p>
             <p className="text-base-content truncate text-sm font-medium">{identity.full_name}</p>
           </div>
         </div>
@@ -121,16 +108,16 @@ const DocumentSettingsPanel = ({
       <div className="flex flex-col px-4 py-2">
         {isOwner && isAuthServiceAvailable ? (
           <>
-            <ToggleSection
-              name="Private"
+            <ToggleRow
+              label="Private"
               description="Only you can open this document."
               checked={isPrivate}
               disabled={isControlDisabled('isPrivate')}
               onChange={() => setPrivate(!isPrivate)}
               className="min-h-11 py-2 sm:min-h-0"
             />
-            <ToggleSection
-              name="Read-only"
+            <ToggleRow
+              label="Read-only"
               description={
                 isPrivate
                   ? 'Not used while the document is private.'
@@ -149,8 +136,8 @@ const DocumentSettingsPanel = ({
           </div>
         )}
         {showFollow ? (
-          <ToggleSection
-            name="Follow"
+          <ToggleRow
+            label="Follow"
             description="Notify me when this document changes."
             checked={following}
             // `set_document_follow` is UPDATE-only, so it needs the membership row first.
@@ -168,12 +155,18 @@ const DocumentSettingsPanel = ({
       {softWell}
       <div className="flex flex-col gap-4 p-4">
         <div className="collapse-arrow rounded-box border-base-300 bg-base-100 collapse border">
-          <input type="radio" className="peer" name="gear-accordion" defaultChecked />
+          <input
+            type="radio"
+            className="peer"
+            name="gear-accordion"
+            aria-label="Document preferences"
+            defaultChecked
+          />
           <div className="collapse-title text-base-content flex items-center gap-2 font-medium">
             <Icons.fileText size={16} className="text-base-content/50" />
-            Document Preferences
+            Document preferences
           </div>
-          <div className="collapse-content border-base-300 border-t px-4 pt-4">
+          <div className="collapse-content border-base-300 px-4 peer-checked:border-t peer-checked:pt-4">
             <div className="flex flex-col gap-4">
               <Textarea
                 id="docDescription"
@@ -201,10 +194,11 @@ const DocumentSettingsPanel = ({
                 <div className="flex justify-end pt-2">
                   <Button
                     variant="primary"
+                    size="sm"
                     loading={isPending}
                     disabled={!canEditMetadata}
                     onClick={saveDescriptionHandler}>
-                    Save Changes
+                    Save details
                   </Button>
                 </div>
               )}
@@ -213,12 +207,12 @@ const DocumentSettingsPanel = ({
         </div>
 
         <div className="collapse-arrow rounded-box border-base-300 bg-base-100 collapse border">
-          <input type="radio" className="peer" name="gear-accordion" />
+          <input type="radio" className="peer" name="gear-accordion" aria-label="Import & export" />
           <div className="collapse-title text-base-content flex items-center gap-2 font-medium">
             <Icons.download size={16} className="text-base-content/50" />
             Import & export
           </div>
-          <div className="collapse-content border-base-300 border-t px-4 pt-4">
+          <div className="collapse-content border-base-300 px-4 peer-checked:border-t peer-checked:pt-4">
             <ImportExportSection
               editor={editor}
               documentId={docMetadata.documentId}
@@ -239,22 +233,16 @@ const DocumentSettingsPanel = ({
       title="Document settings"
       fillHeight
       bodyClassName="min-h-0 overflow-hidden"
-      className={className}
-      onClose={isSheet ? handleClose : undefined}
+      className="max-h-[inherit]"
       footer={
         isSheet ? (
           <SheetPrimaryFooter
-            label="Save"
+            label="Save details"
             onClick={saveDescriptionHandler}
-            disabled={!canEditMetadata || isPending}
+            disabled={!canEditMetadata}
+            loading={isPending}
           />
         ) : undefined
-      }
-      popoverHeader={
-        <div className="flex items-center justify-between">
-          <h2 className="text-base-content text-lg font-semibold">Document settings</h2>
-          <CloseButton onClick={handleClose} size="sm" />
-        </div>
       }>
       {isSheet ? (
         <ScrollArea
@@ -265,7 +253,7 @@ const DocumentSettingsPanel = ({
           {settingsBody}
         </ScrollArea>
       ) : (
-        settingsBody
+        <div className="min-h-0 overflow-y-auto">{settingsBody}</div>
       )}
     </PanelSurfaceShell>
   )

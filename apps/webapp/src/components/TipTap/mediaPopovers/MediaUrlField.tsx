@@ -48,7 +48,7 @@ const MediaUrlField = forwardRef<HTMLInputElement, MediaUrlFieldProps>(
           </Button>
         </div>
         {entry && (
-          <p className="text-base-content/50 px-1 text-xs">
+          <p className="text-base-content/60 text-meta px-1">
             Detected: <span className="text-base-content/70 font-medium">{entry.label}</span>
           </p>
         )}

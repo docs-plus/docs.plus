@@ -22,18 +22,18 @@ export function TocContextMenu({ headingId, isOpen, onToggle }: TocContextMenuPr
 
   const menuItems = [
     {
-      title: 'Chat Room',
+      title: 'Chat room',
       icon: <Icons.chatroom size={16} />,
       onClick: () => tocActions.openChatroom(headingId, { scrollTo: true }),
       variant: 'primary' as const
     },
     {
-      title: isOpen ? 'Fold Section' : 'Unfold Section',
+      title: isOpen ? 'Fold section' : 'Unfold section',
       icon: isOpen ? <Icons.foldVertical size={16} /> : <Icons.unfoldVertical size={16} />,
       onClick: () => onToggle(headingId)
     },
     {
-      title: 'Focus Section',
+      title: 'Focus section',
       icon: <Icons.crosshair size={16} />,
       onClick: () => tocActions.focusSection(headingId)
     },
@@ -66,9 +66,9 @@ export function TocContextMenu({ headingId, isOpen, onToggle }: TocContextMenuPr
           tocActions.deleteSection(headingId)
           setIsOpen(false)
         }}>
-        <ContextMenuRow icon={<Icons.trash size={16} />} variant="danger" className="items-center">
+        <ContextMenuRow icon={<Icons.trash size={16} />} variant="danger">
           <span className="flex items-center gap-1.5">
-            Delete Section
+            Delete section
             <Tooltip
               title="Delete this heading and all nested sub-headings beneath it"
               placement="right"

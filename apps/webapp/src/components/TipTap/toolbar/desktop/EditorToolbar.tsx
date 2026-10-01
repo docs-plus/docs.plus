@@ -12,13 +12,20 @@ import useReRenderOnEditorTransaction from '@hooks/useReRenderOnEditorTransactio
 import { Icons } from '@icons'
 import useCopyDocumentToClipboard from '@pages/document/hooks/useCopyDocumentToClipboard'
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
-import { useAuthStore, useStore } from '@stores'
+import {
+  selectInProgressBookmarkCount,
+  useAuthStore,
+  useChatStore,
+  useStore,
+  withInProgressBookmarks
+} from '@stores'
 import dynamic from 'next/dynamic'
 import React, { useEffect, useRef } from 'react'
 
 import FindBar from '../../find/FindBar'
 import MediaInsertPanelSkeleton from '../../mediaPopovers/MediaInsertPanelSkeleton'
 import { clearFormatting } from '../clearFormatting'
+import { indicatorDotClassName } from '../indicatorDot'
 import ToolbarButton from '../ToolbarButton'
 import ToolbarDivider from '../ToolbarDivider'
 import ToolbarSelect from '../ToolbarSelect'
@@ -64,13 +71,14 @@ const EditorToolbar = () => {
     (state) => state.settings.editor.filterResult.sortedSlugs.length > 0
   )
   const user = useAuthStore((state) => state.profile)
+  const inProgressBookmarks = useChatStore(selectInProgressBookmarkCount)
   const { isOpen: isDocumentsOpen, setIsOpen: setDocumentsOpen } = useSettingsModal()
 
   useReRenderOnEditorTransaction(editor ?? null)
 
   const { createComment } = useTurnSelectedTextIntoComment()
   const { copyDocumentToClipboard, copied } = useCopyDocumentToClipboard(editor ?? null)
-  const copyDocumentTooltip = copied ? 'Copied!' : 'Copy Document'
+  const copyDocumentTooltip = copied ? 'Copied!' : 'Copy document'
   const clearFormattingSelectionRef = useRef<{
     from: number
     to: number
@@ -110,8 +118,7 @@ const EditorToolbar = () => {
           type="bold"
           data-testid="toolbar-bold"
           onClick={() => editor.chain().focus().toggleBold().run()}
-          tooltip="Bold (⌘+B)"
-          aria-label="Bold (⌘+B)">
+          tooltip="Bold (⌘+B)">
           <Icons.bold size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -120,8 +127,7 @@ const EditorToolbar = () => {
           type="italic"
           data-testid="toolbar-italic"
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          tooltip="Italic (⌘+I)"
-          aria-label="Italic (⌘+I)">
+          tooltip="Italic (⌘+I)">
           <Icons.italic size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -130,8 +136,7 @@ const EditorToolbar = () => {
           type="underline"
           data-testid="toolbar-underline"
           onClick={() => editor.chain().focus().toggleUnderline().run()}
-          tooltip="Underline (⌘+U)"
-          aria-label="Underline (⌘+U)">
+          tooltip="Underline (⌘+U)">
           <Icons.underline size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -140,8 +145,7 @@ const EditorToolbar = () => {
           type="strike"
           data-testid="toolbar-strike"
           onClick={() => editor.chain().focus().toggleStrike().run()}
-          tooltip="Strikethrough (⌘+⇧+S)"
-          aria-label="Strikethrough (⌘+⇧+S)">
+          tooltip="Strikethrough (⌘+⇧+S)">
           <Icons.strikethrough size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -150,8 +154,7 @@ const EditorToolbar = () => {
           type="highlight"
           data-testid="toolbar-highlight"
           onClick={() => editor.chain().focus().toggleHighlight().run()}
-          tooltip="Highlight (⌘+⇧+H)"
-          aria-label="Highlight (⌘+⇧+H)">
+          tooltip="Highlight (⌘+⇧+H)">
           <Icons.highlight size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -161,11 +164,9 @@ const EditorToolbar = () => {
 
         <Popover placement="bottom-start">
           <PopoverTrigger asChild>
-            <div>
-              <ToolbarButton tooltip="Insert Media" aria-label="Insert Media">
-                <Icons.image size={ICON_SIZE} />
-              </ToolbarButton>
-            </div>
+            <ToolbarButton tooltip="Insert media">
+              <Icons.image size={ICON_SIZE} />
+            </ToolbarButton>
           </PopoverTrigger>
           <PopoverContent className={popoverPanelClassName}>
             <MediaInsertPanel />
@@ -178,8 +179,7 @@ const EditorToolbar = () => {
           type="chatComment"
           data-testid="toolbar-comment"
           onClick={() => createComment(editor)}
-          tooltip="Comment (⌘+⌥+M)"
-          aria-label="Comment (⌘+⌥+M)">
+          tooltip="Comment (⌘+⌥+M)">
           <Icons.comment size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -188,8 +188,7 @@ const EditorToolbar = () => {
           type="hyperlink"
           data-testid="toolbar-hyperlink"
           onClick={() => editor.chain().focus().openCreateHyperlinkPopover().run()}
-          tooltip="Hyperlink (⌘+K)"
-          aria-label="Hyperlink (⌘+K)">
+          tooltip="Hyperlink (⌘+K)">
           <Icons.link size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -201,26 +200,25 @@ const EditorToolbar = () => {
           editor={editor}
           fallbackIcon={Icons.bulletList}
           tooltip="Lists"
-          aria-label="Lists"
           testId="toolbar-lists"
           items={[
             {
               value: 'bulletList',
-              label: 'Bullet List',
+              label: 'Bullet list',
               icon: Icons.bulletList,
               action: () => editor.chain().focus().toggleBulletList().run(),
               testId: 'toolbar-bullet-list'
             },
             {
               value: 'orderedList',
-              label: 'Ordered List',
+              label: 'Ordered list',
               icon: Icons.orderedList,
               action: () => editor.chain().focus().toggleOrderedList().run(),
               testId: 'toolbar-ordered-list'
             },
             {
               value: 'taskList',
-              label: 'Task List',
+              label: 'Task list',
               icon: Icons.taskList,
               action: () => editor.chain().focus().toggleTaskList().run(),
               testId: 'toolbar-task-list'
@@ -235,8 +233,7 @@ const EditorToolbar = () => {
           type="blockquote"
           data-testid="toolbar-blockquote"
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          tooltip="Blockquote"
-          aria-label="Blockquote">
+          tooltip="Blockquote">
           <Icons.blockquote size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -246,19 +243,18 @@ const EditorToolbar = () => {
           editor={editor}
           fallbackIcon={Icons.code}
           tooltip="Code"
-          aria-label="Code"
           testId="toolbar-code"
           items={[
             {
               value: 'codeBlock',
-              label: 'Code Block',
+              label: 'Code block',
               icon: Icons.codeBlock,
               action: () => editor.chain().focus().toggleCodeBlock().run(),
               testId: 'toolbar-code-block'
             },
             {
               value: 'inlineCode',
-              label: 'Inline Code',
+              label: 'Inline code',
               icon: Icons.code,
               action: () => editor.chain().focus().toggleInlineCode().run(),
               testId: 'toolbar-inline-code'
@@ -295,8 +291,7 @@ const EditorToolbar = () => {
 
             clearFormatting(editor)
           }}
-          tooltip="Clear Formatting"
-          aria-label="Clear Formatting">
+          tooltip="Clear formatting">
           <Icons.clearFormatting size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -305,17 +300,13 @@ const EditorToolbar = () => {
         <div className="!ml-auto flex items-center gap-0.5">
           <ToolbarButton
             onClick={() => window.open('https://discord.gg/2EmAjmgZ8', '_blank')}
-            tooltip="Join Discord Community"
-            aria-label="Join Discord Community">
+            tooltip="Join Discord community">
             <Icons.discord size={ICON_SIZE} className="text-[#5865F2]" />
           </ToolbarButton>
 
           <ToolbarDivider />
 
-          <ToolbarButton
-            onClick={copyDocumentToClipboard}
-            tooltip={copyDocumentTooltip}
-            aria-label={copyDocumentTooltip}>
+          <ToolbarButton onClick={copyDocumentToClipboard} tooltip={copyDocumentTooltip}>
             <span className={`swap ${copied ? 'swap-active' : ''}`} aria-hidden>
               <Icons.check size={ICON_SIZE} className="swap-on text-success stroke-[1.75]" />
               <Icons.copy size={ICON_SIZE} className="swap-off stroke-[1.75]" />
@@ -323,10 +314,7 @@ const EditorToolbar = () => {
           </ToolbarButton>
 
           {isAuthServiceAvailable && user && (
-            <ToolbarButton
-              onClick={() => setDocumentsOpen(true)}
-              tooltip="Documents"
-              aria-label="Documents">
+            <ToolbarButton onClick={() => setDocumentsOpen(true)} tooltip="Documents">
               <Icons.documents size={ICON_SIZE} />
             </ToolbarButton>
           )}
@@ -336,11 +324,19 @@ const EditorToolbar = () => {
           {user && (
             <Popover placement="bottom-end">
               <PopoverTrigger asChild>
-                <div>
-                  <ToolbarButton tooltip="Bookmarks" aria-label="Bookmarks">
-                    <Icons.bookmark size={ICON_SIZE} />
-                  </ToolbarButton>
-                </div>
+                <ToolbarButton
+                  tooltip="Bookmarks"
+                  aria-label={withInProgressBookmarks('Bookmarks', inProgressBookmarks)}
+                  className="relative">
+                  <Icons.bookmark size={ICON_SIZE} />
+                  {inProgressBookmarks > 0 && (
+                    <span
+                      data-testid="bookmarks-in-progress-indicator"
+                      className={indicatorDotClassName('ring-base-100')}
+                      aria-hidden
+                    />
+                  )}
+                </ToolbarButton>
               </PopoverTrigger>
               <PopoverContent className={popoverPanelClassName}>
                 <BookmarkPanel />
@@ -358,21 +354,19 @@ const EditorToolbar = () => {
 
           <Popover placement="bottom-end">
             <PopoverTrigger asChild>
-              <div>
-                <ToolbarButton
-                  tooltip={hasActiveFilters ? 'Filter Document (active)' : 'Filter Document'}
-                  aria-label="Filter Document"
-                  className="relative">
-                  <Icons.filter size={ICON_SIZE} />
-                  {hasActiveFilters && (
-                    <span
-                      data-testid="filter-active-indicator"
-                      className="bg-error ring-base-100 absolute top-0.5 right-0.5 size-1.5 rounded-full ring-2"
-                      aria-hidden
-                    />
-                  )}
-                </ToolbarButton>
-              </div>
+              <ToolbarButton
+                tooltip={hasActiveFilters ? 'Filter document (active)' : 'Filter document'}
+                aria-label="Filter document"
+                className="relative">
+                <Icons.filter size={ICON_SIZE} />
+                {hasActiveFilters && (
+                  <span
+                    data-testid="filter-active-indicator"
+                    className={indicatorDotClassName('ring-base-100')}
+                    aria-hidden
+                  />
+                )}
+              </ToolbarButton>
             </PopoverTrigger>
             <PopoverContent className={popoverPanelClassName}>
               <FilterPanel />
@@ -384,14 +378,9 @@ const EditorToolbar = () => {
 
           <Popover placement="bottom-end">
             <PopoverTrigger asChild>
-              <div>
-                <ToolbarButton
-                  tooltip="Document Settings"
-                  tooltipPlacement="left"
-                  aria-label="Document settings">
-                  <Icons.settings size={ICON_SIZE} />
-                </ToolbarButton>
-              </div>
+              <ToolbarButton tooltip="Document settings" tooltipPlacement="left">
+                <Icons.settings size={ICON_SIZE} />
+              </ToolbarButton>
             </PopoverTrigger>
             <PopoverContent className={popoverPanelClassName}>
               <DocumentSettingsPanel />

@@ -35,6 +35,7 @@ export function useHyperlinkEditorForm({
 
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const textInputId = useId()
+  const errorId = useId()
   const rowIdPrefix = useId().replace(/:/g, '_')
 
   const {
@@ -202,6 +203,7 @@ export function useHyperlinkEditorForm({
     showError,
     inputRef,
     textInputId,
+    errorId,
     rowIdPrefix,
     suggestionStateValue,
     headings,

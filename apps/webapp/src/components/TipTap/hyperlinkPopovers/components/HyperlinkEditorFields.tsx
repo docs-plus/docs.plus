@@ -1,4 +1,5 @@
 import { Icons } from '@components/icons/registry'
+import { FieldHelp, fieldLabelClassName as uiFieldLabelClassName } from '@components/ui/FieldHelp'
 import TextInput from '@components/ui/TextInput'
 import type { ReactNode } from 'react'
 
@@ -8,14 +9,20 @@ import { HyperlinkUrlTextarea } from './HyperlinkUrlTextarea'
 
 type FieldProps = { form: HyperlinkEditorForm }
 
+// The desktop popover is a compact anchored toolbar, so its labels are visually hidden.
+const fieldLabelClassName = (isDesktop: boolean) => (isDesktop ? 'sr-only' : uiFieldLabelClassName)
+
 export function HyperlinkEditorTextField({ form }: FieldProps): ReactNode {
-  const { isCreate, text, textInputId, setText, setTextTouched } = form
+  const { isCreate, isDesktop, text, textInputId, setText, setTextTouched } = form
   if (isCreate) return null
 
   return (
     <TextInput
       id={textInputId}
-      placeholder="Link text"
+      label="Link text"
+      labelPosition="above"
+      labelClassName={fieldLabelClassName(isDesktop)}
+      placeholder={isDesktop ? 'Link text' : undefined}
       value={text}
       startIcon={Icons.textFormat}
       iconSize={18}
@@ -31,7 +38,9 @@ export function HyperlinkEditorTextField({ form }: FieldProps): ReactNode {
 export function HyperlinkEditorUrlField({ form }: FieldProps): ReactNode {
   const {
     href,
+    isDesktop,
     showError,
+    errorId,
     inputRef,
     listboxMounted,
     listboxId,
@@ -40,25 +49,31 @@ export function HyperlinkEditorUrlField({ form }: FieldProps): ReactNode {
     handleKeyDown
   } = form
 
+  // The outer label names the textarea; the error line describes it only while shown.
   return (
-    <label
-      className={`input h-auto w-full min-w-0 items-start gap-2 py-1.5 ${showError ? 'input-error' : ''}`}>
-      <span className="mt-0.5 flex size-[18px] shrink-0 items-center justify-center opacity-60">
-        <Icons.link size={18} aria-hidden />
-      </span>
-      <HyperlinkUrlTextarea
-        inputRef={inputRef}
-        value={href}
-        onCommit={commitHref}
-        testId="hyperlink-editor-url"
-        className="max-h-24 grow overflow-y-auto outline-none"
-        onKeyDown={handleKeyDown}
-        combobox={{
-          expanded: listboxMounted,
-          controls: listboxMounted ? listboxId : undefined,
-          activedescendant: activeRowId
-        }}
-      />
+    <label className="flex w-full min-w-0 flex-col gap-1.5">
+      <span className={fieldLabelClassName(isDesktop)}>URL</span>
+      <div
+        className={`input h-auto w-full min-w-0 items-start gap-2 py-1.5 ${showError ? 'input-error' : ''}`}>
+        <span className="mt-0.5 flex size-[18px] shrink-0 items-center justify-center opacity-60">
+          <Icons.link size={18} aria-hidden />
+        </span>
+        <HyperlinkUrlTextarea
+          inputRef={inputRef}
+          value={href}
+          onCommit={commitHref}
+          testId="hyperlink-editor-url"
+          className="max-h-24 grow overflow-y-auto outline-none"
+          onKeyDown={handleKeyDown}
+          aria-invalid={showError || undefined}
+          aria-describedby={showError ? errorId : undefined}
+          combobox={{
+            expanded: listboxMounted,
+            controls: listboxMounted ? listboxId : undefined,
+            activedescendant: activeRowId
+          }}
+        />
+      </div>
     </label>
   )
 }
@@ -66,9 +81,9 @@ export function HyperlinkEditorUrlField({ form }: FieldProps): ReactNode {
 export function HyperlinkEditorError({ form }: FieldProps): ReactNode {
   if (!form.showError) return null
   return (
-    <span data-testid="hyperlink-editor-error" className="text-error text-xs font-medium">
+    <FieldHelp id={form.errorId} role="alert" data-testid="hyperlink-editor-error" error>
       Please enter a valid URL
-    </span>
+    </FieldHelp>
   )
 }
 

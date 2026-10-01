@@ -1,6 +1,6 @@
 import { documentSettingsOpenRequest } from '@components/TipTap/toolbar/desktop/popoverOpenRequest'
-import CloseButton from '@components/ui/CloseButton'
-import { ModalDescription, ModalHeading } from '@components/ui/Dialog'
+import Button from '@components/ui/Button'
+import { ModalBody, ModalClose, ModalDescription, ModalHeading } from '@components/ui/Dialog'
 import { Tooltip } from '@components/ui/Tooltip'
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { Icons } from '@icons'
@@ -104,20 +104,16 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
   }
 
   return (
-    <div className="min-h-0 overflow-y-auto p-6">
-      <div className="flex items-start justify-between gap-3">
-        <ModalHeading className="text-base-content text-lg font-semibold">
-          Share this document
-        </ModalHeading>
-        <CloseButton onClick={() => setIsOpen(false)} className="-mt-1 -mr-2" />
-      </div>
+    <ModalBody className="min-h-0 overflow-y-auto">
+      <ModalHeading className="pr-10">Share this document</ModalHeading>
+      <ModalClose />
 
       {isPrivate ? (
-        <p className="text-base-content/70 mt-4 text-sm">
+        <p className="text-base-content/70 text-sm">
           Turn off Private in Settings to share a link or a QR code.
         </p>
       ) : (
-        <div className="mt-6 grid gap-6 sm:grid-cols-[12.25rem_minmax(0,1fr)] sm:items-center sm:gap-x-4">
+        <div className="grid gap-6 sm:grid-cols-[12.25rem_minmax(0,1fr)] sm:items-center sm:gap-x-4">
           <PresentQrCode value={shareUrl} title={title} />
 
           <div className="grid min-w-0 content-start gap-4 max-sm:order-first">
@@ -153,7 +149,7 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
                   </span>
                   <span className="swap-off flex items-center gap-1.5">
                     <Icons.copy size={16} />
-                    Copy
+                    Copy link
                   </span>
                 </span>
               </button>
@@ -163,7 +159,7 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
             </span>
 
             <div className="grid gap-2">
-              <span id="share-via-label" className="text-base-content/70 text-xs font-semibold">
+              <span id="share-via-label" className="text-base-content/70 text-meta font-semibold">
                 Share via
               </span>
               <div
@@ -187,19 +183,16 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
         </div>
       )}
 
-      <div className="text-base-content/70 mt-6 flex items-center gap-1.5 text-sm">
+      <div className="text-base-content/70 flex items-center gap-1.5 text-sm">
         <access.icon size={16} />
         <ModalDescription className="min-w-0">{access.text}</ModalDescription>
         {canChangeAccess && (
-          <button
-            type="button"
-            onClick={openDocumentSettings}
-            className="text-primary rounded-selector focus-visible:ring-primary ml-1 shrink-0 font-semibold hover:underline focus-visible:ring-2 focus-visible:outline-none">
+          <Button variant="quiet" onClick={openDocumentSettings} className="ml-1 shrink-0">
             Change
-          </button>
+          </Button>
         )}
       </div>
-    </div>
+    </ModalBody>
   )
 }
 

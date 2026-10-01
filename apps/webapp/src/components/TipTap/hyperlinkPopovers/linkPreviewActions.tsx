@@ -11,7 +11,7 @@ import { navigateHref } from './hrefEventHandler'
 import { classifyInternalDocumentLink } from './internalDocumentLink'
 import { runInternalDocumentLink } from './internalDocumentLinkActions'
 
-const ICON_SIZE = 20
+const ICON_SIZE = 16
 
 export interface LinkPreviewAction {
   key: string

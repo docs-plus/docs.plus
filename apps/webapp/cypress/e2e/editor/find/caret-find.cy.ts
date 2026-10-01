@@ -168,7 +168,7 @@ describe('Caret find (desktop)', () => {
   })
 
   it('no longer labels the Filter field as Find in document', () => {
-    cy.get('[aria-label="Filter Document"]').first().click({ force: true })
+    cy.get('[aria-label="Filter document"]').first().click({ force: true })
     cy.get('#filterSearchBox')
       .should('not.have.attr', 'aria-label', 'Find in document')
       .and('have.attr', 'placeholder')

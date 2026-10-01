@@ -3,9 +3,9 @@ import { ContextMenu, contextMenuPanelClassName } from '@components/ui/ContextMe
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Icons } from '@icons'
+import { twMerge } from '@utils/twMerge'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { twMerge } from 'tailwind-merge'
 
 import { DropIndicatorPortal, pointerYCollision, tocDragModifier } from './dnd'
 import { useToc, useTocAutoScroll, useTocDrag } from './hooks'
@@ -133,7 +133,7 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
         {/* The scroller's fade mask would clip and fade the fixed drag card. */}
         {typeof document !== 'undefined' &&
           createPortal(
-            <DragOverlay dropAnimation={null} style={{ zIndex: 10000 }}>
+            <DragOverlay dropAnimation={null} zIndex={60}>
               {activeItem && (
                 <div className="toc-drag-wrapper">
                   <TocLevelPicker level={originalLevel} projectedLevel={projectedLevel} />

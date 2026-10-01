@@ -1,5 +1,5 @@
 import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 type TocEmptyStateProps = {
   className?: string

@@ -8,6 +8,7 @@ import {
 } from '@api'
 import { isVisitor } from '@components/auth/isVisitor'
 import * as toast from '@components/toast'
+import { Banner } from '@components/ui/Banner'
 import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
 import { Icons } from '@icons'
@@ -63,19 +64,24 @@ const WarningList = ({
   warnings: ConversionWarning[]
   onDismiss?: () => void
 }) => (
-  <div className="border-warning/30 bg-warning/10 rounded-box mt-3 border p-3" role="status">
-    <div className="flex items-start gap-2.5">
-      <Icons.alert size={16} className="text-warning mt-0.5 shrink-0" />
-      <p className="text-base-content min-w-0 flex-1 text-sm font-medium">{heading}</p>
-      {onDismiss ? <CloseButton onClick={onDismiss} size="xs" /> : null}
-    </div>
-    <ul className="text-base-content/70 mt-1.5 list-disc space-y-1 pl-8 text-xs">
+  <Banner
+    tone="warning"
+    title={heading}
+    className="mt-3"
+    actions={
+      onDismiss ? (
+        <Button variant="quiet" onClick={onDismiss}>
+          Dismiss
+        </Button>
+      ) : null
+    }>
+    <ul className="text-meta list-disc space-y-1 pl-4">
       {warnings.slice(0, WARNINGS_SHOWN).map((warning, index) => (
         <li key={`${warning.code}-${index}`}>{warning.message}</li>
       ))}
       {warnings.length > WARNINGS_SHOWN ? <li>{warnings.length - WARNINGS_SHOWN} more.</li> : null}
     </ul>
-  </div>
+  </Banner>
 )
 
 const ImportExportSection = ({
@@ -175,7 +181,7 @@ const ImportExportSection = ({
   const rowTrailing = (id: RowId) => {
     if (id === 'print') return <Icons.print size={14} className="text-base-content/40 shrink-0" />
     if (busyFormat === id)
-      return <span className="loading loading-spinner loading-xs text-primary" />
+      return <span className="loading loading-spinner loading-xs" aria-hidden />
     if (savedFormat === id) return <Icons.check size={14} className="text-success shrink-0" />
     return <Icons.download size={14} className="text-base-content/40 shrink-0" />
   }
@@ -183,9 +189,7 @@ const ImportExportSection = ({
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <p className="text-base-content/50 text-[10px] font-medium tracking-wide uppercase">
-          Export a copy
-        </p>
+        <p className="text-base-content/70 text-meta font-semibold">Export a copy</p>
         <div className="rounded-field border-base-300 divide-base-300 mt-2 divide-y overflow-hidden border">
           {EXPORT_ROWS.map((row) => (
             <button
@@ -199,27 +203,29 @@ const ImportExportSection = ({
               </span>
               <span className="min-w-0 flex-1">
                 <span className="text-base-content block text-sm font-medium">{row.name}</span>
-                <span className="text-base-content/60 block truncate text-xs">{row.hint}</span>
+                <span className="text-base-content/60 text-meta block truncate">{row.hint}</span>
               </span>
               {rowTrailing(row.id)}
             </button>
           ))}
         </div>
-        <p className="text-base-content/60 mt-2 text-xs">
+        <p className="text-base-content/60 text-meta mt-2">
           {canExport
             ? 'Exports use the last saved version, so something you typed a moment ago may not be in the file yet.'
             : 'Nothing to export yet — write something first and it’ll save on its own.'}
         </p>
-        {exportError ? <p className="text-error mt-1.5 text-xs">{exportError}</p> : null}
+        {exportError ? (
+          <Banner tone="error" className="mt-2">
+            {exportError}
+          </Banner>
+        ) : null}
       </div>
 
       <div className="border-base-300 border-t pt-4">
-        <p className="text-base-content/50 text-[10px] font-medium tracking-wide uppercase">
-          Replace with a file
-        </p>
+        <p className="text-base-content/70 text-meta font-semibold">Replace with a file</p>
 
         {editingLocked ? (
-          <p className="text-base-content/60 mt-2 text-xs">
+          <p className="text-base-content/60 text-meta mt-2">
             This document is read-only, so it can’t be replaced.
           </p>
         ) : null}
@@ -227,15 +233,15 @@ const ImportExportSection = ({
         {/* `done` stays here too, or a warning-free import leaves no way to import again. */}
         {!editingLocked && ['idle', 'failed', 'done'].includes(stage.step) ? (
           <>
-            <p className="text-base-content/60 mt-2 text-xs">
+            <p className="text-base-content/60 text-meta mt-2">
               Word (.docx) or Markdown (.md). You’ll see what changes before anything is replaced.
             </p>
             <Button
-              variant="ghost"
+              variant="cancel"
               size="sm"
               disabled={!editor}
               startIcon={Icons.upload}
-              className={`border-base-300 mt-2 w-full border ${touchHeight}`}
+              className={`mt-2 w-full ${touchHeight}`}
               onClick={pickFile}>
               Choose file…
             </Button>
@@ -243,8 +249,10 @@ const ImportExportSection = ({
         ) : null}
 
         {stage.step === 'converting' ? (
-          <div className="rounded-box border-base-300 mt-2 flex items-center gap-2.5 border p-3">
-            <span className="loading loading-spinner loading-xs text-primary" />
+          <div
+            role="status"
+            className="rounded-box border-base-300 mt-2 flex items-center gap-2.5 border p-3">
+            <span className="loading loading-spinner loading-xs" aria-hidden />
             <span className="text-base-content min-w-0 flex-1 truncate text-sm">
               Reading {stage.filename}…
             </span>
@@ -257,7 +265,7 @@ const ImportExportSection = ({
               <Icons.fileText size={16} className="text-base-content/70 mt-0.5 shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="text-base-content truncate text-sm font-medium">{stage.filename}</p>
-                <p className="text-base-content/60 mt-0.5 text-xs">
+                <p className="text-base-content/60 text-meta mt-0.5">
                   Title will be “{stage.result.title}”.
                 </p>
               </div>
@@ -279,22 +287,22 @@ const ImportExportSection = ({
               heading IDs they point at.
             </p>
 
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex flex-wrap justify-end gap-2">
+              <Button
+                variant="cancel"
+                size="sm"
+                disabled={stage.step === 'applying'}
+                className={touchHeight}
+                onClick={() => setStage({ step: 'idle' })}>
+                Discard
+              </Button>
               <Button
                 variant="error"
                 size="sm"
                 loading={stage.step === 'applying'}
-                className={`flex-1 ${touchHeight}`}
+                className={touchHeight}
                 onClick={() => stage.step === 'staged' && applyStaged(stage)}>
                 Replace document
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={stage.step === 'applying'}
-                className={`border-base-300 border ${touchHeight}`}
-                onClick={() => setStage({ step: 'idle' })}>
-                Discard
               </Button>
             </div>
           </div>
@@ -302,7 +310,9 @@ const ImportExportSection = ({
 
         {stage.step === 'done' ? (
           <>
-            <p className="text-success mt-2 text-xs">Replaced with {stage.filename}.</p>
+            <p className="text-meta mt-2 text-[var(--success-ink)]">
+              Replaced with {stage.filename}.
+            </p>
             {stage.warnings.length ? (
               <WarningList
                 heading="Some things didn’t survive the conversion:"
@@ -314,7 +324,9 @@ const ImportExportSection = ({
         ) : null}
 
         {stage.step === 'failed' ? (
-          <p className="text-error mt-2 text-xs">{stage.message}</p>
+          <Banner tone="error" className="mt-2">
+            {stage.message}
+          </Banner>
         ) : null}
       </div>
     </div>

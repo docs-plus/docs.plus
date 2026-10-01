@@ -1,6 +1,6 @@
+import { ContextMenuRow } from '@components/ui/ContextMenu'
 import { filterTextMatchIndex } from '@utils/filterTextMatch'
 import type { ReactNode } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 export interface FilterSuggestion {
   id: string
@@ -48,9 +48,9 @@ export function FilterSuggestions({
       id={listboxId}
       aria-label="Matching headings"
       data-testid="filter-suggestions"
-      className="border-base-300 bg-base-100 rounded-box max-h-64 overflow-y-auto border shadow-xl motion-safe:animate-[doc-content-in_140ms_ease-out_both]">
+      className="border-base-300 bg-base-100 rounded-box max-h-64 overflow-y-auto border p-1.5 motion-safe:animate-[doc-content-in_140ms_ease-out_both]">
       {suggestions.length === 0 ? (
-        <div className="text-base-content/50 px-3 py-2.5 text-sm">No matching headings</div>
+        <div className="text-base-content/60 px-2.5 py-2 text-sm">No matching headings.</div>
       ) : (
         suggestions.map((s, i) => (
           <div
@@ -63,11 +63,10 @@ export function FilterSuggestions({
             onMouseDown={(e) => e.preventDefault()}
             onMouseEnter={() => onHover(i)}
             onClick={() => onPick(s)}
-            className={twMerge(
-              'text-base-content flex cursor-pointer items-center gap-2 px-3 py-2 text-sm',
-              activeIndex === i ? 'bg-base-200' : 'hover:bg-base-200/60'
-            )}>
-            <span className="truncate">{highlightMatch(s.text, query)}</span>
+            className="block w-full text-left">
+            <ContextMenuRow active={activeIndex === i}>
+              <span className="block truncate">{highlightMatch(s.text, query)}</span>
+            </ContextMenuRow>
           </div>
         ))
       )}

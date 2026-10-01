@@ -4,8 +4,8 @@ import UnreadBadge from '@components/ui/UnreadBadge'
 import { usePresentUsers } from '@hooks/usePresentUsers'
 import { useUnreadCount } from '@hooks/useUnreadCount'
 import { Icons } from '@icons'
+import { twMerge } from '@utils/twMerge'
 import type { MouseEvent } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { TOC_CLASSES } from './tocClasses'
 
@@ -38,7 +38,7 @@ export function TocRowTrail({
 
   return (
     <span className="relative flex shrink-0 items-center gap-1.5">
-      <Tooltip title="Chat Room" placement={tooltipPlacement}>
+      <Tooltip title="Chat room" placement={tooltipPlacement}>
         <button
           type="button"
           className={twMerge(

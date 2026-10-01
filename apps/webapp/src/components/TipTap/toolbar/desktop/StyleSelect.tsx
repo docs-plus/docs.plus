@@ -6,21 +6,13 @@ import {
 } from '@components/TipTap/block-style/blockStyle'
 import Select from '@components/ui/Select'
 import { Tooltip } from '@components/ui/Tooltip'
-import { Icons } from '@icons'
 import { Editor } from '@tiptap/core'
+import { twMerge } from '@utils/twMerge'
 import { useCallback } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 interface StyleSelectProps {
   editor: Editor
 }
-
-/** Matches Select trigger (`Select.tsx`); keep in sync for the non-dropdown “Document title” row. */
-const SELECT_TRIGGER_CLASS =
-  'select select-ghost select-sm flex w-full min-w-0 items-center justify-between bg-none pr-3 pl-3 text-left'
-
-/** Fixed width so the toolbar slot does not grow with flex or with label length (Normal vs Heading 1). */
-const SELECT_SLOT_CLASS = 'w-40 max-w-40 shrink-0 min-w-0'
 
 const BODY_STYLE_OPTIONS = [
   { value: 'p', label: 'Normal text' },
@@ -32,6 +24,8 @@ const BODY_STYLE_OPTIONS = [
   { value: '5', label: 'Heading 5' },
   { value: '6', label: 'Heading 6' }
 ]
+
+const TITLE_OPTIONS = [{ value: 'title', label: 'Document title' }]
 
 const selectValue = (style: Exclude<BlockStyle, { kind: 'title' }>): string => {
   switch (style.kind) {
@@ -67,40 +61,32 @@ const StyleSelect = ({ editor }: StyleSelectProps) => {
     [editor]
   )
 
-  if (style.kind === 'title') {
-    return (
-      <div className={SELECT_SLOT_CLASS}>
-        <Tooltip title="Document name — always the first line" placement="bottom">
-          <div
-            role="group"
-            aria-label="Document title — first line of the document"
-            className={twMerge(SELECT_TRIGGER_CLASS, 'is-active pointer-events-none select-none')}>
-            <span className="min-w-0 flex-1 truncate" aria-hidden="true">
-              Document title
-            </span>
-            <Icons.chevronDown
-              size={16}
-              className="text-base-content/50 shrink-0 opacity-50"
-              aria-hidden
-            />
-          </div>
-        </Tooltip>
-      </div>
-    )
-  }
+  const isTitle = style.kind === 'title'
 
+  // Fixed width, so the slot does not grow with the label (Normal text vs Heading 1).
+  // The first line is always the Title: a disabled one-option Select shows the lock.
+  // Select takes no ref, so the span is the Tooltip anchor. On the Title line the
+  // disabled trigger drops pointer events, so hover reaches the span.
   return (
-    <div className={SELECT_SLOT_CLASS}>
-      <Tooltip title="Styles (⌘+⌥+[1-6])" placement="bottom">
-        <Select
-          value={selectValue(style)}
-          onChange={handleChange}
-          options={BODY_STYLE_OPTIONS}
-          ghost
-          size="sm"
-          wrapperClassName="w-full min-w-0 max-w-full"
-          className={twMerge('min-w-0', style.kind !== 'normal' && 'is-active')}
-        />
+    <div className="w-40 max-w-40 min-w-0 shrink-0">
+      <Tooltip
+        title={isTitle ? 'Document name — always the first line' : 'Styles (⌘+⌥+[1-6])'}
+        placement="top">
+        <span className="block w-full min-w-0">
+          <Select
+            value={isTitle ? 'title' : selectValue(style)}
+            onChange={handleChange}
+            options={isTitle ? TITLE_OPTIONS : BODY_STYLE_OPTIONS}
+            disabled={isTitle}
+            ghost
+            size="sm"
+            wrapperClassName={twMerge(
+              'w-full min-w-0 max-w-full',
+              isTitle && 'pointer-events-none'
+            )}
+            className={twMerge('min-w-0', style.kind !== 'normal' && 'is-active')}
+          />
+        </span>
       </Tooltip>
     </div>
   )

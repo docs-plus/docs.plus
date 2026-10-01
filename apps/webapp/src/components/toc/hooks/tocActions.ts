@@ -1,6 +1,6 @@
 import { computeSection } from '@components/TipTap/extensions/shared'
 import * as toast from '@components/toast'
-import Button from '@components/ui/Button'
+import { openConfirmDialog } from '@components/ui/dialogs/ConfirmDialog'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useStore } from '@stores'
 import { TIPTAP_NODES } from '@types'
@@ -14,52 +14,34 @@ import {
   navigateToHeading as navigateToHeadingAction
 } from '../utils/navigateToHeading'
 
-function DeleteSectionDialog({ headingId }: { headingId: string }) {
-  const closeDialog = useStore((state) => state.closeDialog)
-  const editor = useStore((state) => state.settings.editor.instance)
-
-  const handleDelete = () => {
-    closeDialog()
-    if (!editor) return
-
-    const doc = editor.state.doc
-    let offset = 0
-
-    for (let i = 0; i < doc.content.childCount; i++) {
-      const child = doc.content.child(i)
-      const pos = offset
-      offset += child.nodeSize
-
-      if (
-        child.type.name === TIPTAP_NODES.HEADING_TYPE &&
-        (child.attrs['toc-id'] as string) === headingId
-      ) {
-        const section = computeSection(doc, pos, child.attrs.level as number, i)
-        const tr = editor.state.tr
-        tr.delete(section.from, section.to)
-        editor.view.dispatch(tr)
-        return
-      }
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-3 p-4 pr-3 pb-3">
-      <p className="text-base-content/70">Do you want to delete this heading section?</p>
-      <div className="flex justify-end gap-4">
-        <Button variant="ghost" onClick={closeDialog}>
-          Cancel
-        </Button>
-        <Button variant="error" onClick={handleDelete}>
-          Delete
-        </Button>
-      </div>
-    </div>
-  )
-}
-
 function editorOrNull() {
   return useStore.getState().settings.editor.instance
+}
+
+/** Reads the editor at confirm time, not at open, so it acts on the live instance. */
+function removeSectionNow(headingId: string): void {
+  const editor = editorOrNull()
+  if (!editor) return
+
+  const doc = editor.state.doc
+  let offset = 0
+
+  for (let i = 0; i < doc.content.childCount; i++) {
+    const child = doc.content.child(i)
+    const pos = offset
+    offset += child.nodeSize
+
+    if (
+      child.type.name === TIPTAP_NODES.HEADING_TYPE &&
+      (child.attrs['toc-id'] as string) === headingId
+    ) {
+      const section = computeSection(doc, pos, child.attrs.level as number, i)
+      const tr = editor.state.tr
+      tr.delete(section.from, section.to)
+      editor.view.dispatch(tr)
+      return
+    }
+  }
 }
 
 /** Call-time getState / Router — one stable object, no per-row subscriptions. */
@@ -98,7 +80,7 @@ export const tocActions = {
     const href = buildHeadingHref(editor, headingId)
     const success = await copyToClipboard(href)
     if (success) {
-      toast.Success('Section link copied to clipboard')
+      toast.Success('Section link copied')
     } else {
       toast.Error('Failed to copy link')
     }
@@ -130,6 +112,11 @@ export const tocActions = {
 
   deleteSection(headingId: string): void {
     if (!headingId) return
-    useStore.getState().openDialog(<DeleteSectionDialog headingId={headingId} />)
+    openConfirmDialog({
+      title: 'Delete this section?',
+      body: 'This removes the heading and everything under it.',
+      confirmLabel: 'Delete section',
+      onConfirm: () => removeSectionNow(headingId)
+    })
   }
 }

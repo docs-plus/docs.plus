@@ -45,7 +45,7 @@ const PadTitle = () => {
   const themePreference = useThemeStore((state) => state.preference)
   const setThemePreference = useThemeStore((state) => state.setPreference)
   const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
-  const { isOpen: isProfileModalOpen, setIsOpen: setProfileModalOpen } = useSettingsModal(!!user)
+  const { isOpen: isProfileModalOpen, setIsOpen: setProfileModalOpen } = useSettingsModal()
   const [isShareModalOpen, setShareModalOpen] = useState(false)
   const [isNotificationsOpen, setNotificationsOpen] = useState(false)
   const [settingsTab, setSettingsTab] = useState<TabType | undefined>(undefined)
@@ -75,11 +75,14 @@ const PadTitle = () => {
   return (
     <>
       {/* Header bar; `border-b` is the sole line under the title row (toolbar uses `border-b` only, no `border-t` — see EditorToolbar). */}
-      <header className="border-base-300 bg-base-100 relative z-30 flex min-h-12 w-full items-center border-b px-3 py-2 motion-safe:animate-[doc-region-in_220ms_ease-out_both]">
+      <header className="border-base-300 bg-base-100 relative z-30 flex h-14 w-full shrink-0 items-center border-b px-3 motion-safe:animate-[doc-region-in_220ms_ease-out_both]">
         {/* Left section: Logo + Document info */}
         <div className="flex flex-1 items-center gap-2">
           {/* Logo */}
-          <Link href="/" className="shrink-0">
+          <Link
+            href="/"
+            className="rounded-field focus-visible:ring-primary shrink-0 focus-visible:ring-2 focus-visible:outline-none"
+            aria-label="docs.plus home">
             <DocsPlusIcon size={34} />
           </Link>
 
@@ -126,14 +129,16 @@ const PadTitle = () => {
               open={isNotificationsOpen}
               onOpenChange={setNotificationsOpen}>
               {/* A controlled `open` disables the Popover's own `useClick`, so the bell
-                  carries the toggle itself. Outside click and Esc still close it. */}
+                  carries the toggle itself. Outside click and Esc still close it.
+                  No tooltip: it stays up under the open panel while the pointer rests here. */}
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
                   shape="circle"
                   className="relative"
-                  onClick={() => setNotificationsOpen((open) => !open)}>
-                  <Icons.notifications size={18} className="text-base-content/70" />
+                  onClick={() => setNotificationsOpen((open) => !open)}
+                  aria-label="Notifications">
+                  <Icons.notifications size={20} className="text-base-content/70" />
                   <UnreadBadge
                     count={unreadCount}
                     size="sm"
@@ -158,6 +163,7 @@ const PadTitle = () => {
                   size="lg"
                   className="border-0 p-0"
                   onClick={() => openSettings()}
+                  aria-label="Profile"
                   tooltip="Profile"
                   tooltipPlacement="bottom">
                   <Avatar face={user} clickable={false} size="lg" className="pointer-events-none" />
@@ -179,11 +185,11 @@ const PadTitle = () => {
                     tooltipPlacement="bottom"
                     aria-label={`Theme: ${themePreference}. Click to change.`}>
                     {themePreference === 'dark' ? (
-                      <Icons.moon size={20} />
+                      <Icons.moon size={20} className="text-base-content/70" />
                     ) : themePreference === 'system' ? (
-                      <Icons.monitor size={20} />
+                      <Icons.monitor size={20} className="text-base-content/70" />
                     ) : (
-                      <Icons.sun size={20} />
+                      <Icons.sun size={20} className="text-base-content/70" />
                     )}
                   </Button>
                   <Button variant="neutral" onClick={() => openInlineSignInDialog()}>

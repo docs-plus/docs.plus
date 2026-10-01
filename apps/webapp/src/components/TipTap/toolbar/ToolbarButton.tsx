@@ -1,8 +1,8 @@
 import Button, { type ButtonProps } from '@components/ui/Button'
 import { useTouchPress } from '@hooks/useTouchPress'
 import type { Editor } from '@tiptap/core'
+import { twMerge } from '@utils/twMerge'
 import React from 'react'
-import { twMerge } from 'tailwind-merge'
 
 interface ToolbarButtonProps extends Omit<ButtonProps, 'type' | 'shape'> {
   type?: string
@@ -27,6 +27,8 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       variant = 'ghost',
       size = 'sm',
       shape = 'square',
+      'aria-label': ariaLabel,
+      tooltip,
       ...rest
     },
     ref
@@ -40,7 +42,19 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
         variant={variant}
         size={size}
         shape={shape || undefined}
-        className={twMerge(active ? 'is-active' : '', className)}
+        aria-label={ariaLabel ?? tooltip}
+        tooltip={tooltip}
+        className={twMerge(
+          // daisyUI's ghost rest hook, not a text utility: hover, pressed and focus keep
+          // daisyUI's ink. Active skips it; `is-active` has no ink outside `_toolbar.scss`.
+          variant === 'ghost' &&
+            !active &&
+            '[--btn-rest-fg:color-mix(in_oklab,var(--color-base-content)_70%,transparent)]',
+          // daisyUI's disabled ink is /20; the house disabled step is /40.
+          'focus-visible:ring-primary disabled:text-base-content/40 focus-visible:ring-2 focus-visible:outline-none',
+          active && 'is-active',
+          className
+        )}
         onClick={onPress ? handleClick : onClick}
         onTouchEnd={onPress ? handleTouchEnd : onTouchEnd}
         {...rest}

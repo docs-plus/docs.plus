@@ -54,7 +54,7 @@ const SLASH_ITEMS: SlashItem[] = [
   }),
   {
     id: 'bulletList',
-    label: 'Bullet List',
+    label: 'Bullet list',
     icon: Icons.bulletList,
     aliases: ['ul'],
     can: always,
@@ -62,7 +62,7 @@ const SLASH_ITEMS: SlashItem[] = [
   },
   {
     id: 'orderedList',
-    label: 'Ordered List',
+    label: 'Ordered list',
     icon: Icons.orderedList,
     aliases: ['ol', 'numbered'],
     can: always,
@@ -70,7 +70,7 @@ const SLASH_ITEMS: SlashItem[] = [
   },
   {
     id: 'taskList',
-    label: 'Task List',
+    label: 'Task list',
     icon: Icons.taskList,
     aliases: ['todo', 'checkbox'],
     can: always,
@@ -86,7 +86,7 @@ const SLASH_ITEMS: SlashItem[] = [
   },
   {
     id: 'codeBlock',
-    label: 'Code Block',
+    label: 'Code block',
     icon: Icons.codeBlock,
     aliases: ['code', 'pre'],
     can: always,

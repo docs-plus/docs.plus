@@ -104,7 +104,7 @@ export function PresentQrCode({ value, title }: PresentQrCodeProps) {
               className="text-[clamp(1.5rem,5vh,4rem)] leading-tight font-bold text-balance">
               {title}
             </h2>
-            <p className="text-primary text-[clamp(1.25rem,4.6vh,3.5rem)] leading-tight font-bold break-all">
+            <p className="text-base-content text-[clamp(1.25rem,4.6vh,3.5rem)] leading-tight font-bold break-all">
               {displayUrl}
             </p>
             <p className="text-base-content/70 text-[clamp(0.875rem,1.8vh,1.375rem)]">

@@ -1,6 +1,6 @@
 import { useModal } from '@components/ui/ModalDrawer'
 import { useChatStore, useStore } from '@stores'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import { tocActions } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
@@ -56,7 +56,7 @@ export function TocHeader({ variant }: TocHeaderProps) {
     return (
       <div className="border-base-300 bg-base-100 isolate z-30 shrink-0 border-b px-4 py-3">
         <div className="group relative flex items-center justify-between gap-3">
-          <span className="text-base-content text-lg font-bold">{docMetadata?.title}</span>
+          <span className="text-base-content text-xl font-semibold">{docMetadata?.title}</span>
           {trail}
         </div>
       </div>

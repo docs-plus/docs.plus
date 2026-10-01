@@ -1,4 +1,4 @@
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import { TOC_CLASSES } from './tocClasses'
 

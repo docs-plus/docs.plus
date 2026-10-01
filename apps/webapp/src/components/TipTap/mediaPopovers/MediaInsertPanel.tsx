@@ -1,3 +1,4 @@
+import { PanelSurfaceShell } from '@components/PanelSurfaceShell'
 import { PanelTabBar } from '@components/ui/PanelTabBar'
 import { usePopoverState } from '@components/ui/Popover'
 import { useStore } from '@stores'
@@ -21,9 +22,9 @@ const MediaInsertPanel = () => {
   }, [tab])
 
   return (
-    <div className="flex w-full flex-col">
+    <PanelSurfaceShell variant="popover" title="Insert media">
       <PanelTabBar tabs={MEDIA_INSERT_TABS} activeTab={tab} onSelect={setTab} />
-      <div role="tabpanel" aria-label={tab} className="flex flex-col gap-3 px-4 pt-1 pb-4">
+      <div role="tabpanel" aria-label={tab} className="flex flex-col gap-3 p-3">
         {tab === 'Embed URL' ? (
           <MediaUrlField
             ref={inputRef}
@@ -37,7 +38,7 @@ const MediaInsertPanel = () => {
           <MediaUploadDropzone onFile={submitFile} />
         )}
       </div>
-    </div>
+    </PanelSurfaceShell>
   )
 }
 

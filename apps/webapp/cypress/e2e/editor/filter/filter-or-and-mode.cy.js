@@ -23,9 +23,9 @@ describe('Document filter OR/AND mode', () => {
     })
 
     // Apply two terms as two path segments.
-    cy.get('[aria-label="Filter Document"]').first().click({ force: true })
+    cy.get('[aria-label="Filter document"]').first().click({ force: true })
     cy.get('#filterSearchBox').type('apple{enter}')
-    cy.get('[aria-label="Filter Document"]').first().click({ force: true })
+    cy.get('[aria-label="Filter document"]').first().click({ force: true })
     cy.get('#filterSearchBox').type('carrot{enter}')
 
     // Default OR: both Fruit (apple) and Veggies (apple+carrot) bodies visible.
@@ -33,7 +33,7 @@ describe('Document filter OR/AND mode', () => {
     cy.contains('.docy_editor .tiptap.ProseMirror', 'apple carrot body').should('be.visible')
 
     // Switch to AND via the real control (shown once 2+ filters are active).
-    cy.get('[aria-label="Filter Document"]').first().click({ force: true })
+    cy.get('[aria-label="Filter document"]').first().click({ force: true })
     cy.get('#filter-mode-and').click({ force: true })
     cy.location('search').should('include', 'mode=and')
 

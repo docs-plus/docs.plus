@@ -1,6 +1,10 @@
 const MediaInsertPanelSkeleton = () => {
   return (
     <div className="flex w-full flex-col">
+      <div className="border-base-300 flex items-center justify-between border-b px-4 py-3">
+        <div className="skeleton h-5 w-24" />
+        <div className="skeleton rounded-field size-8" />
+      </div>
       <div className="px-4 py-2.5">
         <div className="bg-base-300 rounded-box flex w-full gap-1 p-1">
           <div className="skeleton rounded-field h-9 flex-1" />

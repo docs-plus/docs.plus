@@ -8,7 +8,7 @@ import {
   type SuggestionKeyDownProps,
   type SuggestionProps
 } from '@tiptap/suggestion'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import { isPhone } from './slashItems'
 import SlashMenuList from './SlashMenuList'
@@ -71,7 +71,7 @@ export function renderSlashMenu(pluginKey: PluginKey) {
         props: { editor: props.editor },
         className: twMerge(
           popoverPanelClassName,
-          'w-auto min-w-56 overflow-y-auto overscroll-contain'
+          'w-auto min-w-[11rem] overflow-y-auto overscroll-contain'
         )
       })
       component.element.setAttribute('data-testid', 'slash-menu-popup')

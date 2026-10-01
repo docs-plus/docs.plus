@@ -12,12 +12,12 @@ export function InternalLinkChip({ link, editor }: InternalLinkChipProps) {
 
   return (
     <div className="flex items-center gap-3">
-      <span className="bg-primary/10 text-primary rounded-field inline-flex size-10 shrink-0 items-center justify-center">
+      <span className="bg-base-200 text-base-content/70 rounded-field inline-flex size-10 shrink-0 items-center justify-center">
         <Icon size={20} aria-hidden />
       </span>
       <div className="flex min-w-0 flex-col">
         <span className="text-base-content truncate text-base font-semibold">{label}</span>
-        <span className="text-base-content/60 truncate text-xs">{sublabel}</span>
+        <span className="text-base-content/60 text-meta truncate">{sublabel}</span>
       </div>
     </div>
   )

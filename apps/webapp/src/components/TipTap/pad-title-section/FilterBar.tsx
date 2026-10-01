@@ -2,9 +2,9 @@ import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { REMOVE_FILTER, RESET_FILTER } from '@services/eventsHub'
 import { useStore } from '@stores'
+import { twMerge } from '@utils/twMerge'
 import PubSub from 'pubsub-js'
 import { useCallback } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 const Chip = ({ text }: { text: string }) => (
   <span className="border-info/30 bg-info/10 rounded-field m-0.5 inline-flex max-w-full items-center gap-0.5 border py-0.5 pr-0.5 pl-2 text-xs leading-none font-medium text-[var(--info-ink)] motion-safe:animate-[doc-region-in_180ms_ease-out_both]">

@@ -64,7 +64,7 @@ function saveStatePresentation(
         tooltip: mirrorWriteFailed
           ? 'You are offline, and this browser cannot save an offline copy. Keep this tab open until you reconnect.'
           : 'You are offline. Changes will sync when you reconnect.',
-        className: 'text-warning'
+        className: 'text-[var(--warning-ink)]'
       }
     case 'error':
       // Content-fork freeze is terminal (schema/version mismatch) and only a
@@ -75,14 +75,14 @@ function saveStatePresentation(
           text: 'Reload',
           tooltip:
             'This tab is out of date and stopped syncing to protect your work. Reload the page to keep editing.',
-          className: 'text-error'
+          className: 'text-[var(--error-ink)]'
         }
       }
       return {
         icon: <Icons.cloudOff size={18} />,
         text: 'Error',
         tooltip: "Changes will sync when the connection is restored — don't close the tab",
-        className: 'text-error'
+        className: 'text-[var(--error-ink)]'
       }
     case 'unauthenticated': {
       const { chip, tooltip } = getNeedsAuthCopy()
@@ -90,7 +90,7 @@ function saveStatePresentation(
         icon: <Icons.cloudOff size={18} />,
         text: chip,
         tooltip,
-        className: 'text-warning'
+        className: 'text-[var(--warning-ink)]'
       }
     }
     default: {
@@ -106,7 +106,7 @@ const MirrorWarning = ({ withText, className }: { withText: boolean; className: 
     <div
       role="img"
       aria-label={MIRROR_WARNING_TEXT}
-      className={`text-warning rounded-field flex cursor-default items-center gap-1.5 text-sm font-medium ${
+      className={`rounded-field flex cursor-default items-center gap-1.5 text-sm font-medium text-[var(--warning-ink)] ${
         withText ? 'hover:bg-base-200 px-3 py-1 transition-colors' : 'px-1 py-1'
       } ${className}`}>
       <Icons.alert size={18} />
@@ -151,7 +151,7 @@ const ProviderSyncStatus = ({
     return (
       <>
         <Tooltip title="Loading the latest version of this document…" placement="bottom">
-          <div className="text-base-content/50 hover:bg-base-200 rounded-field flex cursor-default items-center gap-1.5 px-3 py-1 text-sm font-medium transition-colors">
+          <div className="text-base-content/70 hover:bg-base-200 rounded-field flex cursor-default items-center gap-1.5 px-3 py-1 text-sm font-medium transition-colors">
             <Icons.sync className="animate-spin" size={18} />
             <span>Connecting</span>
           </div>
