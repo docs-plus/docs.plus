@@ -72,11 +72,11 @@ const blockSpan = (
 
   // Read the source nodes, not clones: a clone holds its attributes as pending values.
   // The flat schema: a heading owns every later block up to the next heading.
-  // One at or above the target re-parents the subsections after it; one before
+  // One above the floor re-parents the subsections after it; one before
   // the end of the body silently moves the blocks behind it into a new subsection.
   const levels = source.map(sourceHeadingLevel).filter((level) => level !== null)
-  if (levels.some((level) => level <= section.level)) {
-    return invalid(`a new heading must be deeper than level ${section.level}`)
+  if (levels.some((level) => level < section.minHeadingLevel)) {
+    return invalid(`a new heading must be at level ${section.minHeadingLevel} or deeper`)
   }
   if (levels.length > 0 && to !== blocks) {
     return invalid('a new heading can only go at the end of the section')
@@ -218,7 +218,7 @@ export const applyContentToDoc = (
   // Delete-first would broadcast a half-wipe to every collaborator. The cast
   // drops YXmlHook, which insert() rejects and the transformer never produces.
   const source = scratch.getXmlFragment('default').toArray() as BodyNode[]
-  const nodes = source.map((node) => node.clone()) as BodyNode[]
+  const nodes = source.map((node) => node.clone())
 
   let span = { start: fragment.length, end: fragment.length }
   if (mode === 'replace') span = { start: 0, end: fragment.length }

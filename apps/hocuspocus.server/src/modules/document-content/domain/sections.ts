@@ -19,19 +19,15 @@ export const headingLevel = (node: JSONContent | undefined): number | null => {
 export const containsTitleHeading = (nodes: JSONContent[]): boolean =>
   nodes.some((node) => headingLevel(node) === 1)
 
-/** A replacing heading at or above the target level would re-parent the subsections after it. */
-export const containsHeadingAtOrAbove = (nodes: JSONContent[], level: number): boolean =>
-  nodes.some((node) => {
-    const nodeLevel = headingLevel(node)
-    return nodeLevel !== null && nodeLevel <= level
-  })
-
 export interface Section {
   headingIndex: number
   /** The body is `start` up to `end`, exclusive. */
   start: number
   end: number
   level: number
+  /** The shallowest level a new heading at the body end may take: deeper than
+   *  this section, and no shallower than the next heading, or it adopts that one. */
+  minHeadingLevel: number
   /** Hashes the heading plus its body, so a change to either refuses a stale write. */
   rev: string
 }
@@ -59,7 +55,9 @@ export const sectionAt = (nodes: JSONContent[], headingIndex: number): Section =
     .update(canonicalJson(nodes.slice(headingIndex, end)))
     .digest('hex')
     .slice(0, REV_LENGTH)
-  return { headingIndex, start, end, level: headingLevel(nodes[headingIndex]) ?? 1, rev }
+  const level = headingLevel(nodes[headingIndex]) ?? 1
+  const minHeadingLevel = Math.max(level + 1, headingLevel(nodes[end]) ?? 0)
+  return { headingIndex, start, end, level, minHeadingLevel, rev }
 }
 
 /** A repeated `toc-id` resolves to its first heading. */

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { MAX_MARKDOWN_CHARS } from '../../document-conversion/types'
 import { REV_PATTERN } from '../domain/sections'
 
 /**
@@ -44,8 +45,6 @@ const hopContentSchema = z.object({
   content: z.array(z.looseObject({ type: z.string() }))
 })
 
-/** Equals `MAX_MARKDOWN_CHARS`; this file stays import-light, so the number is repeated. */
-const MAX_TEXT_EDIT_CHARS = 64 * 1024
 const MAX_BLOCK_POSITION = 50_000
 
 /** The internal hop carries the mode in the body; REST has already defaulted it. */
@@ -58,8 +57,8 @@ export const internalApplyBodySchema = z
     rev: z.string().regex(REV_PATTERN).optional(),
     from: z.number().int().min(0).max(MAX_BLOCK_POSITION).optional(),
     to: z.number().int().min(0).max(MAX_BLOCK_POSITION).optional(),
-    oldText: z.string().min(1).max(MAX_TEXT_EDIT_CHARS).optional(),
-    newText: z.string().max(MAX_TEXT_EDIT_CHARS).optional(),
+    oldText: z.string().min(1).max(MAX_MARKDOWN_CHARS).optional(),
+    newText: z.string().max(MAX_MARKDOWN_CHARS).optional(),
     actor: actorSchema.optional()
   })
   .refine((body) => !['replace', 'append'].includes(body.mode) || body.content.content.length > 0, {

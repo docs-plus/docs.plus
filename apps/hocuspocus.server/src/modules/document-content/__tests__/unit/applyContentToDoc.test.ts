@@ -208,7 +208,7 @@ describe('applyContentToDoc — blocks mode', () => {
     to
   })
 
-  test('replaces the whole body, keeps the heading, and returns the new rev', () => {
+  test('replaces the whole body, keeps the heading, and returns no rev', () => {
     const live = liveDocWith(outline())
     const before = revOf(live, 'two')
     const result = applyContentToDoc(
@@ -309,6 +309,31 @@ describe('applyContentToDoc — blocks mode', () => {
     expect(
       applyContentToDoc(live, scratchFrom(doc(section('Sub', 3, 'sub'))), 'blocks', at(live, 3, 3))
     ).toMatchObject({ ok: true })
+  })
+
+  test('a heading shallower than the next heading is refused, so it never adopts it', () => {
+    const live = liveDocWith(
+      doc(
+        section('Title', 1, 'title'),
+        section('Two', 2, 'two'),
+        para('a'),
+        section('Deep', 4, 'deep')
+      )
+    )
+    const insert = (level: number) =>
+      applyContentToDoc(live, scratchFrom(doc(section('New', level, 'new'))), 'blocks', {
+        sectionId: 'two',
+        rev: revOf(live, 'two'),
+        from: 1,
+        to: 1
+      })
+
+    expect(insert(3)).toEqual({
+      ok: false,
+      status: 'invalid-content',
+      detail: 'a new heading must be at level 4 or deeper'
+    })
+    expect(insert(4)).toMatchObject({ ok: true })
   })
 })
 

@@ -18,7 +18,7 @@ export const EMBED_NODE_TYPES = new Set([
 ])
 
 /** No `toDOM`, so serializing one throws rather than dropping it. */
-const MEDIA_UPLOAD_PLACEHOLDER = 'mediaUploadPlaceholder'
+export const MEDIA_UPLOAD_PLACEHOLDER = 'mediaUploadPlaceholder'
 
 const embedToParagraph = (node: JsonNode): JsonNode => {
   const attrs = isRecord(node.attrs) ? node.attrs : {}

@@ -3,8 +3,8 @@ import type { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
 
 import {
-  containsHeadingAtOrAbove,
   findSection,
+  headingLevel,
   REV_PATTERN,
   type Section
 } from '../../document-content/domain/sections'
@@ -357,7 +357,7 @@ export const registerDocumentTools = (
           .max(MAX_MARKDOWN_CHARS)
           .default('')
           .describe(
-            'Markdown to insert at the caret; empty only removes. A heading in it must be deeper than the section heading and can go only at the end of the section.'
+            'Markdown to insert at the caret; empty only removes. A heading in it must be deeper than the section heading, no shallower than the next heading, and can go only at the end of the section.'
           )
       }),
       annotations: {
@@ -405,8 +405,10 @@ export const registerDocumentTools = (
             `remove_blocks: block(s) ${media.join(', ')} hold a picture, video or file, and docs.plus never deletes media for an AI app. Choose a range that skips them, or ask the person to change them in docs.plus.`
           )
         }
-        if (containsHeadingAtOrAbove(fragment.content, section.level)) {
-          return toolError(refusedText(`a new heading must be deeper than level ${section.level}`))
+        if (fragment.content.some((n) => (headingLevel(n) ?? Infinity) < section.minHeadingLevel)) {
+          return toolError(
+            refusedText(`a new heading must be at level ${section.minHeadingLevel} or deeper`)
+          )
         }
         if (to !== blocks && fragment.content.some((node) => node.type === 'heading')) {
           return toolError(
