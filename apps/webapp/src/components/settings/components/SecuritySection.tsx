@@ -1,10 +1,10 @@
 import Button from '@components/ui/Button'
+import { useAuthStore } from '@stores'
 import type { User } from '@supabase/supabase-js'
 import type { IconType } from 'react-icons'
 import { FcGoogle } from 'react-icons/fc'
 import { LuKeyRound, LuMail, LuPlugZap, LuShield } from 'react-icons/lu'
 
-import { useAuthUser } from '../hooks/useAuthUser'
 import { useConnectedApps } from '../hooks/useConnectedApps'
 import type { TabType } from '../types'
 import { appsWithAccessText } from '../utils/appsWithAccessText'
@@ -45,7 +45,7 @@ const userProviders = (user: User | null): Set<string> => {
 }
 
 const AccountEmailCard = () => {
-  const email = useAuthUser()?.email
+  const email = useAuthStore((s) => s.session?.email)
   if (!email) return null
 
   return (
@@ -57,7 +57,7 @@ const AccountEmailCard = () => {
 }
 
 const SignInMethodsCard = () => {
-  const user = useAuthUser()
+  const user = useAuthStore((s) => s.session)
   const providers = userProviders(user)
   const methods = SIGN_IN_METHODS.filter((method) => providers.has(method.provider))
 

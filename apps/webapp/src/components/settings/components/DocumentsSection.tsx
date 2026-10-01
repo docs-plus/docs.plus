@@ -86,10 +86,15 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
   // The entry shows only once the trash total is known and above 0, so it never flashes.
   const { data: trashData } = useTrashedDocuments(userId)
   const hasTrash = (trashData?.pages[0]?.total ?? 0) > 0
-  // The last item left the trash (Empty trash, restore): go back to the list.
+  const searchRef = useRef<HTMLInputElement>(null)
+  // The last item left the trash (Empty trash, restore): go back to the list. The Trash
+  // view unmounts with focus inside it, so move focus to search, not to the body.
   useEffect(() => {
-    if (!hasTrash) setShowTrash(false)
-  }, [hasTrash])
+    if (!hasTrash && showTrash) {
+      setShowTrash(false)
+      searchRef.current?.focus()
+    }
+  }, [hasTrash, showTrash])
   const { navigateToDocument, isLoading: isCreatingDocument } = useNavigateToDocument()
 
   // Same order as DocumentListRow open: navigate, then close the settings surface.
@@ -312,6 +317,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
 
             <div className="max-md:border-base-300 max-md:bg-base-100 space-y-4 max-md:sticky max-md:top-0 max-md:z-10 max-md:space-y-2.5 max-md:border-b max-md:px-4 max-md:pt-3 max-md:pb-2.5">
               <TextInput
+                ref={searchRef}
                 aria-label="Search documents"
                 startIcon={LuSearch}
                 endIcon={

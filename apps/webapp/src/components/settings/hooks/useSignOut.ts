@@ -23,8 +23,8 @@ export const useSignOut = () => {
         return
       }
     }
-    // The returning-person row deliberately survives sign-out; clearing it here made
-    // the row almost never appear. "Not you?" on that row drops it.
+    // The returning-person row survives sign-out, or it would almost never appear.
+    // "Not you?" on that row drops it.
     // Consume the takeover's history entry first, or back after reload re-lands on it.
     await consumeSettingsTakeoverEntry()
     window.location.assign(window.location.pathname)

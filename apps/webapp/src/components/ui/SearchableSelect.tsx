@@ -49,6 +49,46 @@ export interface SearchableSelectProps {
   optionLabelClassName?: string
 }
 
+const WORD_CHAR = /[\p{L}\p{N}]/u
+
+/** 0 when a whole word equals the query, 1 when a word starts with it, else 2. */
+const matchRank = (text: string, query: string): number => {
+  let rank = 2
+  for (let i = text.indexOf(query); i !== -1; i = text.indexOf(query, i + 1)) {
+    if (i > 0 && WORD_CHAR.test(text[i - 1])) continue
+    const end = i + query.length
+    if (end === text.length || !WORD_CHAR.test(text[end])) return 0
+    rank = 1
+  }
+  return rank
+}
+
+// Substring filter, then a stable sort lifts word matches in the label or
+// description, so `india` shows India before `Indian/*` and `America/Indiana/*`.
+export const searchOptions = (
+  options: SearchableSelectOption[],
+  search: string
+): SearchableSelectOption[] => {
+  if (!search.trim()) return options
+  const searchLower = search.toLowerCase()
+  const matches = options.filter((opt) => {
+    if (opt.searchText) return opt.searchText.includes(searchLower)
+    return (
+      opt.label.toLowerCase().includes(searchLower) ||
+      opt.value.toLowerCase().includes(searchLower) ||
+      opt.description?.toLowerCase().includes(searchLower)
+    )
+  })
+  const query = searchLower.trim()
+  return matches
+    .map((opt) => ({
+      opt,
+      rank: matchRank(`${opt.label} ${opt.description ?? ''}`.toLowerCase(), query)
+    }))
+    .sort((a, b) => a.rank - b.rank)
+    .map(({ opt }) => opt)
+}
+
 /** Keep in lockstep with `Select`'s trigger classes. */
 const buildTriggerClasses = (size?: SelectSize): string => {
   const classes: string[] = ['select', 'w-full', 'text-left']
@@ -115,18 +155,7 @@ const SearchableSelect = ({
   const dismiss = useDismiss(context, { outsidePress: true, outsidePressEvent: 'mousedown' })
   const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss])
 
-  const filteredOptions = useMemo(() => {
-    if (!search.trim()) return options
-    const searchLower = search.toLowerCase()
-    return options.filter((opt) => {
-      if (opt.searchText) return opt.searchText.includes(searchLower)
-      return (
-        opt.label.toLowerCase().includes(searchLower) ||
-        opt.value.toLowerCase().includes(searchLower) ||
-        opt.description?.toLowerCase().includes(searchLower)
-      )
-    })
-  }, [options, search])
+  const filteredOptions = useMemo(() => searchOptions(options, search), [options, search])
 
   const selectedOption = options.find((opt) => opt.value === value)
   const displayValue = selectedOption?.label || placeholder

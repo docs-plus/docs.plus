@@ -1,8 +1,8 @@
 import { useAuthStore } from '@stores'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { supabaseClient } from '@utils/supabase'
 
-import { makeTrashKey } from '../documentsQueryKey'
+import { useTrashCache } from './documentsCache'
 
 // Same `token` header convention as useUpdateDocMetadata — the backend
 // strict-owner-gates the soft delete / restore off the Supabase JWT.
@@ -20,10 +20,8 @@ const authHeaders = async (): Promise<Record<string, string>> => {
  * component; this hook fires the requests and resyncs Trash after a delete or restore.
  */
 const useDeleteDocument = () => {
-  const queryClient = useQueryClient()
   const userId = useAuthStore((state) => state.profile?.id)
-  // A soft delete or restore moves a row into or out of Trash at a place only the server knows.
-  const resyncTrash = () => queryClient.invalidateQueries({ queryKey: makeTrashKey(userId ?? '') })
+  const trash = useTrashCache(userId ?? '')
 
   const deletion = useMutation<void, Error, { documentId: string }>({
     mutationKey: ['deleteDocument'],
@@ -32,7 +30,7 @@ const useDeleteDocument = () => {
       const response = await fetch(url, { method: 'DELETE', headers: await authHeaders() })
       if (!response.ok) throw new Error('Failed to delete document')
     },
-    onSuccess: resyncTrash
+    onSuccess: trash.resync
   })
 
   const restoration = useMutation<void, Error, { documentId: string }>({
@@ -42,7 +40,7 @@ const useDeleteDocument = () => {
       const response = await fetch(url, { method: 'POST', headers: await authHeaders() })
       if (!response.ok) throw new Error('Failed to restore document')
     },
-    onSuccess: resyncTrash
+    onSuccess: trash.resync
   })
 
   // Trash "Delete forever" — the backend refuses a live (non-soft-deleted) doc.

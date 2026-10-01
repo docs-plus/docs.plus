@@ -23,7 +23,7 @@ interface SettingsCardHeaderProps {
   className?: string
 }
 
-/** The one section card header. The lead icon stays by maintainer ruling. */
+/** The one section card header. */
 export const SettingsCardHeader = ({
   icon: Icon,
   title,

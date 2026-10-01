@@ -1,12 +1,14 @@
+import type { User } from '@supabase/supabase-js'
 import { Profile as TProfile } from '@types'
 import createSelectors from '@utils/zustand'
 import { create } from 'zustand'
 
 export interface IAuthStore {
-  session: any | null
+  /** The Supabase User. Read email here; the profile query omits it. */
+  session: User | null
   profile: TProfile | null
   loading: boolean
-  setSession: (session: any) => void
+  setSession: (session: User | null) => void
   setProfile: (profile: TProfile | null) => void
   setLoading: (loading: boolean) => void
 }

@@ -1,5 +1,7 @@
 import Chatroom from '@components/chatroom/Chatroom'
+import { GlobalDialog } from '@components/ui/GlobalDialog'
 import { useAuthStore, useChatStore, useStore } from '@stores'
+import type { User } from '@supabase/supabase-js'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
@@ -11,7 +13,7 @@ function bootstrapE2EChannel(channelId: string, fetchMsgsFromId?: string | null)
     full_name: 'Tester'
   } as ReturnType<typeof useAuthStore.getState>['profile']
   useAuthStore.getState().setProfile(e2eProfile)
-  useAuthStore.getState().setSession({ user: { id: 'user-1' } })
+  useAuthStore.getState().setSession({ id: 'user-1' } as User)
 
   // Cypress seeds the browser session; do not replace it with an invalid JWT.
 
@@ -68,6 +70,7 @@ export default function E2EChatroomPage() {
         <Chatroom.MessageFeed showScrollToBottom />
         <Chatroom.ChannelComposer className="w-full" />
       </Chatroom>
+      <GlobalDialog />
     </div>
   )
 }

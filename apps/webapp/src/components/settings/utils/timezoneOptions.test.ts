@@ -1,3 +1,5 @@
+import { searchOptions } from '@components/ui/SearchableSelect'
+
 import {
   buildTimezoneOptions,
   canonicalTimezone,
@@ -60,6 +62,14 @@ describe('buildTimezoneOptions', () => {
     const zones = buildTimezoneOptions().map((option) => option.value)
     expect(zones.indexOf('Asia/Tehran')).toBeLessThan(zones.indexOf('Asia/Seoul'))
     expect(zones.indexOf('Asia/Seoul')).toBeLessThan(zones.indexOf('Asia/Tokyo'))
+  })
+
+  it('ranks the country match first in search', () => {
+    const options = buildTimezoneOptions()
+    const first = (query: string) => searchOptions(options, query)[0]?.value
+    expect(first('india')).toBe(canonicalTimezone('Asia/Kolkata'))
+    expect(first('iran')).toBe('Asia/Tehran')
+    expect(first('uk')).toBe('Europe/London')
   })
 
   it('names India on the listed spelling of its zone', () => {

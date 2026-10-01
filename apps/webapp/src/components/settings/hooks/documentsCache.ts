@@ -102,9 +102,10 @@ export const useOwnerDocumentsCache = (scope: DocumentsListScope): DocumentsCach
   useDocumentPagesCache(makeDocumentsKey(scope))
 
 export interface TrashCache extends DocumentsCache {
-  /** Empty trash purges pages this list never loaded, so only the server knows the new
-   *  total. Every other Trash write is a removal, which the paging rule lets us patch. */
-  resync(): void
+  /** Refetch Trash when only the server knows the result: Empty trash purges pages this
+   *  list never loaded, and a soft delete or restore from the live list moves a row into or
+   *  out of Trash at a place this list cannot know. */
+  resync(): Promise<void>
   /** A restore moves a row out of Trash and into the Owner live list, which never saw it. */
   resyncOwnerList(): void
 }
@@ -116,9 +117,7 @@ export function useTrashCache(userId: string): TrashCache {
   return useMemo(
     () => ({
       ...pages,
-      resync: () => {
-        queryClient.invalidateQueries({ queryKey: makeTrashKey(userId) })
-      },
+      resync: () => queryClient.invalidateQueries({ queryKey: makeTrashKey(userId) }),
       resyncOwnerList: () => {
         queryClient.invalidateQueries({ queryKey: ownerDocumentsPrefix(userId) })
       }

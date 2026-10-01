@@ -14,7 +14,6 @@ import type { IconType } from 'react-icons'
 import { LuChevronLeft, LuChevronRight, LuExternalLink, LuLogOut } from 'react-icons/lu'
 
 import { SETTINGS_TABS, supportRowsFor } from './constants'
-import { useAuthUser } from './hooks/useAuthUser'
 import { useSignOut } from './hooks/useSignOut'
 import { openSignOutConfirm } from './openSignOutConfirm'
 import {
@@ -152,7 +151,7 @@ const SettingsPanel = ({ defaultTab, onClose }: SettingsPanelProps) => {
   // tell `#settings?tab=profile` from a bare `#settings`. The pane keeps its back button.
   const [showContent, setShowContent] = useState(defaultTab !== undefined)
   const user = useAuthStore((state) => state.profile)
-  const email = useAuthUser()?.email
+  const email = useAuthStore((s) => s.session?.email)
   const supportRows = supportRowsFor(useRouter().pathname)
   const { isLoading: signOutLoading, handleSignOut } = useSignOut()
 

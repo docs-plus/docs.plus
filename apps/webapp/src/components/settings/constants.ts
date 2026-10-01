@@ -1,4 +1,5 @@
 import config from '@config'
+import { isDocumentReportPath } from '@utils/reportContent'
 import type { IconType } from 'react-icons'
 import {
   LuBell,
@@ -17,6 +18,10 @@ import type { SupportRow, TabType } from './types'
 
 export const MAX_LINKS = 20
 export const MIN_PHONE_DIGITS = 7
+
+export type DocumentViewMode = 'list' | 'grid'
+// The skeleton reads it too, so the loading bones match the restored view.
+export const DOCUMENTS_VIEW_STORAGE_KEY = 'docsplus:my-docs-view'
 
 // `fullWidth` opts a section out of the centered max-w-2xl reading column (the
 // documents grid/list needs the whole panel width).
@@ -45,14 +50,14 @@ export const SUPPORT_ROWS: SupportRow[] = [
   {
     kind: 'link',
     href: `${GITHUB_REPO_URL}/issues/new?template=feature_request.md`,
-    label: 'Request a Feature',
+    label: 'Request a feature',
     icon: LuLightbulb,
     ink: 'warning'
   },
   {
     kind: 'link',
     href: `${GITHUB_REPO_URL}/issues/new?template=bug_report.md`,
-    label: 'Report an Issue',
+    label: 'Report an issue',
     icon: LuBug,
     ink: 'error'
   },
@@ -63,3 +68,9 @@ export const SUPPORT_ROWS: SupportRow[] = [
     ink: 'warning'
   }
 ]
+
+/** The Report row only on a pad path, where there is a document to report. */
+export const supportRowsFor = (pathname: string): SupportRow[] =>
+  isDocumentReportPath(pathname)
+    ? SUPPORT_ROWS
+    : SUPPORT_ROWS.filter((row) => row.kind !== 'action')
