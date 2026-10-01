@@ -6,11 +6,10 @@ import {
   TERMS_PATH
 } from '@components/pages/legal/legalMetadata'
 import { LegalPage, LegalSection } from '@components/pages/legal/LegalPage'
-import Link from 'next/link'
+import { TextLink } from '@components/ui/TextLink'
 
 const CONTACT_MAILTO = `mailto:${LEGAL_CONTACT_EMAIL}`
 const SECURITY_EMAIL = 'security@docs.plus'
-const LINK_CLASS = 'text-primary font-medium hover:underline'
 
 export default function TermsPage() {
   return (
@@ -21,17 +20,12 @@ export default function TermsPage() {
       <LegalSection title="The service">
         <p>
           docs.plus lets people write documents together and chat beside a heading.{' '}
-          <a href={LEGAL_OPERATOR_URL} className={LINK_CLASS}>
-            {LEGAL_OPERATOR}
-          </a>{' '}
-          operates it. The source is open on GitHub.
+          <TextLink href={LEGAL_OPERATOR_URL}>{LEGAL_OPERATOR}</TextLink> operates it. The source is
+          open on GitHub.
         </p>
         <p>
-          Write to us at{' '}
-          <a href={CONTACT_MAILTO} className={LINK_CLASS}>
-            {LEGAL_CONTACT_EMAIL}
-          </a>
-          . An authority may use the same address to reach us.
+          Write to us at <TextLink href={CONTACT_MAILTO}>{LEGAL_CONTACT_EMAIL}</TextLink>. An
+          authority may use the same address to reach us.
         </p>
       </LegalSection>
 
@@ -80,11 +74,8 @@ export default function TermsPage() {
           Issue. That starts a message to us with the link already filled in.
         </p>
         <p>
-          You can also email{' '}
-          <a href={CONTACT_MAILTO} className={LINK_CLASS}>
-            {LEGAL_CONTACT_EMAIL}
-          </a>
-          . Give the document or message link, and say what is wrong.
+          You can also email <TextLink href={CONTACT_MAILTO}>{LEGAL_CONTACT_EMAIL}</TextLink>. Give
+          the document or message link, and say what is wrong.
         </p>
         <p>We read every report. We treat these as urgent, in this order:</p>
         <ul className="list-disc space-y-2 pl-5">
@@ -96,10 +87,8 @@ export default function TermsPage() {
         </ul>
         <p>
           Report a security weakness to{' '}
-          <a href={`mailto:${SECURITY_EMAIL}`} className={LINK_CLASS}>
-            {SECURITY_EMAIL}
-          </a>{' '}
-          instead, and not in a public place.
+          <TextLink href={`mailto:${SECURITY_EMAIL}`}>{SECURITY_EMAIL}</TextLink> instead, and not
+          in a public place.
         </p>
       </LegalSection>
 
@@ -113,10 +102,8 @@ export default function TermsPage() {
         </p>
         <p>
           Disagree with a decision? Reply to that email, or write to{' '}
-          <a href={CONTACT_MAILTO} className={LINK_CLASS}>
-            {LEGAL_CONTACT_EMAIL}
-          </a>
-          . A person reads it, and we answer.
+          <TextLink href={CONTACT_MAILTO}>{LEGAL_CONTACT_EMAIL}</TextLink>. A person reads it, and
+          we answer.
         </p>
       </LegalSection>
 
@@ -131,15 +118,8 @@ export default function TermsPage() {
 
       <LegalSection title="Contact">
         <p>
-          Email{' '}
-          <a href={CONTACT_MAILTO} className={LINK_CLASS}>
-            {LEGAL_CONTACT_EMAIL}
-          </a>
-          . See also the{' '}
-          <Link href={PRIVACY_PATH} className={LINK_CLASS}>
-            privacy page
-          </Link>
-          .
+          Email <TextLink href={CONTACT_MAILTO}>{LEGAL_CONTACT_EMAIL}</TextLink>. See also the{' '}
+          <TextLink href={PRIVACY_PATH}>privacy page</TextLink>.
         </p>
       </LegalSection>
     </LegalPage>

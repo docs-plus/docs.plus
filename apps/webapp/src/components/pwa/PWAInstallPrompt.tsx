@@ -1,11 +1,12 @@
 import { useEntryExitTransition } from '@hooks/useEntryExitTransition'
 import { usePlatformDetection } from '@hooks/usePlatformDetection'
 import { useAuthStore } from '@stores'
+import { twMerge } from '@utils/twMerge'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { LuDownload, LuSmartphone, LuX } from 'react-icons/lu'
-import { twMerge } from 'tailwind-merge'
+import { LuDownload, LuSmartphone } from 'react-icons/lu'
 
 import { IOSInstructions } from './IOSInstructions'
+import { PromptHeader } from './PromptHeader'
 import {
   DISMISSED_KEY,
   PROMPT_COUNT_KEY,
@@ -193,37 +194,32 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
           <IOSInstructions onBack={() => setShowIOSSteps(false)} onClose={handleClose} />
         ) : (
           <>
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="bg-primary/10 rounded-field p-2">
-                  <LuSmartphone size={24} className="text-primary" />
-                </div>
-                <div>
-                  <h3 id="pwa-install-title" className="text-sm font-semibold">
-                    Install docs.plus
-                  </h3>
-                  <p className="text-xs opacity-60">Get the full app experience</p>
-                </div>
-              </div>
-              <button
-                onClick={handleClose}
-                className="hover:bg-base-content/10 rounded-field -mt-1 -mr-2 cursor-pointer p-1.5 opacity-60 transition-[opacity,background-color] hover:opacity-100"
-                aria-label="Dismiss install prompt permanently">
-                <LuX size={16} />
-              </button>
-            </div>
+            <PromptHeader
+              icon={LuSmartphone}
+              title="Install docs.plus"
+              subtitle="Get the full app experience"
+              titleId="pwa-install-title"
+              closeLabel="Dismiss install prompt permanently"
+              onClose={handleClose}
+            />
 
             <ul id="pwa-install-desc" className="flex flex-col gap-2 text-sm">
-              <li className="flex items-center gap-2">
-                <span className="text-primary">•</span>
+              <li className="flex items-baseline gap-2">
+                <span className="opacity-60" aria-hidden="true">
+                  •
+                </span>
                 <span>Push notifications for replies & mentions</span>
               </li>
-              <li className="flex items-center gap-2">
-                <span className="text-primary">•</span>
+              <li className="flex items-baseline gap-2">
+                <span className="opacity-60" aria-hidden="true">
+                  •
+                </span>
                 <span>{PWA_OFFLINE_LINE}</span>
               </li>
-              <li className="flex items-center gap-2">
-                <span className="text-primary">•</span>
+              <li className="flex items-baseline gap-2">
+                <span className="opacity-60" aria-hidden="true">
+                  •
+                </span>
                 <span>Quick access from your home screen</span>
               </li>
             </ul>

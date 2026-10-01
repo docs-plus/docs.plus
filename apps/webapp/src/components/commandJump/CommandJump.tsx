@@ -1,17 +1,19 @@
 import { useHistoryHash } from '@components/pages/history/historyShareUrl'
 import { useOwnerDocuments } from '@components/settings/hooks/useOwnerDocuments'
 import type { DocumentSortKey, OwnedDocument } from '@components/settings/types'
+import { ContextMenuRow } from '@components/ui/ContextMenu'
 import { Modal, ModalContent, ModalHeading } from '@components/ui/Dialog'
+import { ListGroupLabel } from '@components/ui/ListGroupLabel'
 import TextInput from '@components/ui/TextInput'
 import { Icons } from '@icons'
 import { useAuthStore, useSheetStore, useStore } from '@stores'
 import { isModShortcut } from '@utils/platform'
+import { twMerge } from '@utils/twMerge'
 import debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { IconType } from 'react-icons'
 import { LuStar } from 'react-icons/lu'
-import { twMerge } from 'tailwind-merge'
 
 import { buildPlaceRows, type CommandJumpSurface, type PlaceRow } from './buildPlaceRows'
 
@@ -80,6 +82,16 @@ function CommandJumpPanel({ places, userId, onPick, navigate }: PanelProps) {
     }))
 
   const items = [...placeItems, ...padItems]
+  // The debounce window counts as loading, or a pad beyond the live page reads as missing.
+  const docsQuery = searchTerm ? searched : live
+  const isSearching = Boolean(userId) && (query.trim() !== searchTerm || docsQuery.isLoading)
+  const searchFailed = Boolean(userId) && docsQuery.isError
+  // One live region reads this line, so nothing speaks twice.
+  const emptyStatus = isSearching
+    ? 'Searching…'
+    : searchFailed
+      ? 'Could not load documents.'
+      : 'No matches.'
   const activeIndex = items.length === 0 ? -1 : Math.min(active, items.length - 1)
   const optionId = useCallback((index: number) => `${baseId}-option-${index}`, [baseId])
 
@@ -107,14 +119,15 @@ function CommandJumpPanel({ places, userId, onPick, navigate }: PanelProps) {
     const headingId = `${baseId}-${label.toLowerCase()}`
     return (
       <div role="group" aria-labelledby={headingId} className="py-1">
-        <div id={headingId} className="text-base-content/60 px-3 pt-1 pb-1 text-xs font-medium">
+        <ListGroupLabel as="div" id={headingId} className="px-3 pt-1 pb-1">
           {label}
-        </div>
+        </ListGroupLabel>
         {group.map((item, i) => {
           const index = offset + i
           const Icon = item.icon
           const isActive = index === activeIndex
           return (
+            // A div, not a button: the combobox keeps focus in the input and adds no tab stops.
             <div
               key={item.key}
               id={optionId(index)}
@@ -124,19 +137,19 @@ function CommandJumpPanel({ places, userId, onPick, navigate }: PanelProps) {
               onMouseDown={(event) => event.preventDefault()}
               onMouseMove={() => !isActive && setActive(index)}
               onClick={() => onPick(item.run)}
-              className={twMerge(
-                'rounded-field mx-1.5 flex cursor-pointer items-center gap-2.5 px-2.5 py-2 text-sm transition-colors',
-                isActive && 'bg-base-200'
-              )}>
-              <Icon size={16} className="text-base-content/60 shrink-0" aria-hidden />
-              <span className="text-base-content min-w-0 truncate">{item.label}</span>
-              {item.favorite && (
-                <LuStar
-                  size={13}
-                  className="text-accent fill-accent shrink-0"
-                  aria-label="Favorite"
-                />
-              )}
+              className="mx-1.5">
+              <ContextMenuRow active={isActive} icon={<Icon size={16} aria-hidden />}>
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <span className="truncate">{item.label}</span>
+                  {item.favorite && (
+                    <LuStar
+                      size={13}
+                      className="text-accent fill-accent shrink-0"
+                      aria-label="Favorite"
+                    />
+                  )}
+                </span>
+              </ContextMenuRow>
             </div>
           )
         })}
@@ -174,10 +187,23 @@ function CommandJumpPanel({ places, userId, onPick, navigate }: PanelProps) {
         {renderGroup('Documents', padItems, placeItems.length)}
       </div>
       {items.length === 0 && (
-        <p className="text-base-content/60 px-3 py-6 text-center text-sm">No matches</p>
+        <p
+          key={emptyStatus}
+          aria-hidden
+          className={twMerge(
+            'text-base-content/60 px-3 py-6 text-center text-sm',
+            // The 300ms hold keeps a fast search from flashing the loading line.
+            isSearching && 'animate-[doc-content-in_120ms_ease-out_300ms_backwards]'
+          )}>
+          {emptyStatus}
+        </p>
       )}
       <p className="sr-only" aria-live="polite">
-        {items.length === 1 ? '1 result' : `${items.length} results`}
+        {items.length === 0
+          ? emptyStatus
+          : items.length === 1
+            ? '1 result'
+            : `${items.length} results`}
       </p>
     </>
   )

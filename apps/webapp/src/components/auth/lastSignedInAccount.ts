@@ -6,7 +6,7 @@ const LEGACY_STORAGE_KEY = 'docsplus:last-signed-in-name'
 const MAX_NAME_LENGTH = 24
 
 export type LastSignedInAccount = {
-  /** First name only, for the button label. */
+  /** First name only, for the returning-person row. */
   name: string
   /** Passed to Google as `login_hint` so the button lands on the right account. */
   email: string
@@ -16,7 +16,10 @@ export type LastSignedInAccount = {
   avatarUpdatedAt?: string | number | null
 }
 
-/** Last-account label for "Continue as". A hint only — the click still runs Google. */
+/**
+ * Feeds the returning-person row on sign-in: face, first name and email.
+ * A hint only; the click still runs Google.
+ */
 export function rememberSignedInAccount(profile: Profile, email: string | null | undefined): void {
   if (typeof window === 'undefined' || !email) return
 

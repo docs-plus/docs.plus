@@ -1,11 +1,12 @@
-import PrivateDocumentGate, {
-  type PrivateGateVariant
-} from '@components/pages/document/components/PrivateDocumentGate'
+import PrivateDocumentGate from '@components/pages/document/components/PrivateDocumentGate'
 import useAddDeviceTypeHtmlClass from '@components/pages/document/hooks/useAddDeviceTypeHtmlClass'
 import { SlugPageLoader } from '@components/skeleton/SlugPageLoader'
+import Button from '@components/ui/Button'
+import { EmptyState } from '@components/ui/EmptyState'
 import { useStore } from '@stores'
 import { documentServerSideProps } from '@utils/documentServerSideProps'
 import { isIPadDevice } from '@utils/platform'
+import type { PrivateGateVariant } from '@utils/toPrivateGateVariant'
 import { type GetServerSidePropsContext } from 'next'
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
@@ -14,12 +15,17 @@ import React from 'react'
 // Chunk-load failure (e.g. stale hashes after a deploy) would otherwise leave the
 // SSR skeleton up forever — every in-app recovery path lives inside the failed chunk.
 const ChunkLoadError = () => (
-  <div className="bg-base-100 fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 text-center">
-    <p className="text-base-content font-medium">Couldn&apos;t load the editor</p>
-    <p className="text-base-content/60 text-sm">A new version may have been deployed.</p>
-    <button className="btn btn-primary btn-sm mt-2" onClick={() => window.location.reload()}>
-      Reload
-    </button>
+  <div className="bg-base-100 fixed inset-0 z-50 flex items-center justify-center">
+    <EmptyState
+      tone="error"
+      title="Couldn’t load the editor."
+      body="A new version may have been deployed."
+      action={
+        <Button variant="primary" size="sm" onClick={() => window.location.reload()}>
+          Reload
+        </Button>
+      }
+    />
   </div>
 )
 

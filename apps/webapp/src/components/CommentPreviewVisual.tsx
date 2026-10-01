@@ -20,11 +20,11 @@ type LayoutTokens = {
 }
 
 const BASE_LAYOUT = {
-  feedThumb: 'max-h-24 w-full max-w-[10rem] rounded object-cover',
-  composerThumb: 'max-h-32 w-full max-w-xs rounded object-cover',
+  feedThumb: 'max-h-24 w-full max-w-[10rem] rounded-field object-cover',
+  composerThumb: 'max-h-32 w-full max-w-xs rounded-field object-cover',
   insertMediaClass: 'mx-auto max-h-48 w-auto object-contain',
   inlineWrapperClass: 'relative overflow-hidden',
-  stackedWrapperClass: 'relative w-full max-w-[10rem] shrink-0 overflow-hidden rounded'
+  stackedWrapperClass: 'relative w-full max-w-[10rem] shrink-0 overflow-hidden rounded-field'
 } satisfies Omit<LayoutTokens, 'stacked' | 'compact' | 'skeletonMaxH'>
 
 const LAYOUT: Record<CommentPreviewLayout, LayoutTokens> = {
@@ -43,13 +43,13 @@ function UnfurlPreview({ src, layout }: { src: string; layout: CommentPreviewLay
   const tokens = LAYOUT[layout]
   const unfurl = useMediaUrlUnfurl(src, true)
   const thumbClass =
-    layout === 'insert-inline' ? 'size-16 shrink-0 rounded object-cover' : tokens.feedThumb
+    layout === 'insert-inline' ? 'size-16 shrink-0 rounded-field object-cover' : tokens.feedThumb
 
   if (unfurl.status === 'loading') {
     if (layout === 'insert-inline') {
       return (
         <div className="flex gap-3">
-          <div className="skeleton size-16 shrink-0 rounded" />
+          <div className="skeleton rounded-field size-16 shrink-0" />
           <div className="flex flex-1 flex-col justify-center gap-2">
             <div className="skeleton h-3.5 w-3/4" />
             <div className="skeleton h-3 w-1/3" />
@@ -59,7 +59,7 @@ function UnfurlPreview({ src, layout }: { src: string; layout: CommentPreviewLay
     }
     return (
       <div className="flex w-full max-w-[10rem] flex-col gap-1.5">
-        <div className={`skeleton aspect-video w-full rounded ${tokens.skeletonMaxH}`} />
+        <div className={`skeleton rounded-field aspect-video w-full ${tokens.skeletonMaxH}`} />
         <div className="skeleton h-3 w-3/4" />
         <div className="skeleton h-2.5 w-1/2" />
       </div>
@@ -76,7 +76,7 @@ function UnfurlPreview({ src, layout }: { src: string; layout: CommentPreviewLay
           ) : null}
           <div className="min-w-0 flex-1">
             <p className="text-base-content truncate text-sm font-medium">{title}</p>
-            <p className="text-base-content/50 truncate text-xs">{hostname}</p>
+            <p className="text-base-content/60 truncate text-xs">{hostname}</p>
           </div>
         </div>
       )
@@ -86,12 +86,12 @@ function UnfurlPreview({ src, layout }: { src: string; layout: CommentPreviewLay
         {thumbnail ? (
           <img src={thumbnail} alt="" className={thumbClass} onError={hideOnError} />
         ) : (
-          <span className="bg-base-300 flex aspect-video max-h-24 w-full max-w-[10rem] items-center justify-center rounded">
+          <span className="bg-base-300 rounded-field flex aspect-video max-h-24 w-full max-w-[10rem] items-center justify-center">
             <Icons.image size={20} />
           </span>
         )}
         <p className="m-0 truncate text-sm font-medium">{title}</p>
-        <p className="text-base-content/50 m-0 truncate text-xs">{hostname}</p>
+        <p className="text-base-content/60 m-0 truncate text-xs">{hostname}</p>
       </div>
     )
   }
@@ -116,7 +116,7 @@ export function CommentPreviewVisual({ preview, nodeType, layout }: Props) {
     )
     const badge = preview.badge ? (
       <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <span className="bg-base-100/80 flex size-10 items-center justify-center rounded-full shadow">
+        <span className="bg-base-100/80 border-base-300 flex size-10 items-center justify-center rounded-full border">
           <Icons.play className="text-base-content ml-0.5" size={14} aria-hidden />
         </span>
       </span>
@@ -160,7 +160,7 @@ export function CommentPreviewVisual({ preview, nodeType, layout }: Props) {
     }
     if (tokens.compact) {
       return (
-        <span className="bg-base-300 flex aspect-video max-h-24 w-full max-w-[10rem] items-center justify-center rounded">
+        <span className="bg-base-300 rounded-field flex aspect-video max-h-24 w-full max-w-[10rem] items-center justify-center">
           {preview.kind === 'video' ? <Icons.video size={24} /> : <Icons.music size={24} />}
         </span>
       )
@@ -191,13 +191,13 @@ export function CommentPreviewVisual({ preview, nodeType, layout }: Props) {
         {preview.image ? (
           <img src={preview.image} alt="" className={thumbClass} onError={hideOnError} />
         ) : (
-          <span className="bg-base-300 flex aspect-video max-h-24 w-full items-center justify-center rounded">
+          <span className="bg-base-300 rounded-field flex aspect-video max-h-24 w-full items-center justify-center">
             {nodeType ? <MediaTypeIcon nodeType={nodeType} /> : <Icons.image size={20} />}
           </span>
         )}
         {preview.title ? <p className="m-0 truncate text-sm font-medium">{preview.title}</p> : null}
         {preview.hostname ? (
-          <p className="text-base-content/50 m-0 truncate text-xs">{preview.hostname}</p>
+          <p className="text-base-content/60 m-0 truncate text-xs">{preview.hostname}</p>
         ) : null}
       </div>
     )
@@ -205,7 +205,7 @@ export function CommentPreviewVisual({ preview, nodeType, layout }: Props) {
 
   if (tokens.stacked) {
     return (
-      <span className="bg-base-300 flex aspect-video max-h-24 w-full max-w-[10rem] items-center justify-center rounded">
+      <span className="bg-base-300 rounded-field flex aspect-video max-h-24 w-full max-w-[10rem] items-center justify-center">
         {nodeType ? <MediaTypeIcon nodeType={nodeType} /> : <Icons.image size={24} />}
       </span>
     )

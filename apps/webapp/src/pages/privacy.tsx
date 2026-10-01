@@ -6,10 +6,9 @@ import {
   TERMS_PATH
 } from '@components/pages/legal/legalMetadata'
 import { LegalPage, LegalSection } from '@components/pages/legal/LegalPage'
-import Link from 'next/link'
+import { TextLink } from '@components/ui/TextLink'
 
 const CONTACT_MAILTO = `mailto:${LEGAL_CONTACT_EMAIL}`
-const LINK_CLASS = 'text-primary font-medium hover:underline'
 
 export default function PrivacyPage() {
   return (
@@ -20,10 +19,7 @@ export default function PrivacyPage() {
       <LegalSection title="Who we are">
         <p>
           docs.plus is a free, open-source service for shared documents and chat.{' '}
-          <a href={LEGAL_OPERATOR_URL} className={LINK_CLASS}>
-            {LEGAL_OPERATOR}
-          </a>{' '}
-          operates it.
+          <TextLink href={LEGAL_OPERATOR_URL}>{LEGAL_OPERATOR}</TextLink> operates it.
         </p>
       </LegalSection>
 
@@ -106,11 +102,8 @@ export default function PrivacyPage() {
             link.
           </li>
           <li>
-            Email{' '}
-            <a href={CONTACT_MAILTO} className={LINK_CLASS}>
-              {LEGAL_CONTACT_EMAIL}
-            </a>{' '}
-            if you want us to delete your account.
+            Email <TextLink href={CONTACT_MAILTO}>{LEGAL_CONTACT_EMAIL}</TextLink> if you want us to
+            delete your account.
           </li>
         </ul>
       </LegalSection>
@@ -118,51 +111,34 @@ export default function PrivacyPage() {
       <LegalSection title="Who is in charge of your data">
         <p>
           Our data protection lead is in charge of personal data at {LEGAL_OPERATOR}. Reach that
-          role at{' '}
-          <a href={CONTACT_MAILTO} className={LINK_CLASS}>
-            {LEGAL_CONTACT_EMAIL}
-          </a>
-          .
+          role at <TextLink href={CONTACT_MAILTO}>{LEGAL_CONTACT_EMAIL}</TextLink>.
         </p>
       </LegalSection>
 
       <LegalSection title="How to complain">
         <p>
-          Tell us first. Email{' '}
-          <a href={CONTACT_MAILTO} className={LINK_CLASS}>
-            {LEGAL_CONTACT_EMAIL}
-          </a>{' '}
-          and say what went wrong.
+          Tell us first. Email <TextLink href={CONTACT_MAILTO}>{LEGAL_CONTACT_EMAIL}</TextLink> and
+          say what went wrong.
         </p>
         <p>We answer you within 30 days. We tell you the outcome, and what we changed.</p>
         <p>
           Not happy with our answer? You may complain to a regulator. In the United Kingdom that is
           the Information Commissioner's Office, at{' '}
-          <a href="https://ico.org.uk/make-a-complaint/" className={LINK_CLASS}>
+          <TextLink href="https://ico.org.uk/make-a-complaint/">
             ico.org.uk/make-a-complaint
-          </a>
+          </TextLink>
           . In Quebec it is the Commission d'accès à l'information.
         </p>
         <p>
           To report content instead of a data problem, see Report a problem on the{' '}
-          <Link href={TERMS_PATH} className={LINK_CLASS}>
-            terms of use
-          </Link>
-          .
+          <TextLink href={TERMS_PATH}>terms of use</TextLink>.
         </p>
       </LegalSection>
 
       <LegalSection title="Contact">
         <p>
-          Email{' '}
-          <a href={CONTACT_MAILTO} className={LINK_CLASS}>
-            {LEGAL_CONTACT_EMAIL}
-          </a>
-          . See also the{' '}
-          <Link href={TERMS_PATH} className={LINK_CLASS}>
-            terms of use
-          </Link>
-          .
+          Email <TextLink href={CONTACT_MAILTO}>{LEGAL_CONTACT_EMAIL}</TextLink>. See also the{' '}
+          <TextLink href={TERMS_PATH}>terms of use</TextLink>.
         </p>
       </LegalSection>
     </LegalPage>

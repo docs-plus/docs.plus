@@ -17,8 +17,8 @@ export function openInlineSignInDialog(options?: { returnTo?: string }) {
     return
   }
 
-  const { openDialog, closeDialog } = useStore.getState()
-  openDialog(createElement(SignInDialog, { returnTo: options?.returnTo, onClose: closeDialog }), {
+  const { openDialog } = useStore.getState()
+  openDialog(createElement(SignInDialog, { returnTo: options?.returnTo }), {
     size: 'sm'
   })
 }

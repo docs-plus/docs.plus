@@ -1,13 +1,13 @@
 import { signInWithOAuth } from '@api'
+import { PageCardIdentity, PageCardIdentityRow } from '@components/PageCard'
 import * as toast from '@components/toast'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
-import CloseButton from '@components/ui/CloseButton'
 import TextInput from '@components/ui/TextInput'
 import { supabaseClient } from '@utils/supabase'
-import { useEffect, useState } from 'react'
+import { twMerge } from '@utils/twMerge'
+import { type ReactNode, useEffect, useState } from 'react'
 import { FcGoogle } from 'react-icons/fc'
-import { LuMail } from 'react-icons/lu'
 
 import {
   forgetSignedInAccount,
@@ -15,20 +15,30 @@ import {
   readSignedInAccount
 } from './lastSignedInAccount'
 
+/** What a host frames: the dialog puts `back` in its footer strip, the sheet in its body. */
+interface SignInParts {
+  sent: boolean
+  title: string
+  description?: ReactNode
+  body?: ReactNode
+  back?: ReactNode
+}
+
 interface SignInFormProps {
   /** Post-auth return URL (pathname+search); when set the OAuth/magic-link redirect lands here. */
   returnTo?: string
-  onClose: () => void
-  /** Sheet/dialog host already draws the title and close. */
-  embedded?: boolean
+  /** Sheet host: taller touch targets for the buttons and the field. */
+  touch?: boolean
+  children: (parts: SignInParts) => ReactNode
 }
 
-const SignInForm = ({ returnTo, onClose, embedded = false }: SignInFormProps) => {
+const SignInForm = ({ returnTo, touch = false, children }: SignInFormProps) => {
   const [magicLinkEmail, setMagicLinkEmail] = useState('')
   const [emailError, setEmailError] = useState('')
   const [googleBusy, setGoogleBusy] = useState(false)
   const [emailBusy, setEmailBusy] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
+  const [focusEmail, setFocusEmail] = useState(false)
   // Read after mount, never during render: localStorage does not exist on the
   // server, and reading it inline would make the markup differ on hydration.
   const [lastAccount, setLastAccount] = useState<LastSignedInAccount | null>(null)
@@ -37,6 +47,11 @@ const SignInForm = ({ returnTo, onClose, embedded = false }: SignInFormProps) =>
   const useAnotherAccount = () => {
     forgetSignedInAccount()
     setLastAccount(null)
+  }
+
+  const returnToEmailStep = () => {
+    setFocusEmail(true)
+    setEmailSent(false)
   }
 
   const isAnyLoading = googleBusy || emailBusy
@@ -121,134 +136,117 @@ const SignInForm = ({ returnTo, onClose, embedded = false }: SignInFormProps) =>
     }
   }
 
-  const closeButton = embedded ? null : (
-    <CloseButton onClick={onClose} className="-mr-1 min-h-11 min-w-11 md:min-h-8 md:min-w-8" />
-  )
-
-  const googleButton = (
-    <Button
-      variant="neutral"
-      btnStyle="outline"
-      shape="block"
-      className="min-h-12 font-semibold"
-      onClick={handleGoogleSignIn}
-      loading={googleBusy}
-      disabled={isAnyLoading}
-      startIcon={<FcGoogle className="size-5" />}>
-      {lastAccount ? `Continue as ${lastAccount.name}` : 'Continue with Google'}
-    </Button>
-  )
-
-  const emailForm = (
-    <form
-      onSubmit={handleSignInWithEmail}
-      className="border-base-300 flex flex-col gap-2.5 border-t pt-4">
-      <TextInput
-        label="Email"
-        labelPosition="above"
-        labelClassName="text-base-content/60"
-        type="email"
-        inputMode="email"
-        enterKeyHint="send"
-        name="email"
-        autoCapitalize="none"
-        autoCorrect="off"
-        spellCheck={false}
-        placeholder="mail@site.com"
-        autoComplete="username"
-        className="min-h-11 text-base"
-        value={magicLinkEmail}
-        onChange={(e) => setMagicLinkEmail(e.target.value)}
-        disabled={isAnyLoading}
-        error={Boolean(emailError)}
-        helperText={emailError}
-      />
-
-      <Button
-        variant="primary"
-        shape="block"
-        className="min-h-11"
-        loading={emailBusy}
-        disabled={isAnyLoading}
-        type="submit">
-        Send magic link
-      </Button>
-
-      <p className="text-base-content/60 text-xs">We will email a link. No password.</p>
-    </form>
-  )
-
   if (emailSent) {
-    return (
-      <>
-        {closeButton ? <div className="mb-2 flex justify-end">{closeButton}</div> : null}
-        <div
-          className="flex flex-col items-center justify-center py-2 text-center motion-safe:animate-[doc-region-in_200ms_ease-out_both]"
-          role="status">
-          <div className="bg-base-200 mb-3 flex size-12 items-center justify-center rounded-full">
-            <LuMail size={20} className="text-base-content/40" />
-          </div>
-          <h2 className="text-base-content text-lg font-semibold">Check your email</h2>
-          <p className="text-base-content/70 mt-2 text-sm">
-            We sent a link to
-            <br />
-            <span className="text-primary font-semibold">{magicLinkEmail}</span>
-          </p>
-        </div>
-      </>
-    )
+    return children({
+      sent: true,
+      title: 'Check your email',
+      description: (
+        <>
+          We sent a link to{' '}
+          <span className="text-base-content font-semibold [overflow-wrap:anywhere]">
+            {magicLinkEmail}
+          </span>
+          .
+        </>
+      ),
+      // The pressed Send button unmounts here; without this, focus falls to `body`.
+      back: (
+        <Button variant="quiet" onClick={returnToEmailStep} autoFocus>
+          Use a different email
+        </Button>
+      )
+    })
   }
 
-  if (lastAccount) {
-    return (
+  const buttonHeight = touch ? 'min-h-12' : undefined
+
+  return children({
+    sent: false,
+    title: 'Sign in',
+    body: (
       <>
-        {closeButton ? <div className="mb-1 flex justify-end">{closeButton}</div> : null}
-        <div className="flex flex-col items-center pb-5 text-center">
-          <Avatar
-            face={{
-              id: lastAccount.id,
-              avatar_url: lastAccount.avatarUrl,
-              avatar_updated_at: lastAccount.avatarUpdatedAt,
-              display_name: lastAccount.name
-            }}
-            alt={lastAccount.name}
-            size="2xl"
-            edge="none"
-            clickable={false}
-            className="mb-3.5 size-[6.5rem]"
+        {lastAccount ? (
+          <PageCardIdentity>
+            <PageCardIdentityRow
+              leading={
+                <Avatar
+                  face={{
+                    id: lastAccount.id,
+                    avatar_url: lastAccount.avatarUrl,
+                    avatar_updated_at: lastAccount.avatarUpdatedAt,
+                    display_name: lastAccount.name
+                  }}
+                  alt=""
+                  size="md"
+                  edge="none"
+                  clickable={false}
+                  className="shrink-0"
+                />
+              }
+              name={<bdi>{lastAccount.name}</bdi>}
+              meta={lastAccount.email}
+              action={
+                <Button variant="quiet" onClick={useAnotherAccount} disabled={isAnyLoading}>
+                  Not you?
+                </Button>
+              }
+            />
+          </PageCardIdentity>
+        ) : null}
+
+        {/* Google's own colours ride daisyUI's `--btn-*` vars, so its hover and disabled
+            states still apply; a `bg-*` utility would beat both. */}
+        <Button
+          shape="block"
+          className={twMerge(
+            'border-google-stroke focus-visible:outline-primary font-medium [--btn-color:var(--color-google-fill)] [--btn-fg:var(--color-google-ink)]',
+            buttonHeight
+          )}
+          onClick={handleGoogleSignIn}
+          loading={googleBusy}
+          disabled={isAnyLoading}
+          startIcon={<FcGoogle className="size-[18px]" aria-hidden />}>
+          Continue with Google
+        </Button>
+
+        <hr className="border-base-300" />
+
+        <form onSubmit={handleSignInWithEmail} className="flex flex-col gap-4">
+          <TextInput
+            label="Email"
+            labelPosition="above"
+            type="email"
+            inputMode="email"
+            enterKeyHint="send"
+            name="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder="mail@site.com"
+            autoComplete="username"
+            autoFocus={focusEmail}
+            // 16px text stops iOS Safari zooming on focus; iPadOS gets this dialog too.
+            className={twMerge('text-base', touch && 'min-h-11')}
+            value={magicLinkEmail}
+            onChange={(e) => setMagicLinkEmail(e.target.value)}
+            disabled={isAnyLoading}
+            error={Boolean(emailError)}
+            helperText={emailError || 'We will email a link. No password.'}
           />
-          <h2 className="text-base-content text-2xl font-semibold tracking-tight">
-            {lastAccount.name}
-          </h2>
-          <p className="text-base-content/60 mt-1 text-sm">{lastAccount.email}</p>
-          <button
-            type="button"
-            className="text-base-content/60 hover:text-base-content mt-1 min-h-11 text-sm"
-            onClick={useAnotherAccount}
-            disabled={isAnyLoading}>
-            Not you?
-          </button>
-          <div className="mt-4 w-full">{googleButton}</div>
-        </div>
-        {emailForm}
+
+          <Button
+            variant="primary"
+            shape="block"
+            className={buttonHeight}
+            loading={emailBusy}
+            disabled={isAnyLoading}
+            type="submit">
+            Send magic link
+          </Button>
+        </form>
       </>
     )
-  }
-
-  return (
-    <>
-      {embedded ? null : (
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <h2 className="text-base-content text-lg font-semibold">Sign in</h2>
-          {closeButton}
-        </div>
-      )}
-      <div className="flex flex-col gap-4">
-        {googleButton}
-        {emailForm}
-      </div>
-    </>
-  )
+  })
 }
 
 export default SignInForm

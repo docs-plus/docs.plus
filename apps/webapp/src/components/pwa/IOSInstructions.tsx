@@ -1,25 +1,17 @@
-import { LuShare, LuSquarePlus, LuX } from 'react-icons/lu'
+import { LuShare, LuSquarePlus } from 'react-icons/lu'
+
+import { PromptHeader } from './PromptHeader'
 
 export function IOSInstructions({ onBack, onClose }: { onBack: () => void; onClose: () => void }) {
   return (
     <>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/10 rounded-field p-2">
-            <LuSquarePlus size={24} className="text-primary" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold">Add to Home Screen</h3>
-            <p className="text-xs opacity-60">Follow these steps in Safari</p>
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          className="hover:bg-base-content/10 rounded-field -mt-1 -mr-2 cursor-pointer p-1.5 opacity-60 transition-[opacity,background-color] hover:opacity-100"
-          aria-label="Dismiss">
-          <LuX size={16} />
-        </button>
-      </div>
+      <PromptHeader
+        icon={LuSquarePlus}
+        title="Add to Home Screen"
+        subtitle="Follow these steps in Safari"
+        closeLabel="Dismiss"
+        onClose={onClose}
+      />
 
       <ol className="flex flex-col gap-3">
         <li className="flex items-center gap-3">
@@ -28,7 +20,7 @@ export function IOSInstructions({ onBack, onClose }: { onBack: () => void; onClo
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span>Tap</span>
-            <LuShare size={18} className="text-primary" />
+            <LuShare size={18} aria-label="Share" role="img" />
             <span className="opacity-70">in Safari&apos;s toolbar</span>
           </div>
         </li>
@@ -38,7 +30,7 @@ export function IOSInstructions({ onBack, onClose }: { onBack: () => void; onClo
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span>Scroll down, tap</span>
-            <LuSquarePlus size={18} className="text-primary" />
+            <LuSquarePlus size={18} aria-hidden />
             <span className="font-medium">&quot;Add to Home Screen&quot;</span>
           </div>
         </li>
@@ -55,8 +47,9 @@ export function IOSInstructions({ onBack, onClose }: { onBack: () => void; onClo
       <div className="flex justify-end pt-1">
         <button
           onClick={onBack}
-          className="text-primary cursor-pointer text-sm font-medium hover:underline">
-          ← Back
+          className="rounded-field -mx-2 -my-2.5 inline-flex cursor-pointer items-center gap-1 px-2 py-2.5 text-sm font-semibold hover:underline focus-visible:ring-2 focus-visible:ring-current focus-visible:outline-none">
+          <span aria-hidden="true">←</span>
+          Back
         </button>
       </div>
     </>

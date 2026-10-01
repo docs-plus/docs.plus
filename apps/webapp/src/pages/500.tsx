@@ -1,20 +1,21 @@
-import Link from 'next/link'
+import { HomepageLink, PageCard } from '@components/PageCard'
+import Button from '@components/ui/Button'
+import Head from 'next/head'
 
 export default function Custom500() {
   return (
-    <div className="bg-base-200 grid min-h-screen place-items-center p-4">
-      <div className="text-center">
-        <p className="text-error text-8xl font-bold">500</p>
-        <h1 className="text-base-content mt-4 text-2xl font-semibold">Something went wrong</h1>
-        <p className="text-base-content/60 mt-2 max-w-md">
-          An unexpected error occurred. Please try again later.
-        </p>
-        <div className="mt-6 flex justify-center gap-3">
-          <Link href="/" className="btn btn-primary btn-sm">
-            Home
-          </Link>
-        </div>
-      </div>
-    </div>
+    <>
+      <Head>
+        <title>Something went wrong — docs.plus</title>
+      </Head>
+      <PageCard
+        title="Something went wrong"
+        description="We could not load this page. Reload to try again."
+        actions={<HomepageLink />}>
+        <Button variant="primary" shape="block" onClick={() => window.location.reload()}>
+          Reload
+        </Button>
+      </PageCard>
+    </>
   )
 }

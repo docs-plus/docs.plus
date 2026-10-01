@@ -9,9 +9,9 @@ import { usePlatformDetection } from '@hooks/usePlatformDetection'
 import { usePushNotifications } from '@hooks/usePushNotifications'
 import { useAuthStore } from '@stores'
 import { MOTION_PANEL_MS } from '@utils/motion'
+import { twMerge } from '@utils/twMerge'
 import { useCallback, useEffect } from 'react'
 import { LuBell, LuX } from 'react-icons/lu'
-import { twMerge } from 'tailwind-merge'
 
 const STORAGE_KEY = 'notification-prompt-dismissed'
 const PROMPT_COUNT_KEY = 'notification-prompt-count'
@@ -130,6 +130,9 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
   return (
     <div
       ref={nodeRef}
+      role="dialog"
+      aria-labelledby="notification-prompt-title"
+      aria-describedby="notification-prompt-desc"
       className={twMerge(
         // Above pad sash/toolbars (z-50) — design-system above-floating tier
         'fixed top-6 left-6 z-[60]',
@@ -147,11 +150,13 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
         )}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="bg-primary/10 rounded-field p-2">
-              <LuBell size={24} className="text-primary" />
+            <div className="rounded-field bg-current/10 p-2">
+              <LuBell size={24} aria-hidden />
             </div>
             <div>
-              <h3 className="text-sm font-semibold">Never miss a reply!</h3>
+              <h3 id="notification-prompt-title" className="text-sm font-semibold">
+                Never miss a reply!
+              </h3>
               <p className="text-xs opacity-60">Stay in the loop</p>
             </div>
           </div>
@@ -163,7 +168,7 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
           </button>
         </div>
 
-        <p className="text-sm leading-relaxed opacity-70">
+        <p id="notification-prompt-desc" className="text-sm leading-relaxed opacity-70">
           Get instant notifications when someone mentions you or replies to your messages.
         </p>
 

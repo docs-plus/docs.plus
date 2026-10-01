@@ -1,9 +1,10 @@
+import { HomepageLink, PageCard, PageCardIdentity, PageCardIdentityRow } from '@components/PageCard'
 import { AppMark, AppTile } from '@components/ui/AppMark'
 import { Avatar } from '@components/ui/Avatar'
-import Button from '@components/ui/Button'
-import { modalPanelFrameClassName } from '@components/ui/Dialog'
+import Button, { quietActionClassName } from '@components/ui/Button'
+import { DialogActions } from '@components/ui/Dialog'
 import { GlobalDialog } from '@components/ui/GlobalDialog'
-import { DocsPlusIcon, Icons } from '@icons'
+import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
 import type { AuthError, OAuthAuthorizationDetails, OAuthRedirect } from '@supabase/supabase-js'
 import { type AppTrust, appTrust } from '@utils/appTrust'
@@ -15,7 +16,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { LuFilePlus } from 'react-icons/lu'
-import { twMerge } from 'tailwind-merge'
 
 // auth-js puts the id into the request path unencoded, so only path-safe ids pass.
 const AUTHORIZATION_ID = /^[A-Za-z0-9_-]{1,128}$/
@@ -129,56 +129,57 @@ const OAuthConsentPage = () => {
   let content: ReactNode
   if (signedOut && view.kind === 'loading') {
     content = (
-      <StatusCard
+      <PageCard
         title="Connect an app to docs.plus"
-        body="An app wants to use your docs.plus account. Sign in to see which app is asking.">
+        description="An app wants to use your docs.plus account. Sign in to see which app is asking."
+        actions={<HomepageLink />}>
         <Button
           type="button"
           variant="primary"
           shape="block"
-          className="mt-6 min-h-12"
           onClick={() => openInlineSignInDialog({ returnTo: router.asPath })}>
           Sign in
         </Button>
-      </StatusCard>
+      </PageCard>
     )
   } else if (view.kind === 'details') {
     content = <ConsentCard details={view.details} busy={busy} onDecide={decide} />
   } else if (view.kind === 'redirecting') {
     content = (
-      <StatusCard
+      <PageCard
         title="Returning you to the app"
-        body="You can close this tab if the app has opened.">
-        <span className="loading loading-spinner text-primary mt-6" aria-hidden />
-      </StatusCard>
+        description="You can close this tab if the app has opened."
+        actions={<HomepageLink />}>
+        <span className="loading loading-spinner loading-sm text-base-content/70" aria-hidden />
+      </PageCard>
     )
   } else if (view.kind === 'invalid') {
     content = (
-      <StatusCard
+      <PageCard
         title="This request has ended"
-        body="The link is missing, has expired, or was already used. Go back to the app and connect again."
+        description="The link is missing, has expired, or was already used. Go back to the app and connect again."
+        actions={<HomepageLink />}
       />
     )
   } else if (view.kind === 'unavailable') {
     content = (
-      <StatusCard
+      <PageCard
         title="We couldn’t load this request"
-        body="docs.plus could not reach the sign-in service. Try again in a moment.">
-        <Button
-          type="button"
-          variant="primary"
-          shape="block"
-          className="mt-6 min-h-12"
-          onClick={() => router.reload()}>
+        description="docs.plus could not reach the sign-in service. Try again in a moment."
+        actions={<HomepageLink />}>
+        <Button type="button" variant="primary" shape="block" onClick={() => router.reload()}>
           Try again
         </Button>
-      </StatusCard>
+      </PageCard>
     )
   } else {
     content = (
-      <div className={twMerge(modalPanelFrameClassName, 'flex w-full justify-center px-6 py-10')}>
-        <span className="loading loading-spinner text-primary" aria-label="Loading" />
-      </div>
+      <PageCard title="Connect an app to docs.plus" actions={<HomepageLink />}>
+        <p role="status" className="text-base-content/70 flex items-center gap-2 text-sm">
+          <span className="loading loading-spinner loading-sm" aria-hidden />
+          Loading…
+        </p>
+      </PageCard>
     )
   }
 
@@ -188,95 +189,46 @@ const OAuthConsentPage = () => {
         <title>Connect an app — docs.plus</title>
         <meta name="robots" content="noindex, nofollow" />
       </Head>
-      <div className="flex min-h-dvh w-full flex-col items-center justify-center bg-[var(--pad-well)] px-4 py-8">
-        <main className="flex w-full max-w-md flex-col items-center motion-safe:animate-[doc-region-in_220ms_ease-out_both]">
-          <Link
-            href="/"
-            className="text-base-content mb-5 inline-flex items-center gap-2 no-underline"
-            aria-label="docs.plus home">
-            <DocsPlusIcon size={28} />
-            <span className="text-lg font-bold tracking-tight">docs.plus</span>
-          </Link>
-          {content}
-        </main>
-        <GlobalDialog />
-      </div>
+      {content}
+      <GlobalDialog />
     </>
-  )
-}
-
-function StatusCard({
-  title,
-  body,
-  children
-}: {
-  title: string
-  body: string
-  children?: ReactNode
-}) {
-  return (
-    <div
-      className={twMerge(
-        modalPanelFrameClassName,
-        'flex w-full flex-col items-center px-6 py-8 text-center sm:px-8'
-      )}>
-      <div className="bg-base-200 mb-3 flex size-12 items-center justify-center rounded-full">
-        <Icons.lock size={22} className="text-base-content/40" aria-hidden />
-      </div>
-      <h1 className="text-base-content text-lg font-semibold">{title}</h1>
-      <p className="text-base-content/70 mt-2 text-sm">{body}</p>
-      {children}
-    </div>
   )
 }
 
 // A brand mark only for a verified app; the name alone could be anyone's.
 function TrustTile({ trust }: { trust: AppTrust }) {
-  if (trust.kind === 'known') return <AppMark app={trust.app} size={24} className="size-12" />
+  if (trust.kind === 'known') return <AppMark app={trust.app} size={22} className="size-10" />
   return (
-    <AppTile className="size-12">
+    <AppTile className="size-10">
       {trust.kind === 'local' ? (
-        <Icons.monitor size={22} />
+        <Icons.monitor size={20} />
       ) : (
-        <Icons.alert size={22} className="text-warning" />
+        <Icons.alert size={20} className="text-warning" />
       )}
     </AppTile>
   )
 }
 
 // Trust follows the redirect URI. The name is the app's own claim, so it stays in quotes.
-function TrustLine({ trust }: { trust: AppTrust }) {
+function TrustMeta({ trust }: { trust: AppTrust }) {
   if (trust.kind === 'known') {
     return (
-      <p className="text-base-content/60 mt-6 flex items-center justify-center gap-2 text-xs">
-        <Icons.lock size={14} aria-hidden />
-        <span>
-          Returns you to <span className="text-base-content font-mono">{trust.host}</span>
-        </span>
-      </p>
+      <>
+        <Icons.lock size={13} className="mr-1 inline align-[-2px]" aria-hidden />
+        Returns you to <b className="text-base-content font-semibold">{trust.host}</b>
+      </>
     )
   }
   if (trust.kind === 'local') {
     return (
-      <p className="text-base-content/70 mt-6 flex items-start gap-2 text-xs">
-        <Icons.monitor size={14} className="text-warning mt-0.5 shrink-0" aria-hidden />
-        <span>
-          Returns you to{' '}
-          <span className="text-base-content font-mono break-all">{trust.origin}</span>, an app on
-          this computer. Allow it only if you just started it.
-        </span>
-      </p>
+      <>
+        <Icons.monitor size={13} className="text-warning mr-1 inline align-[-2px]" aria-hidden />
+        Returns you to <b className="text-base-content font-semibold">{trust.origin}</b>, an app on
+        this computer. Allow it only if you just started it.
+      </>
     )
   }
-  return (
-    <div role="note" className="alert alert-soft alert-warning mt-6 items-start text-sm">
-      <Icons.alert size={18} className="text-warning mt-0.5 shrink-0" aria-hidden />
-      <span className="text-base-content">
-        docs.plus has not checked this app. It will send you to{' '}
-        <span className="font-mono break-all">{trust.origin}</span>. Allow it only if you trust it.
-      </span>
-    </div>
-  )
+  return null
 }
 
 function ConsentCard({
@@ -293,68 +245,85 @@ function ConsentCard({
   const trust = appTrust(details.redirect_uri)
   const identity = identityLine(scopes)
   const otherScopes = scopes.filter((scope) => !HANDLED_SCOPES.has(scope))
+  const appName =
+    trust.kind === 'known' ? (
+      trust.name
+    ) : (
+      <>
+        “<bdi>{displayClientName(details.client.name)}</bdi>”
+      </>
+    )
 
   return (
-    <div className={twMerge(modalPanelFrameClassName, 'flex w-full flex-col px-6 py-8 sm:px-8')}>
-      <div className="flex items-center justify-center gap-3">
-        <TrustTile trust={trust} />
-        <Icons.link size={16} className="text-base-content/50" aria-hidden />
-        <AppTile className="size-12">
-          <DocsPlusIcon size={24} />
-        </AppTile>
+    <PageCard
+      title={
+        <span className="[overflow-wrap:anywhere]">
+          Allow {appName} to use your docs.plus account?
+        </span>
+      }
+      meta={
+        <>
+          {scopes.includes('offline_access')
+            ? 'It stays connected until you disconnect it in '
+            : 'You can disconnect it any time in '}
+          <Link
+            href="/#settings?tab=connected-apps"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={quietActionClassName}>
+            Settings › Connected apps
+          </Link>
+          .
+        </>
+      }>
+      <PageCardIdentity>
+        <PageCardIdentityRow
+          leading={<TrustTile trust={trust} />}
+          name={appName}
+          meta={trust.kind === 'unknown' ? undefined : <TrustMeta trust={trust} />}
+        />
+        <PageCardIdentityRow
+          leading={<Avatar face={profile} size="md" clickable={false} edge="none" />}
+          meta={details.user.email}
+        />
+      </PageCardIdentity>
+
+      {trust.kind === 'unknown' && (
+        <div role="note" className="alert alert-soft alert-warning items-start px-3 py-2 text-sm">
+          <Icons.alert size={16} className="text-warning mt-0.5 shrink-0" aria-hidden />
+          <span className="text-base-content min-w-0">
+            <b className="font-semibold">Unverified app.</b> docs.plus has not checked this app. It
+            returns you to <b className="font-semibold [overflow-wrap:anywhere]">{trust.origin}</b>.
+            Allow it only if you trust it.
+          </span>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-3">
+        <h2 className="text-meta text-base-content font-semibold">It will be able to</h2>
+        <ul className="flex flex-col gap-3">
+          <ScopeRow icon={<Icons.eye size={16} />}>
+            Read the documents you can open, and their chat.
+          </ScopeRow>
+          <ScopeRow icon={<LuFilePlus size={16} />}>
+            Create documents. A new document is public, like any docs.plus document.
+          </ScopeRow>
+          <ScopeRow icon={<Icons.pencil size={16} />}>
+            Edit and post in chat only in documents you own.
+          </ScopeRow>
+          {identity && <ScopeRow icon={<Icons.user size={16} />}>{identity}</ScopeRow>}
+          {otherScopes.map((scope) => (
+            <ScopeRow key={scope} icon={<Icons.info size={16} />}>
+              <span className="[overflow-wrap:anywhere]">Use the “{scope}” permission.</span>
+            </ScopeRow>
+          ))}
+        </ul>
       </div>
 
-      <h1 className="text-base-content mt-5 text-center text-lg font-semibold text-balance [overflow-wrap:anywhere]">
-        {trust.kind === 'known' ? (
-          `Allow ${trust.name} to use your docs.plus account?`
-        ) : (
-          <>
-            Allow “<bdi>{displayClientName(details.client.name)}</bdi>” to use your docs.plus
-            account?
-          </>
-        )}
-      </h1>
-
-      <div className="border-base-300 mx-auto mt-3 flex w-fit max-w-full items-center gap-2 rounded-full border py-1 pr-3 pl-1">
-        <Avatar face={profile} size="xs" clickable={false} edge="none" />
-        <span className="text-base-content/70 truncate text-sm">{details.user.email}</span>
-      </div>
-
-      <h2 className="text-base-content/70 mt-6 text-sm font-medium">It will be able to</h2>
-      <ul className="mt-3 space-y-3">
-        <li className="text-base-content flex items-start gap-3 text-sm">
-          <Icons.eye size={18} className="text-base-content/60 mt-0.5 shrink-0" aria-hidden />
-          Read the documents you can open, and their chat.
-        </li>
-        <li className="text-base-content flex items-start gap-3 text-sm">
-          <LuFilePlus size={18} className="text-base-content/60 mt-0.5 shrink-0" aria-hidden />
-          Create documents. A new document is public, like any docs.plus document.
-        </li>
-        <li className="text-base-content flex items-start gap-3 text-sm">
-          <Icons.pencil size={18} className="text-base-content/60 mt-0.5 shrink-0" aria-hidden />
-          Edit and post in chat only in documents you own.
-        </li>
-        {identity && (
-          <li className="text-base-content flex items-start gap-3 text-sm">
-            <Icons.user size={18} className="text-base-content/60 mt-0.5 shrink-0" aria-hidden />
-            {identity}
-          </li>
-        )}
-        {otherScopes.map((scope) => (
-          <li key={scope} className="text-base-content flex items-start gap-3 text-sm">
-            <Icons.info size={18} className="text-base-content/60 mt-0.5 shrink-0" aria-hidden />
-            <span className="[overflow-wrap:anywhere]">Use the “{scope}” permission.</span>
-          </li>
-        ))}
-      </ul>
-
-      <TrustLine trust={trust} />
-
-      <div className="mt-6 grid grid-cols-2 gap-3">
+      <DialogActions>
         <Button
           type="button"
-          variant="ghost"
-          className="border-base-300 min-h-12 border"
+          variant="cancel"
           loading={busy === 'deny'}
           disabled={busy !== null}
           onClick={() => onDecide('deny')}>
@@ -363,28 +332,24 @@ function ConsentCard({
         <Button
           type="button"
           variant="primary"
-          className="min-h-12"
           loading={busy === 'approve'}
           disabled={busy !== null}
           onClick={() => onDecide('approve')}>
           Allow
         </Button>
-      </div>
+      </DialogActions>
+    </PageCard>
+  )
+}
 
-      <p className="text-base-content/60 mt-4 text-center text-xs">
-        {scopes.includes('offline_access')
-          ? 'It stays connected until you disconnect it in '
-          : 'You can disconnect it any time in '}
-        <Link
-          href="/#settings?tab=connected-apps"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="link link-primary">
-          Settings › Connected apps
-        </Link>
-        .
-      </p>
-    </div>
+function ScopeRow({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+  return (
+    <li className="text-base-content flex items-start gap-3 text-sm">
+      <span className="text-base-content/70 mt-0.5 shrink-0" aria-hidden>
+        {icon}
+      </span>
+      {children}
+    </li>
   )
 }
 

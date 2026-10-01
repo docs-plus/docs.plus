@@ -1,7 +1,9 @@
-import Button from '@components/ui/Button'
+import { HomepageLink, PageCard } from '@components/PageCard'
+import Button, { quietActionClassName } from '@components/ui/Button'
+import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { LuCircleAlert, LuHouse, LuRotateCcw } from 'react-icons/lu'
+import { LuCircleAlert } from 'react-icons/lu'
 
 const AuthErrorPage = () => {
   const router = useRouter()
@@ -25,81 +27,47 @@ const AuthErrorPage = () => {
     router.back()
   }
 
-  const handleGoHome = () => {
-    router.push('/')
-  }
-
   return (
-    <div className="bg-base-200 flex min-h-[100dvh] items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="rounded-box bg-base-100 p-6 shadow-xl sm:p-8">
-          <div className="mb-6 flex justify-center">
-            <div className="bg-error/10 flex size-16 items-center justify-center rounded-full">
-              <LuCircleAlert size={32} className="text-error" />
+    <>
+      <Head>
+        <title>Authentication error — docs.plus</title>
+      </Head>
+      <PageCard
+        title="Authentication error"
+        description="Something went wrong during authentication."
+        meta={
+          errorDetails.errorCode && (
+            <>
+              Code <code className="text-base-content font-sans">{errorDetails.errorCode}</code>
+            </>
+          )
+        }
+        actions={
+          <>
+            <a
+              href="https://docs.plus/support"
+              className={quietActionClassName}
+              target="_blank"
+              rel="noopener noreferrer">
+              Contact support
+            </a>
+            <HomepageLink />
+          </>
+        }>
+        {errorDetails.error && (
+          <div className="alert alert-soft alert-error items-start px-3 py-2 text-sm">
+            <LuCircleAlert size={16} className="text-error mt-0.5 shrink-0" aria-hidden />
+            <div className="text-base-content flex min-w-0 flex-col gap-1 [overflow-wrap:anywhere]">
+              <p className="font-semibold">{errorDetails.error}</p>
+              {errorDetails.errorDescription && <p>{errorDetails.errorDescription}</p>}
             </div>
           </div>
-
-          <h1 className="text-base-content mb-2 text-center text-2xl font-bold">
-            Authentication Error
-          </h1>
-          <p className="text-base-content/60 mb-6 text-center text-sm">
-            Something went wrong during authentication.
-          </p>
-
-          <div className="border-error/20 bg-error/5 rounded-box mb-6 space-y-3 border p-4">
-            <div>
-              <p className="text-base-content/50 text-xs font-medium tracking-wide uppercase">
-                Error
-              </p>
-              <p className="text-base-content font-medium">{errorDetails.error}</p>
-            </div>
-
-            {errorDetails.errorCode && (
-              <div>
-                <p className="text-base-content/50 text-xs font-medium tracking-wide uppercase">
-                  Code
-                </p>
-                <p className="text-base-content/80 font-mono text-sm">{errorDetails.errorCode}</p>
-              </div>
-            )}
-
-            {errorDetails.errorDescription && (
-              <div>
-                <p className="text-base-content/50 text-xs font-medium tracking-wide uppercase">
-                  Details
-                </p>
-                <p className="text-base-content/70 text-sm">{errorDetails.errorDescription}</p>
-              </div>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button
-              onClick={handleRetry}
-              variant="ghost"
-              className="text-base-content/70 flex-1"
-              startIcon={LuRotateCcw}>
-              Try Again
-            </Button>
-            <Button onClick={handleGoHome} variant="primary" className="flex-1" startIcon={LuHouse}>
-              Go Home
-            </Button>
-          </div>
-        </div>
-
-        <p className="text-base-content/60 mt-6 text-center text-sm">
-          If this problem persists, please{' '}
-          <a
-            href="https://docs.plus/support"
-            className="text-primary font-medium hover:underline"
-            target="_blank"
-            rel="noopener noreferrer">
-            contact support
-          </a>
-          .
-        </p>
-      </div>
-    </div>
+        )}
+        <Button variant="primary" shape="block" onClick={handleRetry}>
+          Try again
+        </Button>
+      </PageCard>
+    </>
   )
 }
 
