@@ -437,14 +437,12 @@ export async function getUserNotificationSubs(c: AppContext) {
     })
 
     const users = await fetchAllRows(supabase, 'users', {
-      columns: 'id, profile_data',
-      notNull: 'profile_data',
+      columns: 'id, notification_preferences',
       orderColumn: 'id'
     })
     users.forEach((user) => {
-      const u = user as { id: string; profile_data: Record<string, unknown> | null }
-      const prefs = u.profile_data?.notification_preferences as Record<string, unknown> | undefined
-      ensure(u.id).email = prefs?.email_enabled === true
+      const u = user as { id: string; notification_preferences: Record<string, unknown> }
+      ensure(u.id).email = u.notification_preferences.email_enabled === true
     })
 
     return c.json(result)
@@ -460,13 +458,15 @@ const REST_PAGE = 1000
 export async function fetchAllRows(
   supabase: ServiceClient,
   table: string,
-  opts: { columns: string; orderColumn: string; notNull?: string }
+  opts: { columns: string; orderColumn: string }
 ): Promise<Array<Record<string, unknown>>> {
   const all: Array<Record<string, unknown>> = []
   for (let from = 0; ; from += REST_PAGE) {
-    let q = supabase.from(table).select(opts.columns).order(opts.orderColumn, { ascending: true })
-    if (opts.notNull) q = q.not(opts.notNull, 'is', null)
-    const { data, error } = await q.range(from, from + REST_PAGE - 1)
+    const { data, error } = await supabase
+      .from(table)
+      .select(opts.columns)
+      .order(opts.orderColumn, { ascending: true })
+      .range(from, from + REST_PAGE - 1)
     if (error) throw error
     const rows = (data as unknown as Array<Record<string, unknown>> | null) ?? []
     all.push(...rows)
