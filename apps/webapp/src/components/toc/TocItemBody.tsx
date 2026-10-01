@@ -147,6 +147,8 @@ function TocItemBodyComponent({
       <TocRow
         headingId={item.id}
         title={item.textContent}
+        // Same word the editor placeholder shows on an empty heading.
+        titleLabel={`Heading ${item.level}`}
         density={variant}
         isActive={isActive}
         isFocused={isFocused}
