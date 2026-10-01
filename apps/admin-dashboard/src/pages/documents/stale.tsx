@@ -39,22 +39,38 @@ export const getServerSideProps: GetServerSideProps = async () => {
   return { props: {} }
 }
 
+// Mirrors the server stale_score bands; the badge text stays the server reason.
+const STALE_TIERS = [
+  {
+    min: 100,
+    label: 'Truly Abandoned',
+    tone: 'badge-error badge-sm',
+    logic: '0 views in 30 days AND no edits for 90+ days'
+  },
+  {
+    min: 90,
+    label: 'Ghost Document',
+    tone: 'badge-warning badge-sm',
+    logic: '0 views in 7 days AND only 1 version (never really used)'
+  },
+  {
+    min: 70,
+    label: 'Declining Interest',
+    tone: 'badge-soft badge-info badge-sm text-[var(--info-ink)]',
+    logic: '0 views in 7 days AND no edits for 30+ days'
+  },
+  {
+    min: 50,
+    label: 'Low Engagement',
+    tone: 'badge-ghost badge-sm',
+    logic: 'Less than 3 views in 7 days AND no edits for 60+ days'
+  }
+]
+
 function getScoreBadge(score: number, reason: string) {
-  if (score >= 100) {
-    return <span className="badge badge-error badge-sm">{reason}</span>
-  }
-  if (score >= 90) {
-    return <span className="badge badge-warning badge-sm">{reason}</span>
-  }
-  if (score >= 70) {
-    return (
-      <span className="badge badge-soft badge-info badge-sm text-[var(--info-ink)]">{reason}</span>
-    )
-  }
-  if (score >= 50) {
-    return <span className="badge badge-ghost badge-sm">{reason}</span>
-  }
-  return <span className="badge badge-ghost badge-sm">{reason || 'Low'}</span>
+  const tier = STALE_TIERS.find((t) => score >= t.min)
+  if (!tier) return <span className="badge badge-ghost badge-sm">{reason || 'Low'}</span>
+  return <span className={`badge ${tier.tone}`}>{reason}</span>
 }
 
 export default function StaleDocumentsPage() {
@@ -412,36 +428,15 @@ export default function StaleDocumentsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td>
-                        <span className="badge badge-error badge-sm">Truly Abandoned</span>
-                      </td>
-                      <td>100</td>
-                      <td>0 views in 30 days AND no edits for 90+ days</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <span className="badge badge-warning badge-sm">Ghost Document</span>
-                      </td>
-                      <td>90</td>
-                      <td>0 views in 7 days AND only 1 version (never really used)</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <span className="badge badge-soft badge-info badge-sm text-[var(--info-ink)]">
-                          Declining Interest
-                        </span>
-                      </td>
-                      <td>70</td>
-                      <td>0 views in 7 days AND no edits for 30+ days</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <span className="badge badge-ghost badge-sm">Low Engagement</span>
-                      </td>
-                      <td>50</td>
-                      <td>Less than 3 views in 7 days AND no edits for 60+ days</td>
-                    </tr>
+                    {STALE_TIERS.map((tier) => (
+                      <tr key={tier.min}>
+                        <td>
+                          <span className={`badge ${tier.tone}`}>{tier.label}</span>
+                        </td>
+                        <td>{tier.min}</td>
+                        <td>{tier.logic}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
                 <p className="text-base-content/60 text-xs">
@@ -454,12 +449,11 @@ export default function StaleDocumentsPage() {
 
           <div className="text-base-content/60 flex flex-wrap items-center gap-4 text-sm">
             <span className="font-medium">Legend:</span>
-            <span className="badge badge-error badge-sm">Truly Abandoned</span>
-            <span className="badge badge-warning badge-sm">Ghost Document</span>
-            <span className="badge badge-soft badge-info badge-sm text-[var(--info-ink)]">
-              Declining Interest
-            </span>
-            <span className="badge badge-ghost badge-sm">Low Engagement</span>
+            {STALE_TIERS.map((tier) => (
+              <span key={tier.min} className={`badge ${tier.tone}`}>
+                {tier.label}
+              </span>
+            ))}
             <span className="ml-4">v=versions d=days h=headings p=paragraphs</span>
           </div>
 

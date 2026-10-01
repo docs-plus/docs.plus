@@ -9,7 +9,7 @@ interface DocumentFactProps {
 
 /**
  * One labelled fact in the delete dialogs. It sits on `base-200`, where `/60` ink is only 4.5:1.
- * The value wraps, not truncates: "over 1 year ago" clipped at 390px.
+ * The value wraps, not truncates, so a long value stays whole at phone width.
  */
 export function DocumentFact({ icon: Icon, label, children }: DocumentFactProps) {
   return (

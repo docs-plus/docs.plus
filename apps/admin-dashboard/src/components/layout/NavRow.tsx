@@ -72,7 +72,6 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   )
 }
 
-/** The brand link at the top of the Sidebar and the MobileMenu. */
 export function NavBrand({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <Link href="/" className="flex items-center gap-2" onClick={onNavigate}>
@@ -83,7 +82,6 @@ export function NavBrand({ onNavigate }: { onNavigate?: () => void }) {
   )
 }
 
-/** The Theme row and the Sign out row at the foot of the Sidebar and the MobileMenu. */
 export function NavFooter() {
   const router = useRouter()
 

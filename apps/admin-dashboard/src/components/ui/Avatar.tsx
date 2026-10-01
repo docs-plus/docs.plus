@@ -13,8 +13,8 @@ const SIZE_CLASSES: Record<AvatarSize, string> = {
   xl: 'w-12 h-12 text-lg'
 }
 
-// Every pair clears 4.5:1 in both themes. Neutral took info's slot (3.84:1 in light), so the
-// hash still maps each user to the same index.
+// Every pair clears 4.5:1 in both themes. Keep the length and order, so the hash keeps
+// each user on the same color.
 const AVATAR_COLORS = [
   'bg-primary text-primary-content',
   'bg-secondary text-secondary-content',

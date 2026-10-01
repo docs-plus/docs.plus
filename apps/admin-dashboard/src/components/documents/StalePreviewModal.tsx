@@ -7,7 +7,6 @@ import { formatDate, formatRelative, userLabel } from '@/utils/format'
 
 import { DeleteDocumentDialog } from './DeleteDocumentDialog'
 import { DocumentFact } from './DocumentFact'
-import { TypeToConfirm } from './TypeToConfirm'
 
 interface StalePreviewModalProps {
   slug: string
@@ -25,7 +24,6 @@ export function StalePreviewModal({
 }: StalePreviewModalProps) {
   const [preview, setPreview] = useState<StaleDocumentPreview | null>(null)
   const [loading, setLoading] = useState(true)
-  const [confirmInput, setConfirmInput] = useState('')
 
   useEffect(() => {
     fetchDocumentPreview(slug)
@@ -34,29 +32,22 @@ export function StalePreviewModal({
       .finally(() => setLoading(false))
   }, [slug])
 
-  const canDelete = confirmInput === slug && !loading
   const ownerDisplay = userLabel(preview?.owner?.username, preview?.owner?.email)
   const hasWorkspace = !!preview?.deletion_impact.workspace_id
-
-  const handleConfirm = () => {
-    if (canDelete) onConfirmDelete(slug)
-  }
 
   return (
     <DeleteDocumentDialog
       title="Document preview"
       subtitle={<code className="text-base-content/60 text-sm break-all">{slug}</code>}
       width="lg"
+      slug={slug}
+      loading={loading}
+      loadingLabel="Loading preview..."
+      ready={!!preview}
       isDeleting={isDeleting}
-      canDelete={canDelete}
-      onConfirm={handleConfirm}
+      onConfirm={() => onConfirmDelete(slug)}
       onCancel={onCancel}>
-      {loading ? (
-        <div className="flex flex-col items-center justify-center gap-3 py-8">
-          <span className="loading loading-spinner loading-md text-primary" />
-          <p className="text-base-content/60 text-sm">Loading preview...</p>
-        </div>
-      ) : preview ? (
+      {preview ? (
         <>
           <div className="card bg-base-200 border-base-300 border">
             <div className="card-body gap-3 p-4">
@@ -112,14 +103,6 @@ export function StalePreviewModal({
               </div>
             </div>
           )}
-
-          <TypeToConfirm
-            expected={slug}
-            value={confirmInput}
-            onChange={setConfirmInput}
-            onSubmit={handleConfirm}
-            disabled={isDeleting}
-          />
         </>
       ) : (
         <p className="text-base-content/70 text-sm">Failed to load document preview.</p>
