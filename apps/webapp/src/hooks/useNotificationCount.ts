@@ -32,7 +32,8 @@ function matchesWorkspace(
   filterId: string | null | undefined,
   payloadWorkspaceId: string | null
 ): boolean {
-  return !filterId || payloadWorkspaceId === filterId
+  // A null workspace is an account-wide alert (no channel); the bell counts it everywhere.
+  return !filterId || payloadWorkspaceId === null || payloadWorkspaceId === filterId
 }
 
 /** Per-user `notifications:<uid>` broadcast counter. Requires `{ config: { private: true } }`
