@@ -54,7 +54,7 @@ async function fetchNotificationPage(
 
 export function useNotificationPanelFeed(): UseNotificationPanelFeedResult {
   const workspaceId = useStore((state) => state.settings.workspaceId)
-  const user = useAuthStore((state) => state.profile)
+  const userId = useAuthStore((state) => state.profile?.id)
   const notifications = useStore((state) => state.notifications)
   const notificationActiveTab = useStore((state) => state.notificationActiveTab)
   const loadingNotification = useStore((state) => state.loadingNotification)
@@ -77,7 +77,7 @@ export function useNotificationPanelFeed(): UseNotificationPanelFeedResult {
   const currentNotifications = notifications.get(notificationActiveTab) || []
 
   const refreshSummary = useCallback(async () => {
-    if (!user || !workspaceId) return
+    if (!userId || !workspaceId) return
 
     try {
       const { data, error } = await summaryRequest({ workspaceId })
@@ -99,7 +99,7 @@ export function useNotificationPanelFeed(): UseNotificationPanelFeedResult {
       setLoadingNotification(false)
     }
   }, [
-    user,
+    userId,
     workspaceId,
     summaryRequest,
     setNotificationSummary,
@@ -110,11 +110,11 @@ export function useNotificationPanelFeed(): UseNotificationPanelFeedResult {
   ])
 
   useEffect(() => {
-    if (!user || !workspaceId) return
+    if (!userId || !workspaceId) return
     setLoadingNotification(true)
     clearNotifications()
     refreshSummary()
-  }, [user, workspaceId, clearNotifications, refreshSummary, setLoadingNotification])
+  }, [userId, workspaceId, clearNotifications, refreshSummary, setLoadingNotification])
 
   useEffect(() => {
     const token = PubSub.subscribe(NOTIFICATION_STATE_CHANGED, () => {
@@ -126,11 +126,11 @@ export function useNotificationPanelFeed(): UseNotificationPanelFeedResult {
   }, [refreshSummary])
 
   const loadReadFirstPage = useCallback(async () => {
-    if (!user?.id) return
+    if (!userId) return
 
     setLoadingNotification(true)
     try {
-      const data = await fetchNotificationPage('Read', 1, user.id, workspaceId)
+      const data = await fetchNotificationPage('Read', 1, userId, workspaceId)
       updateNotifications('Read', data)
       setHasMore(data.length >= PAGE_SIZE)
       setReadFailed(false)
@@ -140,7 +140,7 @@ export function useNotificationPanelFeed(): UseNotificationPanelFeedResult {
     } finally {
       setLoadingNotification(false)
     }
-  }, [user?.id, workspaceId, setLoadingNotification, updateNotifications])
+  }, [userId, workspaceId, setLoadingNotification, updateNotifications])
 
   useEffect(() => {
     setPage(1)
@@ -170,7 +170,7 @@ export function useNotificationPanelFeed(): UseNotificationPanelFeedResult {
   }, [notificationActiveTab, loadReadFirstPage, refreshSummary, setLoadingNotification])
 
   const loadMore = useCallback(async () => {
-    if (isLoadingMore || !hasMore || loadingNotification || !user?.id) return
+    if (isLoadingMore || !hasMore || loadingNotification || !userId) return
 
     setIsLoadingMore(true)
 
@@ -179,7 +179,7 @@ export function useNotificationPanelFeed(): UseNotificationPanelFeedResult {
       const newNotifications = await fetchNotificationPage(
         notificationActiveTab,
         nextPage,
-        user.id,
+        userId,
         workspaceId
       )
 
@@ -205,7 +205,7 @@ export function useNotificationPanelFeed(): UseNotificationPanelFeedResult {
     notificationActiveTab,
     notifications,
     updateNotifications,
-    user?.id,
+    userId,
     workspaceId
   ])
 

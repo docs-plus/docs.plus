@@ -13,9 +13,8 @@ import {
   PanelFeedRowAction
 } from '@components/PanelFeedItem'
 import { Avatar } from '@components/ui/Avatar'
-import { useDismissPanel } from '@hooks/useDismissPanel'
+import { useDismissPanelBeforeNavigate } from '@hooks/useDismissPanel'
 import { openOverlayHash } from '@hooks/useHashOverlay'
-import { consumeHistoryDismissEntry } from '@hooks/useHistoryDismiss'
 import { Icons } from '@icons'
 import { useAuthStore, useStore } from '@stores'
 import { type PanelSurfaceVariant, type TNotification } from '@types'
@@ -61,15 +60,8 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
   const exiting = isDismissing(notification.id)
 
   const profile = useAuthStore((state) => state.profile)
-  const dismissPanel = useDismissPanel(variant)
+  const dismissBeforeNavigate = useDismissPanelBeforeNavigate(variant)
   const router = useRouter()
-
-  // The sheet's close pops its Back entry. A URL write must wait for that pop to land,
-  // or the pop cancels the push or eats the hash. A popover owns no entry.
-  const dismissBeforeNavigate = async () => {
-    dismissPanel()
-    if (variant === 'sheet') await consumeHistoryDismissEntry()
-  }
 
   const handleViewNotification = async (notification: TNotification) => {
     // First, because a sender-less carrier would otherwise be claimed by the
@@ -104,8 +96,8 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
       return
     }
 
+    await dismissBeforeNavigate()
     openChatAtMessage(notification.channel_id, notification.message_id)
-    dismissPanel()
   }
 
   const isContentChange = notification.type === 'content_change'

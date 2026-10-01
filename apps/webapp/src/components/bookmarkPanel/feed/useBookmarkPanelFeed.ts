@@ -21,7 +21,7 @@ type UseBookmarkPanelFeedResult = {
 
 export function useBookmarkPanelFeed(): UseBookmarkPanelFeedResult {
   const workspaceId = useStore((state) => state.settings.workspaceId)
-  const user = useAuthStore((state) => state.profile)
+  const userId = useAuthStore((state) => state.profile?.id)
   const bookmarks = useChatStore((state) => state.bookmarks)
   const bookmarkActiveTab = useChatStore((state) => state.bookmarkActiveTab)
   const loadingBookmarks = useChatStore((state) => state.loadingBookmarks)
@@ -77,11 +77,11 @@ export function useBookmarkPanelFeed(): UseBookmarkPanelFeedResult {
   }, [workspaceId, setBookmarks, setBookmarkPage, setLoadingBookmarks])
 
   useEffect(() => {
-    if (!user) return
+    if (!userId) return
     setLoadingBookmarks(true)
     clearBookmarks()
     void refreshFeed()
-  }, [user, refreshFeed, clearBookmarks, setLoadingBookmarks])
+  }, [userId, refreshFeed, clearBookmarks, setLoadingBookmarks])
 
   const retry = useCallback(() => {
     setLoadingBookmarks(true)

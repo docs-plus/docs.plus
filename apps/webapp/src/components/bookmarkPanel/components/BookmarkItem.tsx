@@ -10,7 +10,7 @@ import {
   PanelFeedRowAction
 } from '@components/PanelFeedItem'
 import { Avatar } from '@components/ui/Avatar'
-import { useDismissPanel } from '@hooks/useDismissPanel'
+import { useDismissPanelBeforeNavigate } from '@hooks/useDismissPanel'
 import { useChatStore } from '@stores'
 import { type MessageMediaItem, type PanelSurfaceVariant, type TBookmarkWithMessage } from '@types'
 import { GENERIC_ATTACHMENT_LABEL, messagePreviewText } from '@utils/messagePreview'
@@ -36,14 +36,14 @@ function BookmarkImageThumb({ media }: { media: MessageMediaItem }) {
 
 export const BookmarkItem = ({ bookmark, variant = 'popover' }: BookmarkItemProps) => {
   const bookmarkActiveTab = useChatStore((state) => state.bookmarkActiveTab)
-  const dismissPanel = useDismissPanel(variant)
+  const dismissBeforeNavigate = useDismissPanelBeforeNavigate(variant)
   const { remove, markAsRead, archive, isExiting } = useBookmarkPanelActions()
 
   const exiting = isExiting(bookmark.bookmark_id)
 
-  const handleViewBookmark = (bookmark: TBookmarkWithMessage) => {
+  const handleViewBookmark = async (bookmark: TBookmarkWithMessage) => {
+    await dismissBeforeNavigate()
     openChatAtMessage(bookmark.message_channel_id, bookmark.message_id)
-    dismissPanel()
   }
 
   const medias = parseMessageMedias(bookmark.message_medias)
@@ -83,7 +83,7 @@ export const BookmarkItem = ({ bookmark, variant = 'popover' }: BookmarkItemProp
 
         <PanelFeedActions
           createdAt={bookmark.bookmark_created_at}
-          onView={() => handleViewBookmark(bookmark)}
+          onView={() => void handleViewBookmark(bookmark)}
           disabled={exiting}>
           {bookmarkActiveTab === 'in progress' && !isRead && (
             <PanelFeedRowAction onClick={() => void markAsRead(bookmark)} disabled={exiting}>
