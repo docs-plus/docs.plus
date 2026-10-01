@@ -13,14 +13,14 @@ interface HomeDocumentsProps {
 }
 
 /**
- * A short door into Settings → Documents, not a second library. Same Owner live list key
- * as Settings under Last opened. Favorites still pin first, so the heading names no order.
- * Hidden while loading, on error and when empty, so the slug card never waits on it.
+ * A short door into Settings → Documents, not a second library. The owned list only, under
+ * Last opened. Favorites still pin first, so the heading names no order. Hidden while
+ * loading, on error and when empty, so the slug card never waits on it.
  */
 export function HomeDocuments({ userId, onSeeAll }: HomeDocumentsProps) {
   const router = useRouter()
   const { data } = useOwnerDocuments(
-    { userId, searchQuery: '', sortKey: 'lastOpenedAt_desc' },
+    { userId, scope: 'owned', searchQuery: '', sortKey: 'lastOpenedAt_desc' },
     { refetchOnWindowFocus: 'always' }
   )
   const firstPage = data?.pages[0]

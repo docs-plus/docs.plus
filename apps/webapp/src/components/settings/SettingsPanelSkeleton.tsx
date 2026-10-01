@@ -75,8 +75,11 @@ export const DocumentsSkeleton = () => {
           <div className="max-md:border-base-300 max-md:bg-base-100 space-y-4 max-md:space-y-2.5 max-md:border-b max-md:px-4 max-md:pt-3 max-md:pb-2.5">
             <div className="skeleton rounded-field h-11 w-full" />
 
-            <div className="flex items-center gap-2 sm:justify-between sm:gap-3">
-              <div className="skeleton rounded-field h-11 min-w-0 flex-1 sm:h-8 sm:w-44 sm:flex-none" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+                <div className="skeleton rounded-field h-11 min-w-0 flex-1 sm:h-8 sm:max-w-40" />
+                <div className="skeleton rounded-field h-11 min-w-0 flex-1 sm:h-8 sm:max-w-44" />
+              </div>
               <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
                 <div className="skeleton rounded-field h-11 w-[5.5rem] sm:h-8 sm:w-16" />
               </div>

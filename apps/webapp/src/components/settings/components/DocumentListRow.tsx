@@ -40,6 +40,10 @@ function DocumentListRow({
   const router = useRouter()
   const label = doc.title || doc.slug
   const date = documentListDate(doc, scope.sortKey)
+  // Another person's row names its owner. An ownerless row has no name to show.
+  // An old server omits isOwner, and it answers the owned list only.
+  const isOwner = doc.isOwner !== false
+  const ownerName = isOwner ? null : doc.owner?.display_name
 
   const { commit } = useCommitDocumentRename(scope)
   const [isRenaming, setIsRenaming] = useState(false)
@@ -142,7 +146,7 @@ function DocumentListRow({
           onClick={open}
           onFocus={() => onActivate(index)}
           onKeyDown={(e) => {
-            if (e.key === 'F2') {
+            if (e.key === 'F2' && isOwner) {
               e.preventDefault()
               enterRename()
             }
@@ -151,7 +155,14 @@ function DocumentListRow({
           <LuFileText size={18} className="text-base-content/60 shrink-0" />
           <span className="flex min-w-0 flex-1 flex-col">
             <DocumentRowLabel doc={doc} className="text-sm" />
-            <span className="text-meta text-base-content/60 sm:hidden">{date}</span>
+            {ownerName ? (
+              <span className="text-meta text-base-content/60 truncate">
+                <bdi>{ownerName}</bdi>
+                <span className="sm:hidden"> · {date}</span>
+              </span>
+            ) : (
+              <span className="text-meta text-base-content/60 sm:hidden">{date}</span>
+            )}
           </span>
         </button>
 
@@ -166,6 +177,7 @@ function DocumentListRow({
         <DocumentRowMenu
           doc={doc}
           scope={scope}
+          isOwner={isOwner}
           triggerTabIndex={isActive ? 0 : -1}
           onRename={enterRename}
           onDelete={(keyboard) => onDelete(doc.documentId, keyboard)}

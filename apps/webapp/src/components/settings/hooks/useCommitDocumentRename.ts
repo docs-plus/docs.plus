@@ -12,7 +12,7 @@ import { useOwnerDocumentsCache } from './documentsCache'
  * sent), so callers can close/exit without waiting. Otherwise the mutation drives `isPending`.
  */
 const useCommitDocumentRename = (scope: DocumentsListScope) => {
-  const cache = useOwnerDocumentsCache(scope)
+  const cache = useOwnerDocumentsCache(scope.userId)
   const { mutate, isPending } = useUpdateDocMetadata()
 
   const commit = useCallback(

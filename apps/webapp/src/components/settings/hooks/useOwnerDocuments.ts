@@ -9,17 +9,19 @@ const DOCUMENTS_PAGE_SIZE = 20
 
 async function fetchDocumentsPage(
   offset: number,
-  { userId, searchQuery, sortKey }: DocumentsListScope
+  { userId, scope, searchQuery, sortKey }: DocumentsListScope
 ): Promise<DocumentsPage> {
+  // ownerId stays beside scope: an old server ignores scope and answers the owned list.
   const params = new URLSearchParams({
     limit: String(DOCUMENTS_PAGE_SIZE),
     offset: String(offset),
     ownerId: userId,
+    scope,
     sort: sortKey
   })
   if (searchQuery) params.set('title', searchQuery)
 
-  // Owner-scoped list requires the token so the backend can gate ownerId === token.sub.
+  // The server reads the joined set from the token, and gates ownerId === token.sub.
   const {
     data: { session }
   } = await supabaseClient.auth.getSession()
@@ -34,9 +36,10 @@ async function fetchDocumentsPage(
 }
 
 /**
- * The owner's live documents. Sibling of `useTrashedDocuments`, so the two lists read
- * alike. The page param is a ROW OFFSET, never a page index — see `nextDocumentsOffset`.
- * The scope must carry the DEBOUNCED search term, or the optimistic patches miss this key.
+ * The caller's live documents in one scope: owned, joined, or both. Sibling of
+ * `useTrashedDocuments`. The page param is a ROW OFFSET, never a page index — see
+ * `nextDocumentsOffset`. The scope must carry the DEBOUNCED search term, or the
+ * optimistic patches miss this key.
  */
 export function useOwnerDocuments(
   scope: DocumentsListScope,

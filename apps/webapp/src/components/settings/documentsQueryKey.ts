@@ -1,19 +1,21 @@
+import type { DocumentsScope } from './constants'
 import type { DocumentSortKey } from './types'
 
-/** The three facts that pick one Owner live list. One value, so the surfaces that patch
- *  that list cannot rebuild a key from loose parts and miss the live query. */
+/** The facts that pick one documents list. One value, so the surfaces that patch that
+ *  list cannot rebuild a key from loose parts and miss the live query. */
 export type DocumentsListScope = {
   userId: string
+  scope: DocumentsScope
   searchQuery: string
   sortKey: DocumentSortKey
 }
 
-// SAME 4-tuple the parent useInfiniteQuery keys on — a 3-tuple never matches the live
-// query, so the optimistic patch would silently no-op under any non-default sort.
-export const makeDocumentsKey = ({ userId, searchQuery, sortKey }: DocumentsListScope) =>
-  ['documents', userId, searchQuery, sortKey] as const
+// The key carries every scope field. A key that drops one never matches the live query,
+// so the optimistic patch would silently no-op under that scope, search or sort.
+export const makeDocumentsKey = ({ userId, scope, searchQuery, sortKey }: DocumentsListScope) =>
+  ['documents', userId, scope, searchQuery, sortKey] as const
 
-/** Every Owner live list one owner holds, across search terms and sort keys. */
+/** Every documents list one user holds, across scopes, search terms and sort keys. */
 export const ownerDocumentsPrefix = (uid: string) => ['documents', uid] as const
 
 // Distinct prefix from makeDocumentsKey, so invalidating ['documents', uid] on

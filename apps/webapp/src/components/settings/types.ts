@@ -37,13 +37,28 @@ export interface OwnedDocument {
   isPrivate: boolean
   updatedAt: string
   createdAt: string
-  lastOpenedAt?: string | null // Owner lists only. Fleet, slug GET, create, and update omit it.
+  // Owned rows in an owner list only. A row the caller does not own never carries it.
+  lastOpenedAt?: string | null
   // Populated only in the Trash view (soft-deleted rows); null/absent on live docs.
   deletedAt?: string | null
-  // Owner live list only. Favorites sit first. Trash omits this.
+  // Owned rows in the live list only. Favorites sit first. Trash omits this.
   isFavorite?: boolean
-  // Owner live list and Owner Trash. Omitted or null = never extracted. `{ heading: null, lines: [] }` = empty or failed extract.
+  // Null on an ownerless pad. `isOwner` is ownerId === the caller; an old server omits it.
+  ownerId?: string | null
+  isOwner?: boolean
+  // Set when the row has an owner whose profile resolves.
+  owner?: DocumentOwner
+  // Every live-list scope and Owner Trash. Omitted or null = never extracted. `{ heading: null, lines: [] }` = empty or failed extract.
   preview?: DocumentGridPreview | null
+}
+
+/** The server folds `full_name` into `display_name`, so this is the name to show. */
+export type DocumentOwner = {
+  id: string
+  display_name: string | null
+  avatar_url: string | null
+  avatar_updated_at: string | null
+  status: string | null
 }
 
 export type DocumentGridPreview = {

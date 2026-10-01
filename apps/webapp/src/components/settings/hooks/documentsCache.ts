@@ -1,12 +1,7 @@
 import { hashKey, type QueryKey, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
-import {
-  type DocumentsListScope,
-  makeDocumentsKey,
-  makeTrashKey,
-  ownerDocumentsPrefix
-} from '../documentsQueryKey'
+import { makeTrashKey, ownerDocumentsPrefix } from '../documentsQueryKey'
 import type { OwnedDocument } from '../types'
 import {
   insertDocumentAtSlot,
@@ -17,7 +12,7 @@ import {
   setFavoriteInPages
 } from '../utils/documentsPageCache'
 
-/** Puts the list back exactly as it stood before one optimistic write. */
+/** Puts every list back exactly as it stood before one optimistic write. */
 export type Rollback = () => void
 
 export type RemovedDocument = {
@@ -43,40 +38,53 @@ export interface DocumentsCache {
 }
 
 /**
- * Keyed on the hash, not the array: a caller builds a fresh key array every render, and an
- * identity dependency would rebuild every method and break the memo of every consumer.
+ * Writes every list under `prefix`: one per scope, search and sort. Owned and All share
+ * rows, so a write to one list alone left the other stale. A remove or a patch keeps each
+ * list a server prefix, so no list refetches and none can race the pending write.
+ * Keyed on the hash: a caller builds a fresh key array every render.
  */
-function useDocumentPagesCache(key: QueryKey): DocumentsCache {
+function useDocumentPagesCache(prefix: QueryKey): DocumentsCache {
   const queryClient = useQueryClient()
-  const keyHash = hashKey(key)
+  const prefixHash = hashKey(prefix)
 
   return useMemo(() => {
-    const read = () => queryClient.getQueryData<Pages>(key)
-    const write = (pages: Pages) => queryClient.setQueryData(key, pages)
+    const filter = { queryKey: prefix }
+    const readAll = () =>
+      queryClient
+        .getQueriesData<Pages>(filter)
+        .filter((entry): entry is [QueryKey, Pages] => entry[1] !== undefined)
+    const restore = (snapshots: [QueryKey, Pages][]): Rollback => {
+      return () => snapshots.forEach(([key, pages]) => queryClient.setQueryData(key, pages))
+    }
 
     // Cancel first: a refetch already in flight lands after the patch and reverts it.
     const edit = async (change: (pages: Pages) => Pages): Promise<Rollback | null> => {
-      await queryClient.cancelQueries({ queryKey: key })
-      const snapshot = read()
-      if (!snapshot) return null
-      write(change(snapshot))
-      return () => write(snapshot)
+      await queryClient.cancelQueries(filter)
+      const snapshots = readAll()
+      if (snapshots.length === 0) return null
+      for (const [key, pages] of snapshots) queryClient.setQueryData(key, change(pages))
+      return restore(snapshots)
     }
 
     return {
       async removeDocument(documentId) {
-        await queryClient.cancelQueries({ queryKey: key })
-        const snapshot = read()
-        if (!snapshot) return null
-        const outcome = removeDocumentFromPages(snapshot, documentId)
-        if (!outcome) return null
-        write(outcome.pages)
+        await queryClient.cancelQueries(filter)
+        const snapshots = readAll()
+        const outcomes = snapshots.flatMap(([key, pages]) => {
+          const outcome = removeDocumentFromPages(pages, documentId)
+          return outcome ? [{ key, ...outcome }] : []
+        })
+        if (outcomes.length === 0) return null
+        for (const { key, pages } of outcomes) queryClient.setQueryData(key, pages)
         return {
-          removed: outcome.removed,
-          rollback: () => write(snapshot),
+          removed: outcomes[0].removed,
+          rollback: restore(snapshots),
+          // Each list puts the row back at its own slot.
           reinsert: () => {
-            const live = read()
-            if (live) write(insertDocumentAtSlot(live, outcome.removed, outcome.slot))
+            for (const { key, removed, slot } of outcomes) {
+              const live = queryClient.getQueryData<Pages>(key)
+              if (live) queryClient.setQueryData(key, insertDocumentAtSlot(live, removed, slot))
+            }
           }
         }
       },
@@ -90,16 +98,16 @@ function useDocumentPagesCache(key: QueryKey): DocumentsCache {
         // Refetch, never patch. A copy has no `lastOpenedAt`, so under `lastOpenedAt_desc`
         // the server sorts it last, past the loaded window. A patch put it near the top and
         // the refetch then removed it, so the row flashed and vanished.
-        queryClient.invalidateQueries({ queryKey: key })
+        queryClient.invalidateQueries(filter)
       }
     }
-    // `key` is left out on purpose: the hash above is its stable identity.
+    // `prefix` is left out on purpose: the hash above is its stable identity.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryClient, keyHash])
+  }, [queryClient, prefixHash])
 }
 
-export const useOwnerDocumentsCache = (scope: DocumentsListScope): DocumentsCache =>
-  useDocumentPagesCache(makeDocumentsKey(scope))
+export const useOwnerDocumentsCache = (userId: string): DocumentsCache =>
+  useDocumentPagesCache(ownerDocumentsPrefix(userId))
 
 export interface TrashCache extends DocumentsCache {
   /** Refetch Trash when only the server knows the result: Empty trash purges pages this

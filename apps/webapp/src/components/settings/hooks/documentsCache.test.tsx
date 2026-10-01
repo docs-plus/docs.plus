@@ -11,7 +11,12 @@ jest.mock('@utils/supabase', () => ({
   supabaseClient: { auth: { getSession: async () => ({ data: { session: null } }) } }
 }))
 
-const scope = { userId: 'u1', searchQuery: '', sortKey: 'lastOpenedAt_desc' } as const
+const scope = {
+  userId: 'u1',
+  scope: 'all',
+  searchQuery: '',
+  sortKey: 'lastOpenedAt_desc'
+} as const
 const key = makeDocumentsKey(scope)
 
 const doc = (id: string): OwnedDocument => ({
@@ -35,7 +40,7 @@ const wrapperFor = (client: QueryClient) => {
 const mount = (seed?: { pages: DocumentsPage[]; pageParams: number[] }) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   if (seed) client.setQueryData(key, seed)
-  const { result } = renderHook(() => useOwnerDocumentsCache(scope), {
+  const { result } = renderHook(() => useOwnerDocumentsCache(scope.userId), {
     wrapper: wrapperFor(client)
   })
   return { client, cache: result.current }
@@ -81,6 +86,28 @@ describe('useOwnerDocumentsCache', () => {
     expect(
       client.getQueryData<typeof onePage>(key)!.pages[0].docs.map((d) => d.documentId)
     ).toEqual(['a', 'b'])
+  })
+
+  // All and Owned hold the same rows under two keys. Marking the sibling stale let its
+  // refetch race the pending DELETE and bring the row back, so every list is patched.
+  it('removes the row from the sibling scope too, and refetches neither list', async () => {
+    const { client, cache } = mount(onePage)
+    const ownedKey = makeDocumentsKey({ ...scope, scope: 'owned' })
+    client.setQueryData(ownedKey, onePage)
+
+    await act(async () => {
+      const outcome = await cache.removeDocument('a')
+      expect(
+        client.getQueryData<typeof onePage>(ownedKey)!.pages[0].docs.map((d) => d.documentId)
+      ).toEqual(['b'])
+      outcome!.reinsert()
+    })
+
+    expect(
+      client.getQueryData<typeof onePage>(ownedKey)!.pages[0].docs.map((d) => d.documentId)
+    ).toEqual(['a', 'b'])
+    expect(client.getQueryState(ownedKey)?.isInvalidated).toBe(false)
+    expect(client.getQueryState(key)?.isInvalidated).toBe(false)
   })
 
   it('answers null when the list holds nothing yet, so no caller writes a phantom row', async () => {

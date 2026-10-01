@@ -57,8 +57,13 @@ function CommandJumpPanel({ places, userId, onPick, navigate }: PanelProps) {
 
   // With an empty term both calls share one key. While a typed search loads, the
   // live list filtered on the client fills in, so rows do not blink.
-  const live = useOwnerDocuments({ userId, searchQuery: '', sortKey: PAD_SORT })
-  const searched = useOwnerDocuments({ userId, searchQuery: searchTerm, sortKey: PAD_SORT })
+  const live = useOwnerDocuments({ userId, scope: 'owned', searchQuery: '', sortKey: PAD_SORT })
+  const searched = useOwnerDocuments({
+    userId,
+    scope: 'owned',
+    searchQuery: searchTerm,
+    sortKey: PAD_SORT
+  })
 
   const term = query.trim().toLowerCase()
   const placeItems: JumpItem[] = places

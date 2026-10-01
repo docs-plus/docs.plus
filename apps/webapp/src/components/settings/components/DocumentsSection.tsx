@@ -11,7 +11,12 @@ import debounce from 'lodash/debounce'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { LuFileText, LuLayoutGrid, LuList, LuSearch, LuTrash2, LuX } from 'react-icons/lu'
 
-import { DOCUMENTS_VIEW_STORAGE_KEY, type DocumentViewMode } from '../constants'
+import {
+  DOCUMENTS_SCOPE_STORAGE_KEY,
+  DOCUMENTS_VIEW_STORAGE_KEY,
+  type DocumentsScope,
+  type DocumentViewMode
+} from '../constants'
 import type { DocumentsListScope } from '../documentsQueryKey'
 import { useOwnerDocumentsCache } from '../hooks/documentsCache'
 import useDeleteDocument from '../hooks/useDeleteDocument'
@@ -48,6 +53,15 @@ const SORT_OPTIONS: SelectOption[] = [
 
 const SORT_STORAGE_KEY = 'docsplus:my-docs-sort'
 
+const LIST_SCOPE_OPTIONS: SelectOption[] = [
+  { value: 'all', label: 'All documents' },
+  { value: 'owned', label: 'Owned by me' },
+  { value: 'joined', label: 'Joined' }
+]
+
+// Last opened is the owner's stamp, so a joined-only list has no order for it.
+const JOINED_SORT_OPTIONS = SORT_OPTIONS.filter((o) => o.value !== 'lastOpenedAt_desc')
+
 const VIEW_OPTIONS = [
   { mode: 'list', icon: LuList, label: 'List view' },
   { mode: 'grid', icon: LuLayoutGrid, label: 'Grid view' }
@@ -67,6 +81,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
   const userId = useAuthStore((state) => state.profile?.id)
 
   const sortLabelId = useId()
+  const listScopeLabelId = useId()
 
   const [inputValue, setInputValue] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
@@ -77,6 +92,14 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
       ? (stored as DocumentSortKey)
       : 'updatedAt_desc'
   })
+  const [listScope, setListScope] = useState<DocumentsScope>(() => {
+    if (typeof window === 'undefined') return 'all'
+    const stored = window.sessionStorage.getItem(DOCUMENTS_SCOPE_STORAGE_KEY)
+    return LIST_SCOPE_OPTIONS.some((o) => o.value === stored) ? (stored as DocumentsScope) : 'all'
+  })
+  // The stored sort stays as chosen, so it returns when the scope leaves Joined.
+  const effectiveSortKey: DocumentSortKey =
+    listScope === 'joined' && sortKey === 'lastOpenedAt_desc' ? 'updatedAt_desc' : sortKey
   const [viewMode, setViewMode] = useState<DocumentViewMode>(() => {
     if (typeof window === 'undefined') return 'list'
     return window.sessionStorage.getItem(DOCUMENTS_VIEW_STORAGE_KEY) === 'grid' ? 'grid' : 'list'
@@ -125,13 +148,24 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
     if (typeof window !== 'undefined') window.sessionStorage.setItem(SORT_STORAGE_KEY, value)
   }
 
+  const handleListScopeChange = (value: string) => {
+    setListScope(value as DocumentsScope)
+    if (typeof window !== 'undefined')
+      window.sessionStorage.setItem(DOCUMENTS_SCOPE_STORAGE_KEY, value)
+  }
+
   const handleViewChange = (mode: DocumentViewMode) => {
     setViewMode(mode)
     if (typeof window !== 'undefined')
       window.sessionStorage.setItem(DOCUMENTS_VIEW_STORAGE_KEY, mode)
   }
 
-  const scope: DocumentsListScope = { userId: userId ?? '', searchQuery, sortKey }
+  const scope: DocumentsListScope = {
+    userId: userId ?? '',
+    scope: listScope,
+    searchQuery,
+    sortKey: effectiveSortKey
+  }
 
   const {
     data,
@@ -146,11 +180,14 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
 
   const docs = useMemo(() => data?.pages.flatMap((p) => p.docs) ?? [], [data])
   const total = data?.pages[0]?.total ?? 0
-  const listItems = useMemo(() => buildDocumentsListItems(docs, sortKey), [docs, sortKey])
+  const listItems = useMemo(
+    () => buildDocumentsListItems(docs, effectiveSortKey),
+    [docs, effectiveSortKey]
+  )
 
   const { data: membersMap } = useDocumentMembers(docs.map(membersKey), !!userId)
 
-  const cache = useOwnerDocumentsCache(scope)
+  const cache = useOwnerDocumentsCache(scope.userId)
   const { deleteDocument, restoreDocument } = useDeleteDocument()
 
   // In-modal Undo banner state; the timer auto-dismisses (soft-delete stands) after the window.
@@ -336,19 +373,33 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                 onChange={handleSearch}
               />
 
-              <div className="flex items-center gap-2 sm:justify-between sm:gap-3">
-                <label htmlFor={sortLabelId} className="sr-only">
-                  Sort documents
-                </label>
-                <Select
-                  id={sortLabelId}
-                  size="sm"
-                  value={sortKey}
-                  onChange={handleSortChange}
-                  options={SORT_OPTIONS}
-                  wrapperClassName="min-w-0 flex-1 sm:w-44 sm:flex-none sm:shrink-0"
-                  className="min-h-11 sm:min-h-8"
-                />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+                  <label htmlFor={listScopeLabelId} className="sr-only">
+                    Show
+                  </label>
+                  <Select
+                    id={listScopeLabelId}
+                    size="sm"
+                    value={listScope}
+                    onChange={handleListScopeChange}
+                    options={LIST_SCOPE_OPTIONS}
+                    wrapperClassName="min-w-0 flex-1 sm:max-w-40"
+                    className="min-h-11 sm:min-h-8"
+                  />
+                  <label htmlFor={sortLabelId} className="sr-only">
+                    Sort documents
+                  </label>
+                  <Select
+                    id={sortLabelId}
+                    size="sm"
+                    value={effectiveSortKey}
+                    onChange={handleSortChange}
+                    options={listScope === 'joined' ? JOINED_SORT_OPTIONS : SORT_OPTIONS}
+                    wrapperClassName="min-w-0 flex-1 sm:max-w-44"
+                    className="min-h-11 sm:min-h-8"
+                  />
+                </div>
 
                 <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
                   {hasTrash && (
@@ -407,6 +458,13 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                       Clear search
                     </Button>
                   }
+                />
+              ) : listScope === 'joined' ? (
+                <EmptyState
+                  icon={LuFileText}
+                  title="No joined documents yet."
+                  body="Documents you open while signed in appear here."
+                  className="max-md:flex-1 max-md:justify-center"
                 />
               ) : (
                 <EmptyState

@@ -37,6 +37,9 @@ function DocumentGridTile({
   const openDialog = useStore((state) => state.openDialog)
   const label = doc.title ?? doc.slug
   const date = documentListDate(doc, scope.sortKey)
+  // An old server omits isOwner, and it answers the owned list only.
+  const isOwner = doc.isOwner !== false
+  const ownerName = isOwner ? null : doc.owner?.display_name
 
   const open = () => {
     router.push(`/${doc.slug}`)
@@ -59,13 +62,13 @@ function DocumentGridTile({
         onClick={open}
         onFocus={() => onActivate(index)}
         onKeyDown={(e) => {
-          if (e.key === 'F2') {
+          if (e.key === 'F2' && isOwner) {
             e.preventDefault()
             openRenameDialog()
           }
         }}
         className="flex flex-col text-left focus-visible:outline-none">
-        <span className="rounded-t-box relative flex aspect-[4/3] items-end justify-center bg-[var(--pad-well)] px-3.5 pt-2.5">
+        <span className="rounded-t-box relative flex aspect-[4/3] items-end justify-center overflow-hidden bg-[var(--pad-well)] px-3.5 pt-2.5">
           <DocumentPreviewPaper preview={doc.preview} title={doc.title} />
           {doc.isFavorite && (
             <span className="absolute top-2 left-2 z-10">
@@ -82,7 +85,15 @@ function DocumentGridTile({
         <span className="text-base-content line-clamp-2 px-3 pt-3 text-sm font-medium">
           {label}
         </span>
-        <span className="text-meta text-base-content/60 px-3 pt-0.5">{date}</span>
+        <span className="text-meta text-base-content/60 truncate px-3 pt-0.5">
+          {ownerName ? (
+            <>
+              <bdi>{ownerName}</bdi> · {date}
+            </>
+          ) : (
+            date
+          )}
+        </span>
       </button>
 
       <div className="mt-auto flex items-center gap-2 px-3 pt-1 pb-2">
@@ -97,6 +108,7 @@ function DocumentGridTile({
           <DocumentRowMenu
             doc={doc}
             scope={scope}
+            isOwner={isOwner}
             triggerTabIndex={isActive ? 0 : -1}
             onRename={openRenameDialog}
             onDelete={(keyboard) => onDelete(doc.documentId, keyboard)}

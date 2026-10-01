@@ -16,8 +16,8 @@ interface DocumentMembersClusterProps {
 
 /**
  * Inline avatar cluster on a document row/tile — the trigger for the roster popover.
- * Solo documents (owner only) show nothing. The button is a sibling of the row's nav
- * button and stops propagation, so opening the roster never navigates the row.
+ * One-member documents show nothing. The button is a sibling of the row's nav button
+ * and stops propagation, so opening the roster never navigates the row.
  */
 function DocumentMembersCluster({
   workspaceId,
@@ -28,7 +28,8 @@ function DocumentMembersCluster({
 }: DocumentMembersClusterProps) {
   if (memberCount <= 1) return null
 
-  const users = previews.slice(0, 3).map(toStackUser)
+  // Four members fit as faces. Past four, 3 faces leave room for the +N of the true total.
+  const users = (memberCount <= 4 ? previews : previews.slice(0, 3)).map(toStackUser)
 
   return (
     <Popover placement="bottom-end">

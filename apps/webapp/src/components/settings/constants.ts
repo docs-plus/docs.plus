@@ -23,6 +23,11 @@ export type DocumentViewMode = 'list' | 'grid'
 // The skeleton reads it too, so the loading bones match the restored view.
 export const DOCUMENTS_VIEW_STORAGE_KEY = 'docsplus:my-docs-view'
 
+/** The `scope` the documents list sends. Settings defaults to `all`; Home and Command
+ *  jump read `owned`. An unknown stored value falls back to `all`. */
+export type DocumentsScope = 'all' | 'owned' | 'joined'
+export const DOCUMENTS_SCOPE_STORAGE_KEY = 'docsplus:my-docs-scope'
+
 // `fullWidth` opts a section out of the centered max-w-2xl reading column (the
 // documents grid/list needs the whole panel width).
 export const SETTINGS_TABS: { id: TabType; label: string; icon: IconType; fullWidth?: boolean }[] =
