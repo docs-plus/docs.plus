@@ -22,8 +22,6 @@ import { ScrollArea } from './ScrollArea'
 import { useOverlayTransition } from './useOverlayTransition'
 
 export type SelectSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
-export type SelectColor =
-  'neutral' | 'primary' | 'secondary' | 'accent' | 'info' | 'success' | 'warning' | 'error'
 
 export interface SelectOption {
   value: string
@@ -41,7 +39,6 @@ export interface SelectProps {
   label?: string
   labelPosition?: 'above' | 'floating'
   size?: SelectSize
-  color?: SelectColor
   ghost?: boolean
   placeholder?: string
   /** Help line under the field. With `error`, it renders as the error line. */
@@ -55,19 +52,26 @@ export interface SelectProps {
   className?: string
 }
 
+/** Whole names, not `select-${size}`: Tailwind only emits classes it finds written out. */
+export const selectSizeClassName: Record<SelectSize, string> = {
+  xs: 'select-xs',
+  sm: 'select-sm',
+  md: 'select-md',
+  lg: 'select-lg',
+  xl: 'select-xl'
+}
+
 const buildTriggerClasses = (
   size?: SelectSize,
-  color?: SelectColor,
   ghost?: boolean,
   error?: boolean,
   success?: boolean
 ): string => {
   const classes: string[] = ['select', 'w-full', 'text-left']
 
-  if (size) classes.push(`select-${size}`)
+  if (size) classes.push(selectSizeClassName[size])
   if (error) classes.push('select-error')
   else if (success) classes.push('select-success')
-  else if (color) classes.push(`select-${color}`)
   if (ghost) classes.push('select-ghost')
 
   return classes.join(' ')
@@ -85,7 +89,6 @@ const Select = ({
   label,
   labelPosition = 'above',
   size,
-  color,
   ghost = false,
   placeholder = 'Select…',
   helperText,
@@ -228,7 +231,7 @@ const Select = ({
     el?.scrollIntoView({ block: 'nearest' })
   }, [highlightedIndex, isOpen])
 
-  const triggerClasses = buildTriggerClasses(size, color, ghost, error, success)
+  const triggerClasses = buildTriggerClasses(size, ghost, error, success)
 
   const helperId = helperText ? `${id}-help` : undefined
 

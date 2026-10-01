@@ -50,10 +50,13 @@ export const quietActionClassName =
 /** A destructive text action on `variant="ghost"`: error ink, soft error hover. */
 export const dangerGhostClassName = 'hover:bg-error/10 text-[var(--error-ink)]'
 
-/** One bordered segment of a choice group (view toggle, media options). */
+/**
+ * One bordered segment of a choice group (view toggle, media options). In a `join` the cells
+ * overlap by 1px; the active cell sits on top so its whole tinted border shows.
+ */
 export const segmentClassName = (active: boolean): string =>
   active
-    ? 'border bg-primary/10 border-primary/40 text-[var(--primary-ink)]'
+    ? 'relative z-[1] border bg-primary/10 border-primary/40 text-[var(--primary-ink)]'
     : 'border border-base-300 text-base-content/70'
 
 /**

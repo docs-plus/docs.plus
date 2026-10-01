@@ -19,7 +19,7 @@ import { FieldHelp, fieldLabelClassName } from './FieldHelp'
 import { useSelectExclusion } from './hooks/useSelectExclusion'
 import { popoverPanelClassName } from './Popover'
 import { ScrollArea } from './ScrollArea'
-import type { SelectSize } from './Select'
+import { type SelectSize, selectSizeClassName } from './Select'
 import TextInput from './TextInput'
 import { useOverlayTransition } from './useOverlayTransition'
 
@@ -92,7 +92,7 @@ export const searchOptions = (
 /** Keep in lockstep with `Select`'s trigger classes. */
 const buildTriggerClasses = (size?: SelectSize): string => {
   const classes: string[] = ['select', 'w-full', 'text-left']
-  if (size) classes.push(`select-${size}`)
+  if (size) classes.push(selectSizeClassName[size])
   return classes.join(' ')
 }
 
