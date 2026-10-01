@@ -1,3 +1,4 @@
+import { useAuthStore } from '@stores'
 import { useEffect, useRef, useState } from 'react'
 
 import { isMobileSurface } from '../utils/isMobileSurface'
@@ -19,12 +20,14 @@ export const consumeSettingsTakeoverEntry = (): Promise<void> => {
  * so hardware/browser back closes the surface instead of leaving the page
  * (ComposerEmojiPanel precedent). X/Esc/scrim close consumes the entry.
  */
-export const useSettingsModal = (takeoverEnabled = true) => {
+export const useSettingsModal = () => {
+  // Signed out, `SettingsTakeover` renders nothing, so there is no entry to push.
+  const signedIn = useAuthStore((state) => !!state.profile)
   const [isOpen, setIsOpen] = useState(false)
   const ownsHistoryEntryRef = useRef(false)
 
   useEffect(() => {
-    if (!isOpen || !takeoverEnabled || !isMobileSurface()) return
+    if (!isOpen || !signedIn || !isMobileSurface()) return
     window.history.pushState({ settingsTakeover: true }, '')
     ownsHistoryEntryRef.current = true
     const onPop = () => {
@@ -42,7 +45,7 @@ export const useSettingsModal = (takeoverEnabled = true) => {
         void consumeSettingsTakeoverEntry()
       }
     }
-  }, [isOpen, takeoverEnabled])
+  }, [isOpen, signedIn])
 
   return { isOpen, setIsOpen }
 }

@@ -1,3 +1,4 @@
+import { useProfileSync } from '@hooks/useProfileSync'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { getRoutePolicy } from '@utils/routePolicy'
 import dynamic from 'next/dynamic'
@@ -8,6 +9,12 @@ const DocumentShellInner = dynamic(
   () => import('./DocumentShellInner').then((module) => module.DocumentShellInner),
   { ssr: false }
 )
+
+// Inside the provider but above the lazy DocumentShellInner, so sync starts with the page.
+function ProfileSync() {
+  useProfileSync()
+  return null
+}
 
 interface AppQueryClientRootProps {
   children: ReactNode
@@ -20,6 +27,7 @@ export function AppQueryClientRoot({ children, queryClient }: AppQueryClientRoot
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ProfileSync />
       {documentShell ? <DocumentShellInner>{children}</DocumentShellInner> : children}
     </QueryClientProvider>
   )

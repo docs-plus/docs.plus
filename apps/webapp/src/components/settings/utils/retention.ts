@@ -3,11 +3,11 @@ import { formatShortDate } from './formatShortDate'
 // Mirrors the backend reaper's DOC_DELETE_RETENTION_DAYS (worker env, default 30).
 // Drives only the Trash countdown copy — the server stays the source of truth for
 // when a document is actually purged.
-export const DOC_DELETE_RETENTION_DAYS = 30
+const DOC_DELETE_RETENTION_DAYS = 30
 
 const MS_PER_DAY = 86_400_000
 
-export const retentionDaysLeft = (
+const retentionDaysLeft = (
   deletedAtIso: string,
   retentionDays = DOC_DELETE_RETENTION_DAYS
 ): number | null => {

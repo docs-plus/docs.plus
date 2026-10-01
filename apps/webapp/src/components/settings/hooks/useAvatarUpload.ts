@@ -57,7 +57,7 @@ export const useAvatarUpload = () => {
       if (!user) return
 
       if (!file.type.startsWith('image/')) {
-        toast.Error('Avatar must be an image')
+        toast.Error('Choose an image file.')
         return
       }
 
@@ -90,14 +90,12 @@ export const useAvatarUpload = () => {
         }
         useAuthStore.getState().setProfile(updatedProfile)
         refreshPresenceAvatar(updatedProfile)
-
-        toast.Success('Avatar uploaded successfully!')
       } catch (error) {
         console.error('Avatar upload error:', error)
         const message =
           error instanceof Error && error.message
             ? error.message
-            : 'Error uploading avatar, please try again.'
+            : 'Couldn’t upload the profile picture.'
         toast.Error(message)
       } finally {
         setUploading(false)
@@ -125,11 +123,9 @@ export const useAvatarUpload = () => {
       }
       useAuthStore.getState().setProfile(updatedProfile)
       refreshPresenceAvatar(updatedProfile)
-
-      toast.Success('Avatar removed successfully!')
     } catch (error) {
       console.error('Avatar remove error:', error)
-      toast.Error('Error removing avatar, please try again.')
+      toast.Error('Couldn’t remove the profile picture.')
     } finally {
       setUploading(false)
     }

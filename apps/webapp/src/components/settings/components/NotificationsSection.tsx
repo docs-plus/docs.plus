@@ -1,31 +1,39 @@
 import { updateNotificationPreferences } from '@api'
 import { showPWAInstallPrompt } from '@components/pwa'
 import * as toast from '@components/toast'
+import { Banner } from '@components/ui/Banner'
 import Button from '@components/ui/Button'
+import { EmptyState } from '@components/ui/EmptyState'
 import Select from '@components/ui/Select'
-import Toggle from '@components/ui/Toggle'
+import { ToggleRow } from '@components/ui/ToggleRow'
+import {
+  notificationPreferencesKey,
+  useNotificationPreferences
+} from '@hooks/useNotificationPreferences'
 import { usePlatformDetection } from '@hooks/usePlatformDetection'
 import { usePushNotifications } from '@hooks/usePushNotifications'
 import { useAuthStore } from '@stores'
+import { useQueryClient } from '@tanstack/react-query'
+import type { EmailFrequency, NotificationPreferences } from '@types'
 import debounce from 'lodash/debounce'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { LuBell, LuClock, LuInfo, LuMail, LuSmartphone, LuTriangleAlert } from 'react-icons/lu'
+import { LuBell, LuClock, LuMail, LuSmartphone } from 'react-icons/lu'
 
-import type { EmailFrequency, NotificationPreferences } from '../types'
+import { NotificationsSkeleton } from '../SettingsPanelSkeleton'
+import { registerPendingPreferenceFlush } from '../utils/pendingPreferenceWrites'
 import { getBrowserTimezone, TIME_OPTIONS } from '../utils/timezoneOptions'
-import SettingsCard from './SettingsCard'
+import SettingsCard, { SettingsCardHeader } from './SettingsCard'
 import TimezoneSelect from './TimezoneSelect'
 
-interface ToggleRowProps {
-  id: string
-  label: string
-  description: string
-  checked: boolean
-  onChange: (checked: boolean) => void
-  disabled?: boolean
-}
+// Mirrors the worker fallback in `07-5-email-notifications-pgmq.sql`.
+const DEFAULT_EMAIL_FREQUENCY: EmailFrequency = 'daily'
 
-const EMAIL_FREQUENCY_OPTIONS: { value: EmailFrequency; label: string; help: string }[] = [
+const EMAIL_FREQUENCY_OPTIONS: {
+  value: EmailFrequency
+  label: string
+  help: string
+  hint?: string
+}[] = [
   {
     value: 'immediate',
     label: 'Immediately (after 15 min if unread)',
@@ -34,41 +42,23 @@ const EMAIL_FREQUENCY_OPTIONS: { value: EmailFrequency; label: string; help: str
   {
     value: 'daily',
     label: 'Daily digest (9 AM)',
-    help: 'One email at 9:00 AM in the timezone below.'
+    hint: 'Default',
+    help: 'One email at 9:00 AM in your time zone.'
   },
   {
     value: 'weekly',
     label: 'Weekly digest (Mondays)',
-    help: 'One email on Mondays at 9:00 AM in the timezone below.'
+    help: 'One email on Mondays at 9:00 AM in your time zone.'
   },
   { value: 'never', label: 'Never', help: 'No notification emails.' }
 ]
 
-function emailFrequencyOption(value: EmailFrequency | undefined) {
-  return EMAIL_FREQUENCY_OPTIONS.find((row) => row.value === (value ?? 'daily'))!
-}
+// Time zone and Email frequency share one field width, so their edges line up.
+const FIELD_WIDTH_CLASS = 'max-w-xs'
 
-const ToggleRow = ({ id, label, description, checked, onChange, disabled }: ToggleRowProps) => (
-  <div className="flex items-start justify-between gap-4 py-3">
-    <div className="min-w-0 flex-1">
-      <label
-        htmlFor={id}
-        className={`text-base-content text-sm font-medium ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
-        {label}
-      </label>
-      <p className="text-base-content/60 mt-0.5 text-xs">{description}</p>
-    </div>
-    <Toggle
-      id={id}
-      variant="primary"
-      size="sm"
-      checked={checked}
-      onChange={(e) => onChange(e.target.checked)}
-      disabled={disabled}
-      className="mt-0.5"
-    />
-  </div>
-)
+function emailFrequencyOption(value: EmailFrequency) {
+  return EMAIL_FREQUENCY_OPTIONS.find((row) => row.value === value)!
+}
 
 // Shown on iOS Safari (not PWA): push requires "Add to Home Screen".
 interface IOSPWANoticeProps {
@@ -79,52 +69,51 @@ const IOSPWANotice = ({ iosSupportsWebPush }: IOSPWANoticeProps) => {
   if (!iosSupportsWebPush) {
     // iOS < 16.4 — push is not available at all
     return (
-      <div className="border-base-300 bg-base-200 rounded-box border p-4">
-        <div className="flex items-start gap-3">
-          <LuInfo size={20} className="text-base-content/60 mt-0.5 shrink-0" />
-          <div className="min-w-0 flex-1">
-            <p className="text-base-content text-sm font-medium">Not available on this device</p>
-            <p className="text-base-content/60 mt-1 text-xs">
-              Push notifications require iOS 16.4 or later. Update your device to enable this
-              feature.
-            </p>
-          </div>
-        </div>
-      </div>
+      <Banner tone="info" role="note" title="Not available on this device">
+        <p>
+          Push notifications require iOS 16.4 or later. Update your device to enable this feature.
+        </p>
+      </Banner>
     )
   }
 
   // iOS ≥ 16.4 but not in PWA mode — guide user to install
   return (
-    <div className="border-primary/20 bg-primary/5 rounded-box border p-4">
-      <div className="flex items-start gap-3">
-        <div className="bg-primary/10 mt-0.5 shrink-0 rounded-full p-1.5">
-          <LuSmartphone size={18} className="text-primary" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-base-content text-sm font-medium">Add to Home Screen to enable</p>
-          <p className="text-base-content/60 mt-1 text-xs leading-relaxed">
-            On iOS, push notifications only work when the app is installed on your home screen. Add
-            docs.plus to your home screen to receive notifications.
-          </p>
-          <Button
-            onClick={() => showPWAInstallPrompt()}
-            variant="primary"
-            btnStyle="soft"
-            size="sm"
-            startIcon={LuSmartphone}
-            className="mt-3">
-            Add to Home Screen
-          </Button>
-        </div>
-      </div>
-    </div>
+    <Banner
+      tone="info"
+      role="note"
+      icon={LuSmartphone}
+      title="Add to Home Screen to enable"
+      actions={
+        <Button variant="quiet" onClick={() => showPWAInstallPrompt()}>
+          Add to Home Screen
+        </Button>
+      }>
+      <p>
+        On iOS, push notifications only work when the app is installed on your home screen. Add
+        docs.plus to your home screen to receive notifications.
+      </p>
+    </Banner>
   )
 }
 
-const NotificationsSection = () => {
-  const profileData = useAuthStore((state) => state.profile?.profile_data)
+// Mirrors the SQL fallbacks. `timezone` stays out: a missing one must read as missing.
+const DEFAULT_PREFERENCES = {
+  push_mentions: true,
+  push_replies: true,
+  push_reactions: true,
+  quiet_hours_enabled: false,
+  quiet_hours_start: '22:00',
+  quiet_hours_end: '08:00',
+  email_enabled: false,
+  email_mentions: true,
+  email_replies: true,
+  email_reactions: false,
+  email_content_changes: true,
+  email_frequency: DEFAULT_EMAIL_FREQUENCY
+} satisfies NotificationPreferences
 
+const NotificationsSection = () => {
   const { platform, isPWAInstalled, iosSupportsWebPush } = usePlatformDetection()
 
   // iOS in Safari (not PWA) — push won't work, show install guidance
@@ -133,37 +122,15 @@ const NotificationsSection = () => {
   const { isSupported, isSubscribed, isLoading, permission, error, subscribe, unsubscribe } =
     usePushNotifications()
 
-  const [preferences, setPreferences] = useState<NotificationPreferences>(() => ({
-    push_mentions: true,
-    push_replies: true,
-    push_reactions: true,
-    quiet_hours_enabled: false,
-    quiet_hours_start: '22:00',
-    quiet_hours_end: '08:00',
-    timezone: getBrowserTimezone(),
-    email_enabled: false,
-    email_mentions: true,
-    email_replies: true,
-    email_reactions: false,
-    email_content_changes: true,
-    email_frequency: 'daily'
-  }))
-  const [saving, setSaving] = useState(false)
+  const queryClient = useQueryClient()
+  const { data: saved, isError, isFetching, refetch } = useNotificationPreferences()
 
-  useEffect(() => {
-    if (profileData) {
-      const saved = (profileData as Record<string, unknown>)
-        .notification_preferences as NotificationPreferences
-      if (saved) {
-        setPreferences((prev) => ({ ...prev, ...saved }))
-      }
-    }
-  }, [profileData])
+  // Edits not yet confirmed by the server. They win over `saved`, so a refetch or
+  // another client's signal never flips a toggle the person just moved.
+  const [localEdits, setLocalEdits] = useState<Partial<NotificationPreferences>>({})
+  const preferences = { ...DEFAULT_PREFERENCES, ...saved, ...localEdits }
 
-  // Accumulate multi-key patches across rapid toggles. `debounce` is
-  // trailing-only and keeps the LAST call's args, so a per-call patch
-  // would drop earlier keys. The buffer merges everything and clears on
-  // flush.
+  // `debounce` keeps only the last call's args, so rapid toggles merge here.
   const pendingPatchRef = useRef<Partial<NotificationPreferences>>({})
 
   const flushPreferences = useMemo(
@@ -172,71 +139,70 @@ const NotificationsSection = () => {
         const patch = pendingPatchRef.current
         if (Object.keys(patch).length === 0) return
         pendingPatchRef.current = {}
-        setSaving(true)
         try {
-          const { error } = await updateNotificationPreferences(patch)
-          if (error) toast.Error('Failed to save preferences')
+          const { data, error } = await updateNotificationPreferences(patch)
+          if (error) throw error
+          const key = notificationPreferencesKey(useAuthStore.getState().profile?.id)
+          // A read that began before this commit would land stale on top; the echo refetches.
+          await queryClient.cancelQueries({ queryKey: key })
+          queryClient.setQueryData(key, (data ?? {}) as NotificationPreferences)
         } catch {
-          toast.Error('Failed to save preferences')
-        } finally {
-          setSaving(false)
+          toast.Error('Couldn’t save your notification settings.')
         }
+        // Confirmed or rolled back, the saved copy now answers for these keys, unless edited again.
+        setLocalEdits((prev) => {
+          const next = { ...prev }
+          for (const key of Object.keys(patch) as (keyof NotificationPreferences)[]) {
+            if (next[key] === patch[key]) delete next[key]
+          }
+          return next
+        })
       }, 500),
-    []
+    [queryClient]
   )
 
-  // Closing the panel or switching tabs unmounts this section, so a patch
-  // still inside the 500 ms window must leave now. `cancel()` dropped it,
-  // and local state had already moved, so nothing looked wrong.
-  useEffect(
-    () => () => {
+  // Sign-out flushes through the registration. Closing the panel or switching tabs
+  // unmounts this section, so a patch still inside the 500 ms window leaves then.
+  // `cancel()` dropped it silently, because local state had already moved.
+  useEffect(() => {
+    const unregister = registerPendingPreferenceFlush(() => flushPreferences.flush())
+    return () => {
+      unregister()
       flushPreferences.flush()
-    },
-    [flushPreferences]
-  )
+    }
+  }, [flushPreferences])
 
   const handlePreferenceChange = (key: keyof NotificationPreferences, value: boolean | string) => {
     const patch: Partial<NotificationPreferences> = {
       [key]: value
     } as Partial<NotificationPreferences>
 
+    // `null` clears it server-side; the banner reads it as falsy.
     if (key === 'email_enabled' && value === true && preferences.email_bounce_info) {
       patch.email_bounce_info = null
     }
 
-    // Daily and weekly 9:00 AM use this timezone. Quiet Hours is the only
-    // other writer, so an email-only user would otherwise stay on UTC.
+    // Quiet hours and the 9:00 AM digests read this timezone; the server falls back to UTC.
     const needsTimezone =
+      (key === 'quiet_hours_enabled' && value === true) ||
       (key === 'email_enabled' && value === true) ||
       (key === 'email_frequency' && (value === 'daily' || value === 'weekly'))
     if (needsTimezone && !preferences.timezone) {
       patch.timezone = getBrowserTimezone()
     }
 
-    setPreferences((prev) => {
-      // Strip the null sentinel locally so the banner hides; the RPC's
-      // JSONB merge writes `null` server-side which we treat as cleared.
-      const next = { ...prev, ...patch }
-      if (patch.email_bounce_info === null) delete next.email_bounce_info
-      return next
-    })
+    setLocalEdits((prev) => ({ ...prev, ...patch }))
     Object.assign(pendingPatchRef.current, patch)
     flushPreferences()
-  }
-
-  const handleClearBounceAndEnable = () => {
-    handlePreferenceChange('email_enabled', true)
   }
 
   const handlePushChange = async (checked: boolean) => {
     if (checked) {
       const result = await subscribe()
       switch (result) {
-        case 'success':
-          toast.Success('Push notifications enabled')
-          break
         case 'denied':
-          toast.Error('Notifications blocked. Please enable in browser settings.')
+          // The toggle help line carries the fix; the toast only names the result.
+          toast.Error('Notifications blocked')
           break
         case 'dismissed':
           // User closed the browser permission prompt without choosing
@@ -247,10 +213,7 @@ const NotificationsSection = () => {
           break
       }
     } else {
-      const success = await unsubscribe()
-      if (success) {
-        toast.Success('Push notifications disabled')
-      }
+      await unsubscribe()
     }
   }
 
@@ -263,13 +226,37 @@ const NotificationsSection = () => {
       ? 'Blocked. On iOS this setting lives in the Settings app, under docs.plus.'
       : 'Blocked. This setting lives in the browser site settings, reached from the address bar.'
 
+  // Saved settings that read a timezone but hold none run on UTC. Write this browser's once.
+  const repairedTimezoneRef = useRef(false)
+  useEffect(() => {
+    if (!saved || saved.timezone || repairedTimezoneRef.current) return
+    const frequency = saved.email_frequency ?? DEFAULT_EMAIL_FREQUENCY
+    const digest = saved.email_enabled && (frequency === 'daily' || frequency === 'weekly')
+    if (!saved.quiet_hours_enabled && !digest) return
+    repairedTimezoneRef.current = true
+    handlePreferenceChange('timezone', getBrowserTimezone())
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per loaded copy
+  }, [saved])
+
+  if (!saved) {
+    if (!isError) return <NotificationsSkeleton />
+    return (
+      <SettingsCard>
+        <EmptyState
+          layout="inline"
+          tone="error"
+          title="Couldn’t load notification settings."
+          onRetry={refetch}
+          retrying={isFetching}
+        />
+      </SettingsCard>
+    )
+  }
+
   return (
     <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
       <SettingsCard>
-        <div className="mb-3 flex items-center gap-2">
-          <LuBell size={20} className="text-primary" />
-          <h2 className="text-base-content text-base font-semibold">Push Notifications</h2>
-        </div>
+        <SettingsCardHeader icon={LuBell} title="Push notifications" />
 
         {isIOSBrowser ? (
           <IOSPWANotice iosSupportsWebPush={iosSupportsWebPush} />
@@ -290,125 +277,96 @@ const NotificationsSection = () => {
               disabled={isLoading || !isSupported || isPushBlocked}
             />
 
-            {isPushEnabled && (
-              <>
-                <ToggleRow
-                  id="push-mentions"
-                  label="Mentions"
-                  description="When someone mentions you with @"
-                  checked={preferences.push_mentions ?? true}
-                  onChange={(checked) => handlePreferenceChange('push_mentions', checked)}
-                  disabled={saving}
-                />
-                <ToggleRow
-                  id="push-replies"
-                  label="Replies"
-                  description="When someone replies to your message"
-                  checked={preferences.push_replies ?? true}
-                  onChange={(checked) => handlePreferenceChange('push_replies', checked)}
-                  disabled={saving}
-                />
-                <ToggleRow
-                  id="push-reactions"
-                  label="Reactions"
-                  description="When someone reacts to your message"
-                  checked={preferences.push_reactions ?? true}
-                  onChange={(checked) => handlePreferenceChange('push_reactions', checked)}
-                  disabled={saving}
-                />
-              </>
-            )}
+            <ToggleRow
+              id="push-mentions"
+              label="Mentions"
+              description="When someone mentions you with @"
+              checked={preferences.push_mentions}
+              onChange={(checked) => handlePreferenceChange('push_mentions', checked)}
+            />
+            <ToggleRow
+              id="push-replies"
+              label="Replies"
+              description="When someone replies to your message"
+              checked={preferences.push_replies}
+              onChange={(checked) => handlePreferenceChange('push_replies', checked)}
+            />
+            <ToggleRow
+              id="push-reactions"
+              label="Reactions"
+              description="When someone reacts to your message"
+              checked={preferences.push_reactions}
+              onChange={(checked) => handlePreferenceChange('push_reactions', checked)}
+            />
           </div>
         )}
       </SettingsCard>
 
-      {isPushEnabled && (
-        <SettingsCard>
-          <div className="mb-3 flex items-center gap-2">
-            <LuClock size={20} className="text-primary" />
-            <h2 className="text-base-content text-base font-semibold">Quiet Hours</h2>
-          </div>
-
-          <div className="divide-base-300 divide-y">
-            <ToggleRow
-              id="quiet-hours"
-              label="Enable quiet hours"
-              description="Pause notifications during specific hours"
-              checked={preferences.quiet_hours_enabled ?? false}
-              onChange={(checked) => handlePreferenceChange('quiet_hours_enabled', checked)}
-              disabled={saving}
-            />
-
-            {preferences.quiet_hours_enabled && (
-              <>
-                <div className="flex items-center gap-3 py-3">
-                  <Select
-                    id="quiet-start"
-                    label="From"
-                    labelPosition="above"
-                    value={preferences.quiet_hours_start || '22:00'}
-                    onChange={(val) => handlePreferenceChange('quiet_hours_start', val)}
-                    options={TIME_OPTIONS}
-                    disabled={saving}
-                    wrapperClassName="flex-1"
-                  />
-                  <Select
-                    id="quiet-end"
-                    label="To"
-                    labelPosition="above"
-                    value={preferences.quiet_hours_end || '08:00'}
-                    onChange={(val) => handlePreferenceChange('quiet_hours_end', val)}
-                    options={TIME_OPTIONS}
-                    disabled={saving}
-                    wrapperClassName="flex-1"
-                  />
-                </div>
-                <div className="py-3">
-                  <TimezoneSelect
-                    value={preferences.timezone || getBrowserTimezone()}
-                    onChange={(tz) => handlePreferenceChange('timezone', tz)}
-                    disabled={saving}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        </SettingsCard>
-      )}
+      <SettingsCard>
+        <TimezoneSelect
+          value={preferences.timezone || getBrowserTimezone()}
+          onChange={(tz) => handlePreferenceChange('timezone', tz)}
+          wrapperClassName={FIELD_WIDTH_CLASS}
+        />
+      </SettingsCard>
 
       <SettingsCard>
-        <div className="mb-3 flex items-center gap-2">
-          <LuMail size={20} className="text-primary" />
-          <h2 className="text-base-content text-base font-semibold">Email Notifications</h2>
+        <SettingsCardHeader icon={LuClock} title="Quiet hours" />
+
+        <div className="divide-base-300 divide-y">
+          <ToggleRow
+            id="quiet-hours"
+            label="Enable quiet hours"
+            description="No push notifications or instant emails during these hours. The bell still shows them."
+            checked={preferences.quiet_hours_enabled}
+            onChange={(checked) => handlePreferenceChange('quiet_hours_enabled', checked)}
+          />
+
+          {preferences.quiet_hours_enabled && (
+            <div className="flex items-center gap-3 py-3">
+              <Select
+                id="quiet-start"
+                label="From"
+                labelPosition="above"
+                value={preferences.quiet_hours_start}
+                onChange={(val) => handlePreferenceChange('quiet_hours_start', val)}
+                options={TIME_OPTIONS}
+                wrapperClassName="flex-1"
+              />
+              <Select
+                id="quiet-end"
+                label="To"
+                labelPosition="above"
+                value={preferences.quiet_hours_end}
+                onChange={(val) => handlePreferenceChange('quiet_hours_end', val)}
+                options={TIME_OPTIONS}
+                wrapperClassName="flex-1"
+              />
+            </div>
+          )}
         </div>
+      </SettingsCard>
+
+      <SettingsCard>
+        <SettingsCardHeader icon={LuMail} title="Email notifications" />
 
         {preferences.email_bounce_info && (
-          <div className="border-warning/30 bg-warning/10 rounded-box mb-3 border p-4">
-            <div className="flex items-start gap-3">
-              <LuTriangleAlert size={20} className="text-warning mt-0.5 shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className="text-base-content text-sm font-medium">Email delivery failed</p>
-                <p className="text-base-content/70 mt-1 text-xs">
-                  We couldn't deliver emails to{' '}
-                  <span className="font-medium">{preferences.email_bounce_info.email}</span>. Your
-                  email notifications have been paused.
-                </p>
-                <p className="text-base-content/50 mt-1 text-xs">
-                  Update your email address or re-enable to try again.
-                </p>
-                <div className="mt-3 flex gap-2">
-                  <Button
-                    onClick={handleClearBounceAndEnable}
-                    disabled={saving}
-                    variant="warning"
-                    btnStyle="soft"
-                    size="xs">
-                    Re-enable
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <Banner
+            tone="warning"
+            title="Email delivery failed"
+            className="mb-3"
+            actions={
+              <Button variant="quiet" onClick={() => handlePreferenceChange('email_enabled', true)}>
+                Re-enable
+              </Button>
+            }>
+            <p>
+              We couldn't deliver emails to{' '}
+              <span className="font-medium">{preferences.email_bounce_info.email}</span>. Your email
+              notifications have been paused.
+            </p>
+            <p>Re-enable to try again.</p>
+          </Banner>
         )}
 
         <div className="divide-base-300 divide-y">
@@ -416,47 +374,45 @@ const NotificationsSection = () => {
             id="email-notifications"
             label="Enable email notifications"
             description="Receive notifications via email when you're away from the app."
-            checked={preferences.email_enabled ?? false}
+            checked={preferences.email_enabled}
             onChange={(checked) => handlePreferenceChange('email_enabled', checked)}
-            disabled={saving}
           />
 
           {preferences.email_enabled && (
             <>
-              <ToggleRow
-                id="email-mentions"
-                label="Mentions"
-                description="When someone mentions you with @"
-                checked={preferences.email_mentions ?? true}
-                onChange={(checked) => handlePreferenceChange('email_mentions', checked)}
-                disabled={saving}
-              />
-              <ToggleRow
-                id="email-replies"
-                label="Replies"
-                description="When someone replies to your message"
-                checked={preferences.email_replies ?? true}
-                onChange={(checked) => handlePreferenceChange('email_replies', checked)}
-                disabled={saving}
-              />
-              <ToggleRow
-                id="email-reactions"
-                label="Reactions"
-                description="When someone reacts to your message"
-                checked={preferences.email_reactions ?? false}
-                onChange={(checked) => handlePreferenceChange('email_reactions', checked)}
-                disabled={saving}
-              />
-              <ToggleRow
-                id="email-content-changes"
-                label="Document changes"
-                description="When a document you follow is edited. These always arrive in a digest, never as a 15-minute ping."
-                checked={preferences.email_content_changes ?? true}
-                onChange={(checked) => handlePreferenceChange('email_content_changes', checked)}
-                disabled={saving}
-              />
-
-              <div className="space-y-3 py-3">
+              {preferences.email_frequency !== 'never' && (
+                <>
+                  <ToggleRow
+                    id="email-mentions"
+                    label="Mentions"
+                    description="When someone mentions you with @"
+                    checked={preferences.email_mentions}
+                    onChange={(checked) => handlePreferenceChange('email_mentions', checked)}
+                  />
+                  <ToggleRow
+                    id="email-replies"
+                    label="Replies"
+                    description="When someone replies to your message"
+                    checked={preferences.email_replies}
+                    onChange={(checked) => handlePreferenceChange('email_replies', checked)}
+                  />
+                  <ToggleRow
+                    id="email-reactions"
+                    label="Reactions"
+                    description="When someone reacts to your message"
+                    checked={preferences.email_reactions}
+                    onChange={(checked) => handlePreferenceChange('email_reactions', checked)}
+                  />
+                  <ToggleRow
+                    id="email-content-changes"
+                    label="Document changes"
+                    description="When a document you follow is edited. These always arrive in a digest, never as a 15-minute ping."
+                    checked={preferences.email_content_changes}
+                    onChange={(checked) => handlePreferenceChange('email_content_changes', checked)}
+                  />
+                </>
+              )}
+              <div className="py-3">
                 <Select
                   id="email-frequency"
                   label="Email frequency"
@@ -464,18 +420,9 @@ const NotificationsSection = () => {
                   value={emailFrequencyOption(preferences.email_frequency).value}
                   onChange={(val) => handlePreferenceChange('email_frequency', val)}
                   options={EMAIL_FREQUENCY_OPTIONS}
-                  disabled={saving}
                   helperText={emailFrequencyOption(preferences.email_frequency).help}
-                  wrapperClassName="max-w-xs"
+                  wrapperClassName={FIELD_WIDTH_CLASS}
                 />
-                {(preferences.email_frequency === 'daily' ||
-                  preferences.email_frequency === 'weekly') && (
-                  <TimezoneSelect
-                    value={preferences.timezone || getBrowserTimezone()}
-                    onChange={(tz) => handlePreferenceChange('timezone', tz)}
-                    disabled={saving}
-                  />
-                )}
               </div>
             </>
           )}

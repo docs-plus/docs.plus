@@ -2,7 +2,8 @@ import { PostgrestSingleResponse } from '@supabase/supabase-js'
 import { Database } from '@types'
 import { supabaseClient } from '@utils/supabase'
 
-export type TUser = Database['public']['Tables']['users']['Row']
+// `notification_preferences` has no client grant; see get_notification_preferences().
+export type TUser = Omit<Database['public']['Tables']['users']['Row'], 'notification_preferences'>
 
 /**
  * `email` is intentionally excluded from the column-level GRANT on

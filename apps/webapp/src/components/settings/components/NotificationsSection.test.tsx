@@ -1,19 +1,38 @@
 import '@testing-library/jest-dom'
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen } from '@testing-library/react'
 
+import { notificationPreferencesKey } from '@hooks/useNotificationPreferences'
 import NotificationsSection from './NotificationsSection'
 
-const updateNotificationPreferences = jest.fn(async () => ({ error: null }))
+const updateNotificationPreferences = jest.fn(async () => ({ data: {}, error: null }))
 
 jest.mock('@api', () => ({
+  getNotificationPreferences: async () => ({ data: {}, error: null }),
   updateNotificationPreferences: (patch: Record<string, unknown>) =>
     updateNotificationPreferences(patch)
 }))
 
+const USER_ID = 'user-1'
+
 jest.mock('@stores', () => ({
-  useAuthStore: () => undefined
+  useAuthStore: Object.assign(
+    (select: (state: unknown) => unknown) => select({ profile: { id: USER_ID } }),
+    { getState: () => ({ profile: { id: USER_ID } }) }
+  )
 }))
+
+// Seeded, so the section renders its rows instead of the loading skeleton.
+const renderSection = () => {
+  const queryClient = new QueryClient()
+  queryClient.setQueryData(notificationPreferencesKey(USER_ID), {})
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <NotificationsSection />
+    </QueryClientProvider>
+  )
+}
 
 jest.mock('@components/toast', () => ({
   Error: jest.fn(),
@@ -63,7 +82,7 @@ describe('<NotificationsSection>', () => {
   // The timers are never advanced, so a patch that reaches the RPC did so
   // because unmount flushed it, not because the 500 ms debounce elapsed.
   it('sends a pending preference patch when the section unmounts', () => {
-    const { unmount } = render(<NotificationsSection />)
+    const { unmount } = renderSection()
 
     fireEvent.click(screen.getByLabelText('Replies'))
     expect(updateNotificationPreferences).not.toHaveBeenCalled()
@@ -75,7 +94,7 @@ describe('<NotificationsSection>', () => {
   })
 
   it('sends nothing when the section unmounts with no pending patch', () => {
-    const { unmount } = render(<NotificationsSection />)
+    const { unmount } = renderSection()
 
     unmount()
 

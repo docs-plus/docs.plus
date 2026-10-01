@@ -2,9 +2,8 @@ import { getUnreadNotificationCount } from '@api'
 import { wasClientRead } from '@components/notificationPanel/feed/readDedupe'
 import { NOTIFICATION_STATE_CHANGED } from '@services/eventsHub'
 import { useAuthStore, useStore } from '@stores'
-import { RealtimeChannel } from '@supabase/supabase-js'
 import { writeAppBadge } from '@utils/appBadge'
-import { supabaseClient } from '@utils/supabase'
+import { subscribePrivateTopic } from '@utils/supabase/subscribePrivateTopic'
 import PubSub from 'pubsub-js'
 import { useEffect, useRef } from 'react'
 
@@ -43,7 +42,6 @@ export const useNotificationCount = ({ workspaceId }: UseNotificationCountProps)
   const profile = useAuthStore((state) => state.profile)
   const unreadCount = useStore((state) => state.totalNotificationUnreadCount)
   const setUnreadCount = useStore((state) => state.setTotalNotificationUnreadCount)
-  const subscriptionRef = useRef<RealtimeChannel | null>(null)
   // Realtime deltas on a count that never loaded are wrong, so they stay off the icon.
   const badgeReadyRef = useRef(false)
 
@@ -83,50 +81,43 @@ export const useNotificationCount = ({ workspaceId }: UseNotificationCountProps)
 
     if (!navigator.onLine) return stop
 
-    const topic = `notifications:${profile.id}`
+    const unsubscribe = subscribePrivateTopic(`notifications:${profile.id}`, (channel) => {
+      channel.on('broadcast', { event: 'INSERT' }, (data: NotificationBroadcastPayload) => {
+        const payload = data.payload
 
-    const channel = supabaseClient.channel(topic, {
-      config: { private: true }
-    })
-
-    channel.on('broadcast', { event: 'INSERT' }, (data: NotificationBroadcastPayload) => {
-      const payload = data.payload
-
-      if (matchesWorkspace(workspaceId, payload.workspace_id)) {
-        setUnreadCount(useStore.getState().totalNotificationUnreadCount + 1)
-      }
-    })
-
-    channel.on('broadcast', { event: 'UPDATE' }, (data: NotificationBroadcastPayload) => {
-      const payload = data.payload
-      const oldRecord = payload.old_record
-      const newRecord = payload.record
-
-      if (matchesWorkspace(workspaceId, payload.workspace_id)) {
-        if (oldRecord && newRecord && !oldRecord.readed_at && newRecord.readed_at) {
-          if (wasClientRead(newRecord.id)) return
-          setUnreadCount(Math.max(0, useStore.getState().totalNotificationUnreadCount - 1))
+        if (matchesWorkspace(workspaceId, payload.workspace_id)) {
+          setUnreadCount(useStore.getState().totalNotificationUnreadCount + 1)
         }
-      }
-    })
+      })
 
-    channel.on('broadcast', { event: 'DELETE' }, (data: NotificationBroadcastPayload) => {
-      const payload = data.payload
-      const oldRecord = payload.old_record
+      channel.on('broadcast', { event: 'UPDATE' }, (data: NotificationBroadcastPayload) => {
+        const payload = data.payload
+        const oldRecord = payload.old_record
+        const newRecord = payload.record
 
-      if (matchesWorkspace(workspaceId, payload.workspace_id)) {
-        if (oldRecord && !oldRecord.readed_at) {
-          setUnreadCount(Math.max(0, useStore.getState().totalNotificationUnreadCount - 1))
+        if (matchesWorkspace(workspaceId, payload.workspace_id)) {
+          if (oldRecord && newRecord && !oldRecord.readed_at && newRecord.readed_at) {
+            if (wasClientRead(newRecord.id)) return
+            setUnreadCount(Math.max(0, useStore.getState().totalNotificationUnreadCount - 1))
+          }
         }
-      }
-    })
+      })
 
-    subscriptionRef.current = channel.subscribe()
+      channel.on('broadcast', { event: 'DELETE' }, (data: NotificationBroadcastPayload) => {
+        const payload = data.payload
+        const oldRecord = payload.old_record
+
+        if (matchesWorkspace(workspaceId, payload.workspace_id)) {
+          if (oldRecord && !oldRecord.readed_at) {
+            setUnreadCount(Math.max(0, useStore.getState().totalNotificationUnreadCount - 1))
+          }
+        }
+      })
+    })
 
     return () => {
       stop()
-      subscriptionRef.current?.unsubscribe()
-      subscriptionRef.current = null
+      unsubscribe()
     }
   }, [profile?.id, workspaceId, setUnreadCount])
 

@@ -112,6 +112,13 @@ export const useThemeStore = create<ThemeStore>()(
 
 // Track OS theme changes, but only while the preference is "system".
 if (typeof window !== 'undefined') {
+  // The theme is per browser. Another tab's pick arrives through storage and repaints on rehydrate.
+  window.addEventListener('storage', (event) => {
+    if (event.key === useThemeStore.persist.getOptions().name) {
+      void useThemeStore.persist.rehydrate()
+    }
+  })
+
   const mql = window.matchMedia('(prefers-color-scheme: dark)')
 
   mql.addEventListener('change', () => {

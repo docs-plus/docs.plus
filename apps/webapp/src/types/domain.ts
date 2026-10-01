@@ -36,7 +36,11 @@ export type TypingIndicatorPayload = {
   user: { id: string }
 }
 
-export type Profile = Omit<Database['public']['Tables']['users']['Row'], 'profile_data'> & {
+// No client can read notification_preferences; get_notification_preferences() serves the owner.
+export type Profile = Omit<
+  Database['public']['Tables']['users']['Row'],
+  'profile_data' | 'notification_preferences'
+> & {
   profile_data?: ProfileData
   channelId?: string | null
   /** Client-only, like `channelId`. Never put it in `status`: that is the Postgres enum `user_status`. */
@@ -48,7 +52,7 @@ export type Profile = Omit<Database['public']['Tables']['users']['Row'], 'profil
 
 export type ProfileUpdate = Omit<
   Database['public']['Tables']['users']['Update'],
-  'profile_data'
+  'profile_data' | 'notification_preferences'
 > & {
   profile_data?: ProfileData
 }
@@ -95,3 +99,30 @@ export type TNotificationSummary = {
 export type TTab = 'Unread' | 'Mentions' | 'Read'
 
 export type TBookmarkTab = 'in progress' | 'archive' | 'read'
+
+export type EmailFrequency = 'immediate' | 'daily' | 'weekly' | 'never'
+
+export interface EmailBounceInfo {
+  email: string
+  reason: string
+  bounced_at: string
+}
+
+export interface NotificationPreferences {
+  push_mentions?: boolean
+  push_replies?: boolean
+  push_reactions?: boolean
+  quiet_hours_enabled?: boolean
+  quiet_hours_start?: string
+  quiet_hours_end?: string
+  timezone?: string
+  email_enabled?: boolean
+  email_mentions?: boolean
+  email_replies?: boolean
+  email_reactions?: boolean
+  email_content_changes?: boolean
+  email_frequency?: EmailFrequency
+  // `null` is the "clear-on-re-enable" wire sentinel; the FE truthy-check
+  // at the banner site hides JSON-null.
+  email_bounce_info?: EmailBounceInfo | null
+}

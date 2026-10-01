@@ -1,10 +1,10 @@
-import * as toast from '@components/toast'
+import type { ProfileChange } from '@api'
 import { Avatar } from '@components/ui/Avatar'
-import Button from '@components/ui/Button'
+import Button, { dangerGhostClassName } from '@components/ui/Button'
 import Textarea from '@components/ui/Textarea'
 import TextInput from '@components/ui/TextInput'
 import { useAuthStore } from '@stores'
-import type { ProfileData } from '@types'
+import { sheetSafeAreaPadMobileClassName } from '@utils/sheetBodyPadding'
 import debounce from 'lodash/debounce'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LuCamera, LuLink, LuUser } from 'react-icons/lu'
@@ -12,14 +12,13 @@ import { LuCamera, LuLink, LuUser } from 'react-icons/lu'
 import { useAvatarUpload } from '../hooks/useAvatarUpload'
 import { useProfileUpdate } from '../hooks/useProfileUpdate'
 import { useUsernameValidation } from '../hooks/useUsernameValidation'
-import SettingsCard from './SettingsCard'
+import SettingsCard, { SettingsCardHeader } from './SettingsCard'
 import SocialLinks from './SocialLinks'
 
 const USERNAME_DEBOUNCE_MS = 1000
 
 const ProfileSection = () => {
   const user = useAuthStore((state) => state.profile)
-  const setProfile = useAuthStore((state) => state.setProfile)
   const { loading, handleSave } = useProfileUpdate()
   const { validateUsername } = useUsernameValidation()
   const { uploading, handleUpload, handleRemove } = useAvatarUpload()
@@ -33,16 +32,22 @@ const ProfileSection = () => {
   const [inputFullName, setInputFullName] = useState(user?.full_name || '')
   const [inputBio, setInputBio] = useState(user?.profile_data?.bio || '')
   const [usernameError, setUsernameError] = useState<boolean | undefined>(undefined)
+  const [usernameMessage, setUsernameMessage] = useState<string | null>(null)
   const latestUsernameRef = useRef<string>('')
 
-  // Resync only on user identity change so a different-device update of
-  // `full_name` via realtime does not clobber in-flight typing.
+  const storedUsername = user?.username || ''
+  const storedFullName = user?.full_name || ''
+  const storedBio = user?.profile_data?.bio || ''
+  const seededRef = useRef({ username: storedUsername, fullName: storedFullName, bio: storedBio })
+
+  // A save from another tab or device reaches only the fields not being edited here.
   useEffect(() => {
-    setInputUsername(user?.username || '')
-    setInputFullName(user?.full_name || '')
-    setInputBio(user?.profile_data?.bio || '')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id])
+    const seeded = seededRef.current
+    setInputUsername((value) => (value === seeded.username ? storedUsername : value))
+    setInputFullName((value) => (value === seeded.fullName ? storedFullName : value))
+    setInputBio((value) => (value === seeded.bio ? storedBio : value))
+    seededRef.current = { username: storedUsername, fullName: storedFullName, bio: storedBio }
+  }, [storedUsername, storedFullName, storedBio])
 
   const handleAvatarClick = useCallback(() => {
     fileInputRef.current?.click()
@@ -62,10 +67,9 @@ const ProfileSection = () => {
     () =>
       debounce((username: string) => {
         validateUsername(username).then(({ isValid, errorMessage }) => {
+          if (username !== latestUsernameRef.current) return
           setUsernameError(!isValid)
-          if (errorMessage && username === latestUsernameRef.current) {
-            toast.Error(errorMessage)
-          }
+          setUsernameMessage(errorMessage)
         })
       }, USERNAME_DEBOUNCE_MS),
     [validateUsername]
@@ -77,6 +81,7 @@ const ProfileSection = () => {
     const newUsername = e.target.value.toLowerCase()
     setInputUsername(newUsername)
     latestUsernameRef.current = newUsername
+    setUsernameMessage(null)
 
     if (newUsername === '') {
       setUsernameError(undefined)
@@ -97,30 +102,20 @@ const ProfileSection = () => {
   const handleSubmit = () => {
     if (!user) return
     debouncedValidate.cancel()
-    const trimmedUsername = inputUsername.trim()
-    if (trimmedUsername === '') {
-      toast.Error('Username cannot be empty.')
+    // The reason shows under the field; `handleSave` re-checks on the server path.
+    if (inputUsername.trim() === '') {
+      setUsernameError(true)
+      setUsernameMessage('Username cannot be empty.')
       return
     }
-    // Only block on a known-bad username. `undefined` means the user
-    // never edited the field (or the debounce hasn't fired) — the
-    // server-side `validateUsername` inside `handleSave` will catch
-    // anything the FE missed.
-    if (usernameError === true) {
-      toast.Error('Fix the username before saving.')
-      return
-    }
-    const nextProfileData: ProfileData = {
-      ...((user.profile_data as ProfileData) ?? {}),
-      bio: inputBio
-    }
-    setProfile({
-      ...user,
-      username: inputUsername,
-      full_name: inputFullName,
-      profile_data: nextProfileData
-    })
-    handleSave()
+    if (usernameError === true) return
+    // Only what differs: an unchanged field must not overwrite a newer value from elsewhere.
+    const change: ProfileChange = {}
+    if (inputUsername !== storedUsername) change.username = inputUsername
+    if (inputFullName !== storedFullName) change.full_name = inputFullName
+    if (inputBio !== storedBio) change.profile_data = { bio: inputBio }
+    if (Object.keys(change).length === 0) return
+    void handleSave(change, 'Profile saved.')
   }
 
   return (
@@ -155,17 +150,17 @@ const ProfileSection = () => {
               aria-label="Choose profile picture file"
             />
           </div>
-          <div className="flex flex-col gap-2">
-            <h2 className="text-base-content text-base font-semibold">Profile Picture</h2>
-            <p className="text-base-content/60 text-sm">
-              Upload a photo (JPEG, PNG, WebP, or AVIF — max 256KB)
-            </p>
-            <div className="flex gap-2">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <h3 className="text-base-content text-base font-semibold">Profile picture</h3>
+              <p className="text-meta text-base-content/60">
+                Upload a photo (JPEG, PNG, WebP, or AVIF — max 256KB)
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
               <Button
                 onClick={handleAvatarClick}
-                variant="info"
-                btnStyle="soft"
-                size="sm"
+                variant="quiet"
                 disabled={uploading}
                 startIcon={LuCamera}>
                 Upload
@@ -173,9 +168,10 @@ const ProfileSection = () => {
               {hasCustomAvatar && (
                 <Button
                   onClick={handleRemove}
+                  disabled={uploading}
                   variant="ghost"
                   size="sm"
-                  className="text-base-content/60 hover:text-error">
+                  className={dangerGhostClassName}>
                   Remove
                 </Button>
               )}
@@ -185,26 +181,22 @@ const ProfileSection = () => {
       </SettingsCard>
 
       <SettingsCard>
-        <div className="mb-3 flex items-center gap-2">
-          <LuUser size={20} className="text-primary" />
-          <h2 className="text-base-content text-base font-semibold">Account Information</h2>
-        </div>
+        <SettingsCardHeader icon={LuUser} title="Account information" />
         <div className="grid gap-4 sm:grid-cols-2">
           <TextInput
-            label="Full Name"
-            labelPosition="floating"
-            placeholder="Full Name"
+            label="Full name"
+            labelPosition="above"
             value={inputFullName}
             onChange={handleFullNameChange}
           />
 
           <TextInput
             label="Username"
-            labelPosition="floating"
-            placeholder="Username"
+            labelPosition="above"
             value={inputUsername}
             onChange={handleUsernameChange}
             error={usernameError === true}
+            helperText={usernameMessage ?? undefined}
             success={usernameError === false}
           />
         </div>
@@ -212,8 +204,7 @@ const ProfileSection = () => {
         <div className="mt-4">
           <Textarea
             label="About"
-            labelPosition="floating"
-            placeholder="About"
+            labelPosition="above"
             value={inputBio}
             onChange={handleBioChange}
             rows={4}
@@ -222,15 +213,11 @@ const ProfileSection = () => {
       </SettingsCard>
 
       <SettingsCard>
-        <div className="mb-3">
-          <div className="flex items-center gap-2">
-            <LuLink size={20} className="text-primary" />
-            <h2 className="text-base-content text-base font-semibold">Connect & Social Links</h2>
-          </div>
-          <p className="text-base-content/60 mt-0.5 pl-7 text-sm">
-            Add your profiles so others can connect with you.
-          </p>
-        </div>
+        <SettingsCardHeader
+          icon={LuLink}
+          title="Connect & social links"
+          description="Add your profiles so others can connect with you."
+        />
         <SocialLinks onSave={handleSave} saveLoading={loading} />
       </SettingsCard>
 
@@ -238,15 +225,15 @@ const ProfileSection = () => {
       <div className="h-16" />
 
       {/* Save Button — sticky footer; bg must match ScrollArea bg in SettingsPanel (base-200) */}
-      <div className="bg-base-200 border-base-300 sticky bottom-0 -mx-4 border-t px-4 py-4 max-md:pb-[max(1rem,env(safe-area-inset-bottom))] sm:-mx-6 sm:px-6">
+      <div
+        className={`bg-base-200 border-base-300 sticky bottom-0 -mx-4 border-t px-4 py-4 ${sheetSafeAreaPadMobileClassName} sm:-mx-6 sm:px-6`}>
         <Button
           onClick={handleSubmit}
-          disabled={loading}
           loading={loading}
           variant="primary"
           shape="block"
           className="font-semibold">
-          Save Changes
+          Save changes
         </Button>
       </div>
     </div>

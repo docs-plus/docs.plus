@@ -1,7 +1,7 @@
 import { supabaseClient } from '@utils/supabase'
 
 /**
- * Partial JSONB merge into `users.profile_data.notification_preferences`.
+ * Partial JSONB merge into `users.notification_preferences`. Returns the merged object.
  * The caller passes typed-but-loose at this boundary so the `@api` layer
  * does not depend on `@components/settings` types.
  */
