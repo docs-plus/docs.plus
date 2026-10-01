@@ -8,6 +8,7 @@ type Props = {
   isOpen: boolean
   className?: string
   avatarLoaderRepeat?: number
+  inMenu?: boolean
 }
 
 export function MessageMenuReadStatus({ message, ...rest }: Props) {
