@@ -16,7 +16,7 @@
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: <%= it.frame === 'sheet' ? it.h.COLORS.padWell : it.h.COLORS.outerBg %>;">
     <tr>
       <td align="center" style="padding: <%= it.frame === 'sheet' ? '32px 16px' : '40px 20px' %>;">
-        <table role="presentation" class="content" width="<%= it.frame === 'sheet' ? '100%' : '600' %>" cellpadding="0" cellspacing="0" style="<%= it.frame === 'sheet' ? 'max-width: 960px; background-color: ' + it.h.COLORS.white + '; border: 1px solid ' + it.h.COLORS.sheetBorder + '; border-radius: 10px;' : 'background-color: ' + it.h.COLORS.white + '; border-radius: ' + it.h.RADIUS.xl + '; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);' %>">
+        <table role="presentation" class="content" width="<%= it.frame === 'sheet' ? '100%' : '600' %>" cellpadding="0" cellspacing="0" style="<%= it.frame === 'sheet' ? 'max-width: 960px; background-color: ' + it.h.COLORS.white + '; border: 1px solid ' + it.h.COLORS.sheetBorder + '; border-radius: ' + it.h.RADIUS.lg + ';' : 'background-color: ' + it.h.COLORS.white + '; border: 1px solid ' + it.h.COLORS.sheetBorder + '; border-radius: ' + it.h.RADIUS.lg + '; overflow: hidden;' %>">
 <% if (it.frame !== 'sheet') { %>
           <tr>
             <td style="background: <%= it.h.COLORS.primary %>; padding: <%= it.h.SPACING.xl %> <%= it.h.SPACING.xxl %>; text-align: center;">
@@ -32,10 +32,10 @@
 <% if (it.frame !== 'sheet') { %>
           <tr>
             <td style="padding: <%= it.h.SPACING.xl %> <%= it.h.SPACING.xxl %>; border-top: 1px solid <%= it.h.COLORS.border %>; background-color: <%= it.h.COLORS.background %>;">
-              <p style="margin: 0 0 <%= it.h.SPACING.sm %>; color: <%= it.h.COLORS.textLight %>; font-size: 12px; text-align: center; line-height: 1.5;">
+              <p style="margin: 0 0 <%= it.h.SPACING.sm %>; color: <%= it.h.COLORS.textMeta %>; font-size: 12px; text-align: center; line-height: 1.5;">
                 You're receiving this because you have email notifications enabled.
               </p>
-              <p style="margin: 0; color: <%= it.h.COLORS.textLight %>; font-size: 12px; text-align: center;">
+              <p style="margin: 0; color: <%= it.h.COLORS.textMeta %>; font-size: 12px; text-align: center;">
                 <%~ it.footerHtml %>
               </p>
             </td>
@@ -44,7 +44,7 @@
         </table>
 
         <!-- Copyright -->
-        <p style="margin: <%= it.h.SPACING.xl %> 0 0; color: <%= it.h.COLORS.textLight %>; font-size: 11px; text-align: center;">
+        <p style="margin: <%= it.h.SPACING.xl %> 0 0; color: <%= it.h.COLORS.textMeta %>; font-size: 11px; text-align: center;">
           &copy; <%= it.year %> <%= it.h.APP_NAME %>. All rights reserved.
         </p>
       </td>

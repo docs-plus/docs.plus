@@ -48,7 +48,7 @@
       <strong style="color: <%= it.h.COLORS.text %>; font-size: 13px;">ID</strong>
     </td>
     <td style="padding: <%= it.h.SPACING.sm %> 0; border-bottom: 1px solid <%= it.h.COLORS.border %>;">
-      <code style="background: <%= it.h.COLORS.borderLight %>; padding: 2px 6px; border-radius: 4px; font-size: 11px; color: <%= it.h.COLORS.textLight %>;"><%= it.documentId %></code>
+      <code style="background: <%= it.h.COLORS.borderLight %>; padding: 2px 6px; border-radius: 4px; font-size: 11px; color: <%= it.h.COLORS.textMeta %>;"><%= it.documentId %></code>
     </td>
   </tr>
   <tr>

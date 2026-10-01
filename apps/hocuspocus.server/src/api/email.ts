@@ -379,10 +379,8 @@ emailRouter.get('/unsubscribe', async (c) => {
   if (!token) {
     return c.html(
       renderUnsubscribePage({
-        success: false,
-        title: 'Invalid Link',
-        message: 'This unsubscribe link is missing required information.',
-        showManageLink: true
+        title: 'Invalid link',
+        message: 'This unsubscribe link is missing required information.'
       })
     )
   }
@@ -393,10 +391,8 @@ emailRouter.get('/unsubscribe', async (c) => {
     if (outcome.status === 'unconfigured') {
       return c.html(
         renderUnsubscribePage({
-          success: false,
-          title: 'Service Error',
-          message: 'Unable to process your request. Please try again later.',
-          showManageLink: true
+          title: 'Service error',
+          message: 'Unable to process your request. Please try again later.'
         })
       )
     }
@@ -404,10 +400,8 @@ emailRouter.get('/unsubscribe', async (c) => {
     if (outcome.status === 'failed') {
       return c.html(
         renderUnsubscribePage({
-          success: false,
           title: 'Error',
-          message: 'Unable to process your request. Please try again later.',
-          showManageLink: true
+          message: 'Unable to process your request. Please try again later.'
         })
       )
     }
@@ -425,33 +419,26 @@ emailRouter.get('/unsubscribe', async (c) => {
 
       return c.html(
         renderUnsubscribePage({
-          success: true,
           title: 'Unsubscribed',
           message: result.message || 'You have been unsubscribed successfully.',
           email: result.email,
-          showManageLink: true,
-          showUndoLink: true,
-          token: token
+          showHomeLink: true
         })
       )
     }
 
     return c.html(
       renderUnsubscribePage({
-        success: false,
-        title: 'Unable to Unsubscribe',
-        message: result.message || 'The unsubscribe link is invalid or has expired.',
-        showManageLink: true
+        title: 'Unable to unsubscribe',
+        message: result.message || 'The unsubscribe link is invalid or has expired.'
       })
     )
   } catch (err) {
     emailLogger.error({ err }, 'Error processing unsubscribe')
     return c.html(
       renderUnsubscribePage({
-        success: false,
         title: 'Error',
-        message: 'An unexpected error occurred. Please try again later.',
-        showManageLink: true
+        message: 'An unexpected error occurred. Please try again later.'
       })
     )
   }

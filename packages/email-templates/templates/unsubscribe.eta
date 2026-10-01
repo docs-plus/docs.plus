@@ -3,83 +3,159 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= it.title %> - <%= it.appName %></title>
+  <title><%= it.title %> - <%= it.h.APP_NAME %></title>
+  <!-- A server-rendered twin of the webapp PageCard (design-system.md §PageCard). -->
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { color-scheme: light dark; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+      font-family: <%~ it.h.FONT_STACK %>;
+      background: <%= it.h.COLORS.padWell %>;
+      color: <%= it.h.COLORS.text %>;
+      -webkit-font-smoothing: antialiased;
+    }
+    main {
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 32px 16px;
+    }
+    .column {
+      width: min(100%, 400px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    a:focus-visible {
+      outline: 2px solid <%= it.h.COLORS.primary %>;
+      outline-offset: 2px;
+    }
+    .brand {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      border-radius: <%= it.h.RADIUS.md %>;
+      color: <%= it.h.COLORS.text %>;
+      text-decoration: none;
+      font-size: 18px;
+      line-height: 28px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
     }
     .card {
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-      padding: 48px;
-      max-width: 480px;
-      width: 100%;
-      text-align: center;
+      background: <%= it.h.COLORS.white %>;
+      border: 1px solid <%= it.h.COLORS.sheetBorder %>;
+      border-radius: <%= it.h.RADIUS.lg %>;
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      overflow: hidden;
     }
-    .icon { margin-bottom: 24px; }
+    .body {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 24px;
+    }
+    .heading {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
     h1 {
-      color: #1f2937;
-      font-size: 24px;
+      font-size: 20px;
+      line-height: 28px;
       font-weight: 600;
-      margin-bottom: 12px;
+      text-wrap: balance;
     }
     .message {
-      color: #6b7280;
-      font-size: 16px;
-      line-height: 1.6;
-      margin-bottom: 8px;
-    }
-    .email {
-      color: #9ca3af;
+      color: <%= it.h.COLORS.textMuted %>;
       font-size: 14px;
-      margin-bottom: 32px;
+      line-height: 20px;
     }
-    .actions { margin-top: 24px; }
-    .logo {
-      margin-top: 32px;
-      padding-top: 24px;
-      border-top: 1px solid #e5e7eb;
-    }
-    .logo-text {
-      color: #9ca3af;
+    .primary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 0 16px;
+      border-radius: <%= it.h.RADIUS.md %>;
+      background: <%= it.h.COLORS.primary %>;
+      color: <%= it.h.COLORS.white %>;
+      text-decoration: none;
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 600;
+    }
+    .strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px 16px;
+      min-height: 48px;
+      padding: 14px 24px;
+      border-top: 1px solid <%= it.h.COLORS.sheetBorder %>;
+      color: <%= it.h.COLORS.textMeta %>;
+      font-size: 13px;
+      line-height: 20px;
+    }
+    .email { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+    .strip nav { margin-left: auto; }
+    .quiet {
+      display: inline-flex;
+      align-items: center;
+      min-height: 40px;
+      margin: -10px 0;
+      color: <%= it.h.COLORS.primary %>;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    /* A web page, not mail: copy the webapp default dark theme (globals.scss). */
+    @media (prefers-color-scheme: dark) {
+      body { background: #0f172a; }
+      body, .brand { color: #e5e7eb; }
+      .card { background: #0b1220; border-color: #2d3f57; }
+      .strip { border-top-color: #2d3f57; }
+      .message, .strip { color: #a4a7ae; }
+      .primary { background: #6ea8ff; color: #0b1220; }
+      .quiet { color: #6ea8ff; }
+      a:focus-visible { outline-color: #6ea8ff; }
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="icon">
-      <% if (it.success) { %>
-        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-      <% } else { %>
-        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-      <% } %>
+  <main>
+    <div class="column">
+      <a class="brand" href="<%= it.h.APP_URL %>" aria-label="<%= it.h.APP_NAME %> home">
+        <img src="<%= it.h.APP_URL %>/icons/logo.svg" width="24" height="24" alt="">
+        <span><%= it.h.APP_NAME %></span>
+      </a>
+      <article class="card" aria-labelledby="unsubscribe-title">
+        <div class="body">
+          <div class="heading">
+            <h1 id="unsubscribe-title"><%= it.title %></h1>
+            <p class="message"><%= it.message %></p>
+          </div>
+          <% if (it.manageUrl) { %>
+          <a class="primary" href="<%= it.manageUrl %>">Manage preferences</a>
+          <% } %>
+        </div>
+        <% if (it.email || it.homeUrl) { %>
+        <div class="strip">
+          <% if (it.email) { %>
+          <p class="email"><%= it.email %></p>
+          <% } %>
+          <% if (it.homeUrl) { %>
+          <nav aria-label="Other pages">
+            <a class="quiet" href="<%= it.homeUrl %>">Go to <%= it.h.APP_NAME %></a>
+          </nav>
+          <% } %>
+        </div>
+        <% } %>
+      </article>
     </div>
-    <h1><%= it.title %></h1>
-    <p class="message"><%= it.message %></p>
-    <% if (it.email) { %>
-    <p class="email"><%= it.email %></p>
-    <% } %>
-    <% if (it.actions && it.actions.length > 0) { %>
-    <div class="actions">
-      <% it.actions.forEach(function(action) { %>
-        <%~ action %>
-      <% }) %>
-    </div>
-    <% } %>
-    <div class="logo">
-      <span class="logo-text"><%= it.appName %></span>
-    </div>
-  </div>
+  </main>
 </body>
 </html>
-

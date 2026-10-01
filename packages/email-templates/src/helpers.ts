@@ -32,7 +32,7 @@ export function avatar(name: string, avatarUrl?: string, size: number = 40): str
   const initial = (name || 'U').charAt(0).toUpperCase()
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="width: ${size}px; height: ${size}px; border-radius: 50%; background: ${COLORS.primary};">
     <tr>
-      <td align="center" valign="middle" style="color: ${COLORS.white}; font-weight: 600; font-size: ${fontSize}px; font-family: Arial, sans-serif;">
+      <td align="center" valign="middle" style="color: ${COLORS.white}; font-weight: 600; font-size: ${fontSize}px; font-family: ${FONT_STACK};">
         ${initial}
       </td>
     </tr>
@@ -186,7 +186,7 @@ export function digestNotificationsUrl(documents: ReadonlyArray<{ url: string }>
 export function changeRunStyle(kind: DigestChangeRun['kind']): string {
   if (kind === 'added') return `background-color:${COLORS.addedWash};border-radius:2px;`
   if (kind === 'removed') {
-    return `background-color:${COLORS.removedWash};color:${COLORS.textMuted};text-decoration:line-through;border-radius:2px;`
+    return `background-color:${COLORS.removedWash};color:${COLORS.removedInk};text-decoration:line-through;border-radius:2px;`
   }
   return ''
 }

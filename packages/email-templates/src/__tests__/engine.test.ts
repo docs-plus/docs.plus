@@ -634,50 +634,36 @@ describe('renderNewDocumentEmail', () => {
 
 describe('renderUnsubscribePage', () => {
   it('renders success state', () => {
-    const html = renderUnsubscribePage({ success: true, title: 'Unsubscribed', message: 'Done.' })
+    const html = renderUnsubscribePage({ title: 'Unsubscribed', message: 'Done.' })
     expect(html).toContain('<!DOCTYPE html>')
     expect(html).toContain('Unsubscribed')
     expect(html).toContain('Done.')
-    expect(html).toContain('#10b981')
   })
 
   it('renders error state', () => {
-    const html = renderUnsubscribePage({ success: false, title: 'Error', message: 'Expired.' })
+    const html = renderUnsubscribePage({ title: 'Error', message: 'Expired.' })
     expect(html).toContain('Error')
     expect(html).toContain('Expired.')
-    expect(html).toContain('#ef4444')
   })
 
-  it('shows manage preferences link when requested', () => {
-    const html = renderUnsubscribePage({
-      success: true,
-      title: 'OK',
-      message: 'OK',
-      showManageLink: true
-    })
-    expect(html).toContain('Manage Preferences')
+  it('always shows the manage preferences link', () => {
+    const html = renderUnsubscribePage({ title: 'OK', message: 'OK' })
+    expect(html).toContain('Manage preferences')
     expect(html).toContain('/#settings?tab=notifications')
   })
 
-  it('shows undo link when token provided', () => {
-    const html = renderUnsubscribePage({
-      success: true,
-      title: 'OK',
-      message: 'OK',
-      showUndoLink: true,
-      token: 'abc123'
-    })
+  it('shows the home link when requested', () => {
+    const html = renderUnsubscribePage({ title: 'OK', message: 'OK', showHomeLink: true })
     expect(html).toContain('Go to docs.plus')
   })
 
   it('hides email when not provided', () => {
-    const html = renderUnsubscribePage({ success: true, title: 'OK', message: 'OK' })
+    const html = renderUnsubscribePage({ title: 'OK', message: 'OK' })
     expect(html).not.toContain('class="email"')
   })
 
   it('shows email when provided', () => {
     const html = renderUnsubscribePage({
-      success: true,
       title: 'OK',
       message: 'OK',
       email: 'jane@example.com'
@@ -687,23 +673,18 @@ describe('renderUnsubscribePage', () => {
 
   it('snapshot — success', () => {
     const html = renderUnsubscribePage({
-      success: true,
       title: 'Unsubscribed',
       message: 'You have been unsubscribed.',
       email: 'jane@example.com',
-      showManageLink: true,
-      showUndoLink: true,
-      token: 'tok_abc'
+      showHomeLink: true
     })
     expect(html).toMatchSnapshot()
   })
 
   it('snapshot — error', () => {
     const html = renderUnsubscribePage({
-      success: false,
       title: 'Invalid Link',
-      message: 'The link is expired.',
-      showManageLink: true
+      message: 'The link is expired.'
     })
     expect(html).toMatchSnapshot()
   })
@@ -747,7 +728,6 @@ describe('XSS protection (autoEscape)', () => {
 
   it('escapes HTML in unsubscribe page title', () => {
     const html = renderUnsubscribePage({
-      success: true,
       title: '<script>alert("xss")</script>',
       message: 'test'
     })
@@ -757,7 +737,6 @@ describe('XSS protection (autoEscape)', () => {
 
   it('escapes HTML in unsubscribe page message', () => {
     const html = renderUnsubscribePage({
-      success: true,
       title: 'Test',
       message: '<img src=x onerror=alert(1)>'
     })
@@ -837,8 +816,7 @@ describe('buildListUnsubscribeHeaders', () => {
 describe('design tokens', () => {
   it('uses FONT_STACK from tokens in base layout', () => {
     const html = renderNotificationEmail(NOTIFICATION_PARAMS)
-    expect(html).toContain('BlinkMacSystemFont')
-    expect(html).toContain("'Segoe UI'") // raw output via <%~ %> for trusted token
+    expect(html).toContain('font-family: Helvetica, Arial, sans-serif;')
   })
 
   it('uses COLORS.primary in header', () => {

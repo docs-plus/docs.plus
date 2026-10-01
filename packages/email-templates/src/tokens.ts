@@ -5,29 +5,27 @@ export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL ||
 
 export const COLORS = {
   primary: '#1a73e8', // --color-primary (docs blue)
-  primaryLight: '#e8f0fe', // light blue bg (cards, highlights)
-  secondary: '#0f9d7a', // --color-secondary (teal-green)
 
-  text: '#1f2937', // gray-800  (--bc / base-content)
-  textMuted: '#6b7280', // gray-500
-  textLight: '#9ca3af', // gray-400
+  text: '#1f2937', // close to base-content (#0f172a)
+  textMuted: '#69707e', // gray-500 one step darker: 4.5:1 on borderLight (code chips)
+  // Footer and meta lines: at least 4.5:1 on every ground, down to padWell.
+  textMeta: '#636a76',
 
-  border: '#e5e7eb', // gray-200  (--b3 / base-300)
+  border: '#e5e7eb', // close to base-300 (#dce3ed)
   borderLight: '#f3f4f6', // gray-100
 
-  background: '#f9fafb', // gray-50   (--b1 / base-100 area bg)
+  background: '#f9fafb', // footer and card ground, close to base-100 (#ffffff)
   outerBg: '#f5f5f5', // email body bg
-  padWell: '#eef1f6', // pad workspace well
-  sheetBorder: '#dce3ed', // document sheet edge
+  padWell: '#eef1f6', // base-200, the pad workspace well
+  sheetBorder: '#dce3ed', // base-300, the document sheet edge
 
   white: '#ffffff',
 
-  // Status (only used in unsubscribe page)
-  success: '#10b981', // emerald-500
-  error: '#ef4444', // red-500
   // History compare uses a light wash. Mail cannot mix colours, so these are the washes.
   addedWash: '#d1fae5',
-  removedWash: '#fee2e2'
+  removedWash: '#fee2e2',
+  // Close to History's base-content/70 on the wash; 6.2:1 on removedWash.
+  removedInk: '#4b5563'
 } as const
 
 export const SPACING = {
@@ -40,12 +38,10 @@ export const SPACING = {
 } as const
 
 export const RADIUS = {
-  sm: '6px',
   md: '8px', // --radius-field
-  lg: '10px', // --radius-box small
-  xl: '12px' // card radius
+  lg: '10px' // --radius-box
 } as const
 
-// System font stack — email-safe.
-export const FONT_STACK =
-  "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+// The app type stack (--font-sans); already email-safe. No double quotes:
+// base.eta writes it raw into a style attribute.
+export const FONT_STACK = 'Helvetica, Arial, sans-serif'

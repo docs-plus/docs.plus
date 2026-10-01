@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url'
 
 import type { DigestBlock } from './digestWalk'
 import { type EmailFooter, templateHelpers } from './helpers'
-import { APP_NAME, APP_URL, COLORS, RADIUS } from './tokens'
+import { APP_NAME, APP_URL, COLORS } from './tokens'
 import type { DigestDocument, NotificationType } from './types'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -96,34 +96,22 @@ export function renderNewDocumentEmail(params: {
 
 /** Standalone HTML page — no email base layout. */
 export function renderUnsubscribePage(params: {
-  success: boolean
   title: string
   message: string
   email?: string
-  showManageLink?: boolean
-  showUndoLink?: boolean
-  token?: string
+  showHomeLink?: boolean
 }): string {
-  const actions: string[] = []
-
-  if (params.showManageLink) {
-    actions.push(
-      `<a href="${APP_URL}/#settings?tab=notifications" style="display: inline-block; background: ${COLORS.primary}; color: ${COLORS.white}; text-decoration: none; padding: 12px 24px; border-radius: ${RADIUS.md}; font-size: 14px; font-weight: 500; margin: 8px;">Manage Preferences</a>`
-    )
-  }
-
-  if (params.showUndoLink && params.token) {
-    actions.push(
-      `<a href="${APP_URL}" style="display: inline-block; background: ${COLORS.white}; color: ${COLORS.primary}; text-decoration: none; padding: 12px 24px; border-radius: ${RADIUS.md}; font-size: 14px; font-weight: 500; border: 1px solid ${COLORS.primary}; margin: 8px;">Go to ${APP_NAME}</a>`
-    )
-  }
-
-  return eta.render('unsubscribe', {
-    ...params,
-    appName: APP_NAME,
-    appUrl: APP_URL,
-    actions
-  })
+  // PageCard twin: Manage is the one body primary; Go to docs.plus is the strip way out.
+  return eta.render(
+    'unsubscribe',
+    baseData({
+      title: params.title,
+      message: params.message,
+      email: params.email,
+      manageUrl: `${APP_URL}/#settings?tab=notifications`,
+      homeUrl: params.showHomeLink ? APP_URL : undefined
+    })
+  )
 }
 
 /** Takes a raw `string`, not `NotificationType`: it reads database text and answers for anything. */
