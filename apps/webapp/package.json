@@ -115,7 +115,7 @@
     "@types/react-dom": "^19.2.7",
     "babel-loader": "^10.1.1",
     "babel-plugin-istanbul": "^8.0.0",
-    "cypress": "^15.21.1",
+    "cypress": "^16.1.0",
     "cypress-real-events": "^1.15.0",
     "cypress-split": "^1.25.0",
     "eslint": "catalog:",
