@@ -101,7 +101,8 @@ export function renderUnsubscribePage(params: {
   email?: string
   showHomeLink?: boolean
 }): string {
-  // PageCard twin: Manage is the one body primary; Go to docs.plus is the strip way out.
+  // A server-rendered twin of the webapp PageCard (design-system.md §PageCard).
+  // Manage is the one body primary; Go to docs.plus is the strip way out.
   return eta.render(
     'unsubscribe',
     baseData({

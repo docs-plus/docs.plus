@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= it.title %> - <%= it.h.APP_NAME %></title>
-  <!-- A server-rendered twin of the webapp PageCard (design-system.md §PageCard). -->
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root { color-scheme: light dark; }
@@ -138,9 +137,7 @@
             <h1 id="unsubscribe-title"><%= it.title %></h1>
             <p class="message"><%= it.message %></p>
           </div>
-          <% if (it.manageUrl) { %>
           <a class="primary" href="<%= it.manageUrl %>">Manage preferences</a>
-          <% } %>
         </div>
         <% if (it.email || it.homeUrl) { %>
         <div class="strip">

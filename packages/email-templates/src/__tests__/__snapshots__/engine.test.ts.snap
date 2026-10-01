@@ -15,11 +15,11 @@ exports[`renderNotificationEmail snapshot 1`] = `
   </style>
   <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; -webkit-font-smoothing: antialiased;">
+<body style="margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; background-color: #f5f5f5; -webkit-font-smoothing: antialiased;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" class="content" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
+        <table role="presentation" class="content" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border: 1px solid #dce3ed; border-radius: 10px; overflow: hidden;">
 
           <tr>
             <td style="background: #1a73e8; padding: 24px 32px; text-align: center;">
@@ -34,7 +34,7 @@ exports[`renderNotificationEmail snapshot 1`] = `
 </p>
 
 
-<p style="margin: 0 0 16px; color: #6b7280; font-size: 13px;">
+<p style="margin: 0 0 16px; color: #69707e; font-size: 13px;">
   
     <span style="color: #1f2937; font-weight: 500;">API Documentation</span>
   
@@ -54,7 +54,7 @@ exports[`renderNotificationEmail snapshot 1`] = `
           <td width="56" valign="top">
             <table role="presentation" cellpadding="0" cellspacing="0" style="width: 44px; height: 44px; border-radius: 50%; background: #1a73e8;">
     <tr>
-      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 17px; font-family: Arial, sans-serif;">
+      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 17px; font-family: Helvetica, Arial, sans-serif;">
         J
       </td>
     </tr>
@@ -65,7 +65,7 @@ exports[`renderNotificationEmail snapshot 1`] = `
               John Doe mentioned you
             </p>
             
-            <p style="margin: 0; color: #6b7280; font-size: 15px; line-height: 1.5;">
+            <p style="margin: 0; color: #69707e; font-size: 15px; line-height: 1.5;">
               "Hey @Jane, can you review the API docs?"
             </p>
             
@@ -91,10 +91,10 @@ exports[`renderNotificationEmail snapshot 1`] = `
 
           <tr>
             <td style="padding: 24px 32px; border-top: 1px solid #e5e7eb; background-color: #f9fafb;">
-              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px; text-align: center; line-height: 1.5;">
+              <p style="margin: 0 0 8px; color: #636a76; font-size: 12px; text-align: center; line-height: 1.5;">
                 You're receiving this because you have email notifications enabled.
               </p>
-              <p style="margin: 0; color: #9ca3af; font-size: 12px; text-align: center;">
+              <p style="margin: 0; color: #636a76; font-size: 12px; text-align: center;">
                 
     <a href="https://docs.plus/#settings?tab=notifications" style="color: #1a73e8; text-decoration: none;">Manage preferences</a>
     <span style="color: #e5e7eb; margin: 0 8px;">|</span>
@@ -107,7 +107,7 @@ exports[`renderNotificationEmail snapshot 1`] = `
         </table>
 
         <!-- Copyright -->
-        <p style="margin: 24px 0 0; color: #9ca3af; font-size: 11px; text-align: center;">
+        <p style="margin: 24px 0 0; color: #636a76; font-size: 11px; text-align: center;">
           &copy; 2026 docs.plus. All rights reserved.
         </p>
       </td>
@@ -134,7 +134,7 @@ exports[`buildDigestEmail snapshot 1`] = `
   </style>
   <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #eef1f6; -webkit-font-smoothing: antialiased;">
+<body style="margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; background-color: #eef1f6; -webkit-font-smoothing: antialiased;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #eef1f6;">
     <tr>
       <td align="center" style="padding: 32px 16px;">
@@ -168,7 +168,7 @@ exports[`buildDigestEmail snapshot 1`] = `
                 </td>
                 <td valign="middle"><table role="presentation" cellpadding="0" cellspacing="0" style="width: 48px; height: 48px; border-radius: 50%; background: #1a73e8;">
     <tr>
-      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 19px; font-family: Arial, sans-serif;">
+      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 19px; font-family: Helvetica, Arial, sans-serif;">
         J
       </td>
     </tr>
@@ -194,7 +194,7 @@ exports[`buildDigestEmail snapshot 1`] = `
   <tr>
     <td width="40" valign="top"><table role="presentation" cellpadding="0" cellspacing="0" style="width: 32px; height: 32px; border-radius: 50%; background: #1a73e8;">
     <tr>
-      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 12px; font-family: Arial, sans-serif;">
+      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 12px; font-family: Helvetica, Arial, sans-serif;">
         J
       </td>
     </tr>
@@ -203,7 +203,7 @@ exports[`buildDigestEmail snapshot 1`] = `
       <p style="margin: 0; color: #1f2937; font-size: 14px; font-weight: 600; line-height: 1.3;">
         <span style="color: #1a73e8;">@</span> John Doe
       </p>
-      <p style="margin: 2px 0 0; color: #6b7280; font-size: 13px; line-height: 1.4;">Hey @Jane, review the auth section?</p>
+      <p style="margin: 2px 0 0; color: #69707e; font-size: 13px; line-height: 1.4;">Hey @Jane, review the auth section?</p>
     </td>
     <td width="48" align="right" valign="middle">
       <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #1a73e8; font-size: 13px; font-weight: 600; text-decoration: none;">View</a>
@@ -217,7 +217,7 @@ exports[`buildDigestEmail snapshot 1`] = `
   <tr>
     <td width="40" valign="top"><table role="presentation" cellpadding="0" cellspacing="0" style="width: 32px; height: 32px; border-radius: 50%; background: #1a73e8;">
     <tr>
-      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 12px; font-family: Arial, sans-serif;">
+      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 12px; font-family: Helvetica, Arial, sans-serif;">
         A
       </td>
     </tr>
@@ -226,7 +226,7 @@ exports[`buildDigestEmail snapshot 1`] = `
       <p style="margin: 0; color: #1f2937; font-size: 14px; font-weight: 600; line-height: 1.3;">
         <span style="color: #1a73e8;">↩</span> Alice Chen
       </p>
-      <p style="margin: 2px 0 0; color: #6b7280; font-size: 13px; line-height: 1.4;">Added rate limiting docs.</p>
+      <p style="margin: 2px 0 0; color: #69707e; font-size: 13px; line-height: 1.4;">Added rate limiting docs.</p>
     </td>
     <td width="48" align="right" valign="middle">
       <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #1a73e8; font-size: 13px; font-weight: 600; text-decoration: none;">View</a>
@@ -238,7 +238,7 @@ exports[`buildDigestEmail snapshot 1`] = `
 
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 22px 0 28px; border-top: 1px solid #dce3ed;">
   <tr>
-    <td valign="middle" style="padding-top: 10px; color: #6b7280; font-size: 12px; line-height: 1.4;"></td>
+    <td valign="middle" style="padding-top: 10px; color: #69707e; font-size: 12px; line-height: 1.4;"></td>
     <td align="right" valign="middle" style="padding-top: 10px; font-size: 12px; white-space: nowrap;">
     <a href="https://docs.plus/#settings?tab=notifications" style="color: #1a73e8; text-decoration: none;">Manage preferences</a>
     <span style="color: #e5e7eb; margin: 0 8px;">|</span>
@@ -255,7 +255,7 @@ exports[`buildDigestEmail snapshot 1`] = `
         </table>
 
         <!-- Copyright -->
-        <p style="margin: 24px 0 0; color: #9ca3af; font-size: 11px; text-align: center;">
+        <p style="margin: 24px 0 0; color: #636a76; font-size: 11px; text-align: center;">
           &copy; 2026 docs.plus. All rights reserved.
         </p>
       </td>
@@ -282,7 +282,7 @@ exports[`buildDigestEmail snapshot — content changes 1`] = `
   </style>
   <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #eef1f6; -webkit-font-smoothing: antialiased;">
+<body style="margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; background-color: #eef1f6; -webkit-font-smoothing: antialiased;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #eef1f6;">
     <tr>
       <td align="center" style="padding: 32px 16px;">
@@ -316,7 +316,7 @@ exports[`buildDigestEmail snapshot — content changes 1`] = `
                 </td>
                 <td valign="middle"><table role="presentation" cellpadding="0" cellspacing="0" style="width: 48px; height: 48px; border-radius: 50%; background: #1a73e8;">
     <tr>
-      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 19px; font-family: Arial, sans-serif;">
+      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 19px; font-family: Helvetica, Arial, sans-serif;">
         J
       </td>
     </tr>
@@ -345,7 +345,7 @@ exports[`buildDigestEmail snapshot — content changes 1`] = `
 
 
 <p style="margin: 12px 0 0; color: #1f2937; font-size: 15px; line-height: 1.45;">
-<span style="">Retries use </span><span style="background-color:#fee2e2;color:#6b7280;text-decoration:line-through;border-radius:2px;">a new</span><span style="background-color:#d1fae5;border-radius:2px;">the same</span><span style=""> key.</span>
+<span style="">Retries use </span><span style="background-color:#fee2e2;color:#4b5563;text-decoration:line-through;border-radius:2px;">a new</span><span style="background-color:#d1fae5;border-radius:2px;">the same</span><span style=""> key.</span>
 </p>
 
 
@@ -360,7 +360,7 @@ exports[`buildDigestEmail snapshot — content changes 1`] = `
   <tr>
     <td width="40" valign="top"><table role="presentation" cellpadding="0" cellspacing="0" style="width: 32px; height: 32px; border-radius: 50%; background: #1a73e8;">
     <tr>
-      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 12px; font-family: Arial, sans-serif;">
+      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 12px; font-family: Helvetica, Arial, sans-serif;">
         J
       </td>
     </tr>
@@ -369,7 +369,7 @@ exports[`buildDigestEmail snapshot — content changes 1`] = `
       <p style="margin: 0; color: #1f2937; font-size: 14px; font-weight: 600; line-height: 1.3;">
         <span style="color: #1a73e8;">@</span> John Doe
       </p>
-      <p style="margin: 2px 0 0; color: #6b7280; font-size: 13px; line-height: 1.4;">Hey @Jane, review the auth section?</p>
+      <p style="margin: 2px 0 0; color: #69707e; font-size: 13px; line-height: 1.4;">Hey @Jane, review the auth section?</p>
     </td>
     <td width="48" align="right" valign="middle">
       <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #1a73e8; font-size: 13px; font-weight: 600; text-decoration: none;">View</a>
@@ -383,7 +383,7 @@ exports[`buildDigestEmail snapshot — content changes 1`] = `
   <tr>
     <td width="40" valign="top"><table role="presentation" cellpadding="0" cellspacing="0" style="width: 32px; height: 32px; border-radius: 50%; background: #1a73e8;">
     <tr>
-      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 12px; font-family: Arial, sans-serif;">
+      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 12px; font-family: Helvetica, Arial, sans-serif;">
         A
       </td>
     </tr>
@@ -392,7 +392,7 @@ exports[`buildDigestEmail snapshot — content changes 1`] = `
       <p style="margin: 0; color: #1f2937; font-size: 14px; font-weight: 600; line-height: 1.3;">
         <span style="color: #1a73e8;">↩</span> Alice Chen
       </p>
-      <p style="margin: 2px 0 0; color: #6b7280; font-size: 13px; line-height: 1.4;">Added rate limiting docs.</p>
+      <p style="margin: 2px 0 0; color: #69707e; font-size: 13px; line-height: 1.4;">Added rate limiting docs.</p>
     </td>
     <td width="48" align="right" valign="middle">
       <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #1a73e8; font-size: 13px; font-weight: 600; text-decoration: none;">View</a>
@@ -404,7 +404,7 @@ exports[`buildDigestEmail snapshot — content changes 1`] = `
 
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 22px 0 28px; border-top: 1px solid #dce3ed;">
   <tr>
-    <td valign="middle" style="padding-top: 10px; color: #6b7280; font-size: 12px; line-height: 1.4;">✏️ Changed since you left, 1 day ago.</td>
+    <td valign="middle" style="padding-top: 10px; color: #69707e; font-size: 12px; line-height: 1.4;">✏️ Changed since you left, 1 day ago.</td>
     <td align="right" valign="middle" style="padding-top: 10px; font-size: 12px; white-space: nowrap;">
     <a href="https://docs.plus/#settings?tab=notifications" style="color: #1a73e8; text-decoration: none;">Manage preferences</a>
     <span style="color: #e5e7eb; margin: 0 8px;">|</span>
@@ -421,7 +421,7 @@ exports[`buildDigestEmail snapshot — content changes 1`] = `
         </table>
 
         <!-- Copyright -->
-        <p style="margin: 24px 0 0; color: #9ca3af; font-size: 11px; text-align: center;">
+        <p style="margin: 24px 0 0; color: #636a76; font-size: 11px; text-align: center;">
           &copy; 2026 docs.plus. All rights reserved.
         </p>
       </td>
@@ -448,11 +448,11 @@ exports[`renderNewDocumentEmail snapshot 1`] = `
   </style>
   <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; -webkit-font-smoothing: antialiased;">
+<body style="margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; background-color: #f5f5f5; -webkit-font-smoothing: antialiased;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" class="content" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
+        <table role="presentation" class="content" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border: 1px solid #dce3ed; border-radius: 10px; overflow: hidden;">
 
           <tr>
             <td style="background: #1a73e8; padding: 24px 32px; text-align: center;">
@@ -475,7 +475,7 @@ exports[`renderNewDocumentEmail snapshot 1`] = `
           <td width="60" valign="top">
             <table role="presentation" cellpadding="0" cellspacing="0" style="width: 48px; height: 48px; border-radius: 50%; background: #1a73e8;">
     <tr>
-      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 19px; font-family: Arial, sans-serif;">
+      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 19px; font-family: Helvetica, Arial, sans-serif;">
         A
       </td>
     </tr>
@@ -486,7 +486,7 @@ exports[`renderNewDocumentEmail snapshot 1`] = `
               Alice Chen
             </p>
             
-            <p style="margin: 0; color: #6b7280; font-size: 13px;">alice@example.com</p>
+            <p style="margin: 0; color: #69707e; font-size: 13px;">alice@example.com</p>
             
           </td>
         </tr>
@@ -501,7 +501,7 @@ exports[`renderNewDocumentEmail snapshot 1`] = `
     <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
       <strong style="color: #1f2937; font-size: 13px;">Name</strong>
     </td>
-    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 13px;">
+    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #69707e; font-size: 13px;">
       Product Roadmap Q1
     </td>
   </tr>
@@ -510,7 +510,7 @@ exports[`renderNewDocumentEmail snapshot 1`] = `
       <strong style="color: #1f2937; font-size: 13px;">Slug</strong>
     </td>
     <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-      <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #6b7280;">product-roadmap-q1</code>
+      <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #69707e;">product-roadmap-q1</code>
     </td>
   </tr>
   <tr>
@@ -518,14 +518,14 @@ exports[`renderNewDocumentEmail snapshot 1`] = `
       <strong style="color: #1f2937; font-size: 13px;">ID</strong>
     </td>
     <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
-      <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 11px; color: #9ca3af;">doc-abc-123</code>
+      <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 11px; color: #636a76;">doc-abc-123</code>
     </td>
   </tr>
   <tr>
     <td style="padding: 8px 0;">
       <strong style="color: #1f2937; font-size: 13px;">Created</strong>
     </td>
-    <td style="padding: 8px 0; color: #6b7280; font-size: 13px;">
+    <td style="padding: 8px 0; color: #69707e; font-size: 13px;">
       2026-02-17T12:00:00Z
     </td>
   </tr>
@@ -546,10 +546,10 @@ exports[`renderNewDocumentEmail snapshot 1`] = `
 
           <tr>
             <td style="padding: 24px 32px; border-top: 1px solid #e5e7eb; background-color: #f9fafb;">
-              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px; text-align: center; line-height: 1.5;">
+              <p style="margin: 0 0 8px; color: #636a76; font-size: 12px; text-align: center; line-height: 1.5;">
                 You're receiving this because you have email notifications enabled.
               </p>
-              <p style="margin: 0; color: #9ca3af; font-size: 12px; text-align: center;">
+              <p style="margin: 0; color: #636a76; font-size: 12px; text-align: center;">
                 
     <a href="https://docs.plus" style="color: #1a73e8; text-decoration: none;">Go to docs.plus</a>
   
@@ -560,7 +560,7 @@ exports[`renderNewDocumentEmail snapshot 1`] = `
         </table>
 
         <!-- Copyright -->
-        <p style="margin: 24px 0 0; color: #9ca3af; font-size: 11px; text-align: center;">
+        <p style="margin: 24px 0 0; color: #636a76; font-size: 11px; text-align: center;">
           &copy; 2026 docs.plus. All rights reserved.
         </p>
       </td>
@@ -581,83 +581,156 @@ exports[`renderUnsubscribePage snapshot — success 1`] = `
   <title>Unsubscribed - docs.plus</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { color-scheme: light dark; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+      font-family: Helvetica, Arial, sans-serif;
+      background: #eef1f6;
+      color: #1f2937;
+      -webkit-font-smoothing: antialiased;
+    }
+    main {
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 32px 16px;
+    }
+    .column {
+      width: min(100%, 400px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    a:focus-visible {
+      outline: 2px solid #1a73e8;
+      outline-offset: 2px;
+    }
+    .brand {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      border-radius: 8px;
+      color: #1f2937;
+      text-decoration: none;
+      font-size: 18px;
+      line-height: 28px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
     }
     .card {
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-      padding: 48px;
-      max-width: 480px;
-      width: 100%;
-      text-align: center;
+      background: #ffffff;
+      border: 1px solid #dce3ed;
+      border-radius: 10px;
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      overflow: hidden;
     }
-    .icon { margin-bottom: 24px; }
+    .body {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 24px;
+    }
+    .heading {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
     h1 {
-      color: #1f2937;
-      font-size: 24px;
+      font-size: 20px;
+      line-height: 28px;
       font-weight: 600;
-      margin-bottom: 12px;
+      text-wrap: balance;
     }
     .message {
-      color: #6b7280;
-      font-size: 16px;
-      line-height: 1.6;
-      margin-bottom: 8px;
-    }
-    .email {
-      color: #9ca3af;
+      color: #69707e;
       font-size: 14px;
-      margin-bottom: 32px;
+      line-height: 20px;
     }
-    .actions { margin-top: 24px; }
-    .logo {
-      margin-top: 32px;
-      padding-top: 24px;
-      border-top: 1px solid #e5e7eb;
-    }
-    .logo-text {
-      color: #9ca3af;
+    .primary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 0 16px;
+      border-radius: 8px;
+      background: #1a73e8;
+      color: #ffffff;
+      text-decoration: none;
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 600;
+    }
+    .strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px 16px;
+      min-height: 48px;
+      padding: 14px 24px;
+      border-top: 1px solid #dce3ed;
+      color: #636a76;
+      font-size: 13px;
+      line-height: 20px;
+    }
+    .email { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+    .strip nav { margin-left: auto; }
+    .quiet {
+      display: inline-flex;
+      align-items: center;
+      min-height: 40px;
+      margin: -10px 0;
+      color: #1a73e8;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    /* A web page, not mail: copy the webapp default dark theme (globals.scss). */
+    @media (prefers-color-scheme: dark) {
+      body { background: #0f172a; }
+      body, .brand { color: #e5e7eb; }
+      .card { background: #0b1220; border-color: #2d3f57; }
+      .strip { border-top-color: #2d3f57; }
+      .message, .strip { color: #a4a7ae; }
+      .primary { background: #6ea8ff; color: #0b1220; }
+      .quiet { color: #6ea8ff; }
+      a:focus-visible { outline-color: #6ea8ff; }
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="icon">
-      
-        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-      
+  <main>
+    <div class="column">
+      <a class="brand" href="https://docs.plus" aria-label="docs.plus home">
+        <img src="https://docs.plus/icons/logo.svg" width="24" height="24" alt="">
+        <span>docs.plus</span>
+      </a>
+      <article class="card" aria-labelledby="unsubscribe-title">
+        <div class="body">
+          <div class="heading">
+            <h1 id="unsubscribe-title">Unsubscribed</h1>
+            <p class="message">You have been unsubscribed.</p>
+          </div>
+          <a class="primary" href="https://docs.plus/#settings?tab=notifications">Manage preferences</a>
+        </div>
+        
+        <div class="strip">
+          
+          <p class="email">jane@example.com</p>
+          
+          
+          <nav aria-label="Other pages">
+            <a class="quiet" href="https://docs.plus">Go to docs.plus</a>
+          </nav>
+          
+        </div>
+        
+      </article>
     </div>
-    <h1>Unsubscribed</h1>
-    <p class="message">You have been unsubscribed.</p>
-    
-    <p class="email">jane@example.com</p>
-    
-    
-    <div class="actions">
-      
-        <a href="https://docs.plus/#settings?tab=notifications" style="display: inline-block; background: #1a73e8; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; margin: 8px;">Manage Preferences</a>
-      
-        <a href="https://docs.plus" style="display: inline-block; background: #ffffff; color: #1a73e8; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; border: 1px solid #1a73e8; margin: 8px;">Go to docs.plus</a>
-      
-    </div>
-    
-    <div class="logo">
-      <span class="logo-text">docs.plus</span>
-    </div>
-  </div>
+  </main>
 </body>
 </html>
-
 "
 `;
 
@@ -670,78 +743,144 @@ exports[`renderUnsubscribePage snapshot — error 1`] = `
   <title>Invalid Link - docs.plus</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { color-scheme: light dark; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+      font-family: Helvetica, Arial, sans-serif;
+      background: #eef1f6;
+      color: #1f2937;
+      -webkit-font-smoothing: antialiased;
+    }
+    main {
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 32px 16px;
+    }
+    .column {
+      width: min(100%, 400px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    a:focus-visible {
+      outline: 2px solid #1a73e8;
+      outline-offset: 2px;
+    }
+    .brand {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      border-radius: 8px;
+      color: #1f2937;
+      text-decoration: none;
+      font-size: 18px;
+      line-height: 28px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
     }
     .card {
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-      padding: 48px;
-      max-width: 480px;
-      width: 100%;
-      text-align: center;
+      background: #ffffff;
+      border: 1px solid #dce3ed;
+      border-radius: 10px;
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      overflow: hidden;
     }
-    .icon { margin-bottom: 24px; }
+    .body {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 24px;
+    }
+    .heading {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
     h1 {
-      color: #1f2937;
-      font-size: 24px;
+      font-size: 20px;
+      line-height: 28px;
       font-weight: 600;
-      margin-bottom: 12px;
+      text-wrap: balance;
     }
     .message {
-      color: #6b7280;
-      font-size: 16px;
-      line-height: 1.6;
-      margin-bottom: 8px;
-    }
-    .email {
-      color: #9ca3af;
+      color: #69707e;
       font-size: 14px;
-      margin-bottom: 32px;
+      line-height: 20px;
     }
-    .actions { margin-top: 24px; }
-    .logo {
-      margin-top: 32px;
-      padding-top: 24px;
-      border-top: 1px solid #e5e7eb;
-    }
-    .logo-text {
-      color: #9ca3af;
+    .primary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 0 16px;
+      border-radius: 8px;
+      background: #1a73e8;
+      color: #ffffff;
+      text-decoration: none;
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 600;
+    }
+    .strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px 16px;
+      min-height: 48px;
+      padding: 14px 24px;
+      border-top: 1px solid #dce3ed;
+      color: #636a76;
+      font-size: 13px;
+      line-height: 20px;
+    }
+    .email { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+    .strip nav { margin-left: auto; }
+    .quiet {
+      display: inline-flex;
+      align-items: center;
+      min-height: 40px;
+      margin: -10px 0;
+      color: #1a73e8;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    /* A web page, not mail: copy the webapp default dark theme (globals.scss). */
+    @media (prefers-color-scheme: dark) {
+      body { background: #0f172a; }
+      body, .brand { color: #e5e7eb; }
+      .card { background: #0b1220; border-color: #2d3f57; }
+      .strip { border-top-color: #2d3f57; }
+      .message, .strip { color: #a4a7ae; }
+      .primary { background: #6ea8ff; color: #0b1220; }
+      .quiet { color: #6ea8ff; }
+      a:focus-visible { outline-color: #6ea8ff; }
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="icon">
-      
-        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-      
+  <main>
+    <div class="column">
+      <a class="brand" href="https://docs.plus" aria-label="docs.plus home">
+        <img src="https://docs.plus/icons/logo.svg" width="24" height="24" alt="">
+        <span>docs.plus</span>
+      </a>
+      <article class="card" aria-labelledby="unsubscribe-title">
+        <div class="body">
+          <div class="heading">
+            <h1 id="unsubscribe-title">Invalid Link</h1>
+            <p class="message">The link is expired.</p>
+          </div>
+          <a class="primary" href="https://docs.plus/#settings?tab=notifications">Manage preferences</a>
+        </div>
+        
+      </article>
     </div>
-    <h1>Invalid Link</h1>
-    <p class="message">The link is expired.</p>
-    
-    
-    <div class="actions">
-      
-        <a href="https://docs.plus/#settings?tab=notifications" style="display: inline-block; background: #1a73e8; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; margin: 8px;">Manage Preferences</a>
-      
-    </div>
-    
-    <div class="logo">
-      <span class="logo-text">docs.plus</span>
-    </div>
-  </div>
+  </main>
 </body>
 </html>
-
 "
 `;
