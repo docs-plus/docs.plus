@@ -1,6 +1,3 @@
-import React from 'react'
-import { twMerge } from 'tailwind-merge'
-
 import {
   BookmarkButton,
   CopyLinkAction,
@@ -10,49 +7,25 @@ import {
   EditAction,
   EmojiReactionButton,
   GroupAuth,
-  QuickActions,
   ReadStatusDisplay,
   ReplyButton,
   ReplyInThreadButton
 } from './components'
 import { HoverMenuActions } from './HoverMenuActions'
 
-interface Props {
-  className?: string
-  children?: React.ReactNode
-}
-
-const MessageActions = ({ className, children }: Props) => {
-  return (
-    <div
-      className={twMerge(
-        'message-actions absolute -top-4 right-2 hidden group-hover/msgcard:block',
-        className
-      )}>
-      {children}
-    </div>
-  )
+const MessageActions = {
+  HoverMenu: HoverMenuActions,
+  EmojiReaction: EmojiReactionButton,
+  Reply: ReplyButton,
+  Bookmark: BookmarkButton,
+  ReplyInThread: ReplyInThreadButton,
+  CopyLink: CopyLinkAction,
+  CopyToDoc: CopyToDocAction,
+  Download: DownloadAction,
+  Delete: DeleteAction,
+  Edit: EditAction,
+  ReadStatus: ReadStatusDisplay,
+  GroupAuth
 }
 
 export default MessageActions
-
-// QuickActions
-MessageActions.QuickActions = QuickActions
-MessageActions.EmojiReaction = EmojiReactionButton
-MessageActions.Reply = ReplyButton
-MessageActions.Bookmark = BookmarkButton
-MessageActions.ReplyInThread = ReplyInThreadButton
-MessageActions.CopyLink = CopyLinkAction
-
-// MoreActionsDropdown
-MessageActions.CopyToDoc = CopyToDocAction
-MessageActions.Download = DownloadAction
-MessageActions.Delete = DeleteAction
-MessageActions.Edit = EditAction
-MessageActions.ReadStatus = ReadStatusDisplay
-
-// GroupAuth
-MessageActions.GroupAuth = GroupAuth
-
-// HoverMenuActions
-MessageActions.HoverMenu = HoverMenuActions

@@ -14,12 +14,7 @@ function FormatButtonGroups() {
           {groupIndex > 0 && <ToolbarDivider className="mx-1 h-5 w-px shrink-0 self-center" />}
           <div className="flex items-center gap-0.5">
             {group.map((Button, index) => (
-              <Button
-                key={formatToolbarButtonKey(Button, index)}
-                size={18}
-                className="btn-ghost rounded-field size-8 min-h-8 min-w-8 shrink-0 border-0 p-0"
-                tooltipPosition="top"
-              />
+              <Button key={formatToolbarButtonKey(Button, index)} size={18} tooltipPosition="top" />
             ))}
           </div>
         </Fragment>

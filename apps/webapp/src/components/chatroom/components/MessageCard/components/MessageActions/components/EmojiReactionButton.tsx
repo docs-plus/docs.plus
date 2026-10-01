@@ -1,10 +1,9 @@
-import { openMessageReaction } from '@components/chatroom/utils/messageReaction'
+import { openMessageReactionAt } from '@components/chatroom/utils/messageReaction'
 import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
 import { useCallback, useRef } from 'react'
 
-import { calculateEmojiPickerPosition } from '../../../helpers'
 import { useMessageCardContext } from '../../../MessageCardContext'
 
 type Props = {
@@ -20,12 +19,7 @@ export const EmojiReactionButton = ({ className }: Props) => {
     if (!message) return
     const coordinates = ref.current?.getBoundingClientRect()
     if (!coordinates) return
-
-    const pickerOpenPosition = calculateEmojiPickerPosition(coordinates)
-    openMessageReaction(message, {
-      top: pickerOpenPosition?.top || 0,
-      left: pickerOpenPosition?.left || 0
-    })
+    openMessageReactionAt(message, coordinates)
   }, [message])
 
   return (
@@ -38,7 +32,8 @@ export const EmojiReactionButton = ({ className }: Props) => {
       disabled={!profile}
       onClick={openEmojiPickerHandler}
       startIcon={<Icons.emoji size={18} className="text-base-content/70" />}
-      tooltip="Add Reaction"
+      tooltip="Add reaction"
+      aria-label="Add reaction"
       tooltipPlacement="left"
     />
   )

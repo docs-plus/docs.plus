@@ -12,8 +12,8 @@ import {
   positiveMediaDims
 } from '@components/chatroom/utils/messageMediaPaths'
 import type { MessageMediaItem } from '@types'
+import { twMerge } from '@utils/twMerge'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { MessageMediaImageLink } from './MessageMediaImageLink'
 import { MessageMediaVideo } from './MessageMediaVideo'
@@ -72,7 +72,6 @@ function singleTileContent(
         media={media}
         width={cell.width}
         height={cell.height}
-        className="rounded-box"
         onOpen={onOpen}
         onDimensions={onDimensions}
       />

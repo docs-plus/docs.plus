@@ -1,4 +1,4 @@
-import type { MessageMediaItem, TGroupedMsgRow } from '@types'
+import type { MessageMediaItem, TGroupedMsgRow, TMsgRow } from '@types'
 import { getSanitizedMessageBodyHtml, isOnlyEmoji } from '@utils/index'
 
 import { parseMessageMedias, resolveOutgoingMessageType } from './messageMediaPaths'
@@ -11,6 +11,11 @@ export type MessagePresentation = {
   layout: MessageSurfaceLayout
   displayType: string
   hasMedia: boolean
+}
+
+// Either field means bookmarked, because realtime rows graft them.
+export function isMessageBookmarked(message: Pick<TMsgRow, 'is_bookmarked' | 'bookmark_id'>) {
+  return Boolean(message.is_bookmarked || message.bookmark_id)
 }
 
 export function deriveMessagePresentation(

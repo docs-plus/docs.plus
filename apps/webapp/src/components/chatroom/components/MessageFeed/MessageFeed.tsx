@@ -1,7 +1,8 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
+import { isMessage } from '@components/chatroom/types/chat-items'
 import { backlogCount } from '@components/chatroom/utils/backlogCount'
 import { useChatStore } from '@stores'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import { ChatList } from '../ChatList/ChatList'
 import { ChatListContextMenu } from '../ChatList/ChatListContextMenu'
@@ -38,6 +39,9 @@ const MessageFeed = ({ className, showScrollToBottom = true }: Props) => {
     isFeedReady
   } = useChatroomContext()
 
+  // Virtuoso reports an empty list as not at the bottom, so the jump chip needs its own gate.
+  // Leaving the tail flips atBottom and re-renders this feed, so the read stays fresh.
+  const hasMessages = isFeedReady && (listRef.current?.data.get() ?? []).some(isMessage)
   const backlog = backlogCount(unreadCount, newCount)
   const showNewMessagesBanner = isFeedReady && !!currentUserId && !atBottom && backlog > 0
   const lastReadSince = useChatStore((state) => {
@@ -89,7 +93,7 @@ const MessageFeed = ({ className, showScrollToBottom = true }: Props) => {
               variant={variant}
             />
           </ChatListContextMenu>
-          {showScrollToBottom && (
+          {showScrollToBottom && hasMessages && (
             <JumpToPresentButton
               atBottom={atBottom}
               onTap={snapToPresent}

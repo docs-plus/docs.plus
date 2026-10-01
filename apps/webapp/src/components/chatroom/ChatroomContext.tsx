@@ -1,6 +1,7 @@
 import { Modal, ModalContent } from '@components/ui/Dialog'
+import { useHistoryDismiss } from '@hooks/useHistoryDismiss'
 import { useUnreadCount } from '@hooks/useUnreadCount'
-import { useAuthStore, useChatStore } from '@stores'
+import { type DialogConfig, useAuthStore, useChatStore } from '@stores'
 import type { VirtuosoMessageListMethods } from '@virtuoso.dev/message-list'
 import React, {
   createContext,
@@ -23,7 +24,7 @@ import { useSendMessage } from './hooks/useSendMessage'
 import { useComposerAttachmentsStore } from './stores/composerAttachmentsStore'
 import type { ChatItem } from './types/chat-items'
 import { isMessage } from './types/chat-items'
-import { ChatroomContextValue, ChatroomVariant, DialogConfig } from './types/chatroom.types'
+import { ChatroomContextValue, ChatroomVariant } from './types/chatroom.types'
 import type { ChannelFeedMode } from './utils/channelFeedProjection'
 import { clearFeedSpoilerReveal } from './utils/feedSpoilerReveal'
 import {
@@ -242,6 +243,9 @@ export const ChatroomProvider: React.FC<{
     setDialogContent(null)
     setDialogConfig({})
   }, [])
+
+  // Same Back behaviour as GlobalDialog: on a phone, Back closes the dialog, not the pane.
+  useHistoryDismiss(isDialogOpen, closeDialog)
 
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_E2E !== 'true') return

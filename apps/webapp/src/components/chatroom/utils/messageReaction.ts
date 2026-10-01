@@ -1,3 +1,4 @@
+import { calculateEmojiPickerPosition } from '@components/chatroom/components/MessageCard/helpers'
 import { useComposerEmojiPanelStore } from '@components/chatroom/components/MessageComposer/stores/composerEmojiPanelStore'
 import { useChatStore, useSheetStore, useStore } from '@stores'
 import type { TMsgRow } from '@types'
@@ -20,6 +21,11 @@ export function openMessageReaction(message: TMsgRow, position: EmojiPickerPosit
   if (isMobile && useSheetStore.getState().activeSheet !== 'messageReaction') {
     useSheetStore.getState().openSheet('messageReaction')
   }
+}
+
+export function openMessageReactionAt(message: TMsgRow, rect: DOMRect): void {
+  const position = calculateEmojiPickerPosition(rect)
+  openMessageReaction(message, { top: position?.top || 0, left: position?.left || 0 })
 }
 
 export function closeMessageReaction(): void {

@@ -1,6 +1,7 @@
 import type { GalleryMediaItem } from '@components/chatroom/utils/galleryPlaylist'
 import { Icons } from '@icons'
 import { formatMediaFileSize } from '@utils/formatMediaFileSize'
+import { twMerge } from '@utils/twMerge'
 import {
   type ButtonHTMLAttributes,
   type ReactNode,
@@ -10,7 +11,6 @@ import {
   useState
 } from 'react'
 import { createPortal } from 'react-dom'
-import { twMerge } from 'tailwind-merge'
 
 import { galleryLightboxThemeStyle } from './galleryTheme'
 import type { GalleryToolbarAction } from './galleryToolbarModel'

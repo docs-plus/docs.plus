@@ -2,6 +2,9 @@ import { Icons } from '@icons'
 import { useChatStore } from '@stores'
 import { useEffect, useMemo, useState } from 'react'
 
+const STEP_BUTTON_CLASS =
+  'btn btn-ghost btn-xs btn-square text-base-content/70 hover:text-base-content focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset'
+
 type PinnedRow = { id: string; content?: string | null; html?: string | null }
 
 /** Multi-pin slider when more than one pin exists; single-pin channels hide controls. */
@@ -36,32 +39,33 @@ export const PinnedMessagesBar = ({
   }
   return (
     <div
-      className="border-base-200 bg-base-100 sticky top-0 z-30 flex items-center border-b"
+      className="border-base-300 bg-base-100 sticky top-0 z-30 flex items-center border-b"
       data-key="pinned-bar">
       {hasMany && (
         <button
           type="button"
           onClick={onPrev}
-          className="btn btn-ghost btn-xs btn-square"
+          className={STEP_BUTTON_CLASS}
           aria-label="Previous pinned message">
           <Icons.chevronUp size={16} />
         </button>
       )}
       <button
         key={current.id}
+        type="button"
         onClick={() => onJumpToMessage(current.id)}
-        className="block min-w-0 flex-1 truncate px-3 py-2 text-left">
+        className="focus-visible:ring-primary block min-w-0 flex-1 truncate px-3 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset">
         {current.content ?? ''}
       </button>
       {hasMany && (
         <>
-          <span className="text-base-content/60 px-1 font-mono text-xs">
+          <span className="text-base-content/60 px-1 text-xs tabular-nums">
             {index + 1}/{pinned.length}
           </span>
           <button
             type="button"
             onClick={onNext}
-            className="btn btn-ghost btn-xs btn-square"
+            className={STEP_BUTTON_CLASS}
             aria-label="Next pinned message">
             <Icons.chevronDown size={16} />
           </button>

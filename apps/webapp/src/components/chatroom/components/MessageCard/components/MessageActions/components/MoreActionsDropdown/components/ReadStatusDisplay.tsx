@@ -1,22 +1,12 @@
 import { UserReadStatus } from '@components/chatroom/components/MessageCard/components/common/UserReadStatus'
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
-import { useDropdownContext } from '@components/ui/HoverMenu'
+import { useContextMenuContext } from '@components/ui/ContextMenu'
 
-type Props = {
-  className?: string
-}
-export const ReadStatusDisplay = ({ className }: Props) => {
-  const { isOpen } = useDropdownContext()
+export const ReadStatusDisplay = () => {
+  const { isOpen } = useContextMenuContext()
   const { message } = useMessageCardContext()
 
   if (!message) return null
 
-  return (
-    <UserReadStatus
-      message={message}
-      isOpen={isOpen}
-      avatarLoaderRepeat={4}
-      className={className}
-    />
-  )
+  return <UserReadStatus message={message} isOpen={isOpen} avatarLoaderRepeat={4} inMenu />
 }

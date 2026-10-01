@@ -1,4 +1,4 @@
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 /** Pale accent block — doc-style skeleton hint for rich content (media, embeds). */
 export function AccentBlockSkeleton({ className }: { className?: string }) {

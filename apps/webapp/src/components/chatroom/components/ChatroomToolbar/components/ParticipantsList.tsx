@@ -3,7 +3,7 @@ import AvatarStackLoader from '@components/skeleton/AvatarStackLoader'
 import { AvatarStack } from '@components/ui/AvatarStack'
 import { usePresentUsers } from '@hooks/usePresentUsers'
 import { useChatStore } from '@stores'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 type Props = {
   className?: string

@@ -1,16 +1,16 @@
+import { twMerge } from '@utils/twMerge'
 import type { ReactNode } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 type FeedOverlayProps = {
   className?: string
 }
 
-/** Feed tile spoiler veil (token ink on card surfaces). */
+/** Feed tile spoiler veil — fixed black/white, like every media-anchored overlay. */
 export function FeedSpoilerRevealOverlay({ className }: FeedOverlayProps) {
   return (
     <span
       className={twMerge(
-        'bg-base-content/35 text-base-100 absolute inset-0 flex items-center justify-center text-xs font-medium',
+        'absolute inset-0 flex items-center justify-center bg-black/40 text-xs font-medium text-white',
         className
       )}>
       Tap to reveal

@@ -1,6 +1,6 @@
 import { Icons } from '@icons'
+import { twMerge } from '@utils/twMerge'
 import { useCallback, useRef } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { useMessageComposer } from '../../../hooks/useMessageComposer'
 import type { UseVoiceRecorderReturn } from '../../../hooks/useVoiceRecorder'
@@ -16,9 +16,6 @@ export function ComposerPrimaryAction({ voice, className }: Props) {
   const listeningRef = useRef(false)
 
   const iconSize = isMobile ? 20 : 18
-  const btnSize = isMobile
-    ? 'size-11 min-h-11 min-w-11 rounded-field'
-    : 'size-8 min-h-8 min-w-8 rounded-field'
 
   const bindHoldListeners = useCallback(
     (pointerId: number) => {
@@ -72,8 +69,7 @@ export function ComposerPrimaryAction({ voice, className }: Props) {
       <Button
         variant="ghost"
         className={twMerge(
-          btnSize,
-          'text-primary shrink-0 border-0 p-0 motion-safe:transition-transform motion-safe:duration-100 motion-safe:ease-out motion-safe:active:scale-95',
+          'text-primary motion-safe:transition-transform motion-safe:duration-100 motion-safe:ease-out motion-safe:active:scale-95',
           className
         )}
         data-testid="composer-primary-action"
@@ -101,8 +97,6 @@ export function ComposerPrimaryAction({ voice, className }: Props) {
       ) : null}
       <Button
         className={twMerge(
-          btnSize,
-          'shrink-0 border-0 p-0',
           voice.phase === 'recording' && 'text-error',
           voice.isHolding &&
             'bg-error text-error-content rounded-full motion-safe:scale-125 motion-safe:transition-transform',

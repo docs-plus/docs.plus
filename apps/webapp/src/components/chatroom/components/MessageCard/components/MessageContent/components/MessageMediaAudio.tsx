@@ -9,8 +9,8 @@ import { useSpoilerGatedActivate } from '@components/chatroom/utils/feedSpoilerR
 import { messageMediaTheme } from '@components/chatroom/utils/messageMediaTheme'
 import { Icons } from '@icons'
 import type { MessageMediaItem } from '@types'
+import { twMerge } from '@utils/twMerge'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { MediaUnavailable } from './MediaUnavailable'
 
@@ -105,7 +105,7 @@ export function MessageMediaAudio({ media, onOpen }: Props) {
         <button
           type="button"
           onClick={onExpand}
-          className="btn btn-circle btn-xs bg-base-content/60 text-base-100 absolute top-2 right-2 border-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover/audio:opacity-100 sm:focus-visible:opacity-100"
+          className="btn btn-ghost btn-xs btn-square absolute top-2 right-2 opacity-100 transition-opacity sm:opacity-0 sm:group-hover/audio:opacity-100 sm:focus-visible:opacity-100"
           aria-label="Expand audio">
           <Icons.maximize2 size={14} />
         </button>

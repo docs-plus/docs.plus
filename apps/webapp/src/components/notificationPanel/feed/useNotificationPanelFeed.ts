@@ -4,11 +4,12 @@ import {
   getUnreadNotificationsPaginated
 } from '@api'
 import { useApi } from '@hooks/useApi'
+import { usePanelFeedSentinel } from '@hooks/usePanelFeedSentinel'
 import { NOTIFICATION_STATE_CHANGED } from '@services/eventsHub'
 import { useAuthStore, useStore } from '@stores'
 import { type TNotification, type TNotificationSummary, type TTab } from '@types'
 import PubSub from 'pubsub-js'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 const PAGE_SIZE = 10
 
@@ -17,6 +18,10 @@ type UseNotificationPanelFeedResult = {
   isLoading: boolean
   isLoadingMore: boolean
   hasMore: boolean
+  /** The active tab's first load failed; the panel shows an error state, not the empty one. */
+  isError: boolean
+  /** Reloads the active tab's first page. */
+  retry: () => void
   sentinelRef: (node: HTMLDivElement | null) => void
 }
 
@@ -53,21 +58,21 @@ export function useNotificationPanelFeed(): UseNotificationPanelFeedResult {
   const notifications = useStore((state) => state.notifications)
   const notificationActiveTab = useStore((state) => state.notificationActiveTab)
   const loadingNotification = useStore((state) => state.loadingNotification)
-  const {
-    setNotificationSummary,
-    setNotifications,
-    clearNotifications,
-    setLoadingNotification,
-    setNotificationTab,
-    setNotificationPage,
-    updateNotifications
-  } = useStore((state) => state)
+  const setNotificationSummary = useStore((state) => state.setNotificationSummary)
+  const setNotifications = useStore((state) => state.setNotifications)
+  const clearNotifications = useStore((state) => state.clearNotifications)
+  const setLoadingNotification = useStore((state) => state.setLoadingNotification)
+  const setNotificationTab = useStore((state) => state.setNotificationTab)
+  const setNotificationPage = useStore((state) => state.setNotificationPage)
+  const updateNotifications = useStore((state) => state.updateNotifications)
   const { request: summaryRequest } = useApi(getNotificationsSummary, null, false)
 
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const observerRef = useRef<IntersectionObserver | null>(null)
+  // Unread and Mentions load through the summary; Read loads its own first page.
+  const [summaryFailed, setSummaryFailed] = useState(false)
+  const [readFailed, setReadFailed] = useState(false)
 
   const currentNotifications = notifications.get(notificationActiveTab) || []
 
@@ -86,8 +91,10 @@ export function useNotificationPanelFeed(): UseNotificationPanelFeedResult {
       setNotificationTab('Unread', summaryData.unread_count)
       setNotificationTab('Mentions', summaryData.unread_mention_count)
       setNotificationPage(1)
+      setSummaryFailed(false)
     } catch (error) {
       console.error('Error fetching notification feed:', error)
+      setSummaryFailed(true)
     } finally {
       setLoadingNotification(false)
     }
@@ -118,40 +125,49 @@ export function useNotificationPanelFeed(): UseNotificationPanelFeedResult {
     }
   }, [refreshSummary])
 
+  const loadReadFirstPage = useCallback(async () => {
+    if (!user?.id) return
+
+    setLoadingNotification(true)
+    try {
+      const data = await fetchNotificationPage('Read', 1, user.id, workspaceId)
+      updateNotifications('Read', data)
+      setHasMore(data.length >= PAGE_SIZE)
+      setReadFailed(false)
+    } catch (error) {
+      console.error('Error fetching read notifications:', error)
+      setReadFailed(true)
+    } finally {
+      setLoadingNotification(false)
+    }
+  }, [user?.id, workspaceId, setLoadingNotification, updateNotifications])
+
   useEffect(() => {
     setPage(1)
 
-    const loadInitialTabPage = async () => {
-      if (notificationActiveTab !== 'Read') return
-      if (!user?.id) return
-
+    if (notificationActiveTab === 'Read') {
       const existingData = useStore.getState().notifications.get('Read')
       if (existingData && existingData.length > 0) {
         setHasMore(existingData.length >= PAGE_SIZE)
         return
       }
-
-      setLoadingNotification(true)
-      try {
-        const data = await fetchNotificationPage('Read', 1, user.id, workspaceId)
-        updateNotifications('Read', data)
-        setHasMore(data.length >= PAGE_SIZE)
-      } catch (error) {
-        console.error('Error fetching read notifications:', error)
-      } finally {
-        setLoadingNotification(false)
-      }
-    }
-
-    if (notificationActiveTab === 'Read') {
-      void loadInitialTabPage()
+      void loadReadFirstPage()
     } else {
       // One-shot seed on tab change; loadMore owns hasMore from here via its own
       // setHasMore(false), so this must not re-run on every notifications Map write.
       const count = (useStore.getState().notifications.get(notificationActiveTab) || []).length
       setHasMore(count >= PAGE_SIZE)
     }
-  }, [notificationActiveTab, user?.id, workspaceId, setLoadingNotification, updateNotifications])
+  }, [notificationActiveTab, loadReadFirstPage])
+
+  const retry = useCallback(() => {
+    if (notificationActiveTab === 'Read') {
+      void loadReadFirstPage()
+      return
+    }
+    setLoadingNotification(true)
+    void refreshSummary()
+  }, [notificationActiveTab, loadReadFirstPage, refreshSummary, setLoadingNotification])
 
   const loadMore = useCallback(async () => {
     if (isLoadingMore || !hasMore || loadingNotification || !user?.id) return
@@ -193,39 +209,15 @@ export function useNotificationPanelFeed(): UseNotificationPanelFeedResult {
     workspaceId
   ])
 
-  const sentinelRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (observerRef.current) {
-        observerRef.current.disconnect()
-      }
-
-      if (!node || !hasMore || isLoadingMore) return
-
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-            loadMore()
-          }
-        },
-        { root: null, rootMargin: '100px', threshold: 0.1 }
-      )
-
-      observerRef.current.observe(node)
-    },
-    [hasMore, isLoadingMore, loadMore]
-  )
-
-  useEffect(() => {
-    return () => {
-      observerRef.current?.disconnect()
-    }
-  }, [])
+  const sentinelRef = usePanelFeedSentinel({ hasMore, isLoadingMore, loadMore })
 
   return {
     notifications: currentNotifications,
     isLoading: loadingNotification,
     isLoadingMore,
     hasMore,
+    isError: notificationActiveTab === 'Read' ? readFailed : summaryFailed,
+    retry,
     sentinelRef
   }
 }

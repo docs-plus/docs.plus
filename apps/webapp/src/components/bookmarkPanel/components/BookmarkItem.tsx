@@ -1,62 +1,25 @@
 import { useMediaDisplayUrl } from '@components/chatroom/hooks/useMediaSignedUrl'
 import { parseMessageMedias } from '@components/chatroom/utils/messageMediaPaths'
-import { PanelFeedItem } from '@components/PanelFeedItem'
+import {
+  openChatAtMessage,
+  PanelFeedActions,
+  PanelFeedCopyLink,
+  PanelFeedItem,
+  PanelFeedMediaHint,
+  PanelFeedPreview,
+  PanelFeedRowAction
+} from '@components/PanelFeedItem'
 import { Avatar } from '@components/ui/Avatar'
-import Button from '@components/ui/Button'
-import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { useDismissPanel } from '@hooks/useDismissPanel'
-import { Icons } from '@icons'
-import { CHAT_OPEN } from '@services/eventsHub'
 import { useChatStore } from '@stores'
 import { type MessageMediaItem, type PanelSurfaceVariant, type TBookmarkWithMessage } from '@types'
-import { formatTimeAgo } from '@utils/formatTime'
-import { buildBookmarkHref } from '@utils/link-helpers'
-import {
-  GENERIC_ATTACHMENT_LABEL,
-  messagePreviewKind,
-  messagePreviewText
-} from '@utils/messagePreview'
-import PubSub from 'pubsub-js'
-import { LuLink } from 'react-icons/lu'
-import { twMerge } from 'tailwind-merge'
+import { GENERIC_ATTACHMENT_LABEL, messagePreviewText } from '@utils/messagePreview'
 
 import { useBookmarkPanelActions } from '../hooks/useBookmarkPanelActions'
 
 type BookmarkItemProps = {
   bookmark: TBookmarkWithMessage
   variant?: PanelSurfaceVariant
-}
-
-function previewKindIcon(kind: NonNullable<ReturnType<typeof messagePreviewKind>>) {
-  switch (kind) {
-    case 'image':
-      return Icons.image
-    case 'video':
-      return Icons.video
-    case 'audio':
-      return Icons.music
-    case 'multi':
-    default:
-      return Icons.fileText
-  }
-}
-
-function BookmarkMediaHint({ preview }: { preview: string }) {
-  const kind = messagePreviewKind(preview)
-  if (!kind) return null
-
-  const Icon = previewKindIcon(kind)
-
-  return (
-    <div
-      className={twMerge(
-        'bg-base-300/40 rounded-field flex size-10 shrink-0 items-center justify-center',
-        kind === 'multi' && 'text-base-content/70'
-      )}
-      aria-hidden>
-      <Icon size={18} className="text-base-content/70" />
-    </div>
-  )
 }
 
 function BookmarkImageThumb({ media }: { media: MessageMediaItem }) {
@@ -73,39 +36,14 @@ function BookmarkImageThumb({ media }: { media: MessageMediaItem }) {
 
 export const BookmarkItem = ({ bookmark, variant = 'popover' }: BookmarkItemProps) => {
   const bookmarkActiveTab = useChatStore((state) => state.bookmarkActiveTab)
-  const { headingId } = useChatStore((state) => state.chatRoom)
-  const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
   const dismissPanel = useDismissPanel(variant)
   const { remove, markAsRead, archive, isExiting } = useBookmarkPanelActions()
-  const { copy, copied } = useCopyToClipboard({
-    successMessage: 'URL copied to clipboard',
-    errorMessage: 'Failed to copy URL'
-  })
 
   const exiting = isExiting(bookmark.bookmark_id)
 
   const handleViewBookmark = (bookmark: TBookmarkWithMessage) => {
-    const messageId = bookmark.message_id
-    const channelId = bookmark.message_channel_id
-
-    if (headingId === channelId) destroyChatRoom()
-
-    PubSub.publish(CHAT_OPEN, {
-      headingId: channelId,
-      toggleRoom: false,
-      fetchMsgsFromId: messageId,
-      scroll2Heading: true
-    })
-
+    openChatAtMessage(bookmark.message_channel_id, bookmark.message_id)
     dismissPanel()
-  }
-
-  const handleCopyUrl = (bookmark: TBookmarkWithMessage) => {
-    const href = buildBookmarkHref({
-      messageId: bookmark.message_id,
-      channelId: bookmark.message_channel_id
-    })
-    void copy(href)
   }
 
   const medias = parseMessageMedias(bookmark.message_medias)
@@ -125,89 +63,42 @@ export const BookmarkItem = ({ bookmark, variant = 'popover' }: BookmarkItemProp
             <p className="text-base-content text-sm font-medium">
               {bookmark.user_details.fullname || bookmark.user_details.username}
             </p>
-            <div className="flex w-full min-w-0 items-start gap-2">
-              {thumbMedia ? (
-                <BookmarkImageThumb media={thumbMedia} />
-              ) : (
-                <BookmarkMediaHint preview={previewText} />
-              )}
-              <p className="bg-base-200 text-base-content/70 rounded-field line-clamp-2 min-w-0 flex-1 px-2 py-1 text-sm">
-                {previewText || GENERIC_ATTACHMENT_LABEL}
-              </p>
-            </div>
+            <PanelFeedPreview
+              media={
+                thumbMedia ? (
+                  <BookmarkImageThumb media={thumbMedia} />
+                ) : (
+                  <PanelFeedMediaHint preview={previewText} />
+                )
+              }>
+              {previewText || GENERIC_ATTACHMENT_LABEL}
+            </PanelFeedPreview>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            shape="square"
-            className="text-base-content/50 hover:text-base-content shrink-0"
-            onClick={() => handleCopyUrl(bookmark)}
+          <PanelFeedCopyLink
+            messageId={bookmark.message_id}
+            channelId={bookmark.message_channel_id}
             disabled={exiting}
-            aria-label={copied ? 'Copied!' : 'Copy link'}>
-            <span className={`swap ${copied ? 'swap-active' : ''}`} aria-hidden>
-              <Icons.check size={14} className="swap-on text-success" />
-              <LuLink size={14} className="swap-off rotate-45" />
-            </span>
-          </Button>
+          />
         </div>
 
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span className="text-base-content/50 text-xs">
-            {formatTimeAgo(bookmark.bookmark_created_at)}
-          </span>
+        <PanelFeedActions
+          createdAt={bookmark.bookmark_created_at}
+          onView={() => handleViewBookmark(bookmark)}
+          disabled={exiting}>
           {bookmarkActiveTab === 'in progress' && !isRead && (
-            <Button
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                void markAsRead(bookmark)
-              }}
-              variant="ghost"
-              size="xs"
-              className="text-primary hover:bg-primary/10"
-              disabled={exiting}
-              aria-busy={exiting}>
+            <PanelFeedRowAction onClick={() => void markAsRead(bookmark)} disabled={exiting}>
               Mark as read
-            </Button>
+            </PanelFeedRowAction>
           )}
           {bookmarkActiveTab !== 'archive' && (
-            <Button
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                void archive(bookmark)
-              }}
-              variant="ghost"
-              size="xs"
-              className="text-base-content/60 hover:bg-base-200"
-              disabled={exiting}
-              aria-busy={exiting}>
+            <PanelFeedRowAction onClick={() => void archive(bookmark)} disabled={exiting}>
               {isArchived ? 'Unarchive' : 'Archive'}
-            </Button>
+            </PanelFeedRowAction>
           )}
-          <Button
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              void remove(bookmark)
-            }}
-            variant="ghost"
-            size="xs"
-            className="text-base-content/60 hover:bg-error/10 hover:text-error"
-            disabled={exiting}
-            aria-busy={exiting}>
+          <PanelFeedRowAction onClick={() => void remove(bookmark)} disabled={exiting} danger>
             Remove
-          </Button>
-          <Button
-            onClick={() => handleViewBookmark(bookmark)}
-            variant="primary"
-            btnStyle="soft"
-            size="xs"
-            className="ml-auto"
-            disabled={exiting}>
-            View
-          </Button>
-        </div>
+          </PanelFeedRowAction>
+        </PanelFeedActions>
       </div>
     </PanelFeedItem>
   )

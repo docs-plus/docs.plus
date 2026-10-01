@@ -2,10 +2,12 @@ import { Icons } from '@components/icons/registry'
 import { InternalLinkChip } from '@components/TipTap/hyperlinkPopovers/components/InternalLinkChip'
 import { classifyInternalDocumentLink } from '@components/TipTap/hyperlinkPopovers/internalDocumentLink'
 import { runInternalDocumentLink } from '@components/TipTap/hyperlinkPopovers/internalDocumentLinkActions'
+import { ContextMenuDivider } from '@components/ui/ContextMenu'
+import { ContextMenuRowButton } from '@components/ui/ContextMenuRowButton'
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { useStore } from '@stores'
-import { useId, useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
+import { useMemo } from 'react'
 
 import { ComposerLinkModalShell } from './ComposerLinkModalShell'
 
@@ -17,7 +19,6 @@ type Props = {
 }
 
 export function ComposerLinkPreviewDialog({ href, onEdit, onRemove, onClose }: Props) {
-  const titleId = useId()
   const padEditor = useStore((s) => s.settings.editor.instance)
   const internalLink = useMemo(
     () => classifyInternalDocumentLink(href, window.location.pathname),
@@ -36,11 +37,8 @@ export function ComposerLinkPreviewDialog({ href, onEdit, onRemove, onClose }: P
   }
 
   return (
-    <ComposerLinkModalShell titleId={titleId} onBackdropClick={onClose}>
-      <div data-testid="composer-link-preview">
-        <h2 id={titleId} className="sr-only">
-          Link options
-        </h2>
+    <ComposerLinkModalShell title="Link options" onBackdropClick={onClose}>
+      <div data-testid="composer-link-preview" className="flex flex-col gap-4">
         {internalLink ? (
           <InternalLinkChip link={internalLink} editor={padEditor ?? null} />
         ) : (
@@ -48,20 +46,19 @@ export function ComposerLinkPreviewDialog({ href, onEdit, onRemove, onClose }: P
             {href}
           </p>
         )}
-        <div className="mt-3 flex flex-col gap-1">
+        <div className="-mx-2.5 flex flex-col">
           {internalLink && (
-            <button
-              type="button"
-              className="btn btn-primary justify-start"
+            <ContextMenuRowButton
+              icon={<Icons.chevronRight size={16} aria-hidden />}
               onClick={handleGo}
+              rowClassName="min-h-10"
               data-testid="composer-link-preview-go">
-              <Icons.chevronRight size={18} aria-hidden />
               Go to destination
-            </button>
+            </ContextMenuRowButton>
           )}
-          <button
-            type="button"
-            className={twMerge('btn btn-ghost justify-start', copied && 'text-success')}
+          <ContextMenuRowButton
+            icon={<Icons.copy size={16} aria-hidden />}
+            rowClassName={twMerge('min-h-10', copied && 'text-[var(--success-ink)]')}
             onClick={() => void copy(href)}
             aria-label={copied ? 'Copied!' : 'Copy link'}
             data-testid="composer-link-preview-copy">
@@ -69,21 +66,23 @@ export function ComposerLinkPreviewDialog({ href, onEdit, onRemove, onClose }: P
               <span className="swap-on">Copied!</span>
               <span className="swap-off">Copy link</span>
             </span>
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost text-error justify-start"
-            onClick={onRemove}
-            data-testid="composer-link-preview-remove">
-            Remove link
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost justify-start"
+          </ContextMenuRowButton>
+          <ContextMenuRowButton
+            icon={<Icons.edit size={16} aria-hidden />}
             onClick={onEdit}
+            rowClassName="min-h-10"
             data-testid="composer-link-preview-edit">
             Edit
-          </button>
+          </ContextMenuRowButton>
+          <ContextMenuDivider as="div" />
+          <ContextMenuRowButton
+            icon={<Icons.unlink size={16} aria-hidden />}
+            variant="danger"
+            onClick={onRemove}
+            rowClassName="min-h-10"
+            data-testid="composer-link-preview-remove">
+            Remove link
+          </ContextMenuRowButton>
         </div>
       </div>
     </ComposerLinkModalShell>

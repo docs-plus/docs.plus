@@ -3,15 +3,15 @@ import {
   commentReferenceContextBarShell,
   type CommentReferenceTheme
 } from '@utils/commentReferenceTheme'
+import { twMerge } from '@utils/twMerge'
 import type { ReactNode } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { useMessageComposer } from '../../hooks/useMessageComposer'
 
 export type ContextBarKind = 'reply' | 'comment' | 'edit'
 
 const STATIC_SHELL: Record<Exclude<ContextBarKind, 'comment'>, { bar: string; icon: string }> = {
-  reply: { bar: 'border-l-[3px] border-l-info bg-base-200/40', icon: 'text-info' },
+  reply: { bar: 'border-l-[3px] border-l-info', icon: 'text-info' },
   edit: { bar: 'border-l-[3px] border-l-warning', icon: 'text-warning' }
 }
 

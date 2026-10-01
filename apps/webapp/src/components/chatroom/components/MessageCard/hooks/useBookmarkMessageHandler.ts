@@ -3,6 +3,7 @@ import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { isMessage } from '@components/chatroom/types/chat-items'
 import * as toast from '@components/toast'
 import { useApi } from '@hooks/useApi'
+import { refreshBookmarkStats } from '@hooks/usePadBookmarkStats'
 import { TMsgRow } from '@types'
 import { useCallback } from 'react'
 
@@ -50,6 +51,8 @@ export const useBookmarkMessageHandler = () => {
         return item
       })
 
+      // The RPC skips the bookmark store, so the Bookmarks dot rereads its count.
+      refreshBookmarkStats()
       toast.Success(added ? 'Bookmark added' : 'Bookmark removed')
     },
     [toggleBookmark, listRef]

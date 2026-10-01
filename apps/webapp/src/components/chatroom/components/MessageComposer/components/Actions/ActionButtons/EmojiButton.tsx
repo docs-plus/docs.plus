@@ -1,8 +1,8 @@
 import { Icons } from '@icons'
 import { useChatStore, useStore } from '@stores'
 import { Editor } from '@tiptap/react'
+import { twMerge } from '@utils/twMerge'
 import { useCallback } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { calculateEmojiPickerPosition } from '../../../../MessageCard/helpers'
 import { discardComposerVoiceNote } from '../../../helpers/composerVoiceRecording'
@@ -22,7 +22,7 @@ function getCaretRect(editor: Editor): DOMRect {
   return { left, top, x: left, y: top } as DOMRect
 }
 
-export const EmojiButton = ({ className, size, ...props }: Props) => {
+export const EmojiButton = ({ size, ...props }: Props) => {
   const { editor, isMobile } = useMessageComposer()
   const glyph = size ?? (isMobile ? 20 : 18)
   const openEmojiPicker = useChatStore((s) => s.openEmojiPicker)
@@ -71,12 +71,6 @@ export const EmojiButton = ({ className, size, ...props }: Props) => {
 
   return (
     <Button
-      className={twMerge(
-        isMobile
-          ? 'rounded-field size-11 min-h-11 min-w-11 shrink-0 border-0 p-0'
-          : 'rounded-field size-8 min-h-8 min-w-8 shrink-0 border-0 p-0',
-        className
-      )}
       onPress={onPress}
       tooltip={ariaLabel}
       tooltipPosition="top"

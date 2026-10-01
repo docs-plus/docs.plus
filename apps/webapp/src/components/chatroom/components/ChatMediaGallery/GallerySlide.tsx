@@ -9,8 +9,8 @@ import {
 import { useFeedSpoilerGate } from '@components/chatroom/utils/feedSpoilerReveal'
 import { type GalleryMediaItem, mediaKey } from '@components/chatroom/utils/galleryPlaylist'
 import { prefersReducedMotion } from '@utils/motion'
+import { twMerge } from '@utils/twMerge'
 import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { MediaUnavailable } from '../MessageCard/components/MessageContent/components/MediaUnavailable'
 

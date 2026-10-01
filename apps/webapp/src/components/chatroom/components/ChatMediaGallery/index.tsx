@@ -24,8 +24,8 @@ import {
   MOTION_PANEL_MS,
   prefersReducedMotion
 } from '@utils/motion'
+import { twMerge } from '@utils/twMerge'
 import { type MouseEvent, useCallback, useEffect, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { useShallow } from 'zustand/react/shallow'
 
 import { GallerySlide } from './GallerySlide'

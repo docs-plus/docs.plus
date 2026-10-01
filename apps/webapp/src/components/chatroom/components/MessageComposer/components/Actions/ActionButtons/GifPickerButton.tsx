@@ -9,8 +9,8 @@ import { openComposerSignIn } from '@components/chatroom/utils/openComposerSignI
 import CloseButton from '@components/ui/CloseButton'
 import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
+import { twMerge } from '@utils/twMerge'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { useComposerAttachmentActions } from '../../../hooks'
 import Button from '../../ui/Button'

@@ -1,6 +1,6 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { Icons } from '@icons'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import { useMessageCardContext } from '../../../MessageCardContext'
 
@@ -38,9 +38,10 @@ export const Timestamp = ({ className }: Props) => {
     <time
       className={twMerge(
         STATUS_SLOT,
-        'invisible opacity-50',
+        'text-base-content/60 invisible',
         isGroupStart ? 'visible' : 'group-hover/msgcard:visible',
-        variant === 'mobile' && 'visible',
+        // Bubble fills are tinted, and `/60` falls under 4.5:1 on them.
+        variant === 'mobile' && 'text-base-content/70 visible',
         className
       )}>
       {new Date(message.created_at).toLocaleTimeString([], {

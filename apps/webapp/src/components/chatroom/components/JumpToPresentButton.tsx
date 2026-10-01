@@ -3,7 +3,7 @@ import Button from '@components/ui/Button'
 import UnreadBadge from '@components/ui/UnreadBadge'
 import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 export type JumpToPresentButtonProps = {
   atBottom: boolean
@@ -38,6 +38,7 @@ export const JumpToPresentButton = ({
         'absolute right-2 bottom-3 z-40 motion-safe:animate-[doc-region-in_200ms_ease-out_both]',
         subdued && 'bg-base-300 border-base-300 border'
       )}
+      aria-label="Jump to latest messages"
       data-key="jump-to-present"
       data-mention={hasMention ? 'true' : 'false'}
       startIcon={

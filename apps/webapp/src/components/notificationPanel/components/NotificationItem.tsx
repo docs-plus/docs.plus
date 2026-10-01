@@ -3,24 +3,27 @@ import {
   normalizeToPlainHistoryHash,
   parseHistoryHash
 } from '@components/pages/history/historyShareUrl'
-import { PanelFeedItem } from '@components/PanelFeedItem'
-import * as toast from '@components/toast'
+import {
+  openChatAtMessage,
+  PanelFeedActions,
+  PanelFeedCopyLink,
+  PanelFeedItem,
+  PanelFeedMediaHint,
+  PanelFeedPreview,
+  PanelFeedRowAction
+} from '@components/PanelFeedItem'
 import { Avatar } from '@components/ui/Avatar'
-import Button from '@components/ui/Button'
-import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { useDismissPanel } from '@hooks/useDismissPanel'
+import { openOverlayHash } from '@hooks/useHashOverlay'
+import { consumeHistoryDismissEntry } from '@hooks/useHistoryDismiss'
 import { Icons } from '@icons'
-import { CHAT_OPEN } from '@services/eventsHub'
-import { useAuthStore, useChatStore, useStore } from '@stores'
+import { useAuthStore, useStore } from '@stores'
 import { type PanelSurfaceVariant, type TNotification } from '@types'
 import { padSlugOf } from '@utils/filterRoute'
-import { formatTimeAgo } from '@utils/formatTime'
 import { useRouter } from 'next/router'
-import PubSub from 'pubsub-js'
-import { LuLink, LuTriangleAlert } from 'react-icons/lu'
+import { LuTriangleAlert } from 'react-icons/lu'
 
 import { useMarkNotificationAsRead } from '../hooks/useMarkNotificationAsRead'
-import { NotificationAttachmentHint } from './NotificationAttachmentHint'
 import NotificationIcon from './NotificationIcon'
 
 const isSystemNotification = (notification: TNotification): boolean =>
@@ -58,28 +61,27 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
   const exiting = isDismissing(notification.id)
 
   const profile = useAuthStore((state) => state.profile)
-  const { headingId } = useChatStore((state) => state.chatRoom)
-  const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
   const dismissPanel = useDismissPanel(variant)
   const router = useRouter()
-  const { copy, copied } = useCopyToClipboard({
-    successMessage: 'URL copied to clipboard',
-    errorMessage: 'Failed to copy URL'
-  })
 
-  const handleViewNotification = (notification: TNotification) => {
+  // The sheet's close pops its Back entry. A URL write must wait for that pop to land,
+  // or the pop cancels the push or eats the hash. A popover owns no entry.
+  const dismissBeforeNavigate = async () => {
+    dismissPanel()
+    if (variant === 'sheet') await consumeHistoryDismissEntry()
+  }
+
+  const handleViewNotification = async (notification: TNotification) => {
     // First, because a sender-less carrier would otherwise be claimed by the
     // system test below. A carrier does carry a sender when the editor is known.
     if (notification.type === 'content_change') {
       void markAsRead(notification)
-      dismissPanel()
-
       // Compare the document segment, not the whole path: active filter terms
       // live in later segments, and a bare push would drop the reader's filters.
       const target = actionUrlPathname(notification.action_url)
+      if (target) void armCompareFromLastLeft(notification.channel_id, profile?.id)
+      await dismissBeforeNavigate()
       if (!target) return
-
-      void armCompareFromLastLeft(notification.channel_id, profile?.id)
 
       if (padSlugOf(target) !== padSlugOf(window.location.pathname)) {
         void router.push(`${target}#history`)
@@ -96,35 +98,14 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
 
     if (isSystemNotification(notification)) {
       void markAsRead(notification)
-      dismissPanel()
-      toast.Info('Check your email settings in Profile → Notifications')
+      await dismissBeforeNavigate()
+      // The email-bounce alert is the one system producer. Its fix lives on this tab.
+      openOverlayHash('settings', 'notifications')
       return
     }
 
-    const messageId = notification.message_id
-    const channelId = notification.channel_id
-
-    if (headingId === channelId) destroyChatRoom()
-
-    PubSub.publish(CHAT_OPEN, {
-      headingId: channelId,
-      toggleRoom: false,
-      fetchMsgsFromId: messageId,
-      scroll2Heading: true
-    })
-
+    openChatAtMessage(notification.channel_id, notification.message_id)
     dismissPanel()
-  }
-
-  const handleCopyUrl = (notification: TNotification) => {
-    // A carrier has no message, so half a link opens nothing.
-    if (!notification.message_id || !notification.channel_id) return
-
-    const newURL = new URL(location.href)
-    newURL.searchParams.set('msg_id', notification.message_id)
-    newURL.searchParams.set('chatroom', notification.channel_id)
-
-    void copy(newURL.toString())
   }
 
   const isContentChange = notification.type === 'content_change'
@@ -161,59 +142,30 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
                     : documentNameFromActionUrl(notification.action_url)}
               </span>
             </p>
-            <div className="flex w-full min-w-0 items-start gap-2">
-              <NotificationAttachmentHint preview={notification.message_preview} />
-              <p className="bg-base-200 text-base-content/70 rounded-field line-clamp-2 min-w-0 flex-1 px-2 py-1 text-sm">
-                {notification.message_preview}
-              </p>
-            </div>
+            <PanelFeedPreview media={<PanelFeedMediaHint preview={notification.message_preview} />}>
+              {notification.message_preview}
+            </PanelFeedPreview>
           </div>
           {!isSystem && !isContentChange && (
-            <Button
-              variant="ghost"
-              size="sm"
-              shape="square"
-              className="text-base-content/50 hover:text-base-content shrink-0"
-              onClick={() => handleCopyUrl(notification)}
+            <PanelFeedCopyLink
+              messageId={notification.message_id}
+              channelId={notification.channel_id}
               disabled={exiting}
-              aria-label={copied ? 'Copied!' : 'Copy link'}>
-              <span className={`swap ${copied ? 'swap-active' : ''}`} aria-hidden>
-                <Icons.check size={14} className="swap-on text-success" />
-                <LuLink size={14} className="swap-off rotate-45" />
-              </span>
-            </Button>
+            />
           )}
         </div>
 
-        <div className="mt-2 flex items-center gap-2">
-          <span className="text-base-content/50 text-xs">
-            {formatTimeAgo(notification.created_at)}
-          </span>
+        <PanelFeedActions
+          createdAt={notification.created_at}
+          onView={() => void handleViewNotification(notification)}
+          viewLabel={isSystem ? 'Review' : 'View'}
+          disabled={exiting}>
           {notificationActiveTab !== 'Read' && (
-            <Button
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                void markAsRead(notification)
-              }}
-              variant="ghost"
-              size="xs"
-              className="text-primary hover:bg-primary/10"
-              disabled={exiting}
-              aria-busy={exiting}>
+            <PanelFeedRowAction onClick={() => void markAsRead(notification)} disabled={exiting}>
               Mark as read
-            </Button>
+            </PanelFeedRowAction>
           )}
-          <Button
-            onClick={() => handleViewNotification(notification)}
-            variant={isSystem ? 'warning' : 'primary'}
-            btnStyle="soft"
-            size="xs"
-            className="ml-auto"
-            disabled={exiting}>
-            {isSystem ? 'Review' : 'View'}
-          </Button>
-        </div>
+        </PanelFeedActions>
       </div>
     </PanelFeedItem>
   )

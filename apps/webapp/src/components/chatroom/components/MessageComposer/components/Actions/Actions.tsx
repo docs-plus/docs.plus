@@ -1,4 +1,4 @@
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 interface Props {
   children: React.ReactNode

@@ -1,6 +1,7 @@
 import { messageActionTitle } from '@components/chatroom/components/MessageCard/hooks/messageActionMenu'
 import { useEditMessageHandler } from '@components/chatroom/components/MessageCard/hooks/useEditMessageHandler'
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
+import { ContextMenuRow, MenuItem } from '@components/ui/ContextMenu'
 import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
 import { useMemo } from 'react'
@@ -17,11 +18,8 @@ export const EditAction = () => {
   if (!isOwner) return null
 
   return (
-    <li>
-      <a className="flex items-center gap-2" onClick={() => editMessageHandler(message)}>
-        <Icons.edit size={18} />
-        {messageActionTitle.edit}
-      </a>
-    </li>
+    <MenuItem onClick={() => editMessageHandler(message)}>
+      <ContextMenuRow icon={<Icons.edit size={16} />}>{messageActionTitle.edit}</ContextMenuRow>
+    </MenuItem>
   )
 }

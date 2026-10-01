@@ -4,8 +4,8 @@ import type { ChatPaneMode } from '@types'
 export const CHAT_PANE_DOC_FLOOR_PX = 96
 
 /**
- * 160px is measured furniture (grabber 20 + header 53 + feed pad 20 + composer 61 = 154,
- * plus margin). The grabber is the pane's own `h-5` control, not the sheet DragIndicator.
+ * 160px is measured furniture (grabber 24 + header 53 + feed pad 20 + composer 61 = 158,
+ * plus margin). The grabber is the pane's own `h-6` control, not the sheet DragIndicator.
  * Safe-area is measured at runtime — see `safeAreaInsetBottom`.
  */
 export const CHAT_PANE_FLOOR_PX = 160

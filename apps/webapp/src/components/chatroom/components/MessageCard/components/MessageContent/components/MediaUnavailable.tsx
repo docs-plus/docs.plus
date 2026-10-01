@@ -1,6 +1,7 @@
+import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import type { MessageMediaKind } from '@types'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 const KIND_ICON = {
   image: Icons.image,
@@ -28,15 +29,14 @@ export function MediaUnavailable({ label, className, onRetry, kind = 'image' }: 
       <Icon size={18} aria-hidden />
       <span className="text-center">{label}</span>
       {onRetry ? (
-        <button
-          type="button"
+        <Button
+          variant="quiet"
           onClick={(event) => {
             event.stopPropagation()
             onRetry()
-          }}
-          className="text-primary hover:underline focus-visible:underline focus-visible:outline-none">
+          }}>
           Retry
-        </button>
+        </Button>
       ) : null}
     </div>
   )

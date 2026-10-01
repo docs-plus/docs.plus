@@ -1,6 +1,5 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { DeleteMessageConfirmationDialog } from '@components/chatroom/components/MessageCard/components/common/DeleteMessageConfirmationDialog'
-import { calculateEmojiPickerPosition } from '@components/chatroom/components/MessageCard/helpers'
 import { useBookmarkMessageHandler } from '@components/chatroom/components/MessageCard/hooks/useBookmarkMessageHandler'
 import { useCopyMessageLinkHandler } from '@components/chatroom/components/MessageCard/hooks/useCopyMessageLinkHandler'
 import { useCopyMessageToDocHandler } from '@components/chatroom/components/MessageCard/hooks/useCopyMessageToDocHandler'
@@ -10,7 +9,8 @@ import { usePinMessageHandler } from '@components/chatroom/components/MessageCar
 import { useReplyInMessageHandler } from '@components/chatroom/components/MessageCard/hooks/useReplyInMessageHandler'
 import { useReplyInThreadHandler } from '@components/chatroom/components/MessageCard/hooks/useReplyInThreadHandler'
 import { parseMessageMedias } from '@components/chatroom/utils/messageMediaPaths'
-import { openMessageReaction } from '@components/chatroom/utils/messageReaction'
+import { isMessageBookmarked } from '@components/chatroom/utils/messagePresentation'
+import { openMessageReactionAt } from '@components/chatroom/utils/messageReaction'
 import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
 import { TMsgRow } from '@types'
@@ -42,6 +42,7 @@ export const useMessageActionMenuItems = (
 
   const isOwner = message.user_id === profile?.id
   const isPinned = hasMetadataProperty(message.metadata, 'pinned')
+  const isBookmarked = isMessageBookmarked(message)
   const attachmentCount = parseMessageMedias(message.medias).length
 
   const items = useMemo(() => {
@@ -62,12 +63,7 @@ export const useMessageActionMenuItems = (
         icon: <Icons.emoji size={iconSize} />,
         onClickFn: (e?: React.MouseEvent) => {
           if (!e?.target) return
-          const coordinates = (e.target as HTMLElement).getBoundingClientRect()
-          const pickerOpenPosition = calculateEmojiPickerPosition(coordinates)
-          openMessageReaction(message, {
-            top: pickerOpenPosition?.top || 0,
-            left: pickerOpenPosition?.left || 0
-          })
+          openMessageReactionAt(message, (e.target as HTMLElement).getBoundingClientRect())
         },
         display: true
       })
@@ -94,13 +90,12 @@ export const useMessageActionMenuItems = (
     list.push(
       {
         id: 'bookmark',
-        title: 'Bookmark',
-        icon:
-          message.is_bookmarked || message.bookmark_id ? (
-            <Icons.bookmarkMinus size={iconSize} />
-          ) : (
-            <Icons.bookmarkPlus size={iconSize} />
-          ),
+        title: isBookmarked ? 'Remove bookmark' : 'Bookmark',
+        icon: isBookmarked ? (
+          <Icons.bookmarkMinus size={iconSize} />
+        ) : (
+          <Icons.bookmarkPlus size={iconSize} />
+        ),
         onClickFn: () => bookmarkMessageHandler(message),
         display: true,
         separatorBefore: true
@@ -114,11 +109,10 @@ export const useMessageActionMenuItems = (
       },
       {
         id: 'reply-in-thread',
-        title: 'Reply in Thread',
+        title: 'Reply in thread',
         icon: <Icons.thread size={iconSize} />,
         onClickFn: () => replyInThreadHandler(message),
-        display: true,
-        variant: 'primary'
+        display: true
       },
       {
         id: 'pin',
@@ -143,9 +137,7 @@ export const useMessageActionMenuItems = (
           openDialog(<DeleteMessageConfirmationDialog message={message} />, { size: 'sm' })
         },
         display: isOwner,
-        variant: 'danger',
-        // Divider before Delete when Edit is hidden (non-owner); Edit owns separatorBefore when owner
-        separatorBefore: !isOwner
+        variant: 'danger'
       },
       {
         // Hidden from the message menu. Document report in Settings stays the route.
@@ -169,6 +161,7 @@ export const useMessageActionMenuItems = (
     getMessageUrl,
     iconSize,
     includeReaction,
+    isBookmarked,
     isOwner,
     isPinned,
     pinMessageHandler,

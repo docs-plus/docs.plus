@@ -1,12 +1,12 @@
 import { Icons } from '@icons'
 import { commentReferenceJumpShell, type CommentReferenceTheme } from '@utils/commentReferenceTheme'
+import { twMerge } from '@utils/twMerge'
 import type { ReactNode } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 const REPLY_SHELL = 'border-l-info bg-base-200/80 hover:bg-base-300/55'
 
 const BUTTON_CLASS =
-  'text-base-content focus-visible:ring-primary relative z-[1] mb-1 block w-full cursor-pointer rounded border-l-4 p-2 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none'
+  'text-base-content focus-visible:ring-primary relative z-[1] mb-1 block w-full cursor-pointer rounded-field border-l-4 p-2 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none'
 
 type ReferenceJumpButtonBase = {
   dataKey: string

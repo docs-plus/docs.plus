@@ -1,9 +1,9 @@
 import { Icons } from '@icons'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useChatStore, useStore } from '@stores'
+import { twMerge } from '@utils/twMerge'
 import PubSub from 'pubsub-js'
 import React, { useCallback, useEffect, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { useChatroomContext } from '../../../ChatroomContext'
 import {

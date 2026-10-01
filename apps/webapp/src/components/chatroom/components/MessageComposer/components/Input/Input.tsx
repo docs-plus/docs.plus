@@ -1,5 +1,5 @@
 import { EditorContent } from '@tiptap/react'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import { useMessageComposer } from '../../hooks/useMessageComposer'
 

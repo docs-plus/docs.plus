@@ -1,8 +1,10 @@
 import SharedButton, { type ButtonShape, type ButtonVariant } from '@components/ui/Button'
 import { Placement } from '@floating-ui/react'
 import { useTouchPress } from '@hooks/useTouchPress'
+import { twMerge } from '@utils/twMerge'
 import React from 'react'
-import { twMerge } from 'tailwind-merge'
+
+import { useMessageComposer } from '../../hooks/useMessageComposer'
 
 interface ToolbarButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
   onPress?: (event: React.MouseEvent | React.TouchEvent) => void
@@ -33,6 +35,7 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
     // Click is wired unconditionally below, unlike the pad button, which gates on `onPress`.
     // The hook's `preventDefault` on every click keeps the composer editor selection from being stolen.
     const { handleTouchEnd, handleClick } = useTouchPress(onPress, onClick)
+    const { isMobile } = useMessageComposer()
 
     return (
       <SharedButton
@@ -40,8 +43,10 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
         variant={variant}
         size="sm"
         shape={shape}
+        // The one composer hit target: 32px on desktop, 44px on a phone.
         className={twMerge(
-          'min-h-0 cursor-pointer touch-manipulation border-0 p-0 antialiased',
+          'rounded-field size-8 min-h-8 min-w-8 shrink-0 cursor-pointer touch-manipulation border-0 p-0 antialiased',
+          isMobile && 'size-11 min-h-11 min-w-11',
           isActive && 'is-active btn-active',
           className
         )}

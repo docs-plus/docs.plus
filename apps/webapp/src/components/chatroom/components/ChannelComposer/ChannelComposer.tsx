@@ -1,6 +1,6 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { useAuthStore, useChatStore } from '@stores'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import MsgComposer from '../MessageComposer/MessageComposer'
 import { ChatroomComposerSkeleton } from '../skeleton'

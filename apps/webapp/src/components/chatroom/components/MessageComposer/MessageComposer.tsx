@@ -5,9 +5,9 @@ import {
 import { composerSendGate } from '@components/chatroom/utils/composerSendGate'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { EditorContent } from '@tiptap/react'
+import { twMerge } from '@utils/twMerge'
 import { nudgeVirtualKeyboardOpenFromVisualViewport } from '@utils/virtualKeyboardMetrics'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { useChatroomContext } from '../../ChatroomContext'
 import { Actions, EmojiButton } from './components/Actions'

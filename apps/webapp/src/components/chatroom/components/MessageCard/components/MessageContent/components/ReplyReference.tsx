@@ -34,13 +34,17 @@ export const ReplyReference = () => {
         <>
           {userReplyTo ? (
             <>
-              <span className="text-base-content/40 font-normal">·</span>
+              <span aria-hidden="true" className="text-base-content/50 font-normal">
+                ·
+              </span>
               <span className="text-base-content font-normal">{userReplyTo}</span>
             </>
           ) : null}
           {repliedTime ? (
             <>
-              <span className="text-base-content/40 font-normal">·</span>
+              <span aria-hidden="true" className="text-base-content/50 font-normal">
+                ·
+              </span>
               <time className="text-base-content/60 font-normal whitespace-nowrap">
                 {repliedTime}
               </time>

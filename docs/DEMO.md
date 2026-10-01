@@ -126,7 +126,7 @@ _A chatroom takes what the page takes, inside a fixed set of caps._
 
 ### Keep a message for later
 
-A bookmark saves a message to your own list, and a second tap takes it back off. The message keeps a Saved for later tag in the chatroom — needs an account.
+A bookmark saves a message to your own list, and a second tap takes it back off. The message keeps a Bookmarked tag in the chatroom — needs an account.
 
 The list opens from the bookmark icon in the document toolbar, in three tabs: in progress, archive, and read. View on a row opens that heading's chatroom at the message — needs an account.
 

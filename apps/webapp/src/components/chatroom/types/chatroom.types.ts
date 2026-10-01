@@ -1,3 +1,4 @@
+import type { DialogConfig } from '@stores'
 import type { VirtuosoMessageListMethods } from '@virtuoso.dev/message-list'
 
 import type { ChannelFeedMode } from '../utils/channelFeedProjection'
@@ -15,12 +16,6 @@ export interface ChatroomProps {
   children: React.ReactNode
   /** Deep-link entry point: scrolls to + flashes target message on mount. */
   deepLinkMessageId?: string | null
-}
-
-export interface DialogConfig {
-  title?: string
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
-  className?: string
 }
 
 export interface ChatroomContextValue {

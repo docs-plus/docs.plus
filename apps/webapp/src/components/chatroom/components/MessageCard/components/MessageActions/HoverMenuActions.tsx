@@ -11,14 +11,12 @@ export const HoverMenuActions = () => {
       <MessageCard.Actions.Bookmark />
 
       <HoverMenuDropdown
-        tooltip="More Actions"
-        trigger={<Icons.moreVertical size={18} className="text-base-content/60" />}>
+        tooltip="More actions"
+        trigger={<Icons.moreVertical size={18} className="text-base-content/70" />}>
         <MessageCard.Actions.Download />
         <MessageCard.Actions.CopyToDoc />
         <MessageCard.Actions.CopyLink />
-        <MessageCard.Actions.GroupAuth
-          checkMessageAuthor={true}
-          className="border-base-300 mt-1 border-t pt-1">
+        <MessageCard.Actions.GroupAuth checkMessageAuthor separatorBefore>
           <MessageCard.Actions.Edit />
           <MessageCard.Actions.Delete />
         </MessageCard.Actions.GroupAuth>

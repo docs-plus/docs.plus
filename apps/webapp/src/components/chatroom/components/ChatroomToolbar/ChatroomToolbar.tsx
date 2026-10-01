@@ -1,4 +1,4 @@
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import {
   Breadcrumb,
@@ -18,7 +18,7 @@ const ChatroomToolbar = ({ children, className }: Props) => {
   return (
     <div
       className={twMerge(
-        'bg-base-100 border-base-300 relative z-50 flex w-full items-center gap-2 border-b px-3 py-1.5',
+        'bg-base-100 border-base-300 relative z-40 flex w-full items-center gap-2 border-b px-3 py-1.5',
         className
       )}>
       {children}

@@ -1,5 +1,5 @@
 import type { ChatroomVariant } from '@components/chatroom/types/chatroom.types'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 type Props = {
   variant?: keyof ChatroomVariant

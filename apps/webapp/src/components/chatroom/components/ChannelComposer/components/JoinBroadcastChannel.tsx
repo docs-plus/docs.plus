@@ -64,7 +64,7 @@ export default function JoinBroadcastChannel() {
           startIcon={Icons.userPlus}
           onClick={() => void join()}
           loading={joinLoading}>
-          Join Channel
+          Join channel
         </Button>
       )}
     </ChannelComposerSurface>

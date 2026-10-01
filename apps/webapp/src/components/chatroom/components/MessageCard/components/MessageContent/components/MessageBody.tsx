@@ -1,8 +1,8 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { useMentionClick } from '@components/chatroom/hooks'
 import { getSanitizedMessageBodyHtml } from '@utils/index'
+import { twMerge } from '@utils/twMerge'
 import { useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { useMessageCardContext } from '../../../MessageCardContext'
 import { EmojiBody } from './EmojiBody'

@@ -6,7 +6,7 @@ import type { MessageSurfaceLayout } from '@components/chatroom/utils/messagePre
 import { pauseChatMediaElements } from '@components/chatroom/utils/pauseChatMediaElements'
 import type { MessageMediaItem } from '@types'
 import { formatGallerySentAt } from '@utils/formatGallerySentAt'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import { useMessageCardContext } from '../../../MessageCardContext'
 import { MessageMediaAudio } from './MessageMediaAudio'

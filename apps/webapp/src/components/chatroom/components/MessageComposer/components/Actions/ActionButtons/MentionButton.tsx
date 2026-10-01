@@ -1,7 +1,7 @@
 import { Icons } from '@icons'
 import type { Editor } from '@tiptap/core'
+import { twMerge } from '@utils/twMerge'
 import { useCallback, useSyncExternalStore } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { dismissComposerOverlaysBeforeMention } from '../../../helpers/dismissComposerOverlays'
 import {
@@ -40,7 +40,7 @@ type Props = React.ComponentProps<typeof Button> & {
   size?: number
 }
 
-export const MentionButton = ({ className, size, ...props }: Props) => {
+export const MentionButton = ({ size, ...props }: Props) => {
   const { editor, isMobile } = useMessageComposer()
   const glyph = size ?? (isMobile ? 20 : 18)
   const isActive = useSyncExternalStore(subscribeMentionPopup, getMentionPickerActive, () => false)
@@ -72,12 +72,6 @@ export const MentionButton = ({ className, size, ...props }: Props) => {
 
   return (
     <Button
-      className={twMerge(
-        isMobile
-          ? 'rounded-field size-11 min-h-11 min-w-11 shrink-0 border-0 p-0'
-          : 'rounded-field size-8 min-h-8 min-w-8 shrink-0 border-0 p-0',
-        className
-      )}
       onPress={onPress}
       tooltip={ariaLabel}
       tooltipPosition="top"

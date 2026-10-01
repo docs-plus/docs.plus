@@ -1,4 +1,4 @@
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import { useMessageCardContext } from '../../MessageCardContext'
 import MessageIndicators from './components/MessageIndicators'

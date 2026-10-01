@@ -1,8 +1,9 @@
 import { messageActionTitle } from '@components/chatroom/components/MessageCard/hooks/messageActionMenu'
 import { useCopyMessageLinkHandler } from '@components/chatroom/components/MessageCard/hooks/useCopyMessageLinkHandler'
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
+import { ContextMenuRow, MenuItem } from '@components/ui/ContextMenu'
 import { Icons } from '@icons'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 type Props = {
   className?: string
@@ -14,22 +15,26 @@ export const CopyLinkAction = ({ className }: Props) => {
 
   if (!message) return null
 
+  // The swap spans are aria-hidden, so the row carries its name here. The label swap
+  // is inline-grid; `align-top` drops its baseline gap, so the row keeps the 36px height.
   return (
-    <li className={twMerge('border-base-300', className)}>
-      <button
-        type="button"
-        className={twMerge('flex items-center gap-2', copied && 'text-success')}
-        aria-label={copied ? 'Copied!' : messageActionTitle.copyLink}
-        onClick={() => copyMessageLinkHandler(message)}>
-        <span className={twMerge('swap', copied && 'swap-active')} aria-hidden>
-          <Icons.check size={18} className="swap-on text-success" />
-          <Icons.link size={18} className="swap-off" />
-        </span>
-        <span className={twMerge('swap', copied && 'swap-active')} aria-hidden>
+    <MenuItem
+      className={className}
+      aria-label={copied ? 'Copied!' : messageActionTitle.copyLink}
+      onClick={() => copyMessageLinkHandler(message)}>
+      <ContextMenuRow
+        icon={
+          <span className={twMerge('swap', copied && 'swap-active')} aria-hidden>
+            <Icons.check size={16} className="swap-on text-success" />
+            <Icons.link size={16} className="swap-off" />
+          </span>
+        }
+        className={twMerge(copied && 'text-[var(--success-ink)]')}>
+        <span className={twMerge('swap align-top', copied && 'swap-active')} aria-hidden>
           <span className="swap-on">Copied!</span>
           <span className="swap-off">{messageActionTitle.copyLink}</span>
         </span>
-      </button>
-    </li>
+      </ContextMenuRow>
+    </MenuItem>
   )
 }

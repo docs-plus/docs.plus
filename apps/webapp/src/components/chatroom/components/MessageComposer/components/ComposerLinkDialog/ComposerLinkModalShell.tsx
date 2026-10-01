@@ -1,8 +1,9 @@
+import CloseButton from '@components/ui/CloseButton'
 import { modalBackdropClassName, modalPanelFrameClassName } from '@components/ui/Dialog'
 import { MOTION_DIALOG_IN_MS, MOTION_DIALOG_OUT_MS } from '@utils/motion'
 import { syncVisualViewportToCssVars } from '@utils/visualViewportCss'
 import { motion, useIsPresent } from 'motion/react'
-import { type ReactNode, useLayoutEffect, useRef } from 'react'
+import { type ReactNode, useId, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 
 // Same timing as the house Dialog in ui/Dialog.tsx: ease-out on enter, ease-in on exit.
@@ -10,13 +11,18 @@ const BACKDROP_TRANSITION = { duration: MOTION_DIALOG_OUT_MS / 1000, ease: 'ease
 const CARD_TRANSITION = { duration: MOTION_DIALOG_IN_MS / 1000, ease: 'easeOut' } as const
 const EXIT_TRANSITION = { duration: MOTION_DIALOG_OUT_MS / 1000, ease: 'easeIn' } as const
 
+// Literal classes for Tailwind. The width ladder: an action list is `sm`, a form is `md`.
+const WIDTH_CLASS = { sm: 'max-w-sm', md: 'max-w-md' } as const
+
 type Props = {
   children: ReactNode
-  titleId: string
+  title: string
   onBackdropClick: () => void
+  size?: keyof typeof WIDTH_CLASS
 }
 
-export function ComposerLinkModalShell({ children, titleId, onBackdropClick }: Props) {
+export function ComposerLinkModalShell({ children, title, onBackdropClick, size = 'sm' }: Props) {
+  const titleId = useId()
   const cardRef = useRef<HTMLDivElement>(null)
   const isPresent = useIsPresent()
 
@@ -103,11 +109,17 @@ export function ComposerLinkModalShell({ children, titleId, onBackdropClick }: P
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
-          className={`${modalPanelFrameClassName} text-base-content pointer-events-auto relative w-full max-w-sm shrink-0 p-4`}
+          className={`${modalPanelFrameClassName} text-base-content pointer-events-auto relative flex w-full ${WIDTH_CLASS[size]} shrink-0 flex-col gap-4 p-6`}
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.96, transition: EXIT_TRANSITION }}
           transition={CARD_TRANSITION}>
+          <div className="flex items-start justify-between gap-2">
+            <h2 id={titleId} className="text-base-content text-xl font-semibold">
+              {title}
+            </h2>
+            <CloseButton onClick={onBackdropClick} />
+          </div>
           {children}
         </motion.div>
       </div>

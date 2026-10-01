@@ -1,5 +1,6 @@
+import { isMessageBookmarked } from '@components/chatroom/utils/messagePresentation'
 import { Icons } from '@icons'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import { useMessageCardContext } from '../../../MessageCardContext'
 
@@ -10,18 +11,16 @@ type Props = {
 export const BookmarkIndicator = ({ className }: Props) => {
   const { message } = useMessageCardContext()
 
-  // Either field truthy = bookmarked (matches the OR pattern everywhere
-  // else — MessageCardContext, ContextMenuItems, BookmarkButton).
-  if (!message.is_bookmarked && !message.bookmark_id) return null
+  if (!isMessageBookmarked(message)) return null
 
   return (
     <div
       className={twMerge(
-        'text-primary flex items-center gap-1 pt-1 pb-4 text-xs font-medium',
+        'text-base-content/70 flex items-center gap-1 pt-1 pb-4 text-xs font-medium',
         className
       )}>
       <Icons.bookmark size={16} />
-      <span>Saved for later</span>
+      <span>Bookmarked</span>
     </div>
   )
 }

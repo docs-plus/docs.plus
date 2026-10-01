@@ -1,4 +1,5 @@
 import { useBookmarkMessageHandler } from '@components/chatroom/components/MessageCard/hooks/useBookmarkMessageHandler'
+import { isMessageBookmarked } from '@components/chatroom/utils/messagePresentation'
 import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
@@ -13,9 +14,12 @@ export const BookmarkButton = ({ className }: Props) => {
   const { message } = useMessageCardContext()
   const profile = useAuthStore((state) => state.profile)
 
+  const isBookmarked = isMessageBookmarked(message)
+  const label = isBookmarked ? 'Remove bookmark' : 'Bookmark'
+
   const icon = bookmarkLoading ? (
-    <div className="border-base-content/30 border-t-base-content/70 size-[18px] animate-spin rounded-full border-2" />
-  ) : message.is_bookmarked || message.bookmark_id ? (
+    <span className="loading loading-spinner loading-xs" aria-hidden />
+  ) : isBookmarked ? (
     <Icons.bookmarkMinus size={18} className="text-info" />
   ) : (
     <Icons.bookmarkPlus size={18} className="text-base-content/70" />
@@ -30,7 +34,8 @@ export const BookmarkButton = ({ className }: Props) => {
       disabled={bookmarkLoading || !profile}
       onClick={() => bookmarkMessageHandler(message)}
       startIcon={icon}
-      tooltip="Bookmark Message"
+      tooltip={label}
+      aria-label={label}
       tooltipPlacement="left"
     />
   )

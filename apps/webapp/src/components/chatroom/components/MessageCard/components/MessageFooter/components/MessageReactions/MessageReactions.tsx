@@ -1,4 +1,4 @@
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import AddReactionButton from './components/AddReactionButton'
 import ReactionList from './components/ReactionList'

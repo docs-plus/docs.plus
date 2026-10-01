@@ -1,7 +1,7 @@
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
 import { Icons } from '@icons'
 import { getMetadataProperty } from '@utils/metadata'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 type Props = {
   className?: string
@@ -15,8 +15,11 @@ export const ReplyCount = ({ className }: Props) => {
 
   return (
     <div className={twMerge('flex items-center', className)}>
-      <Icons.reply size={16} className="text-base-content/50" />
-      <span className="text-xs">{counts}</span>
+      <Icons.reply size={16} className="text-base-content/50" aria-hidden />
+      <span className="text-xs" aria-hidden>
+        {counts}
+      </span>
+      <span className="sr-only">{counts === 1 ? '1 reply' : `${counts} replies`}</span>
     </div>
   )
 }

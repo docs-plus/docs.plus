@@ -7,8 +7,8 @@ import {
 } from '@components/ui/ContextMenu'
 import { useAuthStore, useChatStore } from '@stores'
 import { TMsgRow } from '@types'
+import { twMerge } from '@utils/twMerge'
 import React, { useCallback, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { MessageMenuReadStatus } from '../MessageCard/components/common/MessageMenuReadStatus'
 import ContextMenuItems from '../MessageCard/components/MessageContextMenu/ContextMenuItems'
@@ -36,7 +36,7 @@ const ContextMenuReadStatus = ({ message }: { message: TMsgRow | null }) => {
   const { isOpen } = useContextMenuContext()
   if (!message) return null
 
-  return <MessageMenuReadStatus message={message} isOpen={isOpen} className="px-2.5 py-2" />
+  return <MessageMenuReadStatus message={message} isOpen={isOpen} inMenu />
 }
 
 export const ChatListContextMenu = ({ children, className }: Props) => {
@@ -95,7 +95,7 @@ export const ChatListContextMenu = ({ children, className }: Props) => {
   return (
     <div className={twMerge('flex min-h-0 w-full flex-1 flex-col', className)} ref={contextMenuRef}>
       <ContextMenu
-        className={twMerge(contextMenuPanelClassName, 'absolute z-40 min-w-[12rem]')}
+        className={twMerge(contextMenuPanelClassName, 'absolute z-50')}
         parentRef={contextMenuRef}
         onBeforeShow={handleBeforeShow}
         onClose={handleContextMenuClose}>

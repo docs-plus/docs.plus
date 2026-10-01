@@ -25,7 +25,7 @@ const WIDTH_RATIO = 0.99
 const SIDE_INSET_RATIO = (1 - WIDTH_RATIO) / 2
 
 const POPUP_CLASS =
-  'mention-suggestion-popup bg-base-100 border-base-300 z-[9999] overflow-hidden rounded-field border shadow-md'
+  'mention-suggestion-popup bg-base-100 border-base-300 z-50 overflow-hidden rounded-box border shadow-xl'
 
 function getComposerSurface(editor: Editor): HTMLElement | null {
   return editor.view.dom.closest(COMPOSER_SURFACE_SELECTOR)

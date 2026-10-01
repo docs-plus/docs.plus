@@ -7,8 +7,8 @@ import { useApi } from '@hooks/useApi'
 import { Icons } from '@icons'
 import { TMsgRow } from '@types'
 import { toStackUser } from '@utils/avatarFace'
+import { twMerge } from '@utils/twMerge'
 import { useEffect, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 export function useIsMessageSeenByPeers(message: TMsgRow) {
   const { channelId } = useChatroomContext()
@@ -21,9 +21,17 @@ type Props = {
   isOpen: boolean
   avatarLoaderRepeat?: number
   className?: string
+  /** Inside a `role="menu"` list, a plain `li` is not an allowed child. */
+  inMenu?: boolean
 }
 
-export function UserReadStatus({ message, isOpen, avatarLoaderRepeat = 3, className }: Props) {
+export function UserReadStatus({
+  message,
+  isOpen,
+  avatarLoaderRepeat = 3,
+  className,
+  inMenu = false
+}: Props) {
   const isSeen = useIsMessageSeenByPeers(message)
 
   const [readUsers, setReadUsers] = useState<ChannelMemberReadUpdate[]>([])
@@ -58,7 +66,7 @@ export function UserReadStatus({ message, isOpen, avatarLoaderRepeat = 3, classN
     </>
   ) : (
     <div className="flex items-center gap-2">
-      <span className="text-base-content/50 shrink-0 text-xs">
+      <span className="text-base-content/60 shrink-0 text-xs">
         <span className="flex items-center gap-1 whitespace-nowrap">
           <Icons.checkDouble size={16} className="text-base-content/40" />
           {readUsers.length} seen
@@ -76,8 +84,10 @@ export function UserReadStatus({ message, isOpen, avatarLoaderRepeat = 3, classN
 
   return (
     <li
+      role={inMenu ? 'menuitem' : undefined}
+      aria-disabled={inMenu || undefined}
       className={twMerge(
-        'pointer-events-none select-none',
+        'pointer-events-none px-2.5 py-2 select-none',
         readUsersLoading && 'flex flex-row items-center gap-2',
         className
       )}>

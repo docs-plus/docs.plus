@@ -1,5 +1,5 @@
 import { Icons } from '@icons'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import { useMessageComposer } from '../hooks/useMessageComposer'
 import type { UseVoiceRecorderReturn } from '../hooks/useVoiceRecorder'
@@ -42,7 +42,7 @@ export function VoiceRecordingBar({
         data-testid="composer-recording-bar"
         role="region"
         aria-label="Voice note preview">
-        <span className="text-base-content/60 text-xs font-medium tabular-nums">
+        <span className="text-base-content/70 text-xs font-medium tabular-nums">
           {elapsedLabel}
         </span>
         {previewUrl ? (
@@ -96,7 +96,7 @@ export function VoiceRecordingBar({
         {!isLocked ? (
           // The slide hint follows the finger: the hold writes --voice-drag-x on the composer root.
           <span
-            className="text-base-content/60 flex items-center text-xs"
+            className="text-base-content/70 flex items-center text-xs"
             style={{
               transform: 'translateX(var(--voice-drag-x, 0px))',
               opacity: 'calc(1 - var(--voice-cancel-progress, 0) * 0.6)'
@@ -106,7 +106,7 @@ export function VoiceRecordingBar({
             <span className="sr-only">, or up to lock</span>
           </span>
         ) : (
-          <span className="text-base-content/60 text-[10px]">Recording locked</span>
+          <span className="text-base-content/70 text-xs">Recording locked</span>
         )}
       </span>
       {isLocked ? (

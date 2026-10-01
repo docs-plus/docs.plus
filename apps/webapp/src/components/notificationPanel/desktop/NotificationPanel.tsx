@@ -1,30 +1,27 @@
-import { PanelPopoverHeader } from '@components/PanelPopoverHeader'
+import { PanelFeedSkeleton } from '@components/PanelFeedItem'
 import { PanelSurfaceShell } from '@components/PanelSurfaceShell'
 import { TabbedPanelBody } from '@components/TabbedPanelBody'
-import { useDismissPanel } from '@hooks/useDismissPanel'
+import { EmptyState } from '@components/ui/EmptyState'
 import { useStore } from '@stores'
 import { type PanelSurfaceVariant } from '@types'
+import { LuInbox } from 'react-icons/lu'
 
-import { EmptyNotificationState } from '../components/EmptyNotificationState'
 import { NotificationItem } from '../components/NotificationItem'
 import { NotificationMarkAllReadButton } from '../components/NotificationMarkAllReadButton'
-import { NotificationSkeleton } from '../components/NotificationSkeleton'
 import { useNotificationPanelFeed } from '../feed/useNotificationPanelFeed'
 
 interface NotificationPanelProps {
-  onClose?: () => void
   variant?: PanelSurfaceVariant
 }
 
-export const NotificationPanel = ({ onClose, variant = 'popover' }: NotificationPanelProps) => {
+export const NotificationPanel = ({ variant = 'popover' }: NotificationPanelProps) => {
   const notificationActiveTab = useStore((state) => state.notificationActiveTab)
   const notificationTabs = useStore((state) => state.notificationTabs)
   const setNotificationActiveTab = useStore((state) => state.setNotificationActiveTab)
   const isSheet = variant === 'sheet'
-  const dismissPanel = useDismissPanel(variant)
-  const markAllReadAction = <NotificationMarkAllReadButton />
+  const unreadCount = notificationTabs.find((tab) => tab.label === 'Unread')?.count ?? 0
 
-  const { notifications, isLoading, isLoadingMore, hasMore, sentinelRef } =
+  const { notifications, isLoading, isLoadingMore, hasMore, isError, retry, sentinelRef } =
     useNotificationPanelFeed()
 
   return (
@@ -33,16 +30,7 @@ export const NotificationPanel = ({ onClose, variant = 'popover' }: Notification
       title="Notifications"
       fillHeight
       bodyClassName="min-h-0 overflow-hidden"
-      onClose={isSheet ? (onClose ?? dismissPanel) : undefined}
-      headerActions={markAllReadAction}
-      popoverHeader={
-        <PanelPopoverHeader
-          title="Notifications"
-          onClose={onClose}
-          showClose
-          actions={markAllReadAction}
-        />
-      }>
+      headerActions={unreadCount > 0 ? <NotificationMarkAllReadButton /> : null}>
       <TabbedPanelBody
         variant={variant}
         tabs={notificationTabs}
@@ -57,8 +45,18 @@ export const NotificationPanel = ({ onClose, variant = 'popover' }: Notification
         renderItem={(notification) => (
           <NotificationItem notification={notification} variant={variant} />
         )}
-        loadingSkeleton={<NotificationSkeleton count={isSheet ? 5 : 4} />}
-        emptyState={<EmptyNotificationState show={!isLoading && notifications.length === 0} />}
+        loadingSkeleton={<PanelFeedSkeleton count={isSheet ? 5 : 4} typeIcon />}
+        emptyState={
+          <EmptyState
+            icon={LuInbox}
+            title="You’re all caught up."
+            body="New notifications will appear here."
+          />
+        }
+        isError={isError}
+        errorState={
+          <EmptyState tone="error" title="Couldn’t load notifications." onRetry={retry} />
+        }
         endMessage="No more notifications"
       />
     </PanelSurfaceShell>

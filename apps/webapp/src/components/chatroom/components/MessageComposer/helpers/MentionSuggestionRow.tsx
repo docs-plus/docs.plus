@@ -37,7 +37,7 @@ export const MentionSuggestionRow = memo(function MentionSuggestionRow({
       onMouseEnter={() => onMouseEnter(index)}
       onMouseDown={(e) => e.preventDefault()}
       onClick={() => onSelect(index)}
-      className={`hover:bg-base-200 flex min-h-11 w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-sm ${
+      className={`hover:bg-base-200 rounded-field flex min-h-11 w-full cursor-pointer items-center gap-2 px-2 py-1.5 text-left text-sm ${
         selected ? 'bg-base-200' : ''
       }`}>
       {isEveryone(entry) ? (

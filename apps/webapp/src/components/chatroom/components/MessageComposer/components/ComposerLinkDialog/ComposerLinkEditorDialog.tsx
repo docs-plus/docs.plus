@@ -1,5 +1,9 @@
 import { HyperlinkUrlTextarea } from '@components/TipTap/hyperlinkPopovers/components/HyperlinkUrlTextarea'
 import type { HyperlinkResult } from '@components/TipTap/hyperlinkPopovers/types'
+import Button from '@components/ui/Button'
+import { DialogActions } from '@components/ui/Dialog'
+import { FieldHelp, fieldLabelClassName } from '@components/ui/FieldHelp'
+import TextInput from '@components/ui/TextInput'
 import { normalizeHref, validateURL } from '@docs.plus/extension-hyperlink'
 import { type FormEvent, useId, useLayoutEffect, useRef, useState } from 'react'
 
@@ -20,7 +24,7 @@ export function ComposerLinkEditorDialog({
   onSave,
   onCancel
 }: Props) {
-  const titleId = useId()
+  const errorId = useId()
   const [href, setHref] = useState(initialHref)
   const [text, setText] = useState(initialText)
   const [showError, setShowError] = useState(false)
@@ -49,47 +53,49 @@ export function ComposerLinkEditorDialog({
   }
 
   return (
-    <ComposerLinkModalShell titleId={titleId} onBackdropClick={onCancel}>
-      <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <h2 id={titleId} className="text-lg font-semibold">
-          Link
-        </h2>
-        <label className="form-control">
-          <span className="label-text mb-1">Text</span>
-          <input
-            type="text"
-            className="input input-bordered w-full"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            data-testid="composer-link-editor-text"
-          />
-        </label>
-        <label className="form-control">
-          <span className="label-text mb-1">Link</span>
-          <HyperlinkUrlTextarea
-            inputRef={hrefRef}
-            value={href}
-            onCommit={commitHref}
-            testId="composer-link-editor-url"
-            placeholder="https://"
-            className={`textarea textarea-primary min-h-10 w-full ${showError ? 'textarea-error' : ''}`}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                if (href.trim()) e.currentTarget.form?.requestSubmit()
-              }
-            }}
-          />
-        </label>
-        {showError && <span className="text-error text-xs">Please enter a valid URL</span>}
-        <div className="flex justify-end gap-2 pt-1">
-          <button type="button" className="btn btn-ghost" onClick={onCancel}>
-            Cancel
-          </button>
-          <button type="submit" className="btn btn-primary" disabled={!href.trim()}>
-            Save
-          </button>
+    <ComposerLinkModalShell title="Link" onBackdropClick={onCancel} size="md">
+      <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <TextInput
+          labelPosition="above"
+          label="Text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          data-testid="composer-link-editor-text"
+        />
+        <div className="flex flex-col gap-1.5">
+          <label className="flex flex-col gap-1.5">
+            <span className={fieldLabelClassName}>Link</span>
+            <HyperlinkUrlTextarea
+              inputRef={hrefRef}
+              value={href}
+              onCommit={commitHref}
+              testId="composer-link-editor-url"
+              placeholder="https://"
+              className={`textarea min-h-10 w-full ${showError ? 'textarea-error' : ''}`}
+              aria-invalid={showError || undefined}
+              aria-describedby={showError ? errorId : undefined}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  e.currentTarget.form?.requestSubmit()
+                }
+              }}
+            />
+          </label>
+          {showError && (
+            <FieldHelp id={errorId} role="alert" error>
+              Please enter a valid URL
+            </FieldHelp>
+          )}
         </div>
+        <DialogActions>
+          <Button variant="cancel" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary">
+            Save link
+          </Button>
+        </DialogActions>
       </form>
     </ComposerLinkModalShell>
   )

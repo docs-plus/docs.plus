@@ -1,5 +1,8 @@
+import { twMerge } from '@utils/twMerge'
 import DOMPurify from 'dompurify'
 import { forwardRef, useMemo } from 'react'
+
+import { longPressMotionClass } from './longPressMotion'
 
 interface HighlightedMessageCardProps {
   messageElement: HTMLElement | null
@@ -10,36 +13,32 @@ interface HighlightedMessageCardProps {
 
 export const HighlightedMessageCard = forwardRef<HTMLDivElement, HighlightedMessageCardProps>(
   ({ messageElement, messageBounds, isVisible, className }, ref) => {
+    // Defense-in-depth: the source DOM came from DOMPurify-gated render
+    // paths, but a future regression upstream would silently turn this
+    // clone-card into a parallel XSS sink. Re-sanitise on the way back in.
+    const sanitizedHtml = useMemo(
+      () => (messageElement ? DOMPurify.sanitize(messageElement.outerHTML) : ''),
+      [messageElement]
+    )
+
     if (!messageElement || !messageBounds) {
       return null
     }
 
-    // Defense-in-depth: the source DOM came from DOMPurify-gated render
-    // paths, but a future regression upstream would silently turn this
-    // clone-card into a parallel XSS sink. Re-sanitise on the way back in.
-
-    const sanitizedHtml = useMemo(
-      () => DOMPurify.sanitize(messageElement.outerHTML),
-      [messageElement]
-    )
-
-    // Handle both DOMRect (left/top) and custom bounds (x/y) formats
-    const leftPosition =
-      'left' in messageBounds ? messageBounds.left : (messageBounds as any).x || 0
-    const topPosition = 'top' in messageBounds ? messageBounds.top : (messageBounds as any).y || 0
-    const boundsHeight = messageBounds.height || 0
-
     return (
       <div
         ref={ref}
-        className={`clone-card pointer-events-auto transition-[opacity,transform] duration-200 ease-out select-none ${className || ''}`}
+        className={twMerge(
+          'clone-card pointer-events-auto z-[60] select-none',
+          longPressMotionClass(isVisible),
+          className
+        )}
         style={{
           position: 'fixed',
-          left: leftPosition,
-          top: topPosition,
+          left: messageBounds.left,
+          top: messageBounds.top,
           width: 'auto',
-          height: boundsHeight,
-          zIndex: 60,
+          height: messageBounds.height,
           opacity: isVisible ? 1 : 0,
           transform: isVisible ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.96)'
         }}

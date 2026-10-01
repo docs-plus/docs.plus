@@ -2,6 +2,7 @@ import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { DeleteMessageConfirmationDialog } from '@components/chatroom/components/MessageCard/components/common/DeleteMessageConfirmationDialog'
 import { messageActionTitle } from '@components/chatroom/components/MessageCard/hooks/messageActionMenu'
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
+import { ContextMenuRow, MenuItem } from '@components/ui/ContextMenu'
 import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
 import { useMemo } from 'react'
@@ -24,15 +25,10 @@ export const DeleteAction = () => {
   }
 
   return (
-    <>
-      <li className="border-base-300">
-        <a
-          className="text-error flex cursor-pointer items-center gap-2"
-          onClick={handleDeleteClick}>
-          <Icons.trash size={18} />
-          {messageActionTitle.delete}
-        </a>
-      </li>
-    </>
+    <MenuItem onClick={handleDeleteClick}>
+      <ContextMenuRow icon={<Icons.trash size={16} />} variant="danger">
+        {messageActionTitle.delete}
+      </ContextMenuRow>
+    </MenuItem>
   )
 }

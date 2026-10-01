@@ -2,14 +2,15 @@ import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { FEED_COLUMN_MEDIA_CARD_CLASS } from '@components/chatroom/utils/feedAlbumLayout'
 import {
   deriveMessagePresentation,
+  isMessageBookmarked,
   type MessageSurfaceLayout
 } from '@components/chatroom/utils/messagePresentation'
 import { useChatStore } from '@stores'
 import type { MessageMediaItem } from '@types'
 import { TGroupedMsgRow } from '@types'
 import { isOnlyEmoji } from '@utils/index'
+import { twMerge } from '@utils/twMerge'
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 // Stamped on the card DOM: `cardRef.msgId` for imperative walks; `data-msg-id`
 // for flash polling scoped to `.message-feed` (avoids long-press portal clones).
@@ -109,7 +110,7 @@ export const MessageCardProvider: React.FC<{
           variant !== 'mobile' && 'w-full px-3',
           variant !== 'mobile' && (isGroupStart ? 'py-1' : 'py-0.5'),
           variant !== 'mobile' &&
-            (message.is_bookmarked || message.bookmark_id
+            (isMessageBookmarked(message)
               ? 'bg-primary/5 hover:bg-primary/10 my-0.5'
               : 'hover:bg-base-content/[0.04] hover:before:bg-base-content/25'),
           // Mobile: owner-aligned daisyUI chat bubbles.

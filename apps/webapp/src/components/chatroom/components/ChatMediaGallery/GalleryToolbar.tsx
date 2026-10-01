@@ -6,8 +6,8 @@ import { Avatar } from '@components/ui/Avatar'
 import { Icons } from '@icons'
 import { useStore } from '@stores'
 import type { TMsgRow } from '@types'
+import { twMerge } from '@utils/twMerge'
 import { type CSSProperties } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { GalleryOverflowMenu, GalleryPillAction } from './GalleryOverflowMenu'
 import {

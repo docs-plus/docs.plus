@@ -4,11 +4,12 @@ import {
   formatAttachmentSize
 } from '@components/chatroom/utils/messageMediaPaths'
 import { messageMediaTheme } from '@components/chatroom/utils/messageMediaTheme'
+import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import type { MessageMediaItem } from '@types'
 import { copyToClipboard } from '@utils/clipboard'
+import { twMerge } from '@utils/twMerge'
 import { type MouseEvent, useCallback } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 export function MessageMediaFileCard({ media }: { media: MessageMediaItem }) {
   const theme = messageMediaTheme('file')
@@ -30,7 +31,7 @@ export function MessageMediaFileCard({ media }: { media: MessageMediaItem }) {
     <div
       ref={visibilityRef}
       className={twMerge(
-        'hover:bg-base-200/50 rounded-field flex max-w-sm items-center gap-3 border px-3 py-2.5 transition-colors',
+        'hover:bg-base-200 rounded-field flex max-w-sm items-center gap-3 border px-3 py-2.5 transition-colors',
         theme.cardBorder,
         theme.cardSurface
       )}>
@@ -62,18 +63,18 @@ export function MessageMediaFileCard({ media }: { media: MessageMediaItem }) {
           className="btn btn-ghost btn-xs btn-square shrink-0"
           aria-label={`Copy link for ${label}`}
           onClick={onCopyLink}>
-          <Icons.fileOpen size={16} aria-hidden />
+          <Icons.link size={16} aria-hidden />
         </button>
       ) : signFailed ? (
-        <button
-          type="button"
-          className="btn btn-ghost btn-xs shrink-0"
+        <Button
+          variant="quiet"
+          className="shrink-0"
           onClick={(event) => {
             event.stopPropagation()
             retry()
           }}>
           Retry
-        </button>
+        </Button>
       ) : null}
     </div>
   )

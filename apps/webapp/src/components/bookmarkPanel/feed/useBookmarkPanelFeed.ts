@@ -1,8 +1,9 @@
-import { getBookmarkStats, getUserBookmarks } from '@api'
-import { useApi } from '@hooks/useApi'
+import { getUserBookmarks } from '@api'
+import { loadBookmarkStats } from '@hooks/usePadBookmarkStats'
+import { usePanelFeedSentinel } from '@hooks/usePanelFeedSentinel'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { type TBookmarkTab, type TBookmarkWithMessage } from '@types'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { BOOKMARK_PAGE_SIZE, bookmarkTabFetchParams } from '../utils/bookmarkTabQuery'
 
@@ -11,6 +12,10 @@ type UseBookmarkPanelFeedResult = {
   isLoading: boolean
   isLoadingMore: boolean
   hasMore: boolean
+  /** The first load failed; the panel shows an error state, not the empty one. */
+  isError: boolean
+  /** Reloads all three tabs. */
+  retry: () => void
   sentinelRef: (node: HTMLDivElement | null) => void
 }
 
@@ -20,29 +25,20 @@ export function useBookmarkPanelFeed(): UseBookmarkPanelFeedResult {
   const bookmarks = useChatStore((state) => state.bookmarks)
   const bookmarkActiveTab = useChatStore((state) => state.bookmarkActiveTab)
   const loadingBookmarks = useChatStore((state) => state.loadingBookmarks)
-  const {
-    setBookmarkSummary,
-    setBookmarks,
-    clearBookmarks,
-    setLoadingBookmarks,
-    setBookmarkTab,
-    setBookmarkPage,
-    updateBookmarks
-  } = useChatStore((state) => state)
-  const { request: statsRequest } = useApi(getBookmarkStats, null, false)
+  const setBookmarks = useChatStore((state) => state.setBookmarks)
+  const clearBookmarks = useChatStore((state) => state.clearBookmarks)
+  const setLoadingBookmarks = useChatStore((state) => state.setLoadingBookmarks)
+  const setBookmarkPage = useChatStore((state) => state.setBookmarkPage)
+  const updateBookmarks = useChatStore((state) => state.updateBookmarks)
 
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const observerRef = useRef<IntersectionObserver | null>(null)
+  const [isError, setIsError] = useState(false)
 
   const currentBookmarks = bookmarks.get(bookmarkActiveTab) || []
 
-  useEffect(() => {
-    if (!user) return
-    setLoadingBookmarks(true)
-    clearBookmarks()
-
+  const refreshFeed = useCallback(async () => {
     const loadTab = (tab: TBookmarkTab) => {
       const { archived, markedAsRead } = bookmarkTabFetchParams(tab)
       return getUserBookmarks({
@@ -54,43 +50,43 @@ export function useBookmarkPanelFeed(): UseBookmarkPanelFeedResult {
       })
     }
 
-    const refreshFeed = async () => {
-      try {
-        const { data: statsData, error: statsError } = await statsRequest({ workspaceId })
-        if (statsError) throw statsError
+    try {
+      await loadBookmarkStats(workspaceId)
 
-        const [inProgressResult, archivedResult, readResult] = await Promise.all([
-          loadTab('in progress'),
-          loadTab('archive'),
-          loadTab('read')
-        ])
+      const [inProgressResult, archivedResult, readResult] = await Promise.all([
+        loadTab('in progress'),
+        loadTab('archive'),
+        loadTab('read')
+      ])
 
-        for (const result of [inProgressResult, archivedResult, readResult]) {
-          if (result.error) throw result.error
-        }
-
-        if (statsData) {
-          const summaryData = Array.isArray(statsData) ? statsData[0] : statsData
-          setBookmarkSummary(summaryData)
-          setBookmarkTab('in progress', summaryData.unread || 0)
-          setBookmarkTab('archive', summaryData.archived || 0)
-          setBookmarkTab('read', summaryData.read || 0)
-        }
-
-        setBookmarks('in progress', inProgressResult.data ?? [])
-        setBookmarks('archive', archivedResult.data ?? [])
-        setBookmarks('read', readResult.data ?? [])
-        setBookmarkPage(1)
-      } catch (error) {
-        console.error('Error fetching bookmark feed:', error)
-      } finally {
-        setLoadingBookmarks(false)
+      for (const result of [inProgressResult, archivedResult, readResult]) {
+        if (result.error) throw result.error
       }
-    }
 
-    refreshFeed()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, workspaceId])
+      setBookmarks('in progress', inProgressResult.data ?? [])
+      setBookmarks('archive', archivedResult.data ?? [])
+      setBookmarks('read', readResult.data ?? [])
+      setBookmarkPage(1)
+      setIsError(false)
+    } catch (error) {
+      console.error('Error fetching bookmark feed:', error)
+      setIsError(true)
+    } finally {
+      setLoadingBookmarks(false)
+    }
+  }, [workspaceId, setBookmarks, setBookmarkPage, setLoadingBookmarks])
+
+  useEffect(() => {
+    if (!user) return
+    setLoadingBookmarks(true)
+    clearBookmarks()
+    void refreshFeed()
+  }, [user, refreshFeed, clearBookmarks, setLoadingBookmarks])
+
+  const retry = useCallback(() => {
+    setLoadingBookmarks(true)
+    void refreshFeed()
+  }, [refreshFeed, setLoadingBookmarks])
 
   useEffect(() => {
     setPage(1)
@@ -106,22 +102,17 @@ export function useBookmarkPanelFeed(): UseBookmarkPanelFeedResult {
     async (pageNum: number, tab: TBookmarkTab): Promise<TBookmarkWithMessage[]> => {
       if (!workspaceId) return []
 
-      try {
-        const offset = (pageNum - 1) * BOOKMARK_PAGE_SIZE
-        const { archived, markedAsRead } = bookmarkTabFetchParams(tab)
-        const { data, error } = await getUserBookmarks({
-          workspaceId,
-          archived,
-          markedAsRead,
-          limit: BOOKMARK_PAGE_SIZE,
-          offset
-        })
-        if (error) throw error
-        return data ?? []
-      } catch (error) {
-        console.error('Error fetching bookmarks:', error)
-        return []
-      }
+      const offset = (pageNum - 1) * BOOKMARK_PAGE_SIZE
+      const { archived, markedAsRead } = bookmarkTabFetchParams(tab)
+      const { data, error } = await getUserBookmarks({
+        workspaceId,
+        archived,
+        markedAsRead,
+        limit: BOOKMARK_PAGE_SIZE,
+        offset
+      })
+      if (error) throw error
+      return data ?? []
     },
     [workspaceId]
   )
@@ -144,6 +135,8 @@ export function useBookmarkPanelFeed(): UseBookmarkPanelFeedResult {
         updateBookmarks(bookmarkActiveTab, [...existingBookmarks, ...newBookmarks])
         setPage(nextPage)
       }
+    } catch (error) {
+      console.error('Error fetching bookmarks:', error)
     } finally {
       setIsLoadingMore(false)
     }
@@ -158,39 +151,15 @@ export function useBookmarkPanelFeed(): UseBookmarkPanelFeedResult {
     updateBookmarks
   ])
 
-  const sentinelRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (observerRef.current) {
-        observerRef.current.disconnect()
-      }
-
-      if (!node || !hasMore || isLoadingMore) return
-
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-            loadMore()
-          }
-        },
-        { root: null, rootMargin: '100px', threshold: 0.1 }
-      )
-
-      observerRef.current.observe(node)
-    },
-    [hasMore, isLoadingMore, loadMore]
-  )
-
-  useEffect(() => {
-    return () => {
-      observerRef.current?.disconnect()
-    }
-  }, [])
+  const sentinelRef = usePanelFeedSentinel({ hasMore, isLoadingMore, loadMore })
 
   return {
     bookmarks: currentBookmarks,
     isLoading: loadingBookmarks,
     isLoadingMore,
     hasMore,
+    isError,
+    retry,
     sentinelRef
   }
 }

@@ -2,7 +2,7 @@ import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { isMessage } from '@components/chatroom/types/chat-items'
 import { parseMessageMedias } from '@components/chatroom/utils/messageMediaPaths'
 import { deleteChatMediaFromStorage } from '@components/chatroom/utils/uploadChatMedia'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import { useMessageCardContext } from '../MessageCardContext'
 
@@ -31,26 +31,30 @@ export const MessageFailedRow = ({ className }: { className?: string }) => {
   }
 
   return (
-    <div className={twMerge('text-error mt-1 flex items-center gap-1.5 text-xs', className)}>
+    <div
+      className={twMerge(
+        'mt-1 flex items-center gap-1.5 text-xs text-[var(--error-ink)]',
+        className
+      )}>
       <span>Failed to send</span>
-      <span aria-hidden="true" className="text-base-content/30">
+      <span aria-hidden="true" className="text-base-content/50">
         ·
       </span>
       <button
         type="button"
         onClick={onRetry}
         title={message.statusError ?? 'Retry sending this message'}
-        className="hover:underline focus-visible:underline focus-visible:outline-none"
+        className="rounded-field focus-visible:ring-primary -my-1 py-1 hover:underline focus-visible:ring-2 focus-visible:outline-none"
         aria-label="Retry sending message">
         Retry
       </button>
-      <span aria-hidden="true" className="text-base-content/30">
+      <span aria-hidden="true" className="text-base-content/50">
         ·
       </span>
       <button
         type="button"
         onClick={onDelete}
-        className="text-base-content/60 hover:text-error hover:underline focus-visible:underline focus-visible:outline-none"
+        className="text-base-content/60 hover:text-error rounded-field focus-visible:ring-primary -my-1 py-1 hover:underline focus-visible:ring-2 focus-visible:outline-none"
         aria-label="Delete failed message">
         Delete
       </button>

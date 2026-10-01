@@ -3,8 +3,8 @@ import { useFeedMediaDisplayUrl } from '@components/chatroom/hooks/useMediaSigne
 import { useSpoilerGatedActivate } from '@components/chatroom/utils/feedSpoilerReveal'
 import { positiveMediaDims } from '@components/chatroom/utils/messageMediaPaths'
 import type { MessageMediaItem } from '@types'
+import { twMerge } from '@utils/twMerge'
 import { type CSSProperties, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { MediaUnavailable } from './MediaUnavailable'
 

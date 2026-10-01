@@ -1,7 +1,5 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
-import Button from '@components/ui/Button'
-import PanelHeader from '@components/ui/PanelHeader'
-import { Icons } from '@icons'
+import { ConfirmDialog } from '@components/ui/dialogs/ConfirmDialog'
 import { TMsgRow } from '@types'
 
 import { useDeleteMessageHandler } from '../../hooks/useDeleteMessageHandler'
@@ -10,37 +8,19 @@ type Props = {
   message: TMsgRow
 }
 
+/** Opens in the chat Modal host, so Cancel and the close after delete use its `closeDialog`. */
 export const DeleteMessageConfirmationDialog = ({ message }: Props) => {
   const { deleteMessageHandler } = useDeleteMessageHandler()
   const { closeDialog } = useChatroomContext()
 
-  const handleDeleteConfirm = async () => {
-    await deleteMessageHandler(message)
-    closeDialog()
-  }
-
   return (
-    <div className="flex flex-col gap-4 p-4 sm:p-6">
-      <PanelHeader
-        icon={Icons.trash}
-        title="Delete Message"
-        description="This action cannot be undone"
-        variant="error"
-      />
-
-      <p className="text-base-content/70 text-sm">
-        Are you sure you want to delete this message? This will permanently remove it from the
-        conversation.
-      </p>
-
-      <div className="flex justify-end gap-3 pt-2">
-        <Button variant="ghost" onClick={closeDialog}>
-          Cancel
-        </Button>
-        <Button variant="error" onClick={handleDeleteConfirm}>
-          Delete
-        </Button>
-      </div>
-    </div>
+    <ConfirmDialog
+      title="Delete this message?"
+      body="This permanently removes it from the conversation. You can’t undo this."
+      confirmLabel="Delete message"
+      waitForConfirm
+      onConfirm={() => deleteMessageHandler(message)}
+      onClose={closeDialog}
+    />
   )
 }

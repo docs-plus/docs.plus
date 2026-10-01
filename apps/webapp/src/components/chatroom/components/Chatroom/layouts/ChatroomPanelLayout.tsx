@@ -50,7 +50,7 @@ export const ChatroomPanelLayout = ({ children }: Props) => {
 
       {/* Portal target for the message hover menu — lives inside the
           chatroom panel's stacking context so the menu's z-30 plays
-          inside the same context as toolbar z-50 and jump-to-present z-40.
+          inside the same context as the toolbar and jump-to-present (both z-40).
           Empty by default; FloatingPortal appends children at runtime. */}
       <div id="chat-hover-portal" />
     </div>

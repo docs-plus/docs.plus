@@ -3,7 +3,9 @@ import Button from '@components/ui/Button'
 import { ButtonSize } from '@components/ui/Button'
 import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
+
+import { chatToolbarIconButtonClassName } from './ShareButton'
 
 type Props = {
   className?: string
@@ -49,10 +51,7 @@ export const NotificationToggle = ({ className, size = 'sm', iconSize }: Props) 
       disabled={loading}
       onClick={handleToggle}
       title={config.label}
-      className={twMerge(
-        'text-base-content/70 hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none',
-        className
-      )}
+      className={twMerge(chatToolbarIconButtonClassName, className)}
       aria-label={`Notifications: ${config.label}`}>
       <span className="inline-grid place-content-center" aria-hidden>
         {notificationStates.map((state) => {

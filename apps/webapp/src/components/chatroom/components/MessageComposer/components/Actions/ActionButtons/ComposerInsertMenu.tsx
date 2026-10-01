@@ -1,12 +1,13 @@
+import { ContextMenuRowButton } from '@components/ui/ContextMenuRowButton'
 import {
   Popover,
-  PopoverClose,
   PopoverContent,
   popoverPanelClassName,
-  PopoverTrigger
+  PopoverTrigger,
+  usePopoverState
 } from '@components/ui/Popover'
 import { Icons } from '@icons'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import { useComposerAttachInput } from '../../../hooks/useComposerAttachInput'
 import { useMessageComposer } from '../../../hooks/useMessageComposer'
@@ -20,48 +21,55 @@ type Props = {
 
 type InsertMenuRowsProps = {
   atLimit: boolean
+  isMobile: boolean
   showFormattingToolbar: boolean
   showVoiceEntry?: boolean
   onAttach: () => void
   onFormat: () => void
   onVoice: () => void
-  rowClassName: string
 }
 
+// The panel is a dialog of plain buttons (chatroom CLAUDE.md), so rows are `ContextMenuRowButton`,
+// not `MenuItem`.
 function InsertMenuRows({
   atLimit,
+  isMobile,
   showFormattingToolbar,
   showVoiceEntry,
   onAttach,
   onFormat,
-  onVoice,
-  rowClassName
+  onVoice
 }: InsertMenuRowsProps) {
-  const formatLabel = showFormattingToolbar ? 'Hide formatting' : 'Text formatting'
+  const { close } = usePopoverState()
+  const rowClassName = isMobile ? 'min-h-11 gap-3 px-3 py-2.5' : undefined
+  const run = (action: () => void) => () => {
+    action()
+    close()
+  }
 
   return (
     <>
-      <PopoverClose className={rowClassName} disabled={atLimit} onClick={onAttach}>
-        <Icons.upload size={18} className="text-base-content/80 shrink-0 stroke-[1.75]" />
+      <ContextMenuRowButton
+        icon={<Icons.upload size={18} className="stroke-[1.75]" />}
+        rowClassName={rowClassName}
+        disabled={atLimit}
+        onClick={run(onAttach)}>
         Attach file
-      </PopoverClose>
-      <PopoverClose
-        className={twMerge(rowClassName, showFormattingToolbar && 'text-primary')}
-        onClick={onFormat}>
-        <Icons.textFormat
-          size={18}
-          className={twMerge(
-            'shrink-0 stroke-[1.75]',
-            showFormattingToolbar ? 'text-primary' : 'text-base-content/80'
-          )}
-        />
-        {formatLabel}
-      </PopoverClose>
+      </ContextMenuRowButton>
+      <ContextMenuRowButton
+        icon={<Icons.textFormat size={18} className="stroke-[1.75]" />}
+        rowClassName={rowClassName}
+        variant={showFormattingToolbar ? 'primary' : 'default'}
+        onClick={run(onFormat)}>
+        {showFormattingToolbar ? 'Hide formatting' : 'Text formatting'}
+      </ContextMenuRowButton>
       {showVoiceEntry ? (
-        <PopoverClose className={rowClassName} onClick={onVoice}>
-          <Icons.mic size={18} className="text-base-content/80 shrink-0 stroke-[1.75]" />
+        <ContextMenuRowButton
+          icon={<Icons.mic size={18} className="stroke-[1.75]" />}
+          rowClassName={rowClassName}
+          onClick={run(onVoice)}>
           Record voice
-        </PopoverClose>
+        </ContextMenuRowButton>
       ) : null}
     </>
   )
@@ -92,22 +100,13 @@ export function ComposerInsertMenu({ showVoiceEntry, onVoiceFromMenu, className 
   const { isMobile, showFormattingToolbar, toggleToolbar } = useMessageComposer()
   const attach = useComposerAttachInput()
 
-  const rowClassName = isMobile
-    ? 'hover:bg-base-200 flex w-full min-h-11 items-center gap-3 rounded-field px-3 py-2.5 text-left text-sm disabled:opacity-40'
-    : 'hover:bg-base-200 flex w-full items-center gap-2.5 rounded-field px-2.5 py-2 text-left text-sm disabled:opacity-40'
-
   return (
     <>
       <ComposerAttachInput {...attach} />
       <Popover placement="top-start">
         <PopoverTrigger asChild>
           <Button
-            className={twMerge(
-              isMobile
-                ? 'rounded-field size-11 min-h-11 min-w-11 shrink-0 border-0 p-0'
-                : 'rounded-field size-8 min-h-8 min-w-8 shrink-0 border-0 p-0',
-              className
-            )}
+            className={className}
             data-testid="composer-insert-trigger"
             aria-label="Insert — attach, format, and more">
             <Icons.plus
@@ -121,12 +120,12 @@ export function ComposerInsertMenu({ showVoiceEntry, onVoiceFromMenu, className 
           aria-label="Insert">
           <InsertMenuRows
             atLimit={attach.atLimit}
+            isMobile={isMobile}
             showFormattingToolbar={showFormattingToolbar}
             showVoiceEntry={showVoiceEntry}
             onAttach={attach.openFilePicker}
             onFormat={toggleToolbar}
             onVoice={() => onVoiceFromMenu?.()}
-            rowClassName={rowClassName}
           />
         </PopoverContent>
       </Popover>

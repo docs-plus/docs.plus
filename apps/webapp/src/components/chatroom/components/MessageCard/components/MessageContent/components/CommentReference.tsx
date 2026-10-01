@@ -3,7 +3,6 @@ import { getCommentAnchorLabel, parseCommentAnchor } from '@services/commentAnch
 import { commentReferenceTheme } from '@utils/commentReferenceTheme'
 import { getMetadataProperty } from '@utils/metadata'
 import { scrollToCommentAnchor } from '@utils/scrollToCommentAnchor'
-import { twMerge } from 'tailwind-merge'
 
 import { useMessageCardContext } from '../../../MessageCardContext'
 import { ReferenceJumpButton } from './ReferenceJumpButton'
@@ -29,11 +28,13 @@ export const CommentReference = () => {
       onJump={() => scrollToCommentAnchor(anchor)}
       header={
         <>
-          <span className="text-base-content/40 font-normal">·</span>
-          <span className={twMerge('font-normal', theme.emphasis)}>{typeLabel}</span>
+          <span className="text-base-content/50 font-normal" aria-hidden>
+            ·
+          </span>
+          <span className="text-base-content font-normal">{typeLabel}</span>
         </>
       }>
-      <CommentAnchorPreview anchor={anchor} theme={theme} variant="feed" showTypeLabel={false} />
+      <CommentAnchorPreview anchor={anchor} variant="feed" showTypeLabel={false} />
     </ReferenceJumpButton>
   )
 }

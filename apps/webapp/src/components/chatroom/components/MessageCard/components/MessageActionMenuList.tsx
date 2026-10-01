@@ -4,9 +4,9 @@ import { ContextMenuDivider, ContextMenuRow, MenuItem } from '@components/ui/Con
 import { useCloseAfterHold } from '@hooks/useCloseAfterHold'
 import { Icons } from '@icons'
 import { TMsgRow } from '@types'
+import { twMerge } from '@utils/twMerge'
 import { motion } from 'motion/react'
 import { Fragment, type MouseEvent } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 type Surface = 'contextMenu' | 'longPress'
 
@@ -22,11 +22,13 @@ type Props = {
 function ActionMenuRow({
   item,
   copied,
-  iconSize
+  iconSize,
+  disabled = false
 }: {
   item: MessageActionMenuItem
   copied: boolean
   iconSize: number
+  disabled?: boolean
 }) {
   const isCopyLink = item.id === 'copy-link'
   const icon = isCopyLink ? (
@@ -50,6 +52,7 @@ function ActionMenuRow({
     <ContextMenuRow
       icon={icon}
       variant={item.variant}
+      disabled={disabled}
       className={twMerge(item.className, isCopyLink && copied && 'text-success')}>
       {title}
     </ContextMenuRow>
@@ -102,9 +105,14 @@ export function MessageActionMenuList({
                 whileTap={{ scale: 0.98, transition: { duration: 0.1 } }}
                 className={twMerge(
                   'group rounded-field cursor-pointer touch-manipulation select-none',
-                  !isInteractive && 'pointer-events-none cursor-not-allowed opacity-60'
+                  !isInteractive && 'pointer-events-none'
                 )}>
-                <ActionMenuRow item={item} copied={linkCopied} iconSize={iconSize} />
+                <ActionMenuRow
+                  item={item}
+                  copied={linkCopied}
+                  iconSize={iconSize}
+                  disabled={!isInteractive}
+                />
               </motion.li>
             )}
           </Fragment>

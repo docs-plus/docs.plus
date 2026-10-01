@@ -2,8 +2,8 @@ import { MessageCard } from '@components/chatroom/components/MessageCard/Message
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
 import { FEED_COLUMN_BUBBLE_FILL_CLASS } from '@components/chatroom/utils/feedAlbumLayout'
 import type { TGroupedMsgRow } from '@types'
+import { twMerge } from '@utils/twMerge'
 import type { ReactNode } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 type Props = {
   index: number

@@ -20,7 +20,7 @@ export default function JoinGroupChannel() {
         startIcon={Icons.userPlus}
         onClick={() => void join()}
         loading={loading}>
-        Join Channel
+        Join channel
       </Button>
     </ChannelComposerSurface>
   )

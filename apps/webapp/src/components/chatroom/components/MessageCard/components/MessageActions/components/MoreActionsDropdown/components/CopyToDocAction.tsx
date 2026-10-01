@@ -1,6 +1,7 @@
 import { messageActionTitle } from '@components/chatroom/components/MessageCard/hooks/messageActionMenu'
 import { useCopyMessageToDocHandler } from '@components/chatroom/components/MessageCard/hooks/useCopyMessageToDocHandler'
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
+import { ContextMenuRow, MenuItem } from '@components/ui/ContextMenu'
 import { Icons } from '@icons'
 
 export const CopyToDocAction = () => {
@@ -10,11 +11,10 @@ export const CopyToDocAction = () => {
   if (!message) return null
 
   return (
-    <li>
-      <a className="flex items-center gap-2" onClick={() => copyMessageToDocHandler(message)}>
-        <Icons.fileOpen size={18} />
+    <MenuItem onClick={() => copyMessageToDocHandler(message)}>
+      <ContextMenuRow icon={<Icons.fileOpen size={16} />}>
         {messageActionTitle.copyToDoc}
-      </a>
-    </li>
+      </ContextMenuRow>
+    </MenuItem>
   )
 }

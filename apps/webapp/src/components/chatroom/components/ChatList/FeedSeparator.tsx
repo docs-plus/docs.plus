@@ -1,5 +1,5 @@
+import { twMerge } from '@utils/twMerge'
 import { format, parseISO } from 'date-fns'
-import { twMerge } from 'tailwind-merge'
 
 type DayProps = {
   variant: 'day'
@@ -30,7 +30,7 @@ export function FeedSeparator(props: Props) {
           props.className
         )}>
         <span className="bg-error/40 h-px flex-1" aria-hidden />
-        <span className="text-error/90 shrink-0 text-xs font-semibold">New messages</span>
+        <span className="shrink-0 text-xs font-semibold text-[var(--error-ink)]">New messages</span>
         <span className="badge badge-error badge-xs shrink-0 font-bold uppercase">New</span>
         <span className="bg-error/40 h-px flex-1" aria-hidden />
       </div>
@@ -47,7 +47,7 @@ export function FeedSeparator(props: Props) {
       )}
       {...(floating ? {} : { 'data-msg-date': date })}>
       <span className="bg-base-300/80 h-px flex-1" aria-hidden />
-      <span className="text-base-content/50 shrink-0 text-xs font-semibold">
+      <span className="text-base-content/60 shrink-0 text-xs font-semibold">
         {formatFeedDayLabel(date)}
       </span>
       <span className="bg-base-300/80 h-px flex-1" aria-hidden />

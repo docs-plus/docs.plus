@@ -1,10 +1,12 @@
 import { openMessageReaction } from '@components/chatroom/utils/messageReaction'
 import { Icons } from '@icons'
 import { TMsgRow } from '@types'
+import { twMerge } from '@utils/twMerge'
 import { motion } from 'motion/react'
 import { forwardRef } from 'react'
 
 import { useMessageLongPressMenu } from '../MessageLongPressMenu'
+import { longPressMotionClass } from './longPressMotion'
 
 interface EmojiReaction {
   id: string
@@ -48,6 +50,7 @@ const REACTION_BTN_CLASS =
 export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuProps>(
   ({ position, isVisible, isInteractive = true, onReactionSelect, className, message }, ref) => {
     const { hideMenu } = useMessageLongPressMenu()
+    const interactiveClass = isInteractive ? 'cursor-pointer' : 'pointer-events-none opacity-60'
 
     const handleReactionClick = (reaction: EmojiReaction) => {
       if (!isInteractive) return
@@ -66,7 +69,11 @@ export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuPro
         ref={ref}
         role="toolbar"
         aria-label="Quick reactions"
-        className={`bg-base-100 border-base-300 overflow-hidden rounded-full border shadow-xl transition-[opacity,transform] duration-200 ease-out ${className ?? ''}`}
+        className={twMerge(
+          'bg-base-100 border-base-300 z-[60] overflow-hidden rounded-full border shadow-xl',
+          longPressMotionClass(isVisible),
+          className
+        )}
         style={{
           position: 'fixed',
           left: position.x,
@@ -76,8 +83,7 @@ export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuPro
             : 'translateX(-50%) translateY(8px) scale(0.96)',
           opacity: isVisible ? 1 : 0,
           maxWidth: '380px',
-          width: '88%',
-          zIndex: 70
+          width: '88%'
         }}
         onClick={(e) => e.stopPropagation()}>
         <div
@@ -94,11 +100,7 @@ export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuPro
                 key={reaction.id}
                 onTap={() => handleReactionClick(reaction)}
                 whileTap={isInteractive ? TAP_ANIMATION : undefined}
-                className={`${REACTION_BTN_CLASS} ${
-                  isInteractive
-                    ? 'cursor-pointer'
-                    : 'pointer-events-none cursor-not-allowed opacity-60'
-                }`}
+                className={`${REACTION_BTN_CLASS} ${interactiveClass}`}
                 disabled={!isInteractive}
                 aria-label={`React with ${reaction.label}`}
                 title={reaction.label}>
@@ -118,18 +120,13 @@ export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuPro
                     }
                   : undefined
               }
-              className={`bg-base-200 sticky right-0 flex size-11 touch-manipulation items-center justify-center rounded-full shadow-lg select-none ${
-                isInteractive
-                  ? 'cursor-pointer'
-                  : 'pointer-events-none cursor-not-allowed opacity-60'
-              }`}
+              // A surface-colored fade hides emojis that scroll under the button. The base-100
+              // spread is a mask, not elevation: it fills the circle's corners and the scroller's
+              // right padding, where emojis showed through.
+              className={`bg-base-200 before:from-base-100 sticky right-0 flex size-11 touch-manipulation items-center justify-center rounded-full shadow-[0_0_0_10px_var(--color-base-100)] select-none before:pointer-events-none before:absolute before:inset-y-0 before:right-full before:w-5 before:bg-linear-to-l before:to-transparent before:content-[''] ${interactiveClass}`}
               disabled={!isInteractive}
               aria-label="More emojis"
-              title="More emojis"
-              style={{
-                boxShadow:
-                  '-20px 0 20px -10px color-mix(in oklch, var(--color-base-content) 15%, transparent), -10px 0 10px -5px color-mix(in oklch, var(--color-base-content) 10%, transparent), -5px 0 5px -2px color-mix(in oklch, var(--color-base-content) 5%, transparent)'
-              }}>
+              title="More emojis">
               <Icons.plus
                 size={20}
                 className={isInteractive ? 'text-base-content/60' : 'text-base-content/40'}

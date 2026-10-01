@@ -1,6 +1,6 @@
 import { Avatar } from '@components/ui/Avatar'
 import { TGroupedMsgRow } from '@types'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import { useMessageAuthorDetails } from '../../../hooks/useMessageAuthorDetails'
 import { useMessageCardContext } from '../../../MessageCardContext'

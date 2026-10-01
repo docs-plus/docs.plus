@@ -1,5 +1,5 @@
+import { twMerge } from '@utils/twMerge'
 import React from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { useMessageCardContext } from '../../MessageCardContext'
 import { CommentReference, MessageBody, ReplyReference } from './components'

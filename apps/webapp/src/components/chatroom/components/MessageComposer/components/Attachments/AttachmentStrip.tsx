@@ -4,8 +4,8 @@ import type { ComposerAttachment } from '@components/chatroom/stores/composerAtt
 import { inferMessageMediaKind } from '@components/chatroom/utils/messageMediaPaths'
 import { Icons } from '@icons'
 import { useStore } from '@stores'
+import { twMerge } from '@utils/twMerge'
 import { type CSSProperties, useEffect, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { useComposerAttachmentActions, useComposerAttachmentList } from '../../hooks'
 
@@ -157,7 +157,7 @@ const AttachmentChip = ({
           {canRetry ? (
             <button
               type="button"
-              className="focus-visible:ring-primary/40 rounded-field absolute inset-0 flex items-center justify-center focus-visible:ring-2 focus-visible:outline-none"
+              className="focus-visible:ring-primary rounded-field absolute inset-0 flex items-center justify-center focus-visible:ring-2 focus-visible:outline-none"
               aria-label={`Retry upload for ${label}`}
               title={attachment.error ?? 'Retry upload'}
               onClick={() => retryAttachment(attachment.id)}>
@@ -245,21 +245,17 @@ const AttachmentChip = ({
         </div>
       ) : null}
 
+      {/* The status line already states the failure, so this row is only the action. */}
       {canRetry ? (
-        <div className="text-error flex items-center gap-1.5 text-[10px]">
-          <span>Upload failed</span>
-          <span aria-hidden="true" className="text-base-content/30">
-            ·
-          </span>
-          <button
-            type="button"
-            className="hover:underline focus-visible:underline focus-visible:outline-none"
-            aria-label={`Retry upload for ${label}`}
-            title={attachment.error ?? 'Retry upload'}
-            onClick={() => retryAttachment(attachment.id)}>
-            Retry
-          </button>
-        </div>
+        <button
+          type="button"
+          className="btn btn-ghost btn-xs text-error focus-visible:ring-primary h-6 min-h-0 gap-1 self-start px-1.5 text-[10px] font-medium focus-visible:ring-2 focus-visible:outline-none"
+          aria-label={`Retry upload for ${label}`}
+          title={attachment.error ?? 'Retry upload'}
+          onClick={() => retryAttachment(attachment.id)}>
+          <Icons.sync size={12} className="shrink-0 stroke-[1.75]" aria-hidden />
+          Retry
+        </button>
       ) : null}
     </div>
   )

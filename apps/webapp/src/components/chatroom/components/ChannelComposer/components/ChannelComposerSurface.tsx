@@ -1,6 +1,6 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
+import { twMerge } from '@utils/twMerge'
 import type { ReactNode } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 type Props = {
   children: ReactNode

@@ -1,5 +1,6 @@
 import { useDownloadMessageMediaHandler } from '@components/chatroom/components/MessageCard/hooks/useDownloadMessageMediaHandler'
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
+import { ContextMenuRow, MenuItem } from '@components/ui/ContextMenu'
 import { Icons } from '@icons'
 
 export const DownloadAction = () => {
@@ -16,14 +17,10 @@ export const DownloadAction = () => {
   }
 
   return (
-    <li>
-      <a
-        className={`flex items-center gap-2 ${downloading ? 'pointer-events-none opacity-60' : ''}`}
-        aria-disabled={downloading}
-        onClick={() => downloadMessageMediaHandler(message)}>
-        <Icons.download size={18} />
+    <MenuItem disabled={downloading} onClick={() => downloadMessageMediaHandler(message)}>
+      <ContextMenuRow icon={<Icons.download size={16} />} disabled={downloading}>
         {label}
-      </a>
-    </li>
+      </ContextMenuRow>
+    </MenuItem>
   )
 }

@@ -26,8 +26,8 @@ export type MessageActionMenuItem = {
 }
 
 export const messageActionTitle = {
-  copyLink: 'Copy Link',
-  copyToDoc: 'Copy to Doc',
+  copyLink: 'Copy link',
+  copyToDoc: 'Copy to doc',
   edit: 'Edit',
   delete: 'Delete'
 } as const

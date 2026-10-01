@@ -4,9 +4,9 @@ import { Avatar } from '@components/ui/Avatar'
 import { DocsPlusIcon } from '@icons'
 import { useStore } from '@stores'
 import { getMetadataProperty } from '@utils/metadata'
+import { twMerge } from '@utils/twMerge'
 import { formatDistanceToNow } from 'date-fns'
 import type { MouseEventHandler, ReactNode } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { useMentionClick } from '../../hooks/useMentionClick'
 
@@ -21,7 +21,7 @@ type ChipShellProps = {
   onClick?: MouseEventHandler<HTMLDivElement>
 }
 
-const TIME_CLASS = 'text-base-content/50 shrink-0 text-[11px] leading-none whitespace-nowrap'
+const TIME_CLASS = 'text-base-content/60 shrink-0 text-[11px] leading-none whitespace-nowrap'
 
 const NotifyUserAvatar = ({ message }: { message: MessageRow }) => {
   const ud = message.user_details
@@ -132,12 +132,12 @@ export const SystemNotifyChip = ({ message, variant = 'desktop' }: Props) => {
             <MobileTimedRow timeAgo={timeAgo}>
               <p>
                 <MentionLabel message={message} />
-                <span className="text-base-content/75"> joined</span>
+                <span className="text-base-content/70"> joined</span>
               </p>
             </MobileTimedRow>
             <p className="mt-1.5 flex min-w-0 items-center gap-1.5">
-              <DocsPlusIcon size={14} className="text-primary shrink-0" />
-              <span className="truncate font-medium underline">{docTitle}</span>
+              <DocsPlusIcon size={14} className="shrink-0" />
+              <span className="truncate font-medium">{docTitle}</span>
             </p>
           </MobileChip>
         )
@@ -149,7 +149,7 @@ export const SystemNotifyChip = ({ message, variant = 'desktop' }: Props) => {
           <span>joined</span>
           <span className="inline-flex items-center gap-1">
             <DocsPlusIcon size={12} />
-            <span className="font-medium underline">{docTitle}</span>
+            <span className="font-medium">{docTitle}</span>
           </span>
           <span>— {timeAgo}</span>
         </DesktopChip>
@@ -166,7 +166,7 @@ export const SystemNotifyChip = ({ message, variant = 'desktop' }: Props) => {
             <MobileTimedRow timeAgo={timeAgo}>
               <p>
                 <MentionLabel message={message} />
-                <span className="text-base-content/75"> renamed this document</span>
+                <span className="text-base-content/70"> renamed this document</span>
               </p>
             </MobileTimedRow>
             <p className="mt-1.5 min-w-0 break-words">

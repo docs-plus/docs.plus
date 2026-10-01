@@ -45,10 +45,16 @@ const BreadcrumbMobile = () => {
   return (
     <nav className="min-w-0 flex-1" aria-label="Breadcrumb">
       {ancestors.length > 0 && (
-        <div className="text-base-content/50 flex min-w-0 items-center gap-0.5 truncate text-xs leading-tight">
+        <div className="text-base-content/60 flex min-w-0 items-center gap-0.5 truncate text-xs leading-tight">
           {ancestors.map((h, i) => (
             <React.Fragment key={h.id}>
-              {i > 0 && <Icons.chevronRight size={10} className="shrink-0" />}
+              {i > 0 && (
+                <Icons.chevronRight
+                  size={10}
+                  className="text-base-content/40 shrink-0"
+                  aria-hidden
+                />
+              )}
               <span className="truncate">{h.text}</span>
             </React.Fragment>
           ))}

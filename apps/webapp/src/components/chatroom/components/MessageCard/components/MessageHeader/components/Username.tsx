@@ -1,5 +1,5 @@
+import { twMerge } from '@utils/twMerge'
 import { useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { useMessageCardContext } from '../../../MessageCardContext'
 
@@ -11,7 +11,7 @@ export const Username = ({ className }: Props) => {
   const displayName = useMemo(() => {
     const ud = message.user_details
     // Repo convention is `fullname` (single word) — see BookmarkItem,
-    // ReplyContext, EditContext, types/api.ts. `full_name`/`display_name`
+    // QuotedMessageContext, types/api.ts. `full_name`/`display_name`
     // are kept as legacy fallbacks for any payload that still uses them.
     return ud?.fullname || ud?.display_name || ud?.full_name || ud?.username || ud?.email
     // Granular sub-field deps avoid recomputing on every parent payload

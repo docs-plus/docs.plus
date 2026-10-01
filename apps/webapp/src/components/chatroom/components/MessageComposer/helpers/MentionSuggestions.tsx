@@ -27,7 +27,7 @@ function LoadingSkeleton() {
       {[0, 1].map((i) => (
         <div key={i} className="flex items-center gap-2 px-2 py-1.5">
           <div className="skeleton size-8 shrink-0 rounded-full" />
-          <div className="skeleton h-4 flex-1 rounded" />
+          <div className="skeleton h-4 flex-1" />
         </div>
       ))}
     </>
@@ -75,62 +75,64 @@ export function MentionSuggestions({
         ? 'No members found'
         : `${flatEntries.length} ${flatEntries.length === 1 ? 'option' : 'options'}`
 
+  // The status sits beside the listbox: a listbox may own only options and groups.
   return (
-    <div
-      ref={listRef}
-      id={MENTION_LISTBOX_ID}
-      role="listbox"
-      aria-label="Mention members"
-      className="max-h-[300px] overflow-y-auto p-1">
+    <>
       <div role="status" aria-live="polite" className="sr-only">
         {statusText}
       </div>
-
-      {loading && flatEntries.length === 0 ? (
-        <LoadingSkeleton />
-      ) : (
-        <>
-          {everyoneEntries.length > 0 && (
-            <Section label="Notify">
-              {everyoneEntries.map(({ entry, index }) => (
-                <MentionSuggestionRow
-                  key={entry.id}
-                  entry={entry}
-                  index={index}
-                  optionId={mentionOptionId(index)}
-                  selected={selectedIndex === index}
-                  online={false}
-                  onSelect={onSelect}
-                  onMouseEnter={onRowHover}
-                />
-              ))}
-            </Section>
-          )}
-
-          <Section label="Members">
-            {fetchError ? (
-              <div className="text-error px-2 py-3 text-sm">Couldn&apos;t load members</div>
-            ) : loading && memberEntries.length === 0 ? (
-              <LoadingSkeleton />
-            ) : memberEntries.length > 0 ? (
-              memberEntries.map(({ entry, index }) => (
-                <MentionSuggestionRow
-                  key={entry.id}
-                  entry={entry}
-                  index={index}
-                  optionId={mentionOptionId(index)}
-                  selected={selectedIndex === index}
-                  online={onlineByUserId.get(entry.id) ?? false}
-                  onSelect={onSelect}
-                  onMouseEnter={onRowHover}
-                />
-              ))
-            ) : (
-              <div className="text-base-content/60 px-2 py-3 text-sm">No members found</div>
+      <div
+        ref={listRef}
+        id={MENTION_LISTBOX_ID}
+        role="listbox"
+        aria-label="Mention members"
+        className="max-h-[300px] overflow-y-auto p-1">
+        {loading && flatEntries.length === 0 ? (
+          <LoadingSkeleton />
+        ) : (
+          <>
+            {everyoneEntries.length > 0 && (
+              <Section label="Notify">
+                {everyoneEntries.map(({ entry, index }) => (
+                  <MentionSuggestionRow
+                    key={entry.id}
+                    entry={entry}
+                    index={index}
+                    optionId={mentionOptionId(index)}
+                    selected={selectedIndex === index}
+                    online={false}
+                    onSelect={onSelect}
+                    onMouseEnter={onRowHover}
+                  />
+                ))}
+              </Section>
             )}
-          </Section>
-        </>
-      )}
-    </div>
+
+            <Section label="Members">
+              {fetchError ? (
+                <div className="text-error px-2 py-3 text-sm">Couldn&apos;t load members</div>
+              ) : loading && memberEntries.length === 0 ? (
+                <LoadingSkeleton />
+              ) : memberEntries.length > 0 ? (
+                memberEntries.map(({ entry, index }) => (
+                  <MentionSuggestionRow
+                    key={entry.id}
+                    entry={entry}
+                    index={index}
+                    optionId={mentionOptionId(index)}
+                    selected={selectedIndex === index}
+                    online={onlineByUserId.get(entry.id) ?? false}
+                    onSelect={onSelect}
+                    onMouseEnter={onRowHover}
+                  />
+                ))
+              ) : (
+                <div className="text-base-content/60 px-2 py-3 text-sm">No members found</div>
+              )}
+            </Section>
+          </>
+        )}
+      </div>
+    </>
   )
 }

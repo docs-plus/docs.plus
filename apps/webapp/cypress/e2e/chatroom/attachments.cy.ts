@@ -716,7 +716,7 @@ describe('chatroom attachments', () => {
       )
       assertImageControlReady()
       openMessageContextMenu(messageId)
-      cy.contains('Copy to Doc').should('be.visible')
+      cy.contains('Copy to doc').should('be.visible')
     })
   })
 })

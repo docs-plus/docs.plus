@@ -8,13 +8,10 @@ export function NotificationMarkAllReadButton() {
 
   return (
     <Button
-      variant="ghost"
-      size="sm"
-      onClick={handleMarkAllAsRead}
-      className="text-base-content/60 hover:text-primary hover:bg-primary/10 gap-1.5"
-      aria-label="Mark all as read">
-      <LuCheckCheck size={16} />
-      <span className="text-xs font-medium">Mark all read</span>
+      variant="quiet"
+      startIcon={<LuCheckCheck size={14} aria-hidden />}
+      onClick={handleMarkAllAsRead}>
+      Mark all read
     </Button>
   )
 }

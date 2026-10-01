@@ -2,8 +2,8 @@ import { useMediaDisplayUrl } from '@components/chatroom/hooks/useMediaSignedUrl
 import { messageMediaTheme } from '@components/chatroom/utils/messageMediaTheme'
 import { Icons } from '@icons'
 import type { MessageMediaItem } from '@types'
+import { twMerge } from '@utils/twMerge'
 import { useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 function pickContextBarMedia(medias: MessageMediaItem[]): MessageMediaItem | null {
   if (medias.length === 0) return null

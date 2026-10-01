@@ -1,5 +1,5 @@
 import useReRenderOnEditorTransaction from '@hooks/useReRenderOnEditorTransaction'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import { useMessageComposer } from '../../hooks/useMessageComposer'
 import { FORMAT_TOOLBAR_FLAT, formatToolbarButtonKey } from '../Toolbar/formatToolbarLayout'
@@ -18,12 +18,7 @@ export function ComposerFormatPanel() {
         'motion-safe:animate-[doc-content-in_120ms_ease-out_both]'
       )}>
       {FORMAT_TOOLBAR_FLAT.map((Button, index) => (
-        <Button
-          key={formatToolbarButtonKey(Button, index)}
-          size={18}
-          className="btn-ghost rounded-field size-11 min-h-11 min-w-11 shrink-0 border-0 p-0"
-          tooltipPosition="top"
-        />
+        <Button key={formatToolbarButtonKey(Button, index)} size={18} tooltipPosition="top" />
       ))}
     </div>
   )
