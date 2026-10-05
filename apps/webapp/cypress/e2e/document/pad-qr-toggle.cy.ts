@@ -90,7 +90,7 @@ describe('pad QR toggle (full stack)', () => {
       card()
         .find('[role="img"] svg')
         .should(($img) => expect($img[0].getBoundingClientRect().width).to.be.closeTo(width, 2))
-    const veil = () => cy.get('[data-testid="pad-qr-veil"]')
+    const veil = () => card().find('[data-testid="qr-veil"]')
     veil().should('have.css', 'opacity', '0')
     card().realHover()
     veil().should('have.css', 'opacity', '1')

@@ -1,5 +1,6 @@
 import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
+import { QrVeil } from '@components/ui/QrVeil'
 import { Icons } from '@icons'
 import { isLightTheme, useThemeStore } from '@stores'
 import dynamic from 'next/dynamic'
@@ -71,16 +72,9 @@ export function PresentQrCode({ value, title }: PresentQrCodeProps) {
         type="button"
         onClick={open}
         aria-label={`Present QR code for ${displayUrl}`}
-        className="group rounded-box focus-visible:ring-primary relative block w-full cursor-pointer focus-visible:ring-2 focus-visible:outline-none max-sm:mx-auto max-sm:max-w-56">
+        className="group/qr-veil rounded-box focus-visible:ring-primary relative block w-full cursor-pointer focus-visible:ring-2 focus-visible:outline-none max-sm:mx-auto max-sm:max-w-56">
         <QrCode value={value} quietZone={2} className="rounded-box w-full" />
-        {/* Hover and focus only: at rest nothing covers the code, so it always scans. */}
-        <span
-          aria-hidden
-          className="rounded-box absolute inset-0 flex items-center justify-center bg-[var(--qr-plate)]/30 opacity-0 backdrop-blur-[3px] transition-opacity duration-[var(--motion-overlay-in)] group-hover:opacity-100 group-focus-visible:opacity-100">
-          <span className="flex size-12 scale-90 items-center justify-center rounded-full bg-[var(--qr-ink)] text-[var(--qr-plate)] shadow-xl transition-transform duration-[var(--motion-overlay-in)] ease-out group-hover:scale-100 group-focus-visible:scale-100 group-active:scale-95 motion-reduce:transition-none">
-            <Icons.fullscreen size={22} />
-          </span>
-        </span>
+        <QrVeil icon={Icons.fullscreen} />
       </button>
 
       <dialog

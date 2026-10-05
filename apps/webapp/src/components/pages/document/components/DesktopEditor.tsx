@@ -8,7 +8,7 @@ import ResizeHandle from '@components/ui/ResizeHandle'
 import { useUnreadSync } from '@hooks/useUnreadSync'
 import { useStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
-import { memo, type RefObject, useCallback, useRef, useState } from 'react'
+import { memo, type RefObject, useMemo, useRef, useState } from 'react'
 
 import { useSyncChatPanelHeight, useTocResize } from '../hooks'
 import EditorContent from './EditorContent'
@@ -56,7 +56,7 @@ const DesktopPadChat = memo(function DesktopPadChat() {
   )
 })
 
-// Same gate the toolbar used, so Mod-f stays with the browser until the first sync.
+// Mod-f stays with the browser until the first sync.
 const DesktopPadFind = memo(function DesktopPadFind() {
   const editor = useStore((state) => state.settings.editor.instance)
   const ready = useStore(
@@ -73,9 +73,14 @@ const DesktopEditor = () => {
   // shown state names its pad and a switch reads it as hidden. A Private pad shows no QR.
   const [qrDocumentId, setQrDocumentId] = useState<string | null>(null)
   const isQrShown = !isPrivate && documentId != null && qrDocumentId === documentId
-  const setQrShown = useCallback(
-    (shown: boolean) => setQrDocumentId(shown ? (documentId ?? null) : null),
-    [documentId]
+  // On a Private pad the toggle greys out, like any tool that does not apply.
+  const qr = useMemo(
+    () => ({
+      shown: isQrShown,
+      disabled: isPrivate,
+      onToggle: () => setQrDocumentId(isQrShown ? null : (documentId ?? null))
+    }),
+    [documentId, isPrivate, isQrShown]
   )
 
   const {
@@ -126,7 +131,7 @@ const DesktopEditor = () => {
       {/* No entry animation: at S1 this still shows ToolbarSkeleton — identical pixels
           to the page skeleton's strip; fading it would blank and re-show the same bones. */}
       <div className="toolbars bg-base-100 border-base-300 fixed bottom-0 z-[9] h-auto w-full border-t sm:relative sm:block sm:border-t-0">
-        <EditorToolbar isQrShown={isQrShown} onQrShownChange={setQrShown} />
+        <EditorToolbar qr={qr} />
       </div>
 
       <div className="editor relative flex size-full min-h-0 flex-row-reverse bg-[var(--pad-well)]">
