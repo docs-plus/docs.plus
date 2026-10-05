@@ -185,6 +185,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- **An empty line's hint now shows only its heading chain.** It no longer ends
+  with ` > Write here`. Every pad hint and the Title hint use one grey, a little
+  darker than before. That grey passes 4.5:1 contrast in every theme. The chat
+  composer hint does not change.
+
 - **Home lists the same documents as Settings → Documents.** The Home card
   shows pads you own and pads you joined, in one list. It has the Show and
   sort pickers, avatars, the ⋮ menu, Date groups, and Delete with Undo. Home

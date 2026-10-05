@@ -370,6 +370,9 @@
   --caret-color-inverse: var(--color-primary-content);
   --border-color-tint: color-mix(in oklch, var(--color-base-content) 14%, transparent);
   --muted-foreground: color-mix(in oklch, var(--color-base-content) 50%, transparent);
+  /* Pad empty-block hints and the Title hint (#371). 60% is the least single mix that clears
+     4.5:1 on base-100 in all 7 themes. The chat composer keeps its own 40% mix. */
+  --pad-placeholder-ink: color-mix(in oklch, var(--color-base-content) 60%, transparent);
   /* Hues as TEXT ink: each mix is the least that clears 5:1 on base-100, base-200, hue/10 and
      btn-soft in all 7 themes. oklab keeps the hue (oklch turned info purple on paper). Not @theme
      aliases: a @theme colour freezes its var() mix, so use `text-[var(--x-ink)]`. */

@@ -80,7 +80,9 @@
 
 // Pad document surface — prose rules live in _prose-mirror-body.scss; tokens, layout and block flow spacing here.
 .editorWrapper .ProseMirror {
-  --prose-placeholder-mix: 50%;
+  // One ink for every pad empty-block hint (heading chain, Heading N, Subtitle, List, To-do, Quote,
+  // Write code, Write here in a table cell). The Title hint in editor/_heading-node.scss reads it too.
+  --prose-placeholder-ink: var(--pad-placeholder-ink);
   --prose-pre-padding-block: 0.75rem;
   --prose-pre-padding-inline: 1rem;
   --prose-blockquote-canvas-mix: 4%;

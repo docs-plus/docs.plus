@@ -5,20 +5,15 @@
   outline: none;
 
   // Defaults; pad overrides in _blocks.scss (no duplicate placeholder/blockquote/pre rules)
-  --prose-placeholder-mix: 40%;
+  --prose-placeholder-ink: color-mix(in oklch, var(--color-base-content) 40%, transparent);
   --prose-pre-padding-block: 2px;
   --prose-pre-padding-inline: 10px;
   --prose-blockquote-canvas-mix: 0%;
   --prose-empty-before-width: auto;
-  --task-list-placeholder-color: color-mix(
-    in oklch,
-    var(--color-base-content) var(--prose-placeholder-mix),
-    transparent
-  );
 
   p.is-editor-empty:first-child::before,
   .is-editor-empty:first-child::before {
-    color: color-mix(in oklch, var(--color-base-content) var(--prose-placeholder-mix), transparent);
+    color: var(--prose-placeholder-ink);
     content: attr(data-placeholder);
     float: left;
     height: 0;
@@ -63,7 +58,7 @@
     left: -22px;
   }
 
-  @include taskListPlaceholder.task-list-placeholder-overrides(var(--task-list-placeholder-color));
+  @include taskListPlaceholder.task-list-placeholder-overrides(var(--prose-placeholder-ink));
 
   ul,
   ol {
@@ -110,7 +105,7 @@
   .is-empty::before {
     content: attr(data-placeholder);
     float: left;
-    color: color-mix(in oklch, var(--color-base-content) var(--prose-placeholder-mix), transparent);
+    color: var(--prose-placeholder-ink);
     pointer-events: none;
     height: 0;
     width: var(--prose-empty-before-width);

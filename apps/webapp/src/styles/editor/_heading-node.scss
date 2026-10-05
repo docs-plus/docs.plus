@@ -39,7 +39,7 @@
 
   > h1:first-child:has(> br:only-child):not(.has-focus)::before {
     content: 'Enter document name';
-    color: var(--muted-foreground);
+    color: var(--pad-placeholder-ink);
     float: left;
     height: 0;
     pointer-events: none;
