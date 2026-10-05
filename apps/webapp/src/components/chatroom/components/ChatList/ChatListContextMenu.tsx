@@ -1,10 +1,6 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { isMessage } from '@components/chatroom/types/chat-items'
-import {
-  ContextMenu,
-  contextMenuPanelClassName,
-  useContextMenuContext
-} from '@components/ui/ContextMenu'
+import { ContextMenu, useContextMenuContext } from '@components/ui/ContextMenu'
 import { useAuthStore, useChatStore } from '@stores'
 import { TMsgRow } from '@types'
 import { twMerge } from '@utils/twMerge'
@@ -56,8 +52,8 @@ export const ChatListContextMenu = ({ children, className }: Props) => {
   )
 
   const handleBeforeShow = useCallback(
-    (_e: MouseEvent, target: EventTarget | null): Element | null => {
-      const messageCard = target instanceof Element ? target?.closest('.msg_card') : null
+    (target: Element): Element | null => {
+      const messageCard = target.closest('.msg_card')
       if (!messageCard) return null
 
       const messageId = (messageCard as MessageCardDesktopElement).msgId ?? null
@@ -95,7 +91,7 @@ export const ChatListContextMenu = ({ children, className }: Props) => {
   return (
     <div className={twMerge('flex min-h-0 w-full flex-1 flex-col', className)} ref={contextMenuRef}>
       <ContextMenu
-        className={twMerge(contextMenuPanelClassName, 'absolute z-50')}
+        aria-label="Message options"
         parentRef={contextMenuRef}
         onBeforeShow={handleBeforeShow}
         onClose={handleContextMenuClose}>

@@ -1,9 +1,8 @@
 import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
-import { ContextMenu, contextMenuPanelClassName } from '@components/ui/ContextMenu'
+import { ContextMenu } from '@components/ui/ContextMenu'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Icons } from '@icons'
-import { twMerge } from '@utils/twMerge'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -55,8 +54,8 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
     isOpen: false
   })
 
-  const handleBeforeShow = useCallback((e: any) => {
-    const tocItem = e.target.closest('.toc__item')
+  const handleBeforeShow = useCallback((target: Element) => {
+    const tocItem = target.closest('.toc__item')
     if (!tocItem) return null
 
     removeContextMenuActiveClass()
@@ -107,7 +106,7 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
           <ul className={`${TOC_CLASSES.listMenu} w-full p-0 ${activeId ? 'is-dragging' : ''}`}>
             {headerItem}
             <ContextMenu
-              className={twMerge(contextMenuPanelClassName, 'absolute z-40')}
+              aria-label="Section options"
               parentRef={contextMenuRef}
               onBeforeShow={handleBeforeShow}
               onClose={handleContextMenuClose}>

@@ -4,7 +4,6 @@ import {
   MenuItem,
   useContextMenuContext
 } from '@components/ui/ContextMenu'
-import { Tooltip } from '@components/ui/Tooltip'
 import { Icons } from '@icons'
 
 import { tocActions } from './hooks'
@@ -24,8 +23,7 @@ export function TocContextMenu({ headingId, isOpen, onToggle }: TocContextMenuPr
     {
       title: 'Chat room',
       icon: <Icons.chatroom size={16} />,
-      onClick: () => tocActions.openChatroom(headingId, { scrollTo: true }),
-      variant: 'primary' as const
+      onClick: () => tocActions.openChatroom(headingId, { scrollTo: true })
     },
     {
       title: isOpen ? 'Fold section' : 'Unfold section',
@@ -53,9 +51,7 @@ export function TocContextMenu({ headingId, isOpen, onToggle }: TocContextMenuPr
             item.onClick()
             setIsOpen(false)
           }}>
-          <ContextMenuRow icon={item.icon} variant={item.variant}>
-            {item.title}
-          </ContextMenuRow>
+          <ContextMenuRow icon={item.icon}>{item.title}</ContextMenuRow>
         </MenuItem>
       ))}
 
@@ -67,17 +63,7 @@ export function TocContextMenu({ headingId, isOpen, onToggle }: TocContextMenuPr
           setIsOpen(false)
         }}>
         <ContextMenuRow icon={<Icons.trash size={16} />} variant="danger">
-          <span className="flex items-center gap-1.5">
-            Delete section
-            <Tooltip
-              title="Delete this heading and all nested sub-headings beneath it"
-              placement="right"
-              className="max-w-48 text-pretty">
-              <span className="flex items-center">
-                <Icons.info size={14} className="opacity-60" />
-              </span>
-            </Tooltip>
-          </span>
+          Delete section
         </ContextMenuRow>
       </MenuItem>
     </>

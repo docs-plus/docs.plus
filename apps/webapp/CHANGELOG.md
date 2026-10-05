@@ -195,6 +195,13 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   right-click menu. Screen readers no longer read the "seen" footer as a
   disabled action. On a phone, the long-press menu has 44px rows and closes
   with Escape.
+- **Open the outline and chat menus from the keyboard.** Press Shift+F10 or
+  the Menu key on a focused outline row, or on a link in a message. The menu
+  opens at that item, with its first row focused. Screen readers name the
+  menus "Section options" and "Message options". In the outline menu, Delete
+  section loses its info icon, and Chat room uses the default row colour. A
+  right-click on the outline header or on empty chat space now shows the
+  browser's own menu (#391).
 
 - **An empty line's hint now shows only its heading chain.** It no longer ends
   with ` > Write here`. Every pad hint and the Title hint use one grey, a little
