@@ -35,12 +35,15 @@ const psql = (vars: string[], sql: string): string => {
     return ''
   }
 }
-const queryDocBySlug = (slug: string): { documentId: string } | null => {
+const queryDocBySlug = (slug: string): { documentId: string; ownerId: string | null } | null => {
   const out = psql(
     ['-v', `slug=${slug}`],
-    `select "documentId" from "DocumentMetadata" where slug = :'slug' limit 1`
+    `select "documentId", "ownerId" from "DocumentMetadata" where slug = :'slug' limit 1`
   )
-  return out ? { documentId: out.split('|')[0] } : null
+  if (!out) return null
+  // psql -A prints SQL NULL as an empty field.
+  const [documentId, ownerId] = out.split('|')
+  return { documentId, ownerId: ownerId || null }
 }
 const draftAnchorTasks = {
   queryDocBySlug,
@@ -54,7 +57,7 @@ const draftAnchorTasks = {
       ) || 0
     )
   },
-  async waitForDocBySlug(slug: string): Promise<{ documentId: string } | null> {
+  async waitForDocBySlug(slug: string): Promise<ReturnType<typeof queryDocBySlug>> {
     for (let i = 0; i < 40; i++) {
       const row = queryDocBySlug(slug)
       if (row) return row

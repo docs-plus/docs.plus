@@ -5,9 +5,11 @@
  * CI lane runs e2e/document/**, so run it deliberately with the stack up.
  */
 
-const BASE = 'http://localhost:3001'
+// `--config baseUrl=http://localhost:3000` points the spec at another webapp port.
+const BASE = Cypress.config('baseUrl') ?? 'http://localhost:3001'
 const REST = 'http://localhost:4000/api' // hocuspocus REST under `make dev-local`
 const pad = () => cy.get('.ProseMirror[contenteditable="true"]', { timeout: 40000 })
+type DocRow = { documentId: string; ownerId: string | null } | null
 const freshSlug = () => `e2e-draft-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 
 describe('draft first-edit anchor (full stack)', () => {
@@ -29,8 +31,10 @@ describe('draft first-edit anchor (full stack)', () => {
 
     // Gate the reload on the anchor row landing — that write IS the mechanism
     // under test; a fixed wait would race the async onChange->DB create.
-    cy.task('waitForDocBySlug', slug).then((row: { documentId: string } | null) => {
+    cy.task('waitForDocBySlug', slug).then((row: DocRow) => {
       expect(row, 'anchor row created on first edit').to.not.be.null
+      // Signed out, so the first edit leaves the document open.
+      expect(row!.ownerId, 'signed-out first edit stamps no owner').to.be.null
       const documentId = row!.documentId
       // Content is not server-persisted yet (10s debounce), so survival can only
       // come from the stable documentId + IndexedDB mirror — i.e. the anchor.
@@ -83,7 +87,7 @@ describe('draft first-edit anchor (full stack)', () => {
     // queryDocBySlug looks up BY the URL slug, so a non-null row proves the row was
     // created under the URL slug, not slugify("Hello Anchor World"). Pre-fix this row
     // is absent -> reload mints a new id -> data loss.
-    cy.task('waitForDocBySlug', slug).then((row: { documentId: string } | null) => {
+    cy.task('waitForDocBySlug', slug).then((row: DocRow) => {
       expect(row, 'titled draft anchored under URL slug').to.not.be.null
       const documentId = row!.documentId
 
@@ -101,7 +105,7 @@ describe('draft first-edit anchor (full stack)', () => {
     // Chat rows key on the documentId (=channel_id), so opening chat must anchor it.
     cy.get('[aria-label="Open chat"]', { timeout: 40000 }).first().click({ force: true })
 
-    cy.task('waitForDocBySlug', slug).then((row: { documentId: string } | null) => {
+    cy.task('waitForDocBySlug', slug).then((row: DocRow) => {
       expect(row, 'chatroom-open anchored the draft').to.not.be.null
       const documentId = row!.documentId
 

@@ -131,3 +131,10 @@ jobs:
       - name: 🧪 Run real-infra E2E (document changes)
         working-directory: apps/hocuspocus.server
         run: bun run test:e2e:document-changes
+
+      # SUPABASE_URL is a closed port here, so only the signed-out case asserts.
+      # The signed-in owner, cede and backstop cases need a local run against
+      # real Auth, and the script reports them as skipped.
+      - name: 🧪 Run real-infra E2E (first-edit owner)
+        working-directory: apps/hocuspocus.server
+        run: bun --env-file=../../.env.local scripts/e2e-first-edit-owner.ts
