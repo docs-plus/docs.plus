@@ -1,5 +1,6 @@
 import { authStore, useStore } from '@stores'
 
+import { adoptOwner } from './adoptOwner'
 import { exitSealedDocument } from './exitSealedDocument'
 
 type AccessStatelessPayload = {
@@ -8,7 +9,8 @@ type AccessStatelessPayload = {
   ownerId?: string | null
 }
 
-/** Apply a live access seal payload: patch metadata, kick peers on Private/Deleted ON. */
+/** Apply a live access payload: patch metadata, kick peers on Private/Deleted ON. The
+ *  owner arm names the signed-in person whose first edit created the row. */
 export function applyAccessStateless(args: {
   documentId: string
   slug: string
@@ -21,6 +23,11 @@ export function applyAccessStateless(args: {
     // Home, not `/${slug}`: after a purge the slug resolves to nothing, and
     // opening an unknown slug is the document-creation path.
     exitSealedDocument({ to: '/', stopReconnect, destroyProvider })
+    return
+  }
+
+  if (data.type === 'owner') {
+    if (typeof data.ownerId === 'string') adoptOwner(documentId, data.ownerId)
     return
   }
   if (data.type !== 'readOnly' && data.type !== 'private') return

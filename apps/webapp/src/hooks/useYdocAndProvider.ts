@@ -215,7 +215,8 @@ const useYdocAndProvider = ({
             return
           }
 
-          if (data.type === 'readOnly' || data.type === 'private' || data.type === 'deleted') {
+          // applyAccessStateless owns the list of access types and ignores the rest.
+          if (typeof data.type === 'string') {
             applyAccessStateless({
               documentId,
               slug,

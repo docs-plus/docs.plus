@@ -1,6 +1,7 @@
 import * as toast from '@components/toast'
 import { useStore } from '@stores'
 import { onlineManager, useMutation } from '@tanstack/react-query'
+import { adoptOwner } from '@utils/adoptOwner'
 import { supabaseClient } from '@utils/supabase'
 import { plainTitle, sendDocTitleStateless } from '@utils/titleWrite'
 
@@ -20,6 +21,7 @@ export interface UpdateDocMetadataResponse {
   documentId: string
   readOnly: boolean
   isPrivate: boolean
+  ownerId?: string | null
   title?: string | null
   description?: string | null
   keywords?: string[] | string | null
@@ -90,6 +92,10 @@ const useUpdateDocMetadata = () => {
     // Hook-level, so a save queued offline still relays after its dialog unmounts.
     // Documents list uses optimistic updates — do NOT invalidate here (avoids flash).
     onSuccess: (data, { documentId, title }) => {
+      // A PUT that creates a draft's row makes a signed-in caller its owner. The
+      // first edit then cedes and broadcasts nothing, so the pad learns it here.
+      if (data.ownerId) adoptOwner(documentId, data.ownerId)
+
       if (title === undefined) return
       const { settings, setWorkspaceSetting } = useStore.getState()
       if (settings.metadata?.documentId !== documentId) return
