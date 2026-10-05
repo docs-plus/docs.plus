@@ -10,15 +10,12 @@ import {
   useClick,
   useDismiss,
   useFloating,
-  useInteractions,
-  useListNavigation,
-  useRole,
-  useTypeahead
+  type useInteractions
 } from '@floating-ui/react'
 import { twMerge } from '@utils/twMerge'
-import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useState } from 'react'
 
-import { contextMenuPanelClassName, MenuListProvider } from './ContextMenu'
+import { contextMenuPanelClassName, MenuListProvider, useMenuList } from './ContextMenu'
 import { useOverlayTransition } from './useOverlayTransition'
 
 // Non-modal, so excluding the editors costs no a11y. It keeps markOthers from stamping
@@ -59,9 +56,6 @@ export function DropdownMenu({
   portalRoot
 }: DropdownMenuProps) {
   const [open, setOpenState] = useState(false)
-  const [activeIndex, setActiveIndex] = useState<number | null>(null)
-  const elementsRef = useRef<Array<HTMLElement | null>>([])
-  const labelsRef = useRef<Array<string | null>>([])
 
   // One setter for every close path, so the host's onOpenChange never misses a row close.
   const setOpen = useCallback(
@@ -87,31 +81,10 @@ export function DropdownMenu({
 
   const click = useClick(context)
   const dismiss = useDismiss(context)
-  const role = useRole(context, { role: 'menu' })
-  const listNavigation = useListNavigation(context, {
-    listRef: elementsRef,
-    activeIndex,
-    onNavigate: setActiveIndex
-  })
-  const typeahead = useTypeahead(context, {
-    enabled: open,
-    listRef: labelsRef,
-    activeIndex,
-    onMatch: setActiveIndex
-  })
-
-  const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([
+  const { getReferenceProps, getFloatingProps, listProps } = useMenuList(context, setOpen, [
     click,
-    dismiss,
-    role,
-    listNavigation,
-    typeahead
+    dismiss
   ])
-
-  const menuListValue = useMemo(
-    () => ({ isOpen: open, setIsOpen: setOpen, activeIndex, getItemProps }),
-    [open, setOpen, activeIndex, getItemProps]
-  )
 
   return (
     <>
@@ -128,12 +101,7 @@ export function DropdownMenu({
               style={{ ...floatingStyles, ...transitionStyles, maxWidth: '100%' }}
               {...getFloatingProps()}
               className={twMerge(contextMenuPanelClassName, 'z-50', className)}>
-              <MenuListProvider
-                value={menuListValue}
-                elementsRef={elementsRef}
-                labelsRef={labelsRef}>
-                {children}
-              </MenuListProvider>
+              <MenuListProvider {...listProps}>{children}</MenuListProvider>
             </ul>
           </FloatingFocusManager>
         </FloatingPortal>

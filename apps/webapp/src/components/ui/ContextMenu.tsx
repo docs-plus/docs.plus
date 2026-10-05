@@ -1,10 +1,12 @@
 import {
   autoUpdate,
+  type ElementProps,
   flip,
   FloatingFocusManager,
   FloatingList,
   FloatingOverlay,
   FloatingPortal,
+  type FloatingRootContext,
   offset,
   shift,
   useDismiss,
@@ -17,7 +19,15 @@ import {
   useTypeahead
 } from '@floating-ui/react'
 import { twMerge } from '@utils/twMerge'
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 
 import { useOverlayTransition } from './useOverlayTransition'
 
@@ -151,6 +161,54 @@ export function MenuListProvider({
   )
 }
 
+/**
+ * The menu engine of `ContextMenu`, `DropdownMenu` and the message long press: list nav,
+ * typeahead and `role=menu` over `MenuListProvider` refs. Each host adds its own open and
+ * dismiss interactions; the long press takes none, so a reaction tap is not an outside press.
+ */
+export function useMenuList(
+  context: FloatingRootContext,
+  setOpen: (open: boolean) => void,
+  hostInteractions: ElementProps[] = []
+) {
+  const open = context.open
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  const elementsRef = useRef<Array<HTMLElement | null>>([])
+  const labelsRef = useRef<Array<string | null>>([])
+
+  const role = useRole(context, { role: 'menu' })
+  const listNavigation = useListNavigation(context, {
+    listRef: elementsRef,
+    activeIndex,
+    onNavigate: setActiveIndex
+  })
+  const typeahead = useTypeahead(context, {
+    enabled: open,
+    listRef: labelsRef,
+    activeIndex,
+    onMatch: setActiveIndex
+  })
+
+  const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([
+    ...hostInteractions,
+    role,
+    listNavigation,
+    typeahead
+  ])
+
+  const value = useMemo(
+    () => ({ isOpen: open, setIsOpen: setOpen, activeIndex, getItemProps }),
+    [open, setOpen, activeIndex, getItemProps]
+  )
+
+  return {
+    getReferenceProps,
+    getFloatingProps,
+    setActiveIndex,
+    listProps: { value, elementsRef, labelsRef }
+  }
+}
+
 type MenuItemProps = React.LiHTMLAttributes<HTMLLIElement> & {
   ref?: React.Ref<HTMLLIElement>
   /** Skipped by arrow keys and ignores clicks. Pass the same flag to its `ContextMenuRow`. */
@@ -210,16 +268,14 @@ export function MenuItem({
 }
 
 interface Props {
-  parentRef?: React.RefObject<HTMLElement | null>
-  isOpen?: boolean
-  onOpenChange?: (open: boolean) => void
-  mousePosition?: { x: number; y: number } | null
+  /** Hosts the `contextmenu` and menu-key listeners. */
+  parentRef: React.RefObject<HTMLElement | null>
   /** Takes the right-clicked or focused element; return null to keep the browser's own menu. */
   onBeforeShow?: (target: Element) => Element | null
+  /** Runs once per close, whatever closed the menu. */
   onClose?: () => void
   /** Required: the panel has no other accessible name. */
   'aria-label': string
-  className?: string
   children?: React.ReactNode
 }
 
@@ -235,26 +291,15 @@ function pointRect(x: number, y: number) {
 export function ContextMenu({
   children,
   parentRef,
-  className,
-  isOpen: externalIsOpen,
-  onOpenChange,
-  mousePosition,
   onBeforeShow,
   onClose,
   'aria-label': ariaLabel
 }: Props) {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null)
-  const [internalIsOpen, setInternalIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
   const [openedByKey, setOpenedByKey] = useState(false)
-
-  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen
-  const setIsOpen = onOpenChange || setInternalIsOpen
-
-  // Populated by each MenuItem's useListItem() — not DOM position — so
-  // wrapper components (TocContextMenu, ContextMenuItems, …) don't break it.
-  const listItemsRef = useRef<Array<HTMLLIElement | null>>([])
-  const listContentRef = useRef<Array<string | null>>([])
+  // Armed 300ms after a right-click, so the release of that click does not close the menu.
   const allowMouseUpCloseRef = useRef(false)
+  const wasOpenRef = useRef(false)
 
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,
@@ -276,38 +321,19 @@ export function ContextMenu({
   // Menu tier: 120ms scale-in from the cursor side, instant dismissal.
   const { isMounted, styles: transitionStyles } = useOverlayTransition(context, { closeMs: 0 })
 
-  useEffect(() => {
-    if (mousePosition && externalIsOpen) {
-      refs.setPositionReference({
-        getBoundingClientRect: () => pointRect(mousePosition.x, mousePosition.y)
-      })
-    }
-  }, [mousePosition, externalIsOpen, refs])
-
-  const role = useRole(context, { role: 'menu' })
   const dismiss = useDismiss(context)
-  const listNavigation = useListNavigation(context, {
-    listRef: listItemsRef,
-    onNavigate: setActiveIndex,
-    activeIndex
-  })
-  const typeahead = useTypeahead(context, {
-    enabled: isOpen,
-    listRef: listContentRef,
-    onMatch: setActiveIndex,
-    activeIndex
+  const { getFloatingProps, setActiveIndex, listProps } = useMenuList(context, setIsOpen, [dismiss])
+
+  const onMouseUp = useEffectEvent((e: MouseEvent) => {
+    if (!isOpen || !allowMouseUpCloseRef.current) return
+    // A mouseup inside the menu belongs to a row click.
+    if (refs.floating.current?.contains(e.target as Node)) return
+    setIsOpen(false)
   })
 
-  const { getFloatingProps, getItemProps } = useInteractions([
-    role,
-    dismiss,
-    listNavigation,
-    typeahead
-  ])
+  const onClosed = useEffectEvent(() => onClose?.())
 
   useEffect(() => {
-    if (externalIsOpen !== undefined) return
-
     let timeout: number
     // A menu key also fires a native contextmenu, on keydown or on keyup by browser. Focus
     // may sit in the menu by then, so the document swallows that event. The next pointerdown
@@ -321,8 +347,7 @@ export function ContextMenu({
       }
       e.preventDefault()
 
-      // Always position at mouse click location, regardless of target element
-      // The target element is used for context/validation, not positioning
+      // The point is the cursor; the target element only decides whether the menu opens.
       refs.setPositionReference({
         getBoundingClientRect: () => pointRect(e.clientX, e.clientY)
       })
@@ -369,24 +394,7 @@ export function ContextMenu({
       swallowKeyContextMenu = false
     }
 
-    function onMouseUp(e: MouseEvent) {
-      const menuElement = refs.floating?.current
-      const isInsideMenu = menuElement && menuElement.contains(e.target as Node)
-
-      // Don't close on mouseup inside the menu — let click events handle it
-      if (isInsideMenu) return
-
-      if (allowMouseUpCloseRef.current) {
-        setIsOpen(false)
-        // Clear message context when closing via onBeforeShow pattern
-        if (onBeforeShow && onOpenChange) {
-          onOpenChange(false)
-        }
-        onClose?.()
-      }
-    }
-
-    const parent = parentRef?.current
+    const parent = parentRef.current
     parent?.addEventListener('contextmenu', onContextMenu)
     parent?.addEventListener('keydown', onKeyDown)
     document.addEventListener('contextmenu', onKeyContextMenu, true)
@@ -402,44 +410,35 @@ export function ContextMenu({
       document.removeEventListener('mouseup', onMouseUp)
       clearTimeout(timeout)
     }
-    // onClose is intentionally omitted to avoid re-binding the listener
-    // every render when the parent doesn't memoize the callback.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refs, parentRef, externalIsOpen, setIsOpen, onBeforeShow, onOpenChange])
+  }, [refs, parentRef, onBeforeShow, setActiveIndex])
 
+  // The one close path: every way of closing lands here once, and a mount never does.
   useEffect(() => {
-    if (!isOpen && onClose) {
-      onClose()
+    if (wasOpenRef.current && !isOpen) {
+      allowMouseUpCloseRef.current = false
+      onClosed()
     }
-    // onClose intentionally omitted; firing on identity change would
-    // double-invoke the parent's handler on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    wasOpenRef.current = isOpen
   }, [isOpen])
-
-  if (!parentRef?.current && externalIsOpen === undefined) return null
 
   if (!isMounted) return null
 
   return (
-    <ContextMenuContext.Provider value={{ setIsOpen, isOpen, activeIndex, getItemProps }}>
-      <FloatingPortal>
-        <FloatingOverlay lockScroll>
-          <FloatingFocusManager context={context} initialFocus={openedByKey ? 0 : refs.floating}>
-            <ul
-              className={twMerge(contextMenuPanelClassName, className)}
-              ref={refs.setFloating}
-              style={{ ...floatingStyles, ...transitionStyles }}
-              {...getFloatingProps()}
-              // useRole points aria-labelledby at the reference, which is a virtual point here.
-              aria-labelledby={undefined}
-              aria-label={ariaLabel}>
-              <FloatingList elementsRef={listItemsRef} labelsRef={listContentRef}>
-                {children}
-              </FloatingList>
-            </ul>
-          </FloatingFocusManager>
-        </FloatingOverlay>
-      </FloatingPortal>
-    </ContextMenuContext.Provider>
+    <FloatingPortal>
+      <FloatingOverlay lockScroll>
+        <FloatingFocusManager context={context} initialFocus={openedByKey ? 0 : refs.floating}>
+          <ul
+            className={contextMenuPanelClassName}
+            ref={refs.setFloating}
+            style={{ ...floatingStyles, ...transitionStyles }}
+            {...getFloatingProps()}
+            // useRole points aria-labelledby at the reference, which is a virtual point here.
+            aria-labelledby={undefined}
+            aria-label={ariaLabel}>
+            <MenuListProvider {...listProps}>{children}</MenuListProvider>
+          </ul>
+        </FloatingFocusManager>
+      </FloatingOverlay>
+    </FloatingPortal>
   )
 }
