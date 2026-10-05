@@ -204,9 +204,10 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   heading or a divider that a send removes. The first comment on a heading with
   no chat works for a user who joined late.
 
-- Keep Pad title open on a document with no owner. First edit no longer stamps
-  the signed-in visitor as owner, so anyone can rename it. An owned document
-  still answers only to its owner.
+- Make a signed-in person the owner of a new document when they first click
+  into it, type in it or open its chat. Owner controls show at once, with no
+  reload. A signed-out person leaves the document open, so anyone can rename
+  it. Typing in a document that already exists never makes you its owner.
 
 - Show who renamed the Pad title when workspace chat is already open. A live
   notice arrives without the users join, so the chip used to say "someone".

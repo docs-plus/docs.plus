@@ -280,10 +280,14 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - **A chat push opens the message.** The worker builds
   `/<slug>?chatroom=…&msg_id=…`, because the queued row has no link.
 
-- **First-edit and first persist no longer claim `ownerId`.** The slug→documentId
-  anchor and the no-row persist backstop write `ownerId` null. A signed-in
-  visitor who types does not become the owner. Pad title stays open until
-  `PUT` / `POST` create sets one. The worker `update: {}` arm is unchanged.
+- **A signed-in first edit that creates the row owns it.** The slug→documentId
+  anchor stamps the editor's `ownerId` and `email`, then broadcasts
+  `{type:'owner'}` to the room. A signed-out or anonymous editor leaves the row
+  ownerless. A `P2002` cede never claims a row. When the anchor fails, or cedes
+  the slug to another id, the worker's no-row backstop creates the row. It
+  stamps the editor that the save carries and sends no live event. A direct
+  connection needs a metadata row, so it never reaches that create. The worker
+  `update: {}` arm is unchanged.
 
 - **ODT export and portable JSON no longer read an array as a node.** The shared
   `isRecord` guard accepted arrays, so a `content` array could reach a branch

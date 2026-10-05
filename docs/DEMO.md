@@ -459,7 +459,7 @@ Filtered to this section? [Show the whole document](/demo).
 
 A document carries **two flags: Private and Read-only**. Private is owner-only. A signed-out visitor is asked to sign in, and any other signed-in person is refused. Read-only stops everyone but the owner from editing, and this page is read-only.
 
-A document with no owner is open. Anyone may change its Pad title, signed in or not. Typing does not make that person the owner. Private and Read-only do not turn on until the document has an owner. This page already has an owner, so only they can rename it.
+A document with no owner is open. Anyone may change its Pad title, signed in or not. A signed-in person who first clicks into, types in or opens chat in a new document becomes its owner. Typing in a document that already exists never makes you its owner. Private and Read-only do not turn on until the document has an owner. This page already has an owner, so only they can rename it.
 
 The two flags are never on together. Turning Private on clears Read-only in the same request.
 
