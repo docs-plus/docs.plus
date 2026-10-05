@@ -37,6 +37,7 @@ import { createLowlight } from 'lowlight'
 import ShortUniqueId from 'short-unique-id'
 import * as Y from 'yjs'
 
+import { ClearFormatting } from './clearFormatting'
 import { CaretFind, foldedIdsIncludingFind } from './extensions/caret-find'
 import { HeadingFilter } from './extensions/heading-filter'
 import { HeadingFold, type HeadingFoldMeta, headingFoldPluginKey } from './extensions/heading-fold'
@@ -129,6 +130,7 @@ const Editor = ({
     }),
     ListKeymapWithoutTab,
     ListGapJoin,
+    ClearFormatting,
 
     ParagraphStyle,
 

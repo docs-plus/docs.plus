@@ -2,7 +2,6 @@ import { Icons } from '@icons'
 import { Editor } from '@tiptap/core'
 import { RefObject } from 'react'
 
-import { clearFormatting } from '../clearFormatting'
 import ToolbarButton from '../ToolbarButton'
 import ToolbarDivider from '../ToolbarDivider'
 
@@ -107,7 +106,8 @@ const FormatSelection = ({
         </ToolbarButton>
         <ToolbarDivider className="h-6" />
         <ToolbarButton
-          onPress={() => clearFormatting(editor)}
+          onPress={() => editor.chain().focus().clearFormatting().run()}
+          disabled={!editor.can().clearFormatting()}
           aria-label="Clear formatting"
           className={FORMAT_BTN}>
           <Icons.clearFormatting size={20} className="stroke-[1.75]" />

@@ -20,11 +20,10 @@ import {
   withInProgressBookmarks
 } from '@stores'
 import dynamic from 'next/dynamic'
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect } from 'react'
 
 import FindBar from '../../find/FindBar'
 import MediaInsertPanelSkeleton from '../../mediaPopovers/MediaInsertPanelSkeleton'
-import { clearFormatting } from '../clearFormatting'
 import { indicatorDotClassName } from '../indicatorDot'
 import ToolbarButton from '../ToolbarButton'
 import ToolbarDivider from '../ToolbarDivider'
@@ -80,11 +79,6 @@ const EditorToolbar = () => {
   const { createComment } = useTurnSelectedTextIntoComment()
   const { copyDocumentToClipboard, copied } = useCopyDocumentToClipboard(editor ?? null)
   const copyDocumentTooltip = copied ? 'Copied!' : 'Copy document'
-  const clearFormattingSelectionRef = useRef<{
-    from: number
-    to: number
-    empty: boolean
-  } | null>(null)
 
   useEffect(() => {
     if (!editor) return
@@ -269,32 +263,10 @@ const EditorToolbar = () => {
 
         <ToolbarButton
           data-testid="toolbar-clear-formatting"
-          onMouseDown={(event) => {
-            event.preventDefault()
-            const selection = editor.state.selection
-            clearFormattingSelectionRef.current = {
-              from: selection.from,
-              to: selection.to,
-              empty: selection.empty
-            }
-          }}
-          onClick={() => {
-            const preserved = clearFormattingSelectionRef.current
-            clearFormattingSelectionRef.current = null
-
-            if (preserved && !preserved.empty && preserved.from < preserved.to) {
-              editor
-                .chain()
-                .focus()
-                .setTextSelection({ from: preserved.from, to: preserved.to })
-                .unsetAllMarks()
-                .run()
-              return
-            }
-
-            clearFormatting(editor)
-          }}
-          tooltip="Clear formatting">
+          disabled={!editor.can().clearFormatting()}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => editor.chain().focus().clearFormatting().run()}
+          tooltip={'Clear formatting (⌘+\\)'}>
           <Icons.clearFormatting size={ICON_SIZE} />
         </ToolbarButton>
 

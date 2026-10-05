@@ -21,7 +21,10 @@ const ComplexHierarchyDocument = {
   ]
 }
 
-const getParagraph = () => cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
+const EDITOR = '.docy_editor .tiptap.ProseMirror'
+const MOD = Cypress.platform === 'darwin' ? 'Meta' : 'Control'
+
+const getParagraph = () => cy.get(`${EDITOR} > p`).first().as('paragraph')
 
 const selectTarget = (text, start, end) =>
   cy.createSelection({
@@ -172,22 +175,76 @@ describe('Combined Formatting', () => {
     cy.get('@paragraph').should('contain', text)
   })
 
-  it('keeps schema valid when clear formatting toolbar action is clicked on selection', () => {
-    const text = 'prefix toolbar-clear suffix'
+  it('keeps a heading and its toc-id when Clear formatting runs with a collapsed caret', () => {
+    cy.createDocument(ComplexHierarchyDocument)
 
-    cy.createDocument(SimpleDocument)
-    cy.wait(200)
-    getParagraph().click()
-    cy.get('@paragraph').realType(text)
+    cy.putPosCaretInHeading(2, 'S1-H2', 'end')
+    cy.get(EDITOR).should('have.focus')
+    cy.contains('h2[data-toc-id]', 'S1-H2')
+      .invoke('attr', 'data-toc-id')
+      .then((tocId) => {
+        cy.realPress([MOD, 'b'])
+        cy.realPress([MOD, '\\'])
+        cy.realType('x')
 
-    selectTarget(text, 7, 20)
-    cy.get('.docy_editor').realPress(['Meta', 'b'])
-    cy.get('@paragraph').find('strong').should('contain', 'toolbar-clear')
+        // Editor state, not h2 text: heading widgets add DOM text inside the h2.
+        cy.window().should((win) => {
+          let heading = null
+          win._editor.state.doc.forEach((node) => {
+            if (node.attrs['toc-id'] === tocId) heading = node
+          })
+          expect(heading?.attrs.level).to.eq(2)
+          expect(heading?.textContent).to.eq('S1-H2x')
+          expect(heading?.lastChild.marks).to.have.length(0)
+        })
+      })
+  })
 
-    selectTarget(text, 7, 20)
-    cy.get('[data-testid="toolbar-clear-formatting"]').click()
+  it('clears marks across a heading and a link and keeps both', () => {
+    const marked = (text, ...marks) => ({ type: 'text', text, marks })
 
-    cy.get('@paragraph').should('contain', text)
+    cy.window().then((win) => {
+      win._editor.commands.setContent({
+        type: 'doc',
+        content: [
+          { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Title' }] },
+          {
+            type: 'heading',
+            attrs: { level: 2, 'toc-id': 'clear-h2' },
+            content: [marked('Clear', { type: 'italic' }), { type: 'text', text: ' H2' }]
+          },
+          {
+            type: 'paragraph',
+            content: [
+              marked('bold', { type: 'bold' }),
+              { type: 'text', text: ' and ' },
+              marked(
+                'link',
+                { type: 'bold' },
+                { type: 'hyperlink', attrs: { href: 'https://example.com' } }
+              )
+            ]
+          }
+        ]
+      })
+    })
+    cy.get(`${EDITOR} a[href="https://example.com"]`).should('exist')
+
+    cy.window().then((win) => {
+      const editor = win._editor
+      const { doc } = editor.state
+      editor.commands.focus()
+      editor.commands.setTextSelection({
+        from: doc.child(0).nodeSize + 1,
+        to: doc.content.size - 1
+      })
+    })
+    cy.get('[data-testid="toolbar-clear-formatting"]').should('not.be.disabled').click()
+
+    cy.get(EDITOR).find('strong, em').should('not.exist')
+    cy.get(`${EDITOR} a[href="https://example.com"]`).should('contain', 'link')
+    cy.get(`${EDITOR} > h2[data-toc-id="clear-h2"]`).should('contain', 'Clear H2')
+    cy.window().its('_editor.state.doc.textContent').should('eq', 'TitleClear H2bold and link')
   })
 
   it('supports combined formatting in deep headings across a 7-section forest', () => {
