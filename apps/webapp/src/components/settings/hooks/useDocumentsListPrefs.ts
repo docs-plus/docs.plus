@@ -39,13 +39,30 @@ const subscribe = (listener: () => void) => {
   }
 }
 
+// Storage can throw (blocked site data, private mode, a full quota). This load's picks
+// live here first, so a failed write still shows and a read never throws during render.
+const picks = new Map<string, string>()
+
+const storageGet = (key: string): string | null => {
+  try {
+    return window.sessionStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
 const readStored = <T extends string>(key: string, options: Option<T>[], fallback: T): T => {
-  const stored = window.sessionStorage.getItem(key)
+  const stored = picks.get(key) ?? storageGet(key)
   return options.find((o) => o.value === stored)?.value ?? fallback
 }
 
 const writeStored = (key: string, value: string) => {
-  window.sessionStorage.setItem(key, value)
+  picks.set(key, value)
+  try {
+    window.sessionStorage.setItem(key, value)
+  } catch {
+    // Not kept across a reload; the Map still holds it for this load.
+  }
   listeners.forEach((listener) => listener())
 }
 
