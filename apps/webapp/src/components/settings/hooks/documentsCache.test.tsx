@@ -110,6 +110,26 @@ describe('useOwnerDocumentsCache', () => {
     expect(client.getQueryState(key)?.isInvalidated).toBe(false)
   })
 
+  // Home keeps the old rows while a new pick loads. Cancelling that first fetch left the
+  // new list empty and idle for good, and the old rows stayed dimmed.
+  it('lets a sibling list finish its first fetch', async () => {
+    const { client, cache } = mount(onePage)
+    const nextKey = makeDocumentsKey({ ...scope, sortKey: 'title_asc' })
+    let land: (pages: typeof onePage) => void = () => {}
+    const firstFetch = client.fetchQuery({
+      queryKey: nextKey,
+      queryFn: () => new Promise<typeof onePage>((resolve) => (land = resolve))
+    })
+
+    await act(async () => {
+      await cache.setFavorite('a', true)
+    })
+    land(onePage)
+
+    await expect(firstFetch).resolves.toEqual(onePage)
+    expect(client.getQueryData(nextKey)).toEqual(onePage)
+  })
+
   it('answers null when the list holds nothing yet, so no caller writes a phantom row', async () => {
     const { cache } = mount()
 

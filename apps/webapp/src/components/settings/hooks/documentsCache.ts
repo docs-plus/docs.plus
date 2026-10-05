@@ -59,8 +59,12 @@ function useDocumentPagesCache(prefix: QueryKey): DocumentsCache {
         snapshots.forEach(([key, pages]) => queryClient.setQueryData(key, pages))
 
     // Cancel first: a refetch already in flight lands after the patch and reverts it.
+    // Only a list that holds rows: cancelling a first fetch (Home's next pick) reverts it
+    // to idle with no data, and it never fetches again.
+    const cancelLoaded = () =>
+      queryClient.cancelQueries({ ...filter, predicate: (q) => q.state.data !== undefined })
     const edit = async (change: (pages: Pages) => Pages): Promise<Rollback | null> => {
-      await queryClient.cancelQueries(filter)
+      await cancelLoaded()
       const snapshots = readAll()
       if (snapshots.length === 0) return null
       for (const [key, pages] of snapshots) queryClient.setQueryData(key, change(pages))
@@ -69,7 +73,7 @@ function useDocumentPagesCache(prefix: QueryKey): DocumentsCache {
 
     return {
       async removeDocument(documentId) {
-        await queryClient.cancelQueries(filter)
+        await cancelLoaded()
         const snapshots = readAll()
         const outcomes = snapshots.flatMap(([key, pages]) => {
           const outcome = removeDocumentFromPages(pages, documentId)
