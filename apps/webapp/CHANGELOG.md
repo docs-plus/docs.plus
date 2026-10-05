@@ -321,8 +321,9 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - Headings of the same level in one section always share one size. A section
   move, a new heading, a paste, undo or a remote edit used to drop the size, so
   the heading fell back to a fixed default.
-- Heading sizes run from 22pt to 12pt, and the document title takes no rank.
-  Six levels in one section sit 2pt apart.
+- Heading sizes run from 24pt to 14pt, and the document title takes no rank.
+  Six levels in one section sit 2pt apart. The smallest heading is 14pt, so a
+  short label heading no longer looks like 12pt body text.
 
 - Backspace or Delete on an empty line between two lists of the same type
   joins them into one list. A nested Delete no longer moves the empty line into

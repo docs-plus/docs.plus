@@ -46,7 +46,7 @@ describe('heading-scale decorations', () => {
     const next = state.apply(state.tr.replaceWith(0, state.doc.content.size, state.doc.content))
     const fresh = plugin.spec.state!.init({}, next).decorations
     expect(sizesOf(next)).toEqual(sizesOf(next, fresh))
-    expect(sizesOf(next)).toEqual([[], ['22'], [], ['12'], ['22'], ['12']])
+    expect(sizesOf(next)).toEqual([[], ['24'], [], ['14'], ['24'], ['14']])
   })
 
   it('gives the title no rank and spaces six ranks 2pt apart', () => {
@@ -61,6 +61,6 @@ describe('heading-scale decorations', () => {
       h(5, '5'),
       h(6, '6')
     ])
-    expect(sizesOf(state)).toEqual([[], ['22'], ['22'], ['20'], ['18'], ['16'], ['14'], ['12']])
+    expect(sizesOf(state)).toEqual([[], ['24'], ['24'], ['22'], ['20'], ['18'], ['16'], ['14']])
   })
 })

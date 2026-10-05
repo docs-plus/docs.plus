@@ -3,8 +3,9 @@ import type { Node as PMNode } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 
-const MAX_SIZE = 22
-const MIN_SIZE = 12
+// #369: the 14pt floor keeps the smallest heading about 1.17x the 12pt body text.
+const MAX_SIZE = 24
+const MIN_SIZE = 14
 
 export const headingScalePluginKey = new PluginKey<HeadingScaleState>('headingScale')
 

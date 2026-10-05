@@ -273,20 +273,20 @@ Heading size is **computed, not chosen**. Nothing in the markup says 18pt.
 
 1. Take the headings from one `#` to the next `#`. The document title takes no rank.
 2. Collect the distinct levels among them, in order.
-3. Give the first 22pt, the last 12pt, and space the rest evenly between.
+3. Give the first 24pt, the last 14pt, and space the rest evenly between.
 
 | Distinct levels | Sizes, in points            | Step between ranks |
 | --------------- | --------------------------- | ------------------ |
-| 1               | 22                          | —                  |
-| 2               | 22 · 12                     | 10                 |
-| 3               | 22 · 17 · 12                | 5                  |
-| 4               | 22 · 18.67 · 15.33 · 12     | 3.33               |
-| 5               | 22 · 19.5 · 17 · 14.5 · 12  | 2.5                |
-| 6               | 22 · 20 · 18 · 16 · 14 · 12 | 2                  |
+| 1               | 24                          | —                  |
+| 2               | 24 · 14                     | 10                 |
+| 3               | 24 · 19 · 14                | 5                  |
+| 4               | 24 · 20.67 · 17.33 · 14     | 3.33               |
+| 5               | 24 · 21.5 · 19 · 16.5 · 14  | 2.5                |
+| 6               | 24 · 22 · 20 · 18 · 16 · 14 | 2                  |
 
-The block that holds this heading is the proof. It starts at `🧱 Why a section behaves this way` and ends at the next `#`. That block uses two levels, so its sizes are 22pt and 12pt. This heading is a `##`, so it renders 12pt.
+The block that holds this heading is the proof. It starts at `🧱 Why a section behaves this way` and ends at the next `#`. That block uses two levels, so its sizes are 24pt and 14pt. This heading is a `##`, so it renders 14pt.
 
-Now take the block that starts at `💬 A chatroom on every heading`. It uses three levels, so a `##` inside it renders 17pt. Same tag, different size, because **size answers how deep a heading sits inside its own block**.
+Now take the block that starts at `💬 A chatroom on every heading`. It uses three levels, so a `##` inside it renders 19pt. Same tag, different size, because **size answers how deep a heading sits inside its own block**.
 
 Filtered to this section? [Show the whole document](/demo).
 

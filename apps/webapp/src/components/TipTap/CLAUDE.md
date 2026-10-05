@@ -44,12 +44,14 @@ bun run migrate:nested-to-flat
 - `apps/webapp/src/components/TipTap/extensions/heading-scale/heading-scale.ts` is a mandatory spec.
 - Heading font size is dynamic by rank within a section, not fixed per HTML level and not a Google-style ladder.
 - The Title (the first top-level H1) takes no rank and gets no decoration. CSS draws it at a fixed 28pt.
+- Range ruling, 2026-10-05 ([#369](https://github.com/docs-plus/docs.plus/issues/369)): keep the rank rule and set the range to 24pt down to 14pt. A 12pt heading looked like body text. The 28pt Title stays the largest line.
+- Google Docs, Word and Notion give each level one fixed size. This rank rule is a recorded maintainer exception to that rule. Do not "fix" it.
 - The headings after the Title, up to the next H1, form section 1. Each later H1 starts a new section.
 - Ranking is per section, so the same level can have a different size in two sections.
-- Within a section, distinct heading levels are sorted and sizes interpolate evenly between 22pt max and 12pt min. Body text is 12pt (16px).
-- The minimum step between neighbouring ranks is 2pt, at six ranks: 22, 20, 18, 16, 14, 12. Three ranks give 22, 17, 12. Two ranks give 22, 12.
+- Within a section, distinct heading levels are sorted and sizes interpolate evenly between 24pt max and 14pt min. Body text is 12pt (16px), so the smallest heading is about 1.17x body text.
+- The minimum step between neighbouring ranks is 2pt, at six ranks: 24, 22, 20, 18, 16, 14. The smallest neighbour ratio is then 16/14, about 1.14. Three ranks give 24, 19, 14. Two ranks give 24, 14.
 - The same heading level repeated in one section gets the same visual size.
-- A section with one distinct heading level uses 22pt.
+- A section with one distinct heading level uses 24pt.
 - Use decorations only: `--hd-size`, `--hd-rank`, `--hd-total`. Never write sizes into the document.
 - Plugin state is `{ fingerprint, decorations }`.
 - Fingerprint is top-level heading levels in order, e.g. `1,2,4,1,3`.
