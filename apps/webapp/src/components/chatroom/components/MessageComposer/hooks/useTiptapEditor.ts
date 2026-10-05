@@ -3,6 +3,7 @@ import {
   selectComposerAttachmentsByKey,
   useComposerAttachmentsStore
 } from '@components/chatroom/stores/composerAttachmentsStore'
+import { ClearFormatting } from '@components/TipTap/clearFormatting'
 import { getHyperlinkPopoverConfigAtInvoke } from '@components/TipTap/hyperlinkPopovers/getHyperlinkPopoverConfig'
 import { ListGapJoin } from '@components/TipTap/listGapJoin'
 import { ListKeymapWithoutTab } from '@components/TipTap/listKeymapWithoutTab'
@@ -152,6 +153,7 @@ export const useTiptapEditor = ({
         }),
         ListKeymapWithoutTab,
         ListGapJoin,
+        ClearFormatting,
         InlineCode,
         Indent.configure({
           indentChars: '\t'

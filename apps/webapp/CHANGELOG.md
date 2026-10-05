@@ -185,6 +185,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- **One order for the chat message menus.** The hover ⋯ menu now lists Copy
+  link, Download, Copy to doc, Edit and Delete in the same order as the
+  right-click menu. Screen readers no longer read the "seen" footer as a
+  disabled action. On a phone, the long-press menu has 44px rows and closes
+  with Escape.
+
 - **An empty line's hint now shows only its heading chain.** It no longer ends
   with ` > Write here`. Every pad hint and the Title hint use one grey, a little
   darker than before. That grey passes 4.5:1 contrast in every theme. The chat
@@ -307,6 +313,14 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- **Clear formatting keeps headings, Block style and links.** It removes text
+  styles only: bold, italic, underline, strike, inline code, highlight,
+  superscript and subscript. With no selection it changes no text, and the
+  next text you type is plain. Before, a caret in a heading turned the heading
+  into normal text, so its section, outline row and chat went away. The button
+  is off when there is nothing to clear. `⌘\` (`Ctrl+\` on Windows and Linux)
+  runs it too. The chat composer has the same control at the end of its
+  format bar (#392).
 - The bell now counts account-wide alerts, such as a failed email delivery, in
   every document. The count updates live when one arrives.
 - On a phone, Undo and Redo are disabled when there is nothing to undo or redo.

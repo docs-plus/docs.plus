@@ -30,6 +30,7 @@ bun run migrate:nested-to-flat
 - Shared heading utilities live in `TipTap/extensions/shared/`: `computeSection`, `moveSection`, `canMapDecorations`, `transactionAffectsNodeType`, `matchSections`.
 - Section reorder is TOC-only via `useTocDrag` / `moveHeading` + `moveSection`. There is no in-editor heading drag handle extension.
 - Toolbar **Block style** (Title / Subtitle / H1–H6 / Normal) is outline role. Read and apply it through `TipTap/block-style/blockStyle`. Do not treat the H number as font size — that is HeadingScale. Names: [CONTEXT.md](../../../../../CONTEXT.md) §Pad outline.
+- **Clear formatting never changes Block style** (#392). One command, `ClearFormatting` in `TipTap/clearFormatting.ts`, serves the pad toolbar, the mobile format drawer, the chat composer and `Mod-\`. It removes every mark except `hyperlink` and `link`, in one transaction. A collapsed caret changes no text. It sets the stored marks to the caret's link marks only, so the next typed text is plain and a link is not split. Never call `clearNodes`, `setNode` or `lift` from it: a demoted heading loses its section, TOC row and Heading chat. The disabled state is `editor.can().clearFormatting()`. A selection or caret that holds only a link counts as nothing to clear. The pad and the composer both load it next to `ListGapJoin`.
 
 ### List Keymap
 
