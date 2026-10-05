@@ -1,4 +1,4 @@
-import { MessageMenuReadStatus } from '@components/chatroom/components/MessageCard/components/common/MessageMenuReadStatus'
+import { UserReadStatus } from '@components/chatroom/components/MessageCard/components/common/UserReadStatus'
 import { contextMenuPanelClassName } from '@components/ui/ContextMenu'
 import { TMsgRow } from '@types'
 import { twMerge } from '@utils/twMerge'
@@ -20,6 +20,8 @@ export const ContextActionsMenu = forwardRef<HTMLUListElement, ContextActionsMen
     return (
       <ul
         ref={ref}
+        role="menu"
+        aria-label="Message options"
         className={twMerge(contextMenuPanelClassName, longPressMotionClass(isVisible), className)}
         style={{
           position: 'absolute',
@@ -32,7 +34,7 @@ export const ContextActionsMenu = forwardRef<HTMLUListElement, ContextActionsMen
         }}
         onClick={(e) => e.stopPropagation()}>
         <LongPressMenuItems message={message} isInteractive={isInteractive} />
-        <MessageMenuReadStatus message={message} isOpen />
+        <UserReadStatus message={message} isOpen />
       </ul>
     )
   }

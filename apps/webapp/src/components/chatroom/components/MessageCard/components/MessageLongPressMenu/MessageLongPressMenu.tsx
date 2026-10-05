@@ -2,7 +2,7 @@ import { emojiReaction } from '@api'
 import { QuickReactionMenu } from '@components/chatroom/components/MessageCard/components/MessageLongPressMenu/components/QuickReactionMenu'
 import { modalBackdropClassName } from '@components/ui/Dialog'
 import { TMsgRow } from '@types'
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useEffectEvent, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import {
@@ -108,6 +108,21 @@ export const MessageLongPressMenu = ({ children, message }: Props) => {
       document.body.removeChild(element)
     }
   }, [])
+
+  const onEscapeKey = useEffectEvent((event: KeyboardEvent) => {
+    if (event.key !== 'Escape') return
+    event.preventDefault()
+    event.stopPropagation()
+    closeLongPressMenu()
+  })
+
+  // Capture phase, and stop it there, so the composer's Escape does not also clear reply mode.
+  useEffect(() => {
+    if (!isLongPressMenuVisible) return
+    const onKeyDown = (event: KeyboardEvent) => onEscapeKey(event)
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [isLongPressMenuVisible])
 
   useEffect(() => {
     if (isMenuEnterAnimationActive) setLongPressCompleted(true)

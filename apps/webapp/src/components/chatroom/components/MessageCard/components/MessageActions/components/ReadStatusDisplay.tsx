@@ -6,5 +6,5 @@ export const ReadStatusDisplay = () => {
   const { isOpen } = useContextMenuContext()
   const { message } = useMessageCardContext()
 
-  return <UserReadStatus message={message} isOpen={isOpen} avatarLoaderRepeat={4} inMenu />
+  return <UserReadStatus message={message} isOpen={isOpen} />
 }

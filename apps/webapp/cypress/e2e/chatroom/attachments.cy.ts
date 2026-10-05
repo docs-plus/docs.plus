@@ -718,5 +718,31 @@ describe('chatroom attachments', () => {
       openMessageContextMenu(messageId)
       cy.contains('Copy to doc').should('be.visible')
     })
+
+    it('lists the hover menu rows in the ruled order', () => {
+      const messageId = 'hover-order-1'
+      visitFeed(
+        [
+          mediaRow([{ path: storagePath, url: storagePath, type: 'image', name: 'photo.png' }], {
+            id: messageId,
+            seq: 4,
+            content: 'hello'
+          })
+        ],
+        messageId
+      )
+      assertImageControlReady()
+      cy.get(`[data-msg-id="${messageId}"]`).realHover()
+      cy.get('button[aria-label="More actions"]').should('be.visible').realClick()
+      cy.get('[role="menu"] [role="menuitem"]').should(($rows) => {
+        expect($rows.toArray().map((row) => row.getAttribute('aria-label'))).to.deep.equal([
+          'Copy link',
+          'Download',
+          'Copy to doc',
+          'Edit',
+          'Delete'
+        ])
+      })
+    })
   })
 })

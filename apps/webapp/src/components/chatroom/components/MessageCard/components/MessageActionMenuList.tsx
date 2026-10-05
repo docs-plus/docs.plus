@@ -1,4 +1,5 @@
 import {
+  MESSAGE_MENU_ICON_SIZE,
   type MessageActionMenuItem,
   type MessageActionMenuItemId
 } from '@components/chatroom/components/MessageCard/hooks/messageActionMenu'
@@ -17,7 +18,6 @@ type Props = {
   message: TMsgRow
   surface: Surface
   onClose: () => void
-  iconSize?: number
   includeReaction?: boolean
   isInteractive?: boolean
   /** Shows only these rows, in this order. */
@@ -27,18 +27,16 @@ type Props = {
 function ActionMenuRow({
   item,
   copied,
-  iconSize,
-  disabled = false
+  className
 }: {
   item: MessageActionMenuItem
   copied: boolean
-  iconSize: number
-  disabled?: boolean
+  className?: string
 }) {
   const isCopyLink = item.id === 'copy-link'
   const icon = isCopyLink ? (
     <span className={twMerge('swap', copied && 'swap-active')} aria-hidden>
-      <Icons.check size={iconSize} className="swap-on text-success" />
+      <Icons.check size={MESSAGE_MENU_ICON_SIZE} className="swap-on text-success" />
       <span className="swap-off inline-flex">{item.icon}</span>
     </span>
   ) : (
@@ -57,8 +55,11 @@ function ActionMenuRow({
     <ContextMenuRow
       icon={icon}
       variant={item.variant}
-      disabled={disabled}
-      className={twMerge(item.className, isCopyLink && copied && 'text-[var(--success-ink)]')}>
+      className={twMerge(
+        item.className,
+        isCopyLink && copied && 'text-[var(--success-ink)]',
+        className
+      )}>
       {title}
     </ContextMenuRow>
   )
@@ -68,12 +69,11 @@ export function MessageActionMenuList({
   message,
   surface,
   onClose,
-  iconSize = surface === 'longPress' ? 20 : 16,
   includeReaction = surface === 'contextMenu',
   isInteractive = true,
   only
 }: Props) {
-  const { items, linkCopied } = useMessageActionMenuItems(message, { iconSize, includeReaction })
+  const { items, linkCopied } = useMessageActionMenuItems(message, { includeReaction })
   const { schedule, cancel } = useCloseAfterHold(onClose)
 
   const activate = (item: MessageActionMenuItem, e?: MouseEvent) => {
@@ -105,10 +105,11 @@ export function MessageActionMenuList({
               <MenuItem
                 aria-label={item.id === 'copy-link' && linkCopied ? 'Copied!' : item.title}
                 onClick={(e) => activate(item, e)}>
-                <ActionMenuRow item={item} copied={linkCopied} iconSize={iconSize} />
+                <ActionMenuRow item={item} copied={linkCopied} />
               </MenuItem>
             ) : (
               <motion.li
+                role="menuitem"
                 aria-label={item.id === 'copy-link' && linkCopied ? 'Copied!' : item.title}
                 onTap={() => {
                   if (!isInteractive) return
@@ -119,12 +120,8 @@ export function MessageActionMenuList({
                   'group rounded-field cursor-pointer touch-manipulation select-none',
                   !isInteractive && 'pointer-events-none'
                 )}>
-                <ActionMenuRow
-                  item={item}
-                  copied={linkCopied}
-                  iconSize={iconSize}
-                  disabled={!isInteractive}
-                />
+                {/* Full ink while the press is held; the li ignores taps until it ends. */}
+                <ActionMenuRow item={item} copied={linkCopied} className="min-h-11" />
               </motion.li>
             )}
           </Fragment>

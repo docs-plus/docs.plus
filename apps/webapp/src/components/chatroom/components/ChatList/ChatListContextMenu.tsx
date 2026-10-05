@@ -10,7 +10,7 @@ import { TMsgRow } from '@types'
 import { twMerge } from '@utils/twMerge'
 import React, { useCallback, useRef, useState } from 'react'
 
-import { MessageMenuReadStatus } from '../MessageCard/components/common/MessageMenuReadStatus'
+import { UserReadStatus } from '../MessageCard/components/common/UserReadStatus'
 import ContextMenuItems from '../MessageCard/components/MessageContextMenu/ContextMenuItems'
 import type { MessageCardDesktopElement } from '../MessageCard/MessageCardContext'
 
@@ -36,7 +36,7 @@ const ContextMenuReadStatus = ({ message }: { message: TMsgRow | null }) => {
   const { isOpen } = useContextMenuContext()
   if (!message) return null
 
-  return <MessageMenuReadStatus message={message} isOpen={isOpen} inMenu />
+  return <UserReadStatus message={message} isOpen={isOpen} />
 }
 
 export const ChatListContextMenu = ({ children, className }: Props) => {

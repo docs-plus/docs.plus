@@ -19,7 +19,7 @@ export const HoverMenuActions = () => {
         trigger={<Icons.moreVertical size={18} className="text-base-content/70" />}>
         <ContextMenuItems
           message={message}
-          only={['download', 'copy-to-doc', 'copy-link', 'edit', 'delete']}
+          only={['copy-link', 'download', 'copy-to-doc', 'edit', 'delete']}
         />
         <MessageCard.Actions.ReadStatus />
       </HoverMenuDropdown>

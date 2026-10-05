@@ -14,6 +14,9 @@ export type MessageActionMenuItemId =
   | 'delete'
   | 'report'
 
+/** Every message menu, the long press included, draws 16px icons. */
+export const MESSAGE_MENU_ICON_SIZE = 16
+
 export type MessageActionMenuItem = {
   id: MessageActionMenuItemId
   title: string

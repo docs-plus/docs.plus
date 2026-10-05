@@ -17,16 +17,15 @@ import { hasMetadataProperty } from '@utils/metadata'
 import { openReportMail } from '@utils/reportContent'
 import { useMemo } from 'react'
 
-import { type MessageActionMenuItem } from './messageActionMenu'
+import { MESSAGE_MENU_ICON_SIZE, type MessageActionMenuItem } from './messageActionMenu'
 
 type Options = {
-  iconSize?: number
   includeReaction?: boolean
 }
 
 export const useMessageActionMenuItems = (
   message: TMsgRow,
-  { iconSize = 18, includeReaction = false }: Options = {}
+  { includeReaction = false }: Options = {}
 ) => {
   const openDialog = useStore((s) => s.openDialog)
   const { profile } = useAuthStore()
@@ -49,7 +48,7 @@ export const useMessageActionMenuItems = (
       {
         id: 'reply',
         title: 'Reply',
-        icon: <Icons.reply size={iconSize} />,
+        icon: <Icons.reply size={MESSAGE_MENU_ICON_SIZE} />,
         onClickFn: () => replyInMessageHandler(message),
         display: true
       }
@@ -59,7 +58,7 @@ export const useMessageActionMenuItems = (
       list.push({
         id: 'add-reaction',
         title: 'Add reaction',
-        icon: <Icons.emoji size={iconSize} />,
+        icon: <Icons.emoji size={MESSAGE_MENU_ICON_SIZE} />,
         onClickFn: (e?: React.MouseEvent) => {
           if (!e?.target) return
           openMessageReactionAt(message, (e.target as HTMLElement).getBoundingClientRect())
@@ -71,7 +70,7 @@ export const useMessageActionMenuItems = (
     list.push({
       id: 'copy-link',
       title: 'Copy link',
-      icon: <Icons.link size={iconSize} />,
+      icon: <Icons.link size={MESSAGE_MENU_ICON_SIZE} />,
       onClickFn: () => copyMessageLinkHandler(message),
       display: true
     })
@@ -80,7 +79,7 @@ export const useMessageActionMenuItems = (
       list.push({
         id: 'download',
         title: attachmentCount > 1 ? `Download all (${attachmentCount})` : 'Download',
-        icon: <Icons.download size={iconSize} />,
+        icon: <Icons.download size={MESSAGE_MENU_ICON_SIZE} />,
         onClickFn: () => downloadMessageMediaHandler(message),
         display: true
       })
@@ -91,9 +90,9 @@ export const useMessageActionMenuItems = (
         id: 'bookmark',
         title: isBookmarked ? 'Remove bookmark' : 'Bookmark',
         icon: isBookmarked ? (
-          <Icons.bookmarkMinus size={iconSize} />
+          <Icons.bookmarkMinus size={MESSAGE_MENU_ICON_SIZE} />
         ) : (
-          <Icons.bookmarkPlus size={iconSize} />
+          <Icons.bookmarkPlus size={MESSAGE_MENU_ICON_SIZE} />
         ),
         onClickFn: () => bookmarkMessageHandler(message),
         display: true,
@@ -102,28 +101,32 @@ export const useMessageActionMenuItems = (
       {
         id: 'copy-to-doc',
         title: 'Copy to doc',
-        icon: <Icons.fileOpen size={iconSize} />,
+        icon: <Icons.fileOpen size={MESSAGE_MENU_ICON_SIZE} />,
         onClickFn: () => copyMessageToDocHandler(message),
         display: true
       },
       {
         id: 'reply-in-thread',
         title: 'Reply in thread',
-        icon: <Icons.thread size={iconSize} />,
+        icon: <Icons.thread size={MESSAGE_MENU_ICON_SIZE} />,
         onClickFn: () => replyInThreadHandler(message),
         display: true
       },
       {
         id: 'pin',
         title: isPinned ? 'Unpin' : 'Pin',
-        icon: isPinned ? <Icons.pinOff size={iconSize} /> : <Icons.pin size={iconSize} />,
+        icon: isPinned ? (
+          <Icons.pinOff size={MESSAGE_MENU_ICON_SIZE} />
+        ) : (
+          <Icons.pin size={MESSAGE_MENU_ICON_SIZE} />
+        ),
         onClickFn: () => pinMessageHandler(message),
         display: false
       },
       {
         id: 'edit',
         title: 'Edit',
-        icon: <Icons.edit size={iconSize} />,
+        icon: <Icons.edit size={MESSAGE_MENU_ICON_SIZE} />,
         onClickFn: () => editMessageHandler(message),
         display: isOwner,
         separatorBefore: true
@@ -131,7 +134,7 @@ export const useMessageActionMenuItems = (
       {
         id: 'delete',
         title: 'Delete',
-        icon: <Icons.trash size={iconSize} />,
+        icon: <Icons.trash size={MESSAGE_MENU_ICON_SIZE} />,
         onClickFn: () => {
           openDialog(<DeleteMessageConfirmationDialog message={message} />, { size: 'sm' })
         },
@@ -142,7 +145,7 @@ export const useMessageActionMenuItems = (
         // Hidden from the message menu. Document report in Settings stays the route.
         id: 'report',
         title: 'Report',
-        icon: <Icons.alert size={iconSize} />,
+        icon: <Icons.alert size={MESSAGE_MENU_ICON_SIZE} />,
         onClickFn: () => openReportMail('message', getMessageUrl(message)),
         display: false,
         separatorBefore: true
@@ -158,7 +161,6 @@ export const useMessageActionMenuItems = (
     downloadMessageMediaHandler,
     editMessageHandler,
     getMessageUrl,
-    iconSize,
     includeReaction,
     isBookmarked,
     isOwner,
