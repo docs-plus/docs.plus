@@ -390,6 +390,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   Six levels in one section sit 2pt apart. The smallest heading is 14pt, so a
   short label heading no longer looks like 12pt body text.
 
+- A heading inside a quote or a table now uses the same 24pt to 14pt range.
+  Before, a small one there could look smaller than body text (#369).
 - Backspace or Delete on an empty line between two lists of the same type
   joins them into one list. A nested Delete no longer moves the empty line into
   a list item. Lists of different types lose the line but stay apart.

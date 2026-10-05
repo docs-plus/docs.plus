@@ -61,6 +61,7 @@ bun run migrate:nested-to-flat
 - A Yjs change (remote, undo, redo) replaces the whole document, so mapping drops every decoration and the set rebuilds. A peer pays one full rebuild per remote transaction (measured ~8.7 ms at 1501 headings).
 - Do not gate on a y-sync key string. PluginKey adds a numeric suffix (`y-sync$1` in the live app), so the old `getMeta('y-sync$')` check never matched.
 - Do not replace this with fixed per-level point maps.
+- A heading that is not top-level (inside a blockquote or a table cell) gets no rank decoration. It falls back to a fixed size by HTML level in `_heading-node.scss`: 24, 22, 20, 18, 16 and 14pt for h1 to h6, the same range as the scale. Keep those fallbacks in step with the range.
 
 ### Editor Performance
 
