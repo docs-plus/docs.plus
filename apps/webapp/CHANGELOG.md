@@ -22,8 +22,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   after Filter, shows a small QR code at the top right of the workspace. It
   encodes the same clean pad link as the share card, with no heading, chat or
   Filter terms. The card sits 14px under the toolbar, and below the Find bar
-  while Find is open. Hover the card to show a button that doubles its size
-  and shrinks it back. A Private pad shows no QR, and the toggle is off there.
+  while Find is open. Hover the card to blur it and show a button in the
+  middle that doubles its size and shrinks it back. A Private pad shows no QR, and the toggle is off there.
   The card always shows while the toggle is on; on a narrow window it may
   cover the page's right margin. Nothing is saved: a reload or another pad
   hides it. The other choices are agent defaults that wait for
