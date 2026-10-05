@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+import { expectSelectedFrame } from './selectedFrame'
+
 describe('delete-key collision between text editing and hover controls', () => {
   beforeEach(() => {
     cy.visitPlayground()
@@ -50,7 +52,7 @@ describe('delete-key collision between text editing and hover controls', () => {
 
     // No single press deletes media: the first one selects it, visibly.
     cy.nodeCount('image').should('eq', 1)
-    cy.get('#editor .hypermultimedia--image__content.ProseMirror-selectednode').should('exist')
+    expectSelectedFrame()
     cy.getEditor().then((editor) => {
       const selection = editor.state.selection as { node?: { type: { name: string } } }
       expect(selection.node?.type.name, 'NodeSelection on the image').to.eq('image')

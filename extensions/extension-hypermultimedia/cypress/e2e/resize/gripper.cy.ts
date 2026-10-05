@@ -387,6 +387,18 @@ describe('resize gripper', () => {
       })
     })
 
+    it('keeps the ratio when a corner drag stops at the column width', () => {
+      cy.prepareImageForResize(400, 300)
+      cy.get('#editor .ProseMirror').then(($prose) => {
+        const maxWidth = $prose[0].clientWidth
+        // 400 + 300 passes the column, and the pointer stays inside the viewport, so the move still fires.
+        cy.dragResizeClamp('bottom-right', 300, 10)
+        expectCornerRatio('image', '#editor img', 4 / 3)
+          .its('width')
+          .should('be.within', maxWidth - 2, maxWidth)
+      })
+    })
+
     it('removes gripper and toolbar when the hovered media node is deleted', () => {
       cy.getEditor().then((editor) => {
         editor.commands.setYoutubeVideo({ src: YOUTUBE_SRC })

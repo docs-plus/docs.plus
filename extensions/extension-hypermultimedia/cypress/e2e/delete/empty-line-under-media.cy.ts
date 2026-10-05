@@ -2,6 +2,8 @@
 
 import type { Node as PMNode } from '@tiptap/pm/model'
 
+import { expectSelectedFrame } from './selectedFrame'
+
 const MEDIA_SRC = {
   image: 'https://example.com/photo.png',
   video: 'https://example.com/clip.mp4',
@@ -12,8 +14,6 @@ const MEDIA_SRC = {
   spotify: 'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl',
   loom: 'https://www.loom.com/share/abcdef1234567890'
 } as const
-
-const SELECTED_HOST = '#editor .ProseMirror-selectednode > .hm-media-host'
 
 const text = (value: string) => ({ type: 'text', text: value })
 const paragraph = (value?: string) => ({
@@ -56,16 +56,6 @@ function paragraphCount(): Cypress.Chainable<number> {
 function expectParagraphCount(count: number): void {
   cy.get('#editor .ProseMirror').should(($root) => {
     expect($root.find('p').length, 'rendered paragraphs').to.eq(count)
-  })
-}
-
-function expectSelectedFrame(): void {
-  cy.get(SELECTED_HOST).should('have.length', 1)
-  cy.get(SELECTED_HOST).should(($host) => {
-    const host = $host[0]
-    const frame = host.ownerDocument.defaultView!.getComputedStyle(host, '::after')
-    expect(frame.borderTopStyle).to.eq('solid')
-    expect(frame.borderTopWidth).to.eq('1px')
   })
 }
 
