@@ -318,6 +318,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- Outline rows of one heading level now start their titles at the same place.
+  A heading with no subheadings keeps an empty space where the fold arrow
+  sits, so it no longer shifts left. This holds in the desktop outline and in
+  the phone outline. The fold arrow now tells screen readers whether the
+  section is open (#373).
 - **Clear formatting keeps headings, Block style and links.** It removes text
   styles only: bold, italic, underline, strike, inline code, highlight,
   superscript and subscript. With no selection it changes no text, and the

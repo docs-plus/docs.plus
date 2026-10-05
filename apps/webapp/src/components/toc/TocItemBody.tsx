@@ -92,6 +92,27 @@ function TocItemBodyComponent({
     isDragging && 'is-dragging'
   )
 
+  const foldSize = isDesktop ? 'size-5' : 'size-11 min-h-11 min-w-11'
+  // A leaf keeps a blank slot of the fold size, so rows of one heading level
+  // share one title start. Without it the leaf title moves left.
+  const fold = hasChildren ? (
+    <button
+      type="button"
+      className={twMerge(
+        TOC_CLASSES.foldBtn,
+        'inline-flex shrink-0 items-center justify-center',
+        foldSize,
+        item.open ? 'opened' : 'closed'
+      )}
+      onClick={handleToggle}
+      aria-expanded={item.open}
+      aria-label={item.open ? 'Collapse section' : 'Expand section'}>
+      <Icons.chevronRight size={18} className="fill-none stroke-current" aria-hidden />
+    </button>
+  ) : (
+    <span aria-hidden="true" className={twMerge('shrink-0', foldSize)} />
+  )
+
   const leading =
     isDesktop && sortable ? (
       <>
@@ -112,35 +133,17 @@ function TocItemBodyComponent({
           </Tooltip>
           {isHoveringHandle && !isDragging && <TocLevelPicker level={item.level} mode="preview" />}
         </span>
-        {hasChildren && (
+        {hasChildren ? (
           <Tooltip title="Toggle" placement="top">
-            <button
-              type="button"
-              className={twMerge(
-                TOC_CLASSES.foldBtn,
-                'inline-flex size-5 shrink-0 items-center justify-center',
-                item.open ? 'opened' : 'closed'
-              )}
-              onClick={handleToggle}
-              aria-label={item.open ? 'Collapse section' : 'Expand section'}>
-              <Icons.chevronRight size={18} className="fill-none stroke-current" aria-hidden />
-            </button>
+            {fold}
           </Tooltip>
+        ) : (
+          fold
         )}
       </>
-    ) : hasChildren ? (
-      <button
-        type="button"
-        className={twMerge(
-          TOC_CLASSES.foldBtn,
-          'inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center',
-          item.open ? 'opened' : 'closed'
-        )}
-        onClick={handleToggle}
-        aria-label={item.open ? 'Collapse section' : 'Expand section'}>
-        <Icons.chevronRight size={18} className="fill-none stroke-current" aria-hidden />
-      </button>
-    ) : null
+    ) : (
+      fold
+    )
 
   return (
     <li ref={sortable?.setNodeRef} className={liClassName} data-id={item.id}>
