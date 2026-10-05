@@ -225,6 +225,28 @@ type DocumentOrderBy =
   | Prisma.DocumentMetadataOrderByWithRelationInput[]
 type ListTier = { where: DocumentWhere; orderBy: DocumentOrderBy }
 
+const notOwnedBy = (userId: string): DocumentWhere[] => [
+  { ownerId: null },
+  { ownerId: { not: userId } }
+]
+
+/**
+ * Pins the caller's own Favorites, then the rest. Never `favorites: { _count }`: it counts
+ * every user's stars, so a row starred only by someone else would pin with no star.
+ */
+function favoritePinTiers(
+  where: DocumentWhere,
+  userId: string,
+  orderBy: DocumentOrderBy
+): ListTier[] {
+  const mine = { userId }
+  const unpinned: DocumentWhere[] = [...notOwnedBy(userId), { favorites: { none: mine } }]
+  return [
+    { where: { AND: [where, { ownerId: userId }, { favorites: { some: mine } }] }, orderBy },
+    { where: { AND: [where, { OR: unpinned }] }, orderBy }
+  ]
+}
+
 /**
  * The `all` and `joined` scopes. A row the caller does not own must be public and live.
  * The tiers stand in for orderings Prisma cannot write: pin only the caller's own stars,
@@ -243,7 +265,7 @@ function buildMemberScopeTiers(args: {
     isPrivate: false,
     deletedAt: null
   }
-  const notOwned: DocumentWhere[] = [{ ownerId: null }, { ownerId: { not: userId } }]
+  const notOwned = notOwnedBy(userId)
   const scopeWhere: DocumentWhere =
     args.scope === 'all'
       ? { OR: [{ ownerId: userId, deletedAt: null }, joinedArm] }
@@ -255,18 +277,14 @@ function buildMemberScopeTiers(args: {
   const orderBy = buildDocumentsOrderBy({ sort, ownerLiveList: false })
   if (args.scope === 'joined') return [{ where: where(), orderBy }]
 
-  const mine = { userId }
-  const pinned = where({ ownerId: userId }, { favorites: { some: mine } })
-  const unpinned: DocumentWhere[] = [...notOwned, { favorites: { none: mine } }]
-  if (sort !== 'lastOpenedAt_desc') {
-    return [
-      { where: pinned, orderBy },
-      { where: where({ OR: unpinned }), orderBy }
-    ]
-  }
+  if (sort !== 'lastOpenedAt_desc') return favoritePinTiers(where(), userId, orderBy)
 
+  const mine = { userId }
   return [
-    { where: pinned, orderBy: { lastOpenedAt: { sort: 'desc', nulls: 'last' } } },
+    {
+      where: where({ ownerId: userId }, { favorites: { some: mine } }),
+      orderBy: { lastOpenedAt: { sort: 'desc', nulls: 'last' } }
+    },
     {
       where: where(
         { ownerId: userId },
@@ -344,9 +362,7 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
     // view inverts that to show only the caller's tombstoned docs.
     const deletedWhere = deleted ? { deletedAt: { not: null } } : { deletedAt: null }
 
-    // AND `ownerId` onto any existing WHERE so the search and owner
-    // filter compose. When neither is set, the WHERE is undefined and
-    // Prisma returns every row.
+    // AND `ownerId` onto any existing WHERE so the search and owner filter compose.
     const ownerWhere = ownerId ? { ownerId } : undefined
 
     // Fleet clamp: an unverified caller or an owner-less list must not enumerate
@@ -414,14 +430,8 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
         ...deletedWhere
       }
 
-      if (ownerLiveList) {
-        // Pin with tiers: `favorites: { _count }` counts every user's stars, so a row
-        // starred only by someone else pinned with no star. Same rule as the Merged list.
-        const mine = { userId: requesterId }
-        const tiers: ListTier[] = [
-          { where: { AND: [baseWhere, { favorites: { some: mine } }] }, orderBy },
-          { where: { AND: [baseWhere, { favorites: { none: mine } }] }, orderBy }
-        ]
+      if (ownerLiveList && requesterId) {
+        const tiers = favoritePinTiers(baseWhere, requesterId, orderBy)
         ;[docs, total] = await findTieredPage(prisma, tiers, listSelect, offset, limit)
       } else {
         ;[docs, total] = await Promise.all([

@@ -181,31 +181,6 @@ describe('Documents API', () => {
       }
     })
 
-    test('Trash and the fleet keep a plain order with no Favorite pin', async () => {
-      let captured: { orderBy?: unknown } | undefined
-      mockPrisma.documentMetadata.findMany = async (args: { orderBy?: unknown }) => {
-        captured = args
-        return []
-      }
-      mockPrisma.documentMetadata.count = async () => 0
-
-      await searchDocuments(mockPrisma, {
-        ownerId: 'user-123',
-        requesterId: 'user-123',
-        deleted: true,
-        limit: 10,
-        offset: 0
-      })
-      expect(captured?.orderBy).toEqual({ deletedAt: 'desc' })
-
-      await searchDocuments(mockPrisma, {
-        sort: 'title_asc',
-        limit: 10,
-        offset: 0
-      })
-      expect(captured?.orderBy).toEqual({ title: 'asc' })
-    })
-
     test('lastOpenedAt_desc sorts only the owner live list; other calls fall back', async () => {
       let captured: { orderBy?: unknown } | undefined
       mockPrisma.documentMetadata.findMany = async (args: { orderBy?: unknown }) => {
@@ -527,6 +502,7 @@ describe('Documents API', () => {
 
     test("the owner live list pins only the caller's own favorites", async () => {
       // ME's star sits on the oldest row and OTHER's on the newest, so a plain sort fails.
+      // The two dates disagree on the rest, so each sort has its own order.
       const owned = [
         row('mine-starred', { ownerId: ME, updatedAt: day(2), favorites: [{ userId: ME }] }),
         row('other-starred', {
@@ -535,9 +511,13 @@ describe('Documents API', () => {
           lastOpenedAt: day(9),
           favorites: [{ userId: OTHER }]
         }),
-        row('plain', { ownerId: ME, updatedAt: day(5), lastOpenedAt: day(5) })
+        row('plain', { ownerId: ME, updatedAt: day(5), lastOpenedAt: day(20) })
       ]
-      for (const sort of ['updatedAt_desc', 'lastOpenedAt_desc'] as const) {
+      const cases = [
+        ['updatedAt_desc', ['mine-starred', 'other-starred', 'plain']],
+        ['lastOpenedAt_desc', ['mine-starred', 'plain', 'other-starred']]
+      ] as const
+      for (const [sort, expected] of cases) {
         const result = await searchDocuments(fakePrisma(owned), {
           ownerId: ME,
           requesterId: ME,
@@ -545,12 +525,42 @@ describe('Documents API', () => {
           limit: 10,
           offset: 0
         })
-        expect(slugs(result)).toEqual(['mine-starred', 'other-starred', 'plain'])
+        expect(slugs(result)).toEqual([...expected])
         expect(result.total).toBe(3)
         const bySlug = Object.fromEntries(result.docs.map((d: any) => [d.slug, d]))
         expect(bySlug['mine-starred'].isFavorite).toBe(true)
         expect(bySlug['other-starred'].isFavorite).toBe(false)
       }
+    })
+
+    test('Trash and the fleet keep a plain order with no Favorite pin', async () => {
+      // ME's star sits on the older row, so a pin would put it first.
+      const listed = [
+        row('starred', {
+          ownerId: ME,
+          updatedAt: day(2),
+          deletedAt: day(3),
+          favorites: [{ userId: ME }]
+        }),
+        row('plain', { ownerId: ME, updatedAt: day(8), deletedAt: day(7) })
+      ]
+      const trash = await searchDocuments(fakePrisma(listed), {
+        ownerId: ME,
+        requesterId: ME,
+        deleted: true,
+        limit: 10,
+        offset: 0
+      })
+      expect(slugs(trash)).toEqual(['plain', 'starred'])
+      expect(trash.docs[0]).not.toHaveProperty('isFavorite')
+
+      const live = listed.map((r) => ({ ...r, deletedAt: null }))
+      const fleet = await searchDocuments(fakePrisma(live), {
+        requesterId: ME,
+        limit: 10,
+        offset: 0
+      })
+      expect(slugs(fleet)).toEqual(['plain', 'starred'])
     })
   })
 
