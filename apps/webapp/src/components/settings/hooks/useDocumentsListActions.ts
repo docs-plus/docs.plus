@@ -2,6 +2,7 @@ import * as toast from '@components/toast'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { OwnedDocument } from '../types'
+import { documentDisplayName } from '../utils/documentDisplayName'
 import { useOwnerDocumentsCache } from './documentsCache'
 import useDeleteDocument from './useDeleteDocument'
 
@@ -89,7 +90,7 @@ export function useDocumentsListActions({ userId, docs }: DocumentsListActionsIn
       clearTimeout(dismissTimerRef.current ?? undefined)
       setPendingDelete({
         documentId,
-        title: outcome.removed.title ?? outcome.removed.slug,
+        title: documentDisplayName(outcome.removed),
         reinsert: outcome.reinsert
       })
       dismissTimerRef.current = setTimeout(() => setPendingDelete(null), UNDO_WINDOW_MS)

@@ -5,6 +5,7 @@ import type { DocumentsListScope } from '../documentsQueryKey'
 import { type DocumentMembersEntry } from '../hooks/useDocumentMembers'
 import { openRenameDocumentDialog } from '../openRenameDocumentDialog'
 import type { OwnedDocument } from '../types'
+import { documentDisplayName } from '../utils/documentDisplayName'
 import { documentListDate } from '../utils/documentListDate'
 import DocumentMembersCluster from './DocumentMembersCluster'
 import DocumentPreviewPaper from './DocumentPreviewPaper'
@@ -33,7 +34,7 @@ function DocumentGridTile({
   onDelete
 }: DocumentGridTileProps) {
   const router = useRouter()
-  const label = doc.title ?? doc.slug
+  const label = documentDisplayName(doc)
   const date = documentListDate(doc, scope.sortKey)
   // An old server omits isOwner, and it answers the owned list only.
   const isOwner = doc.isOwner !== false
@@ -105,7 +106,6 @@ function DocumentGridTile({
             triggerTabIndex={isActive ? 0 : -1}
             onRename={openRenameDialog}
             onDelete={(keyboard) => onDelete(doc.documentId, keyboard)}
-            onOpenDocument={onOpenDocument}
           />
         </div>
       </div>

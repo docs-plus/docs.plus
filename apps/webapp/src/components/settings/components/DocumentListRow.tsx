@@ -8,6 +8,7 @@ import useCommitDocumentRename from '../hooks/useCommitDocumentRename'
 import { type DocumentMembersEntry } from '../hooks/useDocumentMembers'
 import { openRenameDocumentDialog } from '../openRenameDocumentDialog'
 import type { OwnedDocument } from '../types'
+import { documentDisplayName } from '../utils/documentDisplayName'
 import { documentListDate } from '../utils/documentListDate'
 import DocumentMembersCluster from './DocumentMembersCluster'
 import DocumentRowLabel from './DocumentRowLabel'
@@ -42,7 +43,7 @@ function DocumentListRow({
   renameInDialog
 }: DocumentListRowProps) {
   const router = useRouter()
-  const label = doc.title || doc.slug
+  const label = documentDisplayName(doc)
   const date = documentListDate(doc, scope.sortKey)
   // Another person's row names its owner. An ownerless row has no name to show.
   // An old server omits isOwner, and it answers the owned list only.
@@ -189,7 +190,6 @@ function DocumentListRow({
           triggerTabIndex={isActive ? 0 : -1}
           onRename={enterRename}
           onDelete={(keyboard) => onDelete(doc.documentId, keyboard)}
-          onOpenDocument={onOpenDocument}
         />
       </div>
     </li>
