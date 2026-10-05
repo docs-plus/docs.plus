@@ -3,9 +3,9 @@ import Button from '@components/ui/Button'
 import { ModalBody, ModalClose, ModalDescription, ModalHeading } from '@components/ui/Dialog'
 import { Tooltip } from '@components/ui/Tooltip'
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
+import { usePadShareUrl } from '@hooks/usePadShareUrl'
 import { Icons } from '@icons'
 import { useAuthStore, useStore } from '@stores'
-import { padSlugOf } from '@utils/filterRoute'
 import type { IconType } from 'react-icons'
 import { BsReddit } from 'react-icons/bs'
 import { FaFacebook } from 'react-icons/fa'
@@ -89,9 +89,7 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
   const canChangeAccess = isOwner && documentSettingsOpenRequest.canRequest()
   const title = docMetadata?.title || 'Untitled document'
 
-  // Always the whole document: the address bar can carry heading, chat and filter state.
-  const slug = docMetadata?.slug || padSlugOf(window.location.pathname)
-  const shareUrl = `${window.location.origin}/${slug}`
+  const shareUrl = usePadShareUrl()
   const hasWebShare = typeof navigator.share === 'function'
 
   const openDocumentSettings = () => {
