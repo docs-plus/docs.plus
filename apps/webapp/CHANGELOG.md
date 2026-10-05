@@ -185,6 +185,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- **Home lists the same documents as Settings → Documents.** The Home card
+  shows pads you own and pads you joined, in one list. It has the Show and
+  sort pickers, avatars, the ⋮ menu, Date groups, and Delete with Undo. Home
+  and Settings keep the same picks. The card shows the first 8 rows and See
+  all. On a phone, Rename opens a dialog.
+
 - **Settings › Documents shows Trash only when the trash holds a document.**
   When the last document leaves the trash, the list comes back.
 

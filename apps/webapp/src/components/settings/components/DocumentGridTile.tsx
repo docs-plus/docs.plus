@@ -1,15 +1,14 @@
-import { useStore } from '@stores'
 import { useRouter } from 'next/router'
 import { LuEye, LuLock, LuStar } from 'react-icons/lu'
 
 import type { DocumentsListScope } from '../documentsQueryKey'
 import { type DocumentMembersEntry } from '../hooks/useDocumentMembers'
+import { openRenameDocumentDialog } from '../openRenameDocumentDialog'
 import type { OwnedDocument } from '../types'
 import { documentListDate } from '../utils/documentListDate'
 import DocumentMembersCluster from './DocumentMembersCluster'
 import DocumentPreviewPaper from './DocumentPreviewPaper'
 import DocumentRowMenu from './DocumentRowMenu'
-import RenameDocumentDialog from './RenameDocumentDialog'
 
 interface DocumentGridTileProps {
   doc: OwnedDocument
@@ -34,7 +33,6 @@ function DocumentGridTile({
   onDelete
 }: DocumentGridTileProps) {
   const router = useRouter()
-  const openDialog = useStore((state) => state.openDialog)
   const label = doc.title ?? doc.slug
   const date = documentListDate(doc, scope.sortKey)
   // An old server omits isOwner, and it answers the owned list only.
@@ -46,12 +44,7 @@ function DocumentGridTile({
     onOpenDocument?.()
   }
 
-  const openRenameDialog = () => {
-    openDialog(
-      <RenameDocumentDialog documentId={doc.documentId} currentTitle={doc.title} scope={scope} />,
-      { size: 'md', align: 'top', className: 'mt-14' }
-    )
-  }
+  const openRenameDialog = () => openRenameDocumentDialog(doc, scope)
 
   return (
     <div className="rounded-box border-base-300 bg-base-100 hover:bg-base-200 focus-within:ring-primary flex flex-col border transition-colors focus-within:ring-2">

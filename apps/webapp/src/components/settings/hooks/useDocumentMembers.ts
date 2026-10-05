@@ -13,6 +13,11 @@ export interface DocumentMembersEntry {
   previews: DocumentMemberPreview[]
 }
 
+/** Keyed on lower(documentId): that is what Supabase `workspaces.slug` holds, despite the
+ *  column's name. The human slug matches nothing. One expression so the fetch key and both
+ *  lookups cannot drift apart — a drift here was the original bug. */
+export const documentMembersKey = (doc: { documentId: string }) => doc.documentId.toLowerCase()
+
 /**
  * Batch member previews for a page of owned docs. `enabled` is required: the RPC
  * is revoked from `anon`, so an unguarded call 403s. React Query hashes slugs by

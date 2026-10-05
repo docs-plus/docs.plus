@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
 import { supabaseClient } from '@utils/supabase'
 
 import { type DocumentsListScope, makeDocumentsKey } from '../documentsQueryKey'
@@ -43,13 +43,19 @@ async function fetchDocumentsPage(
  */
 export function useOwnerDocuments(
   scope: DocumentsListScope,
-  focusOptions: { refetchOnWindowFocus?: boolean | 'always' } = {}
+  {
+    refetchOnWindowFocus,
+    keepPrevious = false,
+    enabled = true
+  }: { refetchOnWindowFocus?: boolean | 'always'; keepPrevious?: boolean; enabled?: boolean } = {}
 ) {
   return useInfiniteQuery({
     queryKey: makeDocumentsKey(scope),
-    enabled: !!scope.userId,
+    // AND, never override: no caller may fetch without a user.
+    enabled: !!scope.userId && enabled,
     staleTime: 30_000,
-    ...focusOptions,
+    ...(refetchOnWindowFocus === undefined ? {} : { refetchOnWindowFocus }),
+    ...(keepPrevious ? { placeholderData: keepPreviousData } : {}),
     initialPageParam: 0,
     queryFn: ({ pageParam }) => fetchDocumentsPage(pageParam, scope),
     getNextPageParam: (lastPage, allPages) => nextDocumentsOffset(allPages, lastPage.total)

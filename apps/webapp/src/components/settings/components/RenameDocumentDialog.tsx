@@ -11,8 +11,8 @@ interface RenameDocumentDialogProps {
 }
 
 /**
- * Grid-tile rename surface (openDialog). The tile title is line-clamp-2, so a dialog
- * is used instead of an inline swap. Stays mounted until the PUT settles so its
+ * Rename where an inline swap cannot work: the grid tile title is line-clamp-2, and the
+ * phone keyboard collapses the Home card. Stays mounted until the PUT settles so its
  * mutate-scoped rollback + toast still fire (an inline close would drop them).
  */
 function RenameDocumentDialog({ documentId, currentTitle, scope }: RenameDocumentDialogProps) {

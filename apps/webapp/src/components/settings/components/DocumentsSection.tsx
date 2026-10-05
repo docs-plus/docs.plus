@@ -1,76 +1,34 @@
-import * as toast from '@components/toast'
 import Button, { segmentClassName } from '@components/ui/Button'
 import { EmptyState } from '@components/ui/EmptyState'
-import { ListGroupLabel } from '@components/ui/ListGroupLabel'
-import Select, { type SelectOption } from '@components/ui/Select'
 import TextInput from '@components/ui/TextInput'
 import { useNavigateToDocument } from '@hooks/useNavigateToDocument'
 import { useAuthStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
 import debounce from 'lodash/debounce'
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { LuFileText, LuLayoutGrid, LuList, LuSearch, LuTrash2, LuX } from 'react-icons/lu'
 
 import {
-  DOCUMENTS_SCOPE_STORAGE_KEY,
+  DOCUMENTS_EMPTY_TEXT,
   DOCUMENTS_VIEW_STORAGE_KEY,
-  type DocumentsScope,
   type DocumentViewMode
 } from '../constants'
 import type { DocumentsListScope } from '../documentsQueryKey'
-import { useOwnerDocumentsCache } from '../hooks/documentsCache'
-import useDeleteDocument from '../hooks/useDeleteDocument'
-import { useDocumentMembers } from '../hooks/useDocumentMembers'
+import { useDocumentsListActions } from '../hooks/useDocumentsListActions'
+import { useDocumentsListPrefs } from '../hooks/useDocumentsListPrefs'
 import { useOwnerDocuments } from '../hooks/useOwnerDocuments'
 import { useTrashedDocuments } from '../hooks/useTrashedDocuments'
 import { DocumentsBodySkeleton } from '../SettingsPanelSkeleton'
-import type { DocumentSortKey } from '../types'
-import { buildDocumentsListItems, type DocumentsListItem } from '../utils/documentsListItems'
-import DocumentGridTile from './DocumentGridTile'
-import DocumentListRow from './DocumentListRow'
+import DocumentsList from './DocumentsList'
+import DocumentsListSelects from './DocumentsListSelects'
+import DocumentUndoBanner from './DocumentUndoBanner'
 import SettingsCard from './SettingsCard'
 import TrashSection from './TrashSection'
-
-// One pending soft-delete at a time, for the in-modal Undo banner. Rendered inline (not a
-// toast) so Undo stays clickable inside the Settings modal scrim. `reinsert` comes from the
-// cache and stays bound to the list the row left, which search or sort may have replaced.
-type PendingDelete = {
-  documentId: string
-  title: string
-  reinsert: () => void
-}
-
-const UNDO_WINDOW_MS = 6000
-
-// Sort labels map 1:1 to the backend `sort` enum; server-side only (client sort breaks Load more).
-const SORT_OPTIONS: SelectOption[] = [
-  { value: 'updatedAt_desc', label: 'Last modified' },
-  { value: 'lastOpenedAt_desc', label: 'Last opened' },
-  { value: 'createdAt_desc', label: 'Date created' },
-  { value: 'title_asc', label: 'Name (A→Z)' },
-  { value: 'title_desc', label: 'Name (Z→A)' }
-]
-
-const SORT_STORAGE_KEY = 'docsplus:my-docs-sort'
-
-const LIST_SCOPE_OPTIONS: SelectOption[] = [
-  { value: 'all', label: 'All documents' },
-  { value: 'owned', label: 'Owned by me' },
-  { value: 'joined', label: 'Joined' }
-]
-
-// Last opened is the owner's stamp, so a joined-only list has no order for it.
-const JOINED_SORT_OPTIONS = SORT_OPTIONS.filter((o) => o.value !== 'lastOpenedAt_desc')
 
 const VIEW_OPTIONS = [
   { mode: 'list', icon: LuList, label: 'List view' },
   { mode: 'grid', icon: LuLayoutGrid, label: 'Grid view' }
 ] as const
-
-/** Keyed on lower(documentId): that is what Supabase `workspaces.slug` holds, despite the
- *  column's name. The human slug matches nothing. One expression so the fetch key and both
- *  lookups cannot drift apart — a drift here was the original bug. */
-const membersKey = (doc: { documentId: string }) => doc.documentId.toLowerCase()
 
 interface DocumentsSectionProps {
   // Dismiss the Settings modal when a row/tile opens a doc.
@@ -80,26 +38,9 @@ interface DocumentsSectionProps {
 const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
   const userId = useAuthStore((state) => state.profile?.id)
 
-  const sortLabelId = useId()
-  const listScopeLabelId = useId()
-
   const [inputValue, setInputValue] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [sortKey, setSortKey] = useState<DocumentSortKey>(() => {
-    if (typeof window === 'undefined') return 'updatedAt_desc'
-    const stored = window.sessionStorage.getItem(SORT_STORAGE_KEY)
-    return SORT_OPTIONS.some((o) => o.value === stored)
-      ? (stored as DocumentSortKey)
-      : 'updatedAt_desc'
-  })
-  const [listScope, setListScope] = useState<DocumentsScope>(() => {
-    if (typeof window === 'undefined') return 'all'
-    const stored = window.sessionStorage.getItem(DOCUMENTS_SCOPE_STORAGE_KEY)
-    return LIST_SCOPE_OPTIONS.some((o) => o.value === stored) ? (stored as DocumentsScope) : 'all'
-  })
-  // The stored sort stays as chosen, so it returns when the scope leaves Joined.
-  const effectiveSortKey: DocumentSortKey =
-    listScope === 'joined' && sortKey === 'lastOpenedAt_desc' ? 'updatedAt_desc' : sortKey
+  const { listScope, sortKey } = useDocumentsListPrefs()
   const [viewMode, setViewMode] = useState<DocumentViewMode>(() => {
     if (typeof window === 'undefined') return 'list'
     return window.sessionStorage.getItem(DOCUMENTS_VIEW_STORAGE_KEY) === 'grid' ? 'grid' : 'list'
@@ -143,17 +84,6 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
     setSearchQuery('')
   }
 
-  const handleSortChange = (value: string) => {
-    setSortKey(value as DocumentSortKey)
-    if (typeof window !== 'undefined') window.sessionStorage.setItem(SORT_STORAGE_KEY, value)
-  }
-
-  const handleListScopeChange = (value: string) => {
-    setListScope(value as DocumentsScope)
-    if (typeof window !== 'undefined')
-      window.sessionStorage.setItem(DOCUMENTS_SCOPE_STORAGE_KEY, value)
-  }
-
   const handleViewChange = (mode: DocumentViewMode) => {
     setViewMode(mode)
     if (typeof window !== 'undefined')
@@ -164,7 +94,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
     userId: userId ?? '',
     scope: listScope,
     searchQuery,
-    sortKey: effectiveSortKey
+    sortKey
   }
 
   const {
@@ -180,152 +110,8 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
 
   const docs = useMemo(() => data?.pages.flatMap((p) => p.docs) ?? [], [data])
   const total = data?.pages[0]?.total ?? 0
-  const listItems = useMemo(
-    () => buildDocumentsListItems(docs, effectiveSortKey),
-    [docs, effectiveSortKey]
-  )
-
-  const { data: membersMap } = useDocumentMembers(docs.map(membersKey), !!userId)
-
-  const cache = useOwnerDocumentsCache(scope.userId)
-  const { deleteDocument, restoreDocument } = useDeleteDocument()
-
-  // In-modal Undo banner state; the timer auto-dismisses (soft-delete stands) after the window.
-  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
-  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => () => clearTimeout(dismissTimerRef.current ?? undefined), [])
-
-  // Roving tabindex: one tab stop per row or tile; arrows move the active item.
-  const listRef = useRef<HTMLElement | null>(null)
-  const bindListRef = (el: HTMLElement | null) => {
-    listRef.current = el
-  }
-  const [activeIndex, setActiveIndex] = useState(0)
-  useEffect(() => {
-    setActiveIndex((i) => (docs.length === 0 ? 0 : Math.min(i, docs.length - 1)))
-  }, [docs.length])
-
-  const focusRowAt = useCallback((index: number) => {
-    const buttons = listRef.current?.querySelectorAll<HTMLButtonElement>('[data-doc-row-button]')
-    if (!buttons?.length) return
-    const next = Math.max(0, Math.min(index, buttons.length - 1))
-    setActiveIndex(next)
-    buttons[next]?.focus()
-  }, [])
-
-  const handleListKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
-    // Only from a row nav button — never while the rename input (same <ul>) is focused.
-    if (!(e.target as HTMLElement).matches('[data-doc-row-button]')) return
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      focusRowAt(activeIndex + 1)
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      focusRowAt(activeIndex - 1)
-    } else if (e.key === 'Home') {
-      e.preventDefault()
-      focusRowAt(0)
-    } else if (e.key === 'End') {
-      e.preventDefault()
-      focusRowAt(docs.length - 1)
-    }
-  }
-
-  // Optimistic soft-delete: drop the row, offer Undo (~6s), reconcile keyboard focus.
-  // Not memoized — it must read this render's scope + live docs, or the patch no-ops.
-  const handleDelete = (documentId: string, keyboard: boolean) => {
-    const delIndex = docs.findIndex((d) => d.documentId === documentId)
-
-    void cache.removeDocument(documentId).then((outcome) => {
-      if (!outcome) return
-
-      // The ⋮ trigger unmounts, so the section (not the closing menu) lands focus on the
-      // adjacent row; 100ms clears floating-ui's 80ms return-focus race. Browser-pending.
-      if (keyboard && delIndex !== -1) {
-        setTimeout(() => focusRowAt(delIndex), 100)
-      }
-
-      // Replace the prior banner (one pending delete at a time) and arm auto-dismiss.
-      clearTimeout(dismissTimerRef.current ?? undefined)
-      setPendingDelete({
-        documentId,
-        title: outcome.removed.title ?? outcome.removed.slug,
-        reinsert: outcome.reinsert
-      })
-      dismissTimerRef.current = setTimeout(() => setPendingDelete(null), UNDO_WINDOW_MS)
-
-      deleteDocument(
-        { documentId },
-        {
-          onError: () => {
-            outcome.rollback()
-            clearTimeout(dismissTimerRef.current ?? undefined)
-            setPendingDelete(null)
-            toast.Error('Couldn’t delete document')
-          }
-        }
-      )
-    })
-  }
-
-  // Undo: put the row back where it sat, then restore server-side.
-  const handleUndo = () => {
-    const pending = pendingDelete
-    if (!pending) return
-    clearTimeout(dismissTimerRef.current ?? undefined)
-    setPendingDelete(null)
-    pending.reinsert()
-    restoreDocument(
-      { documentId: pending.documentId },
-      { onError: () => toast.Error('Couldn’t restore document') }
-    )
-  }
-
-  // One switch for both arms. The list and the grid carry the same item kinds and differ only
-  // in wrapper element and classes, so a new kind lands here once instead of twice.
-  const isListView = viewMode === 'list'
-  const ItemWrapper = isListView ? 'li' : 'div'
-
-  const renderItem = (item: DocumentsListItem) => {
-    if (item.kind === 'hairline') {
-      return (
-        <ItemWrapper
-          key="favorites-end"
-          aria-hidden
-          className={
-            isListView
-              ? 'pointer-events-none my-3'
-              : 'border-base-300 col-span-2 my-1 border-t lg:col-span-3'
-          }>
-          {isListView ? <div className="border-base-300 border-t" /> : null}
-        </ItemWrapper>
-      )
-    }
-    if (item.kind === 'bucket') {
-      return (
-        <ListGroupLabel
-          as={ItemWrapper}
-          key={item.key}
-          className={isListView ? 'px-2 pt-4 pb-1' : 'col-span-2 pt-2 lg:col-span-3'}>
-          {item.label}
-        </ListGroupLabel>
-      )
-    }
-    const DocumentItem = isListView ? DocumentListRow : DocumentGridTile
-    return (
-      <DocumentItem
-        key={item.doc.documentId}
-        doc={item.doc}
-        scope={scope}
-        members={membersMap?.get(membersKey(item.doc))}
-        onOpenDocument={onOpenDocument}
-        index={item.index}
-        isActive={item.index === activeIndex}
-        onActivate={setActiveIndex}
-        onDelete={handleDelete}
-      />
-    )
-  }
+  const listActions = useDocumentsListActions({ userId: scope.userId, docs })
+  const { pendingDelete, handleUndo } = listActions
 
   // SettingsTakeover never renders without a profile; this only narrows the type.
   if (!userId) return null
@@ -340,16 +126,11 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
         ) : (
           <div className="space-y-4 max-md:flex max-md:min-h-0 max-md:flex-1 max-md:flex-col max-md:space-y-0">
             {pendingDelete && (
-              <div
-                role="status"
-                className="bg-base-200 rounded-field flex items-center justify-between gap-3 px-3 py-2 motion-safe:animate-[doc-content-in_180ms_ease-out_both] max-md:mx-4 max-md:mt-3">
-                <span className="text-base-content/70 truncate text-sm">
-                  Deleted “{pendingDelete.title}”
-                </span>
-                <Button variant="quiet" className="shrink-0" onClick={handleUndo}>
-                  Undo
-                </Button>
-              </div>
+              <DocumentUndoBanner
+                title={pendingDelete.title}
+                onUndo={handleUndo}
+                className="max-md:mx-4 max-md:mt-3"
+              />
             )}
 
             <div className="max-md:border-base-300 max-md:bg-base-100 space-y-4 max-md:sticky max-md:top-0 max-md:z-10 max-md:space-y-2.5 max-md:border-b max-md:px-4 max-md:pt-3 max-md:pb-2.5">
@@ -375,30 +156,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
 
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-                  <label htmlFor={listScopeLabelId} className="sr-only">
-                    Show
-                  </label>
-                  <Select
-                    id={listScopeLabelId}
-                    size="sm"
-                    value={listScope}
-                    onChange={handleListScopeChange}
-                    options={LIST_SCOPE_OPTIONS}
-                    wrapperClassName="min-w-0 flex-1 sm:max-w-40"
-                    className="min-h-11 sm:min-h-8"
-                  />
-                  <label htmlFor={sortLabelId} className="sr-only">
-                    Sort documents
-                  </label>
-                  <Select
-                    id={sortLabelId}
-                    size="sm"
-                    value={effectiveSortKey}
-                    onChange={handleSortChange}
-                    options={listScope === 'joined' ? JOINED_SORT_OPTIONS : SORT_OPTIONS}
-                    wrapperClassName="min-w-0 flex-1 sm:max-w-44"
-                    className="min-h-11 sm:min-h-8"
-                  />
+                  <DocumentsListSelects />
                 </div>
 
                 <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
@@ -462,15 +220,13 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
               ) : listScope === 'joined' ? (
                 <EmptyState
                   icon={LuFileText}
-                  title="No joined documents yet."
-                  body="Documents you open while signed in appear here."
+                  {...DOCUMENTS_EMPTY_TEXT.joined}
                   className="max-md:flex-1 max-md:justify-center"
                 />
               ) : (
                 <EmptyState
                   icon={LuFileText}
-                  title="No documents yet."
-                  body="Documents you create will appear here."
+                  {...DOCUMENTS_EMPTY_TEXT.owned}
                   className="max-md:flex-1 max-md:justify-center"
                   action={
                     <Button
@@ -491,22 +247,13 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                   {total} {total === 1 ? 'document' : 'documents'}
                 </p>
 
-                {isListView ? (
-                  <ul
-                    ref={bindListRef}
-                    role="list"
-                    onKeyDown={handleListKeyDown}
-                    className="[&>li[data-doc-row]+li[data-doc-row]]:border-base-300 [&>li[data-doc-row]+li[data-doc-row]]:border-t">
-                    {listItems.map(renderItem)}
-                  </ul>
-                ) : (
-                  <div
-                    ref={bindListRef}
-                    onKeyDown={handleListKeyDown}
-                    className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-                    {listItems.map(renderItem)}
-                  </div>
-                )}
+                <DocumentsList
+                  docs={docs}
+                  viewMode={viewMode}
+                  scope={scope}
+                  actions={listActions}
+                  onOpenDocument={onOpenDocument}
+                />
 
                 {hasNextPage && (
                   <div className="mt-4 flex justify-center">

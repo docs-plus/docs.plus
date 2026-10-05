@@ -29,19 +29,19 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 
 ## Documents list
 
-- **Favorite** — a per-user mark that pins a document to the top of Settings → Documents. Stored as `DocumentFavorite` (`userId` + `documentId`). Owner-only. Soft-delete keeps the row; purge cascade drops it. In the Merged list only the caller's own Favorites pin.
+- **Favorite** — a per-user mark that pins a document to the top of Settings → Documents and the Home card. Stored as `DocumentFavorite` (`userId` + `documentId`). Owner-only. Soft-delete keeps the row; purge cascade drops it. In the Merged list only the caller's own Favorites pin.
   _Avoid_: Bookmark (chat messages and the hyperlink picker), Pin (channel messages)
-- **Owner live list** — the owner's undeleted Documents (`scope=owned`). Home and Command jump read only this list. Pins Favorites first. Includes `isFavorite`, DocumentGridPreview, and Last opened.
+- **Owner live list** — the owner's undeleted Documents (`scope=owned`). Command jump reads only this list. Pins only the caller's own Favorites first. Includes `isFavorite`, DocumentGridPreview, and Last opened.
   _Avoid_: public fleet (omits Favorite, DocumentGridPreview, and Last opened)
 - **Joined** — a public, live Document the caller opened while signed in and does not own. The proof is an active `workspace_members` row (`left_at` null) whose `workspace_id` equals `documentId` in exact case. An ownerless Document counts. The server reads the set from `token.sub` (`apps/hocuspocus.server/src/lib/joinedDocuments.ts`); the client never sends ids. A failed read is a 503, never an empty list. A Joined row shows its owner's name when it has one. Its ⋮ offers only Open in new tab and Copy link.
   _Avoid_: Shared, Shared with me (nobody shares it; opening joins it), Recents (Joined has no visit order)
-- **Merged list** — the Settings → Documents default (`scope=all`): the Owner live list plus every Joined row, in one sort. The Show filter picks All documents, Owned by me (`owned`) or Joined (`joined`). `sessionStorage` key `docsplus:my-docs-scope` keeps the pick for the tab.
+- **Merged list** — the default list in Settings → Documents and on Home (`scope=all`): the Owner live list plus every Joined row, in one sort. The Show filter picks All documents, Owned by me (`owned`) or Joined (`joined`). Settings and Home share the `sessionStorage` keys `docsplus:my-docs-scope` and `docsplus:my-docs-sort`, so they share one query key.
 - **Owner Trash list** — the owner's soft-deleted Documents. Includes DocumentGridPreview and Last opened. Omits Favorite. Same NULL fill as the Owner live list.
   _Avoid_: Owner live list
 - **DocumentGridPreview** — the first-page extract painted on Documents grid paper. SQL NULL means never extracted. `{ heading: null, lines: [] }` means empty or a failed extract. The paper omits heading at paint when it equals Title. List and Trash rows paint `LuFileText`.
   _Avoid_: DocumentPreview (admin stale-doc shape), screenshot, thumbnail
 - **Last opened** — `DocumentMetadata.lastOpenedAt`, stamped when the owner opens the pad. Sort key `lastOpenedAt_desc`. Does not move Last modified. Owner lists only. A row the caller does not own never carries it and sorts as never opened. The Joined filter hides this sort.
-- **Date buckets** — Today / Yesterday / Previous 7 days / Previous 30 days / Earlier / Never opened. Used on date sorts in Settings → Documents. Favorites stay unbucketed. Never opened is for a null sort timestamp: Last opened with no stamp, or a row the caller does not own.
+- **Date buckets** — Today / Yesterday / Previous 7 days / Previous 30 days / Earlier / Never opened. Used on date sorts in Settings → Documents and on Home. Favorites stay unbucketed. Never opened is for a null sort timestamp: Last opened with no stamp, or a row the caller does not own.
 
 ## Document access
 

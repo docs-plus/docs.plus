@@ -6,6 +6,7 @@ import { LuFileText } from 'react-icons/lu'
 import type { DocumentsListScope } from '../documentsQueryKey'
 import useCommitDocumentRename from '../hooks/useCommitDocumentRename'
 import { type DocumentMembersEntry } from '../hooks/useDocumentMembers'
+import { openRenameDocumentDialog } from '../openRenameDocumentDialog'
 import type { OwnedDocument } from '../types'
 import { documentListDate } from '../utils/documentListDate'
 import DocumentMembersCluster from './DocumentMembersCluster'
@@ -21,6 +22,8 @@ interface DocumentListRowProps {
   isActive: boolean
   onActivate: (index: number) => void
   onDelete: (documentId: string, keyboard: boolean) => void
+  /** True opens `RenameDocumentDialog` instead of the inline input. Read at rename time. */
+  renameInDialog?: () => boolean
 }
 
 /**
@@ -35,7 +38,8 @@ function DocumentListRow({
   index,
   isActive,
   onActivate,
-  onDelete
+  onDelete,
+  renameInDialog
 }: DocumentListRowProps) {
   const router = useRouter()
   const label = doc.title || doc.slug
@@ -55,6 +59,10 @@ function DocumentListRow({
   const wasRenamingRef = useRef(false)
 
   const enterRename = () => {
+    if (renameInDialog?.()) {
+      openRenameDocumentDialog(doc, scope)
+      return
+    }
     setDraft(doc.title ?? '')
     finishedRef.current = false
     setIsRenaming(true)

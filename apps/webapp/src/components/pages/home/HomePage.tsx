@@ -14,18 +14,23 @@ import { useAuthStore, useStore } from '@stores'
 import { useQueryClient } from '@tanstack/react-query'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { twMerge } from '@utils/twMerge'
+import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { LuUser } from 'react-icons/lu'
 
 import { BrandLockup } from './BrandLockup'
 import { HomeActionCard } from './HomeActionCard'
 import { HomeCollapseRegion } from './HomeCollapseRegion'
-import { HomeDocuments } from './HomeDocuments'
 import { HomeFooter } from './HomeFooter'
 import { HomeHero } from './HomeHero'
 import { HomeInstallButton } from './HomeInstallButton'
 import { HOME_MOBILE_MQ, HOME_REGION_DURATION, homeRegionEase } from './homeMobileLayout'
 import { SkipLink } from './SkipLink'
+
+// Loads only after the profile arrives, so a signed-out visitor fetches none of the list code.
+const HomeDocuments = dynamic(() => import('./HomeDocuments').then((m) => m.HomeDocuments), {
+  ssr: false
+})
 
 const HOME_FLEX_SPACER = 'motion-safe:transition-[flex-grow] max-sm:min-h-0 max-sm:shrink'
 
@@ -77,8 +82,8 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
     openSettings(hashSettingsTab ?? undefined)
   }, [overlay, hashSettingsTab, user, openSettings])
 
-  // Settings patches only its own list key, and closing it fires no focus event. Refresh
-  // Home on close. Watch the state, because mobile back closes it without `onOpenChange`.
+  // A rename re-sorts and a Trash restore returns rows only on a refetch, and closing
+  // Settings fires no focus event. Watch the state: mobile back skips `onOpenChange`.
   useEffect(() => {
     const wasOpen = wasProfileOpenRef.current
     wasProfileOpenRef.current = isProfileOpen

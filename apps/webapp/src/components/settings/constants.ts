@@ -23,10 +23,20 @@ export type DocumentViewMode = 'list' | 'grid'
 // The skeleton reads it too, so the loading bones match the restored view.
 export const DOCUMENTS_VIEW_STORAGE_KEY = 'docsplus:my-docs-view'
 
-/** The `scope` the documents list sends. Settings defaults to `all`; Home and Command
- *  jump read `owned`. An unknown stored value falls back to `all`. */
+/** The `scope` the documents list sends. Settings and Home default to `all`; Command
+ *  jump reads `owned`. An unknown stored value falls back to `all`. */
 export type DocumentsScope = 'all' | 'owned' | 'joined'
 export const DOCUMENTS_SCOPE_STORAGE_KEY = 'docsplus:my-docs-scope'
+export const DOCUMENTS_SORT_STORAGE_KEY = 'docsplus:my-docs-sort'
+
+// Settings and the Home card show one text for an empty pick. All and Owned share `owned`.
+export const DOCUMENTS_EMPTY_TEXT = {
+  owned: { title: 'No documents yet.', body: 'Documents you create will appear here.' },
+  joined: {
+    title: 'No joined documents yet.',
+    body: 'Documents you open while signed in appear here.'
+  }
+} as const
 
 // `fullWidth` opts a section out of the centered max-w-2xl reading column (the
 // documents grid/list needs the whole panel width).
