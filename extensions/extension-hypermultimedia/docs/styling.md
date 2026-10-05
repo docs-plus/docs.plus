@@ -22,7 +22,7 @@ The X embed plate keys on the node's own `theme` attribute instead, so the plate
 | `--hm-toolbar-hover`          | Toolbar button / menu row hover background                    |
 | `--hm-toolbar-active`         | Active (toggled) action background                            |
 | `--hm-toolbar-active-fg`      | Active action icon/text color, and the menu row focus outline |
-| `--hm-toolbar-danger`         | Delete row text in the overflow menu                          |
+| `--hm-toolbar-danger`         | Text of the overflow menu row whose action `id` is `delete`   |
 | `--hm-toolbar-shadow`         | Toolbar and menu drop shadow                                  |
 | `--hm-caption-fg`             | Caption text                                                  |
 | `--hm-caption-placeholder`    | Empty-caption placeholder text                                |
@@ -61,7 +61,7 @@ These names are the stable styling contract. A custom toolbar, a custom action a
 | `.media-toolbar__more`                                                  | The `…` overflow trigger.                                                            |
 | `.media-toolbar__divider`                                               | Separator grouping inline actions.                                                   |
 | `.media-toolbar__menu`                                                  | Overflow menu body, `role="menu"`. Rows are `__menu-item`, plus `--active`.          |
-| `.media-toolbar__menu-divider`                                          | Overflow menu separator, before Delete and after a `dividerAfter` action.            |
+| `.media-toolbar__menu-divider`                                          | Overflow menu separator, before the `delete` row and after a `dividerAfter` action.  |
 | `.media-toolbar__menu-section` / `.media-toolbar__menu-heading`         | Expanded submenu group inside the overflow menu, and its sentence-case title.        |
 | `.media-toolbar__submenu`                                               | Submenu body. Rows are `__submenu-item`, plus `--active`.                            |
 | `.media-toolbar__submenu-section` / `.media-toolbar__submenu-heading`   | Grouped rows inside a submenu, and the sentence-case group title (X Size and Theme). |

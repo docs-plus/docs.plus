@@ -90,6 +90,8 @@ export type OpenMediaPopoverOptions = {
   ariaLabel?: string
   /** When false, skip toggle-close if the same kind is already open (dialogs). Default true for menu. */
   toggle?: boolean
+  /** Runs when the popover hides or another popover replaces it, such as to reset `aria-expanded`. */
+  onHide?: () => void
 }
 
 export function openMediaPopover(options: OpenMediaPopoverOptions): void {
@@ -101,7 +103,8 @@ export function openMediaPopover(options: OpenMediaPopoverOptions): void {
     variant = 'menu',
     role,
     ariaLabel,
-    toggle = variant === 'menu'
+    toggle = variant === 'menu',
+    onHide
   } = options
 
   const controller = getDefaultController()
@@ -119,7 +122,8 @@ export function openMediaPopover(options: OpenMediaPopoverOptions): void {
     ...POPOVER_BY_VARIANT[variant],
     role,
     ariaLabel,
-    ignoreOutsideClickOn: trigger
+    ignoreOutsideClickOn: trigger,
+    onHide
   })
 
   controller.adopt(popover, kind, {
@@ -176,6 +180,13 @@ export function labelledGroup(
   return group
 }
 
+// Host icons can carry an SVG <title>, so typeahead reads the row text without its icons.
+function rowLabel(row: HTMLElement): string {
+  const copy = row.cloneNode(true) as HTMLElement
+  copy.querySelectorAll('svg').forEach((svg) => svg.remove())
+  return copy.textContent?.trim().toLowerCase() ?? ''
+}
+
 /** Arrows, Home/End, first-letter typeahead and focus return to ⋯, as a native menu. */
 function bindMenuKeys(menu: HTMLElement, trigger: HTMLElement): void {
   // A keyboard pick closes the menu, so focus goes back to ⋯ first. A dialog the row opens
@@ -211,7 +222,7 @@ function bindMenuKeys(menu: HTMLElement, trigger: HTMLElement): void {
     ) {
       const key = event.key.toLowerCase()
       const ordered = [...rows.slice(current + 1), ...rows.slice(0, current + 1)]
-      const match = ordered.find((row) => row.textContent?.trim().toLowerCase().startsWith(key))
+      const match = ordered.find((row) => rowLabel(row).startsWith(key))
       if (!match) return
       next = rows.indexOf(match)
     } else return
@@ -241,7 +252,7 @@ export function buildOverflowMenu(
     menu.append(divider)
   }
   for (const action of menuActions) {
-    // Delete sits apart after a divider, as in every docs.plus menu.
+    // The divider and the danger ink key on the id `delete`, not on the row's place.
     if (action.id === 'delete') appendDivider()
     if (action.renderSubmenu) {
       const submenu = action.renderSubmenu(ctx)
@@ -269,6 +280,8 @@ export function buildOverflowMenu(
     if (action.dividerAfter) appendDivider()
   }
   if (endsInDivider()) menu.lastElementChild?.remove()
+  // Rows leave the Tab order; the arrow keys move between them, as in a native menu.
+  menu.querySelectorAll<HTMLElement>('[role^="menuitem"]').forEach((row) => (row.tabIndex = -1))
   bindMenuKeys(menu, trigger)
   return menu
 }
