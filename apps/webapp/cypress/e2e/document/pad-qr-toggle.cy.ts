@@ -48,7 +48,8 @@ describe('pad QR toggle (full stack)', () => {
     cy.visit(`/${slug}/alpha?h=beta`)
     toggle().click()
 
-    card().should('be.visible').and('have.attr', 'aria-label', `QR code for ${host}/${slug}`)
+    card().should('be.visible')
+    card().find('[role="img"]').should('have.attr', 'aria-label', `QR code for ${host}/${slug}`)
 
     card().then(($card) => {
       const qr = $card[0].getBoundingClientRect()
@@ -71,6 +72,33 @@ describe('pad QR toggle (full stack)', () => {
         expect(intersects(qr, find), 'card clears the Find bar').to.eq(false)
       })
     })
+  })
+
+  it('sits 14px under the toolbar and doubles on demand', () => {
+    cy.visit(`/${slug}`)
+    toggle().click()
+    card().should('be.visible')
+    rectOf('.toolbars').then((bar) => {
+      card().then(($card) => {
+        expect($card[0].getBoundingClientRect().top - bar.bottom).to.be.closeTo(14, 1)
+      })
+    })
+
+    const size = () => cy.get('[data-testid="pad-qr-size"]')
+    // Retrying width check: the code grows over the 200ms panel tween.
+    const codeWidthIs = (width: number) =>
+      card()
+        .find('[role="img"] svg')
+        .should(($img) => expect($img[0].getBoundingClientRect().width).to.be.closeTo(width, 2))
+    size().should('have.css', 'opacity', '0')
+    card().realHover()
+    size().should('have.css', 'opacity', '1').and('have.attr', 'aria-pressed', 'false')
+    codeWidthIs(128)
+    size().click()
+    size().should('have.attr', 'aria-pressed', 'true')
+    codeWidthIs(256)
+    size().click()
+    codeWidthIs(128)
   })
 
   it('stays pressed but hides the card when the well has no room', () => {

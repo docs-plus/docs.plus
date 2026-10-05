@@ -130,7 +130,7 @@ const DesktopEditor = () => {
       </div>
 
       <div className="editor relative flex size-full min-h-0 flex-row-reverse bg-[var(--pad-well)]">
-        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="group/padcol relative flex min-h-0 min-w-0 flex-1 flex-col">
           <DesktopPadFind />
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-row-reverse">
             <DesktopPadEditor wrapperRef={editorWrapperRef} />

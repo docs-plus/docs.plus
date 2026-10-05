@@ -21,10 +21,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - **A QR code for the pad from the desktop toolbar.** A new toolbar toggle,
   after Filter, shows a small QR code at the top right of the workspace. It
   encodes the same clean pad link as the share card, with no heading, chat or
-  Filter terms. A Private pad shows no QR, and the toggle is off there. The card
-  shows only when it fits beside the page, and it never covers the outline,
-  chat or the page. Nothing is saved: a reload or another pad hides it. These
-  are agent defaults that wait for the maintainer's review (#377).
+  Filter terms. The card sits 14px under the toolbar, and below the Find bar
+  while Find is open. Hover the card to show a button that doubles its size
+  and shrinks it back. A Private pad shows no QR, and the toggle is off there.
+  The card shows only when it fits beside the page. Nothing is saved: a reload
+  or another pad hides it. The other choices are agent defaults that wait for
+  the maintainer's review (#377).
 
 - **Settings sync across your tabs and devices.** A setting you save shows in
   every open tab and on every device where you are signed in. A field you are
