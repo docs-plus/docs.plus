@@ -116,7 +116,7 @@ export function buildGalleryToolbarActions({
   if (isImage) {
     actions.push({
       id: 'copy-image',
-      label: 'Copy Image',
+      label: 'Copy image',
       Icon: Icons.copy,
       onSelect: () => copyMediaImage(media, readGalleryActiveMediaUrl()),
       surfaces: ['overflow']
@@ -125,7 +125,7 @@ export function buildGalleryToolbarActions({
 
   actions.push({
     id: 'copy-link',
-    label: 'Copy Media Link',
+    label: 'Copy media link',
     Icon: Icons.link,
     onSelect: () => copyResolvedMediaLink(readGalleryActiveMediaUrl()),
     surfaces: ['overflow']

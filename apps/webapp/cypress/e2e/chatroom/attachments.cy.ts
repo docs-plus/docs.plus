@@ -426,7 +426,7 @@ describe('chatroom attachments', () => {
       cy.get('[data-testid="chat-media-gallery"] [aria-label="Zoom in"]').should('be.visible')
     })
 
-    it('opens overflow menu with Copy Media Link', () => {
+    it('opens overflow menu with Copy media link and closes it before the gallery on Escape', () => {
       const messageId = 'feed-image-overflow'
       visitFeed(
         [
@@ -441,7 +441,11 @@ describe('chatroom attachments', () => {
       cy.get('[data-testid="chat-media-gallery"]').should('be.visible')
       cy.get('[data-testid="chat-media-gallery"] button[aria-label="Media actions"]').click()
       cy.get('[data-testid="chat-media-gallery"] [role="menu"]').should('be.visible')
-      cy.get('[data-testid="chat-media-gallery"]').contains('Copy Media Link').should('be.visible')
+      cy.get('[data-testid="chat-media-gallery"]').contains('Copy media link').should('be.visible')
+      cy.get('[data-testid="chat-media-gallery"] [role="menu"]').should('have.focus')
+      cy.realPress('Escape')
+      cy.get('[data-testid="chat-media-gallery"] [role="menu"]').should('not.exist')
+      cy.get('[data-testid="chat-media-gallery"]').should('exist')
     })
 
     it('opens video lightbox from expand control', () => {

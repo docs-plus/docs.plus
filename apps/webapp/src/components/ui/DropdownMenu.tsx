@@ -3,6 +3,7 @@ import {
   flip,
   FloatingFocusManager,
   FloatingPortal,
+  type FloatingPortalProps,
   offset,
   type Placement,
   shift,
@@ -38,6 +39,11 @@ export interface DropdownMenuProps {
   /** Merged onto the panel, such as `z-[60]` for a menu stacked on a floating surface. */
   className?: string
   onOpenChange?: (open: boolean) => void
+  /**
+   * Portal target. A menu inside a modal portals into the modal, so its outside-press
+   * dismiss counts the menu as inside.
+   */
+  portalRoot?: FloatingPortalProps['root']
 }
 
 /**
@@ -49,7 +55,8 @@ export function DropdownMenu({
   children,
   placement = 'bottom-end',
   className,
-  onOpenChange
+  onOpenChange,
+  portalRoot
 }: DropdownMenuProps) {
   const [open, setOpenState] = useState(false)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
@@ -110,7 +117,7 @@ export function DropdownMenu({
     <>
       {trigger({ ref: refs.setReference, getProps: getReferenceProps })}
       {isMounted && (
-        <FloatingPortal>
+        <FloatingPortal root={portalRoot}>
           <FloatingFocusManager
             context={context}
             modal={false}

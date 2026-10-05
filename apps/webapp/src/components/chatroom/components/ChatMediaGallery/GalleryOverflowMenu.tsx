@@ -1,18 +1,19 @@
 import type { GalleryMediaItem } from '@components/chatroom/utils/galleryPlaylist'
+import { SheetLayout } from '@components/SheetLayout'
+import {
+  ContextMenuDivider,
+  ContextMenuRow,
+  MenuItem,
+  useContextMenuContext
+} from '@components/ui/ContextMenu'
+import { ContextMenuRowButton } from '@components/ui/ContextMenuRowButton'
+import { DropdownMenu } from '@components/ui/DropdownMenu'
 import { Icons } from '@icons'
+import { useSheetStore } from '@stores'
 import { formatMediaFileSize } from '@utils/formatMediaFileSize'
 import { twMerge } from '@utils/twMerge'
-import {
-  type ButtonHTMLAttributes,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useRef,
-  useState
-} from 'react'
-import { createPortal } from 'react-dom'
+import { type ComponentProps, type ReactNode, useEffect, useRef, useState } from 'react'
 
-import { galleryLightboxThemeStyle } from './galleryTheme'
 import type { GalleryToolbarAction } from './galleryToolbarModel'
 
 export function GalleryPillAction({
@@ -20,7 +21,7 @@ export function GalleryPillAction({
   isMobile,
   type = 'button',
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { isMobile?: boolean }) {
+}: ComponentProps<'button'> & { isMobile?: boolean }) {
   return (
     <button
       type={type}
@@ -34,268 +35,235 @@ export function GalleryPillAction({
   )
 }
 
-function GalleryMenuRow({
-  label,
-  icon,
-  onSelect,
-  disabled,
-  compact
-}: {
-  label: string
-  icon: ReactNode
-  onSelect: () => void
-  disabled?: boolean
-  /** Desktop dropdown: icon trailing. Mobile sheet: icon leading + 48px rows. */
-  compact?: boolean
-}) {
-  return (
-    <li>
-      <button
-        type="button"
-        disabled={disabled}
-        className={twMerge(
-          'group rounded-field flex w-full cursor-pointer items-center gap-3 text-left text-sm text-[var(--gallery-text-primary)] transition-colors duration-150 hover:bg-[var(--gallery-panel-hover)] disabled:cursor-not-allowed disabled:opacity-40',
-          compact
-            ? 'flex-row-reverse justify-between gap-4 px-2.5 py-2'
-            : 'min-h-12 px-3 py-3 active:bg-[var(--gallery-panel-hover)]'
-        )}
-        onClick={onSelect}>
-        <span className="shrink-0 text-[var(--gallery-text-muted)]">{icon}</span>
-        <span className="min-w-0 flex-1 font-medium">{label}</span>
-      </button>
-    </li>
-  )
+const closeGalleryMenu = () => {
+  const { activeSheet, closeSheet } = useSheetStore.getState()
+  if (activeSheet === 'galleryMenu') closeSheet()
+}
+
+/** The gallery panel. The menu and the sheet mount in it, so the gallery counts them as inside. */
+const galleryPanel = (node: Element | null) => node?.closest<HTMLElement>('[role="dialog"]') ?? null
+
+/** Clipboard writes need the click's user gesture, so `onSelect` runs before any close. */
+const runAction = (action: GalleryToolbarAction, close: () => void) => {
+  void Promise.resolve(action.onSelect()).finally(close)
 }
 
 function GalleryMediaDetails({
   media,
-  variant
+  termClassName
 }: {
   media: GalleryMediaItem
-  variant: 'flyout' | 'inline'
+  termClassName: string
 }) {
   const fileName = media.name?.trim() || 'attachment'
   const fileSize = formatMediaFileSize(media.size)
 
-  const body = (
-    <dl className="space-y-3 text-sm">
+  return (
+    <dl className="space-y-3 px-2.5 py-2 text-sm">
       <div>
-        <dt className="mb-1 text-[var(--gallery-text-muted)]">Filename</dt>
-        <dd className="font-medium break-all text-[var(--gallery-text-primary)]">{fileName}</dd>
+        <dt className={twMerge('mb-1', termClassName)}>Filename</dt>
+        <dd className="font-medium break-all">{fileName}</dd>
       </div>
       <div>
-        <dt className="mb-1 text-[var(--gallery-text-muted)]">Size</dt>
-        <dd className="font-medium text-[var(--gallery-text-primary)]">{fileSize ?? 'Unknown'}</dd>
+        <dt className={twMerge('mb-1', termClassName)}>Size</dt>
+        <dd className="font-medium">{fileSize ?? 'Unknown'}</dd>
       </div>
     </dl>
   )
+}
 
-  if (variant === 'inline') {
-    return (
-      <div className="border-t border-[var(--gallery-panel-border)] px-3 pt-3 pb-1 text-[var(--gallery-text-primary)]">
-        {body}
-      </div>
-    )
-  }
+type GalleryRowProps = {
+  icon: ReactNode
+  label: string
+  disabled?: boolean
+  trailing?: ReactNode
+  expanded?: boolean
+  onClick: () => void
+}
 
+/** `ContextMenuRow` sizes on the lightbox's dark `--gallery-*` ink, in both app themes. */
+function GalleryMenuItem({ icon, label, disabled, trailing, expanded, onClick }: GalleryRowProps) {
   return (
-    <div className="rounded-box absolute top-0 right-full z-10 mr-2 w-52 border border-[var(--gallery-panel-border)] bg-[var(--gallery-panel-bg)] p-3 text-[var(--gallery-text-primary)] shadow-xl backdrop-blur-md">
-      {body}
-    </div>
+    <MenuItem disabled={disabled} aria-expanded={expanded} onClick={onClick}>
+      <ContextMenuRow
+        icon={icon}
+        disabled={disabled}
+        trailing={trailing}
+        className={
+          disabled
+            ? 'text-[var(--gallery-text-muted)]'
+            : 'group-hover:bg-[var(--gallery-panel-hover)] group-focus-visible:bg-[var(--gallery-panel-hover)] group-active:bg-[var(--gallery-panel-hover)]'
+        }>
+        {label}
+      </ContextMenuRow>
+    </MenuItem>
   )
 }
 
-function GalleryOverflowMenuList({
+function GallerySheetRow({ icon, label, disabled, trailing, expanded, onClick }: GalleryRowProps) {
+  return (
+    <ContextMenuRowButton
+      icon={icon}
+      disabled={disabled}
+      trailing={trailing}
+      aria-expanded={expanded}
+      rowClassName="min-h-12"
+      onClick={onClick}>
+      {label}
+    </ContextMenuRowButton>
+  )
+}
+
+export type GalleryMenuProps = {
+  media: GalleryMediaItem
+  overflowPrefix: GalleryToolbarAction[]
+  overflowActions: GalleryToolbarAction[]
+}
+
+// One row order for the desktop menu and the phone sheet. It unmounts with its host,
+// so the details close with the menu.
+function GalleryMenuList({
   media,
-  compact,
   overflowPrefix,
   overflowActions,
-  detailsOpen,
-  onToggleDetails,
-  onRun
-}: {
-  media: GalleryMediaItem
-  compact: boolean
-  overflowPrefix: GalleryToolbarAction[]
-  overflowActions: GalleryToolbarAction[]
-  detailsOpen: boolean
-  onToggleDetails: () => void
-  onRun: (action: () => void | Promise<unknown>) => void
-}) {
-  return (
-    <div className="relative">
-      {detailsOpen && compact ? <GalleryMediaDetails media={media} variant="flyout" /> : null}
-      <ul className="flex list-none flex-col">
-        {overflowPrefix.map((action) => (
-          <GalleryMenuRow
-            key={action.id}
-            label={action.label}
-            icon={<action.Icon size={compact ? 16 : 18} />}
-            disabled={action.disabled}
-            compact={compact}
-            onSelect={() => onRun(action.onSelect)}
-          />
-        ))}
-        {overflowPrefix.length > 0 ? (
-          <li role="separator" className="my-1 h-px bg-[var(--gallery-panel-border)]" />
-        ) : null}
-        {overflowActions.map((action) => (
-          <GalleryMenuRow
-            key={action.id}
-            label={action.label}
-            icon={<action.Icon size={compact ? 16 : 18} />}
-            disabled={action.disabled}
-            compact={compact}
-            onSelect={() => onRun(action.onSelect)}
-          />
-        ))}
-        <li>
-          <button
-            type="button"
-            className={twMerge(
-              'group rounded-field flex w-full cursor-pointer items-center gap-3 text-left text-sm text-[var(--gallery-text-primary)] transition-colors duration-150 hover:bg-[var(--gallery-panel-hover)]',
-              compact
-                ? 'flex-row-reverse justify-between gap-4 px-2.5 py-2'
-                : 'min-h-12 px-3 py-3 active:bg-[var(--gallery-panel-hover)]'
-            )}
-            onClick={onToggleDetails}>
-            {compact ? (
-              <Icons.chevronRight size={16} className="shrink-0 text-[var(--gallery-text-muted)]" />
-            ) : (
-              <Icons.info size={18} className="shrink-0 text-[var(--gallery-text-muted)]" />
-            )}
-            <span className="min-w-0 flex-1 font-medium">View Details</span>
-            {!compact ? (
-              <Icons.chevronRight
-                size={16}
-                className={twMerge(
-                  'shrink-0 text-[var(--gallery-text-muted)] transition-transform duration-150',
-                  detailsOpen && 'rotate-90'
-                )}
-              />
-            ) : null}
-          </button>
-        </li>
-      </ul>
-      {detailsOpen && !compact ? <GalleryMediaDetails media={media} variant="inline" /> : null}
-    </div>
-  )
-}
-
-type Props = {
-  media: GalleryMediaItem
-  isMobile: boolean
-  overflowPrefix: GalleryToolbarAction[]
-  overflowActions: GalleryToolbarAction[]
-}
-
-export function GalleryOverflowMenu({ media, isMobile, overflowPrefix, overflowActions }: Props) {
-  const [open, setOpen] = useState(false)
+  asMenu,
+  close
+}: GalleryMenuProps & { asMenu: boolean; close: () => void }) {
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const rootRef = useRef<HTMLDivElement>(null)
-  const sheetRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const onPointerDown = (event: PointerEvent) => {
-      const target = event.target as Node
-      if (rootRef.current?.contains(target) || sheetRef.current?.contains(target)) return
-      setOpen(false)
-      setDetailsOpen(false)
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.stopPropagation()
-      setOpen(false)
-      setDetailsOpen(false)
-    }
-    document.addEventListener('pointerdown', onPointerDown)
-    window.addEventListener('keydown', onKeyDown, true)
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown)
-      window.removeEventListener('keydown', onKeyDown, true)
-    }
-  }, [open])
-
-  const closeMenu = useCallback(() => {
-    setOpen(false)
-    setDetailsOpen(false)
-  }, [])
-
-  const run = (action: () => void | Promise<unknown>) => {
-    void Promise.resolve(action()).finally(closeMenu)
-  }
-
-  const menuList = (
-    <GalleryOverflowMenuList
+  const Row = asMenu ? GalleryMenuItem : GallerySheetRow
+  const divider = asMenu ? (
+    <ContextMenuDivider className="bg-[var(--gallery-panel-border)]" />
+  ) : (
+    <ContextMenuDivider as="div" />
+  )
+  const details = (
+    <GalleryMediaDetails
       media={media}
-      compact={!isMobile}
-      overflowPrefix={overflowPrefix}
-      overflowActions={overflowActions}
-      detailsOpen={detailsOpen}
-      onToggleDetails={() => setDetailsOpen((value) => !value)}
-      onRun={run}
+      termClassName={asMenu ? 'text-[var(--gallery-text-muted)]' : 'text-base-content/60'}
     />
   )
 
-  // Portal: pill `backdrop-blur` traps `position: fixed` and collapses the sheet into the ⋯ button.
-  const mobileSheet =
-    open && isMobile && typeof document !== 'undefined'
-      ? createPortal(
-          <div
-            ref={sheetRef}
-            className="fixed inset-0 z-[120]"
-            style={galleryLightboxThemeStyle}
-            onClick={(event) => event.stopPropagation()}
-            onPointerDown={(event) => event.stopPropagation()}>
-            <button
-              type="button"
-              aria-label="Dismiss media actions"
-              className="absolute inset-0 bg-[var(--modal-scrim)]"
-              onClick={closeMenu}
-            />
-            <div
-              role="menu"
-              aria-label="Media actions"
-              className="rounded-t-box absolute inset-x-0 bottom-0 border border-b-0 border-[var(--gallery-panel-border)] bg-[var(--gallery-panel-bg)] px-2 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-[var(--gallery-text-primary)] shadow-xl motion-safe:animate-[doc-region-in_180ms_ease-out_both]">
-              <div
-                className="mx-auto mb-2 h-1 w-10 rounded-full bg-[var(--gallery-panel-border)]"
-                aria-hidden
-              />
-              {menuList}
-              <button
-                type="button"
-                className="rounded-field mt-1 flex min-h-12 w-full items-center justify-center px-3 text-sm font-semibold text-[var(--gallery-text-primary)] transition-colors hover:bg-[var(--gallery-panel-hover)]"
-                onClick={closeMenu}>
-                Cancel
-              </button>
-            </div>
-          </div>,
-          document.body
-        )
-      : null
+  const actionRow = (action: GalleryToolbarAction) => (
+    <Row
+      key={action.id}
+      icon={<action.Icon size={16} />}
+      label={action.label}
+      disabled={action.disabled}
+      onClick={() => runAction(action, close)}
+    />
+  )
 
   return (
-    <div ref={rootRef} className="relative">
+    <>
+      {overflowPrefix.map(actionRow)}
+      {overflowPrefix.length > 0 && divider}
+      {overflowActions.map(actionRow)}
+      <Row
+        icon={<Icons.info size={16} />}
+        label="View details"
+        expanded={detailsOpen}
+        trailing={
+          <Icons.chevronRight
+            size={16}
+            aria-hidden
+            className={twMerge(
+              'opacity-70 motion-safe:transition-transform',
+              detailsOpen && 'rotate-90'
+            )}
+          />
+        }
+        onClick={() => setDetailsOpen((open) => !open)}
+      />
+      {detailsOpen && (
+        <>
+          {divider}
+          {asMenu ? (
+            // No intrinsic width: a long file name wraps instead of widening the menu.
+            <li role="none" className="[contain:inline-size]">
+              {details}
+            </li>
+          ) : (
+            details
+          )}
+        </>
+      )}
+    </>
+  )
+}
+
+function GalleryMenuRows(props: GalleryMenuProps) {
+  const { setIsOpen } = useContextMenuContext()
+  return <GalleryMenuList {...props} asMenu close={() => setIsOpen(false)} />
+}
+
+/** Phone body of the house `galleryMenu` sheet (`BottomSheet` registry), in the app theme. */
+export function GalleryMenuSheet({ media, overflowPrefix, overflowActions }: GalleryMenuProps) {
+  // The sheet mounts in the gallery panel, which sets `text-white`.
+  return (
+    <SheetLayout
+      title="Media actions"
+      onClose={closeGalleryMenu}
+      className="text-base-content"
+      bodyClassName="px-1.5 pt-1.5">
+      <GalleryMenuList
+        media={media}
+        overflowPrefix={overflowPrefix}
+        overflowActions={overflowActions}
+        asMenu={false}
+        close={closeGalleryMenu}
+      />
+    </SheetLayout>
+  )
+}
+
+type Props = GalleryMenuProps & { isMobile: boolean }
+
+export function GalleryOverflowMenu({ media, isMobile, overflowPrefix, overflowActions }: Props) {
+  const isSheetOpen = useSheetStore((state) => state.activeSheet === 'galleryMenu')
+  const panelRef = useRef<HTMLElement | null>(null)
+
+  // The sheet holds a snapshot: a closed gallery or a new slide must not leave it open.
+  useEffect(() => closeGalleryMenu, [media])
+
+  if (isMobile) {
+    return (
       <GalleryPillAction
-        isMobile={isMobile}
+        isMobile
         aria-label="Media actions"
-        aria-expanded={open}
-        aria-haspopup="menu"
-        onClick={() => setOpen((value) => !value)}>
+        aria-haspopup="dialog"
+        aria-expanded={isSheetOpen}
+        onClick={(event) => {
+          const mountPoint = galleryPanel(event.currentTarget) ?? undefined
+          useSheetStore
+            .getState()
+            .openSheet('galleryMenu', { media, overflowPrefix, overflowActions, mountPoint })
+        }}>
         <Icons.moreHorizontal size={18} />
       </GalleryPillAction>
+    )
+  }
 
-      {open && !isMobile ? (
-        <div
-          role="menu"
-          className="rounded-box absolute top-[calc(100%+0.5rem)] right-0 z-[110] w-56 border border-[var(--gallery-panel-border)] bg-[var(--gallery-panel-bg)] p-1.5 text-[var(--gallery-text-primary)] shadow-xl backdrop-blur-md"
-          onClick={(event) => event.stopPropagation()}>
-          {menuList}
-        </div>
-      ) : null}
-
-      {mobileSheet}
-    </div>
+  // Never in place under the pill: its `backdrop-blur` is the containing block for `fixed`.
+  return (
+    <DropdownMenu
+      portalRoot={panelRef}
+      className="border-[var(--gallery-panel-border)] bg-[var(--gallery-panel-bg)] text-[var(--gallery-text-primary)]"
+      trigger={({ ref, getProps }) => (
+        <GalleryPillAction
+          ref={(node) => {
+            ref(node)
+            panelRef.current = galleryPanel(node)
+          }}
+          {...getProps()}
+          aria-label="Media actions">
+          <Icons.moreHorizontal size={18} />
+        </GalleryPillAction>
+      )}>
+      <GalleryMenuRows
+        media={media}
+        overflowPrefix={overflowPrefix}
+        overflowActions={overflowActions}
+      />
+    </DropdownMenu>
   )
 }

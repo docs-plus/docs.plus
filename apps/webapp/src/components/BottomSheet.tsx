@@ -1,5 +1,6 @@
 import SignInSheet from '@components/auth/SignInSheet'
 import { BookmarkPanel } from '@components/bookmarkPanel'
+import { GalleryMenuSheet } from '@components/chatroom/components/ChatMediaGallery/GalleryOverflowMenu'
 import MessageReactionSheet from '@components/pages/document/components/chat/MessageReactionSheet'
 import HistoryCompareSheet from '@components/pages/history/mobile/HistoryCompareSheet'
 import { DocumentRowMenuSheet } from '@components/settings/components/DocumentRowMenu'
@@ -119,6 +120,12 @@ const SHEETS: { [K in keyof SheetDataMap]: SheetEntry<K> } = {
     detent: 'content',
     escapeKey: false,
     render: (data) => <DocumentRowMenuSheet {...data} />
+  },
+  galleryMenu: {
+    id: 'gallery_menu_sheet',
+    ariaLabel: 'Media actions',
+    detent: 'content',
+    render: (data) => <GalleryMenuSheet {...data} />
   }
 }
 

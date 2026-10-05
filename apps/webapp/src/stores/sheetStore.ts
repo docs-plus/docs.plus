@@ -1,3 +1,4 @@
+import type { GalleryMenuProps } from '@components/chatroom/components/ChatMediaGallery/GalleryOverflowMenu'
 import type { DocumentRowMenuProps } from '@components/settings/components/DocumentRowMenu'
 import type { HyperlinkAttributes } from '@docs.plus/extension-hyperlink'
 import type { Editor } from '@tiptap/core'
@@ -71,6 +72,8 @@ export interface SheetDataMap {
    * modal's outside-press dismiss and focus trap treat the sheet as inside.
    */
   documentRowMenu: DocumentRowMenuProps & { mountPoint?: HTMLElement }
+  /** Phone ⋯ of the chat media gallery. `mountPoint` is the gallery panel, for the same reason. */
+  galleryMenu: GalleryMenuProps & { mountPoint?: HTMLElement }
 }
 
 export type SheetData = SheetDataMap[keyof SheetDataMap]
