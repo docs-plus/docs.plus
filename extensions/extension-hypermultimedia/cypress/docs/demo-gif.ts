@@ -54,16 +54,21 @@ await recordDemo({
     await page.locator('#editor .media-toolbar').waitFor({ state: 'visible' })
     await sleep(700)
 
+    const gripper = '#editor .hypermultimedia__resize-gripper--active'
+    const frame = (await page.locator(gripper).boundingBox())!
     const clamp = (await page
-      .locator('#editor .hypermultimedia__resize-gripper--active .media-resize-clamp--bottom-right')
+      .locator(`${gripper} .media-resize-clamp--bottom-right`)
       .boundingBox())!
     const cx = clamp.x + clamp.width / 2
     const cy = clamp.y + clamp.height / 2
+    // A corner drag keeps the ratio (#379). Drag along the diagonal so the corner stays under the cursor.
+    const dx = -Math.round(frame.width * 0.3)
+    const dy = Math.round((dx * frame.height) / frame.width)
     await cursor.moveTo(cx, cy)
     await sleep(250)
     await cursor.down()
     await sleep(120)
-    await cursor.moveTo(cx - 156, cy - 207, 40, 20)
+    await cursor.moveTo(cx + dx, cy + dy, 40, 20)
     await sleep(120)
     await cursor.up()
     await sleep(350)
