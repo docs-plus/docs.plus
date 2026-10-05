@@ -15,6 +15,7 @@ import { sendNewDocumentNotification } from './email/document-notification'
 import { captureUnknown } from './instrument'
 import { queueLogger } from './logger'
 import { recordJobOutcome } from './metrics'
+import { firstEditOwner } from './ownerAccess'
 import { prisma } from './prisma'
 import {
   bullmqConnectionOptions,
@@ -448,12 +449,15 @@ export const createDocumentWorker = () => {
                 // slug, so a collision suffixes the slug without renaming the doc.
                 let slug: string | undefined
                 if (isFirst) {
+                  // Creates only a row the anchor never wrote: it failed, had no slug, or
+                  // ceded the slug to another id (then the slug gets a suffix). The owner is
+                  // the save's last editor, the creator in a one-editor room. A direct
+                  // connection needs a metadata row first, so it always takes update: {}.
                   slug = await upsertDocumentMetadata(tx, {
                     documentId: data.documentName,
                     slug: candidateSlug,
                     title: baseSlug,
-                    ownerId: null,
-                    email: null
+                    ...firstEditOwner(context.user)
                   })
                 }
 

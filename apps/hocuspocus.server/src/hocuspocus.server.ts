@@ -39,6 +39,7 @@ import {
   wsMessagesTotal,
   ydocUpdateBytes
 } from './lib/metrics'
+import { firstEditOwner } from './lib/ownerAccess'
 import { prisma, shutdownDatabase } from './lib/prisma'
 import { closeQueues, refreshPendingStateKeyTtls } from './lib/queue'
 import { disconnectRedis, getRedisClient } from './lib/redis'
@@ -49,6 +50,7 @@ import type { RevertOutcome, VersionFailureReason, VersionOps } from './modules/
 import * as documentVersions from './modules/document-versions'
 import { MAX_VERSION_NUMBER } from './modules/document-versions/types'
 import type { HistoryPayload } from './types/document.types'
+import type { StoreDocumentContext } from './types/queue.types'
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 
@@ -405,9 +407,12 @@ const firstEditMetadataExtension = {
     documentName,
     context
   }: {
-    document: { getMap: (name: string) => { get: (key: string) => unknown } }
+    document: {
+      getMap: (name: string) => { get: (key: string) => unknown }
+      broadcastStateless: (payload: string) => void
+    }
     documentName: string
-    context?: { slug?: string; user?: { sub?: string; email?: string } | null }
+    context?: StoreDocumentContext
   }) {
     if (draftMetadataEnsured.has(document)) return
     if (document.getMap('metadata').get('isDraft')) return
@@ -416,16 +421,22 @@ const firstEditMetadataExtension = {
     // the guard. Otherwise a later slug-bearing edit on this doc could never anchor.
     const slug = context?.slug ?? ''
     if (!slug) return
+    // Claimed before the await, so a failed anchor never retries. The worker's first
+    // save then makes the row, owned by that save's editor and shown after a reload.
     draftMetadataEnsured.add(document)
     try {
-      // Identity only. Do not stamp the socket user as owner; that locked
-      // Pad title on an unclaimed pad. Ownership stays on PUT/POST create.
-      await ensureDraftDocumentMetadata(prisma, {
+      const { ownerId, email } = firstEditOwner(context?.user)
+      const created = await ensureDraftDocumentMetadata(prisma, {
         documentId: documentName,
         slug,
-        ownerId: null,
-        email: null
+        ownerId,
+        email
       })
+      if (created && ownerId) {
+        // Every peer in the room, the creator included, holds a stale ownerId null.
+        document.broadcastStateless(JSON.stringify({ type: 'owner', ownerId }))
+        wsLogger.info({ documentName, ownerId }, 'First edit stamped owner')
+      }
     } catch (err) {
       wsLogger.warn({ err, documentName }, 'First-edit metadata anchor failed')
     }
