@@ -1,5 +1,6 @@
 import Controllers from '@components/pages/editor/Controllers'
 import { createDocumentFromStructure } from '@components/pages/editor/helpers/createDocumentFromStructure'
+import FindBar from '@components/TipTap/find/FindBar'
 import { HyperlinkPopoverPortal } from '@components/TipTap/hyperlinkPopovers/HyperlinkPopoverPortal'
 import editorConfig from '@components/TipTap/TipTap'
 import EditorToolbar from '@components/TipTap/toolbar/desktop/EditorToolbar'
@@ -117,7 +118,8 @@ const EditorPlayground = ({ localPersistence, docName }: EditorPlaygroundProps) 
         <Controllers editor={editor} />
       </div>
 
-      <div className="flex flex-1">
+      <div className="relative flex flex-1">
+        {editor && <FindBar editor={editor} variant="desktop" />}
         <aside className="tiptap__toc m_desktop flex w-64 shrink-0 flex-col border-r border-[var(--pad-divider)] bg-[var(--pad-well)] !pt-0">
           <div className="scrollbar-custom min-h-0 flex-1 scrollbar-thin overflow-y-auto p-2">
             <TocDesktop />

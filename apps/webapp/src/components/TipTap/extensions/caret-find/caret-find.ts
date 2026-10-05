@@ -1,6 +1,7 @@
 import { Extension } from '@tiptap/core'
 
 import {
+  caretFindPluginKey,
   closeFindTr,
   createCaretFindPlugin,
   openFindTr,
@@ -22,6 +23,8 @@ declare module '@tiptap/core' {
 /** Pad text find: decorations only, so hits never enter the doc or its history. */
 export const CaretFind = Extension.create({
   name: 'caretFind',
+  // Last in line, so an editor key handler that takes Escape (the slash menu) keeps it.
+  priority: 1,
 
   addCommands() {
     return {
@@ -50,6 +53,14 @@ export const CaretFind = Extension.create({
         (direction: 1 | -1) =>
         ({ state, tr, dispatch }) =>
           dispatch ? stepFindTr(state, tr, direction) : true
+    }
+  },
+
+  addKeyboardShortcuts() {
+    return {
+      Escape: () =>
+        !!caretFindPluginKey.getState(this.editor.state)?.open &&
+        this.editor.commands.closeCaretFind()
     }
   },
 

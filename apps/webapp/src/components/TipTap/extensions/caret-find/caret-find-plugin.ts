@@ -12,7 +12,10 @@ import { scrollElementInMobilePadEditor } from '@utils/scrollMobilePadEditor'
 import { type HeadingFoldMeta, headingFoldPluginKey } from '../heading-fold'
 import { computeSection } from '../shared'
 
-export const CARET_FIND_HIT_CAP = 200
+export const CARET_FIND_HIT_CAP = 9999
+// Paint only a window around the current hit, so a huge count stays cheap to draw.
+const CARET_FIND_PAINT_CAP = 200
+const PREFILL_MAX_CHARS = 100
 
 interface FindHit {
   from: number
@@ -132,25 +135,28 @@ function sameIds(a: Set<string>, b: Set<string>): boolean {
 
 function buildDecorations(doc: PMNode, hits: FindHit[], current: number): DecorationSet {
   if (hits.length === 0) return DecorationSet.empty
+  const half = CARET_FIND_PAINT_CAP / 2
+  const start = Math.max(0, Math.min(current - half, hits.length - CARET_FIND_PAINT_CAP))
   return DecorationSet.create(
     doc,
-    hits.map((hit, i) =>
+    hits.slice(start, start + CARET_FIND_PAINT_CAP).map((hit, i) =>
       Decoration.inline(hit.from, hit.to, {
-        class: i === current ? 'caret-find-hit caret-find-current' : 'caret-find-hit'
+        class: start + i === current ? 'caret-find-hit caret-find-current' : 'caret-find-hit'
       })
     )
   )
 }
 
-function firstHitFrom(hits: FindHit[], pos: number): number {
+// The hit that holds the caret or follows it, so a step from inside hit k lands on k + 1.
+function hitAtCaret(hits: FindHit[], pos: number): number {
   if (hits.length === 0) return -1
-  const index = hits.findIndex((hit) => hit.from >= pos)
+  const index = hits.findIndex((hit) => hit.to > pos)
   return index === -1 ? 0 : index
 }
 
 /**
- * Moves the caret to hit `index` and unfolds only the sections that hide it.
- * Sections Find opened for the last hit fold again. Temporary folds never persist.
+ * Unfolds only the sections that hide hit `index`. Sections Find opened for the last hit
+ * fold again. Temporary folds never persist.
  */
 function revealHit(
   state: EditorState,
@@ -178,7 +184,6 @@ function revealHit(
     }
   }
 
-  if (hit) tr.setSelection(TextSelection.create(tr.doc, hit.from))
   return { current: index, opened, restorePersist, revealSeq: find.revealSeq + 1 }
 }
 
@@ -189,23 +194,39 @@ export function foldedIdsIncludingFind(state: EditorState): Set<string> {
   return opened?.size ? new Set([...folded, ...opened]) : folded
 }
 
+/** A short selection inside one textblock, as find text; null otherwise. */
+function selectionQuery(state: EditorState): string | null {
+  const { selection } = state
+  if (!(selection instanceof TextSelection) || selection.empty) return null
+  const { $from, $to, from, to } = selection
+  if (!$from.sameParent($to) || !$from.parent.isTextblock) return null
+  if (to - from > PREFILL_MAX_CHARS) return null
+  return state.doc.textBetween(from, to, '', OBJECT_CHAR)
+}
+
 export function openFindTr(state: EditorState, tr: Transaction): void {
   const find = caretFindPluginKey.getState(state)
   if (!find) return
   let patch: CaretFindPatch = {}
-  if (!find.open && find.query) {
-    const { hits, capped } = findHits(tr.doc, find.query)
-    const index = firstHitFrom(hits, state.selection.from)
-    patch = { hits, capped, ...revealHit(state, tr, find, hits, index) }
+  if (!find.open) {
+    // The same text in another case keeps the typed query, so a reopen keeps its casing.
+    const selected = selectionQuery(state)
+    const query = selected && foldCase(selected) !== foldCase(find.query) ? selected : find.query
+    if (query) {
+      const { hits, capped } = findHits(tr.doc, query)
+      const index = hitAtCaret(hits, state.selection.from)
+      patch = { query, hits, capped, ...revealHit(state, tr, find, hits, index) }
+    }
   }
   tr.setMeta(caretFindPluginKey, { type: 'open', patch } satisfies CaretFindMeta)
 }
 
 export function setFindQueryTr(state: EditorState, tr: Transaction, query: string): void {
   const find = caretFindPluginKey.getState(state)
-  if (!find) return
+  // A late debounced query must not paint or unfold behind a closed bar.
+  if (!find?.open) return
   const { hits, capped } = findHits(tr.doc, query)
-  const index = firstHitFrom(hits, state.selection.from)
+  const index = hitAtCaret(hits, state.selection.from)
   const patch = { query, hits, capped, ...revealHit(state, tr, find, hits, index) }
   tr.setMeta(caretFindPluginKey, { type: 'update', patch } satisfies CaretFindMeta)
 }
@@ -216,18 +237,21 @@ export function stepFindTr(state: EditorState, tr: Transaction, direction: 1 | -
   const count = find.hits.length
   const index = (find.current + direction + count) % count
   const patch = revealHit(state, tr, find, find.hits, index)
+  tr.setSelection(TextSelection.create(tr.doc, find.hits[index].from))
   tr.setMeta(caretFindPluginKey, { type: 'update', patch } satisfies CaretFindMeta)
   return true
 }
 
 /**
- * Folds back what Find opened, in the persist mode seen before Find touched folds.
- * A caret left inside a folded body moves up to that section's heading line.
+ * Selects the current hit, then folds back what Find opened, in the persist mode seen
+ * before Find touched folds. A hit inside a folded body leaves the caret on its heading.
  */
 export function closeFindTr(state: EditorState, tr: Transaction): void {
   const find = caretFindPluginKey.getState(state)
   if (!find) return
   const fold = headingFoldPluginKey.getState(state)
+  const hit = find.hits[find.current]
+  if (hit) tr.setSelection(TextSelection.create(tr.doc, hit.from, hit.to))
 
   if (fold && find.restorePersist !== null) {
     const ids = new Set([...fold.foldedIds, ...find.opened])
@@ -283,13 +307,20 @@ export function createCaretFindPlugin(): Plugin<CaretFindState> {
           next = { ...next, opened: new Set(), restorePersist: null }
         }
 
-        if (!tr.docChanged || !next.query) return next
+        if (!next.query) return next
 
-        // A full rescan per doc change is fine: hits cap at 200, and only while Find is open.
+        // The current hit is the one at the caret. Typing leaves the caret alone, a step puts
+        // it on the hit, and a caret move picks a new one. A y-sync change replaces the whole
+        // doc, so mapping the old hit loses it, but the restored caret keeps the index.
+        if (!tr.docChanged) {
+          if (!tr.selectionSet) return next
+          const current = hitAtCaret(next.hits, tr.selection.from)
+          return current === next.current ? next : withPatch(next, { current }, tr.doc)
+        }
 
+        // A full rescan per doc change, only while Find is open; hits cap at 9,999.
         const { hits, capped } = findHits(tr.doc, next.query)
-        const anchor = prev.hits[prev.current]
-        const current = firstHitFrom(hits, anchor ? tr.mapping.map(anchor.from) : tr.selection.from)
+        const current = hitAtCaret(hits, tr.selection.from)
         return withPatch(next, { hits, capped, current }, tr.doc)
       }
     },
@@ -307,8 +338,9 @@ export function createCaretFindPlugin(): Plugin<CaretFindState> {
           if (!find || find.revealSeq === caretFindPluginKey.getState(prevState)?.revealSeq) return
           // The find input holds focus, so ProseMirror's own scrollIntoView does nothing.
           const hit = view.dom.querySelector('.caret-find-current')
-          if (!hit || scrollElementInMobilePadEditor(hit)) return
-          hit.scrollIntoView({ block: 'center', inline: 'nearest' })
+          // Instant beats the wrapper's scroll-smooth, so a held Enter and reduced motion jump.
+          if (!hit || scrollElementInMobilePadEditor(hit, { behavior: 'instant' })) return
+          hit.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' })
         }
       }
     }

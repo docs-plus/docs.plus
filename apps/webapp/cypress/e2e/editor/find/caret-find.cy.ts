@@ -4,10 +4,14 @@ import { heading, paragraph, section } from '../../../fixtures/docMaker'
 
 type PadEditor = {
   state: {
-    selection: { from: number }
-    doc: { textBetween(from: number, to: number): string; firstChild: { nodeSize: number } | null }
+    selection: { from: number; to: number }
+    doc: {
+      textBetween(from: number, to: number): string
+      firstChild: { nodeSize: number } | null
+      descendants(fn: (node: { isText: boolean; text?: string }, pos: number) => void): void
+    }
   }
-  commands: { setTextSelection(pos: number): boolean }
+  commands: { setTextSelection(pos: number): boolean; focus(): boolean }
   setEditable(editable: boolean): void
   getJSON(): unknown
 }
@@ -19,6 +23,8 @@ const MOD = Cypress.platform === 'darwin' ? 'Meta' : 'Control'
 const EDITOR = '.docy_editor > .tiptap.ProseMirror'
 const BAR = '[data-testid="caret-find-bar"]'
 const INPUT = '[data-testid="caret-find-input"]'
+const COUNT = '[data-testid="caret-find-count"]'
+// The spoken count, which follows the visible count after a short pause.
 const STATUS = '[data-testid="caret-find-status"]'
 
 const withEditor = (fn: (editor: PadEditor) => void) =>
@@ -30,8 +36,10 @@ const parseFolds = (raw: string | null) => (raw ? (JSON.parse(raw) as string[]).
 // A query chain, so each `.should` callback retries until storage catches up.
 const storedFolds = () => cy.window().its('localStorage').invoke('getItem', foldKey())
 
-const openFromToolbar = () => {
-  cy.get('[data-testid="toolbar-find"]').click()
+const openWithShortcut = () => {
+  cy.get(EDITOR).click()
+  withEditor((editor) => editor.commands.setTextSelection(1))
+  cy.realPress([MOD, 'f'])
   cy.get(INPUT).should('have.focus')
 }
 
@@ -61,32 +69,32 @@ describe('Caret find (desktop)', () => {
 
   it('finds literal case-insensitive hits with decorations and steps the caret', () => {
     cy.location('href').then((href) => {
-      openFromToolbar()
+      openWithShortcut()
       cy.get('#filterSearchBox').should('not.exist') // Find is not the Filter panel
 
       cy.get(INPUT).type('ApPlE')
       cy.get(`${EDITOR} .caret-find-hit`).should('have.length', 4)
       cy.get(`${EDITOR} .heading-filter-highlight`).should('not.exist')
-      cy.get(STATUS).should('have.text', '1 of 4')
-      cy.get(STATUS).should('have.attr', 'role', 'status')
+      cy.get(COUNT).should('have.text', '1 of 4')
+      cy.get(STATUS).should('have.text', '1 of 4').and('have.attr', 'role', 'status')
       cy.get(STATUS).closest('.ProseMirror').should('not.exist')
 
       cy.get(INPUT).type('{enter}')
-      cy.get(STATUS).should('have.text', '2 of 4')
+      cy.get(COUNT).should('have.text', '2 of 4')
       withEditor((editor) => {
         const { from } = editor.state.selection
         expect(editor.state.doc.textBetween(from, from + 5).toLowerCase()).to.eq('apple')
       })
 
       cy.get(INPUT).type('{shift}{enter}')
-      cy.get(STATUS).should('have.text', '1 of 4')
+      cy.get(COUNT).should('have.text', '1 of 4')
       withEditor((editor) => {
         expect(editor.state.selection.from).to.be.lessThan(
           editor.state.doc.firstChild?.nodeSize ?? 0
         ) // the hit in Title
       })
       cy.get(INPUT).type('{shift}{enter}')
-      cy.get(STATUS).should('have.text', '4 of 4')
+      cy.get(COUNT).should('have.text', '4 of 4')
 
       withEditor((editor) => {
         const json = JSON.stringify(editor.getJSON())
@@ -110,11 +118,69 @@ describe('Caret find (desktop)', () => {
       cy.wrap(seen).as('findKeys')
     })
 
+    cy.get('[data-testid="toolbar-find"]').should('not.exist')
     cy.get(EDITOR).click()
     cy.realPress([MOD, 'f'])
     cy.get(BAR).should('be.visible')
     cy.get(INPUT).should('have.focus')
     cy.get('@findKeys').should('deep.equal', [true])
+  })
+
+  it('Escape from Next closes the bar and selects the match', () => {
+    openWithShortcut()
+    cy.get(INPUT).type('beta apple')
+    cy.get(COUNT).should('have.text', '1 of 1')
+    // Typing never moves the caret; only a step or a close does.
+    withEditor((editor) => expect(editor.state.selection.from).to.eq(1))
+    cy.get('[aria-label="Next match"]').focus().should('have.focus')
+    cy.realPress('Escape')
+    cy.get(BAR).should('not.exist')
+    cy.get(EDITOR).should('have.focus')
+    withEditor((editor) => {
+      const { from, to } = editor.state.selection
+      expect(editor.state.doc.textBetween(from, to).toLowerCase()).to.eq('beta apple')
+    })
+  })
+
+  it('Mod-g from the editor steps, and Escape in the editor closes the bar', () => {
+    openWithShortcut()
+    cy.get(INPUT).type('apple')
+    cy.get(COUNT).should('have.text', '1 of 4')
+    withEditor((editor) => editor.commands.focus())
+    cy.get(EDITOR).should('have.focus')
+    cy.realPress([MOD, 'g'])
+    cy.get(COUNT).should('have.text', '2 of 4')
+
+    // A caret moved inside the third match makes it current, so the next step is the fourth.
+    withEditor((editor) => {
+      let pos = -1
+      editor.state.doc.descendants((node, at) => {
+        if (node.isText && node.text?.startsWith('deep apple')) pos = at + 'deep ap'.length
+      })
+      editor.commands.setTextSelection(pos)
+    })
+    cy.get(COUNT).should('have.text', '3 of 4')
+    cy.realPress([MOD, 'g'])
+    cy.get(COUNT).should('have.text', '4 of 4')
+
+    cy.realPress('Escape')
+    cy.get(BAR).should('not.exist')
+  })
+
+  it('reopen announces the first count', () => {
+    openWithShortcut()
+    cy.get(INPUT).type('apple')
+    cy.get(STATUS).should('have.text', '1 of 4')
+    cy.get(INPUT).type('{esc}')
+    cy.get(BAR).should('not.exist')
+
+    // A held clock keeps the spoken count empty until the pause ends, on any runner speed.
+    cy.clock()
+    cy.realPress([MOD, 'f'])
+    cy.get(INPUT).should('have.focus')
+    cy.get(STATUS).should('have.text', '')
+    cy.tick(500)
+    cy.get(STATUS).should('have.text', '1 of 4')
   })
 
   it('unfolds a folded hit, restores the exact folds on Esc, and keeps fold saving alive', () => {
@@ -126,9 +192,9 @@ describe('Caret find (desktop)', () => {
       .then((initial) => {
         const before = parseFolds(initial)
 
-        openFromToolbar()
+        openWithShortcut()
         cy.get(INPUT).type('deep apple')
-        cy.get(STATUS).should('have.text', '1 of 1')
+        cy.get(COUNT).should('have.text', '1 of 1')
         cy.contains(`${EDITOR} p`, 'deep apple here').should('be.visible')
         cy.get(`${EDITOR} .heading-fold-hidden`).should('not.exist')
         // The temporary unfold is never saved.
@@ -145,26 +211,28 @@ describe('Caret find (desktop)', () => {
       })
   })
 
-  it('caps at 200 hits and shows 200+', () => {
+  it('paints 200 hits but counts and steps past them', () => {
     cy.createDocument({
       sections: [section('Cap Doc', [paragraph('ab '.repeat(250))])]
     })
-    withEditor((editor) => editor.commands.setTextSelection(1))
 
-    openFromToolbar()
+    openWithShortcut()
     cy.get(INPUT).type('ab')
-    cy.get(STATUS).should('have.text', '1 of 200+')
+    cy.get(COUNT).should('have.text', '1 of 250')
     cy.get(`${EDITOR} .caret-find-hit`).should('have.length', 200)
+    cy.get(INPUT).type('{shift}{enter}')
+    cy.get(COUNT).should('have.text', '250 of 250')
+    cy.get(`${EDITOR} .caret-find-current`).should('exist')
   })
 
   it('still finds when the pad is read-only', () => {
     withEditor((editor) => editor.setEditable(false))
 
-    openFromToolbar()
+    openWithShortcut()
     cy.get(INPUT).type('apple')
-    cy.get(STATUS).should('have.text', '1 of 4')
+    cy.get(COUNT).should('have.text', '1 of 4')
     cy.get(INPUT).type('{enter}')
-    cy.get(STATUS).should('have.text', '2 of 4')
+    cy.get(COUNT).should('have.text', '2 of 4')
   })
 
   it('no longer labels the Filter field as Find in document', () => {

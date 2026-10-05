@@ -21,7 +21,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 
 ## Pad tools
 
-- **Find** — caret find in the open pad (`TipTap/extensions/caret-find/`). A literal, case-insensitive text search that includes Title. It unfolds a hit only for the session and never writes folds to storage.
+- **Find** — caret find in the open pad (`TipTap/extensions/caret-find/`). A literal, case-insensitive text search that includes Title. It unfolds a hit only for the session and never writes folds to storage. Desktop opens it with ⌘F / Ctrl+F only; the pad toolbar has no Find button. The phone opens it from the TOC drawer.
   _Avoid_: Filter, Find in document (for Filter)
 - **Filter** — the heading filter (`matchSections`). It folds sections that do not match. It is not a text search.
 - **Slash menu** — `/` on an empty textblock that is not Title opens a list of block inserts. Each row runs an existing editor command.

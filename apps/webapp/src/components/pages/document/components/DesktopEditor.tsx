@@ -1,10 +1,12 @@
 import { Chatroom } from '@components/chatroom'
+import FindBar from '@components/TipTap/find/FindBar'
 import { HyperlinkPopoverPortal } from '@components/TipTap/hyperlinkPopovers/HyperlinkPopoverPortal'
 import EditorToolbar from '@components/TipTap/toolbar/desktop/EditorToolbar'
 import { useHeadingScrollSpy } from '@components/toc/hooks/useHeadingScrollSpy'
 import { TocTickRail } from '@components/toc/TocTickRail'
 import ResizeHandle from '@components/ui/ResizeHandle'
 import { useUnreadSync } from '@hooks/useUnreadSync'
+import { useStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
 import { memo, type RefObject, useRef } from 'react'
 
@@ -51,6 +53,15 @@ const DesktopPadChat = memo(function DesktopPadChat() {
       <Chatroom.ChannelComposer className="w-full" />
     </Chatroom>
   )
+})
+
+// Same gate the toolbar used, so Mod-f stays with the browser until the first sync.
+const DesktopPadFind = memo(function DesktopPadFind() {
+  const editor = useStore((state) => state.settings.editor.instance)
+  const ready = useStore(
+    (state) => !state.settings.editor.loading && !state.settings.editor.providerSyncing
+  )
+  return editor && ready ? <FindBar editor={editor} variant="desktop" /> : null
 })
 
 const DesktopEditor = () => {
@@ -109,6 +120,7 @@ const DesktopEditor = () => {
 
       <div className="editor relative flex size-full min-h-0 flex-row-reverse bg-[var(--pad-well)]">
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+          <DesktopPadFind />
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-row-reverse">
             <DesktopPadEditor wrapperRef={editorWrapperRef} />
             {isRail && (
