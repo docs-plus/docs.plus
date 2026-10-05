@@ -18,14 +18,14 @@ export function PadQrCode() {
   const [isLarge, setIsLarge] = useState(false)
   const SizeIcon = isLarge ? Icons.minimize2 : Icons.maximize2
 
-  // A size container over the pad row, above docked chat. At 1x the card shows only where it
-  // clears the sheet, its heading chips, chat and the scrollbar; the reader may enlarge it over
-  // the sheet. It sits 14px under the toolbar, and drops below the Find bar while Find is open.
+  // A size container over the pad row, above docked chat: the card hides only when the row is
+  // too short to clear chat. On a narrow window it may cover the page edge (ruling #377).
+  // It sits 14px under the toolbar, and drops below the Find bar while Find is open.
   return (
     <div className="[container-type:size] pointer-events-none absolute inset-x-0 top-0 bottom-[var(--chat-panel-height,0px)]">
       <div
         data-testid="pad-qr-code"
-        className="group/qr pointer-events-auto absolute top-3.5 right-[calc(var(--scrollbar-size-thin)+0.875rem)] z-50 hidden group-has-[[data-testid=caret-find-bar]]/padcol:top-17 [@container_(min-width:80rem)_and_(min-height:13.5rem)]:block">
+        className="group/qr pointer-events-auto absolute top-3.5 right-[calc(var(--scrollbar-size-thin)+0.875rem)] z-50 hidden group-has-[[data-testid=caret-find-bar]]/padcol:top-17 [@container_(min-height:13.5rem)]:block">
         <div
           role="img"
           aria-label={`QR code for ${shareUrl.replace(/^https?:\/\//, '')}`}

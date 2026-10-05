@@ -101,12 +101,12 @@ describe('pad QR toggle (full stack)', () => {
     codeWidthIs(128)
   })
 
-  it('stays pressed but hides the card when the well has no room', () => {
+  it('shows the card on a narrow window too, and hides it with the toggle', () => {
     cy.viewport(1280, 800)
     cy.visit(`/${slug}`)
     toggle().click()
     toggle().should('have.attr', 'aria-pressed', 'true')
-    card().should('exist').and('not.be.visible')
+    card().should('be.visible')
 
     toggle().click()
     card().should('not.exist')
