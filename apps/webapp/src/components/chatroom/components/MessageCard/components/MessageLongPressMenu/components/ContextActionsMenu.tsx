@@ -46,7 +46,6 @@ export const ContextActionsMenu = forwardRef<HTMLUListElement, ContextActionsMen
       <ul
         ref={mergedRef}
         {...getFloatingProps()}
-        role="menu"
         // useRole points aria-labelledby at a reference this menu does not have.
         aria-labelledby={undefined}
         aria-label="Message options"
