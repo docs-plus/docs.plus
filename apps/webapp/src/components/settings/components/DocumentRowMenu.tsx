@@ -1,5 +1,4 @@
 import { SheetLayout } from '@components/SheetLayout'
-import * as toast from '@components/toast'
 import {
   ContextMenuDivider,
   ContextMenuRow,
@@ -19,10 +18,10 @@ import { twMerge } from '@utils/twMerge'
 import { type MouseEvent, type ReactNode, useEffect, useId } from 'react'
 
 import type { DocumentsListScope } from '../documentsQueryKey'
-import { useOwnerDocumentsCache } from '../hooks/documentsCache'
 import useDuplicateDocument from '../hooks/useDuplicateDocument'
 import useToggleDocumentFavorite from '../hooks/useToggleDocumentFavorite'
 import type { OwnedDocument } from '../types'
+import { documentDisplayName } from '../utils/documentDisplayName'
 
 export interface DocumentRowMenuProps {
   doc: OwnedDocument
@@ -30,7 +29,6 @@ export interface DocumentRowMenuProps {
   scope: DocumentsListScope
   /** A non-owned row (joined or ownerless) offers only Open in new tab and Copy link. */
   isOwner: boolean
-  onOpenDocument?: () => void
   /** Menu delegates to the row/section (inline rename mode / rename dialog). */
   onRename?: () => void
   /** Section owns the optimistic filter-out + Undo toast; `keyboard` drives focus reconciliation. */
@@ -39,133 +37,134 @@ export interface DocumentRowMenuProps {
   triggerTabIndex?: number
 }
 
-type DocumentAccess = ReturnType<typeof useDocumentAccessMutation>
-
-const useRowAccess = ({ doc, scope }: Pick<DocumentRowMenuProps, 'doc' | 'scope'>) =>
-  useDocumentAccessMutation({
-    documentId: doc.documentId,
-    userId: scope.userId,
-    isPrivate: doc.isPrivate,
-    readOnly: doc.readOnly
-  })
-
-type RowShape = { asMenu: boolean; icon: ReactNode; disabled?: boolean }
-
-type ActionRowProps = RowShape & {
+type ActionRowProps = {
+  icon: ReactNode
   children: ReactNode
   variant?: ContextMenuRowVariant
+  disabled?: boolean
   ariaLabel?: string
   rowClassName?: string
   onClick: (event: MouseEvent<HTMLElement>) => void
 }
 
-/** A `MenuItem` in the desktop menu; a `ContextMenuRowButton` in the phone sheet (a dialog). */
-function ActionRow({
-  asMenu,
-  icon,
-  children,
-  variant,
-  disabled,
-  ariaLabel,
-  rowClassName,
-  onClick
-}: ActionRowProps) {
-  if (!asMenu) {
-    return (
-      <ContextMenuRowButton
-        icon={icon}
-        variant={variant}
-        disabled={disabled}
-        aria-label={ariaLabel}
-        rowClassName={twMerge('min-h-12', rowClassName)}
-        onClick={onClick}>
-        {children}
-      </ContextMenuRowButton>
+type CheckRowProps = {
+  icon: ReactNode
+  label: string
+  hint?: string
+  checked: boolean
+  disabled?: boolean
+  onToggle: () => void
+}
+
+/** The row owns the state, so the trailing `Toggle` is only a picture of it. */
+function useCheckRowParts({ label, hint, checked, disabled }: CheckRowProps) {
+  const hintId = useId()
+  return {
+    state: { 'aria-checked': checked, 'aria-describedby': hint ? hintId : undefined },
+    trailing: (
+      <span inert className="flex">
+        <Toggle size="sm" variant="primary" checked={checked} disabled={disabled} readOnly />
+      </span>
+    ),
+    // The hint is the row's description, not part of its name.
+    body: (
+      <span className="flex flex-col">
+        {label}
+        {hint && (
+          <span id={hintId} aria-hidden className="text-meta text-base-content/60 font-normal">
+            {hint}
+          </span>
+        )}
+      </span>
     )
   }
-  return (
+}
+
+type RowSet = {
+  Action: (props: ActionRowProps) => ReactNode
+  Check: (props: CheckRowProps) => ReactNode
+  Divider: () => ReactNode
+}
+
+/** `MenuItem` rows for the desktop menu. */
+const MENU_ROWS: RowSet = {
+  Action: ({ icon, children, variant, disabled, ariaLabel, rowClassName, onClick }) => (
     <MenuItem disabled={disabled} aria-label={ariaLabel} onClick={onClick}>
       <ContextMenuRow icon={icon} variant={variant} disabled={disabled} className={rowClassName}>
         {children}
       </ContextMenuRow>
     </MenuItem>
-  )
+  ),
+  Check: function MenuCheckRow(props) {
+    const { state, trailing, body } = useCheckRowParts(props)
+    return (
+      <MenuItem
+        role="menuitemcheckbox"
+        {...state}
+        disabled={props.disabled}
+        onClick={props.onToggle}>
+        <ContextMenuRow icon={props.icon} disabled={props.disabled} trailing={trailing}>
+          {body}
+        </ContextMenuRow>
+      </MenuItem>
+    )
+  },
+  Divider: () => <ContextMenuDivider />
 }
 
-type CheckRowProps = RowShape & {
-  label: string
-  hint?: string
-  checked: boolean
-  onToggle: () => void
-}
-
-/** The row owns the state, so the trailing `Toggle` is only a picture of it. */
-function CheckRow({ asMenu, icon, label, hint, checked, disabled, onToggle }: CheckRowProps) {
-  const hintId = useId()
-  const state = { 'aria-checked': checked, 'aria-describedby': hint ? hintId : undefined }
-  const trailing = (
-    <span inert className="flex">
-      <Toggle size="sm" variant="primary" checked={checked} disabled={disabled} readOnly />
-    </span>
-  )
-  // The hint is the row's description, not part of its name.
-  const body = (
-    <span className="flex flex-col">
-      {label}
-      {hint && (
-        <span id={hintId} aria-hidden className="text-meta text-base-content/60 font-normal">
-          {hint}
-        </span>
-      )}
-    </span>
-  )
-
-  if (!asMenu) {
+/** Button rows for the phone sheet, which is a dialog and not a menu. */
+const SHEET_ROWS: RowSet = {
+  Action: ({ icon, children, variant, disabled, ariaLabel, rowClassName, onClick }) => (
+    <ContextMenuRowButton
+      icon={icon}
+      variant={variant}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      rowClassName={twMerge('min-h-12', rowClassName)}
+      onClick={onClick}>
+      {children}
+    </ContextMenuRowButton>
+  ),
+  Check: function SheetCheckRow(props) {
+    const { state, trailing, body } = useCheckRowParts(props)
     return (
       <ContextMenuRowButton
         role="switch"
         {...state}
-        icon={icon}
-        disabled={disabled}
+        icon={props.icon}
+        disabled={props.disabled}
         trailing={trailing}
         rowClassName="min-h-12"
-        onClick={onToggle}>
+        onClick={props.onToggle}>
         {body}
       </ContextMenuRowButton>
     )
-  }
-  return (
-    <MenuItem role="menuitemcheckbox" {...state} disabled={disabled} onClick={onToggle}>
-      <ContextMenuRow icon={icon} disabled={disabled} trailing={trailing}>
-        {body}
-      </ContextMenuRow>
-    </MenuItem>
-  )
+  },
+  Divider: () => <ContextMenuDivider as="div" />
 }
 
 type RowMenuItemsProps = DocumentRowMenuProps & {
-  asMenu: boolean
-  access: DocumentAccess
+  rows: RowSet
   close: () => void
 }
 
-function RowMenuItems({
-  doc,
-  scope,
-  isOwner,
-  onRename,
-  onDelete,
-  asMenu,
-  access,
-  close
-}: RowMenuItemsProps) {
-  const { documentId, slug, title, isPrivate, readOnly, isFavorite } = doc
-  const cache = useOwnerDocumentsCache(scope.userId)
-  const { duplicate, isPending: isDuplicating } = useDuplicateDocument()
-  const { toggleFavorite, isPending: isFavoriting } = useToggleDocumentFavorite()
-  const { setPrivate, setReadOnly, isControlDisabled } = access
+/**
+ * One body for the menu and the sheet. Each write keeps its side effects in hook-level
+ * mutation options, so closing either surface mid-request drops nothing.
+ */
+function RowMenuItems({ doc, scope, isOwner, onRename, onDelete, rows, close }: RowMenuItemsProps) {
+  const { Action, Check, Divider } = rows
+  const { documentId, slug, isPrivate, readOnly, isFavorite } = doc
+  const docName = documentDisplayName(doc)
+  const { duplicate, isPending: isDuplicating } = useDuplicateDocument(scope.userId)
+  const { toggleFavorite, isPending: isFavoriting } = useToggleDocumentFavorite(scope.userId)
+  const { setPrivate, setReadOnly, isControlDisabled } = useDocumentAccessMutation({
+    documentId,
+    userId: scope.userId,
+    isPrivate,
+    readOnly
+  })
 
-  const docName = title ?? slug
   const { schedule, cancel } = useCloseAfterHold(close)
   const { copy, copied } = useCopyToClipboard({
     successMessage: 'Link copied!',
@@ -194,54 +193,14 @@ function RowMenuItems({
     closeNow()
   }
 
-  // Additive post-confirm write — no cancel/snapshot/rollback (nothing to undo).
-  // Menu stays open (mirrors patch) so this mutate-scoped onSuccess isn't dropped.
-  const runDuplicate = () => {
-    cancel()
-    const toastId = toast.Loading('Duplicating…')
-    duplicate(
-      { documentId },
-      {
-        onSuccess: (copy) => {
-          cache.addDuplicate()
-          toast.Success(`Copy of “${docName}” created`, {
-            id: toastId,
-            actionLabel: 'Open',
-            onAction: () => window.open(`/${copy.slug}`, '_blank')
-          })
-        },
-        onError: () => toast.Error('Couldn’t duplicate document', { id: toastId })
-      }
-    )
-  }
-
-  const runToggleFavorite = () => {
-    cancel()
-    const next = !isFavorite
-    void cache.setFavorite(documentId, next).then((rollback) => {
-      toggleFavorite(
-        { documentId, favorite: next },
-        {
-          onError: () => {
-            rollback?.()
-            toast.Error('Couldn’t update favorite')
-          }
-        }
-      )
-    })
-  }
-
-  const divider = asMenu ? <ContextMenuDivider /> : <ContextMenuDivider as="div" />
-
   return (
     <>
-      <ActionRow asMenu={asMenu} icon={<Icons.externalLink size={16} />} onClick={openInNewTab}>
+      <Action icon={<Icons.externalLink size={16} />} onClick={openInNewTab}>
         Open in new tab
-      </ActionRow>
+      </Action>
 
       {!isPrivate && (
-        <ActionRow
-          asMenu={asMenu}
+        <Action
           onClick={() => void copy(`${window.location.origin}/${slug}`)}
           ariaLabel={copied ? 'Copied!' : 'Copy link'}
           icon={
@@ -255,27 +214,28 @@ function RowMenuItems({
             <span className="swap-on">Copied!</span>
             <span className="swap-off">Copy link</span>
           </span>
-        </ActionRow>
+        </Action>
       )}
 
       {isOwner && (
         <>
-          {divider}
+          <Divider />
 
-          <ActionRow asMenu={asMenu} icon={<Icons.pencilLine size={16} />} onClick={startRename}>
+          <Action icon={<Icons.pencilLine size={16} />} onClick={startRename}>
             Rename
-          </ActionRow>
+          </Action>
 
-          <ActionRow
-            asMenu={asMenu}
+          <Action
             icon={<Icons.copy size={16} />}
             disabled={isDuplicating}
-            onClick={runDuplicate}>
+            onClick={() => {
+              cancel()
+              duplicate({ documentId, name: docName })
+            }}>
             Duplicate
-          </ActionRow>
+          </Action>
 
-          <ActionRow
-            asMenu={asMenu}
+          <Action
             icon={
               <Icons.star
                 size={16}
@@ -283,14 +243,16 @@ function RowMenuItems({
               />
             }
             disabled={isFavoriting}
-            onClick={runToggleFavorite}>
+            onClick={() => {
+              cancel()
+              toggleFavorite({ documentId, favorite: !isFavorite })
+            }}>
             {isFavorite ? 'Unfavorite' : 'Favorite'}
-          </ActionRow>
+          </Action>
 
-          {divider}
+          <Divider />
 
-          <CheckRow
-            asMenu={asMenu}
+          <Check
             icon={<Icons.lock size={16} />}
             label="Private"
             hint="Only you can open this document."
@@ -302,8 +264,7 @@ function RowMenuItems({
             }}
           />
 
-          <CheckRow
-            asMenu={asMenu}
+          <Check
             icon={<Icons.eye size={16} />}
             label="Read-only"
             hint={isPrivate ? 'Not used while the document is private.' : undefined}
@@ -315,27 +276,27 @@ function RowMenuItems({
             }}
           />
 
-          {divider}
+          <Divider />
 
-          <ActionRow
-            asMenu={asMenu}
-            icon={<Icons.trash size={16} />}
-            variant="danger"
-            onClick={removeDocument}>
+          <Action icon={<Icons.trash size={16} />} variant="danger" onClick={removeDocument}>
             Delete
-          </ActionRow>
+          </Action>
         </>
       )}
     </>
   )
 }
 
-function RowMenuDropdownItems(props: Omit<RowMenuItemsProps, 'asMenu' | 'close'>) {
+function RowMenuDropdownItems(props: DocumentRowMenuProps) {
   const { setIsOpen } = useContextMenuContext()
-  return <RowMenuItems {...props} asMenu close={() => setIsOpen(false)} />
+  return <RowMenuItems {...props} rows={MENU_ROWS} close={() => setIsOpen(false)} />
 }
 
 type DocumentRowMenuSheetData = SheetDataMap['documentRowMenu']
+
+const isRowSheet = (state: ReturnType<typeof useSheetStore.getState>, documentId: string) =>
+  state.activeSheet === 'documentRowMenu' &&
+  (state.sheetData as DocumentRowMenuSheetData).doc.documentId === documentId
 
 /** Phone body of the house `documentRowMenu` sheet (`BottomSheet` registry). */
 export function DocumentRowMenuSheet({
@@ -343,10 +304,6 @@ export function DocumentRowMenuSheet({
   ...props
 }: DocumentRowMenuSheetData) {
   const closeSheet = useSheetStore((state) => state.closeSheet)
-  // Its own copy until `sheetData` can carry the row's `access` (#391 follow-up).
-  // Closing the sheet mid-write still drops that write's rollback and toasts.
-  const access = useRowAccess(props)
-  const docName = props.doc.title ?? props.doc.slug
 
   // The sheet and Settings both dismiss on a document keydown. Capture on window runs
   // first and stops it, so Escape closes only the sheet. A GlobalDialog confirm owns Escape.
@@ -362,20 +319,12 @@ export function DocumentRowMenuSheet({
 
   return (
     <SheetLayout
-      title={docName}
+      title={documentDisplayName(props.doc)}
       onClose={closeSheet}
       className="[&_h2]:truncate"
       bodyClassName="px-1.5 pt-1.5">
-      <RowMenuItems {...props} asMenu={false} access={access} close={closeSheet} />
+      <RowMenuItems {...props} rows={SHEET_ROWS} close={closeSheet} />
     </SheetLayout>
-  )
-}
-
-const isSheetFor = (documentId: string): boolean => {
-  const { activeSheet, sheetData } = useSheetStore.getState()
-  return (
-    activeSheet === 'documentRowMenu' &&
-    (sheetData as DocumentRowMenuSheetData).doc.documentId === documentId
   )
 }
 
@@ -385,20 +334,13 @@ const isSheetFor = (documentId: string): boolean => {
  */
 function DocumentRowMenu(props: DocumentRowMenuProps) {
   const { documentId } = props.doc
-  const docName = props.doc.title ?? props.doc.slug
-  // Lives here, not in the menu: a menu closed mid-write would unmount the mutation,
-  // which drops its rollback and toasts.
-  const access = useRowAccess(props)
-  const isSheetOpen = useSheetStore(
-    (state) =>
-      state.activeSheet === 'documentRowMenu' &&
-      (state.sheetData as DocumentRowMenuSheetData).doc.documentId === documentId
-  )
+  const docName = documentDisplayName(props.doc)
+  const isSheetOpen = useSheetStore((state) => isRowSheet(state, documentId))
 
   // The registry renders a snapshot, so push fresh props or the toggles show stale state.
   // Never `openSheet` here: a late prop change after Delete would re-open the sheet.
   useEffect(() => {
-    if (!isSheetOpen || !isSheetFor(documentId)) return
+    if (!isSheetOpen || !isRowSheet(useSheetStore.getState(), documentId)) return
     useSheetStore.setState((state) => ({
       sheetData: { ...(state.sheetData as DocumentRowMenuSheetData), ...props }
     }))
@@ -407,7 +349,7 @@ function DocumentRowMenu(props: DocumentRowMenuProps) {
   // A gone row must not leave its sheet open: it holds the focus trap and the Back entry.
   useEffect(
     () => () => {
-      if (isSheetFor(documentId)) useSheetStore.getState().closeSheet()
+      if (isRowSheet(useSheetStore.getState(), documentId)) useSheetStore.getState().closeSheet()
     },
     [documentId]
   )
@@ -445,7 +387,7 @@ function DocumentRowMenu(props: DocumentRowMenuProps) {
             <Icons.moreVertical size={18} />
           </button>
         )}>
-        <RowMenuDropdownItems {...props} access={access} />
+        <RowMenuDropdownItems {...props} />
       </DropdownMenu>
     </>
   )

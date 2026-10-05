@@ -1,8 +1,10 @@
+import * as toast from '@components/toast'
 import { useMutation } from '@tanstack/react-query'
 import { supabaseClient } from '@utils/supabase'
 
-// Backend resets isPrivate/readOnly and returns only these three fields;
-// the component synthesizes the rest of OwnedDocument for the cache prepend.
+import { useOwnerDocumentsCache } from './documentsCache'
+
+// The backend resets isPrivate and readOnly, and returns only these three fields.
 export interface DuplicatedDocument {
   documentId: string
   slug: string
@@ -10,14 +12,17 @@ export interface DuplicatedDocument {
 }
 
 /**
- * POST /documents/:documentId/duplicate (strict owner). Same `token` header
- * convention as useUpdateDocMetadata; the cache prepend lives in the component.
+ * POST /documents/:documentId/duplicate (strict owner). The toast and the list refresh are
+ * hook-level, so they still run when the ⋮ menu or its phone sheet closes mid-request.
+ * `name` rides the variables: hook-level callbacks keep the options of the last render.
  */
-const useDuplicateDocument = () => {
-  const { isPending, isSuccess, mutate, data } = useMutation<
+const useDuplicateDocument = (userId: string) => {
+  const cache = useOwnerDocumentsCache(userId)
+  const { isPending, mutate } = useMutation<
     DuplicatedDocument,
     Error,
-    { documentId: string }
+    { documentId: string; name: string },
+    { toastId: string }
   >({
     mutationKey: ['duplicateDocument'],
     mutationFn: async ({ documentId }) => {
@@ -35,10 +40,21 @@ const useDuplicateDocument = () => {
       const json = await response.json()
       if (!json.success || !json.data) throw new Error('Invalid duplicate response')
       return json.data as DuplicatedDocument
-    }
+    },
+    onMutate: () => ({ toastId: toast.Loading('Duplicating…') }),
+    onSuccess: (copy, { name }, { toastId }) => {
+      cache.addDuplicate()
+      toast.Success(`Copy of “${name}” created`, {
+        id: toastId,
+        actionLabel: 'Open',
+        onAction: () => window.open(`/${copy.slug}`, '_blank')
+      })
+    },
+    onError: (_error, _variables, context) =>
+      toast.Error('Couldn’t duplicate document', { id: context?.toastId })
   })
 
-  return { duplicate: mutate, isPending, isSuccess, data }
+  return { duplicate: mutate, isPending }
 }
 
 export default useDuplicateDocument
