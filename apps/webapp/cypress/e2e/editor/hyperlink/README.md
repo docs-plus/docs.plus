@@ -5,7 +5,7 @@ Coverage for `@docs.plus/extension-hyperlink` in the real editor (`TipTap.tsx`: 
 ## Scope
 
 - **hyperlink-create.cy.js** — Create popover + `setHyperlink` command
-  - Mod+K and toolbar button trigger, Apply button state, valid/invalid URL submission, error display, Escape dismiss, outside-click dismiss, URL prefix normalization (`https://`)
+  - Mod+K and toolbar button trigger, URL field focus on toolbar open, Apply button state, valid/invalid URL submission, error display, Escape dismiss, outside-click dismiss, URL prefix normalization (`https://`)
 
 - **hyperlink-preview-edit.cy.js** — Preview popover + edit popover + remove + copy
   - Click-to-preview, href display, open-in-new-tab, remove link, copy href, edit button transition, edit pre-fill, text/URL editing, edit validation, Back button return

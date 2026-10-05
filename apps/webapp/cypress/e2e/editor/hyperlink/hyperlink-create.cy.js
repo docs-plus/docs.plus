@@ -51,12 +51,15 @@ describe('Hyperlink Create Popover', () => {
       cy.get(URL_INPUT).should('be.visible')
     })
 
-    it('opens create popover via toolbar button', () => {
+    it('opens create popover via toolbar button with the caret in the URL field', () => {
       selectTarget()
+      cy.get(PM).should('have.focus')
       cy.get('[data-testid="toolbar-hyperlink"]').click()
 
       cy.get(POPOVER).should('be.visible')
-      cy.get(URL_INPUT).should('be.visible')
+      cy.get(URL_INPUT).should('be.visible').and('have.focus')
+      cy.realType('x')
+      cy.get(URL_INPUT).should('have.value', 'x')
     })
   })
 

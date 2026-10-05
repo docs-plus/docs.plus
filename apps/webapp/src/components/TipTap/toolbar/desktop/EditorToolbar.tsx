@@ -184,11 +184,13 @@ const EditorToolbar = () => {
           <Icons.comment size={ICON_SIZE} />
         </ToolbarButton>
 
+        {/* No focus(): the click blurs the pad, so focus() would refocus it in a rAF and
+            take the caret back from the URL field. scrollIntoView() keeps the scroll that focus() did. */}
         <ToolbarButton
           editor={editor}
           type="hyperlink"
           data-testid="toolbar-hyperlink"
-          onClick={() => editor.chain().focus().openCreateHyperlinkPopover().run()}
+          onClick={() => editor.chain().scrollIntoView().openCreateHyperlinkPopover().run()}
           tooltip="Hyperlink (⌘+K)">
           <Icons.link size={ICON_SIZE} />
         </ToolbarButton>
