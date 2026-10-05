@@ -126,6 +126,32 @@ describe('media toolbar overlay', () => {
     cy.nodeCount('image').should('eq', 0)
   })
 
+  it('moves through the overflow menu with the keyboard and returns focus to the trigger on close', () => {
+    cy.visitPlayground()
+    cy.insertSizedImage(480, 320)
+    cy.activateImageGripper()
+    // A mouse toggle first: the click selects the media, and Enter must still open the menu.
+    cy.get('#editor .media-toolbar .media-toolbar__more').click()
+    cy.get('.media-toolbar__menu').should('exist')
+    cy.get('#editor .media-toolbar .media-toolbar__more').click()
+    cy.get('.media-toolbar__menu').should('not.exist')
+    cy.get('#editor .media-toolbar .media-toolbar__more').focus().should('have.focus')
+    cy.realPress('Enter')
+    cy.get('.media-toolbar__menu[role="menu"] [data-action-id="replace"]').should('have.focus')
+    cy.realPress('ArrowDown')
+    cy.get('.media-toolbar__menu [data-action-id="copy"]').should('have.focus')
+    cy.realPress('Escape')
+    cy.get('.media-toolbar__menu').should('not.exist')
+    cy.get('#editor .media-toolbar .media-toolbar__more').should('have.focus')
+    // A row picked with Enter closes the menu and also returns focus to ⋯.
+    cy.realPress('Enter')
+    cy.get('.media-toolbar__menu [data-action-id="replace"]').should('have.focus')
+    cy.realPress('ArrowDown')
+    cy.realPress('Enter')
+    cy.get('.media-toolbar__menu').should('not.exist')
+    cy.get('#editor .media-toolbar .media-toolbar__more').should('have.focus')
+  })
+
   it('hides View original for host-uploaded image/video/audio', () => {
     cy.visitPlayground('uploaded=true')
     cy.insertSizedImage(480, 320)

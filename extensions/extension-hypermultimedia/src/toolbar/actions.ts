@@ -21,6 +21,7 @@ import {
   removeMediaNode,
   viewOriginalMedia
 } from './handlers'
+import { labelledGroup } from './menu'
 import { openReplaceUrlPopover } from './replaceUrl'
 import { resolveMediaToolbarIcon } from './resolveIcon'
 import type { MediaAction, MediaActionContext, MediaActionList } from './types'
@@ -106,15 +107,13 @@ function renderXOptionsSubmenu(ctx: MediaActionContext): HTMLElement {
   const activeSize = resolveXEmbedSizeId(ctx.attrs.maxwidth as number | null | undefined)
   const activeTheme = (ctx.attrs.theme as XEmbedTheme | undefined) ?? 'light'
 
-  const section = (title: string, children: HTMLElement[]) => {
-    const wrap = document.createElement('div')
-    wrap.className = 'media-toolbar__submenu-section'
-    const heading = document.createElement('p')
-    heading.className = 'media-toolbar__submenu-heading'
-    heading.textContent = title
-    wrap.append(heading, ...children)
-    return wrap
-  }
+  const section = (title: string, children: HTMLElement[]) =>
+    labelledGroup(
+      'media-toolbar__submenu-section',
+      'media-toolbar__submenu-heading',
+      title,
+      children
+    )
   list.append(
     section(
       'Size',

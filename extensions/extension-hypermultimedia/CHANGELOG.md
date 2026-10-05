@@ -8,15 +8,40 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
-The next release is a minor bump (issue #379).
+The next release is a minor bump (issues #379 and #391).
 
 ### Highlights
 
 - A corner drag keeps the aspect ratio on `image`, `video`, `youtube`,
   `vimeo` and `loom`, as in Word, Google Docs and Notion.
+- The `…` overflow menu is a keyboard menu. It uses the docs.plus menu row,
+  and Delete sits last in danger ink.
+
+### Added
+
+- `--hm-toolbar-danger` sets the Delete row ink in the overflow menu. The
+  default is `light-dark(#dc2626, #f87171)`. See #391.
 
 ### Changed
 
+- Overflow menu rows match the docs.plus menu row: `8px 10px` padding, 14px
+  text at weight 500, and 16px icons. The panel has `6px` padding and a
+  `176px` minimum width. Submenu rows use the same values. A row with
+  keyboard focus also shows a 2px `--hm-toolbar-active-fg` outline.
+- Group labels in the overflow menu are sentence case, not uppercase.
+- A submenu inside the overflow menu has no border, shadow or padding of its
+  own, so the menu shows one frame.
+- Delete sits last in the overflow menu, after a divider.
+- `dividerAfter` now draws a divider in the overflow menu too, not only in
+  the inline bar.
+- The overflow menu is `role="menu"`. Action rows are `menuitem`, or
+  `menuitemcheckbox` when the action declares `isActive`. Each submenu is a
+  labelled group, and its pressed rows become `menuitemradio`, such as the X
+  Size and Theme options.
+- Arrow keys, `Home` and `End` move between rows, and a letter key jumps to
+  the next row that starts with it. `Escape` closes the menu and returns
+  focus to `…`. `Enter` or `Space` on `…` opens the menu on its first row.
+  A row picked with `Enter` or `Space` also returns focus to `…`.
 - A corner handle on `image`, `video`, `youtube`, `vimeo` and `loom` always
   keeps the aspect ratio. `Shift` no longer changes a resize. Side handles
   still resize one axis. See #379.
@@ -28,6 +53,9 @@ The next release is a minor bump (issue #379).
 
 ### Fixed
 
+- `Enter` on a button in the built-in media toolbar no longer edits the
+  document. ProseMirror took the key, so the button never clicked. A toolbar
+  from a custom `mediaToolbar` factory must stop these keys itself. See #391.
 - Backspace no longer deletes a media node in one press (#376). In an empty
   line under media, the first Backspace removes the line and keeps the media.
   The caret stays after the media. The next Backspace selects the media, and
@@ -55,6 +83,9 @@ The next release is a minor bump (issue #379).
 - The Quickstart image is a photo served from docs.plus.
 - The image README and `docs/resize-and-loading.md` describe the corner rule
   for every resizable node. `docs/api.md` drops the `Shift` row.
+- `docs/media-toolbar.md` describes the overflow menu keys and roles.
+  `docs/styling.md` lists `--hm-toolbar-danger` and
+  `.media-toolbar__menu-divider`.
 
 ### Internal
 

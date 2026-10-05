@@ -11,6 +11,7 @@
   --hm-toolbar-hover: light-dark(#f3f4f6, #374151);
   --hm-toolbar-active: light-dark(#e5edff, #1e3a8a);
   --hm-toolbar-active-fg: light-dark(#1d4ed8, #bfdbfe);
+  --hm-toolbar-danger: light-dark(#dc2626, #f87171);
   /* Elevation matches the docs.plus floating-surface language: 10px shells with a
      two-layer overlay shadow (anchored panels), 8px inner controls — lockstep with
      extension-hyperlink's --hl-shadow/--hl-radius. */
@@ -101,51 +102,87 @@
   background: var(--hm-toolbar-border);
 }
 
+/* Rows match the docs.plus menu row as literals: 8px 10px, 14/20 at 500, 16px icons. */
 .media-toolbar__menu,
 .media-toolbar__submenu {
   display: flex;
   flex-direction: column;
-  min-width: 160px;
-  padding: 4px;
+  min-width: 176px;
+  padding: 6px;
   border: 1px solid var(--hm-toolbar-border);
   border-radius: 10px;
   background: var(--hm-toolbar-bg);
   box-shadow: var(--hm-toolbar-shadow);
 }
+/* An expanded submenu inside the overflow menu shares its frame. */
+.media-toolbar__menu .media-toolbar__submenu {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
 .media-toolbar__menu-item,
 .media-toolbar__submenu-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 5px 8px;
+  padding: 8px 10px;
   border: 0;
   border-radius: 8px;
   background: transparent;
   color: var(--hm-toolbar-fg);
   font: inherit;
-  /* Match the bar's compact scale — `font: inherit` alone resolves to the page's editor size. */
-  font-size: 12px;
+  /* `font: inherit` alone resolves to the page's editor size. */
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
   text-align: left;
   cursor: pointer;
   transition: background-color 120ms ease;
 }
+.media-toolbar__menu-item svg,
+.media-toolbar__submenu-item svg {
+  width: 16px;
+  height: 16px;
+  opacity: 0.7;
+}
 .media-toolbar__menu-item:hover,
-.media-toolbar__submenu-item:hover {
+.media-toolbar__menu-item:focus-visible,
+.media-toolbar__submenu-item:hover,
+.media-toolbar__submenu-item:focus-visible {
   background: var(--hm-toolbar-hover);
+}
+/* The outline paints over the fill, so keyboard focus stays apart from a hovered row. */
+.media-toolbar__menu-item:focus-visible,
+.media-toolbar__submenu-item:focus-visible {
+  outline: 2px solid var(--hm-toolbar-active-fg);
+  outline-offset: -2px;
 }
 .media-toolbar__menu-item--active,
 .media-toolbar__submenu-item--active {
   background: var(--hm-toolbar-active);
   color: var(--hm-toolbar-active-fg);
 }
+.media-toolbar__menu-item[data-action-id='delete'] {
+  color: var(--hm-toolbar-danger);
+}
+.media-toolbar__menu-item[data-action-id='delete'] svg {
+  opacity: 1;
+}
+.media-toolbar__menu-divider {
+  flex-shrink: 0;
+  height: 1px;
+  margin: 4px 0;
+  background: var(--hm-toolbar-border);
+}
 .media-toolbar__menu-heading,
 .media-toolbar__submenu-heading {
-  margin: 6px 8px 2px;
-  font-size: 11px;
+  margin: 4px 10px 2px;
+  font-size: 13px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  line-height: 20px;
   color: var(--hm-caption-fg);
 }
 

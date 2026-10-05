@@ -41,8 +41,8 @@ export function actionButton(
   btn.type = 'button'
   btn.dataset.actionId = action.id
   const active = action.isActive?.(ctx) ?? false
-  // Only toggle-semantics actions (those declaring isActive) announce a pressed state.
-  if (action.isActive) btn.setAttribute('aria-pressed', active ? 'true' : 'false')
+  // Only toggle-semantics actions (those declaring isActive) announce a state.
+  const state = action.isActive ? String(active) : null
   const iconMarkup = action.icon?.(ctx) ?? resolveMediaToolbarIcon(ctx, action.id, icons) ?? null
   const label = action.label(ctx)
 
@@ -56,6 +56,7 @@ export function actionButton(
 
   if (variant === 'inline') {
     btn.className = 'media-toolbar__button' + (active ? ' media-toolbar__button--active' : '')
+    if (state) btn.setAttribute('aria-pressed', state)
     if (iconMarkup) btn.innerHTML = iconMarkup
     else {
       btn.append(labelSpan())
@@ -69,6 +70,8 @@ export function actionButton(
     }
   } else {
     btn.className = 'media-toolbar__menu-item' + (active ? ' media-toolbar__menu-item--active' : '')
+    btn.setAttribute('role', state ? 'menuitemcheckbox' : 'menuitem')
+    if (state) btn.setAttribute('aria-checked', state)
     if (iconMarkup) btn.innerHTML = iconMarkup
     btn.append(labelSpan())
   }
@@ -152,28 +155,120 @@ export function closeToolbarPopover(): void {
   getDefaultController().close()
 }
 
+let groupHeadingId = 0
+
+/** A `role="group"` named by its visible heading, so each set of rows announces apart. */
+export function labelledGroup(
+  className: string,
+  headingClassName: string,
+  title: string,
+  children: HTMLElement[]
+): HTMLElement {
+  const group = document.createElement('div')
+  group.className = className
+  group.setAttribute('role', 'group')
+  const heading = document.createElement('p')
+  heading.className = headingClassName
+  heading.id = `hm-group-heading-${++groupHeadingId}`
+  heading.textContent = title
+  group.setAttribute('aria-labelledby', heading.id)
+  group.append(heading, ...children)
+  return group
+}
+
+/** Arrows, Home/End, first-letter typeahead and focus return to ⋯, as a native menu. */
+function bindMenuKeys(menu: HTMLElement, trigger: HTMLElement): void {
+  // A keyboard pick closes the menu, so focus goes back to ⋯ first. A dialog the row opens
+  // can still take focus after this.
+  menu.addEventListener(
+    'click',
+    (event) => {
+      if (event.detail === 0) trigger.focus()
+    },
+    true
+  )
+  menu.addEventListener('keydown', (event) => {
+    // The engine's root listener still hides the menu after focus returns to ⋯.
+    if (event.key === 'Escape') {
+      trigger.focus()
+      return
+    }
+    const rows = Array.from(
+      menu.querySelectorAll<HTMLButtonElement>('[role^="menuitem"]:not(:disabled)')
+    )
+    const current = rows.indexOf(document.activeElement as HTMLButtonElement)
+    let next: number
+    if (event.key === 'ArrowDown') next = (current + 1) % rows.length
+    else if (event.key === 'ArrowUp') next = current < 1 ? rows.length - 1 : current - 1
+    else if (event.key === 'Home') next = 0
+    else if (event.key === 'End') next = rows.length - 1
+    else if (
+      event.key.length === 1 &&
+      event.key !== ' ' &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey
+    ) {
+      const key = event.key.toLowerCase()
+      const ordered = [...rows.slice(current + 1), ...rows.slice(0, current + 1)]
+      const match = ordered.find((row) => row.textContent?.trim().toLowerCase().startsWith(key))
+      if (!match) return
+      next = rows.indexOf(match)
+    } else return
+    event.preventDefault()
+    rows[next]?.focus()
+  })
+}
+
 /** Vertical overflow menu: action rows + inline-expanded submenu sections. */
 export function buildOverflowMenu(
   ctx: MediaActionContext,
   menuActions: MediaAction[],
+  trigger: HTMLElement,
   icons?: MediaToolbarIconsResolver | null
 ): HTMLElement {
   const menu = document.createElement('div')
   menu.className = 'media-toolbar__menu'
-  for (const action of menuActions) {
-    if (action.renderSubmenu) {
-      const section = document.createElement('div')
-      section.className = 'media-toolbar__menu-section'
-      const heading = document.createElement('p')
-      heading.className = 'media-toolbar__menu-heading'
-      heading.textContent = action.label(ctx)
-      section.append(heading, action.renderSubmenu(ctx))
-      menu.append(section)
-      continue
-    }
-    const row = actionButton(action, ctx, 'row', icons)
-    row.onclick = () => action.run?.(ctx)
-    menu.append(row)
+  menu.setAttribute('role', 'menu')
+  menu.setAttribute('aria-label', 'More actions')
+  const endsInDivider = () =>
+    menu.lastElementChild?.classList.contains('media-toolbar__menu-divider') ?? false
+  const appendDivider = () => {
+    if (!menu.lastElementChild || endsInDivider()) return
+    const divider = document.createElement('div')
+    divider.className = 'media-toolbar__menu-divider'
+    divider.setAttribute('role', 'separator')
+    menu.append(divider)
   }
+  for (const action of menuActions) {
+    // Delete sits apart after a divider, as in every docs.plus menu.
+    if (action.id === 'delete') appendDivider()
+    if (action.renderSubmenu) {
+      const submenu = action.renderSubmenu(ctx)
+      // Submenu rows can be host markup. Inside the menu, a pressed row is a single-choice option.
+      submenu.querySelectorAll('button:not([role])').forEach((row) => {
+        const pressed = row.getAttribute('aria-pressed')
+        row.setAttribute('role', pressed ? 'menuitemradio' : 'menuitem')
+        if (!pressed) return
+        row.setAttribute('aria-checked', pressed)
+        row.removeAttribute('aria-pressed')
+      })
+      menu.append(
+        labelledGroup(
+          'media-toolbar__menu-section',
+          'media-toolbar__menu-heading',
+          action.label(ctx),
+          [submenu]
+        )
+      )
+    } else {
+      const row = actionButton(action, ctx, 'row', icons)
+      row.onclick = () => action.run?.(ctx)
+      menu.append(row)
+    }
+    if (action.dividerAfter) appendDivider()
+  }
+  if (endsInDivider()) menu.lastElementChild?.remove()
+  bindMenuKeys(menu, trigger)
   return menu
 }

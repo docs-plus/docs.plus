@@ -26,6 +26,8 @@ Align places the node Left, Center, Right, Wrap left or Wrap right. Those five l
 
 View original opens the `src` in a new tab. Its own allowlist admits `https:`, `http:`, `blob:` and a root-relative path, so an uploaded blob still opens. Download fetches the file and saves it, then falls back to opening a tab when the fetch fails.
 
+The `…` overflow menu is a `role="menu"` named "More actions". `Enter` or `Space` on `…` opens it and focuses the first row. The arrow keys, `Home` and `End` move between rows, and a letter key jumps to the next row that starts with it. `Escape` closes the menu and returns focus to `…`, and so does a row picked with `Enter` or `Space`. Action rows are `menuitem`, or `menuitemcheckbox` when the action declares `isActive`. Each submenu is a labelled group, and its pressed rows become `menuitemradio`, such as the X Size and Theme options. Delete sits last, after a divider.
+
 Replace URL sits in the `…` overflow menu. It opens the URL form in a popover anchored below the node, and it flips above the node when the space below is too small. Confirming swaps the node's `src` in place, keeping the same node, caption, size and placement. It validates against the node's own provider, so a YouTube node only accepts another YouTube URL. It never changes the node type. It stays available on a node whose `src` is empty or broken, because that is how you repair a node with a broken `src`.
 
 ## Customizing actions
@@ -67,7 +69,7 @@ HyperMultimediaKit.configure({
 })
 ```
 
-A `MediaAction` is `{ id, label, icon?, placement: 'inline' | 'overflow', isVisible?(ctx), isActive?(ctx), run?(ctx), renderSubmenu?(ctx), dividerAfter? }`. `run` and `renderSubmenu` are mutually exclusive: with both set, `renderSubmenu` wins and `run` never fires. A built-in action omits `icon`. The Material Symbols defaults resolve by `id`, plus `align:<placement>` for alignment. A custom action can omit `icon` too and supply SVG through `mediaToolbarIcons`, or set `icon` for a one-off override. An action with no icon renders as a text button carrying `.media-toolbar__button--text`. `dividerAfter` renders a separator after the action, as the Margin button does.
+A `MediaAction` is `{ id, label, icon?, placement: 'inline' | 'overflow', isVisible?(ctx), isActive?(ctx), run?(ctx), renderSubmenu?(ctx), dividerAfter? }`. `run` and `renderSubmenu` are mutually exclusive: with both set, `renderSubmenu` wins and `run` never fires. A built-in action omits `icon`. The Material Symbols defaults resolve by `id`, plus `align:<placement>` for alignment. A custom action can omit `icon` too and supply SVG through `mediaToolbarIcons`, or set `icon` for a one-off override. An action with no icon renders as a text button carrying `.media-toolbar__button--text`. `dividerAfter` renders a separator after the action in either row, as the Margin button does in the inline bar.
 
 `mediaToolbarIcons` swaps SVG markup without touching toolbar layout. Keys:
 
@@ -114,6 +116,8 @@ HyperMultimediaKit.configure({
 A factory that returns `null` still keeps the resize gripper and the delete-key handling. Only `resizeGripper: false` removes both.
 
 The kit stamps `data-hm-toolbar` on the mounted element, reuses that element on re-hover, and removes it on dismissal. No class is required. You own positioning inside the media wrapper. Add the `.media-toolbar` class to adopt the built-in top-right skin. [Class names](./styling.md#class-names) holds the rest of the contract.
+
+The toolbar mounts inside the editor DOM, so ProseMirror sees its key events. Stop `Enter` and `Space` at `keydown`, and every `keypress`, on your toolbar root, as the built-in toolbar does. Otherwise `Enter` on a button edits the document.
 
 Two rules bind action handlers:
 

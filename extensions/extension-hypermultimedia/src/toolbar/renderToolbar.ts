@@ -22,6 +22,13 @@ export function renderMediaToolbar(ctx: MediaActionContext, actions: MediaAction
   bar.setAttribute('data-node-type', ctx.nodeType)
   bar.setAttribute('role', 'toolbar')
   bar.setAttribute('aria-label', 'Media toolbar')
+  // The bar sits inside the editor DOM, so ProseMirror sees its keys. Stop Enter and Space at
+  // keydown, and every keypress: Enter would edit the document, and keypress cancels the click
+  // on node-selected media. Backspace and Delete still reach the editor's own media keys.
+  bar.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') event.stopPropagation()
+  })
+  bar.addEventListener('keypress', (event) => event.stopPropagation())
 
   for (const action of inline) {
     const btn = actionButton(action, ctx, 'inline', kitIcons, tooltipDetaches)
@@ -45,12 +52,17 @@ export function renderMediaToolbar(ctx: MediaActionContext, actions: MediaAction
     more.type = 'button'
     more.className = 'media-toolbar__button media-toolbar__more'
     more.setAttribute('aria-label', 'More actions')
+    more.setAttribute('aria-haspopup', 'menu')
     more.innerHTML = resolveMediaToolbarIcon(ctx, 'more', kitIcons) ?? ''
     tooltipDetaches.push(attachTooltip(more, 'More actions'))
-    more.onclick = () =>
-      openToolbarPopover(more, buildOverflowMenu(ctx, overflow, kitIcons), 'media-menu', {
-        positionReference: bar
-      })
+    more.onclick = (event) => {
+      const menu = buildOverflowMenu(ctx, overflow, more, kitIcons)
+      openToolbarPopover(more, menu, 'media-menu', { positionReference: bar })
+      // Enter or Space clicks with detail 0; a keyboard open moves focus to the first row.
+      if (event.detail === 0 && menu.isConnected) {
+        menu.querySelector<HTMLElement>('[role^="menuitem"]:not(:disabled)')?.focus()
+      }
+    }
     bar.append(more)
   }
 
