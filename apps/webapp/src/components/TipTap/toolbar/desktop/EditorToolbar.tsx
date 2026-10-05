@@ -61,7 +61,13 @@ const ICON_SIZE = 16
 
 /* ── Component ── */
 
-const EditorToolbar = () => {
+interface EditorToolbarProps {
+  /** The pad passes both; the `/editor` playground has no pad well, so it gets no QR toggle. */
+  isQrShown?: boolean
+  onQrShownChange?: (shown: boolean) => void
+}
+
+const EditorToolbar = ({ isQrShown, onQrShownChange }: EditorToolbarProps) => {
   const editor = useStore((state) => state.settings.editor.instance)
   const loading = useStore((state) => state.settings.editor.loading)
   const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
@@ -69,6 +75,7 @@ const EditorToolbar = () => {
   const hasActiveFilters = useStore(
     (state) => state.settings.editor.filterResult.sortedSlugs.length > 0
   )
+  const isPrivate = useStore((state) => Boolean(state.settings.metadata?.isPrivate))
   const user = useAuthStore((state) => state.profile)
   const inProgressBookmarks = useChatStore(selectInProgressBookmarkCount)
   const { isOpen: isDocumentsOpen, setIsOpen: setDocumentsOpen } = useSettingsModal()
@@ -339,6 +346,19 @@ const EditorToolbar = () => {
             </PopoverContent>
             <filterOpenRequest.Listener />
           </Popover>
+
+          {/* A Private pad shows no QR, so the toggle greys out like any tool that does not apply. */}
+          {onQrShownChange && (
+            <ToolbarButton
+              data-testid="toolbar-qr"
+              tooltip="Document QR code"
+              isActive={isQrShown}
+              aria-pressed={Boolean(isQrShown)}
+              disabled={isPrivate}
+              onClick={() => onQrShownChange(!isQrShown)}>
+              <Icons.qrCode size={ICON_SIZE} />
+            </ToolbarButton>
+          )}
 
           <ToolbarDivider />
 

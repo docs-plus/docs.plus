@@ -8,10 +8,11 @@ import ResizeHandle from '@components/ui/ResizeHandle'
 import { useUnreadSync } from '@hooks/useUnreadSync'
 import { useStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
-import { memo, type RefObject, useRef } from 'react'
+import { memo, type RefObject, useCallback, useRef, useState } from 'react'
 
 import { useSyncChatPanelHeight, useTocResize } from '../hooks'
 import EditorContent from './EditorContent'
+import { PadQrCode } from './PadQrCode'
 import { PAD_MAIN_ID } from './SkipToPadMain'
 import TOC from './Toc'
 
@@ -66,6 +67,16 @@ const DesktopPadFind = memo(function DesktopPadFind() {
 
 const DesktopEditor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)
+  const documentId = useStore((state) => state.settings.metadata?.documentId)
+  const isPrivate = useStore((state) => Boolean(state.settings.metadata?.isPrivate))
+  // Session-only, like the tick rail. A pad switch keeps this layout mounted, so the
+  // shown state names its pad and a switch reads it as hidden. A Private pad shows no QR.
+  const [qrDocumentId, setQrDocumentId] = useState<string | null>(null)
+  const isQrShown = !isPrivate && documentId != null && qrDocumentId === documentId
+  const setQrShown = useCallback(
+    (shown: boolean) => setQrDocumentId(shown ? (documentId ?? null) : null),
+    [documentId]
+  )
 
   const {
     tocRef,
@@ -115,7 +126,7 @@ const DesktopEditor = () => {
       {/* No entry animation: at S1 this still shows ToolbarSkeleton — identical pixels
           to the page skeleton's strip; fading it would blank and re-show the same bones. */}
       <div className="toolbars bg-base-100 border-base-300 fixed bottom-0 z-[9] h-auto w-full border-t sm:relative sm:block sm:border-t-0">
-        <EditorToolbar />
+        <EditorToolbar isQrShown={isQrShown} onQrShownChange={setQrShown} />
       </div>
 
       <div className="editor relative flex size-full min-h-0 flex-row-reverse bg-[var(--pad-well)]">
@@ -130,6 +141,7 @@ const DesktopEditor = () => {
                 <TocTickRail onOpenWide={openWide} />
               </div>
             )}
+            {isQrShown && <PadQrCode />}
           </div>
 
           <DesktopPadChat />

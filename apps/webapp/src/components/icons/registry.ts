@@ -79,6 +79,7 @@ import {
   LuPlay,
   LuPlus,
   LuPrinter,
+  LuQrCode,
   LuRedo2,
   LuRefreshCw,
   LuRemoveFormatting,
@@ -190,6 +191,7 @@ export const Icons = {
   pause: LuPause,
   maximize2: LuMaximize2,
   fullscreen: LuFullscreen,
+  qrCode: LuQrCode,
 
   calendar: LuCalendar,
   mapPin: LuMapPin,
