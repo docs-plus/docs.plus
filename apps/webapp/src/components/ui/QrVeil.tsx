@@ -20,5 +20,3 @@ export function QrVeil({ icon: Icon }: QrVeilProps) {
     </span>
   )
 }
-
-export default QrVeil
