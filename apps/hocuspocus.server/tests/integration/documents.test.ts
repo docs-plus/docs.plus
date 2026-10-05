@@ -181,21 +181,13 @@ describe('Documents API', () => {
       }
     })
 
-    test('pins favorites first only on an owner live list', async () => {
+    test('Trash and the fleet keep a plain order with no Favorite pin', async () => {
       let captured: { orderBy?: unknown } | undefined
       mockPrisma.documentMetadata.findMany = async (args: { orderBy?: unknown }) => {
         captured = args
         return []
       }
       mockPrisma.documentMetadata.count = async () => 0
-
-      await searchDocuments(mockPrisma, {
-        ownerId: 'user-123',
-        requesterId: 'user-123',
-        limit: 10,
-        offset: 0
-      })
-      expect(captured?.orderBy).toEqual([{ favorites: { _count: 'desc' } }, { updatedAt: 'desc' }])
 
       await searchDocuments(mockPrisma, {
         ownerId: 'user-123',
@@ -232,12 +224,6 @@ describe('Documents API', () => {
 
       await searchDocuments(mockPrisma, { ...base, requesterId: 'user-456', ownerId: 'user-123' })
       expect(captured?.orderBy).toEqual({ updatedAt: 'desc' })
-
-      await searchDocuments(mockPrisma, { ...base, requesterId: 'user-123', ownerId: 'user-123' })
-      expect(captured?.orderBy).toEqual([
-        { favorites: { _count: 'desc' } },
-        { lastOpenedAt: { sort: 'desc', nulls: 'last' } }
-      ])
     })
 
     test('defaults to updatedAt_desc when sort is omitted', async () => {
@@ -528,16 +514,43 @@ describe('Documents API', () => {
     })
 
     test('scope=owned is the owner live list of the token subject', async () => {
-      let captured: any
-      mockPrisma.documentMetadata.findMany = async (args: any) => {
-        captured = args
-        return []
-      }
+      const { count, findMany } = fakePrisma(rows).documentMetadata
+      Object.assign(mockPrisma.documentMetadata, { count, findMany })
       const response = await testServer.get('/api/documents?scope=owned', {
         token: 'valid-test-token'
       })
       expect(response.status).toBe(200)
-      expect(captured.where).toEqual({ ownerId: 'user-123', deletedAt: null })
+      const { data } = await response.json()
+      expect(slugs(data)).toEqual(['own-fav', 'own-private', 'own-opened'])
+      expect(data.total).toBe(3)
+    })
+
+    test("the owner live list pins only the caller's own favorites", async () => {
+      // ME's star sits on the oldest row and OTHER's on the newest, so a plain sort fails.
+      const owned = [
+        row('mine-starred', { ownerId: ME, updatedAt: day(2), favorites: [{ userId: ME }] }),
+        row('other-starred', {
+          ownerId: ME,
+          updatedAt: day(9),
+          lastOpenedAt: day(9),
+          favorites: [{ userId: OTHER }]
+        }),
+        row('plain', { ownerId: ME, updatedAt: day(5), lastOpenedAt: day(5) })
+      ]
+      for (const sort of ['updatedAt_desc', 'lastOpenedAt_desc'] as const) {
+        const result = await searchDocuments(fakePrisma(owned), {
+          ownerId: ME,
+          requesterId: ME,
+          sort,
+          limit: 10,
+          offset: 0
+        })
+        expect(slugs(result)).toEqual(['mine-starred', 'other-starred', 'plain'])
+        expect(result.total).toBe(3)
+        const bySlug = Object.fromEntries(result.docs.map((d: any) => [d.slug, d]))
+        expect(bySlug['mine-starred'].isFavorite).toBe(true)
+        expect(bySlug['other-starred'].isFavorite).toBe(false)
+      }
     })
   })
 

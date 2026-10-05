@@ -199,8 +199,8 @@ const OWNER_LIST_SELECT = {
 } as const
 
 /**
- * Owner live lists pin this user's favorites first. Trash and the fleet skip it.
  * Only the owner live list may sort by `lastOpenedAt`; elsewhere the order would leak it.
+ * The Favorite pin is a tier in `findTieredPage`, never part of this order.
  */
 function buildDocumentsOrderBy(args: {
   deleted?: boolean
@@ -212,13 +212,11 @@ function buildDocumentsOrderBy(args: {
     requested.field === 'lastOpenedAt' && !args.ownerLiveList
       ? SORT_FIELD_MAP.updatedAt_desc
       : requested
-  const sortOrder = args.deleted
+  return args.deleted
     ? { deletedAt: 'desc' as const }
     : field === 'lastOpenedAt'
       ? { lastOpenedAt: { sort: dir, nulls: 'last' as const } }
       : { [field]: dir }
-  if (!args.ownerLiveList) return sortOrder
-  return [{ favorites: { _count: 'desc' as const } }, sortOrder]
 }
 
 type DocumentWhere = Prisma.DocumentMetadataWhereInput
@@ -408,37 +406,35 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
           ? ownerFavoritesSelect
           : { ...PUBLIC_METADATA_SELECT, preview: true as const }
       ;[docs, total] = await findTieredPage(prisma, tiers, memberSelect, offset, limit)
-    } else if (searchClauses) {
-      const searchWhere = {
-        OR: searchClauses,
+    } else {
+      const baseWhere: Prisma.DocumentMetadataWhereInput = {
+        ...(searchClauses ? { OR: searchClauses } : {}),
         ...(ownerWhere ?? {}),
         ...privacyWhere,
         ...deletedWhere
       }
 
-      ;[docs, total] = await Promise.all([
-        prisma.documentMetadata.findMany({
-          skip: offset,
-          take: limit,
-          where: searchWhere,
-          select: listSelect,
-          orderBy
-        }),
-        prisma.documentMetadata.count({ where: searchWhere })
-      ])
-    } else {
-      const listWhere = { ...(ownerWhere ?? {}), ...privacyWhere, ...deletedWhere }
-
-      ;[docs, total] = await Promise.all([
-        prisma.documentMetadata.findMany({
-          skip: offset,
-          take: limit,
-          where: listWhere,
-          select: listSelect,
-          orderBy
-        }),
-        prisma.documentMetadata.count({ where: listWhere })
-      ])
+      if (ownerLiveList) {
+        // Pin with tiers: `favorites: { _count }` counts every user's stars, so a row
+        // starred only by someone else pinned with no star. Same rule as the Merged list.
+        const mine = { userId: requesterId }
+        const tiers: ListTier[] = [
+          { where: { AND: [baseWhere, { favorites: { some: mine } }] }, orderBy },
+          { where: { AND: [baseWhere, { favorites: { none: mine } }] }, orderBy }
+        ]
+        ;[docs, total] = await findTieredPage(prisma, tiers, listSelect, offset, limit)
+      } else {
+        ;[docs, total] = await Promise.all([
+          prisma.documentMetadata.findMany({
+            skip: offset,
+            take: limit,
+            where: baseWhere,
+            select: listSelect,
+            orderBy
+          }),
+          prisma.documentMetadata.count({ where: baseWhere })
+        ])
+      }
     }
 
     const previewList = ownerPreviewList || Boolean(membership)

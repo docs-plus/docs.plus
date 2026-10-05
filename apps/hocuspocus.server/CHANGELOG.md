@@ -266,6 +266,12 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Fixed
 
+- **The Owner live list pins only your own Favorites.** `GET /documents`
+  with your own `ownerId` ordered by the count of every user's Favorite
+  rows. A pad starred only by someone else pinned with no star, and Command
+  jump, Home and Settings 'Owned by me' showed it out of order. The list now
+  pins with the same rule as the Merged list.
+
 - **A content write to a cold document waits for its own commit (#229).**
   Each document has a per-document lock, and a `200` carries the saved
   `version`. A save that cannot be confirmed in 20 s answers `503` with
