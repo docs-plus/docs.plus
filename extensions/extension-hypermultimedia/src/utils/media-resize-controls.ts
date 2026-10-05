@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/core'
-import { TextSelection, type Transaction } from '@tiptap/pm/state'
+import type { Transaction } from '@tiptap/pm/state'
 
 import { updateToolbarContextNodePos } from '../toolbar/contextRegistry'
 import { closeMediaToolbar, openMediaToolbar } from '../toolbar/mount'
@@ -370,9 +370,9 @@ function handleMediaDeleteKey(editor: Editor, event: KeyboardEvent): boolean {
   if (!getControlsState(editor).activeTarget) return false
   if (isFormControlInMediaUI(document.activeElement)) return false
   if (isEditingMediaCaption(document.activeElement)) return false
-  // A focused caret in text must keep editing text. Hover controls only own the
-  // key when the node is selected or focus is outside the editor.
-  if (editor.view.hasFocus() && editor.state.selection instanceof TextSelection) return false
+  // A focused editor owns the key: its keymap selects media before deleting it.
+  // PM ignores `defaultPrevented`, so deleting here too would act twice in one press.
+  if (editor.view.hasFocus()) return false
   if (!deleteActiveMediaNode(editor)) return false
 
   event.preventDefault()

@@ -8,6 +8,19 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
+### Fixed
+
+- Backspace no longer deletes a media node in one press (#376). In an empty
+  line under media, the first Backspace removes the line and keeps the media.
+  The caret stays after the media. The next Backspace selects the media, and
+  one more deletes it.
+- Delete works the same way forward. Media right after the caret is selected
+  first, and the next Delete removes it.
+- This holds for every media node, inline images included.
+- A selected media node shows a 1px frame in `--hm-resize-border`.
+- The hover delete key now acts only while the editor has no focus. A focused
+  editor's own keys select media first.
+
 ### Documentation
 
 - The README is a short start page: why to use it, install, a Quickstart

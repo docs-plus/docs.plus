@@ -137,3 +137,14 @@ html.hypermultimedia--resize-dragging * {
   user-select: none !important;
   cursor: inherit;
 }
+
+/* ProseMirror puts this class on the selected node view root (keyboard or click select). */
+.ProseMirror-selectednode > .hm-media-host::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 1px solid var(--hm-resize-border, #1a73e8);
+  border-radius: inherit;
+  pointer-events: none;
+}

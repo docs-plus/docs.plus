@@ -151,20 +151,23 @@ Pass provider player options on the insert call — see [Embeds](./embeds.md).
 
 ## Keyboard shortcuts
 
-The kit declares no `addKeyboardShortcuts`. A `keydown` listener binds every key below. The listener sits on the caption element, the Replace URL field, the resize drag, or the document.
+The kit binds Backspace and Delete next to media through a keymap at priority 101, ahead of Tiptap's core keymap. A `keydown` listener binds every other key below. The listener sits on the caption element, the Replace URL field, the resize drag, or the document.
 
-| Shortcut               | Context            | Action                                                                               |
-| ---------------------- | ------------------ | ------------------------------------------------------------------------------------ |
-| `Enter`                | `media caption`    | Commits the caption text, blurs the field, and returns focus to the editor.          |
-| `Enter`                | `replace-URL form` | Submits the URL. An invalid URL shows an inline error and the form stays open.       |
-| `Escape`               | `media toolbar`    | Dismisses the toolbar and refocuses the editor, once focus sits on a toolbar button. |
-| `Escape`               | `resize drag`      | Cancels the drag. The node keeps the size it had before the drag started.            |
-| `Shift` (held)         | `resize drag`      | Locks the aspect ratio while a corner handle moves.                                  |
-| `Backspace` / `Delete` | `document`         | Deletes the media node under the active hover controls.                              |
+| Shortcut               | Context            | Action                                                                                |
+| ---------------------- | ------------------ | ------------------------------------------------------------------------------------- |
+| `Enter`                | `media caption`    | Commits the caption text, blurs the field, and returns focus to the editor.           |
+| `Enter`                | `replace-URL form` | Submits the URL. An invalid URL shows an inline error and the form stays open.        |
+| `Escape`               | `media toolbar`    | Dismisses the toolbar and refocuses the editor, once focus sits on a toolbar button.  |
+| `Escape`               | `resize drag`      | Cancels the drag. The node keeps the size it had before the drag started.             |
+| `Shift` (held)         | `resize drag`      | Locks the aspect ratio while a corner handle moves.                                   |
+| `Backspace` / `Delete` | `editor`           | Next to a media node, selects it first. The next press deletes it.                    |
+| `Backspace` / `Delete` | `document`         | Deletes the media node under the active hover controls while the editor has no focus. |
 
-Hover opens the media toolbar and moves no focus. So `Escape` acts only after a click or a tab into a toolbar button. The `Escape` handler also skips the key when focus sits inside a `.floating-popover`, because the popover closes itself first. The delete-key handler ignores `Backspace` and `Delete` with `Meta`, `Control` or `Alt`, and during IME composition. It also ignores them inside a media form control, inside the caption, and while the focused editor holds a text selection.
+In an empty line under media, Backspace removes the line and keeps the media. The caret then sits after the media. For a block node it is a gap cursor, which needs Tiptap's `Gapcursor` extension. StarterKit includes it. Delete right after the media removes the empty line under it. Delete in an empty line above block media removes the line and selects the media.
 
-The `x` node sets `priority: 101`, above the Tiptap default of `100`. That number decides parse-rule order, not key order. It lets `blockquote.twitter-tweet` parse as an X embed before the StarterKit blockquote rule claims it. No extension in the kit contests a key with another.
+Hover opens the media toolbar and moves no focus. So `Escape` acts only after a click or a tab into a toolbar button. The `Escape` handler also skips the key when focus sits inside a `.floating-popover`, because the popover closes itself first. The delete-key handler ignores `Backspace` and `Delete` with `Meta`, `Control` or `Alt`, and during IME composition. It also ignores them inside a media form control, inside the caption, and whenever the editor has focus.
+
+The `x` node sets `priority: 101`, above the Tiptap default of `100`. That number decides parse-rule order, not key order. It lets `blockquote.twitter-tweet` parse as an X embed before the StarterKit blockquote rule claims it. No other kit keymap binds Backspace or Delete.
 
 ## Caveats
 

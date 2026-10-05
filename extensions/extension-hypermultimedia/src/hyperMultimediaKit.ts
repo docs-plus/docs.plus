@@ -1,5 +1,6 @@
 import { Extension } from '@tiptap/core'
 
+import { MediaDeleteKeys } from './extensions/mediaDeleteKeys'
 import { MediaResizeControls } from './extensions/mediaResizeControls'
 import { MediaResizeGripper } from './extensions/mediaResizeGripper'
 import { HYPER_MULTIMEDIA_KIT_EXTENSION_NAME } from './kitStorage'
@@ -124,6 +125,7 @@ export const HyperMultimediaKit = Extension.create<HyperMultimediaKitOptions>({
           trackedNodes: mediaNodeNames
         })
       )
+      extensions.push(MediaDeleteKeys.configure({ mediaNodes: mediaNodeNames }))
     }
 
     return extensions

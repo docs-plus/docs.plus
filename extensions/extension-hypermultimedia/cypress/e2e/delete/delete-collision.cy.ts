@@ -29,7 +29,7 @@ describe('delete-key collision between text editing and hover controls', () => {
     cy.nodeCount('image').should('eq', 1)
   })
 
-  it('Backspace at the start of the paragraph after an image deletes only the image, keeping the text intact', () => {
+  it('Backspace at the start of the paragraph after an image selects the image, and the next Backspace deletes it', () => {
     cy.getEditor().then((editor) => {
       editor.commands.focus(13)
     })
@@ -48,21 +48,20 @@ describe('delete-key collision between text editing and hover controls', () => {
     cy.get('#editor .ProseMirror').should('have.focus')
     cy.realPress('Backspace')
 
-    // Upstream joinBackward deletes a leaf atom before the cut, so one
-    // Backspace removes the image through the standard edit pipeline.
-    // The surrounding paragraphs stay untouched and the caret stays a text
-    // cursor (no NodeSelection, no hover-controls involvement).
+    // No single press deletes media: the first one selects it, visibly.
+    cy.nodeCount('image').should('eq', 1)
+    cy.get('#editor .hypermultimedia--image__content.ProseMirror-selectednode').should('exist')
+    cy.getEditor().then((editor) => {
+      const selection = editor.state.selection as { node?: { type: { name: string } } }
+      expect(selection.node?.type.name, 'NodeSelection on the image').to.eq('image')
+    })
+
+    cy.get('#editor .ProseMirror').should('have.focus')
+    cy.realPress('Backspace')
+
     cy.nodeCount('image').should('eq', 0)
     cy.get('#editor .ProseMirror p').first().should('have.text', 'hello world')
     cy.get('#editor .ProseMirror p').last().should('have.text', 'below')
-    cy.getEditor().then((editor) => {
-      const selection = editor.state.selection as {
-        node?: { type: { name: string } }
-        empty: boolean
-      }
-      expect(selection.node, 'caret selection, not a NodeSelection').to.eq(undefined)
-      expect(selection.empty, 'empty cursor after the deletion').to.eq(true)
-    })
   })
 })
 

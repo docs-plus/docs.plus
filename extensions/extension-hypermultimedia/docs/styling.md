@@ -32,7 +32,7 @@ The X embed plate keys on the node's own `theme` attribute instead, so the plate
 | `--hm-loading-error`          | Error-state message color                  |
 | `--hm-loading-spinner-track`  | Spinner track ring                         |
 | `--hm-loading-spinner-active` | Spinner active arc                         |
-| `--hm-resize-border`          | Gripper selection border                   |
+| `--hm-resize-border`          | Gripper and selected-media border          |
 | `--hm-resize-handle-bg`       | Gripper handle fill                        |
 
 Override any token to retheme:
@@ -71,6 +71,7 @@ These names are the stable styling contract. A custom toolbar, a custom action a
 | `.hypermultimedia--figure`                                              | The node emits this `<figure>` wrapper for a captioned image.                       |
 | `.hypermultimedia--<type>__content`                                     | Media wrapper per node, for example `.hypermultimedia--youtube__content`.           |
 | `.hypermultimedia__resize-gripper`                                      | Gripper widget. Adds `--active` on hover and `--dragging` during a drag.            |
+| `.ProseMirror-selectednode`                                             | Selected media wrapper. Its `.hm-media-host` gets a 1px `--hm-resize-border` frame. |
 | `.hypermultimedia--resize-dragging`                                     | On `<html>` for the duration of a drag.                                             |
 | `.hm-media-host` / `[data-hm-loading]`                                  | Loading shell host, and its `pending` / `ready` / `error` state.                    |
 | `.hm-media-host--plain` / `.hm-media-host--fluid`                       | Host with the shell disabled, and host after an X embed settles.                    |
