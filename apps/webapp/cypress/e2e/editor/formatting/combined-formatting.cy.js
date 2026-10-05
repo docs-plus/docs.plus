@@ -175,29 +175,36 @@ describe('Combined Formatting', () => {
     cy.get('@paragraph').should('contain', text)
   })
 
-  it('keeps a heading and its toc-id when Clear formatting runs with a collapsed caret', () => {
-    cy.createDocument(ComplexHierarchyDocument)
-
-    cy.putPosCaretInHeading(2, 'S1-H2', 'end')
-    cy.get(EDITOR).should('have.focus')
-    cy.contains('h2[data-toc-id]', 'S1-H2')
-      .invoke('attr', 'data-toc-id')
-      .then((tocId) => {
-        cy.realPress([MOD, 'b'])
-        cy.realPress([MOD, '\\'])
-        cy.realType('x')
-
-        // Editor state, not h2 text: heading widgets add DOM text inside the h2.
-        cy.window().should((win) => {
-          let heading = null
-          win._editor.state.doc.forEach((node) => {
-            if (node.attrs['toc-id'] === tocId) heading = node
-          })
-          expect(heading?.attrs.level).to.eq(2)
-          expect(heading?.textContent).to.eq('S1-H2x')
-          expect(heading?.lastChild.marks).to.have.length(0)
-        })
+  it('types plain text after Clear formatting on a caret inside a bold heading run', () => {
+    cy.window().then((win) => {
+      win._editor.commands.setContent({
+        type: 'doc',
+        content: [
+          { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Title' }] },
+          {
+            type: 'heading',
+            attrs: { level: 2, 'toc-id': 'caret-h2' },
+            content: [{ type: 'text', text: 'Bold', marks: [{ type: 'bold' }] }]
+          }
+        ]
       })
+      // Mid-run, so the caret's own marks are bold: null stored marks would type bold again.
+      win._editor.commands.focus(win._editor.state.doc.child(0).nodeSize + 3)
+    })
+    cy.get(EDITOR).should('have.focus')
+    cy.realPress([MOD, '\\'])
+    cy.realType('x')
+
+    // Editor state, not h2 text: heading widgets add DOM text inside the h2.
+    cy.window().should((win) => {
+      const heading = win._editor.state.doc.child(1)
+      expect(heading.attrs.level).to.eq(2)
+      expect(heading.attrs['toc-id']).to.eq('caret-h2')
+      expect(heading.textContent).to.eq('Boxld')
+      expect(heading.childCount).to.eq(3)
+      expect(heading.child(1).text).to.eq('x')
+      expect(heading.child(1).marks).to.have.length(0)
+    })
   })
 
   it('clears marks across a heading and a link and keeps both', () => {

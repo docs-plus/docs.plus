@@ -36,7 +36,8 @@ export const ClearFormatting = Extension.create({
             return true
           }
 
-          // can() runs on every transaction, so one scan stops at the first clearable mark.
+          // can() runs on every transaction. After the first clearable mark the walk skips every
+          // child, so a long selection only touches its top-level nodes.
           let hasClearable = false
           for (const { $from, $to } of selection.ranges) {
             doc.nodesBetween($from.pos, $to.pos, (node) => {
