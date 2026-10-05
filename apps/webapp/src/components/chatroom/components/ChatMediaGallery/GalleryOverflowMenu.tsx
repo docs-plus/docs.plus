@@ -12,7 +12,7 @@ import { Icons } from '@icons'
 import { useSheetStore } from '@stores'
 import { formatMediaFileSize } from '@utils/formatMediaFileSize'
 import { twMerge } from '@utils/twMerge'
-import { type ComponentProps, type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ComponentProps, type ReactNode, useEffect, useId, useRef, useState } from 'react'
 
 import type { GalleryToolbarAction } from './galleryToolbarModel'
 
@@ -49,9 +49,11 @@ const runAction = (action: GalleryToolbarAction, close: () => void) => {
 }
 
 function GalleryMediaDetails({
+  id,
   media,
   termClassName
 }: {
+  id: string
   media: GalleryMediaItem
   termClassName: string
 }) {
@@ -59,7 +61,7 @@ function GalleryMediaDetails({
   const fileSize = formatMediaFileSize(media.size)
 
   return (
-    <dl className="space-y-3 px-2.5 py-2 text-sm">
+    <dl id={id} className="space-y-3 px-2.5 py-2 text-sm">
       <div>
         <dt className={twMerge('mb-1', termClassName)}>Filename</dt>
         <dd className="font-medium break-all">{fileName}</dd>
@@ -78,13 +80,26 @@ type GalleryRowProps = {
   disabled?: boolean
   trailing?: ReactNode
   expanded?: boolean
+  describedBy?: string
   onClick: () => void
 }
 
 /** `ContextMenuRow` sizes on the lightbox's dark `--gallery-*` ink, in both app themes. */
-function GalleryMenuItem({ icon, label, disabled, trailing, expanded, onClick }: GalleryRowProps) {
+function GalleryMenuItem({
+  icon,
+  label,
+  disabled,
+  trailing,
+  expanded,
+  describedBy,
+  onClick
+}: GalleryRowProps) {
   return (
-    <MenuItem disabled={disabled} aria-expanded={expanded} onClick={onClick}>
+    <MenuItem
+      disabled={disabled}
+      aria-expanded={expanded}
+      aria-describedby={describedBy}
+      onClick={onClick}>
       <ContextMenuRow
         icon={icon}
         disabled={disabled}
@@ -100,13 +115,22 @@ function GalleryMenuItem({ icon, label, disabled, trailing, expanded, onClick }:
   )
 }
 
-function GallerySheetRow({ icon, label, disabled, trailing, expanded, onClick }: GalleryRowProps) {
+function GallerySheetRow({
+  icon,
+  label,
+  disabled,
+  trailing,
+  expanded,
+  describedBy,
+  onClick
+}: GalleryRowProps) {
   return (
     <ContextMenuRowButton
       icon={icon}
       disabled={disabled}
       trailing={trailing}
       aria-expanded={expanded}
+      aria-describedby={describedBy}
       rowClassName="min-h-12"
       onClick={onClick}>
       {label}
@@ -130,6 +154,7 @@ function GalleryMenuList({
   close
 }: GalleryMenuProps & { asMenu: boolean; close: () => void }) {
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const detailsId = useId()
   const Row = asMenu ? GalleryMenuItem : GallerySheetRow
   const divider = asMenu ? (
     <ContextMenuDivider className="bg-[var(--gallery-panel-border)]" />
@@ -138,6 +163,7 @@ function GalleryMenuList({
   )
   const details = (
     <GalleryMediaDetails
+      id={detailsId}
       media={media}
       termClassName={asMenu ? 'text-[var(--gallery-text-muted)]' : 'text-base-content/60'}
     />
@@ -162,6 +188,8 @@ function GalleryMenuList({
         icon={<Icons.info size={16} />}
         label="View details"
         expanded={detailsOpen}
+        // Menu mode cannot reach the details by key, so the row reads them out.
+        describedBy={detailsOpen ? detailsId : undefined}
         trailing={
           <Icons.chevronRight
             size={16}
