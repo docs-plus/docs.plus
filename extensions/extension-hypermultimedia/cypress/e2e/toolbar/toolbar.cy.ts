@@ -146,6 +146,9 @@ describe('media toolbar overlay', () => {
     // A row picked with Enter closes the menu and also returns focus to ⋯.
     cy.realPress('Enter')
     cy.get('.media-toolbar__menu [data-action-id="replace"]').should('have.focus')
+    // The menu sits outside the editor, where one press must not delete media (#376).
+    cy.realPress('Backspace')
+    cy.nodeCount('image').should('eq', 1)
     cy.realPress('ArrowDown')
     cy.realPress('Enter')
     cy.get('.media-toolbar__menu').should('not.exist')

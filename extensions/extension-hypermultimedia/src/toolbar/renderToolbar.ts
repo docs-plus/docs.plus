@@ -1,7 +1,13 @@
 import { attachTooltip } from '@docs.plus/floating-tooltip'
 
 import { getKitStorage } from '../kitStorage'
-import { actionButton, bindToolbarTooltips, buildOverflowMenu, openToolbarPopover } from './menu'
+import {
+  actionButton,
+  bindToolbarTooltips,
+  buildOverflowMenu,
+  openMediaPopover,
+  openToolbarPopover
+} from './menu'
 import { resolveMediaToolbarIcon } from './resolveIcon'
 import type { MediaAction, MediaActionContext } from './types'
 
@@ -24,7 +30,8 @@ export function renderMediaToolbar(ctx: MediaActionContext, actions: MediaAction
   bar.setAttribute('aria-label', 'Media toolbar')
   // The bar sits inside the editor DOM, so ProseMirror sees its keys. Stop Enter and Space at
   // keydown, and every keypress: Enter would edit the document, and keypress cancels the click
-  // on node-selected media. Backspace and Delete still reach the editor's own media keys.
+  // on node-selected media. Backspace and Delete pass on: the editor has no focus here, so
+  // the hover delete key removes the media, as docs/api.md states.
   bar.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' || event.key === ' ') event.stopPropagation()
   })
@@ -53,13 +60,23 @@ export function renderMediaToolbar(ctx: MediaActionContext, actions: MediaAction
     more.className = 'media-toolbar__button media-toolbar__more'
     more.setAttribute('aria-label', 'More actions')
     more.setAttribute('aria-haspopup', 'menu')
+    more.setAttribute('aria-expanded', 'false')
     more.innerHTML = resolveMediaToolbarIcon(ctx, 'more', kitIcons) ?? ''
     tooltipDetaches.push(attachTooltip(more, 'More actions'))
     more.onclick = (event) => {
       const menu = buildOverflowMenu(ctx, overflow, more, kitIcons)
-      openToolbarPopover(more, menu, 'media-menu', { positionReference: bar })
+      openMediaPopover({
+        kind: 'media-menu',
+        content: menu,
+        trigger: more,
+        positionReference: bar,
+        onHide: () => more.setAttribute('aria-expanded', 'false')
+      })
+      // A second click toggles the menu closed, so it never mounts.
+      if (!menu.isConnected) return
+      more.setAttribute('aria-expanded', 'true')
       // Enter or Space clicks with detail 0; a keyboard open moves focus to the first row.
-      if (event.detail === 0 && menu.isConnected) {
+      if (event.detail === 0) {
         menu.querySelector<HTMLElement>('[role^="menuitem"]:not(:disabled)')?.focus()
       }
     }

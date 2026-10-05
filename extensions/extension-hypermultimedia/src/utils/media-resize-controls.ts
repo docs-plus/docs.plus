@@ -370,8 +370,10 @@ function handleMediaDeleteKey(editor: Editor, event: KeyboardEvent): boolean {
   if (!getControlsState(editor).activeTarget) return false
   if (isFormControlInMediaUI(document.activeElement)) return false
   if (isEditingMediaCaption(document.activeElement)) return false
-  // A focused editor owns the key: its keymap selects media before deleting it.
-  // PM ignores `defaultPrevented`, so deleting here too would act twice in one press.
+  // Focus in a toolbar popover (the ⋯ menu, a submenu, Replace URL) sits outside the editor.
+  // Deleting from there would take one press (#376).
+  if (document.activeElement?.closest('.floating-popover')) return false
+  // A focused editor owns the key, so its keymap selects media before a second press deletes it (#376).
   if (editor.view.hasFocus()) return false
   if (!deleteActiveMediaNode(editor)) return false
 

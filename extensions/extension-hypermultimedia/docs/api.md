@@ -164,7 +164,7 @@ The kit binds Backspace and Delete next to media through a keymap at priority 10
 
 In an empty line under media, Backspace removes the line and keeps the media. The caret then sits after the media. For a block node it is a gap cursor, which needs Tiptap's `Gapcursor` extension. StarterKit includes it. Delete right after the media removes the empty line under it. Delete in an empty line above block media removes the line and selects the media.
 
-Hover opens the media toolbar and moves no focus. So `Escape` acts only after a click or a tab into a toolbar button. The `Escape` handler also skips the key when focus sits inside a `.floating-popover`, because the popover closes itself first. The delete-key handler ignores `Backspace` and `Delete` with `Meta`, `Control` or `Alt`, and during IME composition. It also ignores them inside a media form control, inside the caption, and whenever the editor has focus.
+Hover opens the media toolbar and moves no focus. So `Escape` acts only after a click or a tab into a toolbar button. The `Escape` handler also skips the key when focus sits inside a `.floating-popover`, because the popover closes itself first. The delete-key handler ignores `Backspace` and `Delete` with `Meta`, `Control` or `Alt`, and during IME composition. It also ignores them inside a media form control, inside the caption, and inside a `.floating-popover` such as the `…` menu. It ignores them whenever the editor has focus too.
 
 The `x` node sets `priority: 101`, above the Tiptap default of `100`. That number decides parse-rule order, not key order. It lets `blockquote.twitter-tweet` parse as an X embed before the StarterKit blockquote rule claims it. No other kit keymap binds Backspace or Delete.
 

@@ -8,7 +8,7 @@ Hovering a media node on a fine-pointer device activates the gripper. A tap acti
 
 Sizes clamp to a `160` × `80` minimum and to the editor content column as the maximum. The `soundcloud` node raises the height floor to `120` compact or `166` visual. The `spotify` node raises it to `352`, or `152` for a track. A side drag, or a corner drag on `audio`, `soundcloud` or `spotify`, stops early when it hits one of those floors. A corner drag on the other five nodes keeps the ratio at a limit. At a floor, it grows the other axis instead. When the column is too narrow for a floor at that ratio, the column wins.
 
-Committed `width` and `height` land on the node attributes, so a resize persists and syncs through collaboration. `Escape` cancels a drag without committing. `Backspace` or `Delete` removes the hovered media node only while the editor has no focus. In a focused editor, the first press selects the media and the next press deletes it.
+Committed `width` and `height` land on the node attributes, so a resize persists and syncs through collaboration. `Escape` cancels a drag without committing. `Backspace` or `Delete` removes the hovered media node only while neither the editor nor a toolbar popover has focus. In a focused editor, the first press selects the media and the next press deletes it.
 
 The `x` node has no gripper at all. Size an X post through the toolbar `maxwidth` presets — see [Embeds](./embeds.md#x).
 
