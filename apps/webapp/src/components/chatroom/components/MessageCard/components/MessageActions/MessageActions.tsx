@@ -1,10 +1,4 @@
-import {
-  BookmarkButton,
-  EmojiReactionButton,
-  ReadStatusDisplay,
-  ReplyButton,
-  ReplyInThreadButton
-} from './components'
+import { BookmarkButton, EmojiReactionButton, ReplyButton, ReplyInThreadButton } from './components'
 import { HoverMenuActions } from './HoverMenuActions'
 
 const MessageActions = {
@@ -12,8 +6,7 @@ const MessageActions = {
   EmojiReaction: EmojiReactionButton,
   Reply: ReplyButton,
   Bookmark: BookmarkButton,
-  ReplyInThread: ReplyInThreadButton,
-  ReadStatus: ReadStatusDisplay
+  ReplyInThread: ReplyInThreadButton
 }
 
 export default MessageActions

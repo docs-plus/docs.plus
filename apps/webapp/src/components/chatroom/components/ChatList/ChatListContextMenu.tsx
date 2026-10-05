@@ -1,6 +1,6 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { isMessage } from '@components/chatroom/types/chat-items'
-import { ContextMenu, useContextMenuContext } from '@components/ui/ContextMenu'
+import { ContextMenu } from '@components/ui/ContextMenu'
 import { useAuthStore, useChatStore } from '@stores'
 import { TMsgRow } from '@types'
 import { twMerge } from '@utils/twMerge'
@@ -22,30 +22,12 @@ const removeContextMenuActiveClass = () => {
   })
 }
 
-/**
- * Desktop right-click affordance restored on top of the Virtuoso feed.
- * Message identity is read back off the stamped `msgId` DOM property. The lookup then
- * goes through `listRef.current.data.findIndex`, so the Virtuoso-owned data store stays
- * the single source and no parallel id->row map is needed.
- */
-const ContextMenuReadStatus = ({ message }: { message: TMsgRow | null }) => {
-  const { isOpen } = useContextMenuContext()
-  if (!message) return null
-
-  return <UserReadStatus message={message} isOpen={isOpen} />
-}
-
+/** Desktop right-click menu over the Virtuoso feed; the row comes from Virtuoso's own data. */
 export const ChatListContextMenu = ({ children, className }: Props) => {
   const { channelId, variant, listRef } = useChatroomContext()
   const profile = useAuthStore((state) => state.profile)
   const contextMenuRef = useRef<HTMLDivElement>(null)
-  const [contextMenuState, setContextMenuState] = useState<{
-    message: TMsgRow | null
-    messageCardElement: Element | null
-  }>({
-    message: null,
-    messageCardElement: null
-  })
+  const [message, setMessage] = useState<TMsgRow | null>(null)
 
   const channelSettings = useChatStore(
     (state) => state.workspaceSettings.channels.get(channelId) ?? null
@@ -58,6 +40,7 @@ export const ChatListContextMenu = ({ children, className }: Props) => {
 
       const messageId = (messageCard as MessageCardDesktopElement).msgId ?? null
       if (!messageId) return null
+      if (!channelSettings?.isUserChannelMember) return null
 
       // Virtuoso owns the active window; map over it to recover the row
       // without keeping a parallel store. The visitor returns the item
@@ -71,9 +54,7 @@ export const ChatListContextMenu = ({ children, className }: Props) => {
       })
       if (!foundRow) return null
 
-      if (!channelSettings?.isUserChannelMember) return null
-
-      setContextMenuState({ message: foundRow, messageCardElement: messageCard })
+      setMessage(foundRow)
       removeContextMenuActiveClass()
       messageCard.classList.add('context-menu-active')
       return messageCard
@@ -83,7 +64,7 @@ export const ChatListContextMenu = ({ children, className }: Props) => {
 
   const handleContextMenuClose = useCallback(() => {
     removeContextMenuActiveClass()
-    setContextMenuState({ message: null, messageCardElement: null })
+    setMessage(null)
   }, [])
 
   if (variant === 'mobile' || !profile) return <>{children}</>
@@ -95,8 +76,8 @@ export const ChatListContextMenu = ({ children, className }: Props) => {
         parentRef={contextMenuRef}
         onBeforeShow={handleBeforeShow}
         onClose={handleContextMenuClose}>
-        <ContextMenuItems message={contextMenuState?.message ?? null} />
-        <ContextMenuReadStatus message={contextMenuState?.message ?? null} />
+        <ContextMenuItems message={message} />
+        {message && <UserReadStatus message={message} />}
       </ContextMenu>
       {children}
     </div>

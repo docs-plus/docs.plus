@@ -10,7 +10,7 @@ import { Icons } from '@icons'
 import { TMsgRow } from '@types'
 import { twMerge } from '@utils/twMerge'
 import { motion } from 'motion/react'
-import { Fragment, type MouseEvent } from 'react'
+import { Fragment, type MouseEvent, useRef } from 'react'
 
 type Surface = 'contextMenu' | 'longPress'
 
@@ -74,6 +74,10 @@ export function MessageActionMenuList({
   only
 }: Props) {
   const { items, linkCopied } = useMessageActionMenuItems(message, { includeReaction })
+  const isLongPress = surface === 'longPress'
+  // A long press can end in a click where the finger lifts. Only a press that began on the
+  // row runs it; Enter and Space send a click with `detail` 0.
+  const pressedRowRef = useRef<string | null>(null)
   const { schedule, cancel } = useCloseAfterHold(onClose)
 
   const activate = (item: MessageActionMenuItem, e?: MouseEvent) => {
@@ -101,29 +105,35 @@ export function MessageActionMenuList({
         .map((item) => (
           <Fragment key={item.id}>
             {item.separatorBefore && <ContextMenuDivider />}
-            {surface === 'contextMenu' ? (
-              <MenuItem
-                aria-label={item.id === 'copy-link' && linkCopied ? 'Copied!' : item.title}
-                onClick={(e) => activate(item, e)}>
+            <MenuItem
+              aria-label={item.id === 'copy-link' && linkCopied ? 'Copied!' : item.title}
+              className={
+                isLongPress
+                  ? twMerge(
+                      'touch-manipulation select-none',
+                      !isInteractive && 'pointer-events-none'
+                    )
+                  : undefined
+              }
+              onPointerDown={() => {
+                pressedRowRef.current = item.id
+              }}
+              onClick={(e) => {
+                if (!isInteractive) return
+                if (isLongPress && e.detail > 0 && pressedRowRef.current !== item.id) return
+                activate(item, e)
+              }}>
+              {isLongPress ? (
+                <motion.span
+                  className="block"
+                  whileTap={{ scale: 0.98, transition: { duration: 0.1 } }}>
+                  {/* Full ink while the press is held; the row ignores taps until it ends. */}
+                  <ActionMenuRow item={item} copied={linkCopied} className="min-h-11" />
+                </motion.span>
+              ) : (
                 <ActionMenuRow item={item} copied={linkCopied} />
-              </MenuItem>
-            ) : (
-              <motion.li
-                role="menuitem"
-                aria-label={item.id === 'copy-link' && linkCopied ? 'Copied!' : item.title}
-                onTap={() => {
-                  if (!isInteractive) return
-                  activate(item)
-                }}
-                whileTap={{ scale: 0.98, transition: { duration: 0.1 } }}
-                className={twMerge(
-                  'group rounded-field cursor-pointer touch-manipulation select-none',
-                  !isInteractive && 'pointer-events-none'
-                )}>
-                {/* Full ink while the press is held; the li ignores taps until it ends. */}
-                <ActionMenuRow item={item} copied={linkCopied} className="min-h-11" />
-              </motion.li>
-            )}
+              )}
+            </MenuItem>
           </Fragment>
         ))}
     </>

@@ -13,11 +13,13 @@ import { useEffect, useState } from 'react'
 
 type Props = {
   message: TMsgRow
-  isOpen: boolean
 }
 
-/** The read-receipt footer of every message menu: a divider, then who has seen it. */
-export function UserReadStatus({ message, isOpen }: Props) {
+/**
+ * The read-receipt footer of every message menu: a divider, then who has seen it.
+ * It mounts only while its menu is open, so the fetch runs once per open.
+ */
+export function UserReadStatus({ message }: Props) {
   const { channelId } = useChatroomContext()
   const peerReadSeq = usePeerReadSeq(channelId)
   const isSeen = typeof message.seq === 'number' && message.seq <= peerReadSeq
@@ -30,19 +32,14 @@ export function UserReadStatus({ message, isOpen }: Props) {
   )
 
   useEffect(() => {
+    if (!isSeen) return
     const fetchData = async () => {
-      if (isOpen && isSeen) {
-        const { data } = await fetchReadUsers(message.channel_id, message.created_at)
-        setReadUsers(data as ChannelMemberReadUpdate[])
-      }
+      const { data } = await fetchReadUsers(message.channel_id, message.created_at)
+      setReadUsers(data as ChannelMemberReadUpdate[])
     }
 
     fetchData()
-    // Fetch fires only when the menu opens on a seen message. The channelId and
-    // created_at values are captured by closure at that moment, and stay stable
-    // for the lifetime of one open-cycle.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, isSeen])
+  }, [isSeen, fetchReadUsers, message.channel_id, message.created_at])
 
   if (!isSeen) return null
 

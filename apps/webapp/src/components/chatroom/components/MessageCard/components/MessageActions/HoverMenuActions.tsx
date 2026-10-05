@@ -1,3 +1,4 @@
+import { UserReadStatus } from '@components/chatroom/components/MessageCard/components/common/UserReadStatus'
 import ContextMenuItems from '@components/chatroom/components/MessageCard/components/MessageContextMenu/ContextMenuItems'
 import { MessageCard } from '@components/chatroom/components/MessageCard/MessageCard'
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
@@ -21,7 +22,7 @@ export const HoverMenuActions = () => {
           message={message}
           only={['copy-link', 'download', 'copy-to-doc', 'edit', 'delete']}
         />
-        <MessageCard.Actions.ReadStatus />
+        <UserReadStatus message={message} />
       </HoverMenuDropdown>
     </>
   )

@@ -2,7 +2,15 @@ import { emojiReaction } from '@api'
 import { QuickReactionMenu } from '@components/chatroom/components/MessageCard/components/MessageLongPressMenu/components/QuickReactionMenu'
 import { modalBackdropClassName } from '@components/ui/Dialog'
 import { TMsgRow } from '@types'
-import { createContext, useCallback, useContext, useEffect, useEffectEvent, useState } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState
+} from 'react'
 import { createPortal } from 'react-dom'
 
 import {
@@ -59,8 +67,15 @@ export const MessageLongPressMenu = ({ children, message }: Props) => {
     adjustedMessageBounds
   } = useMenuPositioning(isLongPressMenuVisible, originalMessageBounds)
 
+  // The menu takes focus on open, so close hands it back to where it was.
+  const returnFocusRef = useRef<HTMLElement | null>(null)
+
   const handleLongPressActivation = useCallback(
     (event: any) => {
+      const active = document.activeElement
+      returnFocusRef.current =
+        active instanceof HTMLElement && active !== document.body ? active : null
+
       const result = createHighlightedMessage(event)
 
       if (result) {
@@ -91,10 +106,16 @@ export const MessageLongPressMenu = ({ children, message }: Props) => {
   setOnActivation(handleLongPressActivation)
 
   const closeLongPressMenu = useCallback(() => {
+    // A row that moved focus (a dialog, the composer) keeps it.
+    const active = document.activeElement
+    if (!active || active === document.body || menuOverlayRef.current?.contains(active)) {
+      returnFocusRef.current?.focus({ preventScroll: true })
+    }
+    returnFocusRef.current = null
     hideMenu()
     clearHighlighting()
     setLongPressCompleted(false)
-  }, [hideMenu, clearHighlighting, setLongPressCompleted])
+  }, [hideMenu, clearHighlighting, setLongPressCompleted, menuOverlayRef])
 
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null)
 
