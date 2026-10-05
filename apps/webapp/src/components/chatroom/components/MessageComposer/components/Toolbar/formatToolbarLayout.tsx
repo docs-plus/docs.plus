@@ -1,7 +1,6 @@
 import type { Placement } from '@floating-ui/react'
 import { Icons } from '@icons'
 import type { ChainedCommands } from '@tiptap/core'
-import { twMerge } from '@utils/twMerge'
 import type { ComponentType } from 'react'
 import type { IconType } from 'react-icons'
 
@@ -47,8 +46,7 @@ function makeFormatToggle({ name, Icon, label, tooltip, type, run }: FormatToggl
   return FormatToggleButton
 }
 
-// The composer Button has no house disabled ink, so set /40 over daisyUI's /20, as the pad ToolbarButton does.
-const ClearFormattingButton = ({ size, className, ...props }: FormatButtonProps) => {
+const ClearFormattingButton = ({ size, ...props }: FormatButtonProps) => {
   const { editor } = useMessageComposer()
 
   return (
@@ -57,7 +55,6 @@ const ClearFormattingButton = ({ size, className, ...props }: FormatButtonProps)
       disabled={!editor?.can().clearFormatting()}
       aria-label="Clear formatting"
       tooltip={'Clear formatting (⌘+\\)'}
-      className={twMerge('disabled:text-base-content/40', className)}
       {...props}>
       <Icons.clearFormatting size={size} className="pointer-events-none shrink-0 stroke-[1.75]" />
     </Button>
