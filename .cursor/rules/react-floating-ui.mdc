@@ -231,6 +231,7 @@ FloatingPortal          → renders at body level
 | `Select` | `useClick` | `absolute` (default) | Yes |
 | `SearchableSelect` | `useClick` | `absolute` (default) | Yes |
 | `HoverMenu` | `useHover` | `absolute` (override to `fixed` in style) | Yes |
+| `DropdownMenu` | `useClick` | `fixed` | Yes (`portalRoot` portals into a host modal) |
 | `Dialog` | — (controlled) | — | Yes |
 
 ---
@@ -255,8 +256,8 @@ All overlay/floating components MUST include:
 // Border for visibility on dark backgrounds
 className="border border-base-300"
 
-// Elevated background (not base-100 which matches page bg in dark)
-className="bg-base-200"
+// The L1 panel ground, as in design-system.md §Elevation species (#391)
+className="bg-base-100"
 
 // Sufficient shadow
 className="shadow-xl"  // or shadow-lg, not shadow-xs
@@ -264,4 +265,4 @@ className="shadow-xl"  // or shadow-lg, not shadow-xs
 
 ### Components Affected
 
-- `ContextMenu`, `Dialog`, `HoverMenu`, `Toast`, `Popover`, `Select`
+- `ContextMenu`, `DropdownMenu`, `Dialog`, `HoverMenu`, `Toast`, `Popover`, `Select`
