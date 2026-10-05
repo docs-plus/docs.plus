@@ -1,6 +1,5 @@
-import { contextMenuPanelClassName } from '@components/ui/ContextMenu'
-import { ContextMenuRowButton } from '@components/ui/ContextMenuRowButton'
-import { Popover, PopoverContent, PopoverTrigger, usePopoverState } from '@components/ui/Popover'
+import { ContextMenuRow, MenuItem, useContextMenuContext } from '@components/ui/ContextMenu'
+import { DropdownMenu } from '@components/ui/DropdownMenu'
 import { Icons } from '@icons'
 import type { Editor } from '@tiptap/core'
 import type { IconType } from 'react-icons'
@@ -19,38 +18,36 @@ export interface ToolbarSelectItem {
 interface ToolbarSelectProps {
   editor: Editor
   items: ToolbarSelectItem[]
-  tooltip?: string
+  /** Also the trigger's accessible name, which names the menu too. */
+  tooltip: string
   fallbackIcon: IconType
   /** Specs select the trigger by this, never by its user-facing label. */
   testId: string
 }
 
-const ToolbarSelectPanel = ({ items, editor }: { items: ToolbarSelectItem[]; editor: Editor }) => {
-  const { close } = usePopoverState()
+const ToolbarSelectItems = ({ items, editor }: { items: ToolbarSelectItem[]; editor: Editor }) => {
+  const { setIsOpen } = useContextMenuContext()
 
-  // The popover moves real focus onto the rows, so each row button carries MenuItem's focus recipe.
-  return (
-    <div className={contextMenuPanelClassName} role="menu">
-      {items.map((item) => {
-        const active = editor.isActive(item.value)
-        return (
-          <ContextMenuRowButton
-            key={item.value}
-            role="menuitemradio"
-            aria-checked={active}
-            data-testid={item.testId}
-            icon={<item.icon size={16} className="stroke-currentColor fill-none" />}
-            trailing={active && <Icons.check size={16} className="text-primary" aria-hidden />}
-            onClick={() => {
-              item.action()
-              close()
-            }}>
-            {item.label}
-          </ContextMenuRowButton>
-        )
-      })}
-    </div>
-  )
+  return items.map((item) => {
+    const active = editor.isActive(item.value)
+    return (
+      <MenuItem
+        key={item.value}
+        role="menuitemradio"
+        aria-checked={active}
+        data-testid={item.testId}
+        onClick={() => {
+          item.action()
+          setIsOpen(false)
+        }}>
+        <ContextMenuRow
+          icon={<item.icon size={16} className="stroke-currentColor fill-none" />}
+          trailing={active && <Icons.check size={16} className="text-primary" aria-hidden />}>
+          {item.label}
+        </ContextMenuRow>
+      </MenuItem>
+    )
+  })
 }
 
 const ToolbarSelect = ({
@@ -64,9 +61,12 @@ const ToolbarSelect = ({
   const TriggerIcon = activeItem?.icon ?? FallbackIcon
 
   return (
-    <Popover placement="bottom-start">
-      <PopoverTrigger asChild>
+    <DropdownMenu
+      placement="bottom-start"
+      trigger={({ ref, getProps }) => (
         <ToolbarButton
+          ref={ref}
+          {...getProps()}
           isActive={!!activeItem}
           tooltip={tooltip}
           data-testid={testId}
@@ -75,11 +75,9 @@ const ToolbarSelect = ({
           <TriggerIcon size={16} className="stroke-currentColor fill-none" />
           <Icons.chevronDown size={10} className="stroke-currentColor fill-none opacity-40" />
         </ToolbarButton>
-      </PopoverTrigger>
-      <PopoverContent>
-        <ToolbarSelectPanel items={items} editor={editor} />
-      </PopoverContent>
-    </Popover>
+      )}>
+      <ToolbarSelectItems items={items} editor={editor} />
+    </DropdownMenu>
   )
 }
 

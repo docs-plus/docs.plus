@@ -3,20 +3,16 @@ import { Tooltip } from '@components/ui/Tooltip'
 import {
   autoUpdate,
   flip,
-  FloatingFocusManager,
   FloatingPortal,
   offset,
   Placement,
   safePolygon,
   shift,
-  useClick,
   useDismiss,
   useFloating,
   useHover,
   useInteractions,
-  useListNavigation,
-  useRole,
-  useTypeahead
+  useRole
 } from '@floating-ui/react'
 import { twMerge } from '@utils/twMerge'
 import debounce from 'lodash/debounce'
@@ -33,7 +29,7 @@ import {
   useState
 } from 'react'
 
-import { contextMenuPanelClassName, MenuListProvider } from './ContextMenu'
+import { DropdownMenu } from './DropdownMenu'
 import { useOverlayTransition } from './useOverlayTransition'
 
 class HoverMenuManager {
@@ -387,141 +383,45 @@ const HoverMenuContent: FC<HoverMenuContentProps> = ({ children, portalId, menuC
   )
 }
 
-function useFloatingDropdown() {
-  const [open, setOpen] = useState(false)
-  const [activeIndex, setActiveIndex] = useState<number | null>(null)
-  const elementsRef = useRef<Array<HTMLElement | null>>([])
-  const labelsRef = useRef<Array<string | null>>([])
-
-  const data = useFloating({
-    placement: 'bottom-end',
-    open,
-    onOpenChange: setOpen,
-    whileElementsMounted: autoUpdate,
-    // left/top positioning — the overlay transition animates `transform: scale()`.
-    transform: false,
-    middleware: [
-      offset(4),
-      flip({
-        fallbackPlacements: ['top-end', 'bottom-start', 'top-start'],
-        padding: 8
-      }),
-      shift({ padding: 8 })
-    ]
-  })
-
-  const context = data.context
-  const { isMounted, styles: transitionStyles } = useOverlayTransition(context)
-
-  const click = useClick(context)
-  const dismiss = useDismiss(context)
-  const role = useRole(context, { role: 'menu' })
-  const listNavigation = useListNavigation(context, {
-    listRef: elementsRef,
-    activeIndex,
-    onNavigate: setActiveIndex
-  })
-  const typeahead = useTypeahead(context, {
-    enabled: open,
-    listRef: labelsRef,
-    activeIndex,
-    onMatch: setActiveIndex
-  })
-
-  const interactions = useInteractions([click, dismiss, role, listNavigation, typeahead])
-
-  return useMemo(
-    () => ({
-      open,
-      setOpen,
-      activeIndex,
-      elementsRef,
-      labelsRef,
-      isMounted,
-      transitionStyles,
-      ...interactions,
-      ...data
-    }),
-    [open, setOpen, activeIndex, isMounted, transitionStyles, interactions, data]
-  )
-}
-
-// Non-modal, so excluding the editors costs no a11y. It keeps markOthers from stamping
-// `data-floating-ui-inert` on a ProseMirror root, which recreates its node views.
-const editorRoots = () => Array.from(document.querySelectorAll('.ProseMirror'))
-
 export interface HoverMenuDropdownProps {
   /** `MenuItem` rows with `ContextMenuRow` bodies; `ContextMenuDivider` between groups. */
   children: ReactNode
   trigger: ReactNode
-  /** Also the trigger's accessible name. */
-  tooltip?: string
+  /** Also the trigger's accessible name, which names the menu too. */
+  tooltip: string
 }
 
 export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({ children, trigger, tooltip }) => {
-  const dropdown = useFloatingDropdown()
-  const hoverMenuContext = useHoverMenuContext()
+  const [open, setOpen] = useState(false)
+  const { incrementDropdownCount, decrementDropdownCount } = useHoverMenuContext()
 
   // The parent HoverMenu must stay open while this dropdown is.
   useEffect(() => {
-    if (dropdown.open) {
-      hoverMenuContext.incrementDropdownCount()
-      return () => hoverMenuContext.decrementDropdownCount()
+    if (open) {
+      incrementDropdownCount()
+      return () => decrementDropdownCount()
     }
-  }, [dropdown.open, hoverMenuContext])
-
-  const menuListValue = useMemo(
-    () => ({
-      isOpen: dropdown.open,
-      setIsOpen: dropdown.setOpen,
-      activeIndex: dropdown.activeIndex,
-      getItemProps: dropdown.getItemProps
-    }),
-    [dropdown]
-  )
+  }, [open, incrementDropdownCount, decrementDropdownCount])
 
   return (
-    <>
-      <Tooltip title={tooltip} placement="left" open={dropdown.open ? false : undefined}>
-        <Button
-          ref={dropdown.refs.setReference}
-          {...dropdown.getReferenceProps()}
-          aria-label={tooltip}
-          variant="ghost"
-          size="sm"
-          shape="square"
-          className="join-item">
-          {trigger}
-        </Button>
-      </Tooltip>
-
-      {dropdown.isMounted && (
-        <FloatingPortal>
-          <FloatingFocusManager
-            context={dropdown.context}
-            modal={false}
-            initialFocus={dropdown.refs.floating}
-            getInsideElements={editorRoots}>
-            <ul
-              ref={dropdown.refs.setFloating}
-              style={{
-                ...dropdown.floatingStyles,
-                ...dropdown.transitionStyles,
-                position: 'fixed',
-                maxWidth: '100%'
-              }}
-              {...dropdown.getFloatingProps()}
-              className={`${contextMenuPanelClassName} z-[60] max-h-80 w-52 overflow-y-auto`}>
-              <MenuListProvider
-                value={menuListValue}
-                elementsRef={dropdown.elementsRef}
-                labelsRef={dropdown.labelsRef}>
-                {children}
-              </MenuListProvider>
-            </ul>
-          </FloatingFocusManager>
-        </FloatingPortal>
-      )}
-    </>
+    <DropdownMenu
+      className="z-[60] max-h-80 overflow-y-auto"
+      onOpenChange={setOpen}
+      trigger={({ ref, getProps }) => (
+        <Tooltip title={tooltip} placement="left" open={open ? false : undefined}>
+          <Button
+            ref={ref}
+            {...getProps()}
+            aria-label={tooltip}
+            variant="ghost"
+            size="sm"
+            shape="square"
+            className="join-item">
+            {trigger}
+          </Button>
+        </Tooltip>
+      )}>
+      {children}
+    </DropdownMenu>
   )
 }
