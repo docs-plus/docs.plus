@@ -27,7 +27,7 @@ import { HomeInstallButton } from './HomeInstallButton'
 import { HOME_MOBILE_MQ, HOME_REGION_DURATION, homeRegionEase } from './homeMobileLayout'
 import { SkipLink } from './SkipLink'
 
-// Loads only after the profile arrives, so a signed-out visitor fetches none of the list code.
+// Loads only after the profile arrives, so a signed-out visitor fetches none of the list rows.
 const HomeDocuments = dynamic(() => import('./HomeDocuments').then((m) => m.HomeDocuments), {
   ssr: false
 })

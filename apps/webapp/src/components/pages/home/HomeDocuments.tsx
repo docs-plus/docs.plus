@@ -15,15 +15,40 @@ import { isHomeMobileLayout } from './homeMobileLayout'
 
 const HOME_DOCUMENTS_LIMIT = 8
 
+type HomeCardInput = {
+  hasPage: boolean
+  isError: boolean
+  /** The current pick has a real page with no rows. */
+  isEmpty: boolean
+  isNarrowed: boolean
+  /** The Merged list total; undefined while its probe loads. */
+  mergedTotal: number | undefined
+  hasShownCard: boolean
+  hasPendingDelete: boolean
+}
+
+/**
+ * Hidden on the first load, on error and when the Merged list is empty. A card on screen
+ * stays while the probe loads, and a pending Undo keeps it. A narrowed pick with no rows
+ * shows the empty text, so the Show filter stays reachable.
+ */
+function homeCardState(input: HomeCardInput): 'hidden' | 'rows' | 'empty' {
+  const { isEmpty, mergedTotal, hasShownCard } = input
+  const isMergedEmpty =
+    isEmpty && (mergedTotal === 0 || (mergedTotal === undefined && !hasShownCard))
+  const isShown = (!input.isError && input.hasPage && !isMergedEmpty) || input.hasPendingDelete
+  if (!isShown) return 'hidden'
+  return isEmpty && input.isNarrowed ? 'empty' : 'rows'
+}
+
 interface HomeDocumentsProps {
   userId: string
   onSeeAll: () => void
 }
 
 /**
- * A short door into the Merged list, with the Settings rows, picks and Undo. It hides on the
- * first load, on error and when the Merged list is empty, so the slug card never waits on it.
- * A Show pick with no rows keeps the card, so the pick stays reachable.
+ * A short door into the Merged list, with the Settings rows, picks and Undo. `homeCardState`
+ * keeps it hidden until a page lands, so the slug card never waits on it.
  */
 export function HomeDocuments({ userId, onSeeAll }: HomeDocumentsProps) {
   const { listScope, sortKey } = useDocumentsListPrefs()
@@ -45,22 +70,26 @@ export function HomeDocuments({ userId, onSeeAll }: HomeDocumentsProps) {
     { ...scope, scope: 'all' },
     { enabled: isNarrowed && isEmpty }
   )
-  const mergedTotal = isNarrowed ? mergedData?.pages[0]?.total : total
-  // A card on screen stays while that probe loads, so it never blinks out under the finger.
   const [hasShownCard, setHasShownCard] = useState(false)
-  const isMergedEmpty =
-    isEmpty && (mergedTotal === 0 || (mergedTotal === undefined && !hasShownCard))
 
   const listActions = useDocumentsListActions({ userId, docs: rows })
   const { pendingDelete, handleUndo } = listActions
   const { navigateToDocument, isLoading: isCreatingDocument } = useNavigateToDocument()
 
-  // A pending Undo keeps the card, so Undo stays reachable after the last row goes.
-  const isShown = (!isError && !!firstPage && !isMergedEmpty) || !!pendingDelete
-  if (isShown && !hasShownCard) setHasShownCard(true)
-  if (!isShown) return null
+  const cardState = homeCardState({
+    hasPage: !!firstPage,
+    isError,
+    isEmpty,
+    isNarrowed,
+    mergedTotal: isNarrowed ? mergedData?.pages[0]?.total : total,
+    hasShownCard,
+    hasPendingDelete: !!pendingDelete
+  })
+  if (cardState !== 'hidden' && !hasShownCard) setHasShownCard(true)
+  if (cardState === 'hidden') return null
 
-  const emptyText = isEmpty && listScope !== 'all' ? DOCUMENTS_EMPTY_TEXT[listScope] : null
+  const emptyText =
+    cardState === 'empty' && listScope !== 'all' ? DOCUMENTS_EMPTY_TEXT[listScope] : null
 
   return (
     <section
