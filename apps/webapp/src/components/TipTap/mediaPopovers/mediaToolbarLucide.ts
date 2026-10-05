@@ -12,7 +12,7 @@ import {
   LuCaptions,
   LuCopy,
   LuDownload,
-  LuEllipsisVertical,
+  LuEllipsis,
   LuExternalLink,
   LuMessageSquarePlus,
   LuPanelLeft,
@@ -38,7 +38,7 @@ const ACTION_ICONS: Partial<Record<MediaToolbarIconKey, IconType>> = {
   replace: LuReplace,
   copy: LuCopy,
   delete: LuTrash2,
-  more: LuEllipsisVertical,
+  more: LuEllipsis,
   comment: LuMessageSquarePlus
 }
 
