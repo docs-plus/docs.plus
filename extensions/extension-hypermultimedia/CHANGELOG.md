@@ -8,19 +8,31 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
-The next release is a minor bump (issues #379 and #391).
+The next release is a minor bump (issues #376, #379 and #391).
 
 ### Highlights
 
 - A corner drag keeps the aspect ratio on `image`, `video`, `youtube`,
   `vimeo` and `loom`, as in Word, Google Docs and Notion.
 - The `…` overflow menu is a keyboard menu. It uses the docs.plus menu row,
-  and Delete sits last in danger ink.
+  and the Delete row has a divider before it and danger ink.
+- No single key press deletes media. The first press next to media selects
+  it, and the next press deletes it (#376).
 
 ### Added
 
 - `--hm-toolbar-danger` sets the Delete row ink in the overflow menu. The
   default is `light-dark(#dc2626, #f87171)`. See #391.
+- `.media-toolbar__menu-divider` is a new class. It draws each separator in
+  the overflow menu.
+- The `…` button carries `aria-expanded`. It is `true` while the menu is
+  open and `false` otherwise.
+- `openMediaPopover` takes an `onHide` callback. It runs when the popover
+  hides, or when another popover replaces it.
+- A selected media node shows a 1px frame in `--hm-resize-border` (#376).
+  The frame is `.ProseMirror-selectednode > .hm-media-host::after`.
+- A host that already styles `.ProseMirror-selectednode` now sees two frames.
+  Drop one of them, or hide the kit frame with the selector above.
 
 ### Changed
 
@@ -31,13 +43,20 @@ The next release is a minor bump (issues #379 and #391).
 - Group labels in the overflow menu are sentence case, not uppercase.
 - A submenu inside the overflow menu has no border, shadow or padding of its
   own, so the menu shows one frame.
-- Delete sits last in the overflow menu, after a divider.
+- A divider now goes before the overflow row whose action `id` is
+  `delete`, and that row uses danger ink. Both key on the id, not on the
+  row's place. The built-in order puts Delete last.
 - `dividerAfter` now draws a divider in the overflow menu too, not only in
   the inline bar.
 - The overflow menu is `role="menu"`. Action rows are `menuitem`, or
   `menuitemcheckbox` when the action declares `isActive`. Each submenu is a
   labelled group, and its pressed rows become `menuitemradio`, such as the X
-  Size and Theme options.
+  Size and Theme options. Rows carry `tabindex="-1"`.
+- **Breaking for host selectors:** rows inside the `…` menu no longer carry
+  `aria-pressed`. They carry `aria-checked` instead. A host selector or test
+  on `[aria-pressed]` in that menu must move to `[aria-checked]`.
+- Inline bar buttons and the inline submenu popovers, such as Align and
+  Margin, keep `aria-pressed`.
 - Arrow keys, `Home` and `End` move between rows, and a letter key jumps to
   the next row that starts with it. `Escape` closes the menu and returns
   focus to `…`. `Enter` or `Space` on `…` opens the menu on its first row.
@@ -50,6 +69,9 @@ The next release is a minor bump (issues #379 and #391).
   that ratio, the column wins.
 - `audio`, `soundcloud` and `spotify` keep a free corner drag, because their
   players have a fixed height.
+- The kit registers a `MediaDeleteKeys` keymap at priority 101 for Backspace
+  and Delete. A host keymap for those keys at priority 100 or lower now runs
+  after it next to media (#376).
 
 ### Fixed
 
@@ -63,9 +85,11 @@ The next release is a minor bump (issues #379 and #391).
 - Delete works the same way forward. Media right after the caret is selected
   first, and the next Delete removes it.
 - This holds for every media node, inline images included.
-- A selected media node shows a 1px frame in `--hm-resize-border`.
 - The hover delete key now acts only while the editor has no focus. A focused
   editor's own keys select media first.
+- Backspace or Delete on a focused row in a toolbar popover no longer deletes
+  the media. This covers the `…` menu, the Align and Margin submenus, and
+  Replace URL.
 
 ### Documentation
 
@@ -83,7 +107,8 @@ The next release is a minor bump (issues #379 and #391).
 - The Quickstart image is a photo served from docs.plus.
 - The image README and `docs/resize-and-loading.md` describe the corner rule
   for every resizable node. `docs/api.md` drops the `Shift` row.
-- `docs/media-toolbar.md` describes the overflow menu keys and roles.
+- `docs/media-toolbar.md` describes the overflow menu keys and roles, and
+  the `delete` id contract for the divider and danger ink.
   `docs/styling.md` lists `--hm-toolbar-danger` and
   `.media-toolbar__menu-divider`.
 
