@@ -185,6 +185,34 @@ const updateSelectionState = (view: EditorView): void => {
   }
 }
 
+/**
+ * `.ha-wrap` of the nearest heading at or before this top-level block, or null.
+ * The schema is flat, so that heading owns the innermost section that holds the block.
+ */
+const findSectionWrapper = (view: EditorView, el: Element): HTMLElement | null => {
+  try {
+    const { doc } = view.state
+    const pos = view.posAtDOM(el, 0)
+    const $pos = doc.resolve(pos)
+    let index = $pos.index(0)
+    // A top-level widget, such as the fold crinkle, resolves to the node after it.
+    // Step back to the node it follows.
+    if ($pos.depth === 0 && view.nodeDOM(pos) !== el) index -= 1
+
+    for (let i = index; i >= 0; i--) {
+      if (doc.child(i).type.name !== TIPTAP_NODES.HEADING_TYPE) continue
+      const headingDom = view.nodeDOM($pos.posAtIndex(i, 0)) as HTMLElement | null
+      return (
+        headingDom?.querySelector<HTMLElement>(`:scope > .${HEADING_ACTIONS_CLASSES.wrap}`) ?? null
+      )
+    }
+  } catch (error) {
+    // posAtDOM throws a RangeError for DOM that ProseMirror does not own.
+    if (!(error instanceof RangeError)) throw error
+  }
+  return null
+}
+
 export function createHoverChatPlugin(editor: Editor): Plugin {
   const targetNodeTypes = [TIPTAP_NODES.HEADING_TYPE]
 
@@ -195,10 +223,71 @@ export function createHoverChatPlugin(editor: Editor): Plugin {
     key: new PluginKey('hoverChat'),
     state: createDecorationPluginState(buildDecorations, targetNodeTypes),
     props: createDecorationPluginProps(),
-    view() {
+    view(editorView) {
+      let frame = 0
+      let target: EventTarget | null = null
+      let wrapper: HTMLElement | null = null
+      let sheet: HTMLElement | null = null
+
+      // The class sits on widget DOM, which DOMObserver ignores, so it costs no re-render.
+      const setWrapper = (next: HTMLElement | null): void => {
+        if (next === wrapper) return
+        wrapper?.classList.remove(HEADING_ACTIONS_CLASSES.sectionHover)
+        next?.classList.add(HEADING_ACTIONS_CLASSES.sectionHover)
+        wrapper = next
+      }
+
+      const syncSectionHover = (): void => {
+        const { dom } = editorView
+        // A block gap targets view.dom itself. Keep the current class there:
+        // no layout read, and no flicker between blocks.
+        if (!(target instanceof Element) || target === dom || !dom.contains(target)) return
+
+        let el: Element = target
+        while (el.parentElement && el.parentElement !== dom) el = el.parentElement
+        setWrapper(findSectionWrapper(editorView, el))
+      }
+
+      const clearSectionHover = (): void => {
+        cancelAnimationFrame(frame)
+        frame = 0
+        target = null
+        setWrapper(null)
+      }
+
+      // The class clears when the pointer leaves the sheet, not view.dom, so it holds
+      // across the sheet padding on the way to the button. Tiptap mounts view.dom
+      // into the sheet after view() runs, so the sheet is found on a move.
+      const watchSheet = (): void => {
+        if (sheet?.contains(editorView.dom)) return
+        sheet?.removeEventListener('pointerleave', clearSectionHover)
+        sheet = editorView.dom.closest<HTMLElement>('.tiptap__editor') ?? editorView.dom
+        sheet.addEventListener('pointerleave', clearSectionHover)
+      }
+
+      // A native listener, not handleDOMEvents: ProseMirror skips those for events
+      // that a node view's stopEvent claims, such as a media caption.
+      const onPointerMove = (event: PointerEvent): void => {
+        if (event.pointerType === 'touch') return
+        watchSheet()
+        target = event.target
+        if (frame) return
+        frame = requestAnimationFrame(() => {
+          frame = 0
+          syncSectionHover()
+        })
+      }
+
+      editorView.dom.addEventListener('pointermove', onPointerMove)
+
       return {
         update: (view: EditorView) => {
           updateSelectionState(view)
+        },
+        destroy: () => {
+          editorView.dom.removeEventListener('pointermove', onPointerMove)
+          sheet?.removeEventListener('pointerleave', clearSectionHover)
+          clearSectionHover()
         }
       }
     }

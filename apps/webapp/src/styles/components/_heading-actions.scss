@@ -151,6 +151,7 @@ $ha-group-has-unread: '.ha-wrap.has-selection > .ha-group:has(.ha-chat-btn[data-
   @media (hover: hover) and (pointer: fine) {
     &:hover .ha-wrap:not(.has-selection) .ha-single,
     .ha-wrap:not(.has-selection):hover .ha-single,
+    .ha-wrap.is-section-hover:not(.has-selection) .ha-single,
     &:focus-within .ha-wrap:not(.has-selection) .ha-single {
       @include heading-chat-visible;
     }

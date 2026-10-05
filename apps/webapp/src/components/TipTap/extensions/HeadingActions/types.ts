@@ -12,7 +12,8 @@ export const HEADING_ACTIONS_CLASSES = {
   commentBtn: 'ha-comment-btn',
   /** Same horizontal dock as `.ha-wrap` on headings. */
   selectionCommentDock: 'ha-selection-comment-dock',
-  hasSelection: 'has-selection'
+  hasSelection: 'has-selection',
+  sectionHover: 'is-section-hover'
 } as const
 
 export type HeadingActionsClassName =

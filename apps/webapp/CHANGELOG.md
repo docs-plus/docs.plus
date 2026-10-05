@@ -185,6 +185,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- **The heading chat button shows while the pointer is over its section.** On
+  a desktop, the button shows anywhere over the heading and the blocks under
+  it. A block under a nested heading shows only that heading's button. The
+  button leaves when the pointer leaves the section or the document sheet
+  (#372).
 - **One order for the chat message menus.** The hover ⋯ menu now lists Copy
   link, Download, Copy to doc, Edit and Delete in the same order as the
   right-click menu. Screen readers no longer read the "seen" footer as a
