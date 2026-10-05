@@ -25,9 +25,12 @@ import { useOverlayTransition } from './useOverlayTransition'
 export const contextMenuPanelClassName =
   'flex flex-col list-none bg-base-100 border-base-300 m-0 min-w-[11rem] rounded-box border p-1.5 shadow-xl outline-none'
 
-/** Row host focus look: `group` feeds the `ContextMenuRow` fill, the ring shows keyboard focus. */
+/**
+ * Row host focus look: `group` feeds the `ContextMenuRow` fill. An outline paints above that fill;
+ * an inset ring hid under it. No `outline-none`: in Tailwind v4 it zeroes the outline style.
+ */
 export const contextMenuRowHostClassName =
-  'group rounded-field focus-visible:ring-primary outline-none focus-visible:ring-2 focus-visible:ring-inset'
+  'group rounded-field focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary'
 
 export type ContextMenuRowVariant = 'default' | 'primary' | 'danger'
 
