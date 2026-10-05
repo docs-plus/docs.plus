@@ -45,33 +45,35 @@
     pointer-events: none;
   }
 
-  h1:not(:first-child) {
-    font-size: var(--hd-size, 20pt);
+  // Fallbacks size only headings with no HeadingScale rank, such as one in a blockquote or table cell.
+  // Plain `h1` also covers a nested first-child h1; the Title rule above is more specific.
+  h1 {
+    font-size: var(--hd-size, 24pt);
     margin-top: 1.33em;
   }
 
   h2 {
-    font-size: var(--hd-size, 16pt);
+    font-size: var(--hd-size, 22pt);
     margin-top: 1.15em;
   }
 
   h3 {
-    font-size: var(--hd-size, 14pt);
+    font-size: var(--hd-size, 20pt);
     margin-top: 1em;
   }
 
   h4 {
-    font-size: var(--hd-size, 12pt);
+    font-size: var(--hd-size, 18pt);
     margin-top: 1em;
   }
 
   h5 {
-    font-size: var(--hd-size, 11pt);
+    font-size: var(--hd-size, 16pt);
     margin-top: 1em;
   }
 
   h6 {
-    font-size: var(--hd-size, 11pt);
+    font-size: var(--hd-size, 14pt);
     margin-top: 1em;
   }
 
