@@ -27,6 +27,8 @@ describe('canon options — enableClickSelection + exitable', () => {
       cy.window({ timeout: 10000 }).should('have.property', '_editor')
     })
 
+    // The mark is not inclusive (#374), so the right edge is plain on its own.
+    // The test seeds a stored link mark, so only the handler can make `X` plain.
     it('clears the hyperlink mark from storedMarks at the right edge so the next typed char is plain', () => {
       cy.setEditorContent('<p><a href="https://example.com">link</a></p>')
 
@@ -37,6 +39,11 @@ describe('canon options — enableClickSelection + exitable', () => {
           .focus()
           .setTextSelection(docEnd - 1)
           .run()
+        // Seed after the chain: a selection change clears stored marks.
+        const { state, schema } = editor
+        editor.view.dispatch(
+          state.tr.addStoredMark(schema.marks.hyperlink.create({ href: 'https://example.com' }))
+        )
       })
 
       // ArrowRight at the edge fires `exitMarkOnArrowRight` which clears

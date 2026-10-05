@@ -14,6 +14,7 @@ Persistent memory for AI agents working inside this package. Covers schema, comm
 - `previewHyperlink.ts` no longer passes dead `view` / `linkCoords` args to `editHyperlinkPopover`; keep the canonical signature.
 - Link-compatible command aliases: `setLink`, `unsetLink`, `toggleLink` — command names only, no schema rename.
 - Canon options: `defaultProtocol`, `isAllowedUri(href, ctx)`, `shouldAutoLink(url)`, `enableClickSelection`, `exitable`.
+- The `hyperlink` mark is never inclusive: the mark spec sets `inclusive: false`. Text typed at either edge of a link stays plain, as in Google Docs (maintainer ruling on #374, 2026-10-05). Do not tie it back to `autolink` for Tiptap parity. `exitable` stays in the API.
 - `editHyperlinkCommand` must return a composable Tiptap command that reads positions/marks from `tr.doc`. Do not dispatch a nested chain that can cause mismatched transactions.
 
 ## Click Handling

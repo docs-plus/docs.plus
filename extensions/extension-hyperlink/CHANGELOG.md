@@ -10,6 +10,23 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ## [Unreleased]
 
+The next release is a minor bump (issue #374).
+
+### Highlights
+
+- **Typing at a link edge stays plain.** Text typed immediately before or after a link no longer joins it, as in Google Docs.
+
+### Changed
+
+- The `hyperlink` mark is no longer inclusive. The mark spec sets `inclusive: false`, and `autolink` no longer sets it.
+  A character typed at the right end of a link now stays plain.
+  To make a link longer, select the new text and apply the link again.
+
+### Fixed
+
+- Typing before a link that starts its block no longer changes the link.
+  A letter used to remove the whole link, and a space used to join it ([#374](https://github.com/docs-plus/docs.plus/issues/374)).
+
 ### Documentation
 
 - The README is a short start page: why to use it, install, a Quickstart

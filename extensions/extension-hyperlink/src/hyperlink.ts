@@ -103,7 +103,7 @@ export interface HyperlinkOptions {
   shouldAutoLink?: (uri: string) => boolean
   /** Click inside a link selects the whole mark range (editable mode only). Mirrors `@tiptap/extension-link`. */
   enableClickSelection: boolean
-  /** ArrowRight at the right edge of a link exits the mark. Mirrors `@tiptap/extension-link`. */
+  /** ArrowRight at the right edge of a link drops a stored link mark. Mirrors `@tiptap/extension-link`. */
   exitable: boolean
 }
 
@@ -133,6 +133,10 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
   priority: 1000,
 
   keepOnSplit: false,
+
+  // Text typed at either edge stays outside the link, as in Google Docs.
+  // Upstream Tiptap ties this to `autolink`; this package does not (#374).
+  inclusive: false,
 
   // Markdown import/export lives with the mark itself (inert unless the host
   // also loads a Markdown extension). Parsing applies the locked `hyperlink` mark name.
@@ -178,10 +182,6 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
   // outlive the editor.
   onDestroy() {
     closeOwnedPopover(this.editor)
-  },
-
-  inclusive() {
-    return this.options.autolink
   },
 
   addOptions() {
@@ -315,8 +315,9 @@ function getContext(self: {
   return ctx
 }
 
-// `exitable` ArrowRight handler — clears the link mark from `storedMarks` so the next
-// typed char lands outside the link. Returns `false` so ProseMirror still moves the caret.
+// `exitable` ArrowRight handler. The mark is not inclusive, so this only drops a stored
+// link mark, such as one `setHyperlink` leaves on a collapsed caret.
+// Returns `false` so ProseMirror still moves the caret.
 function exitMarkOnArrowRight(editor: Editor, type: MarkType): boolean {
   const { state } = editor
   const { selection, tr } = state
