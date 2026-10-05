@@ -24,53 +24,6 @@ export function getPointerPosition(e: MouseEvent | TouchEvent | PointerEvent): P
   return { x: mouseEvent.clientX, y: mouseEvent.clientY }
 }
 
-/** Aspect-locked resize: the larger pointer delta drives the axis the other follows. */
-export function calculateAspectRatioDimensions(
-  deltaX: number,
-  deltaY: number,
-  initialWidth: number,
-  initialHeight: number,
-  aspectRatio: number,
-  corner: string
-): { width: number; height: number } {
-  let newWidth: number
-  let newHeight: number
-  const absX = Math.abs(deltaX)
-  const absY = Math.abs(deltaY)
-
-  if (absX > absY) {
-    switch (corner) {
-      case 'topRight':
-      case 'bottomRight':
-        newWidth = initialWidth + deltaX
-        break
-      case 'topLeft':
-      case 'bottomLeft':
-        newWidth = initialWidth - deltaX
-        break
-      default:
-        newWidth = initialWidth + deltaX
-    }
-    newHeight = newWidth / aspectRatio
-  } else {
-    switch (corner) {
-      case 'topRight':
-      case 'topLeft':
-        newHeight = initialHeight - deltaY
-        break
-      case 'bottomRight':
-      case 'bottomLeft':
-        newHeight = initialHeight + deltaY
-        break
-      default:
-        newHeight = initialHeight + deltaY
-    }
-    newWidth = newHeight * aspectRatio
-  }
-
-  return { width: newWidth, height: newHeight }
-}
-
 function resolveResizeConstraints(editor: Editor): ResizeConstraints {
   const maxWidth = getEditorContentWidth(editor)
   return {
@@ -100,14 +53,30 @@ export function resolveMediaNodeConstraints(
   return base
 }
 
+// These players have a fixed height, so a ratio lock would make them grow taller as they grow wider.
+const FIXED_HEIGHT_PLAYERS = new Set(['audio', 'soundcloud', 'spotify'])
+
+export function keepsCornerAspectRatio(node?: { type: { name: string } } | null): boolean {
+  return !!node && !FIXED_HEIGHT_PLAYERS.has(node.type.name)
+}
+
 export function clampDimensionsToConstraints(
   width: number,
   height: number,
-  constraints: ResizeConstraints
+  constraints: ResizeConstraints,
+  lockedRatio: number | null = null
 ): { width: number; height: number } {
-  const maxWidth = constraints.maxWidth ?? Number.POSITIVE_INFINITY
-  const maxHeight = constraints.maxHeight ?? Number.POSITIVE_INFINITY
-  const fitted = fitDimensionsToBounds(width, height, { maxWidth, maxHeight })
+  const bounds = {
+    maxWidth: constraints.maxWidth ?? Number.POSITIVE_INFINITY,
+    maxHeight: constraints.maxHeight ?? Number.POSITIVE_INFINITY
+  }
+  // Width alone carries a locked size, so a drag past the opposite corner still
+  // lands on the floors. The column fit runs last, so it wins over a floor.
+  if (lockedRatio) {
+    const lockedWidth = Math.max(width, constraints.minWidth, constraints.minHeight * lockedRatio)
+    return fitDimensionsToBounds(lockedWidth, lockedWidth / lockedRatio, bounds)
+  }
+  const fitted = fitDimensionsToBounds(width, height, bounds)
   return {
     width: Math.max(constraints.minWidth, fitted.width),
     height: Math.max(constraints.minHeight, fitted.height)
@@ -118,7 +87,8 @@ export function updateNodeDimensions(
   editor: Editor,
   nodePos: number,
   width: number,
-  height: number
+  height: number,
+  lockedRatio: number | null = null
 ): void {
   const { state, dispatch } = editor.view
   const { tr } = state
@@ -132,7 +102,8 @@ export function updateNodeDimensions(
   const clamped = clampDimensionsToConstraints(
     width,
     height,
-    resolveMediaNodeConstraints(editor, nodeAtPos)
+    resolveMediaNodeConstraints(editor, nodeAtPos),
+    lockedRatio
   )
   tr.setNodeMarkup(nodePos, null, {
     ...nodeAtPos.attrs,
@@ -164,35 +135,4 @@ export function resetGripperPosition(
 ): void {
   gripper.style.left = `${initialLeft}px`
   gripper.style.top = `${initialTop}px`
-}
-
-/** Drag-scoped Shift tracking; caller must `cleanup()` on drag end to avoid leaking listeners. */
-export function setupKeyboardListeners(): {
-  isShiftPressed: () => boolean
-  cleanup: () => void
-} {
-  let shiftPressed = false
-
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Shift') {
-      shiftPressed = true
-    }
-  }
-
-  const handleKeyUp = (e: KeyboardEvent) => {
-    if (e.key === 'Shift') {
-      shiftPressed = false
-    }
-  }
-
-  document.addEventListener('keydown', handleKeyDown)
-  document.addEventListener('keyup', handleKeyUp)
-
-  return {
-    isShiftPressed: () => shiftPressed,
-    cleanup: () => {
-      document.removeEventListener('keydown', handleKeyDown)
-      document.removeEventListener('keyup', handleKeyUp)
-    }
-  }
 }

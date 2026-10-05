@@ -8,6 +8,24 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
+The next release is a minor bump (issue #379).
+
+### Highlights
+
+- A corner drag keeps the aspect ratio on `image`, `video`, `youtube`,
+  `vimeo` and `loom`, as in Word, Google Docs and Notion.
+
+### Changed
+
+- A corner handle on `image`, `video`, `youtube`, `vimeo` and `loom` always
+  keeps the aspect ratio. `Shift` no longer changes a resize. Side handles
+  still resize one axis. See #379.
+- On those five nodes, the `160` × `80` floor and the column width keep the
+  ratio during a corner drag. When the column is too narrow for a floor at
+  that ratio, the column wins.
+- `audio`, `soundcloud` and `spotify` keep a free corner drag, because their
+  players have a fixed height.
+
 ### Fixed
 
 - Backspace no longer deletes a media node in one press (#376). In an empty
@@ -35,6 +53,8 @@ historical Conventional Commits format. The project adheres to
   Markdown on jsDelivr.
 - The README opens with a GIF: a pasted YouTube URL becomes a player, then a corner drag resizes it.
 - The Quickstart image is a photo served from docs.plus.
+- The image README and `docs/resize-and-loading.md` describe the corner rule
+  for every resizable node. `docs/api.md` drops the `Shift` row.
 
 ### Internal
 

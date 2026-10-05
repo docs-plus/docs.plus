@@ -7,15 +7,14 @@ import {
   setMediaResizing
 } from '../../utils/media-resize-controls'
 import { getMediaNodeType, resolveMediaFromGripper } from '../../utils/media-target'
-import { Corner, ResizeConstraints, ResizeState } from './types'
+import { ClampType, Corner, ResizeConstraints, ResizeState } from './types'
 import {
-  calculateAspectRatioDimensions,
   clampDimensionsToConstraints,
   getPointerPosition,
+  keepsCornerAspectRatio,
   readGripperDimensions,
   resetGripperPosition,
   resolveMediaNodeConstraints,
-  setupKeyboardListeners,
   updateNodeDimensions
 } from './utils'
 
@@ -29,9 +28,12 @@ export function abortActiveGripperDrag(editor: Editor): void {
   activeDragByEditor.get(editor)?.()
 }
 
-interface GripperBox {
+interface GripperSize {
   width: number
   height: number
+}
+
+interface GripperBox extends GripperSize {
   top: number
   left: number
 }
@@ -43,48 +45,49 @@ interface GripperDragContext {
   clamp: HTMLElement
 }
 
-type ComputeGripperBox = (ctx: GripperDragContext) => GripperBox
-
 function isLeftEdge(clamp: HTMLElement): boolean {
   return (
-    clamp.classList.contains('media-resize-clamp--left') ||
-    clamp.classList.contains('media-resize-clamp--top-left') ||
-    clamp.classList.contains('media-resize-clamp--bottom-left')
+    clamp.classList.contains(ClampType.Left) ||
+    clamp.classList.contains(ClampType.TopLeft) ||
+    clamp.classList.contains(ClampType.BottomLeft)
   )
 }
 
 function isTopEdge(clamp: HTMLElement): boolean {
   return (
-    clamp.classList.contains('media-resize-clamp--top') ||
-    clamp.classList.contains('media-resize-clamp--top-left') ||
-    clamp.classList.contains('media-resize-clamp--top-right')
+    clamp.classList.contains(ClampType.Top) ||
+    clamp.classList.contains(ClampType.TopLeft) ||
+    clamp.classList.contains(ClampType.TopRight)
   )
 }
 
+/** The handle's own edge moves; the opposite edge stays put. */
 function clampGripperBox(
-  box: GripperBox,
+  size: GripperSize,
   state: ResizeState,
   clamp: HTMLElement,
   constraints: ResizeConstraints
 ): GripperBox {
-  const clamped = clampDimensionsToConstraints(box.width, box.height, constraints)
-  let { top, left } = box
-
-  if (isLeftEdge(clamp)) {
-    left = state.initialLeft + (state.initialWidth - clamped.width)
+  const { width, height } = clampDimensionsToConstraints(
+    size.width,
+    size.height,
+    constraints,
+    state.lockedRatio
+  )
+  return {
+    width,
+    height,
+    top: isTopEdge(clamp) ? state.initialTop + state.initialHeight - height : state.initialTop,
+    left: isLeftEdge(clamp) ? state.initialLeft + state.initialWidth - width : state.initialLeft
   }
-  if (isTopEdge(clamp)) {
-    top = state.initialTop + (state.initialHeight - clamped.height)
-  }
-
-  return { width: clamped.width, height: clamped.height, top, left }
 }
 
 interface GripperDragConfig {
   clamp: HTMLElement
   gripper: HTMLElement
   editor: Editor
-  computeBox: ComputeGripperBox
+  /** Set on a corner handle; a side handle omits it. */
+  corner?: Corner
 }
 
 /** Pointer-capture class on the gripper widget during a drag — never mutate node-view DOM. */
@@ -106,9 +109,9 @@ function resolveDragTargetPos(editor: Editor, gripper: HTMLElement): number | nu
   return resolveMediaNodePos(editor.view, media, nodeType)
 }
 
-/** Wire one clamp's pointer drag onto the shared resize lifecycle; `computeBox` owns the per-handle math. */
+/** Wire one clamp's pointer drag onto the shared resize lifecycle. */
 export function attachGripperDrag(config: GripperDragConfig): void {
-  const { clamp, gripper, editor, computeBox } = config
+  const { clamp, gripper, editor, corner } = config
 
   function handleStart(event: Event) {
     if (!(event instanceof PointerEvent)) return
@@ -133,7 +136,6 @@ export function attachGripperDrag(config: GripperDragConfig): void {
       return
     }
 
-    const keyboard = setupKeyboardListeners()
     const start = getPointerPosition(event)
     const nodePos = resolveDragTargetPos(editor, gripper)
     const node = nodePos != null ? editor.state.doc.nodeAt(nodePos) : null
@@ -146,19 +148,19 @@ export function attachGripperDrag(config: GripperDragConfig): void {
       initialHeight: gripper.offsetHeight,
       initialTop: gripper.offsetTop,
       initialLeft: gripper.offsetLeft,
-      aspectRatio: gripper.offsetWidth / gripper.offsetHeight,
-      isShiftPressed: keyboard.isShiftPressed()
+      lockedRatio:
+        corner && keepsCornerAspectRatio(node) ? gripper.offsetWidth / gripper.offsetHeight : null
     }
 
     function applyMove(clientX: number, clientY: number) {
-      state.isShiftPressed = keyboard.isShiftPressed()
-      const raw = computeBox({
+      const ctx = {
         deltaX: clientX - state.initialX,
         deltaY: clientY - state.initialY,
         state,
         clamp
-      })
-      const box = clampGripperBox(raw, state, clamp, constraints)
+      }
+      const size = corner ? computeCornerSize(corner, ctx) : computeSideSize(ctx)
+      const box = clampGripperBox(size, state, clamp, constraints)
 
       gripper.style.width = `${box.width}px`
       gripper.style.height = `${box.height}px`
@@ -200,7 +202,7 @@ export function attachGripperDrag(config: GripperDragConfig): void {
 
       try {
         if (nodePos !== null) {
-          updateNodeDimensions(editor, nodePos, width, height)
+          updateNodeDimensions(editor, nodePos, width, height, state.lockedRatio)
         }
       } finally {
         // Listeners and pointer capture must release even when the commit throws.
@@ -258,7 +260,6 @@ export function attachGripperDrag(config: GripperDragConfig): void {
 
     function teardown() {
       setDragListeners(false)
-      keyboard.cleanup()
       try {
         if (clamp.hasPointerCapture(pointerId)) clamp.releasePointerCapture(pointerId)
       } catch {
@@ -285,86 +286,27 @@ export function attachGripperDrag(config: GripperDragConfig): void {
   clamp.addEventListener('pointerdown', handleStart)
 }
 
-/** Left/right/top/bottom handles: one axis, no aspect ratio. */
-export const computeSideBox: ComputeGripperBox = ({ deltaX, deltaY, state, clamp }) => {
+/** Side handles: one axis, no aspect ratio. */
+function computeSideSize({ deltaX, deltaY, state, clamp }: GripperDragContext): GripperSize {
   let width = state.initialWidth
   let height = state.initialHeight
-  let top = state.initialTop
-  let left = state.initialLeft
-
-  if (clamp.classList.contains('media-resize-clamp--left')) {
-    width = state.initialWidth - deltaX
-    left = state.initialLeft + deltaX
-  } else if (clamp.classList.contains('media-resize-clamp--right')) {
-    width = state.initialWidth + deltaX
-  } else if (clamp.classList.contains('media-resize-clamp--top')) {
-    height = state.initialHeight - deltaY
-    top = state.initialTop + deltaY
-  } else if (clamp.classList.contains('media-resize-clamp--bottom')) {
-    height = state.initialHeight + deltaY
-  }
-
-  return { width, height, top, left }
+  if (clamp.classList.contains(ClampType.Left)) width -= deltaX
+  else if (clamp.classList.contains(ClampType.Right)) width += deltaX
+  else if (clamp.classList.contains(ClampType.Top)) height -= deltaY
+  else if (clamp.classList.contains(ClampType.Bottom)) height += deltaY
+  return { width, height }
 }
 
-/** Corner handles: free resize, or aspect-locked while Shift is held. */
-export function computeCornerBox(corner: Corner): ComputeGripperBox {
-  return ({ deltaX, deltaY, state }) => {
-    let width: number
-    let height: number
-    let top = state.initialTop
-    let left = state.initialLeft
-
-    if (state.isShiftPressed && state.aspectRatio) {
-      const dimensions = calculateAspectRatioDimensions(
-        deltaX,
-        deltaY,
-        state.initialWidth,
-        state.initialHeight,
-        state.aspectRatio,
-        corner
-      )
-      width = dimensions.width
-      height = dimensions.height
-
-      switch (corner) {
-        case 'topRight':
-          top = state.initialTop + (state.initialHeight - height)
-          break
-        case 'bottomLeft':
-          left = state.initialLeft + (state.initialWidth - width)
-          break
-        case 'topLeft':
-          top = state.initialTop + (state.initialHeight - height)
-          left = state.initialLeft + (state.initialWidth - width)
-          break
-        case 'bottomRight':
-      }
-    } else {
-      switch (corner) {
-        case 'topRight':
-          width = state.initialWidth + deltaX
-          height = state.initialHeight - deltaY
-          top = state.initialTop + deltaY
-          break
-        case 'bottomLeft':
-          width = state.initialWidth - deltaX
-          height = state.initialHeight + deltaY
-          left = state.initialLeft + deltaX
-          break
-        case 'topLeft':
-          width = state.initialWidth - deltaX
-          height = state.initialHeight - deltaY
-          top = state.initialTop + deltaY
-          left = state.initialLeft + deltaX
-          break
-        case 'bottomRight':
-          width = state.initialWidth + deltaX
-          height = state.initialHeight + deltaY
-          break
-      }
-    }
-
-    return { width, height, top, left }
-  }
+/** Corner handles: with a locked ratio, the larger pointer move drives one axis. */
+function computeCornerSize(
+  corner: Corner,
+  { deltaX, deltaY, state }: GripperDragContext
+): GripperSize {
+  const width = state.initialWidth + (corner.endsWith('Left') ? -deltaX : deltaX)
+  const height = state.initialHeight + (corner.startsWith('top') ? -deltaY : deltaY)
+  const ratio = state.lockedRatio
+  if (!ratio) return { width, height }
+  return Math.abs(deltaX) > Math.abs(deltaY)
+    ? { width, height: width / ratio }
+    : { width: height * ratio, height }
 }

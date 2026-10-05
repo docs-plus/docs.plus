@@ -159,7 +159,6 @@ The kit binds Backspace and Delete next to media through a keymap at priority 10
 | `Enter`                | `replace-URL form` | Submits the URL. An invalid URL shows an inline error and the form stays open.        |
 | `Escape`               | `media toolbar`    | Dismisses the toolbar and refocuses the editor, once focus sits on a toolbar button.  |
 | `Escape`               | `resize drag`      | Cancels the drag. The node keeps the size it had before the drag started.             |
-| `Shift` (held)         | `resize drag`      | Locks the aspect ratio while a corner handle moves.                                   |
 | `Backspace` / `Delete` | `editor`           | Next to a media node, selects it first. The next press deletes it.                    |
 | `Backspace` / `Delete` | `document`         | Deletes the media node under the active hover controls while the editor has no focus. |
 

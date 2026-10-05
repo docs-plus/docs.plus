@@ -3,6 +3,20 @@ const MIN_HEIGHT = 80
 
 const YOUTUBE_SRC = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
 
+/** Yields the committed size after it checks whole numbers, the ratio and the painted box. */
+function expectCornerRatio(nodeName: string, selector: string, ratio: number, tolerance = 0.02) {
+  return cy.nodeAttr(nodeName, 'width').then((width) =>
+    cy.nodeAttr(nodeName, 'height').then((height) => {
+      const size = { width: Number(width), height: Number(height) }
+      expect(Number.isInteger(size.width) && Number.isInteger(size.height)).to.eq(true)
+      expect(size.width / size.height).to.be.closeTo(ratio, tolerance)
+      cy.expectRenderedMediaSize(selector, 'width', size.width)
+      cy.expectRenderedMediaSize(selector, 'height', size.height)
+      return cy.wrap(size)
+    })
+  )
+}
+
 describe('resize gripper', () => {
   beforeEach(() => {
     cy.visitPlayground()
@@ -215,14 +229,61 @@ describe('resize gripper', () => {
   })
 
   describe('corner handles', () => {
-    it('grows width and height when dragging the bottom-right handle', () => {
+    it('keeps the aspect ratio on an image corner drag', () => {
       cy.prepareImageForResize(200, 150)
-      cy.dragResizeClamp('bottom-right', 40, 40)
-      cy.nodeAttr('image', 'width').should((width) => {
-        expect(Number(width)).to.be.greaterThan(200)
+      cy.dragResizeClamp('bottom-right', 80, 10)
+      expectCornerRatio('image', '#editor img', 4 / 3)
+        .its('width')
+        .should('be.greaterThan', 200)
+    })
+
+    it('ignores Shift during a corner drag', () => {
+      cy.prepareImageForResize(200, 150)
+      cy.get(
+        '#editor .hypermultimedia__resize-gripper--active .media-resize-clamp--bottom-right'
+      ).then(($clamp) => {
+        const rect = $clamp[0].getBoundingClientRect()
+        const x = rect.left + rect.width / 2
+        const y = rect.top + rect.height / 2
+        cy.wrap($clamp).realMouseDown({ position: 'center', shiftKey: true })
+        // Shift goes down after the drag starts, where a listener bound at drag start would see it.
+        cy.document().trigger('keydown', { key: 'Shift' })
+        cy.get('body').realMouseMove(x + 80, y + 10, { shiftKey: true })
+        cy.get('body').realMouseUp({ shiftKey: true })
+        cy.document().trigger('keyup', { key: 'Shift' })
       })
-      cy.nodeAttr('image', 'height').should((height) => {
-        expect(Number(height)).to.be.greaterThan(150)
+      expectCornerRatio('image', '#editor img', 4 / 3)
+        .its('width')
+        .should('be.greaterThan', 200)
+    })
+
+    it('keeps the aspect ratio on a youtube corner drag', () => {
+      cy.getEditor().then((editor) => {
+        editor.commands.setYoutubeVideo({ src: YOUTUBE_SRC, width: 400, height: 300 })
+      })
+      cy.hoverMediaControls('#editor .hypermultimedia--youtube__content')
+      cy.dragResizeClamp('bottom-right', 60, 0)
+      expectCornerRatio('youtube', '#editor .hm-media-host', 4 / 3)
+        .its('width')
+        .should('be.greaterThan', 400)
+    })
+
+    it('keeps a free corner drag on audio', () => {
+      cy.getEditor().then((editor) => {
+        editor.commands.setAudio({
+          src: 'https://example.com/clip.mp3',
+          width: 400,
+          height: 120
+        })
+      })
+      cy.hoverMediaControls('#editor .hypermultimedia--audio__content')
+      cy.dragResizeClamp('bottom-right', 0, 60)
+      cy.nodeAttr('audio', 'width').should((width) => {
+        expect(Number(width)).to.be.closeTo(400, 2)
+      })
+      cy.nodeAttr('audio', 'height').then((height) => {
+        expect(Number(height)).to.be.closeTo(180, 2)
+        cy.expectRenderedMediaSize('#editor .hm-media-host', 'height', Number(height))
       })
     })
   })
@@ -279,6 +340,28 @@ describe('resize gripper', () => {
       cy.dragResizeClamp('top', 0, 200)
       cy.nodeAttr('image', 'height').should((height) => {
         expect(Number(height)).to.be.at.least(MIN_HEIGHT)
+      })
+    })
+
+    it('keeps the ratio at the minimum size on a corner drag', () => {
+      cy.prepareImageForResize(400, 100)
+      cy.get(
+        '#editor .hypermultimedia__resize-gripper--active .media-resize-clamp--bottom-right'
+      ).then(($clamp) => {
+        const rect = $clamp[0].getBoundingClientRect()
+        cy.wrap($clamp).realMouseDown({ position: 'center' })
+        // Past the opposite corner, so the raw drag size is negative.
+        cy.get('body').realMouseMove(rect.left + rect.width / 2 - 450, rect.top + rect.height / 2)
+        // The commit clamps again, so only the preview shows a ratio lost mid-drag.
+        cy.get('#editor .hypermultimedia__resize-gripper--active').should(($gripper) => {
+          expect($gripper[0].style.width).to.eq(`${MIN_HEIGHT * 4}px`)
+          expect($gripper[0].style.height).to.eq(`${MIN_HEIGHT}px`)
+        })
+        cy.get('body').realMouseUp()
+      })
+      expectCornerRatio('image', '#editor img', 4, 0.05).should('deep.equal', {
+        width: MIN_HEIGHT * 4,
+        height: MIN_HEIGHT
       })
     })
 

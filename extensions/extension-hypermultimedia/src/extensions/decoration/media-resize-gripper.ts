@@ -1,7 +1,7 @@
 import { Editor } from '@tiptap/core'
 import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 
-import { attachGripperDrag, computeCornerBox, computeSideBox } from './gripperDrag'
+import { attachGripperDrag } from './gripperDrag'
 import { ClampType, Corner, MediaGripperInfo } from './types'
 
 function createClamp(extraClass: ClampType): HTMLDivElement {
@@ -54,16 +54,11 @@ export const createMediaResizeGripper = (
   gripper.append(...clamps.sides, ...Object.values(clamps.corners))
 
   clamps.sides.forEach((clamp) => {
-    attachGripperDrag({ clamp, gripper, editor, computeBox: computeSideBox })
+    attachGripperDrag({ clamp, gripper, editor })
   })
 
   Object.entries(clamps.corners).forEach(([corner, clamp]) => {
-    attachGripperDrag({
-      clamp,
-      gripper,
-      editor,
-      computeBox: computeCornerBox(corner as Corner)
-    })
+    attachGripperDrag({ clamp, gripper, editor, corner: corner as Corner })
   })
 
   return gripper

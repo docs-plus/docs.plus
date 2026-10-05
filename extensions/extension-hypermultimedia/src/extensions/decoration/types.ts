@@ -13,8 +13,8 @@ export interface ResizeState {
   initialHeight: number
   initialTop: number
   initialLeft: number
-  aspectRatio?: number
-  isShiftPressed: boolean
+  /** Width over height at drag start; null on a side handle or a fixed-height player. */
+  lockedRatio: number | null
 }
 
 export interface PointerPosition {
