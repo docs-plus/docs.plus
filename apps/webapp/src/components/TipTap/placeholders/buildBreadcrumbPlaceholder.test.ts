@@ -146,8 +146,8 @@ describe('resolveTailSegment', () => {
     expect(resolveTailSegment({ nodeName: 'paragraph', isSubtitle: true })).toBe('Subtitle')
   })
 
-  it('returns "Write here" for a regular paragraph', () => {
-    expect(resolveTailSegment({ nodeName: 'paragraph' })).toBe('Write here')
+  it('returns empty string for a plain paragraph', () => {
+    expect(resolveTailSegment({ nodeName: 'paragraph' })).toBe('')
   })
 
   it('returns "Write code" for a code block', () => {
@@ -247,9 +247,7 @@ describe('buildBreadcrumbPlaceholder', () => {
     const { doc, positions } = makeDoc(children)
     const props = makeProps(doc, children[3], positions[3])
 
-    expect(buildBreadcrumbPlaceholder(props)).toBe(
-      'Introduction > Background > Methods > Write here'
-    )
+    expect(buildBreadcrumbPlaceholder(props)).toBe('Introduction > Background > Methods')
   })
 
   it('renders breadcrumb for a top-level empty H3 (parents only + Heading 3 tail)', () => {
@@ -278,9 +276,7 @@ describe('buildBreadcrumbPlaceholder', () => {
     const { doc, positions } = makeDoc(children)
     const props = makeProps(doc, children[3], positions[3])
 
-    expect(buildBreadcrumbPlaceholder(props)).toBe(
-      'Project plan > Q3 details > Sub item > Write here'
-    )
+    expect(buildBreadcrumbPlaceholder(props)).toBe('Project plan > Q3 details > Sub item')
   })
 
   it('falls back to "Heading 1" when the title H1 is empty above a paragraph', () => {
@@ -288,7 +284,7 @@ describe('buildBreadcrumbPlaceholder', () => {
     const { doc, positions } = makeDoc(children)
     const props = makeProps(doc, children[2], positions[2])
 
-    expect(buildBreadcrumbPlaceholder(props)).toBe('Heading 1 > Methods > Write here')
+    expect(buildBreadcrumbPlaceholder(props)).toBe('Heading 1 > Methods')
   })
 
   it('truncates long heading segments to 24 chars including ellipsis', () => {
@@ -300,9 +296,7 @@ describe('buildBreadcrumbPlaceholder', () => {
     const { doc, positions } = makeDoc(children)
     const props = makeProps(doc, children[2], positions[2])
 
-    expect(buildBreadcrumbPlaceholder(props)).toBe(
-      'A surprisingly thorou... > Methods > Write here'
-    )
+    expect(buildBreadcrumbPlaceholder(props)).toBe('A surprisingly thorou... > Methods')
   })
 
   it("default scope ('top-level') returns existing 'List' inside list items", () => {
@@ -334,9 +328,7 @@ describe('buildBreadcrumbPlaceholder', () => {
     const { doc, positions } = makeDoc(children)
     const props = makeProps(doc, children[2], positions[2], 'listItem')
 
-    expect(buildBreadcrumbPlaceholder(props, { scope: 'all-blocks' })).toBe(
-      'Doc > Tasks > Write here'
-    )
+    expect(buildBreadcrumbPlaceholder(props, { scope: 'all-blocks' })).toBe('Doc > Tasks')
   })
 
   it('returns empty string when an unknown node type appears at top-level with no headings', () => {
@@ -384,7 +376,7 @@ describe('buildBreadcrumbPlaceholder', () => {
       parentName: 'doc'
     }
     expect(() => buildBreadcrumbPlaceholder(props)).not.toThrow()
-    expect(buildBreadcrumbPlaceholder(props)).toBe('Title > Write here')
+    expect(buildBreadcrumbPlaceholder(props)).toBe('Title')
   })
 
   it("default scope keeps existing 'Heading' for an empty heading inside a blockquote", () => {

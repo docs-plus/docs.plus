@@ -71,13 +71,16 @@ interface TailContext {
   isSubtitle?: boolean
 }
 
-/** Headings carry their level (`Heading N`) so the user sees what they're about to write. */
+/**
+ * Headings carry their level (`Heading N`) so the user sees what they're about to write.
+ * A plain paragraph has no tail, because the heading chain already names its section.
+ */
 export function resolveTailSegment(ctx: TailContext): string {
   if (ctx.nodeName === 'heading' && typeof ctx.headingLevel === 'number') {
     return `Heading ${ctx.headingLevel}`
   }
-  if (ctx.nodeName === 'paragraph' && ctx.isSubtitle) {
-    return 'Subtitle'
+  if (ctx.nodeName === 'paragraph') {
+    return ctx.isSubtitle ? 'Subtitle' : ''
   }
   return PLACEHOLDER_TEXT[ctx.nodeName] ?? ''
 }
