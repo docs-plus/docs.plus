@@ -32,7 +32,10 @@ interface CaretFindState {
   opened: Set<string>
   /** Fold persist mode from before Find first changed folds; null while Find has not. */
   restorePersist: boolean | null
-  /** Bumped on an explicit step so the view scrolls only then, never on remote edits. */
+  /**
+   * Bumped when Find picks a hit (open, query, step), so the view scrolls only then,
+   * never on a remote edit.
+   */
   revealSeq: number
   decos: DecorationSet
 }

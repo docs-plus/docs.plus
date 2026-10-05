@@ -187,6 +187,14 @@ const FindBar = ({ editor, variant }: { editor: Editor; variant: 'desktop' | 'mo
     return () => window.removeEventListener('keydown', onKeyDownCapture, true)
   }, [editor, isDesktop, nodeRef, sendQuery, step])
 
+  // Every close path, the editor's Escape included. A late query would dispatch an empty
+  // transaction. A stale opener would take focus on the next close.
+  useEffect(() => {
+    if (status.open) return
+    sendQuery.cancel()
+    returnFocusRef.current = null
+  }, [sendQuery, status.open])
+
   // No editor refocus here: that would pull the keyboard away from the chat composer.
   useEffect(() => {
     if (!yieldsToChat || !status.open || editor.isDestroyed) return
@@ -217,6 +225,7 @@ const FindBar = ({ editor, variant }: { editor: Editor; variant: 'desktop' | 'mo
         event.stopPropagation()
         close()
       }}
+      // The pad QR card drops below this bar through `.caret-find-bar` and its desktop top-2.
       className={
         isDesktop
           ? twMerge(
