@@ -18,6 +18,14 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Added
 
+- **A QR code for the pad from the desktop toolbar.** A new toolbar toggle,
+  after Filter, shows a small QR code at the top right of the workspace. It
+  encodes the same clean pad link as the share card, with no heading, chat or
+  Filter terms. A Private pad shows no QR, and the toggle is off there. The card
+  shows only when it fits beside the page, and it never covers the outline,
+  chat or the page. Nothing is saved: a reload or another pad hides it. These
+  are agent defaults that wait for the maintainer's review (#377).
+
 - **Settings sync across your tabs and devices.** A setting you save shows in
   every open tab and on every device where you are signed in. A field you are
   still editing keeps your change. When two devices save different settings
@@ -185,6 +193,20 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- **Find floats at the top right of the page, like Google Docs.** On a
+  desktop, ⌘F (Ctrl+F) opens a small Find bar over the editor column. The
+  toolbar no longer has a Find button, and the page never moves when Find
+  opens. ⌘G and Shift+⌘G step through matches, and Escape closes the bar. On a
+  phone, Find stays in the outline drawer (#393).
+- **Every click menu now works like the right-click menus.** The Documents ⋮
+  menu in Settings and on Home groups its rows as Open in new tab, Copy link |
+  Rename, Duplicate, Favorite | Private, Read-only | Delete. Private and
+  Read-only are check rows inside the menu. The image viewer's ⋯ menu, the
+  toolbar list menus and the media toolbar ⋯ use the same rows, with arrow
+  keys, Escape and a visible keyboard focus ring. On a phone, these menus open
+  the standard bottom sheet. Toolbar overflow buttons show ⋯, and row menus
+  show ⋮ (#391).
+
 - **The heading chat button shows while the pointer is over its section.** On
   a desktop, the button shows anywhere over the heading and the blocks under
   it. A block under a nested heading shows only that heading's button. The
@@ -324,6 +346,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   and the count of the rest.
 
 ### Fixed
+
+- **The Add link form takes your typing at once.** After you select text and
+  press the toolbar link button, the URL field has focus, so the first letter
+  you type lands there (#366).
 
 - Outline rows of one heading level now start their titles at the same place.
   A heading with no subheadings keeps an empty space where the fold arrow
