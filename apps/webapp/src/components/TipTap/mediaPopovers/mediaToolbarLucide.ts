@@ -3,6 +3,7 @@ import {
   type MediaToolbarIconKey,
   type MediaToolbarIconsResolver
 } from '@docs.plus/extension-hypermultimedia'
+import { Icons } from '@icons'
 import { lucideSvgString } from '@utils/lucideSvgString'
 import type { IconType } from 'react-icons'
 import {
@@ -12,7 +13,6 @@ import {
   LuCaptions,
   LuCopy,
   LuDownload,
-  LuEllipsis,
   LuExternalLink,
   LuMessageSquarePlus,
   LuPanelLeft,
@@ -38,7 +38,7 @@ const ACTION_ICONS: Partial<Record<MediaToolbarIconKey, IconType>> = {
   replace: LuReplace,
   copy: LuCopy,
   delete: LuTrash2,
-  more: LuEllipsis,
+  more: Icons.moreHorizontal,
   comment: LuMessageSquarePlus
 }
 
