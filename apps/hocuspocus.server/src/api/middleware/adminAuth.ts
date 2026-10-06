@@ -58,6 +58,19 @@ export async function adminAuthMiddleware(c: Context, next: Next) {
     c.set('userId', user.sub)
 
     await next()
+    // Who did what. The request logger has no user.
+    if (c.req.method !== 'GET') {
+      adminLogger.info(
+        {
+          actor: user.sub,
+          method: c.req.method,
+          path: c.req.path,
+          status: c.res.status,
+          requestId: c.get('requestId')
+        },
+        'Admin action'
+      )
+    }
   } catch (error) {
     adminLogger.error({ err: error }, 'Admin auth middleware error')
     return c.json({ error: 'Authentication failed' }, 500)
