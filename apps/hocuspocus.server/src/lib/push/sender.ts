@@ -152,12 +152,10 @@ export async function sendPushNotification(
 
   const results = await Promise.allSettled(
     subscriptions.map(async (sub: PushSubscription) => {
-      // The endpoint is subscriber-written and the SQL that stores it validates
-      // nothing, so this is the one outbound target a caller chooses. A bad URL
-      // string can never recover, so deactivate, and record no detail:
-      // last_error is subscriber-readable and would become a port-scan oracle.
+      // The endpoint is subscriber-written, so refuse what the filter rejects.
+      // A refusal can be a bug in our own filter (#417), so skip the send and
+      // leave the row alone. Log no endpoint detail.
       if (!isSafeUrl(sub.push_credentials.endpoint)) {
-        invalidIds.push(sub.id)
         pushLogger.warn({ subscription_id: sub.id }, 'Refused an unsafe push endpoint')
         return { success: false, id: sub.id, error: 'Unsafe endpoint' }
       }
@@ -173,12 +171,14 @@ export async function sendPushNotification(
         return { success: false, id: sub.id, error: 'Unsafe endpoint' }
       }
       try {
+        // A chat push is useless after a day; a hung socket must not hold a worker slot.
         await webpush.sendNotification(
           {
             endpoint: sub.push_credentials.endpoint,
             keys: sub.push_credentials.keys
           },
-          pushPayload
+          pushPayload,
+          { TTL: 86400, timeout: 10000 }
         )
 
         successIds.push(sub.id)
@@ -186,15 +186,19 @@ export async function sendPushNotification(
         return { success: true, id: sub.id }
       } catch (err: unknown) {
         const error = err as { statusCode?: number; message?: string }
-        pushLogger.warn({ subscription_id: sub.id, statusCode: error.statusCode }, 'Push failed')
+        const status = error.statusCode
+        pushLogger.warn({ subscription_id: sub.id, statusCode: status }, 'Push failed')
 
-        if (error.statusCode === 404 || error.statusCode === 410) {
+        if (status === 404 || status === 410) {
           invalidIds.push(sub.id)
         } else {
+          // 429, 5xx and network errors are transient and add nothing.
+          // Charging them let one provider outage switch devices off (#417).
+          const transient = !status || status === 429 || status >= 500
           failures.push({
             id: sub.id,
-            failed_count: (sub.failed_count || 0) + 1,
-            last_error: error.message || 'Unknown error'
+            failed_count: (sub.failed_count || 0) + (transient ? 0 : 1),
+            last_error: status ? `HTTP ${status}` : 'Network error'
           })
         }
 
