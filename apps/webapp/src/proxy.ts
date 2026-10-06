@@ -17,9 +17,9 @@ export async function proxy(request: NextRequest) {
 
   if (searchParams.has('error') && searchParams.has('error_code')) {
     const errorUrl = new URL('/auth/error', request.url)
-    const errorDescription = searchParams.get('error_description')
-    if (errorDescription) {
-      errorUrl.searchParams.set('error_description', errorDescription)
+    const errorCode = searchParams.get('error_code')
+    if (errorCode) {
+      errorUrl.searchParams.set('error_code', errorCode)
     }
     return NextResponse.redirect(errorUrl)
   }
