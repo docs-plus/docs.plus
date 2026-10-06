@@ -269,7 +269,7 @@ const SettingsPanel = ({ defaultTab, onClose }: SettingsPanelProps) => {
       </div>
 
       <div
-        className={`bg-base-100 flex min-h-0 flex-1 flex-col max-md:absolute max-md:inset-0 ${
+        className={`bg-base-100 flex min-h-0 min-w-0 flex-1 flex-col max-md:absolute max-md:inset-0 ${
           showContent
             ? 'max-md:motion-safe:[transition:transform_var(--motion-panel)_var(--motion-ease-enter)]'
             : 'max-md:invisible max-md:[transform:translateX(100%)] max-md:motion-safe:[transition:transform_var(--motion-panel)_var(--motion-ease-exit),visibility_0s_var(--motion-panel)]'
