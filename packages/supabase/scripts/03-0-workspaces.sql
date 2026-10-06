@@ -18,4 +18,4 @@ alter table public.workspaces add constraint check_slug_format check (slug ~ '^[
 comment on table public.workspaces is 'This table contains information about various workspaces, which are collections of channels for group discussions and messaging. Workspaces provide a higher-level organization structure within the application, allowing for segregation and grouping of channels.';
 
 comment on column public.workspaces.created_by is
-'First signed-in visitor to open the document: join_workspace() auto-bootstraps the workspace row and stamps auth.uid() of whoever got there first. NOT ownership — that is Prisma DocumentMetadata.ownerId. Nothing reads this column; workspaces_creator_insert only checks it on INSERT.';
+'First signed-in visitor to open the document: join_workspace() auto-bootstraps the workspace row and stamps auth.uid() of whoever got there first. NOT ownership — that is Prisma DocumentMetadata.ownerId. Nothing reads this column.';

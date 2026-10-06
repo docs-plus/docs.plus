@@ -27,7 +27,7 @@ GRANT EXECUTE ON FUNCTION internal.can_read_channel(varchar)    TO authenticated
 -- INVOKER RPCs (fetch_message_window, get_channel_aggregate_data, …) and
 -- PostgREST need GRANT-layer access or they 42501. Anon SELECT whitelist
 -- lives in 29-lint-hardening.sql §3; admin-table revokes stay in §4.
-GRANT SELECT, INSERT ON public.workspaces TO authenticated;
+GRANT SELECT ON public.workspaces TO authenticated;
 GRANT SELECT ON public.workspace_members TO authenticated;
 GRANT SELECT, INSERT ON public.channels TO authenticated;
 GRANT SELECT, INSERT ON public.channel_members TO authenticated;
@@ -35,7 +35,11 @@ GRANT SELECT, INSERT, UPDATE ON public.messages TO authenticated;
 GRANT SELECT ON public.pinned_messages TO authenticated;
 GRANT SELECT ON public.channel_message_counts TO authenticated;
 GRANT SELECT, UPDATE ON public.notifications TO authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.message_bookmarks TO authenticated;
+GRANT SELECT ON public.message_bookmarks TO authenticated;
+-- DEFINER RPCs are the only writers (join_workspace, the bookmark RPCs). The
+-- revoke also clears a default-privilege grant on images that still make one.
+REVOKE INSERT, UPDATE ON public.workspaces FROM authenticated;
+REVOKE INSERT, UPDATE, DELETE ON public.message_bookmarks FROM authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
 
 
@@ -82,7 +86,8 @@ GRANT UPDATE (
 ) ON public.users TO authenticated;
 
 
--- 2b. workspaces — visible to active members.
+-- 2b. workspaces — visible to active members. No client writes: join_workspace
+--     (SECURITY DEFINER) is the only writer, so there is no INSERT policy.
 
 ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS workspaces_member_select  ON public.workspaces;
@@ -91,14 +96,6 @@ DROP POLICY IF EXISTS workspaces_creator_insert ON public.workspaces;
 CREATE POLICY workspaces_member_select ON public.workspaces
   FOR SELECT TO authenticated
   USING (internal.is_workspace_member(id));
-
--- Auto-bootstrap path: client/SSR INSERT a workspace row when a new doc is
--- opened. Confined to the creating user; UPDATE remains gated through
--- SECURITY DEFINER paths (e.g. join_workspace) so name/slug stay immutable
--- from PostgREST.
-CREATE POLICY workspaces_creator_insert ON public.workspaces
-  FOR INSERT TO authenticated
-  WITH CHECK (created_by = (select auth.uid()));
 
 
 -- 2c. workspace_members — same-workspace members see each other.
@@ -113,8 +110,8 @@ CREATE POLICY workspace_members_select ON public.workspace_members
 
 -- 2d. channels — PUBLIC bypass + member visibility.
 --     INSERT: only as creator and only into a workspace I'm a member of.
---     UPDATE: any active member can update *mutable* columns; immutable
---     columns are locked via column-level GRANT below.
+--     UPDATE: none from the client. SECURITY DEFINER triggers keep the
+--     counters, previews and activity time current.
 
 ALTER TABLE public.channels ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS channels_visible_select  ON public.channels;
@@ -132,20 +129,7 @@ CREATE POLICY channels_member_insert ON public.channels
     AND internal.is_workspace_member(workspace_id)
   );
 
-CREATE POLICY channels_member_update ON public.channels
-  FOR UPDATE TO authenticated
-  USING      (internal.is_channel_member(id))
-  WITH CHECK (internal.is_channel_member(id));
-
--- Column-level grant: lock id/slug/workspace_id/created_by/type/member_count
--- /deleted_at/created_at/updated_at from direct FE update. RPCs (definer)
--- bypass column grants too.
 REVOKE UPDATE ON public.channels FROM authenticated;
-GRANT UPDATE (
-  name, description, member_limit, is_avatar_set,
-  allow_emoji_reactions, mute_in_app_notifications, metadata,
-  last_message_preview, last_activity_at
-) ON public.channels TO authenticated;
 
 
 -- 2e. channel_members — own row always, plus the full roster to channel members.

@@ -213,8 +213,8 @@ DECLARE
         'get_unread_notifications_paginated', 'get_channel_notif_state',
         'get_workspace_notifications', 'update_notification_preferences',
         'get_notification_preferences',
-        -- Mentions / DMs
-        'fetch_mentioned_users', 'create_direct_message_channel',
+        -- Mentions
+        'fetch_mentioned_users',
         -- Workspace / presence
         'join_workspace', 'update_user_online_at',
         -- Owned-documents member roster (Settings > Documents). Both are
