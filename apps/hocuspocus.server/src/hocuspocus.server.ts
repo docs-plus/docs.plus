@@ -539,23 +539,23 @@ const serverConfig = {
     let deleted = false
     let purged = false
     try {
-      const meta = await prisma.documentMetadata.findUnique({
-        where: { documentId: documentName },
-        select: { isPrivate: true, readOnly: true, ownerId: true, deletedAt: true }
-      })
+      // A tab that missed the purge close frame would reconnect on the old id and sync
+      // its erased IndexedDB mirror back up. The tombstone is read even when a row
+      // exists, because a row re-created after the purge must not admit that tab.
+      const [meta, tombstone] = await Promise.all([
+        prisma.documentMetadata.findUnique({
+          where: { documentId: documentName },
+          select: { isPrivate: true, readOnly: true, ownerId: true, deletedAt: true }
+        }),
+        prisma.documentPurgeTombstone.findUnique({
+          where: { documentId: documentName },
+          select: { documentId: true }
+        })
+      ])
       isPrivate = meta?.isPrivate === true
       readOnly = meta?.readOnly === true
       ownerId = meta?.ownerId ?? null
-      // A purged document has no row, so without the tombstone this arm cannot tell it
-      // from one that never existed. A tab that missed the close frame would reconnect
-      // on the old id and sync its erased IndexedDB mirror back up. Only reached when
-      // there is no row, so a live document still costs one query.
-      purged =
-        meta == null &&
-        (await prisma.documentPurgeTombstone.findUnique({
-          where: { documentId: documentName },
-          select: { documentId: true }
-        })) != null
+      purged = tombstone != null
       deleted = meta?.deletedAt != null || purged
     } catch (error) {
       lookupFailed = true
