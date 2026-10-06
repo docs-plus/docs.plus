@@ -683,6 +683,9 @@ as $$
 declare
     v_user_id uuid := auth.uid();
     v_next jsonb;
+    v_key text;
+    v_value jsonb;
+    v_ok boolean;
 begin
     if v_user_id is null then
         raise exception 'unauthenticated' using errcode = '42501';
@@ -690,6 +693,35 @@ begin
     if jsonb_typeof(p_patch) <> 'object' then
         raise exception 'patch_must_be_object' using errcode = '22023';
     end if;
+    for v_key, v_value in select key, value from jsonb_each(p_patch) loop
+        -- Null clears a key; the readers coalesce it.
+        continue when jsonb_typeof(v_value) = 'null';
+        v_ok := case
+            when v_key in (
+                'push_enabled', 'push_mentions', 'push_replies', 'push_reactions', 'push_content_changes',
+                'quiet_hours_enabled',
+                'email_enabled', 'email_mentions', 'email_replies', 'email_reactions', 'email_content_changes'
+            ) then jsonb_typeof(v_value) = 'boolean'
+            when v_key = 'email_frequency' then v_value #>> '{}' in ('immediate', 'daily', 'weekly', 'never')
+            when v_key in ('quiet_hours_start', 'quiet_hours_end', 'timezone') then jsonb_typeof(v_value) = 'string'
+            else true
+        end;
+        -- Run the same cast the readers run, so we accept exactly what will not crash them.
+        if v_ok and v_key in ('quiet_hours_start', 'quiet_hours_end', 'timezone') then
+            begin
+                if v_key = 'timezone' then
+                    perform now() at time zone (v_value #>> '{}');
+                else
+                    perform (v_value #>> '{}')::time;
+                end if;
+            exception when data_exception then
+                v_ok := false;
+            end;
+        end if;
+        if not v_ok then
+            raise exception 'invalid_preference_value' using errcode = '22023', detail = v_key;
+        end if;
+    end loop;
     update public.users
        set notification_preferences = notification_preferences || p_patch
      where id = v_user_id
@@ -4802,9 +4834,9 @@ EXECUTE PROCEDURE public.handle_new_user();
 
 /**
  * Function: update_user_online_at
- * Description: Updates the online_at timestamp when a user's status changes
+ * Description: Updates the online_at timestamp on every status write
  * Trigger: Executes before UPDATE of status on public.users
- * Action: Sets the online_at timestamp to current UTC time when status changes
+ * Action: Sets online_at to now() on every status write, so the 60 s heartbeat keeps it fresh
  * Returns: The modified NEW record
  */
 CREATE OR REPLACE FUNCTION public.update_user_online_at()
@@ -4812,23 +4844,21 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    -- Check if the 'status' column is being updated
-    IF OLD.status IS DISTINCT FROM NEW.status THEN
-        -- Update 'online_at' to the current timestamp
-        NEW.online_at := timezone('utc', now());
-    END IF;
+    -- Stamp even when status is unchanged, so is_user_online sees the heartbeat.
+    -- now() is timestamptz, which matches online_at whatever the session TimeZone.
+    NEW.online_at := now();
     RETURN NEW;
 END;
 $$;
 
-COMMENT ON FUNCTION public.update_user_online_at() IS 'Updates the online_at timestamp whenever a user status changes, for tracking user activity.';
+COMMENT ON FUNCTION public.update_user_online_at() IS 'Stamps online_at on every status write, so the heartbeat keeps it fresh for is_user_online.';
 
 CREATE TRIGGER trigger_update_user_online_at
 BEFORE UPDATE OF status ON public.users
 FOR EACH ROW
 EXECUTE FUNCTION public.update_user_online_at();
 
-COMMENT ON TRIGGER trigger_update_user_online_at ON public.users IS 'Automatically updates the online_at timestamp when a user status changes.';
+COMMENT ON TRIGGER trigger_update_user_online_at ON public.users IS 'Stamps online_at on every status write, so the heartbeat keeps it fresh.';
 
 ----------------------------------------------------
 ----------------------------------------------------

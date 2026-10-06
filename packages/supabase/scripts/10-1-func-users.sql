@@ -132,9 +132,9 @@ EXECUTE PROCEDURE public.handle_new_user();
 
 /**
  * Function: update_user_online_at
- * Description: Updates the online_at timestamp when a user's status changes
+ * Description: Updates the online_at timestamp on every status write
  * Trigger: Executes before UPDATE of status on public.users
- * Action: Sets the online_at timestamp to current UTC time when status changes
+ * Action: Sets online_at to now() on every status write, so the 60 s heartbeat keeps it fresh
  * Returns: The modified NEW record
  */
 CREATE OR REPLACE FUNCTION public.update_user_online_at()
@@ -142,23 +142,21 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    -- Check if the 'status' column is being updated
-    IF OLD.status IS DISTINCT FROM NEW.status THEN
-        -- Update 'online_at' to the current timestamp
-        NEW.online_at := timezone('utc', now());
-    END IF;
+    -- Stamp even when status is unchanged, so is_user_online sees the heartbeat.
+    -- now() is timestamptz, which matches online_at whatever the session TimeZone.
+    NEW.online_at := now();
     RETURN NEW;
 END;
 $$;
 
-COMMENT ON FUNCTION public.update_user_online_at() IS 'Updates the online_at timestamp whenever a user status changes, for tracking user activity.';
+COMMENT ON FUNCTION public.update_user_online_at() IS 'Stamps online_at on every status write, so the heartbeat keeps it fresh for is_user_online.';
 
 CREATE TRIGGER trigger_update_user_online_at
 BEFORE UPDATE OF status ON public.users
 FOR EACH ROW
 EXECUTE FUNCTION public.update_user_online_at();
 
-COMMENT ON TRIGGER trigger_update_user_online_at ON public.users IS 'Automatically updates the online_at timestamp when a user status changes.';
+COMMENT ON TRIGGER trigger_update_user_online_at ON public.users IS 'Stamps online_at on every status write, so the heartbeat keeps it fresh.';
 
 ----------------------------------------------------
 ----------------------------------------------------
