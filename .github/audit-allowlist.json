@@ -79,5 +79,10 @@
     "severity": "high",
     "reason": "@xmldom/xmldom, only via mammoth (DOCX import). Reachable but bounded: mammoth parses attacker-supplied XML from an uploaded .docx. The route POST /:documentId/import requires requireServiceRoleOrUser and caps the body at MAX_IMPORT_BYTES = 10 MB, so an anonymous caller cannot reach it and the quadratic blow-up is bounded by that cap. No fix exists: every 0.8.x is vulnerable, mammoth@1.12.2 is the latest release and pins ^0.8.6, and an override to 0.9.12 breaks the importer outright \u2014 mammoth calls parseFromString(string) with no mimeType, which 0.9 rejects with 'the provided mimeType \"undefined\" is not valid' (measured 2026-09-09). Revisit when mammoth moves to xmldom 0.9.",
     "reviewed": "2026-09-09"
+  },
+  "GHSA-vfj7-8cjw-p6xm": {
+    "severity": "high",
+    "reason": "braces through 3.0.3. npm latest is still 3.0.3, so no patched release exists (checked 2026-10-06). It reaches the tree through stylelint, ESLint, Cypress, and next-pwa's build-time globby. Those callers pass this repo's own glob patterns. No request path hands braces a pattern. Drop this entry when braces 3.0.4 or later is published.",
+    "reviewed": "2026-10-06"
   }
 }

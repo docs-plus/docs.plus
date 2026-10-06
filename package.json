@@ -48,7 +48,8 @@
     "prosemirror-changeset": "2.4.1",
     "prosemirror-model": "1.25.11",
     "prosemirror-transform": "1.12.1",
-    "prosemirror-view": "1.42.3"
+    "prosemirror-view": "1.42.3",
+    "source-map-js": "^1.2.2"
   },
   "prettier": "./.prettierrc.json",
   "scripts": {
