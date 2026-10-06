@@ -1,11 +1,11 @@
-import nodemailer from 'nodemailer'
+import nodemailer, { type Transporter } from 'nodemailer'
 
 import { emailLogger } from '../../logger'
 import type { EmailMessage, EmailProviderInterface, SendResult } from './types'
 
-let transporter: nodemailer.Transporter | null = null
+let transporter: Transporter | null = null
 
-function getTransporter(): nodemailer.Transporter | null {
+function getTransporter(): Transporter | null {
   if (transporter) return transporter
 
   const host = process.env.SMTP_HOST
