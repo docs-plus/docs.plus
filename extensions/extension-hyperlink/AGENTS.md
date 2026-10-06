@@ -27,6 +27,7 @@ Persistent memory for AI agents working inside this package. Covers schema, comm
 - If the popover returns `null`, skip the focus call entirely. `null` is the host opt-out signal, especially for mobile sheets. Desktop popovers still set focus/selection after content exists so edit/remove actions target the right mark.
 - `iosCaretFixPlugin` must early-return on link targets in both `touchstart` and `click`, and clear `lastTouchCoords` on `touchstart`. Link taps are owned by this extension; stray caret-fix selection dispatch can re-trigger iOS auto-scroll.
 - `target` and `image` mark attrs are `rendered: false` so stored `_blank` and preview-metadata payloads do not render to DOM. Preview metadata stays mark-only and refetches on demand.
+- `class` is `rendered: false` with `parseHTML: () => null`, so content can never set it (#399). Only the developer's `HTMLAttributes.class` reaches the `<a>`, through `mergeAttributes`.
 
 ## Safety And Normalization
 

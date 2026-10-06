@@ -27,6 +27,10 @@ The next release is a minor bump (issue #374).
 - Typing before a link that starts its block no longer changes the link.
   A letter used to remove the whole link, and a space used to join it ([#374](https://github.com/docs-plus/docs.plus/issues/374)).
 
+### Security
+
+- The `class` attribute is no longer read from pasted or loaded HTML. Only `HTMLAttributes.class` from the extension options renders ([#399](https://github.com/docs-plus/docs.plus/issues/399)).
+
 ### Documentation
 
 - The README is a short start page: why to use it, install, a Quickstart
