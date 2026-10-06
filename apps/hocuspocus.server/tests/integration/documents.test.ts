@@ -686,6 +686,7 @@ describe('Documents API', () => {
       expect(response.status).toBe(500)
       expect(data.success).toBe(false)
       expect(data.error).toHaveProperty('code', 'DATABASE_ERROR')
+      expect(data.error.message).toBe('Internal server error')
     })
   })
 
