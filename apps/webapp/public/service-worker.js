@@ -95,10 +95,18 @@ function buildNotificationTitle(type, senderName) {
       return `Message from ${name}`;
     case "thread_message":
       return `${name} replied in thread`;
+    case "message":
+    case "channel_event":
     case "channel_message":
       return `${name} sent a message`;
+    case "invitation":
     case "invite":
       return `${name} invited you`;
+    // These two can come with no sender, so the title leaves the name out.
+    case "content_change":
+      return "A document you follow changed";
+    case "system_alert":
+      return "Account notice";
     default:
       return "New notification";
   }
@@ -137,53 +145,74 @@ function buildNotificationBody(data) {
 
 // Handle incoming push notifications
 self.addEventListener("push", (event) => {
-  if (!event.data) {
-    return;
-  }
-
-  let data;
-  try {
-    data = event.data.json();
-  } catch (e) {
-    data = { type: "unknown", message_preview: event.data.text() };
-  }
-
-  // Build title and body from raw data
-  const title = buildNotificationTitle(data.type, data.sender_name);
-  const body = buildNotificationBody(data);
-
-  // Use sender avatar if available, otherwise fall back to app icon
-  // The sender_avatar comes from the push payload (set in 19-push-notifications.sql)
-  const notificationIcon = data.sender_avatar || "/icons/android-chrome-192x192.png";
-
-  // Use notification_id as tag so each notification is unique on iOS.
-  // iOS Safari does NOT support `renotify` — using a generic tag like "mention"
-  // would cause each new mention to silently replace the previous one.
-  const tag = data.notification_id || `${data.type}-${Date.now()}`;
-
-  const options = {
-    body: body,
-    icon: notificationIcon,
+  // Chrome and Android can revoke the subscription when a push shows nothing,
+  // so a bad or empty payload still shows this generic notification.
+  let title = "New notification";
+  let options = {
+    icon: "/icons/android-chrome-192x192.png",
     badge: "/icons/favicon-32x32.png",
-    tag: tag,
-    renotify: true,
-    requireInteraction: false,
-    data: {
-      url: data.action_url || "/",
-      notification_id: data.notification_id,
-    },
-    // Include image preview if message has an attachment
-    ...(data.image_url && { image: data.image_url }),
+    data: { url: "/" },
   };
 
+  try {
+    const data = event.data ? event.data.json() : null;
+    if (data && typeof data === "object") {
+      title = buildNotificationTitle(data.type, data.sender_name);
+      const body = buildNotificationBody(data);
+
+      // Use sender avatar if available, otherwise fall back to app icon
+      // The sender_avatar comes from the push payload (set in 19-push-notifications.sql)
+      const notificationIcon = data.sender_avatar || "/icons/android-chrome-192x192.png";
+
+      // Use notification_id as tag so each notification is unique on iOS.
+      // iOS Safari does NOT support `renotify` — using a generic tag like "mention"
+      // would cause each new mention to silently replace the previous one.
+      const tag = data.notification_id || `${data.type}-${Date.now()}`;
+
+      options = {
+        body: body,
+        icon: notificationIcon,
+        badge: "/icons/favicon-32x32.png",
+        tag: tag,
+        renotify: true,
+        requireInteraction: false,
+        data: {
+          url: data.action_url || "/",
+          notification_id: data.notification_id,
+        },
+        // Include image preview if message has an attachment
+        ...(data.image_url && { image: data.image_url }),
+      };
+    }
+  } catch (error) {
+    console.warn("[SW Extension] Bad push payload, showing a generic notification", error);
+  }
+
   event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// The worker has no user session, so it cannot save the new endpoint.
+// The client saves it on its next signed-in load.
+self.addEventListener("pushsubscriptionchange", (event) => {
+  const key = event.oldSubscription?.options?.applicationServerKey;
+  if (!key) return;
+  event.waitUntil(
+    self.registration.pushManager
+      .subscribe({ userVisibleOnly: true, applicationServerKey: key })
+      .catch((error) => console.error("[SW Extension] Could not subscribe again", error))
+  );
 });
 
 // Handle notification click
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const url = event.notification.data?.url || "/";
+  // action_url comes from the payload, so only a same-origin path may open.
+  let url = "/";
+  try {
+    const target = new URL(event.notification.data?.url || "/", self.location.origin);
+    if (target.origin === self.location.origin) url = target.href;
+  } catch {}
 
   event.waitUntil(
     clients

@@ -6,8 +6,8 @@ const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 
 const SUBSCRIPTION_TIMESTAMP_KEY = 'docsplus_push_subscription_timestamp'
 
-// Subscriptions can expire, so re-subscribe once one is older than 30 days.
-const SUBSCRIPTION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000
+// Save again at most daily: the server may have switched this device off.
+const SUBSCRIPTION_MAX_AGE_MS = 24 * 60 * 60 * 1000
 
 export type PushErrorCode =
   | 'NOT_SUPPORTED'
@@ -97,6 +97,16 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
     outputArray[i] = rawData.charCodeAt(i)
   }
   return outputArray.buffer
+}
+
+// A null key means the browser does not say; treat it as current so we never churn it.
+function hasCurrentKey(subscription: PushSubscription, key: string): boolean {
+  const current = subscription.options.applicationServerKey
+  if (!current) return true
+  const a = new Uint8Array(current)
+  const b = new Uint8Array(urlBase64ToUint8Array(key))
+  if (a.length !== b.length) return false
+  return a.every((byte, i) => byte === b[i])
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer | null): string {
@@ -231,10 +241,12 @@ export async function registerPushSubscription(): Promise<string | null> {
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const existing = await registration.pushManager.getSubscription()
-      if (existing) {
+      if (existing && hasCurrentKey(existing, VAPID_PUBLIC_KEY)) {
         subscription = existing
         break
       }
+      // A subscription made with another VAPID key gets 403 on every send.
+      await existing?.unsubscribe()
 
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -279,30 +291,32 @@ export async function registerPushSubscription(): Promise<string | null> {
   return getDeviceId()
 }
 
+/**
+ * The RPC goes first because sign-out calls this while the session is still valid.
+ * getRegistration() resolves at once with no worker, where serviceWorker.ready would hang.
+ * The stamp is cleared even on failure, so the load path never resubscribes an opt-out.
+ */
 export async function unregisterPushSubscription(): Promise<boolean> {
   try {
-    const registration = await navigator.serviceWorker.ready
-    const subscription = await registration.pushManager.getSubscription()
-
-    if (subscription) {
-      await subscription.unsubscribe()
-    }
-
     const { data, error } = await supabaseClient.rpc('unregister_push_subscription', {
       p_device_id: getDeviceId()
     })
+
+    const registration = await navigator.serviceWorker.getRegistration()
+    const subscription = await registration?.pushManager.getSubscription()
+    await subscription?.unsubscribe()
 
     if (error) {
       console.error('Failed to unregister push subscription:', error)
       return false
     }
 
-    clearSubscriptionTimestamp()
-
     return data as boolean
   } catch (err) {
     console.error('Failed to unsubscribe from push:', err)
     return false
+  } finally {
+    clearSubscriptionTimestamp()
   }
 }
 
@@ -318,18 +332,30 @@ export async function isSubscribed(): Promise<boolean> {
   }
 }
 
-function shouldRefreshSubscription(): boolean {
-  const timestamp = localStorage.getItem(SUBSCRIPTION_TIMESTAMP_KEY)
-  if (!timestamp) return true
-  return Date.now() - parseInt(timestamp, 10) > SUBSCRIPTION_MAX_AGE_MS
+// The stamp doubles as the opt-in record: present means this device registered and kept push on.
+function readSubscriptionTimestamp(): number | null {
+  try {
+    const timestamp = localStorage.getItem(SUBSCRIPTION_TIMESTAMP_KEY)
+    return timestamp ? parseInt(timestamp, 10) : null
+  } catch {
+    return null
+  }
 }
 
 function markSubscriptionFresh(): void {
-  localStorage.setItem(SUBSCRIPTION_TIMESTAMP_KEY, String(Date.now()))
+  try {
+    localStorage.setItem(SUBSCRIPTION_TIMESTAMP_KEY, String(Date.now()))
+  } catch {
+    // Storage blocked: the next load saves again, which is harmless.
+  }
 }
 
 function clearSubscriptionTimestamp(): void {
-  localStorage.removeItem(SUBSCRIPTION_TIMESTAMP_KEY)
+  try {
+    localStorage.removeItem(SUBSCRIPTION_TIMESTAMP_KEY)
+  } catch {
+    // Storage blocked: nothing was stored to clear.
+  }
 }
 
 async function saveSubscriptionToDatabase(subscription: PushSubscription): Promise<void> {
@@ -353,10 +379,26 @@ async function saveSubscriptionToDatabase(subscription: PushSubscription): Promi
   markSubscriptionFresh()
 }
 
-export async function refreshSubscriptionIfNeeded(): Promise<
-  'fresh' | 'refreshed' | 'failed' | 'not_subscribed'
-> {
-  if (!isPushSupported() || !VAPID_PUBLIC_KEY) return 'not_subscribed'
+type RefreshResult = 'fresh' | 'refreshed' | 'failed' | 'not_subscribed'
+
+let refreshInFlight: Promise<RefreshResult> | null = null
+
+/**
+ * Load-path sync: re-saves a live subscription daily, restores a lost one, and replaces one
+ * made with an old VAPID key. It never unsubscribes a working subscription or asks for
+ * permission. Concurrent callers share one run, so two mounted hooks send one RPC.
+ */
+export function refreshSubscriptionIfNeeded(): Promise<RefreshResult> {
+  refreshInFlight ??= syncSubscription().finally(() => {
+    refreshInFlight = null
+  })
+  return refreshInFlight
+}
+
+async function syncSubscription(): Promise<RefreshResult> {
+  if (!isPushSupported() || !VAPID_PUBLIC_KEY || Notification.permission !== 'granted') {
+    return 'not_subscribed'
+  }
 
   try {
     const registration = await Promise.race([
@@ -364,17 +406,21 @@ export async function refreshSubscriptionIfNeeded(): Promise<
       new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
     ])
 
-    const existingSubscription = await registration.pushManager.getSubscription()
-    if (!existingSubscription) return 'not_subscribed'
-    if (!shouldRefreshSubscription()) return 'fresh'
+    const existing = await registration.pushManager.getSubscription()
+    const savedAt = readSubscriptionTimestamp()
 
-    await existingSubscription.unsubscribe()
-    const newSubscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-    })
+    // No subscription and no stamp: never opted in here, or turned push off.
+    if (!existing && savedAt === null) return 'not_subscribed'
+    if (
+      existing &&
+      hasCurrentKey(existing, VAPID_PUBLIC_KEY) &&
+      savedAt !== null &&
+      Date.now() - savedAt < SUBSCRIPTION_MAX_AGE_MS
+    ) {
+      return 'fresh'
+    }
 
-    await saveSubscriptionToDatabase(newSubscription)
+    await registerPushSubscription()
     return 'refreshed'
   } catch {
     return 'failed'
