@@ -218,6 +218,11 @@ This file is the operator and API changelog. The pad product lives in the [root 
   read answers `503 SERVICE_UNAVAILABLE`, never an empty list. Deploy this
   server before the webapp.
 
+- **Every admin write logs its actor.** `adminAuthMiddleware` writes one
+  `Admin action` line per non-GET admin request, with `actor`, `method`,
+  `path`, `status` and `requestId`. The request logger has no user
+  ([#404](https://github.com/docs-plus/docs.plus/issues/404)).
+
 ### Changed
 
 - **Admin notification stats read `users.notification_preferences`.** Push the
@@ -312,6 +317,33 @@ This file is the operator and API changelog. The pad product lives in the [root 
   deploy. The WS and worker processes now seed their alerting series on
   startup.
 
+- **Push reaches Chrome, Android, Edge, Brave and Opera again.** `isSafeUrl`
+  ran the IPv6 range rules on hostnames, so `fcm.googleapis.com` counted as
+  private. From 2026-08-09 the sender refused every such device and switched
+  it off. The range rules now run on IP literals only, and
+  `resolvesToPublicAddress` still checks a hostname after DNS
+  ([#398](https://github.com/docs-plus/docs.plus/issues/398)).
+- **The push sender keeps a device on after a refusal or an outage.** An SSRF
+  refusal skips the send and leaves the row alone, because the refusal can
+  come from our own filter. A `429`, a `5xx` or a network error no longer
+  raises `failed_count`. `last_error` records `HTTP <code>` or
+  `Network error`. Each send carries a 1-day TTL and a 10 s timeout
+  ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
+- **A purged document id stays gone.** `PUT /api/documents/:docId` answers
+  `404` for a purged id and no longer creates its row again. The WebSocket
+  gate reads the tombstone even when a row exists
+  ([#407](https://github.com/docs-plus/docs.plus/issues/407)).
+- **`online_at` follows the status heartbeat.** `update_user_online_at` now
+  stamps it on every status write. It changed only with the status, so an
+  active person looked offline after 2 minutes. Push the Supabase migration
+  `20261006120000_push_online_at_and_preference_checks`
+  ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
+- **`update_notification_preferences` refuses a value the push and email
+  triggers cannot cast.** It answers `22023` `invalid_preference_value` and
+  names the key. A bad value used to abort message inserts. The same
+  migration carries it
+  ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
+
 ### Security
 
 - **Supabase refuses a connected app's token.** Run
@@ -332,6 +364,30 @@ This file is the operator and API changelog. The pad product lives in the [root 
   Confirm email must stay on. The operator turns the hook on, as
   [configuration](../../docs/self-hosting/configuration.md#turn-off-password-sign-in)
   says. It stays off on the local stack.
+
+- **Outside development, a 5xx `error.message` is `Internal server error`.**
+  The `code` is unchanged, and the server logs the original. A Prisma or
+  Supabase message used to reach production `500` responses
+  ([#413](https://github.com/docs-plus/docs.plus/issues/413)).
+
+- **Service-role functions refuse `public`, `anon` and `authenticated`.** The
+  Supabase migration `20261006130000_close_client_write_and_grant_gaps`
+  revokes them. It also moves the three `28-ghost-accounts-audit.sql`
+  functions into a migration. Production already held these revokes, so a
+  fresh deploy now matches it
+  ([#397](https://github.com/docs-plus/docs.plus/issues/397)).
+- **Clients no longer update `channels` or write `workspaces`.** The same migration
+  revokes UPDATE on `channels`, so the channel-wide mute is no longer
+  client-writable. The per-user mute on `channel_members` is unchanged. It
+  revokes INSERT and UPDATE on `workspaces`, and `join_workspace` is the only
+  writer ([#401](https://github.com/docs-plus/docs.plus/issues/401),
+  [#409](https://github.com/docs-plus/docs.plus/issues/409)).
+- **A reply stays in its channel, and Bookmarks show only readable
+  messages.** `set_replied_message_preview` refuses a parent from another
+  channel. `get_user_bookmarks` returns only messages the caller can read.
+  Clients no longer write `message_bookmarks`; the bookmark RPCs do. The
+  same migration carries all three
+  ([#410](https://github.com/docs-plus/docs.plus/issues/410)).
 
 ### Removed
 

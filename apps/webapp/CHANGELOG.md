@@ -501,6 +501,43 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - In a segmented control, such as the list and grid toggle, the selected
   segment shows its whole border.
 
+- **Push recovers on a signed-in load.** `refreshSubscriptionIfNeeded` saves
+  the subscription again at most once a day and never unsubscribes it. It
+  restores a missing subscription when permission is granted. It subscribes
+  again when the VAPID key changed. The old refresh ran every 30 days and
+  unsubscribed first, so it could break a working subscription
+  ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
+- **Sign-out unregisters this device's push subscription first.**
+  `useSignOut` calls `unregisterPushSubscription` before `signOut()`, because
+  the RPC needs a live session. The next person on this browser no longer
+  gets the old account's pushes
+  ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
+- **The service worker keeps push alive.** It subscribes again on
+  `pushsubscriptionchange`, and the client saves the new endpoint on its next
+  signed-in load. A bad or empty payload still shows a generic notification,
+  because Chrome can revoke a subscription that shows nothing. Every server
+  type has a title, `content_change` and `system_alert` included
+  ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
+
+### Security
+
+- **A highlight colour is a hex or numeric `rgb()` value, or nothing.**
+  `Highlight` checks `color` on parse and on render, because stored marks and
+  Yjs updates skip parse. Document content can no longer add CSS to the page
+  ([#399](https://github.com/docs-plus/docs.plus/issues/399)).
+- **`docTitle` is a refetch signal.** The relay has no access check, so
+  `DocTitle` and `MobilePadTitle` never apply its text.
+  `onDocTitleStateless` in `utils/titleWrite.ts` fetches the title over REST.
+  One fetch runs at a time, with a 2 s gap before a rerun
+  ([#406](https://github.com/docs-plus/docs.plus/issues/406)).
+- **The sign-in error page never shows text from the URL.** `proxy.ts`
+  forwards `error_code` only. `/auth/error` shows fixed copy: one message for
+  `otp_expired`, and one for every other code
+  ([#411](https://github.com/docs-plus/docs.plus/issues/411)).
+- **A notification click opens same-origin URLs only.** The service worker
+  opens `/` for any other `action_url`
+  ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
+
 ### Removed
 
 - Next routes for Validate, Status, and Confirm. The service worker no longer

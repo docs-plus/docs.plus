@@ -137,6 +137,10 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   match, and Edit sits above Delete in each. A message with files keeps Copy
   Link, where it used to say Share message link.
 
+- Show a plain, fixed message on the sign-in error page. An expired or used
+  sign-in link says so. Every other error shows one general message
+  ([#411](https://github.com/docs-plus/docs.plus/issues/411)).
+
 ### Fixed
 
 - Mark your first message in an empty chat as sent. It was saved at once, but
@@ -252,6 +256,40 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 - Stop the docked chat panel losing 1 px each time you click its resize handle.
 - Keep the colour of a saved highlight. The server stored it, but the pad
   dropped it.
+- Deliver push notifications to Chrome, Android, Edge, Brave and Opera again.
+  A server check read their push service address as private, so these
+  browsers got no push from 2026-08-09
+  ([#398](https://github.com/docs-plus/docs.plus/issues/398)).
+- Turn push back on for a device the server switched off. The app saves the
+  device again, at most once a day, when you open docs.plus signed in. An
+  outage at the push service no longer switches devices off
+  ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
+- Stop pushes for the old account after you sign out. Sign-out now removes
+  this browser's push subscription first
+  ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
+- Give every notification type a real title. A document change or an account
+  notice no longer arrives as "New notification"
+  ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
+
+### Security
+
+- Stop document content from changing the page's styles
+  ([#399](https://github.com/docs-plus/docs.plus/issues/399)).
+- Stop a viewer from changing the Pad title that other people see. The pad
+  reads the title from the server
+  ([#406](https://github.com/docs-plus/docs.plus/issues/406)).
+- Keep server error text out of responses. Outside development, a server
+  error says only "Internal server error"
+  ([#413](https://github.com/docs-plus/docs.plus/issues/413)).
+- Keep server secrets out of the webapp and admin containers. In
+  `docker-compose.prod.yml` they no longer load the whole `.env.production`,
+  only the keys they read
+  ([#403](https://github.com/docs-plus/docs.plus/issues/403)).
+- Tighten the chat and workspace write rules. A reply stays in its own
+  channel, and Bookmarks list only messages you can still read
+  ([#401](https://github.com/docs-plus/docs.plus/issues/401),
+  [#409](https://github.com/docs-plus/docs.plus/issues/409),
+  [#410](https://github.com/docs-plus/docs.plus/issues/410)).
 
 ### Removed
 

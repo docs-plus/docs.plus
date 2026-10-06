@@ -61,6 +61,8 @@ The canonical error shape is defined by `getErrorResponse` in `src/lib/errors.ts
 
 A request-validation `400` (`VALIDATION_ERROR`) also carries `error.fields`: one `{ path, message }` per rejected input, so a caller can fix it without guessing.
 
+Outside development, every 5xx `error.message` is `Internal server error`. The `code` is unchanged, and the server logs the original message.
+
 `error.details` is included only when `NODE_ENV=development`. `AppError` subclasses map to status codes and codes: `VALIDATION_ERROR` (400), `BAD_REQUEST` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403), `NOT_FOUND` (404), `CONFLICT` (409), `PAYLOAD_TOO_LARGE` (413), `UNSUPPORTED_MEDIA_TYPE` (415), `UNPROCESSABLE_ENTITY` (422), `RATE_LIMIT_EXCEEDED` (429), `INTERNAL_SERVER_ERROR` (500), `SERVICE_UNAVAILABLE` (503), `DATABASE_ERROR`. `handlePrismaError` maps Prisma codes (`P2002` → conflict, `P2025` → not found, etc.) into the same set. `AUTH_UNAVAILABLE` (503) sits outside this set: the auth middleware returns it, not an `AppError`, when Supabase token verification is unreachable.
 
 The documents controller emits this envelope on error and `{ "success": true, "data": ... }` on success.
