@@ -66,6 +66,13 @@ describe('isSafeUrl', () => {
     expect(isSafeUrl('http://[fc00::1]')).toBe(false)
   })
 
+  test('allows hostnames that start with an IPv6 range prefix', () => {
+    expect(isSafeUrl('https://fcm.googleapis.com/fcm/send/x')).toBe(true)
+    expect(isSafeUrl('https://ffmpeg.org')).toBe(true)
+    expect(isSafeUrl('https://fdic.gov')).toBe(true)
+    expect(isSafeUrl('https://fe80.example.com')).toBe(true)
+  })
+
   test('blocks trailing-dot FQDN variants', () => {
     expect(isSafeUrl('http://localhost.')).toBe(false)
     expect(isSafeUrl('http://server.local.')).toBe(false)

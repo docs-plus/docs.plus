@@ -74,12 +74,12 @@ export const isSafeUrl = (rawUrl: string): boolean => {
 
   if (host === 'localhost') return false
   if (host.endsWith('.local') || host.endsWith('.internal')) return false
-  if (isPrivateAddress(host)) return false
+  if (isIpLiteral(host)) return !isPrivateAddress(host)
 
   // Every backend and observability container shares one Docker network, so
   // `redis` or `docsplus-grafana` resolves from here while matching no range
   // rule above. A public link never has a single-label host.
-  if (!isIpLiteral(host) && !host.includes('.')) return false
+  if (!host.includes('.')) return false
 
   return true
 }
