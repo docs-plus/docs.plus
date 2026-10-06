@@ -45,6 +45,10 @@ The full route-by-route contract is [`apps/hocuspocus.server/API.md`](../apps/ho
 | [apps/hocuspocus.server/ENV.md](../apps/hocuspocus.server/ENV.md) | Every backend environment variable, its type, and its default     |
 | [RUNBOOK-backend.md](RUNBOOK-backend.md)                          | What to do when a backend alert pages you                         |
 
+## Roadmap
+
+Features that are designed but not built yet, each with an RFC, its research, and its open decisions. Start at [roadmap/README.md](roadmap/README.md).
+
 ## Decision records
 
 Why one piece of the architecture is the way it is. Each record states the decision, the alternatives, and what it cost.

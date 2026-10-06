@@ -10,6 +10,7 @@
     ".agents",
     ".github",
     "Notes",
+    "docs/roadmap",
     "node_modules",
     "**/dist",
     "**/cypress",
