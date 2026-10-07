@@ -39,7 +39,12 @@ export const createServerFactory =
         websiteUrl: deps.appUrl,
         description: 'Find, read, create and edit your docs.plus documents and their chat.'
       },
-      { instructions: INSTRUCTIONS }
+      {
+        instructions: INSTRUCTIONS,
+        // The tool set never changes. The SDK default (true) invites a
+        // subscriptions/listen stream that would never carry a message.
+        capabilities: { tools: { listChanged: false } }
+      }
     )
     registerDocumentTools(server, deps, context)
     registerChatTools(server, deps, context)
