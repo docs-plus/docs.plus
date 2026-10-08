@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll } from 'bun:test'
+import { describe, test, expect, beforeAll, afterAll } from 'bun:test'
 import { Hono } from 'hono'
 import { setupMiddleware } from '../../src/middleware'
 import { TestServer } from '../helpers/test-server'
@@ -6,9 +6,10 @@ import { TestServer } from '../helpers/test-server'
 describe('CORS Middleware', () => {
   let testServer: TestServer
   let app: Hono
+  // Bun runs every suite in one process, so a leaked value breaks later suites.
+  const originalNodeEnv = process.env.NODE_ENV
 
   beforeAll(() => {
-    // Set development environment
     process.env.NODE_ENV = 'development'
 
     app = new Hono()
@@ -27,6 +28,10 @@ describe('CORS Middleware', () => {
     app.delete('/test/:id', (c) => c.json({ deleted: c.req.param('id') }))
 
     testServer = new TestServer(app)
+  })
+
+  afterAll(() => {
+    process.env.NODE_ENV = originalNodeEnv
   })
 
   describe('Preflight OPTIONS requests', () => {
