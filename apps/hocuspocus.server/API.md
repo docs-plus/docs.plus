@@ -207,7 +207,7 @@ Access follows ownership. An **owned** document accepts writes only from its own
 
 A signed-in rename that changes Pad title posts a workspace-chat notice after the write. The PUT does not wait for that call. A missing RPC, a signed-out rename, a create, an unchanged title, or an empty title posts nothing. The Prisma write still succeeds.
 
-When the owner sends `isPrivate`, the PUT also writes the stored flag and owner to the Supabase `document_access` table, which gates chat. It writes even when the flag did not change, so a retry repairs a failed write. That write is awaited. If it fails, the route answers `503 SERVICE_UNAVAILABLE` after the Prisma write, and the owner should send the same request again.
+When the owner sends `isPrivate`, the PUT also writes the stored flag and owner to the Supabase `document_access` table, which gates chat. It writes even when the flag did not change, so a retry repairs a failed write. That write is awaited, and a failed write answers `503 SERVICE_UNAVAILABLE`. When the request turns Private on, the table write runs before the Prisma write, so a `503` leaves the document public. If the Prisma write then fails, the route answers an error, and the chat stays closed on a public document. For any other request, the table write runs after the Prisma write, so a failed Private-off write leaves the chat closed. In both cases the owner should send the same request again.
 
 ### DELETE /api/documents/:documentId
 

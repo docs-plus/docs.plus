@@ -609,6 +609,14 @@ export const updateDocument = async (
       )
     }
 
+    // Private on writes the mirror first, so a failed write leaves Prisma and the chat public.
+    // A failed Prisma write after it leaves the mirror Private while Prisma is public or has no row,
+    // so the chat stays closed.
+    const turnsPrivateOn = updateData.isPrivate === true && mayMutateAccess
+    if (turnsPrivateOn) {
+      await writeDocumentAccessMirror({ documentId, isPrivate: true, ownerId: ownerAfterWrite })
+    }
+
     // Anchor a draft under its URL slug when this PUT creates the row; without a
     // slug, non-slug callers keep the prior slugify(title) behavior, unchanged.
     // Never enters updateData — the update branch must not rename an existing doc.
@@ -660,7 +668,10 @@ export const updateDocument = async (
 
     // Written even when the flag did not change, so a retry repairs a failed write.
     // It runs after the seal and the title notice, so a throw here loses neither.
-    if (isPrivate !== undefined && mayMutateAccess) {
+    // Private off lands here, so a failed write leaves the chat closed. Private on lands here
+    // only when a create race stored another owner than the pre-write named.
+    const preWriteHolds = turnsPrivateOn && upsertedDoc.ownerId === ownerAfterWrite
+    if (isPrivate !== undefined && mayMutateAccess && !preWriteHolds) {
       await writeDocumentAccessMirror({
         documentId,
         isPrivate: upsertedDoc.isPrivate,

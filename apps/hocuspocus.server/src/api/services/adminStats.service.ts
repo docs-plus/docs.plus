@@ -246,6 +246,24 @@ export async function updateDocumentFlags(
   id: number,
   updateData: Record<string, boolean>
 ) {
+  // Private on writes the mirror before Prisma, as in the PUT route. A missing row skips
+  // it, so the update below throws P2025.
+  const stored =
+    updateData.isPrivate === true
+      ? await prisma.documentMetadata.findUnique({
+          where: { id },
+          select: { documentId: true, isPrivate: true, ownerId: true }
+        })
+      : null
+  const turnsPrivateOn = stored != null && !stored.isPrivate
+  if (turnsPrivateOn) {
+    await writeDocumentAccessMirror({
+      documentId: stored.documentId,
+      isPrivate: true,
+      ownerId: stored.ownerId
+    })
+  }
+
   const document = await prisma.documentMetadata.update({
     where: { id },
     data: updateData,
@@ -276,7 +294,7 @@ export async function updateDocumentFlags(
   }
 
   // After the seal, as in the PUT route. A failed write throws, and the controller answers 500.
-  if (updateData.isPrivate !== undefined) {
+  if (updateData.isPrivate !== undefined && !turnsPrivateOn) {
     await writeDocumentAccessMirror({
       documentId: document.documentId,
       isPrivate: document.isPrivate,

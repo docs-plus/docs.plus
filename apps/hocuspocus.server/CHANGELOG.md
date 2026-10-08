@@ -487,9 +487,13 @@ SMTP_PASS=...
   `PUT /api/documents/:docId` and `PATCH /api/admin/documents/:id` write the
   row with the service role on every Private change. A failed write answers
   `503 SERVICE_UNAVAILABLE` on the PUT and `500` on the admin route, so the
-  caller can retry. Until a retry succeeds, Prisma holds Private and the chat
-  stays open. Running the backfill again also repairs the row. Deploy order:
-  confirm that `20261006130000_close_client_write_and_grant_gaps` is applied,
+  caller can retry. Both failures fail closed. When Private turns on, the row
+  is written before the Prisma write, so a failed write leaves the document
+  public and changes nothing. When Private turns off, the row is written after
+  the Prisma write, so a failed write leaves the chat closed. If the Prisma
+  write fails after the row write, the chat stays closed on a public document.
+  A retry that carries `isPrivate` repairs either case. The backfill does not.
+  Deploy order: confirm that `20261006130000_close_client_write_and_grant_gaps` is applied,
   because the bookmark panel gate lives there. Then apply this migration,
   deploy this server, and run `scripts/backfill-document-access.ts` (a dry run
   first, then `--apply`). Until the backfill runs, Private documents' chat
