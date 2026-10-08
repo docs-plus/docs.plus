@@ -108,7 +108,10 @@ comment on function public.get_ghost_summary_public() is
 'Returns summary counts from public.users: total, never active, soft-deleted, and active.';
 
 
--- Grant execute to service_role (used by Hocuspocus admin controller)
+-- Service role only (the Hocuspocus admin controller).
+revoke all on function public.get_inactive_users(integer) from public, anon, authenticated;
+revoke all on function public.get_user_deletion_impact(uuid) from public, anon, authenticated;
+revoke all on function public.get_ghost_summary_public() from public, anon, authenticated;
 grant execute on function public.get_inactive_users(integer) to service_role;
 grant execute on function public.get_user_deletion_impact(uuid) to service_role;
 grant execute on function public.get_ghost_summary_public() to service_role;

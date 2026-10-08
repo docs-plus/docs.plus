@@ -76,9 +76,8 @@ $$;
 -- Read access is filtered row-by-row by the `<table>_public_anon_select`
 -- policies in 13-RLS.sql §3 so anon only sees PUBLIC-channel rows.
 
-REVOKE SELECT, INSERT, UPDATE, DELETE
-    ON ALL TABLES IN SCHEMA public
-    FROM anon;
+-- REVOKE ALL also drops TRUNCATE, REFERENCES and TRIGGER, and column grants.
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
 
 -- Re-grant SELECT for the chat read path. Row-level filtering happens
 -- through the anon policies; this just lifts the GRANT-layer block.
@@ -109,16 +108,17 @@ GRANT SELECT ON public.message_bookmarks TO anon;
 -- Tables whose only authenticated access path is via SECURITY DEFINER
 -- RPCs (definer bypass). Direct PostgREST/GraphQL access is removed.
 
-REVOKE SELECT, INSERT, UPDATE, DELETE ON public.admin_users            FROM authenticated;
-REVOKE SELECT, INSERT, UPDATE, DELETE ON public.email_queue            FROM authenticated;
-REVOKE SELECT, INSERT, UPDATE, DELETE ON public.email_bounces          FROM authenticated;
-REVOKE SELECT, INSERT, UPDATE, DELETE ON public.push_subscriptions     FROM authenticated;
-REVOKE SELECT, INSERT, UPDATE, DELETE ON public.document_view_stats    FROM authenticated;
-REVOKE SELECT, INSERT, UPDATE, DELETE ON public.document_views         FROM authenticated;
+REVOKE ALL ON public.admin_users            FROM authenticated;
+REVOKE ALL ON public.email_queue            FROM authenticated;
+REVOKE ALL ON public.email_bounces          FROM authenticated;
+REVOKE ALL ON public.push_subscriptions     FROM authenticated;
+REVOKE ALL ON public.document_view_stats    FROM authenticated;
+REVOKE ALL ON public.document_views         FROM authenticated;
 
 -- Partition tables (document_views_YYYY_MM) are created dynamically by
 -- 09-document-views.sql for current + next 3 months, so the exact set
--- depends on when the script runs. Discover and revoke at runtime.
+-- depends on when the script runs. Discover them at runtime, turn RLS on
+-- and revoke every browser role, as the 2026-09-28 prod fix did (#314).
 DO $$
 DECLARE
     rec record;
@@ -131,7 +131,11 @@ BEGIN
           AND c.relname ~ '^document_views_[0-9]{4}_[0-9]{2}$'
     LOOP
         EXECUTE format(
-            'REVOKE SELECT, INSERT, UPDATE, DELETE ON %I.%I FROM authenticated',
+            'ALTER TABLE %I.%I ENABLE ROW LEVEL SECURITY',
+            rec.nspname, rec.relname
+        );
+        EXECUTE format(
+            'REVOKE ALL ON %I.%I FROM public, anon, authenticated',
             rec.nspname, rec.relname
         );
     END LOOP;
@@ -146,7 +150,7 @@ BEGIN
         JOIN pg_namespace n ON n.oid = c.relnamespace
         WHERE n.nspname='public' AND c.relname='document_views_daily'
     ) THEN
-        EXECUTE 'REVOKE SELECT, INSERT, UPDATE, DELETE ON public.document_views_daily FROM authenticated';
+        EXECUTE 'REVOKE ALL ON public.document_views_daily FROM authenticated';
     END IF;
 END
 $$;
@@ -207,7 +211,7 @@ DECLARE
         'advance_read_cursor', 'add_reaction', 'remove_reaction',
         -- Bookmarks
         'toggle_message_bookmark', 'archive_bookmark', 'mark_bookmark_as_read',
-        'get_bookmark_count', 'get_bookmark_stats', 'get_user_bookmarks',
+        'get_bookmark_stats', 'get_user_bookmarks',
         -- Notifications
         'notifications_summary', 'get_unread_notif_count',
         'get_unread_notifications_paginated', 'get_channel_notif_state',
@@ -350,9 +354,15 @@ COMMIT;
 --       'User Avatar is publicly accessible'
 --     );
 --
--- (c) anon SELECT on public tables (expect 0)
---   SELECT table_name FROM information_schema.role_table_grants
---   WHERE grantee='anon' AND table_schema='public' AND privilege_type='SELECT';
+-- (c) anon table rights outside the read allowlist (expect 0 rows)
+--   SELECT c.relname FROM pg_class c
+--   JOIN pg_namespace n ON n.oid = c.relnamespace
+--   WHERE n.nspname = 'public' AND c.relkind IN ('r','p','v','m')
+--     AND (has_table_privilege('anon', c.oid, 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+--          OR (has_table_privilege('anon', c.oid, 'SELECT')
+--              AND c.relname NOT IN ('channels','messages','channel_message_counts',
+--                  'pinned_messages','workspaces','channel_members','message_bookmarks')));
+--   SELECT has_column_privilege('anon','public.users','email','SELECT');  -- expect false
 --
 -- (d) anon EXECUTE on SECURITY DEFINER fns (expect 0)
 --   SELECT p.proname FROM pg_proc p

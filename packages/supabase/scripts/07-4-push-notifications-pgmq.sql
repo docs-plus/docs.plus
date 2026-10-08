@@ -331,7 +331,8 @@ comment on function public.consume_push_queue(int, int) is
 Called by backend consumer service every 2 seconds.
 Returns batch of messages with visibility timeout.';
 
--- Grant execute to service_role (backend uses service_role key)
+-- Service role only (the backend uses the service key).
+revoke all on function public.consume_push_queue(int, int) from public, anon, authenticated;
 grant execute on function public.consume_push_queue(int, int) to service_role;
 
 
@@ -349,6 +350,7 @@ comment on function public.ack_push_message(bigint) is
 'Acknowledges a push notification message was processed successfully.
 Archives the message (moves to pgmq.a_push_notifications) for stats tracking.';
 
+revoke all on function public.ack_push_message(bigint) from public, anon, authenticated;
 grant execute on function public.ack_push_message(bigint) to service_role;
 
 

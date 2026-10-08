@@ -88,8 +88,8 @@ comment on trigger notify_on_workspace_join on public.workspace_members is
 -- =============================================================================
 
 -- Returns workspace member counts for a batch of document slugs.
--- SECURITY DEFINER bypasses RLS; guarded by is_admin() for authenticated
--- callers and allows service_role (backend) direct access.
+-- SECURITY DEFINER bypasses RLS. Callable by service_role only: the admin
+-- API calls it with the service key (adminStats.service.ts).
 
 create or replace function public.admin_get_document_member_counts(p_slugs text[])
 returns table (
@@ -126,10 +126,9 @@ end;
 $$;
 
 comment on function public.admin_get_document_member_counts(text[]) is
-'Returns workspace member counts per document slug. Admin-only or service_role, bypasses RLS.';
+'Returns workspace member counts per document slug. Service role only; bypasses RLS.';
 
-revoke execute on function public.admin_get_document_member_counts(text[]) from anon;
-grant execute on function public.admin_get_document_member_counts(text[]) to authenticated;
+revoke all on function public.admin_get_document_member_counts(text[]) from public, anon, authenticated;
 grant execute on function public.admin_get_document_member_counts(text[]) to service_role;
 
 -- ============================================================

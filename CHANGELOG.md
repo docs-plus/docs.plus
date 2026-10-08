@@ -301,6 +301,11 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   client can no longer set a message's order or time, move it to another
   channel, or post it as a system notice
   ([#400](https://github.com/docs-plus/docs.plus/issues/400)).
+- Keep the database grant fix from 28 September in the repository, so a fresh
+  install matches production. Guests and signed-in users can no longer read the
+  analytics tables or call the admin, cron and notification helper functions.
+  Monthly view tables now have row security on
+  ([#314](https://github.com/docs-plus/docs.plus/issues/314)).
 
 ### Removed
 

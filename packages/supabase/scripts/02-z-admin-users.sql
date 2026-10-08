@@ -50,8 +50,9 @@ $$;
 
 comment on function public.is_admin(uuid) is 'Check if a user has admin dashboard access';
 
--- Grant execute to authenticated users
-grant execute on function public.is_admin(uuid) to authenticated;
+-- The admin_users policies call it for signed-in users. Guests never need it.
+revoke all on function public.is_admin(uuid) from public, anon;
+grant execute on function public.is_admin(uuid) to authenticated, service_role;
 
 -- -----------------------------------------------------------------------------
 -- RLS Policies

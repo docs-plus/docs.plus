@@ -260,8 +260,9 @@ $$;
 
 comment on function public.is_admin(uuid) is 'Check if a user has admin dashboard access';
 
--- Grant execute to authenticated users
-grant execute on function public.is_admin(uuid) to authenticated;
+-- The admin_users policies call it for signed-in users. Guests never need it.
+revoke all on function public.is_admin(uuid) from public, anon;
+grant execute on function public.is_admin(uuid) to authenticated, service_role;
 
 -- -----------------------------------------------------------------------------
 -- RLS Policies
@@ -1401,7 +1402,8 @@ comment on function public.consume_push_queue(int, int) is
 Called by backend consumer service every 2 seconds.
 Returns batch of messages with visibility timeout.';
 
--- Grant execute to service_role (backend uses service_role key)
+-- Service role only (the backend uses the service key).
+revoke all on function public.consume_push_queue(int, int) from public, anon, authenticated;
 grant execute on function public.consume_push_queue(int, int) to service_role;
 
 
@@ -1419,6 +1421,7 @@ comment on function public.ack_push_message(bigint) is
 'Acknowledges a push notification message was processed successfully.
 Archives the message (moves to pgmq.a_push_notifications) for stats tracking.';
 
+revoke all on function public.ack_push_message(bigint) from public, anon, authenticated;
 grant execute on function public.ack_push_message(bigint) to service_role;
 
 
@@ -3589,7 +3592,8 @@ Returns view_id for duration updates.';
 
 -- Server-side only: Hocuspocus enqueues views with the service_role key.
 -- anon/authenticated are excluded so a browser/bot can't call this directly
--- and inflate view counts. Hardening sweep (29 §7) keeps them revoked.
+-- and inflate view counts. Hardening sweep (29 §5) keeps them revoked.
+revoke all on function public.enqueue_document_view(text, text, uuid, boolean, text) from public, anon, authenticated;
 grant execute on function public.enqueue_document_view(text, text, uuid, boolean, text)
     to service_role;
 
@@ -3738,6 +3742,7 @@ $$;
 comment on function public.update_view_duration(uuid, integer) is
 'Updates duration for a view by view_id. Called by Hocuspocus on disconnect.';
 
+revoke all on function public.update_view_duration(uuid, integer) from public, anon, authenticated;
 grant execute on function public.update_view_duration(uuid, integer)
     to service_role;
 
@@ -4182,6 +4187,16 @@ grant execute on function public.get_top_viewed_documents(integer, integer) to a
 grant execute on function public.get_document_views_trend(text, integer) to authenticated;
 grant execute on function public.get_document_view_stats(text) to authenticated;
 
+-- pg_cron runs these as the owner. No browser path calls them.
+revoke all on function public.create_document_views_partitions() from public, anon, authenticated;
+revoke all on function public.process_document_views_queue() from public, anon, authenticated;
+revoke all on function public.aggregate_document_view_stats() from public, anon, authenticated;
+revoke all on function public.cleanup_old_document_views() from public, anon, authenticated;
+grant execute on function public.create_document_views_partitions() to service_role;
+grant execute on function public.process_document_views_queue() to service_role;
+grant execute on function public.aggregate_document_view_stats() to service_role;
+grant execute on function public.cleanup_old_document_views() to service_role;
+
 -- ============================================================
 -- Hardening: pin search_path = public on functions defined above
 -- (idempotent — safe to re-run)
@@ -4247,8 +4262,7 @@ $$;
 comment on function public.purge_document_footprint(varchar, text) is
 'Service-role GC for a soft-deleted document: storage objects first, chat/analytics rows, workspace cascade last.';
 
-revoke all on function public.purge_document_footprint(varchar, text) from public;
-revoke all on function public.purge_document_footprint(varchar, text) from anon;
+revoke all on function public.purge_document_footprint(varchar, text) from public, anon, authenticated;
 grant execute on function public.purge_document_footprint(varchar, text) to service_role;
 
 
@@ -6184,7 +6198,7 @@ $$;
 comment on function public.get_workspace_media_storage_stats(varchar) is
   'Per-workspace chat media usage row (same shape as fleet RPC rows).';
 
-revoke all on function public.get_workspace_media_storage_stats(varchar) from public;
+revoke all on function public.get_workspace_media_storage_stats(varchar) from public, anon, authenticated;
 grant execute on function public.get_workspace_media_storage_stats(varchar) to service_role;
 
 create or replace function public.get_all_workspace_media_storage_stats()
@@ -6226,7 +6240,7 @@ $$;
 comment on function public.get_all_workspace_media_storage_stats() is
   'Fleet list of workspaces with chat media (admin service reads once, paginates in TS).';
 
-revoke all on function public.get_all_workspace_media_storage_stats() from public;
+revoke all on function public.get_all_workspace_media_storage_stats() from public, anon, authenticated;
 grant execute on function public.get_all_workspace_media_storage_stats() to service_role;
 
 create or replace function public.get_workspace_media_storage_summary()
@@ -6260,7 +6274,7 @@ $$;
 comment on function public.get_workspace_media_storage_summary() is
   'Fleet rollup for admin media storage StatCards.';
 
-revoke all on function public.get_workspace_media_storage_summary() from public;
+revoke all on function public.get_workspace_media_storage_summary() from public, anon, authenticated;
 grant execute on function public.get_workspace_media_storage_summary() to service_role;
 
 alter function public.fetch_media_message_window(varchar, bigint, int) set search_path = public;
@@ -6754,8 +6768,8 @@ comment on trigger notify_on_workspace_join on public.workspace_members is
 -- =============================================================================
 
 -- Returns workspace member counts for a batch of document slugs.
--- SECURITY DEFINER bypasses RLS; guarded by is_admin() for authenticated
--- callers and allows service_role (backend) direct access.
+-- SECURITY DEFINER bypasses RLS. Callable by service_role only: the admin
+-- API calls it with the service key (adminStats.service.ts).
 
 create or replace function public.admin_get_document_member_counts(p_slugs text[])
 returns table (
@@ -6792,10 +6806,9 @@ end;
 $$;
 
 comment on function public.admin_get_document_member_counts(text[]) is
-'Returns workspace member counts per document slug. Admin-only or service_role, bypasses RLS.';
+'Returns workspace member counts per document slug. Service role only; bypasses RLS.';
 
-revoke execute on function public.admin_get_document_member_counts(text[]) from anon;
-grant execute on function public.admin_get_document_member_counts(text[]) to authenticated;
+revoke all on function public.admin_get_document_member_counts(text[]) from public, anon, authenticated;
 grant execute on function public.admin_get_document_member_counts(text[]) to service_role;
 
 -- ============================================================
@@ -8868,6 +8881,18 @@ ALTER FUNCTION public.get_unread_notif_count(_workspace_id character varying) SE
 ALTER FUNCTION public.get_channel_notif_state(_channel_id character varying) SET search_path = public;
 ALTER FUNCTION public.join_workspace(_workspace_id character varying) SET search_path = public;
 ALTER FUNCTION public.get_channel_members_by_last_read_update(_channel_id character varying, _timestamp timestamp with time zone) SET search_path = public;
+
+-- No browser path calls it; #319 drops it.
+revoke all on function public.create_direct_message_channel(character varying, uuid) from public, anon, authenticated;
+grant execute on function public.create_direct_message_channel(character varying, uuid) to service_role;
+
+-- Invoker RPCs the browser calls, guests included. Name the grants, so access
+-- does not rest on default privileges (#316).
+grant execute on function public.get_channel_aggregate_data(character varying, integer, uuid) to anon, authenticated, service_role;
+grant execute on function public.notifications_summary(character varying) to anon, authenticated, service_role;
+grant execute on function public.get_channel_members_by_last_read_update(character varying, timestamp with time zone) to anon, authenticated, service_role;
+grant execute on function public.get_unread_notif_count(character varying) to anon, authenticated, service_role;
+grant execute on function public.fetch_mentioned_users(character varying, text) to anon, authenticated, service_role;
 
 -- ============================================================
 -- v2 chatroom RPCs (paired with migrations 20260513140500..20260513142000).
@@ -11084,7 +11109,10 @@ comment on function public.get_ghost_summary_public() is
 'Returns summary counts from public.users: total, never active, soft-deleted, and active.';
 
 
--- Grant execute to service_role (used by Hocuspocus admin controller)
+-- Service role only (the Hocuspocus admin controller).
+revoke all on function public.get_inactive_users(integer) from public, anon, authenticated;
+revoke all on function public.get_user_deletion_impact(uuid) from public, anon, authenticated;
+revoke all on function public.get_ghost_summary_public() from public, anon, authenticated;
 grant execute on function public.get_inactive_users(integer) to service_role;
 grant execute on function public.get_user_deletion_impact(uuid) to service_role;
 grant execute on function public.get_ghost_summary_public() to service_role;
@@ -11181,9 +11209,8 @@ $$;
 -- Read access is filtered row-by-row by the `<table>_public_anon_select`
 -- policies in 13-RLS.sql §3 so anon only sees PUBLIC-channel rows.
 
-REVOKE SELECT, INSERT, UPDATE, DELETE
-    ON ALL TABLES IN SCHEMA public
-    FROM anon;
+-- REVOKE ALL also drops TRUNCATE, REFERENCES and TRIGGER, and column grants.
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
 
 -- Re-grant SELECT for the chat read path. Row-level filtering happens
 -- through the anon policies; this just lifts the GRANT-layer block.
@@ -11214,16 +11241,17 @@ GRANT SELECT ON public.message_bookmarks TO anon;
 -- Tables whose only authenticated access path is via SECURITY DEFINER
 -- RPCs (definer bypass). Direct PostgREST/GraphQL access is removed.
 
-REVOKE SELECT, INSERT, UPDATE, DELETE ON public.admin_users            FROM authenticated;
-REVOKE SELECT, INSERT, UPDATE, DELETE ON public.email_queue            FROM authenticated;
-REVOKE SELECT, INSERT, UPDATE, DELETE ON public.email_bounces          FROM authenticated;
-REVOKE SELECT, INSERT, UPDATE, DELETE ON public.push_subscriptions     FROM authenticated;
-REVOKE SELECT, INSERT, UPDATE, DELETE ON public.document_view_stats    FROM authenticated;
-REVOKE SELECT, INSERT, UPDATE, DELETE ON public.document_views         FROM authenticated;
+REVOKE ALL ON public.admin_users            FROM authenticated;
+REVOKE ALL ON public.email_queue            FROM authenticated;
+REVOKE ALL ON public.email_bounces          FROM authenticated;
+REVOKE ALL ON public.push_subscriptions     FROM authenticated;
+REVOKE ALL ON public.document_view_stats    FROM authenticated;
+REVOKE ALL ON public.document_views         FROM authenticated;
 
 -- Partition tables (document_views_YYYY_MM) are created dynamically by
 -- 09-document-views.sql for current + next 3 months, so the exact set
--- depends on when the script runs. Discover and revoke at runtime.
+-- depends on when the script runs. Discover them at runtime, turn RLS on
+-- and revoke every browser role, as the 2026-09-28 prod fix did (#314).
 DO $$
 DECLARE
     rec record;
@@ -11236,7 +11264,11 @@ BEGIN
           AND c.relname ~ '^document_views_[0-9]{4}_[0-9]{2}$'
     LOOP
         EXECUTE format(
-            'REVOKE SELECT, INSERT, UPDATE, DELETE ON %I.%I FROM authenticated',
+            'ALTER TABLE %I.%I ENABLE ROW LEVEL SECURITY',
+            rec.nspname, rec.relname
+        );
+        EXECUTE format(
+            'REVOKE ALL ON %I.%I FROM public, anon, authenticated',
             rec.nspname, rec.relname
         );
     END LOOP;
@@ -11251,7 +11283,7 @@ BEGIN
         JOIN pg_namespace n ON n.oid = c.relnamespace
         WHERE n.nspname='public' AND c.relname='document_views_daily'
     ) THEN
-        EXECUTE 'REVOKE SELECT, INSERT, UPDATE, DELETE ON public.document_views_daily FROM authenticated';
+        EXECUTE 'REVOKE ALL ON public.document_views_daily FROM authenticated';
     END IF;
 END
 $$;
@@ -11312,7 +11344,7 @@ DECLARE
         'advance_read_cursor', 'add_reaction', 'remove_reaction',
         -- Bookmarks
         'toggle_message_bookmark', 'archive_bookmark', 'mark_bookmark_as_read',
-        'get_bookmark_count', 'get_bookmark_stats', 'get_user_bookmarks',
+        'get_bookmark_stats', 'get_user_bookmarks',
         -- Notifications
         'notifications_summary', 'get_unread_notif_count',
         'get_unread_notifications_paginated', 'get_channel_notif_state',
@@ -11455,9 +11487,15 @@ COMMIT;
 --       'User Avatar is publicly accessible'
 --     );
 --
--- (c) anon SELECT on public tables (expect 0)
---   SELECT table_name FROM information_schema.role_table_grants
---   WHERE grantee='anon' AND table_schema='public' AND privilege_type='SELECT';
+-- (c) anon table rights outside the read allowlist (expect 0 rows)
+--   SELECT c.relname FROM pg_class c
+--   JOIN pg_namespace n ON n.oid = c.relnamespace
+--   WHERE n.nspname = 'public' AND c.relkind IN ('r','p','v','m')
+--     AND (has_table_privilege('anon', c.oid, 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+--          OR (has_table_privilege('anon', c.oid, 'SELECT')
+--              AND c.relname NOT IN ('channels','messages','channel_message_counts',
+--                  'pinned_messages','workspaces','channel_members','message_bookmarks')));
+--   SELECT has_column_privilege('anon','public.users','email','SELECT');  -- expect false
 --
 -- (d) anon EXECUTE on SECURITY DEFINER fns (expect 0)
 --   SELECT p.proname FROM pg_proc p

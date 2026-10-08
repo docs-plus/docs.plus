@@ -1020,6 +1020,18 @@ ALTER FUNCTION public.get_channel_notif_state(_channel_id character varying) SET
 ALTER FUNCTION public.join_workspace(_workspace_id character varying) SET search_path = public;
 ALTER FUNCTION public.get_channel_members_by_last_read_update(_channel_id character varying, _timestamp timestamp with time zone) SET search_path = public;
 
+-- No browser path calls it; #319 drops it.
+revoke all on function public.create_direct_message_channel(character varying, uuid) from public, anon, authenticated;
+grant execute on function public.create_direct_message_channel(character varying, uuid) to service_role;
+
+-- Invoker RPCs the browser calls, guests included. Name the grants, so access
+-- does not rest on default privileges (#316).
+grant execute on function public.get_channel_aggregate_data(character varying, integer, uuid) to anon, authenticated, service_role;
+grant execute on function public.notifications_summary(character varying) to anon, authenticated, service_role;
+grant execute on function public.get_channel_members_by_last_read_update(character varying, timestamp with time zone) to anon, authenticated, service_role;
+grant execute on function public.get_unread_notif_count(character varying) to anon, authenticated, service_role;
+grant execute on function public.fetch_mentioned_users(character varying, text) to anon, authenticated, service_role;
+
 -- ============================================================
 -- v2 chatroom RPCs (paired with migrations 20260513140500..20260513142000).
 -- ============================================================

@@ -335,7 +335,8 @@ Returns view_id for duration updates.';
 
 -- Server-side only: Hocuspocus enqueues views with the service_role key.
 -- anon/authenticated are excluded so a browser/bot can't call this directly
--- and inflate view counts. Hardening sweep (29 §7) keeps them revoked.
+-- and inflate view counts. Hardening sweep (29 §5) keeps them revoked.
+revoke all on function public.enqueue_document_view(text, text, uuid, boolean, text) from public, anon, authenticated;
 grant execute on function public.enqueue_document_view(text, text, uuid, boolean, text)
     to service_role;
 
@@ -484,6 +485,7 @@ $$;
 comment on function public.update_view_duration(uuid, integer) is
 'Updates duration for a view by view_id. Called by Hocuspocus on disconnect.';
 
+revoke all on function public.update_view_duration(uuid, integer) from public, anon, authenticated;
 grant execute on function public.update_view_duration(uuid, integer)
     to service_role;
 
@@ -928,6 +930,16 @@ grant execute on function public.get_top_viewed_documents(integer, integer) to a
 grant execute on function public.get_document_views_trend(text, integer) to authenticated;
 grant execute on function public.get_document_view_stats(text) to authenticated;
 
+-- pg_cron runs these as the owner. No browser path calls them.
+revoke all on function public.create_document_views_partitions() from public, anon, authenticated;
+revoke all on function public.process_document_views_queue() from public, anon, authenticated;
+revoke all on function public.aggregate_document_view_stats() from public, anon, authenticated;
+revoke all on function public.cleanup_old_document_views() from public, anon, authenticated;
+grant execute on function public.create_document_views_partitions() to service_role;
+grant execute on function public.process_document_views_queue() to service_role;
+grant execute on function public.aggregate_document_view_stats() to service_role;
+grant execute on function public.cleanup_old_document_views() to service_role;
+
 -- ============================================================
 -- Hardening: pin search_path = public on functions defined above
 -- (idempotent — safe to re-run)
@@ -993,6 +1005,5 @@ $$;
 comment on function public.purge_document_footprint(varchar, text) is
 'Service-role GC for a soft-deleted document: storage objects first, chat/analytics rows, workspace cascade last.';
 
-revoke all on function public.purge_document_footprint(varchar, text) from public;
-revoke all on function public.purge_document_footprint(varchar, text) from anon;
+revoke all on function public.purge_document_footprint(varchar, text) from public, anon, authenticated;
 grant execute on function public.purge_document_footprint(varchar, text) to service_role;

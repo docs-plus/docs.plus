@@ -201,7 +201,7 @@ $$;
 comment on function public.get_workspace_media_storage_stats(varchar) is
   'Per-workspace chat media usage row (same shape as fleet RPC rows).';
 
-revoke all on function public.get_workspace_media_storage_stats(varchar) from public;
+revoke all on function public.get_workspace_media_storage_stats(varchar) from public, anon, authenticated;
 grant execute on function public.get_workspace_media_storage_stats(varchar) to service_role;
 
 create or replace function public.get_all_workspace_media_storage_stats()
@@ -243,7 +243,7 @@ $$;
 comment on function public.get_all_workspace_media_storage_stats() is
   'Fleet list of workspaces with chat media (admin service reads once, paginates in TS).';
 
-revoke all on function public.get_all_workspace_media_storage_stats() from public;
+revoke all on function public.get_all_workspace_media_storage_stats() from public, anon, authenticated;
 grant execute on function public.get_all_workspace_media_storage_stats() to service_role;
 
 create or replace function public.get_workspace_media_storage_summary()
@@ -277,7 +277,7 @@ $$;
 comment on function public.get_workspace_media_storage_summary() is
   'Fleet rollup for admin media storage StatCards.';
 
-revoke all on function public.get_workspace_media_storage_summary() from public;
+revoke all on function public.get_workspace_media_storage_summary() from public, anon, authenticated;
 grant execute on function public.get_workspace_media_storage_summary() to service_role;
 
 alter function public.fetch_media_message_window(varchar, bigint, int) set search_path = public;
