@@ -1,4 +1,8 @@
-import { describe, test, expect, beforeAll, beforeEach, mock } from 'bun:test'
+import { describe, test, expect, beforeAll, beforeEach, afterEach, mock } from 'bun:test'
+
+// Null by default, so the membership read fails closed. The Private flip test sets
+// a stub, because that write must reach the `document_access` mirror (#396).
+let serviceRoleClient: unknown = null
 
 // Drive requireUser/optionalUser through the real auth module + a stubbed anon
 // client. Do NOT mock `lib/auth` itself — that sticky mock.module poisons later
@@ -24,7 +28,7 @@ mock.module('../../src/lib/supabase', () => ({
       }
     }
   }),
-  getServiceRoleClient: () => null
+  getServiceRoleClient: () => serviceRoleClient
 }))
 
 // Capture footprint-purge invocations so the permanent-delete tests can assert
@@ -73,6 +77,10 @@ describe('Documents API', () => {
   beforeEach(() => {
     mockPrisma = createMockPrisma()
     purgeCalls.length = 0
+  })
+
+  afterEach(() => {
+    serviceRoleClient = null
   })
 
   describe('GET /api/documents', () => {
@@ -958,6 +966,9 @@ describe('Documents API', () => {
     })
 
     test('should update isPrivate flag when owner', async () => {
+      serviceRoleClient = {
+        from: () => ({ upsert: async () => ({ error: null }) })
+      }
       mockPrisma.documentMetadata.findUnique = async () => ({
         ownerId: 'user-123',
         readOnly: false,
@@ -966,6 +977,7 @@ describe('Documents API', () => {
       mockPrisma.documentMetadata.upsert = async (data: any) => ({
         id: 1,
         documentId: 'abc123',
+        ownerId: 'user-123',
         isPrivate: data.update.isPrivate,
         readOnly: false,
         keywords: ''

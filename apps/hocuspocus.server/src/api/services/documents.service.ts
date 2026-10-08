@@ -2,6 +2,7 @@ import { Prisma, PrismaClient } from '@prisma/client'
 import ShortUniqueId from 'short-unique-id'
 
 import { publishDocumentAccessEvent } from '../../lib/accessRealtime'
+import { writeDocumentAccessMirror } from '../../lib/documentAccessMirror'
 import {
   fillMissingDocumentPreviews,
   parseDocumentGridPreview
@@ -640,8 +641,6 @@ export const updateDocument = async (
       })
     }
 
-    documentsServiceLogger.info({ documentId }, 'Document updated successfully')
-
     if (
       requesterId &&
       title !== undefined &&
@@ -658,6 +657,18 @@ export const updateDocument = async (
         titleTo: title
       })
     }
+
+    // Written even when the flag did not change, so a retry repairs a failed write.
+    // It runs after the seal and the title notice, so a throw here loses neither.
+    if (isPrivate !== undefined && mayMutateAccess) {
+      await writeDocumentAccessMirror({
+        documentId,
+        isPrivate: upsertedDoc.isPrivate,
+        ownerId: upsertedDoc.ownerId
+      })
+    }
+
+    documentsServiceLogger.info({ documentId }, 'Document updated successfully')
 
     return {
       ...upsertedDoc,

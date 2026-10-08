@@ -45,7 +45,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 
 ## Document access
 
-- **Private** — only the owner may open the document (REST slug + WS room sealed). A Joined membership grants no access. Settings → Documents never lists a private or deleted Document the caller does not own.
+- **Private** — only the owner may open the document (REST slug + WS room sealed). A Joined membership grants no access. Its chat closes too, through the Supabase `document_access` table (the Private mirror, #396). Settings → Documents never lists a private or deleted Document the caller does not own.
 - **Read-only** — non-owners may view but not edit; owners remain editable. Turning Private ON clears Read-only and disables the control until the doc is public again.
 - **PrivateAccess** — server decision: `allow` | `sign-in-required` | `denied` (`resolvePrivateAccess`).
 - **PrivateGateVariant** — UI CTA after a blocked open: `sign-in-required` | `access-denied` | `check-unavailable` (`toPrivateGateVariant`). The third is a degraded backend (503 `AUTH_UNAVAILABLE`) that decided nothing, so its CTA retries instead of offering sign-in.

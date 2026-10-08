@@ -132,6 +132,8 @@ on conflict (id) do update set
 
 -- Path layout: `{userId}/{channelId}/{uuid}.ext` — ownership + channel membership gate reads.
 -- In EXISTS (FROM channels c), qualify objects.name: bare `name` binds to c.name.
+-- Every chat media policy also checks internal.can_open_document, so a Private
+-- document's media opens and uploads only for its owner (#396).
 drop policy if exists "Media files are publicly accessible" on storage.objects;
 drop policy if exists "User can upload media files" on storage.objects;
 drop policy if exists "User can update own media files" on storage.objects;
@@ -149,8 +151,10 @@ create policy "Channel members can read chat media" on storage.objects
         and exists (
             select 1
               from public.channel_members cm
-             where cm.channel_id = (storage.foldername(name))[2]
+              join public.channels c on c.id = cm.channel_id
+             where cm.channel_id = (storage.foldername(objects.name))[2]
                and cm.member_id = (select auth.uid())
+               and internal.can_open_document(c.workspace_id, (select auth.uid()))
         )
     );
 
@@ -162,6 +166,7 @@ create policy "Authed can read public channel chat media" on storage.objects
               from public.channels c
              where c.id = (storage.foldername(objects.name))[2]
                and c.type = 'PUBLIC'
+               and internal.can_open_document(c.workspace_id, (select auth.uid()))
         )
     );
 
@@ -173,6 +178,7 @@ create policy "Anon can read public channel chat media" on storage.objects
               from public.channels c
              where c.id = (storage.foldername(objects.name))[2]
                and c.type = 'PUBLIC'
+               and internal.can_open_document(c.workspace_id, null::uuid)
         )
     );
 
@@ -183,8 +189,10 @@ create policy "User can upload own channel chat media" on storage.objects
         and exists (
             select 1
               from public.channel_members cm
-             where cm.channel_id = (storage.foldername(name))[2]
+              join public.channels c on c.id = cm.channel_id
+             where cm.channel_id = (storage.foldername(objects.name))[2]
                and cm.member_id = (select auth.uid())
+               and internal.can_open_document(c.workspace_id, (select auth.uid()))
         )
     );
 

@@ -33,25 +33,15 @@ begin
         where id = v_bookmark_id;
         v_action := 'removed';
     else
-        -- Bookmark path: gate on visibility (PUBLIC channel or active
-        -- member, message not soft-deleted). Closes the message-id
+        -- Bookmark path: gate on read access, which includes the Private
+        -- gate (#396), and on a live message. Closes the message-id
         -- existence probe via FK-error-vs-success.
         if not exists (
             select 1
             from public.messages m
-            join public.channels c on c.id = m.channel_id
             where m.id = p_message_id
               and m.deleted_at is null
-              and (
-                  c.type = 'PUBLIC'
-                  or exists (
-                      select 1
-                      from public.channel_members cm
-                      where cm.channel_id = m.channel_id
-                        and cm.member_id  = v_user_id
-                        and cm.left_at is null
-                  )
-              )
+              and internal.can_read_channel(m.channel_id)
         ) then
             raise exception 'Access denied: message % is not visible to this user.', p_message_id;
         end if;

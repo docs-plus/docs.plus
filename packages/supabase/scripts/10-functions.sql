@@ -835,9 +835,8 @@ $$;
 -- Function to add the current user to a workspace.
 --
 -- Product invariant: docs.plus workspaces are document slugs. Opening any doc
--- auto-bootstraps the workspace and joins the caller — membership is self-service,
--- so any signed-in user sees every workspace's PUBLIC channels; non-PUBLIC types
--- still need per-channel membership (`channels_visible_select` in 13-RLS.sql).
+-- auto-bootstraps the workspace and joins the caller. Membership is self-service
+-- on a public document. A Private document refuses everyone but its owner (#396).
 CREATE OR REPLACE FUNCTION join_workspace(
     _workspace_id VARCHAR(36)
 )
@@ -855,6 +854,11 @@ BEGIN
     -- Check if the user ID is valid
     IF user_id IS NULL THEN
         RAISE EXCEPTION 'Authentication required. User ID is NULL.';
+    END IF;
+
+    -- Refuse before the lazy workspace row, the joined notice and the channel enrolment.
+    IF NOT internal.can_open_document(_workspace_id, user_id) THEN
+        RAISE EXCEPTION 'Access denied' USING ERRCODE = '42501';
     END IF;
 
     -- Check if the workspace exists and is not deleted, create if it doesn't exist
@@ -928,7 +932,8 @@ $$;
 
 COMMENT ON FUNCTION join_workspace(VARCHAR(36)) IS
 'Adds the currently authenticated user to the specified workspace.
-Returns TRUE if successful or if user is already a member.';
+Returns TRUE if successful or if user is already a member.
+Raises 42501 for a Private document the caller does not own.';
 
 -----------------------------------
 -- Function to get channel members by last read update timestamp
@@ -1279,6 +1284,11 @@ begin
     raise exception 'not authenticated' using errcode = '42501';
   end if;
 
+  -- A past member of a Private document keeps a row, but must not learn its unread count.
+  if not internal.can_read_channel(p_channel_id) then
+    return;
+  end if;
+
   -- FOR UPDATE locks the row so concurrent advances (open tab + mobile)
   -- cannot interleave SELECT/UPDATE and flap unread_message_count.
   select greatest(last_read_seq, p_up_to_seq) into v_new_seq
@@ -1328,7 +1338,8 @@ revoke execute on function public.advance_read_cursor(varchar, bigint) from anon
 
 -- ---------------------------------------------------------------------------
 -- Authorization for `chatroom-read:{channel_id}` private topic.
---   - Subscribers must be authenticated channel members (left_at IS NULL).
+--   - Subscribers must be authenticated channel members (left_at IS NULL)
+--     who can read the channel, so a Private document admits only its owner.
 --   - `realtime.messages` RLS is already enabled by 07-3-notification-broadcast.
 --   - 14-char prefix `chatroom-read:` -> substring starts at position 15.
 -- ---------------------------------------------------------------------------
@@ -1348,6 +1359,7 @@ using (
       and cm.member_id  = (select auth.uid())
       and cm.left_at    is null
   )
+  and internal.can_read_channel(substr(realtime.messages.topic, 15))
 );
 
 -- A line comment, not comment on policy: that statement needs ownership of

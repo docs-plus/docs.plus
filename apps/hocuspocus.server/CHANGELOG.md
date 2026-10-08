@@ -405,6 +405,21 @@ This file is the operator and API changelog. The pad product lives in the [root 
   Clients no longer write `message_bookmarks`; the bookmark RPCs do. The
   same migration carries all three
   ([#410](https://github.com/docs-plus/docs.plus/issues/410)).
+- **A Private document's chat opens only for its owner.** The Supabase
+  migration `20261008130000_private_document_chat_gate` adds
+  `public.document_access`, a copy of the Private flag and the owner. Chat
+  reads, sends, edits, media, read receipts, `join_workspace`, notifications
+  and unread counts check it. A missing row means public.
+  `PUT /api/documents/:docId` and `PATCH /api/admin/documents/:id` write the
+  row with the service role on every Private change. A failed write answers
+  `503 SERVICE_UNAVAILABLE` on the PUT and `500` on the admin route, so the
+  caller can retry. Until a retry succeeds, Prisma holds Private and the chat
+  stays open. Running the backfill again also repairs the row. Deploy order:
+  confirm that `20261006130000_close_client_write_and_grant_gaps` is applied,
+  because the bookmark panel gate lives there. Then apply this migration,
+  deploy this server, and run `scripts/backfill-document-access.ts` (a dry run
+  first, then `--apply`). Until the backfill runs, Private documents' chat
+  stays open ([#396](https://github.com/docs-plus/docs.plus/issues/396)).
 
 ### Removed
 

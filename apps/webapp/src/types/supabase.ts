@@ -263,6 +263,27 @@ export type Database = {
           },
         ]
       }
+      document_access: {
+        Row: {
+          document_id: string
+          is_private: boolean
+          owner_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          document_id: string
+          is_private: boolean
+          owner_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          document_id?: string
+          is_private?: boolean
+          owner_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       document_view_stats: {
         Row: {
           anonymous_views: number

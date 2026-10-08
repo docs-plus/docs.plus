@@ -360,6 +360,31 @@ alter table public.workspace_members add constraint workspace_members_workspace_
 
 
 -- ============================================================================
+-- File: 03-2-document_access.sql
+-- ============================================================================
+
+-- Table: public.document_access
+-- The Supabase copy of a document's Private flag and owner. Prisma holds the source.
+-- Hocuspocus writes it with the service role on every Access mutation (#396).
+-- A missing row means the document is public. internal.can_open_document reads it.
+create table if not exists public.document_access (
+    document_id varchar(36) primary key, -- The documentId verbatim, the same value as channels.workspace_id.
+    is_private  boolean not null,
+    owner_id    uuid, -- No foreign key: Prisma owns the owner fact.
+    updated_at  timestamp with time zone not null default now()
+);
+
+comment on table public.document_access is
+'Private flag and owner of a document, copied from Prisma by hocuspocus with the service role. A missing row means public. Clients have no access.';
+
+-- RLS with no policy, and no client grant. Hosted Supabase grants a new public
+-- table to anon and authenticated, so the revoke is load-bearing.
+alter table public.document_access enable row level security;
+revoke all on public.document_access from anon, authenticated;
+grant all on public.document_access to service_role;
+
+
+-- ============================================================================
 -- File: 04-channels.sql
 -- ============================================================================
 
@@ -2870,25 +2895,15 @@ begin
         where id = v_bookmark_id;
         v_action := 'removed';
     else
-        -- Bookmark path: gate on visibility (PUBLIC channel or active
-        -- member, message not soft-deleted). Closes the message-id
+        -- Bookmark path: gate on read access, which includes the Private
+        -- gate (#396), and on a live message. Closes the message-id
         -- existence probe via FK-error-vs-success.
         if not exists (
             select 1
             from public.messages m
-            join public.channels c on c.id = m.channel_id
             where m.id = p_message_id
               and m.deleted_at is null
-              and (
-                  c.type = 'PUBLIC'
-                  or exists (
-                      select 1
-                      from public.channel_members cm
-                      where cm.channel_id = m.channel_id
-                        and cm.member_id  = v_user_id
-                        and cm.left_at is null
-                  )
-              )
+              and internal.can_read_channel(m.channel_id)
         ) then
             raise exception 'Access denied: message % is not visible to this user.', p_message_id;
         end if;
@@ -4627,16 +4642,31 @@ ALTER FUNCTION public.message_content_preview(text, jsonb, public.message_type) 
 -- =====================================================================
 -- internal policy primitives (RLS)
 -- =====================================================================
--- Defined here (not 13-RLS.sql) so later 10-x RPC scripts can call them at
--- seed time; 13-RLS.sql owns their grants, hardening, and the policies.
--- SECURITY DEFINER + SET search_path = public — search-path-hijack safe.
--- STABLE SQL bodies are inlined by the planner, so policy expressions
--- effectively become the inlined EXISTS subqueries against:
---   workspace_members_workspace_id_member_id_key  → is_workspace_member
---   idx_channel_members_channel_id_member_id      → is_channel_member
---   channels_pkey + the above                     → can_read_channel
+-- Defined here so later 10-x RPC scripts can call them; 13-RLS.sql owns grants.
+-- A nested SECURITY DEFINER call pays a SET search_path switch per row, which
+-- doubled chat read time. So the three primitives copy the can_open_document
+-- predicate inline. Keep all four copies identical.
 
 CREATE SCHEMA IF NOT EXISTS internal;
+
+-- A Private document opens only for its owner (#396). No row means public.
+-- An ownerless Private row opens for nobody, and a null user never owns one.
+CREATE OR REPLACE FUNCTION internal.can_open_document(p_document_id varchar, p_user_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT NOT EXISTS (
+    SELECT 1 FROM public.document_access da
+    WHERE da.document_id = p_document_id
+      AND da.is_private
+      AND coalesce(da.owner_id = p_user_id, false) = false
+  );
+$$;
+
+COMMENT ON FUNCTION internal.can_open_document(varchar, uuid) IS
+'False when the document is Private and the user is not its owner. Reads public.document_access.';
 
 CREATE OR REPLACE FUNCTION internal.is_workspace_member(p_workspace_id varchar)
 RETURNS boolean
@@ -4649,11 +4679,17 @@ AS $$
     WHERE workspace_id = p_workspace_id
       AND member_id    = auth.uid()
       AND left_at IS NULL
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM public.document_access da
+    WHERE da.document_id = p_workspace_id
+      AND da.is_private
+      AND coalesce(da.owner_id = auth.uid(), false) = false
   );
 $$;
 
 COMMENT ON FUNCTION internal.is_workspace_member(varchar) IS
-'Active workspace membership predicate for RLS policies.';
+'Active workspace membership predicate for RLS policies. False on a Private document the caller does not own.';
 
 CREATE OR REPLACE FUNCTION internal.is_channel_member(p_channel_id varchar)
 RETURNS boolean
@@ -4662,15 +4698,22 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
   SELECT EXISTS (
-    SELECT 1 FROM public.channel_members
-    WHERE channel_id = p_channel_id
-      AND member_id  = auth.uid()
-      AND left_at IS NULL
+    SELECT 1 FROM public.channel_members cm
+    JOIN public.channels c ON c.id = cm.channel_id
+    WHERE cm.channel_id = p_channel_id
+      AND cm.member_id  = auth.uid()
+      AND cm.left_at IS NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM public.document_access da
+        WHERE da.document_id = c.workspace_id
+          AND da.is_private
+          AND coalesce(da.owner_id = auth.uid(), false) = false
+      )
   );
 $$;
 
 COMMENT ON FUNCTION internal.is_channel_member(varchar) IS
-'Active channel membership predicate for RLS policies.';
+'Active channel membership predicate for RLS policies. False on a Private document the caller does not own.';
 
 CREATE OR REPLACE FUNCTION internal.can_read_channel(p_channel_id varchar)
 RETURNS boolean
@@ -4681,6 +4724,12 @@ AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.channels c
     WHERE c.id = p_channel_id
+      AND NOT EXISTS (
+        SELECT 1 FROM public.document_access da
+        WHERE da.document_id = c.workspace_id
+          AND da.is_private
+          AND coalesce(da.owner_id = auth.uid(), false) = false
+      )
       AND (
         c.type = 'PUBLIC'
         OR EXISTS (
@@ -4694,7 +4743,7 @@ AS $$
 $$;
 
 COMMENT ON FUNCTION internal.can_read_channel(varchar) IS
-'PUBLIC bypass + active channel membership; read-eligibility predicate.';
+'PUBLIC bypass + active channel membership; read-eligibility predicate. False on a Private document the caller does not own.';
 
 
 -- ============================================================================
@@ -6992,6 +7041,8 @@ grant  execute on function public.mark_document_connection_closed(varchar, uuid,
 
 -- Fan-out triggers for message-driven notifications (mentions, @everyone,
 -- replies, reactions, regular sends) and unread-count maintenance.
+-- Each one skips a receiver who cannot open the document (#396). So a Private
+-- document notifies only its owner, and push and email follow the bell rows.
 
 -- One @ token rule serves the mention, @everyone and regular-message fan-outs.
 -- A token is @ plus the longest run of [A-Za-z0-9_-]. The @ is at the start or
@@ -7006,11 +7057,12 @@ SET search_path = public
 AS $$
 DECLARE
     is_channel_muted BOOLEAN;
+    workspace_id_var VARCHAR(36);
     truncated_content TEXT;
 BEGIN
     -- 1) Check if the channel exists and notifications are not globally muted on the channel
-    SELECT mute_in_app_notifications
-      INTO is_channel_muted
+    SELECT mute_in_app_notifications, workspace_id
+      INTO is_channel_muted, workspace_id_var
       FROM public.channels
      WHERE id = NEW.channel_id;
 
@@ -7065,7 +7117,8 @@ BEGIN
     WHERE tokens.username <> 'everyone'
       AND u.id <> NEW.user_id
       AND cm.mute_in_app_notifications = false
-      AND cm.notif_state <> 'MUTED';
+      AND cm.notif_state <> 'MUTED'
+      AND internal.can_open_document(workspace_id_var, u.id);
 
     RETURN NEW;
 END;
@@ -7101,7 +7154,7 @@ BEGIN
     END IF;
 
     -- Get the original message and channel info
-    SELECT m.user_id, m.channel_id, c.mute_in_app_notifications
+    SELECT m.user_id, m.channel_id, c.mute_in_app_notifications, c.workspace_id
     INTO original_message
     FROM public.messages m
     JOIN public.channels c ON c.id = m.channel_id
@@ -7118,6 +7171,11 @@ BEGIN
 
     -- Skip if replying to own message
     IF original_message.user_id = NEW.user_id THEN
+        RETURN NEW;
+    END IF;
+
+    -- Skip an author who can no longer open a Private document
+    IF NOT internal.can_open_document(original_message.workspace_id, original_message.user_id) THEN
         RETURN NEW;
     END IF;
 
@@ -7181,11 +7239,12 @@ AS $$
 DECLARE
     channel_member_id UUID;
     is_channel_muted  BOOLEAN;
+    workspace_id_var  VARCHAR(36);
     truncated_content TEXT;
 BEGIN
     -- 1) Check if the channel exists and if it's globally muted
-    SELECT mute_in_app_notifications
-      INTO is_channel_muted
+    SELECT mute_in_app_notifications, workspace_id
+      INTO is_channel_muted, workspace_id_var
       FROM public.channels
      WHERE id = NEW.channel_id;
 
@@ -7213,6 +7272,7 @@ BEGIN
            AND cm.member_id != NEW.user_id
            AND cm.mute_in_app_notifications = false
            AND cm.notif_state != 'MUTED'
+           AND internal.can_open_document(workspace_id_var, cm.member_id)
     LOOP
         -- Insert the notification for each eligible member
         INSERT INTO public.notifications (
@@ -7262,11 +7322,12 @@ SET search_path = public
 AS $$
 DECLARE
     is_channel_muted  BOOLEAN;
+    workspace_id_var  VARCHAR(36);
     truncated_content TEXT;
 BEGIN
     -- 1) Check if the channel exists and if it's globally muted
-    SELECT mute_in_app_notifications
-      INTO is_channel_muted
+    SELECT mute_in_app_notifications, workspace_id
+      INTO is_channel_muted, workspace_id_var
       FROM public.channels
      WHERE id = NEW.channel_id;
 
@@ -7324,7 +7385,8 @@ BEGIN
       AND cm.member_id  != NEW.user_id
       AND (u.status IS NULL OR u.status != 'ONLINE')
       AND cm.mute_in_app_notifications = FALSE
-      AND cm.notif_state = 'ALL';
+      AND cm.notif_state = 'ALL'
+      AND internal.can_open_document(workspace_id_var, cm.member_id);
 
     RETURN NEW;
 END;
@@ -7356,14 +7418,20 @@ DECLARE
     sender_user_id    UUID;
     is_channel_muted  BOOLEAN;
     is_user_muted     BOOLEAN;
+    workspace_id_var  VARCHAR(36);
 BEGIN
     -- 1) Check if the channel is globally muted
-    SELECT mute_in_app_notifications
-      INTO is_channel_muted
+    SELECT mute_in_app_notifications, workspace_id
+      INTO is_channel_muted, workspace_id_var
       FROM public.channels
      WHERE id = NEW.channel_id;
 
     IF NOT FOUND OR is_channel_muted THEN
+        RETURN NEW;
+    END IF;
+
+    -- Skip a message author who can no longer open a Private document
+    IF NOT internal.can_open_document(workspace_id_var, OLD.user_id) THEN
         RETURN NEW;
     END IF;
 
@@ -7452,7 +7520,7 @@ COMMENT ON TRIGGER create_reaction_notifications ON public.messages IS 'Creates 
 -- Bumps unread_message_count for every workspace member except the sender, so
 -- unread badges include people who never explicitly joined. On PUBLIC channels it
 -- also creates the missing channel_members row; on every other type it must not,
--- because that row is what grants read access.
+-- because that row is what grants read access. Both skip a Private non-owner.
 CREATE OR REPLACE FUNCTION increment_unread_count_on_new_message() RETURNS TRIGGER AS $$
 DECLARE
     workspace_id_var VARCHAR(36);
@@ -7495,6 +7563,7 @@ BEGIN
         WHERE wm.workspace_id = workspace_id_var
           AND wm.left_at IS NULL
           AND wm.member_id != NEW.user_id
+          AND internal.can_open_document(workspace_id_var, wm.member_id)
           AND NOT EXISTS (
               SELECT 1
               FROM public.channel_members cm
@@ -7514,7 +7583,8 @@ BEGIN
       AND wm.workspace_id = workspace_id_var
       AND wm.member_id = cm.member_id
       AND wm.left_at IS NULL
-      AND cm.last_read_update_at < NEW.created_at;
+      AND cm.last_read_update_at < NEW.created_at
+      AND internal.can_open_document(workspace_id_var, cm.member_id);
 
     RETURN NEW;
 END;
@@ -8614,9 +8684,8 @@ $$;
 -- Function to add the current user to a workspace.
 --
 -- Product invariant: docs.plus workspaces are document slugs. Opening any doc
--- auto-bootstraps the workspace and joins the caller — membership is self-service,
--- so any signed-in user sees every workspace's PUBLIC channels; non-PUBLIC types
--- still need per-channel membership (`channels_visible_select` in 13-RLS.sql).
+-- auto-bootstraps the workspace and joins the caller. Membership is self-service
+-- on a public document. A Private document refuses everyone but its owner (#396).
 CREATE OR REPLACE FUNCTION join_workspace(
     _workspace_id VARCHAR(36)
 )
@@ -8634,6 +8703,11 @@ BEGIN
     -- Check if the user ID is valid
     IF user_id IS NULL THEN
         RAISE EXCEPTION 'Authentication required. User ID is NULL.';
+    END IF;
+
+    -- Refuse before the lazy workspace row, the joined notice and the channel enrolment.
+    IF NOT internal.can_open_document(_workspace_id, user_id) THEN
+        RAISE EXCEPTION 'Access denied' USING ERRCODE = '42501';
     END IF;
 
     -- Check if the workspace exists and is not deleted, create if it doesn't exist
@@ -8707,7 +8781,8 @@ $$;
 
 COMMENT ON FUNCTION join_workspace(VARCHAR(36)) IS
 'Adds the currently authenticated user to the specified workspace.
-Returns TRUE if successful or if user is already a member.';
+Returns TRUE if successful or if user is already a member.
+Raises 42501 for a Private document the caller does not own.';
 
 -----------------------------------
 -- Function to get channel members by last read update timestamp
@@ -9058,6 +9133,11 @@ begin
     raise exception 'not authenticated' using errcode = '42501';
   end if;
 
+  -- A past member of a Private document keeps a row, but must not learn its unread count.
+  if not internal.can_read_channel(p_channel_id) then
+    return;
+  end if;
+
   -- FOR UPDATE locks the row so concurrent advances (open tab + mobile)
   -- cannot interleave SELECT/UPDATE and flap unread_message_count.
   select greatest(last_read_seq, p_up_to_seq) into v_new_seq
@@ -9107,7 +9187,8 @@ revoke execute on function public.advance_read_cursor(varchar, bigint) from anon
 
 -- ---------------------------------------------------------------------------
 -- Authorization for `chatroom-read:{channel_id}` private topic.
---   - Subscribers must be authenticated channel members (left_at IS NULL).
+--   - Subscribers must be authenticated channel members (left_at IS NULL)
+--     who can read the channel, so a Private document admits only its owner.
 --   - `realtime.messages` RLS is already enabled by 07-3-notification-broadcast.
 --   - 14-char prefix `chatroom-read:` -> substring starts at position 15.
 -- ---------------------------------------------------------------------------
@@ -9127,6 +9208,7 @@ using (
       and cm.member_id  = (select auth.uid())
       and cm.left_at    is null
   )
+  and internal.can_read_channel(substr(realtime.messages.topic, 15))
 );
 
 -- A line comment, not comment on policy: that statement needs ownership of
@@ -9434,6 +9516,8 @@ on conflict (id) do update set
 
 -- Path layout: `{userId}/{channelId}/{uuid}.ext` — ownership + channel membership gate reads.
 -- In EXISTS (FROM channels c), qualify objects.name: bare `name` binds to c.name.
+-- Every chat media policy also checks internal.can_open_document, so a Private
+-- document's media opens and uploads only for its owner (#396).
 drop policy if exists "Media files are publicly accessible" on storage.objects;
 drop policy if exists "User can upload media files" on storage.objects;
 drop policy if exists "User can update own media files" on storage.objects;
@@ -9451,8 +9535,10 @@ create policy "Channel members can read chat media" on storage.objects
         and exists (
             select 1
               from public.channel_members cm
-             where cm.channel_id = (storage.foldername(name))[2]
+              join public.channels c on c.id = cm.channel_id
+             where cm.channel_id = (storage.foldername(objects.name))[2]
                and cm.member_id = (select auth.uid())
+               and internal.can_open_document(c.workspace_id, (select auth.uid()))
         )
     );
 
@@ -9464,6 +9550,7 @@ create policy "Authed can read public channel chat media" on storage.objects
               from public.channels c
              where c.id = (storage.foldername(objects.name))[2]
                and c.type = 'PUBLIC'
+               and internal.can_open_document(c.workspace_id, (select auth.uid()))
         )
     );
 
@@ -9475,6 +9562,7 @@ create policy "Anon can read public channel chat media" on storage.objects
               from public.channels c
              where c.id = (storage.foldername(objects.name))[2]
                and c.type = 'PUBLIC'
+               and internal.can_open_document(c.workspace_id, null::uuid)
         )
     );
 
@@ -9485,8 +9573,10 @@ create policy "User can upload own channel chat media" on storage.objects
         and exists (
             select 1
               from public.channel_members cm
-             where cm.channel_id = (storage.foldername(name))[2]
+              join public.channels c on c.id = cm.channel_id
+             where cm.channel_id = (storage.foldername(objects.name))[2]
                and cm.member_id = (select auth.uid())
+               and internal.can_open_document(c.workspace_id, (select auth.uid()))
         )
     );
 
@@ -9523,9 +9613,10 @@ create policy "User can delete own chat media" on storage.objects
 -- =====================================================================
 
 
--- Anon is blocked at the policy level (TO authenticated) before any helper
--- call, so anon does not need USAGE on internal.
-GRANT USAGE ON SCHEMA internal                                 TO authenticated, service_role;
+-- Anon needs USAGE on internal because its policies below call
+-- can_open_document. PostgREST does not expose the internal schema.
+GRANT USAGE ON SCHEMA internal                                 TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION internal.can_open_document(varchar, uuid) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION internal.is_workspace_member(varchar) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION internal.is_channel_member(varchar)   TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION internal.can_read_channel(varchar)    TO authenticated, service_role;
@@ -9635,7 +9726,10 @@ DROP POLICY IF EXISTS channels_member_update   ON public.channels;
 
 CREATE POLICY channels_visible_select ON public.channels
   FOR SELECT TO authenticated
-  USING (type = 'PUBLIC' OR internal.is_channel_member(id));
+  USING (
+    (type = 'PUBLIC' AND internal.can_open_document(workspace_id, (select auth.uid())))
+    OR internal.is_channel_member(id)
+  );
 
 CREATE POLICY channels_member_insert ON public.channels
   FOR INSERT TO authenticated
@@ -9695,7 +9789,8 @@ GRANT UPDATE (
 
 
 -- 2f. messages — visible iff channel is readable.
---     INSERT: as self into a readable channel. UPDATE: own row (edit, soft delete).
+--     INSERT: as self into a readable channel. UPDATE: own row (edit, soft delete)
+--     in a readable channel, so a past member of a Private document cannot edit.
 --     Clients write only the columns granted at the top. Notice rows (type
 --     notification) are server-only: definer and service-role writers skip RLS.
 
@@ -9721,6 +9816,7 @@ CREATE POLICY messages_self_update ON public.messages
   USING (
     user_id = (select auth.uid())
     AND type IS DISTINCT FROM 'notification'
+    AND internal.can_read_channel(channel_id)
   )
   WITH CHECK (
     user_id = (select auth.uid())
@@ -9794,6 +9890,9 @@ ALTER TABLE public.document_views ENABLE ROW LEVEL SECURITY;
 -- channel_message_counts.message_count as the "messages so far" total
 -- (see useMapDocumentAndWorkspace.ts::fetchChannels).
 --
+-- A Private document is closed to anon: every policy below passes a null user
+-- to internal.can_open_document (#396).
+--
 -- Each policy is a separate `<table>_public_anon_select` rule scoped to
 -- TO anon — authenticated paths above remain unchanged. This deliberately
 -- re-introduces `pg_graphql_anon_table_exposed` lints on these tables;
@@ -9802,7 +9901,11 @@ ALTER TABLE public.document_views ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS channels_public_anon_select       ON public.channels;
 CREATE POLICY channels_public_anon_select ON public.channels
   FOR SELECT TO anon
-  USING (type = 'PUBLIC' AND deleted_at IS NULL);
+  USING (
+    type = 'PUBLIC'
+    AND deleted_at IS NULL
+    AND internal.can_open_document(workspace_id, null::uuid)
+  );
 
 DROP POLICY IF EXISTS messages_public_anon_select       ON public.messages;
 CREATE POLICY messages_public_anon_select ON public.messages
@@ -9814,6 +9917,7 @@ CREATE POLICY messages_public_anon_select ON public.messages
       WHERE c.id = messages.channel_id
         AND c.type = 'PUBLIC'
         AND c.deleted_at IS NULL
+        AND internal.can_open_document(c.workspace_id, null::uuid)
     )
   );
 
@@ -9826,6 +9930,7 @@ CREATE POLICY counts_public_anon_select ON public.channel_message_counts
       WHERE c.id = channel_message_counts.channel_id
         AND c.type = 'PUBLIC'
         AND c.deleted_at IS NULL
+        AND internal.can_open_document(c.workspace_id, null::uuid)
     )
   );
 
@@ -9838,6 +9943,7 @@ CREATE POLICY pinned_public_anon_select ON public.pinned_messages
       WHERE c.id = pinned_messages.channel_id
         AND c.type = 'PUBLIC'
         AND c.deleted_at IS NULL
+        AND internal.can_open_document(c.workspace_id, null::uuid)
     )
   );
 
@@ -9851,6 +9957,7 @@ CREATE POLICY workspaces_public_anon_select ON public.workspaces
   FOR SELECT TO anon
   USING (
     deleted_at IS NULL
+    AND internal.can_open_document(workspaces.id, null::uuid)
     AND EXISTS (
       SELECT 1 FROM public.channels c
       WHERE c.workspace_id = workspaces.id
@@ -9867,6 +9974,7 @@ CREATE POLICY workspaces_public_anon_select ON public.workspaces
 ALTER FUNCTION internal.is_workspace_member(p_workspace_id character varying) SET search_path = public;
 ALTER FUNCTION internal.is_channel_member(p_channel_id character varying) SET search_path = public;
 ALTER FUNCTION internal.can_read_channel(p_channel_id character varying) SET search_path = public;
+ALTER FUNCTION internal.can_open_document(p_document_id character varying, p_user_id uuid) SET search_path = public;
 
 -- ============================================================
 -- v2 chatroom RPC grants (paired with migrations 20260513140500..20260513141500).

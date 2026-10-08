@@ -14,9 +14,10 @@
 -- =====================================================================
 
 
--- Anon is blocked at the policy level (TO authenticated) before any helper
--- call, so anon does not need USAGE on internal.
-GRANT USAGE ON SCHEMA internal                                 TO authenticated, service_role;
+-- Anon needs USAGE on internal because its policies below call
+-- can_open_document. PostgREST does not expose the internal schema.
+GRANT USAGE ON SCHEMA internal                                 TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION internal.can_open_document(varchar, uuid) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION internal.is_workspace_member(varchar) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION internal.is_channel_member(varchar)   TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION internal.can_read_channel(varchar)    TO authenticated, service_role;
@@ -126,7 +127,10 @@ DROP POLICY IF EXISTS channels_member_update   ON public.channels;
 
 CREATE POLICY channels_visible_select ON public.channels
   FOR SELECT TO authenticated
-  USING (type = 'PUBLIC' OR internal.is_channel_member(id));
+  USING (
+    (type = 'PUBLIC' AND internal.can_open_document(workspace_id, (select auth.uid())))
+    OR internal.is_channel_member(id)
+  );
 
 CREATE POLICY channels_member_insert ON public.channels
   FOR INSERT TO authenticated
@@ -186,7 +190,8 @@ GRANT UPDATE (
 
 
 -- 2f. messages — visible iff channel is readable.
---     INSERT: as self into a readable channel. UPDATE: own row (edit, soft delete).
+--     INSERT: as self into a readable channel. UPDATE: own row (edit, soft delete)
+--     in a readable channel, so a past member of a Private document cannot edit.
 --     Clients write only the columns granted at the top. Notice rows (type
 --     notification) are server-only: definer and service-role writers skip RLS.
 
@@ -212,6 +217,7 @@ CREATE POLICY messages_self_update ON public.messages
   USING (
     user_id = (select auth.uid())
     AND type IS DISTINCT FROM 'notification'
+    AND internal.can_read_channel(channel_id)
   )
   WITH CHECK (
     user_id = (select auth.uid())
@@ -285,6 +291,9 @@ ALTER TABLE public.document_views ENABLE ROW LEVEL SECURITY;
 -- channel_message_counts.message_count as the "messages so far" total
 -- (see useMapDocumentAndWorkspace.ts::fetchChannels).
 --
+-- A Private document is closed to anon: every policy below passes a null user
+-- to internal.can_open_document (#396).
+--
 -- Each policy is a separate `<table>_public_anon_select` rule scoped to
 -- TO anon — authenticated paths above remain unchanged. This deliberately
 -- re-introduces `pg_graphql_anon_table_exposed` lints on these tables;
@@ -293,7 +302,11 @@ ALTER TABLE public.document_views ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS channels_public_anon_select       ON public.channels;
 CREATE POLICY channels_public_anon_select ON public.channels
   FOR SELECT TO anon
-  USING (type = 'PUBLIC' AND deleted_at IS NULL);
+  USING (
+    type = 'PUBLIC'
+    AND deleted_at IS NULL
+    AND internal.can_open_document(workspace_id, null::uuid)
+  );
 
 DROP POLICY IF EXISTS messages_public_anon_select       ON public.messages;
 CREATE POLICY messages_public_anon_select ON public.messages
@@ -305,6 +318,7 @@ CREATE POLICY messages_public_anon_select ON public.messages
       WHERE c.id = messages.channel_id
         AND c.type = 'PUBLIC'
         AND c.deleted_at IS NULL
+        AND internal.can_open_document(c.workspace_id, null::uuid)
     )
   );
 
@@ -317,6 +331,7 @@ CREATE POLICY counts_public_anon_select ON public.channel_message_counts
       WHERE c.id = channel_message_counts.channel_id
         AND c.type = 'PUBLIC'
         AND c.deleted_at IS NULL
+        AND internal.can_open_document(c.workspace_id, null::uuid)
     )
   );
 
@@ -329,6 +344,7 @@ CREATE POLICY pinned_public_anon_select ON public.pinned_messages
       WHERE c.id = pinned_messages.channel_id
         AND c.type = 'PUBLIC'
         AND c.deleted_at IS NULL
+        AND internal.can_open_document(c.workspace_id, null::uuid)
     )
   );
 
@@ -342,6 +358,7 @@ CREATE POLICY workspaces_public_anon_select ON public.workspaces
   FOR SELECT TO anon
   USING (
     deleted_at IS NULL
+    AND internal.can_open_document(workspaces.id, null::uuid)
     AND EXISTS (
       SELECT 1 FROM public.channels c
       WHERE c.workspace_id = workspaces.id
@@ -358,6 +375,7 @@ CREATE POLICY workspaces_public_anon_select ON public.workspaces
 ALTER FUNCTION internal.is_workspace_member(p_workspace_id character varying) SET search_path = public;
 ALTER FUNCTION internal.is_channel_member(p_channel_id character varying) SET search_path = public;
 ALTER FUNCTION internal.can_read_channel(p_channel_id character varying) SET search_path = public;
+ALTER FUNCTION internal.can_open_document(p_document_id character varying, p_user_id uuid) SET search_path = public;
 
 -- ============================================================
 -- v2 chatroom RPC grants (paired with migrations 20260513140500..20260513141500).

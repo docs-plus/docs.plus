@@ -1,6 +1,7 @@
 import type { PrismaClient } from '@prisma/client'
 
 import { publishDocumentAccessEvent } from '../../lib/accessRealtime'
+import { writeDocumentAccessMirror } from '../../lib/documentAccessMirror'
 import { adminLogger } from '../../lib/logger'
 import { parseSupabaseArray, supabaseUsersArraySchema } from '../../schemas/supabase.schema'
 import { getSupabaseClient, supabaseRest } from '../utils/supabase'
@@ -271,6 +272,15 @@ export async function updateDocumentFlags(
       ...(updateData.readOnly !== undefined ? { readOnly: document.readOnly } : {}),
       ownerId: document.ownerId,
       timestamp: new Date().toISOString()
+    })
+  }
+
+  // After the seal, as in the PUT route. A failed write throws, and the controller answers 500.
+  if (updateData.isPrivate !== undefined) {
+    await writeDocumentAccessMirror({
+      documentId: document.documentId,
+      isPrivate: document.isPrivate,
+      ownerId: document.ownerId
     })
   }
 

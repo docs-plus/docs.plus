@@ -95,16 +95,31 @@ ALTER FUNCTION public.message_content_preview(text, jsonb, public.message_type) 
 -- =====================================================================
 -- internal policy primitives (RLS)
 -- =====================================================================
--- Defined here (not 13-RLS.sql) so later 10-x RPC scripts can call them at
--- seed time; 13-RLS.sql owns their grants, hardening, and the policies.
--- SECURITY DEFINER + SET search_path = public — search-path-hijack safe.
--- STABLE SQL bodies are inlined by the planner, so policy expressions
--- effectively become the inlined EXISTS subqueries against:
---   workspace_members_workspace_id_member_id_key  → is_workspace_member
---   idx_channel_members_channel_id_member_id      → is_channel_member
---   channels_pkey + the above                     → can_read_channel
+-- Defined here so later 10-x RPC scripts can call them; 13-RLS.sql owns grants.
+-- A nested SECURITY DEFINER call pays a SET search_path switch per row, which
+-- doubled chat read time. So the three primitives copy the can_open_document
+-- predicate inline. Keep all four copies identical.
 
 CREATE SCHEMA IF NOT EXISTS internal;
+
+-- A Private document opens only for its owner (#396). No row means public.
+-- An ownerless Private row opens for nobody, and a null user never owns one.
+CREATE OR REPLACE FUNCTION internal.can_open_document(p_document_id varchar, p_user_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT NOT EXISTS (
+    SELECT 1 FROM public.document_access da
+    WHERE da.document_id = p_document_id
+      AND da.is_private
+      AND coalesce(da.owner_id = p_user_id, false) = false
+  );
+$$;
+
+COMMENT ON FUNCTION internal.can_open_document(varchar, uuid) IS
+'False when the document is Private and the user is not its owner. Reads public.document_access.';
 
 CREATE OR REPLACE FUNCTION internal.is_workspace_member(p_workspace_id varchar)
 RETURNS boolean
@@ -117,11 +132,17 @@ AS $$
     WHERE workspace_id = p_workspace_id
       AND member_id    = auth.uid()
       AND left_at IS NULL
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM public.document_access da
+    WHERE da.document_id = p_workspace_id
+      AND da.is_private
+      AND coalesce(da.owner_id = auth.uid(), false) = false
   );
 $$;
 
 COMMENT ON FUNCTION internal.is_workspace_member(varchar) IS
-'Active workspace membership predicate for RLS policies.';
+'Active workspace membership predicate for RLS policies. False on a Private document the caller does not own.';
 
 CREATE OR REPLACE FUNCTION internal.is_channel_member(p_channel_id varchar)
 RETURNS boolean
@@ -130,15 +151,22 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
   SELECT EXISTS (
-    SELECT 1 FROM public.channel_members
-    WHERE channel_id = p_channel_id
-      AND member_id  = auth.uid()
-      AND left_at IS NULL
+    SELECT 1 FROM public.channel_members cm
+    JOIN public.channels c ON c.id = cm.channel_id
+    WHERE cm.channel_id = p_channel_id
+      AND cm.member_id  = auth.uid()
+      AND cm.left_at IS NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM public.document_access da
+        WHERE da.document_id = c.workspace_id
+          AND da.is_private
+          AND coalesce(da.owner_id = auth.uid(), false) = false
+      )
   );
 $$;
 
 COMMENT ON FUNCTION internal.is_channel_member(varchar) IS
-'Active channel membership predicate for RLS policies.';
+'Active channel membership predicate for RLS policies. False on a Private document the caller does not own.';
 
 CREATE OR REPLACE FUNCTION internal.can_read_channel(p_channel_id varchar)
 RETURNS boolean
@@ -149,6 +177,12 @@ AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.channels c
     WHERE c.id = p_channel_id
+      AND NOT EXISTS (
+        SELECT 1 FROM public.document_access da
+        WHERE da.document_id = c.workspace_id
+          AND da.is_private
+          AND coalesce(da.owner_id = auth.uid(), false) = false
+      )
       AND (
         c.type = 'PUBLIC'
         OR EXISTS (
@@ -162,4 +196,4 @@ AS $$
 $$;
 
 COMMENT ON FUNCTION internal.can_read_channel(varchar) IS
-'PUBLIC bypass + active channel membership; read-eligibility predicate.';
+'PUBLIC bypass + active channel membership; read-eligibility predicate. False on a Private document the caller does not own.';
