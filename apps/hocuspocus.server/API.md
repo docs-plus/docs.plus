@@ -815,9 +815,9 @@ A named checkpoint of an unchanged document mints a row whose bytes duplicate it
 
 **The tree is in head order.** Each `removed` section is emitted just after the last head section that did pair, and removals with nothing before them come first. A `removed` node carries the **baseline's** level and text, so it can nest under a head section by that older level.
 
-`excerpt` is not verbatim. Whitespace collapses to single spaces, C0 and C1 control characters are stripped, and the result is cut at 140 characters. Both caps exist because this text is meant for an email body, where a newline forges a whole entry. The Change digest paints `runs` when they exist. It paints `excerpt` or `removedExcerpt` when they do not.
+`excerpt` is not verbatim. Whitespace collapses to single spaces, C0 and C1 control characters are stripped, and the result is cut at 140 characters. Both caps keep a newline from forging a whole entry in a plain-text reader. The Change digest paints only `runs`, and their text is cleaned the same way.
 
-When present, `runs` holds at least one `added` or `removed` run, and it never ends in a `gap`. An edit with no visible text gives no `runs`. Whitespace, U+00A0, a zero-width space, a zero-width joiner and U+FE0F alone are such edits. The excerpts are cleared with it, and an excerpt with no visible text is left out. The status and the magnitude stay. An added or removed media node has no text, so it reads `image`, `video` or `embed` in `runs`. A whole `added` or `removed` section uses the same words in its excerpt. Word counts never include them.
+When present, `runs` holds at least one `added` or `removed` run, and it never ends in a `gap`. An edit with no visible text gives no `runs`. Whitespace, U+00A0, a zero-width space, non-joiner or joiner, a word joiner, a bidi mark (LRM, RLM or ALM) and U+FE0F alone are such edits. The excerpts are cleared with it, and an excerpt with no visible text is left out. The status and the magnitude stay. An added or removed media node has no text, so it reads `image`, `video` or `embed` in `runs`. A whole `added` or `removed` section uses the same words in its excerpt. Word counts never include them.
 
 ### Section status
 

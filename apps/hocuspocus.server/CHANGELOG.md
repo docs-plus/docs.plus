@@ -290,8 +290,9 @@ SMTP_PASS=...
 - **`GET /changes` sections show only real edits, and name media and level
   changes ([#448](https://github.com/docs-plus/docs.plus/issues/448)).** A
   `runs` list never holds only `same` and `gap` runs. An edit of whitespace,
-  U+00A0, a zero-width space, a zero-width joiner or U+FE0F alone gives no
-  `runs`, and the excerpts are cleared with it. An excerpt with no visible
+  U+00A0, a zero-width space, non-joiner or joiner, a word joiner, a bidi mark
+  (LRM, RLM or ALM) or U+FE0F alone gives no `runs`. The excerpts are cleared
+  with it. An excerpt with no visible
   text is left out. An added or removed image, video or embed reads `image`,
   `video` or `embed` in `runs` and in a whole section's excerpt. A new
   optional `previousLevel` holds the baseline level of a `modified` heading

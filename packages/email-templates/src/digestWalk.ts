@@ -16,18 +16,6 @@ function shownNotice(notice: DigestNotification, fallbackUrl: string): DigestNot
   return { ...notice, message_preview, action_url }
 }
 
-function passageRuns(section: {
-  runs?: DigestChangeRun[]
-  excerpt?: string
-  removed?: string
-}): DigestChangeRun[] {
-  if (section.runs?.length) return section.runs
-  const runs: DigestChangeRun[] = []
-  if (section.excerpt) runs.push({ kind: 'added', text: section.excerpt })
-  if (section.removed) runs.push({ kind: 'removed', text: section.removed })
-  return runs
-}
-
 export type DigestBlock =
   | {
       kind: 'sheet'
@@ -86,12 +74,12 @@ export function walkDigest(input: {
       notificationsUrl: input.notificationsUrl
     })
     const sections = doc.content_changes?.sections ?? []
-    // A block with no rows means no detail could be computed or placed.
+    // A Change digest block with no sections means no detail could be computed or placed.
     if (doc.content_changes && sections.length === 0) {
       blocks.push({ kind: 'note', text: CHANGED_NOTE })
     }
     for (const section of sections) {
-      const runs = passageRuns(section)
+      const runs = section.runs ?? []
       blocks.push({
         kind: 'heading',
         text: section.text || 'Untitled heading',

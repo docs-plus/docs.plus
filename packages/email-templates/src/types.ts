@@ -46,23 +46,16 @@ export interface DigestChangeRun {
 export interface DigestChangedSection {
   /** Heading text. Compute already sanitised and capped it. */
   text: string
-  /** `${docUrl}?id=<tocId>`, or docUrl for the root and for a removed section. */
+  /** `${docUrl}?id=<tocId>`, or docUrl for the root, a removed section or a nameless one. */
   url: string
-  /**
-   * The compute status. A job queued before this field existed carries none, so
-   * a reader compares it with one value and never switches over it.
-   */
-  status: 'added' | 'removed' | 'modified' | 'moved' | 'unchanged'
+  /** The compute status. A job queued before this field existed carries none. */
+  status?: 'added' | 'removed' | 'modified' | 'moved' | 'unchanged'
   /** The baseline heading level. Set only on a modified heading whose level changed. */
   previousLevel?: number
-  excerpt?: string
-  removed?: string
   runs?: DigestChangeRun[]
-  /** Absent when the section was removed and has nothing to open. */
+  /** Absent when the section was removed or has no name. */
   tocId?: string
   chats?: DigestNotification[]
-  /** Set when the heading is in the mail only for its chats. */
-  chatOnly?: true
 }
 
 /**

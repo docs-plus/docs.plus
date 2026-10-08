@@ -228,8 +228,6 @@ function digestPreviewDocuments(appUrl: string): DigestDocument[] {
             url: `${appUrl}/api-documentation?id=rate-limiting`,
             status: 'modified',
             tocId: 'rate-limiting',
-            excerpt: 'Requests over the cap wait.',
-            removed: 'Requests over the cap fail.',
             runs: [
               { kind: 'same', text: 'Requests over the cap ' },
               { kind: 'removed', text: 'fail' },

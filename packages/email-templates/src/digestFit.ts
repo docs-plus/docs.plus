@@ -79,7 +79,7 @@ function dropOldestChat(documents: DigestDocument[]): DigestDocument[] | null {
       if (sectionIndex !== target.section) return [section]
       const chats = (section.chats ?? []).filter((_, chatIndex) => chatIndex !== target.chat)
       const next = chats.length > 0 ? { ...section, chats } : { ...section, chats: undefined }
-      if (section.chatOnly && chats.length === 0) return []
+      if (section.status === 'unchanged' && chats.length === 0) return []
       return [next]
     })
     return { ...doc, content_changes: { ...doc.content_changes, sections } }

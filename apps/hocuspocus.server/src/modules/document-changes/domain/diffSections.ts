@@ -28,11 +28,11 @@ const NOTHING: Quantified = { magnitude: null, excerpt: '', removedExcerpt: '', 
 
 const MAX_CONTEXT_CHARS = 800
 
-// JS `\s` already covers U+00A0. The zero-width space, the zero-width joiner
-// and the emoji variation selector draw nothing on their own, so an edit made
-// only of them is not a change.
-// An alternation, because ESLint rejects a class that holds U+200D or U+FE0F.
-const INVISIBLE = /\s|\u200b|\u200d|\ufe0f/gu
+// JS `\s` covers U+00A0. The zero-width space, non-joiner and joiner, the word
+// joiner, the bidi marks (LRM, RLM, ALM) and the emoji variation selector draw
+// nothing alone. An edit made only of them is not a change. An alternation,
+// because ESLint rejects a class that holds U+200D or U+FE0F.
+const INVISIBLE = /\s|\u200b|\u200c|\u200d|\u2060|\u200e|\u200f|\u061c|\ufe0f/gu
 const hasVisibleText = (text: string): boolean => text.replace(INVISIBLE, '').length > 0
 
 /** Media has no text, so an added or removed one would otherwise read as a space. */
@@ -108,6 +108,7 @@ function capRuns(runs: SectionChangeRun[]): SectionChangeRun[] {
     out.push({ kind: run.kind, text })
     left = Math.max(0, left - text.length)
   }
+  if (out.at(-1)?.kind === 'gap') out.pop()
   return out
 }
 
@@ -252,23 +253,19 @@ export const diffSections = (
 
     // A passage with no green or red word is grey text only, so the runs and
     // both excerpts go together.
-    const trimmed =
-      quantified.runs.at(-1)?.kind === 'gap' ? quantified.runs.slice(0, -1) : quantified.runs
-    const shown = trimmed.some(
+    const shown = quantified.runs.some(
       (run) => (run.kind === 'added' || run.kind === 'removed') && hasVisibleText(run.text)
     )
-    const runs = shown ? trimmed : []
+    const runs = shown ? quantified.runs : []
     const visible = (value: string): string => {
       const clean = sanitizeText(value, EXCERPT_MAX_CHARS)
       return shown && hasVisibleText(clean) ? clean : ''
     }
     const excerpt = visible(quantified.excerpt)
     const removedExcerpt = visible(quantified.removedExcerpt)
+    // The level is part of the canonical form, so a level change is always modified.
     const previousLevel =
-      pair.baseline !== null &&
-      pair.head !== null &&
-      status === 'modified' &&
-      pair.baseline.level !== pair.head.level
+      pair.baseline !== null && pair.head !== null && pair.baseline.level !== pair.head.level
         ? pair.baseline.level
         : null
     return {

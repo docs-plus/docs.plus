@@ -198,35 +198,6 @@ describe('buildDigestEmail', () => {
     expect(html).toMatchSnapshot()
   })
 
-  it('shows the added and removed words under a heading that opens that place', () => {
-    const { html, text } = buildDigestEmail({
-      ...DIGEST_CHANGES_PARAMS,
-      documents: [
-        {
-          ...DIGEST_CHANGES_PARAMS.documents[0],
-          content_changes: {
-            ...DIGEST_CHANGES_PARAMS.documents[0].content_changes,
-            sections: [
-              {
-                ...DIGEST_CHANGES_PARAMS.documents[0].content_changes.sections[0],
-                excerpt: 'Requests over the cap wait.',
-                removed: 'Requests over the cap fail.',
-                tocId: 'rate-limiting'
-              }
-            ]
-          }
-        }
-      ]
-    })
-    expect(html).toContain('Requests over the cap wait.')
-    expect(html).toContain('Requests over the cap fail.')
-    expect(html).toContain('https://docs.plus/api-docs?id=rate-limiting')
-    expect(html).toContain('font-weight: 700')
-    expect(text).toContain('{+Requests over the cap wait.+}')
-    expect(text).toContain('[-Requests over the cap fail.-]')
-    expect(text).toContain('https://docs.plus/api-docs?id=rate-limiting')
-  })
-
   it('paints the changed passage under the heading', () => {
     const { html, text } = buildDigestEmail({
       ...DIGEST_CHANGES_PARAMS,
@@ -307,7 +278,6 @@ describe('buildDigestEmail', () => {
             {
               text: 'Bugs',
               url: 'https://docs.plus/pad?id=bugs',
-              status: 'modified' as const,
               runs: [
                 {
                   kind: 'same' as const,
@@ -366,7 +336,6 @@ describe('buildDigestEmail', () => {
             {
               text: 'Bugs',
               url: 'https://docs.plus/pad?id=bugs',
-              status: 'modified' as const,
               runs: [
                 { kind: 'added' as const, text: 'First edit' },
                 { kind: 'same' as const, text: ` stays. ${'context '.repeat(400)}` },
@@ -576,7 +545,7 @@ describe('buildDigestEmail', () => {
     // A job queued before the deploy carries no status. It must paint as before.
     it('paints a section with no status with no mark and no label', () => {
       const { status: _drop, ...old } = row({})
-      const { html, text } = withSections([old as DigestChangedSection])
+      const { html, text } = withSections([old])
       expect(html).toContain('text-decoration: none;">Intro</a>\n</p>')
       expect(html).not.toContain('Edited')
       expect(text).toContain('    Intro\n')

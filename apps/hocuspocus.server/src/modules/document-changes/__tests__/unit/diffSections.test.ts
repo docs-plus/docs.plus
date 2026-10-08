@@ -216,8 +216,8 @@ describe('diffSections — an edit with no visible text paints no passage', () =
     }
   })
 
-  test('a removed U+FE0F or ZWJ alone paints nothing', () => {
-    for (const mark of ['\ufe0f', '\u200d']) {
+  test('a removed U+FE0F, ZWJ, ZWNJ, word joiner or bidi mark alone paints nothing', () => {
+    for (const mark of ['\ufe0f', '\u200d', '\u200c', '\u2060', '\u200e', '\u200f', '\u061c']) {
       const [section] = modifiedOf(
         doc(heading(1, 'Title', 't1'), para(text(`🧰${mark} tools`))),
         doc(heading(1, 'Title', 't1'), para(text('🧰 tools')))
