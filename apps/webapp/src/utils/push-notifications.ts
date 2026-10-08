@@ -295,8 +295,10 @@ export async function registerPushSubscription(): Promise<string | null> {
  * The RPC goes first because sign-out calls this while the session is still valid.
  * getRegistration() resolves at once with no worker, where serviceWorker.ready would hang.
  * The stamp is cleared even on failure, so the load path never resubscribes an opt-out.
+ * A load sync still in flight could save the row again after the RPC, so wait for it first.
  */
 export async function unregisterPushSubscription(): Promise<boolean> {
+  await refreshInFlight
   try {
     const { data, error } = await supabaseClient.rpc('unregister_push_subscription', {
       p_device_id: getDeviceId()

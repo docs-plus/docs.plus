@@ -30,6 +30,7 @@ The next release is a minor bump (issue #374).
 ### Security
 
 - The `class` attribute is no longer read from pasted or loaded HTML. Only `HTMLAttributes.class` from the extension options renders ([#399](https://github.com/docs-plus/docs.plus/issues/399)).
+  A `class` set on a single link mark no longer renders either. Use `HTMLAttributes.class` instead.
 
 ### Documentation
 

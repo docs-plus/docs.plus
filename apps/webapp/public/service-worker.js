@@ -192,7 +192,8 @@ self.addEventListener("push", (event) => {
 });
 
 // The worker has no user session, so it cannot save the new endpoint.
-// The client saves it on its next signed-in load.
+// The client saves it at the first signed-in load after its daily stamp
+// expires, so within a day.
 self.addEventListener("pushsubscriptionchange", (event) => {
   const key = event.oldSubscription?.options?.applicationServerKey;
   if (!key) return;

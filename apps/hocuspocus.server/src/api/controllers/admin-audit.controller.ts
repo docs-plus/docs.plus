@@ -389,7 +389,7 @@ export async function resendGhostConfirmation(c: AppContext) {
 
     const { email } = await c.req.json()
     const { error } = await adminAuth.auth.resend({ type: 'signup', email })
-    if (error) return c.json({ error: error.message }, 500)
+    if (error) throw error
     return c.json({ success: true })
   } catch (error) {
     adminLogger.error({ err: error }, 'Failed to resend confirmation')

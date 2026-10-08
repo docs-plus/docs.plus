@@ -46,6 +46,27 @@ function getSupabaseClient() {
 
 type SupabaseLike = ReturnType<typeof getSupabaseClient>
 
+const NETWORK_ERROR_CODES = new Set([
+  'ECONNRESET',
+  'ECONNREFUSED',
+  'ECONNABORTED',
+  'ETIMEDOUT',
+  'ENOTFOUND',
+  'EAI_AGAIN',
+  'EHOSTUNREACH',
+  'ENETUNREACH',
+  'EPIPE'
+])
+
+// A bad p256dh or auth key fails before any send, with no status or an ERR_* code.
+// Only a real transport failure is transient, so only that one adds nothing to failed_count.
+function isNetworkError(error: { code?: unknown; message?: string }): boolean {
+  return (
+    (typeof error.code === 'string' && NETWORK_ERROR_CODES.has(error.code)) ||
+    error.message === 'Socket timeout'
+  )
+}
+
 /**
  * Success/invalid rows share identical values so each is one `.in()` UPDATE;
  * failures group by their (failed_count, last_error) pair to keep queries low.
@@ -149,6 +170,7 @@ export async function sendPushNotification(
   const successIds: string[] = []
   const invalidIds: string[] = []
   const failures: { id: string; failed_count: number; last_error: string }[] = []
+  let filtered = 0
 
   const results = await Promise.allSettled(
     subscriptions.map(async (sub: PushSubscription) => {
@@ -156,6 +178,7 @@ export async function sendPushNotification(
       // A refusal can be a bug in our own filter (#417), so skip the send and
       // leave the row alone. Log no endpoint detail.
       if (!isSafeUrl(sub.push_credentials.endpoint)) {
+        filtered++
         pushLogger.warn({ subscription_id: sub.id }, 'Refused an unsafe push endpoint')
         return { success: false, id: sub.id, error: 'Unsafe endpoint' }
       }
@@ -185,7 +208,7 @@ export async function sendPushNotification(
         pushLogger.debug({ subscription_id: sub.id }, 'Push sent successfully')
         return { success: true, id: sub.id }
       } catch (err: unknown) {
-        const error = err as { statusCode?: number; message?: string }
+        const error = err as { statusCode?: number; code?: unknown; message?: string }
         const status = error.statusCode
         pushLogger.warn({ subscription_id: sub.id, statusCode: status }, 'Push failed')
 
@@ -194,11 +217,16 @@ export async function sendPushNotification(
         } else {
           // 429, 5xx and network errors are transient and add nothing.
           // Charging them let one provider outage switch devices off (#417).
-          const transient = !status || status === 429 || status >= 500
+          const network = !status && isNetworkError(error)
+          const transient = status ? status === 429 || status >= 500 : network
           failures.push({
             id: sub.id,
             failed_count: (sub.failed_count || 0) + (transient ? 0 : 1),
-            last_error: status ? `HTTP ${status}` : 'Network error'
+            last_error: status
+              ? `HTTP ${status}`
+              : network
+                ? 'Network error'
+                : 'Invalid subscription'
           })
         }
 
@@ -212,6 +240,10 @@ export async function sendPushNotification(
   const successful = results.filter(
     (r) => r.status === 'fulfilled' && (r.value as { success: boolean }).success
   ).length
+  // A row the URL filter refuses was never sent, so it is not a failed delivery.
+  // Counting it made the job retry and dead-letter on every notification for that user.
+  // A row the DNS check refuses still counts, so a resolver blip can make the job retry.
+  const attempted = subscriptions.length - filtered
 
   pushLogger.info(
     {
@@ -224,7 +256,7 @@ export async function sendPushNotification(
   )
 
   return {
-    success: successful > 0 || subscriptions.length === 0,
+    success: successful > 0 || attempted === 0,
     sent: successful,
     total: subscriptions.length,
     results: results.map((r) =>

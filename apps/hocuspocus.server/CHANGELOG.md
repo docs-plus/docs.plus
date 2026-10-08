@@ -335,9 +335,14 @@ This file is the operator and API changelog. The pad product lives in the [root 
   ([#398](https://github.com/docs-plus/docs.plus/issues/398)).
 - **The push sender keeps a device on after a refusal or an outage.** An SSRF
   refusal skips the send and leaves the row alone, because the refusal can
-  come from our own filter. A `429`, a `5xx` or a network error no longer
-  raises `failed_count`. `last_error` records `HTTP <code>` or
-  `Network error`. Each send carries a 1-day TTL and a 10 s timeout
+  come from our own filter. A row that the URL filter refuses is not a failed
+  delivery, so it no longer makes the job retry and dead-letter. A row that
+  the DNS check refuses still counts as a delivery attempt, so the job
+  retries when no other row succeeds. It adds nothing to `failed_count`. A
+  `429`, a `5xx` or a network error no longer raises `failed_count`. Any
+  other error with no status, such as a bad subscription key, still adds 1.
+  `last_error` records `HTTP <code>`, `Network error` or
+  `Invalid subscription`. Each send carries a 1-day TTL and a 10 s timeout
   ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
 - **A purged document id stays gone.** `PUT /api/documents/:docId` answers
   `404` for a purged id and no longer creates its row again. The WebSocket
@@ -375,9 +380,11 @@ This file is the operator and API changelog. The pad product lives in the [root 
   [configuration](../../docs/self-hosting/configuration.md#turn-off-password-sign-in)
   says. It stays off on the local stack.
 
-- **Outside development, a 5xx `error.message` is `Internal server error`.**
+- **Outside development, `getErrorResponse` answers every 5xx with `Internal server error`.**
   The `code` is unchanged, and the server logs the original. A Prisma or
-  Supabase message used to reach production `500` responses
+  Supabase message used to reach production `500` responses. A handler that
+  calls `fail()` keeps its own fixed message, which never carries driver text.
+  The admin resend-confirmation route now answers with a fixed message too
   ([#413](https://github.com/docs-plus/docs.plus/issues/413)).
 
 - **Service-role functions refuse `public`, `anon` and `authenticated`.** The

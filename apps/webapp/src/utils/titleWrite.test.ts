@@ -1,8 +1,6 @@
 import { fetchDocument } from '@utils/fetchDocument'
 
-import { onDocTitleStateless, plainTitle } from './titleWrite'
-
-const setWorkspaceSetting = jest.fn()
+import { onDocTitleStateless, plainTitle, REFETCH_GAP_MS } from './titleWrite'
 
 jest.mock('@utils/fetchDocument', () => ({ fetchDocument: jest.fn() }))
 jest.mock('@utils/supabase', () => ({
@@ -12,18 +10,17 @@ jest.mock('@stores', () => ({
   useStore: {
     getState: () => ({
       settings: { metadata: { documentId: 'd1', slug: 's1', title: 'Old' } },
-      setWorkspaceSetting
+      setWorkspaceSetting: jest.fn()
     })
   }
 }))
 
 const fetchDocumentMock = fetchDocument as jest.Mock
-const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
+const docTitle = JSON.stringify({ type: 'docTitle', state: { title: 'x' } })
 
 describe('titleWrite', () => {
-  beforeEach(() => {
-    fetchDocumentMock.mockReset()
-    setWorkspaceSetting.mockReset()
+  afterEach(() => {
+    jest.useRealTimers()
   })
 
   it('strips tags and keeps the text', () => {
@@ -31,23 +28,26 @@ describe('titleWrite', () => {
     expect(plainTitle('  plain  ')).toBe('  plain  ')
   })
 
-  it('applies the REST title, never the relayed text', async () => {
-    fetchDocumentMock.mockResolvedValue({ documentId: 'd1', title: 'Real' })
-    onDocTitleStateless(JSON.stringify({ type: 'docTitle', state: { title: 'fake' } }))
-    await flush()
+  it('folds a burst during one GET into one rerun after the gap', async () => {
+    jest.useFakeTimers()
+    const pending: Array<(doc: { documentId: string; title: string }) => void> = []
+    fetchDocumentMock.mockImplementation(() => new Promise((resolve) => pending.push(resolve)))
 
-    expect(fetchDocumentMock).toHaveBeenCalledWith('s1', null)
-    expect(setWorkspaceSetting).toHaveBeenCalledWith(
-      'metadata',
-      expect.objectContaining({ title: 'Real' })
-    )
-  })
+    onDocTitleStateless(docTitle)
+    await jest.advanceTimersByTimeAsync(0)
+    expect(fetchDocumentMock).toHaveBeenCalledTimes(1)
 
-  it('ignores other stateless messages', async () => {
-    onDocTitleStateless(JSON.stringify({ type: 'private', state: { title: 'x' } }))
-    onDocTitleStateless('not-json')
-    await flush()
+    onDocTitleStateless(docTitle)
+    onDocTitleStateless(docTitle)
+    pending[0]({ documentId: 'd1', title: 'Real' })
+    await jest.advanceTimersByTimeAsync(REFETCH_GAP_MS - 1)
+    expect(fetchDocumentMock).toHaveBeenCalledTimes(1)
 
-    expect(fetchDocumentMock).not.toHaveBeenCalled()
+    await jest.advanceTimersByTimeAsync(1)
+    expect(fetchDocumentMock).toHaveBeenCalledTimes(2)
+
+    pending[1]({ documentId: 'd1', title: 'Real' })
+    await jest.advanceTimersByTimeAsync(REFETCH_GAP_MS * 2)
+    expect(fetchDocumentMock).toHaveBeenCalledTimes(2)
   })
 })

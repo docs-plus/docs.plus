@@ -144,10 +144,6 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   match, and Edit sits above Delete in each. A message with files keeps Copy
   Link, where it used to say Share message link.
 
-- Show a plain, fixed message on the sign-in error page. An expired or used
-  sign-in link says so. Every other error shows one general message
-  ([#411](https://github.com/docs-plus/docs.plus/issues/411)).
-
 ### Fixed
 
 - Mark your first message in an empty chat as sent. It was saved at once, but
@@ -286,8 +282,12 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   reads the title from the server
   ([#406](https://github.com/docs-plus/docs.plus/issues/406)).
 - Keep server error text out of responses. Outside development, a server
-  error says only "Internal server error"
+  error from the shared error handler says only "Internal server error".
+  A handler that sets its own message keeps it
   ([#413](https://github.com/docs-plus/docs.plus/issues/413)).
+- Show a plain, fixed message on the sign-in error page. An expired or used
+  sign-in link says so. Every other error shows one general message
+  ([#411](https://github.com/docs-plus/docs.plus/issues/411)).
 - Keep server secrets out of the webapp and admin containers. In
   `docker-compose.prod.yml` they no longer load the whole `.env.production`,
   only the keys they read

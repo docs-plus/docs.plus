@@ -4,7 +4,7 @@ import { supabaseClient } from '@utils/supabase'
 
 export const plainTitle = (value: string): string => value.replace(/<[^>]*>/g, '')
 
-const REFETCH_GAP_MS = 2000
+export const REFETCH_GAP_MS = 2000
 
 let inFlight = false
 let again = false

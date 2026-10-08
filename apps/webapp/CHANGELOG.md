@@ -513,10 +513,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   gets the old account's pushes
   ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
 - **The service worker keeps push alive.** It subscribes again on
-  `pushsubscriptionchange`, and the client saves the new endpoint on its next
-  signed-in load. A bad or empty payload still shows a generic notification,
-  because Chrome can revoke a subscription that shows nothing. Every server
-  type has a title, `content_change` and `system_alert` included
+  `pushsubscriptionchange`. The client saves the new endpoint within a day, at
+  the first signed-in load after its daily stamp expires. A bad or empty
+  payload still shows a generic notification, because Chrome can revoke a
+  subscription that shows nothing. Every server type has a title,
+  `content_change` and `system_alert` included
   ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
 
 ### Security

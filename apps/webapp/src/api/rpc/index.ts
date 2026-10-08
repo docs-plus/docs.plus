@@ -1,5 +1,4 @@
 export * from './archiveBookmark'
-export * from './createDirectMessageChannel'
 export * from './fetchChannelInitialData'
 export * from './getBookmarkStats'
 export * from './getChannelMembersByLastReadUpdate'
