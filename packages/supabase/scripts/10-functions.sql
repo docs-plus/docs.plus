@@ -1350,8 +1350,8 @@ revoke execute on function public.advance_read_cursor(varchar, bigint) from anon
 
 -- ---------------------------------------------------------------------------
 -- Authorization for `chatroom-read:{channel_id}` private topic.
---   - Subscribers must be authenticated channel members (left_at IS NULL)
---     who can read the channel, so a Private document admits only its owner.
+--   - internal.is_channel_member admits active members only, and on a Private
+--     document only its owner.
 --   - `realtime.messages` RLS is already enabled by 07-3-notification-broadcast.
 --   - 14-char prefix `chatroom-read:` -> substring starts at position 15.
 -- ---------------------------------------------------------------------------
@@ -1364,14 +1364,7 @@ for select
 to authenticated
 using (
   realtime.messages.topic like 'chatroom-read:%'
-  and exists (
-    select 1
-    from public.channel_members cm
-    where cm.channel_id = substr(realtime.messages.topic, 15)
-      and cm.member_id  = (select auth.uid())
-      and cm.left_at    is null
-  )
-  and internal.can_read_channel(substr(realtime.messages.topic, 15))
+  and internal.is_channel_member(substr(realtime.messages.topic, 15))
 );
 
 -- A line comment, not comment on policy: that statement needs ownership of

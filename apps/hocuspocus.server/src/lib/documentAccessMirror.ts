@@ -8,7 +8,7 @@ const unavailable = () =>
   new AppError('Document access could not be saved', 503, 'SERVICE_UNAVAILABLE')
 
 /**
- * Copies the stored Private flag and owner into Supabase `public.document_access`,
+ * Copies a document's Private flag and owner into Supabase `public.document_access`,
  * which gates chat (#396). Throws 503 on a missing client or a failed write. A lost
  * write leaves a Private document's chat open, so the caller must see it and retry.
  */
@@ -33,7 +33,7 @@ export const writeDocumentAccessMirror = async (params: {
     { onConflict: 'document_id' }
   )
   if (error) {
-    mirrorLogger.error({ error, documentId: params.documentId }, 'Mirror write failed')
+    mirrorLogger.error({ err: error, documentId: params.documentId }, 'Mirror write failed')
     throw unavailable()
   }
 }

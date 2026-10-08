@@ -114,6 +114,7 @@ REVOKE ALL ON public.email_bounces          FROM authenticated;
 REVOKE ALL ON public.push_subscriptions     FROM authenticated;
 REVOKE ALL ON public.document_view_stats    FROM authenticated;
 REVOKE ALL ON public.document_views         FROM authenticated;
+REVOKE ALL ON public.document_views_daily   FROM authenticated;
 
 -- Partition tables (document_views_YYYY_MM) are created dynamically by
 -- 09-document-views.sql for current + next 3 months, so the exact set
@@ -139,19 +140,6 @@ BEGIN
             rec.nspname, rec.relname
         );
     END LOOP;
-END
-$$;
-
--- document_views_daily may exist on remote but not local; guard.
-DO $$
-BEGIN
-    IF EXISTS (
-        SELECT 1 FROM pg_class c
-        JOIN pg_namespace n ON n.oid = c.relnamespace
-        WHERE n.nspname='public' AND c.relname='document_views_daily'
-    ) THEN
-        EXECUTE 'REVOKE ALL ON public.document_views_daily FROM authenticated';
-    END IF;
 END
 $$;
 

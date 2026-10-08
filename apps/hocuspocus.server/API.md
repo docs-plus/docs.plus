@@ -215,7 +215,7 @@ Soft-delete (owner-only, `requireUser`). Stamps `deletedAt`; the row survives fo
 
 ### POST /api/documents/:documentId/restore
 
-Clear `deletedAt` (owner-only). Idempotent; non-owner → `403`.
+Clear `deletedAt` (owner-only). Idempotent; non-owner → `403`. A Private document first writes its chat access row. A failed write → `503`, and the document stays in Trash.
 
 ### POST /api/documents/:documentId/duplicate
 
@@ -245,7 +245,7 @@ Bulk permanent-delete (owner-only). Body `{ ids?: string[] }` — omit `ids` to 
 
 ### POST /api/documents/trash/restore
 
-Bulk restore (owner-only). Body `{ ids: string[] }` (1–500). Returns `{ restored: <count> }`. Non-owned ids are skipped.
+Bulk restore (owner-only). Body `{ ids: string[] }` (1–500). Returns `{ restored: <count> }`. Non-owned ids are skipped. A failed chat access write for a Private id → `503`. The ids before it stay restored, and a retry is safe.
 
 ## Document content
 

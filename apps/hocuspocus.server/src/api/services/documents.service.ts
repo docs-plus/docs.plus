@@ -668,10 +668,10 @@ export const updateDocument = async (
 
     // Written even when the flag did not change, so a retry repairs a failed write.
     // It runs after the seal and the title notice, so a throw here loses neither.
-    // Private off lands here, so a failed write leaves the chat closed. Private on lands here
-    // only when a create race stored another owner than the pre-write named.
-    const preWriteHolds = turnsPrivateOn && upsertedDoc.ownerId === ownerAfterWrite
-    if (isPrivate !== undefined && mayMutateAccess && !preWriteHolds) {
+    // A failed Private-off write leaves the chat closed. Private on lands here only when a
+    // create race stored a different owner from the one the first write used.
+    const mirrorCurrent = turnsPrivateOn && upsertedDoc.ownerId === ownerAfterWrite
+    if (isPrivate !== undefined && mayMutateAccess && !mirrorCurrent) {
       await writeDocumentAccessMirror({
         documentId,
         isPrivate: upsertedDoc.isPrivate,
@@ -716,9 +716,16 @@ const setDeletedAt = async (
 
   const existing = await prisma.documentMetadata.findUnique({
     where: { documentId },
-    select: { ownerId: true }
+    select: { ownerId: true, isPrivate: true }
   })
   if (!isDocumentOwner(existing, requesterId)) return { authorized: false }
+
+  // A partial purge may already have deleted the Private mirror row, and a missing row
+  // opens the chat. So a Private restore writes the row first. A failed write keeps the
+  // document in Trash.
+  if (deletedAt === null && existing?.isPrivate) {
+    await writeDocumentAccessMirror({ documentId, isPrivate: true, ownerId: existing.ownerId })
+  }
 
   try {
     await prisma.documentMetadata.update({ where: { documentId }, data: { deletedAt } })

@@ -103,7 +103,8 @@ as $$
 declare
     v_jwt_role text;
 begin
-    -- Allow: service_role (backend API) or authenticated admin
+    -- Only service_role holds EXECUTE, so this guard can no longer refuse anyone.
+    -- Drop it in the next migration that recreates this function.
     v_jwt_role := coalesce(current_setting('request.jwt.claim.role', true), '');
 
     if v_jwt_role not in ('service_role') then
@@ -152,7 +153,7 @@ ALTER FUNCTION public.notify_user_join_workspace() SECURITY DEFINER;
 -- workspace membership, so a non-member gets 0 rows (never an error).
 -- Slug → workspace id is resolved through the workspaces join; never compare
 -- a slug to workspace_id (varchar36). Distinct from admin_get_document_member_counts,
--- which is is_admin-gated for the admin dashboard.
+-- which is service-role only.
 
 -- Batched avatar-cluster previews for the visible document list. Returns the
 -- true member_count plus up to 4 earliest-joined members per slug as jsonb.

@@ -487,7 +487,11 @@ SMTP_PASS=...
   migration `20261008130000_private_document_chat_gate` adds
   `public.document_access`, a copy of the Private flag and the owner. Chat
   reads, sends, edits, media, read receipts, `join_workspace`, notifications
-  and unread counts check it. A missing row means public.
+  and unread counts check it. A missing row means public. The same migration
+  makes `purge_document_footprint` delete the row, so a purged document leaves
+  no Private flag or owner behind. A restore of a Private document writes the
+  row first, so a restore after a partial purge does not open its chat. A
+  failed write answers `503`, and the document stays in Trash.
   `PUT /api/documents/:docId` and `PATCH /api/admin/documents/:id` write the
   row with the service role on every Private change. A failed write answers
   `503 SERVICE_UNAVAILABLE` on the PUT and `500` on the admin route, so the

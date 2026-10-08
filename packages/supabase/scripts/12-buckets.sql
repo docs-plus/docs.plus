@@ -132,7 +132,7 @@ on conflict (id) do update set
 
 -- Path layout: `{userId}/{channelId}/{uuid}.ext` — ownership + channel membership gate reads.
 -- In EXISTS (FROM channels c), qualify objects.name: bare `name` binds to c.name.
--- Every chat media policy also checks internal.can_open_document, so a Private
+-- The read and upload policies also check internal.can_open_document, so a Private
 -- document's media opens and uploads only for its owner (#396).
 drop policy if exists "Media files are publicly accessible" on storage.objects;
 drop policy if exists "User can upload media files" on storage.objects;

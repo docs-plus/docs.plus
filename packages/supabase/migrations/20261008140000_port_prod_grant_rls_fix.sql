@@ -1,6 +1,7 @@
 -- Issue #314. Ports the 2026-09-28 production hand fix for grants and partition RLS.
 -- No-op on production except partitions made after 2026-09-28. Re-runs safely.
--- Pairs with scripts 02-z, 07-4, 09, 10-4, 10-8, 10-functions, 27, 28 and 29.
+-- Pairs with scripts 02-z-admin-users, 09-document-views, 10-functions, 27-failed-notifications-audit
+-- and 29-lint-hardening.
 -- Migration 20261006130000 already closed 14 of the functions in that fix, so they are not repeated here.
 
 set local lock_timeout = '5s';
@@ -32,7 +33,7 @@ grant select (id, username, full_name, display_name, avatar_url, avatar_updated_
               profile_data, status, online_at, created_at, updated_at, deleted_at)
   on public.users to anon;
 
--- Service role or pg_cron only. Grant first, because service_role may hold EXECUTE only through PUBLIC.
+-- Service role or pg_cron only.
 grant execute on function public.get_push_failure_summary() to service_role;
 grant execute on function public.get_email_failure_summary() to service_role;
 grant execute on function public.get_failed_push_subscriptions(integer, integer) to service_role;

@@ -401,48 +401,6 @@ export type Database = {
         }
         Relationships: []
       }
-      document_views_2026_09: {
-        Row: {
-          device_type: string | null
-          document_slug: string
-          duration_ms: number | null
-          id: string
-          is_anonymous: boolean
-          is_authenticated: boolean
-          is_bounce: boolean | null
-          session_id: string
-          user_id: string | null
-          view_date: string
-          viewed_at: string
-        }
-        Insert: {
-          device_type?: string | null
-          document_slug: string
-          duration_ms?: number | null
-          id: string
-          is_anonymous?: boolean
-          is_authenticated?: boolean
-          is_bounce?: boolean | null
-          session_id: string
-          user_id?: string | null
-          view_date?: string
-          viewed_at?: string
-        }
-        Update: {
-          device_type?: string | null
-          document_slug?: string
-          duration_ms?: number | null
-          id?: string
-          is_anonymous?: boolean
-          is_authenticated?: boolean
-          is_bounce?: boolean | null
-          session_id?: string
-          user_id?: string | null
-          view_date?: string
-          viewed_at?: string
-        }
-        Relationships: []
-      }
       document_views_2026_10: {
         Row: {
           device_type: string | null
@@ -528,6 +486,48 @@ export type Database = {
         Relationships: []
       }
       document_views_2026_12: {
+        Row: {
+          device_type: string | null
+          document_slug: string
+          duration_ms: number | null
+          id: string
+          is_anonymous: boolean
+          is_authenticated: boolean
+          is_bounce: boolean | null
+          session_id: string
+          user_id: string | null
+          view_date: string
+          viewed_at: string
+        }
+        Insert: {
+          device_type?: string | null
+          document_slug: string
+          duration_ms?: number | null
+          id: string
+          is_anonymous?: boolean
+          is_authenticated?: boolean
+          is_bounce?: boolean | null
+          session_id: string
+          user_id?: string | null
+          view_date?: string
+          viewed_at?: string
+        }
+        Update: {
+          device_type?: string | null
+          document_slug?: string
+          duration_ms?: number | null
+          id?: string
+          is_anonymous?: boolean
+          is_authenticated?: boolean
+          is_bounce?: boolean | null
+          session_id?: string
+          user_id?: string | null
+          view_date?: string
+          viewed_at?: string
+        }
+        Relationships: []
+      }
+      document_views_2027_01: {
         Row: {
           device_type: string | null
           document_slug: string

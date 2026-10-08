@@ -21,6 +21,7 @@ end;
 $$;
 
 comment on function public.update_user_online_at() is 'Stamps online_at on every status write, so the heartbeat keeps it fresh for is_user_online.';
+comment on trigger trigger_update_user_online_at on public.users is 'Stamps online_at on every status write, so the heartbeat keeps it fresh.';
 
 
 -- 2. Check the keys the triggers read. Unknown keys and JSON null pass, because the client clears email_bounce_info with null.

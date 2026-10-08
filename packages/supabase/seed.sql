@@ -365,8 +365,9 @@ alter table public.workspace_members add constraint workspace_members_workspace_
 -- ============================================================================
 
 -- Table: public.document_access
--- The Supabase copy of a document's Private flag and owner. Prisma holds the source.
--- Hocuspocus writes it with the service role on every Access mutation (#396).
+-- The Private mirror: the Supabase copy of a document's Private flag and owner. Prisma holds the source.
+-- Hocuspocus writes it with the service role when a request sets the Private flag,
+-- and when a Private document leaves Trash (#396).
 -- A missing row means the document is public. internal.can_open_document reads it.
 create table if not exists public.document_access (
     document_id varchar(36) primary key, -- The documentId verbatim, the same value as channels.workspace_id.
@@ -376,7 +377,7 @@ create table if not exists public.document_access (
 );
 
 comment on table public.document_access is
-'Private flag and owner of a document, copied from Prisma by hocuspocus with the service role. A missing row means public. Clients have no access.';
+'Private flag and owner of a document, copied from Prisma by Hocuspocus with the service role. A missing row means public. Clients have no access.';
 
 -- RLS with no policy, and no client grant. Hosted Supabase grants a new public
 -- table to anon and authenticated, so the revoke is load-bearing.
@@ -4254,13 +4255,16 @@ begin
     delete from public.document_views_daily
     where document_slug in (lower(p_document_id), lower(p_slug));
 
+    -- The Private mirror stores the documentId verbatim, so match it without lower() (#396).
+    delete from public.document_access where document_id = p_document_id;
+
     -- Cascades every chat table (channels, messages, members, bookmarks, …).
     delete from public.workspaces where id = p_document_id;
 end;
 $$;
 
 comment on function public.purge_document_footprint(varchar, text) is
-'Service-role GC for a soft-deleted document: storage objects first, chat/analytics rows, workspace cascade last.';
+'Service-role GC for a soft-deleted document: storage objects first, analytics and Private mirror rows, workspace cascade last.';
 
 revoke all on function public.purge_document_footprint(varchar, text) from public, anon, authenticated;
 grant execute on function public.purge_document_footprint(varchar, text) to service_role;
@@ -4896,13 +4900,6 @@ EXECUTE PROCEDURE public.handle_new_user();
 ----------------------------------------------------
 ----------------------------------------------------
 
-/**
- * Function: update_user_online_at
- * Description: Updates the online_at timestamp on every status write
- * Trigger: Executes before UPDATE of status on public.users
- * Action: Sets online_at to now() on every status write, so the 60 s heartbeat keeps it fresh
- * Returns: The modified NEW record
- */
 CREATE OR REPLACE FUNCTION public.update_user_online_at()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -6783,7 +6780,8 @@ as $$
 declare
     v_jwt_role text;
 begin
-    -- Allow: service_role (backend API) or authenticated admin
+    -- Only service_role holds EXECUTE, so this guard can no longer refuse anyone.
+    -- Drop it in the next migration that recreates this function.
     v_jwt_role := coalesce(current_setting('request.jwt.claim.role', true), '');
 
     if v_jwt_role not in ('service_role') then
@@ -6832,7 +6830,7 @@ ALTER FUNCTION public.notify_user_join_workspace() SECURITY DEFINER;
 -- workspace membership, so a non-member gets 0 rows (never an error).
 -- Slug → workspace id is resolved through the workspaces join; never compare
 -- a slug to workspace_id (varchar36). Distinct from admin_get_document_member_counts,
--- which is is_admin-gated for the admin dashboard.
+-- which is service-role only.
 
 -- Batched avatar-cluster previews for the visible document list. Returns the
 -- true member_count plus up to 4 earliest-joined members per slug as jsonb.
@@ -9212,8 +9210,8 @@ revoke execute on function public.advance_read_cursor(varchar, bigint) from anon
 
 -- ---------------------------------------------------------------------------
 -- Authorization for `chatroom-read:{channel_id}` private topic.
---   - Subscribers must be authenticated channel members (left_at IS NULL)
---     who can read the channel, so a Private document admits only its owner.
+--   - internal.is_channel_member admits active members only, and on a Private
+--     document only its owner.
 --   - `realtime.messages` RLS is already enabled by 07-3-notification-broadcast.
 --   - 14-char prefix `chatroom-read:` -> substring starts at position 15.
 -- ---------------------------------------------------------------------------
@@ -9226,14 +9224,7 @@ for select
 to authenticated
 using (
   realtime.messages.topic like 'chatroom-read:%'
-  and exists (
-    select 1
-    from public.channel_members cm
-    where cm.channel_id = substr(realtime.messages.topic, 15)
-      and cm.member_id  = (select auth.uid())
-      and cm.left_at    is null
-  )
-  and internal.can_read_channel(substr(realtime.messages.topic, 15))
+  and internal.is_channel_member(substr(realtime.messages.topic, 15))
 );
 
 -- A line comment, not comment on policy: that statement needs ownership of
@@ -9541,7 +9532,7 @@ on conflict (id) do update set
 
 -- Path layout: `{userId}/{channelId}/{uuid}.ext` — ownership + channel membership gate reads.
 -- In EXISTS (FROM channels c), qualify objects.name: bare `name` binds to c.name.
--- Every chat media policy also checks internal.can_open_document, so a Private
+-- The read and upload policies also check internal.can_open_document, so a Private
 -- document's media opens and uploads only for its owner (#396).
 drop policy if exists "Media files are publicly accessible" on storage.objects;
 drop policy if exists "User can upload media files" on storage.objects;
@@ -9657,8 +9648,8 @@ GRANT SELECT ON public.workspace_members TO authenticated;
 GRANT SELECT, INSERT ON public.channels TO authenticated;
 GRANT SELECT, INSERT ON public.channel_members TO authenticated;
 GRANT SELECT ON public.messages TO authenticated;
--- Some images add a default table-wide grant, so revoke it (#400). A table
--- revoke also clears column grants, so it runs before them.
+-- Some images add a default table-wide grant, so each REVOKE below clears it.
+-- A table revoke also clears column grants, so it runs before them.
 REVOKE INSERT, UPDATE ON public.messages FROM authenticated;
 GRANT INSERT (id, channel_id, user_id, content, html, medias, type, metadata, reply_to_message_id)
   ON public.messages TO authenticated;
@@ -9667,8 +9658,7 @@ GRANT SELECT ON public.pinned_messages TO authenticated;
 GRANT SELECT ON public.channel_message_counts TO authenticated;
 GRANT SELECT, UPDATE ON public.notifications TO authenticated;
 GRANT SELECT ON public.message_bookmarks TO authenticated;
--- DEFINER RPCs are the only writers (join_workspace, the bookmark RPCs). The
--- revoke also clears a default-privilege grant on images that still make one.
+-- SECURITY DEFINER RPCs are the only writers (join_workspace, the bookmark RPCs).
 REVOKE INSERT, UPDATE ON public.workspaces FROM authenticated;
 REVOKE INSERT, UPDATE, DELETE ON public.message_bookmarks FROM authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
@@ -11247,6 +11237,7 @@ REVOKE ALL ON public.email_bounces          FROM authenticated;
 REVOKE ALL ON public.push_subscriptions     FROM authenticated;
 REVOKE ALL ON public.document_view_stats    FROM authenticated;
 REVOKE ALL ON public.document_views         FROM authenticated;
+REVOKE ALL ON public.document_views_daily   FROM authenticated;
 
 -- Partition tables (document_views_YYYY_MM) are created dynamically by
 -- 09-document-views.sql for current + next 3 months, so the exact set
@@ -11272,19 +11263,6 @@ BEGIN
             rec.nspname, rec.relname
         );
     END LOOP;
-END
-$$;
-
--- document_views_daily may exist on remote but not local; guard.
-DO $$
-BEGIN
-    IF EXISTS (
-        SELECT 1 FROM pg_class c
-        JOIN pg_namespace n ON n.oid = c.relnamespace
-        WHERE n.nspname='public' AND c.relname='document_views_daily'
-    ) THEN
-        EXECUTE 'REVOKE ALL ON public.document_views_daily FROM authenticated';
-    END IF;
 END
 $$;
 

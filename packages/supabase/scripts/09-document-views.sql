@@ -997,13 +997,16 @@ begin
     delete from public.document_views_daily
     where document_slug in (lower(p_document_id), lower(p_slug));
 
+    -- The Private mirror stores the documentId verbatim, so match it without lower() (#396).
+    delete from public.document_access where document_id = p_document_id;
+
     -- Cascades every chat table (channels, messages, members, bookmarks, …).
     delete from public.workspaces where id = p_document_id;
 end;
 $$;
 
 comment on function public.purge_document_footprint(varchar, text) is
-'Service-role GC for a soft-deleted document: storage objects first, chat/analytics rows, workspace cascade last.';
+'Service-role GC for a soft-deleted document: storage objects first, analytics and Private mirror rows, workspace cascade last.';
 
 revoke all on function public.purge_document_footprint(varchar, text) from public, anon, authenticated;
 grant execute on function public.purge_document_footprint(varchar, text) to service_role;

@@ -33,8 +33,8 @@ GRANT SELECT ON public.workspace_members TO authenticated;
 GRANT SELECT, INSERT ON public.channels TO authenticated;
 GRANT SELECT, INSERT ON public.channel_members TO authenticated;
 GRANT SELECT ON public.messages TO authenticated;
--- Some images add a default table-wide grant, so revoke it (#400). A table
--- revoke also clears column grants, so it runs before them.
+-- Some images add a default table-wide grant, so each REVOKE below clears it.
+-- A table revoke also clears column grants, so it runs before them.
 REVOKE INSERT, UPDATE ON public.messages FROM authenticated;
 GRANT INSERT (id, channel_id, user_id, content, html, medias, type, metadata, reply_to_message_id)
   ON public.messages TO authenticated;
@@ -43,8 +43,7 @@ GRANT SELECT ON public.pinned_messages TO authenticated;
 GRANT SELECT ON public.channel_message_counts TO authenticated;
 GRANT SELECT, UPDATE ON public.notifications TO authenticated;
 GRANT SELECT ON public.message_bookmarks TO authenticated;
--- DEFINER RPCs are the only writers (join_workspace, the bookmark RPCs). The
--- revoke also clears a default-privilege grant on images that still make one.
+-- SECURITY DEFINER RPCs are the only writers (join_workspace, the bookmark RPCs).
 REVOKE INSERT, UPDATE ON public.workspaces FROM authenticated;
 REVOKE INSERT, UPDATE, DELETE ON public.message_bookmarks FROM authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;

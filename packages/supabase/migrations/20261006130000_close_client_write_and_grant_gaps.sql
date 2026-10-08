@@ -1,6 +1,8 @@
 -- Issues #397, #401, #409 and #410. Close grant and client-write gaps that only scripts/ closed.
 -- No RPC signature or return type changes. Production already denies the #397 functions, so that part is a no-op there.
--- Pairs with scripts/03-0-workspaces.sql, 07-bookmark-functions.sql, 10-5-func-replied_msg.sql, 13-RLS.sql and 29-lint-hardening.sql.
+-- Pairs with scripts/03-0-workspaces.sql, 07-4-push-notifications-pgmq.sql, 07-bookmark-functions.sql, 09-document-views.sql,
+-- 10-4-func-chat-media-features.sql, 10-5-func-replied_msg.sql, 10-8-func-workspace_members.sql, 10-functions.sql,
+-- 13-RLS.sql, 28-ghost-accounts-audit.sql and 29-lint-hardening.sql.
 
 
 -- #397. The ghost-account helpers were applied to production by hand. Copied from scripts/28-ghost-accounts-audit.sql.

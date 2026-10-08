@@ -1,7 +1,7 @@
 -- Issue #396. A Private document's chat opens only for its owner. Hocuspocus copies
 -- the Private flag and owner into public.document_access; a missing row means public.
--- Pairs with scripts 03-2, 07-bookmark-functions, 10-0, 10-functions,
--- 10-func-notifications, 12-buckets, 13-RLS.
+-- Pairs with scripts 03-2-document_access, 07-bookmark-functions, 09-document-views,
+-- 10-0-func-helpers, 10-functions, 10-func-notifications, 12-buckets, 13-RLS.
 -- Idempotent. messages_self_update keeps every clause from #400 (20261008120000).
 
 -- 1. Mirror table.
@@ -13,7 +13,7 @@ create table if not exists public.document_access (
 );
 
 comment on table public.document_access is
-'Private flag and owner of a document, copied from Prisma by hocuspocus with the service role. A missing row means public. Clients have no access.';
+'Private flag and owner of a document, copied from Prisma by Hocuspocus with the service role. A missing row means public. Clients have no access.';
 
 -- RLS with no policy, and no client grant. Hosted Supabase grants a new public
 -- table to anon and authenticated, so the revoke is load-bearing.
@@ -118,8 +118,6 @@ $$;
 
 COMMENT ON FUNCTION internal.can_read_channel(varchar) IS
 'PUBLIC bypass + active channel membership; read-eligibility predicate. False on a Private document the caller does not own.';
-
-alter function internal.can_open_document(p_document_id character varying, p_user_id uuid) set search_path = public;
 
 -- 3. Grants come before the policies that call the helper. Anon policies need them too.
 grant usage on schema internal to anon, authenticated, service_role;
@@ -347,14 +345,7 @@ for select
 to authenticated
 using (
   realtime.messages.topic like 'chatroom-read:%'
-  and exists (
-    select 1
-    from public.channel_members cm
-    where cm.channel_id = substr(realtime.messages.topic, 15)
-      and cm.member_id  = (select auth.uid())
-      and cm.left_at    is null
-  )
-  and internal.can_read_channel(substr(realtime.messages.topic, 15))
+  and internal.is_channel_member(substr(realtime.messages.topic, 15))
 );
 
 -- 8. join_workspace refuses a non-owner before any write.
@@ -458,8 +449,8 @@ Raises 42501 for a Private document the caller does not own.';
 
 alter function public.join_workspace(_workspace_id character varying) set search_path = public;
 
--- 9. Notification and unread fan-out. Create or replace resets SECURITY and SET,
--- so each body is followed by both alter lines. The triggers stay bound.
+-- 9. Notification and unread fan-out. The alter lines copy 10-func-notifications.
+-- They matter for the reaction and unread bodies, which set neither. The triggers stay bound.
 CREATE OR REPLACE FUNCTION create_mention_notifications()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -1004,3 +995,57 @@ begin
     );
 end;
 $$;
+
+-- 11. Purge also deletes the Private mirror row, so no Private flag or owner outlives the document.
+-- Erases a soft-deleted document's cross-store footprint. Ordering is
+-- load-bearing: capture channel ids and delete storage BEFORE the workspace
+-- cascade removes the channels those media paths are keyed by.
+create or replace function public.purge_document_footprint(
+    p_document_id varchar(36),
+    p_slug text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public, storage
+as $$
+declare
+    v_channel_ids varchar(36)[];
+begin
+    -- storage.protect_delete blocks raw DELETEs unless this GUC is set (the same
+    -- flag the Storage API uses); scope it to this transaction.
+    perform set_config('storage.allow_delete_query', 'true', true);
+
+    -- Capture channel ids before the cascade drops them; media object paths are
+    -- '<uploaderId>/<channelId>/<file>', so segment 2 is the channel id.
+    select array_agg(id) into v_channel_ids
+    from public.channels
+    where workspace_id = p_document_id;
+
+    delete from storage.objects
+    where bucket_id = 'media'
+      and split_part(name, '/', 2) = any(v_channel_ids);
+
+    -- View rows are keyed by lower(documentId): enqueue_document_view stores
+    -- lower(trim(<WS room name>)) and the room name IS the documentId, so a
+    -- slug-only match deletes nothing. p_slug stays as belt-and-braces.
+    delete from public.document_views
+    where document_slug in (lower(p_document_id), lower(p_slug));
+    delete from public.document_view_stats
+    where document_slug in (lower(p_document_id), lower(p_slug));
+    delete from public.document_views_daily
+    where document_slug in (lower(p_document_id), lower(p_slug));
+
+    -- The Private mirror stores the documentId verbatim, so match it without lower() (#396).
+    delete from public.document_access where document_id = p_document_id;
+
+    -- Cascades every chat table (channels, messages, members, bookmarks, …).
+    delete from public.workspaces where id = p_document_id;
+end;
+$$;
+
+comment on function public.purge_document_footprint(varchar, text) is
+'Service-role GC for a soft-deleted document: storage objects first, analytics and Private mirror rows, workspace cascade last.';
+
+revoke all on function public.purge_document_footprint(varchar, text) from public, anon, authenticated;
+grant execute on function public.purge_document_footprint(varchar, text) to service_role;

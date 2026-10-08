@@ -130,13 +130,6 @@ EXECUTE PROCEDURE public.handle_new_user();
 ----------------------------------------------------
 ----------------------------------------------------
 
-/**
- * Function: update_user_online_at
- * Description: Updates the online_at timestamp on every status write
- * Trigger: Executes before UPDATE of status on public.users
- * Action: Sets online_at to now() on every status write, so the 60 s heartbeat keeps it fresh
- * Returns: The modified NEW record
- */
 CREATE OR REPLACE FUNCTION public.update_user_online_at()
 RETURNS TRIGGER
 LANGUAGE plpgsql

@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll, beforeEach, afterEach, mock } from 'bun:test'
+import { describe, test, expect, beforeAll, beforeEach, mock } from 'bun:test'
 
 // Null by default, so the membership read fails closed. The Private flip test sets
 // a stub, because that write must reach the `document_access` mirror (#396).
@@ -77,9 +77,6 @@ describe('Documents API', () => {
   beforeEach(() => {
     mockPrisma = createMockPrisma()
     purgeCalls.length = 0
-  })
-
-  afterEach(() => {
     serviceRoleClient = null
   })
 
