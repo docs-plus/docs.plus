@@ -102,29 +102,16 @@ export const handlePrismaError = (error: any): AppError => {
 }
 
 export const getErrorResponse = (error: Error) => {
-  if (error instanceof AppError) {
-    return {
-      success: false,
-      error: {
-        // A 5xx message can carry driver text (handlePrismaError); callers log the original.
-        message:
-          process.env.NODE_ENV === 'development' || error.statusCode < 500
-            ? error.message
-            : 'Internal server error',
-        code: error.code,
-        ...(process.env.NODE_ENV === 'development' && error.details
-          ? { details: error.details }
-          : {})
-      }
-    }
-  }
-
-  // Don't expose internal error details in production
+  const dev = process.env.NODE_ENV === 'development'
+  const appError = error instanceof AppError ? error : null
+  const status = appError?.statusCode ?? 500
   return {
     success: false,
     error: {
-      message: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
-      code: 'INTERNAL_SERVER_ERROR'
+      // A 5xx message can carry driver text (handlePrismaError); callers log the original.
+      message: dev || status < 500 ? error.message : 'Internal server error',
+      code: appError ? appError.code : 'INTERNAL_SERVER_ERROR',
+      ...(dev && appError?.details ? { details: appError.details } : {})
     }
   }
 }

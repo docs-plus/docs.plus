@@ -79,9 +79,7 @@ export const isSafeUrl = (rawUrl: string): boolean => {
   // Every backend and observability container shares one Docker network, so
   // `redis` or `docsplus-grafana` resolves from here while matching no range
   // rule above. A public link never has a single-label host.
-  if (!host.includes('.')) return false
-
-  return true
+  return host.includes('.')
 }
 
 /** `lookup` takes no signal, so a stage timeout could not cut a slow resolver short. */

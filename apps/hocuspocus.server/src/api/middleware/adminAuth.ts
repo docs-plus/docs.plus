@@ -62,7 +62,7 @@ export async function adminAuthMiddleware(c: Context, next: Next) {
     if (c.req.method !== 'GET') {
       adminLogger.info(
         {
-          actor: user.sub,
+          actorId: user.sub,
           method: c.req.method,
           path: c.req.path,
           status: c.res.status,

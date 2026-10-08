@@ -272,7 +272,7 @@ SMTP_PASS=...
   server before the webapp.
 
 - **Every admin write logs its actor.** `adminAuthMiddleware` writes one
-  `Admin action` line per non-GET admin request, with `actor`, `method`,
+  `Admin action` line per non-GET admin request, with `actorId`, `method`,
   `path`, `status` and `requestId`. The request logger has no user
   ([#404](https://github.com/docs-plus/docs.plus/issues/404)).
 
@@ -415,12 +415,12 @@ SMTP_PASS=...
   retries when no other row succeeds. It adds nothing to `failed_count`. A
   `429`, a `5xx` or a network error no longer raises `failed_count`. Any
   other error with no status, such as a bad subscription key, still adds 1.
-  `last_error` records `HTTP <code>`, `Network error` or
-  `Invalid subscription`. Each send carries a 1-day TTL and a 10 s timeout
+  `last_error` records `HTTP <code>`, `Network error` or `Send error`. Each
+  send carries a 1-day TTL and a 10 s timeout
   ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
 - **A purged document id stays gone.** `PUT /api/documents/:docId` answers
   `404` for a purged id and no longer creates its row again. The WebSocket
-  gate reads the tombstone even when a row exists
+  gate reads the purge tombstone even when a row exists
   ([#407](https://github.com/docs-plus/docs.plus/issues/407)).
 - **`online_at` follows the status heartbeat.** `update_user_online_at` now
   stamps it on every status write. It changed only with the status, so an

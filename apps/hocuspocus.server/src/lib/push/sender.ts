@@ -59,7 +59,6 @@ const NETWORK_ERROR_CODES = new Set([
 ])
 
 // A bad p256dh or auth key fails before any send, with no status or an ERR_* code.
-// Only a real transport failure is transient, so only that one adds nothing to failed_count.
 function isNetworkError(error: { code?: unknown; message?: string }): boolean {
   return (
     (typeof error.code === 'string' && NETWORK_ERROR_CODES.has(error.code)) ||
@@ -217,16 +216,12 @@ export async function sendPushNotification(
         } else {
           // 429, 5xx and network errors are transient and add nothing.
           // Charging them let one provider outage switch devices off (#417).
-          const network = !status && isNetworkError(error)
+          const network = isNetworkError(error)
           const transient = status ? status === 429 || status >= 500 : network
           failures.push({
             id: sub.id,
             failed_count: (sub.failed_count || 0) + (transient ? 0 : 1),
-            last_error: status
-              ? `HTTP ${status}`
-              : network
-                ? 'Network error'
-                : 'Invalid subscription'
+            last_error: status ? `HTTP ${status}` : network ? 'Network error' : 'Send error'
           })
         }
 
@@ -240,10 +235,6 @@ export async function sendPushNotification(
   const successful = results.filter(
     (r) => r.status === 'fulfilled' && (r.value as { success: boolean }).success
   ).length
-  // A row the URL filter refuses was never sent, so it is not a failed delivery.
-  // Counting it made the job retry and dead-letter on every notification for that user.
-  // A row the DNS check refuses still counts, so a resolver blip can make the job retry.
-  const attempted = subscriptions.length - filtered
 
   pushLogger.info(
     {
@@ -255,8 +246,11 @@ export async function sendPushNotification(
     'Push notification batch completed'
   )
 
+  // A row the URL filter refuses was never sent, so it is not a failed delivery.
+  // Counting it made the job retry and dead-letter on every notification for that user.
+  // A row the DNS check refuses still counts, so a resolver blip can make the job retry.
   return {
-    success: successful > 0 || attempted === 0,
+    success: successful > 0 || filtered === subscriptions.length,
     sent: successful,
     total: subscriptions.length,
     results: results.map((r) =>
