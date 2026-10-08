@@ -1,3 +1,4 @@
+import { resolveEmailConfig } from './email'
 import { env } from './env.schema'
 
 export { env }
@@ -86,17 +87,9 @@ export const config = {
   },
 
   email: {
-    fromEmail: env.EMAIL_FROM || env.SMTP_USER || 'noreply@docs.plus',
-    fromName: env.SMTP_FROM_NAME,
+    delivery: resolveEmailConfig(env),
     notificationEmails: env.NEW_DOCUMENT_NOTIFICATION_EMAILS.filter((email) => email.includes('@')),
     appUrl,
-    smtp: {
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: env.SMTP_SECURE,
-      user: env.SMTP_USER,
-      pass: env.SMTP_PASS
-    },
     unsubscribeSecret: env.EMAIL_UNSUBSCRIBE_SECRET,
     gateway: {
       workerConcurrency: env.EMAIL_WORKER_CONCURRENCY,

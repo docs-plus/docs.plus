@@ -1139,7 +1139,7 @@ Errors (`400`) use this module's own shape — top-level `code` and `message`, n
 
 ## Email
 
-Base path `/api/email` (`src/api/email.ts`). Notification delivery runs through a pgmq consumer, not HTTP: `email_queue` → `pg_cron` → pgmq → worker → BullMQ → SMTP. **The `/api/email/send` endpoint was removed.** Most endpoints below are internal triggers and webhooks. `send-generic`, `send-digest`, `bounce` and `preview/:type` require the service-role key. `health`, `status`, `validate`, and both `unsubscribe` routes need no credential. A rejected JSON or query body on `send-generic`, `send-digest`, `bounce`, `validate`, and `POST /unsubscribe` is the house envelope (`VALIDATION_ERROR`), not a raw Zod body.
+Base path `/api/email` (`src/api/email.ts`). Notification delivery runs through a pgmq consumer, not HTTP: `email_queue` → `pg_cron` → pgmq → worker → BullMQ → the configured provider, SMTP or Resend. **The `/api/email/send` endpoint was removed.** Most endpoints below are internal triggers and webhooks. `send-generic`, `send-digest`, `bounce` and `preview/:type` require the service-role key. `health`, `status`, `validate`, and both `unsubscribe` routes need no credential. A rejected JSON or query body on `send-generic`, `send-digest`, `bounce`, `validate`, and `POST /unsubscribe` is the house envelope (`VALIDATION_ERROR`), not a raw Zod body.
 
 ### POST /api/email/send-generic
 

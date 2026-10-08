@@ -1,70 +1,33 @@
-import { emailLogger } from '../../logger'
-import { resendProvider } from './resend'
-import { sendgridProvider } from './sendgrid'
-import { smtpProvider } from './smtp'
-import type { EmailMessage, EmailProvider, EmailProviderInterface, SendResult } from './types'
+import { config } from '../../../config/env'
+import { createResendProvider } from './resend'
+import { createSmtpProvider } from './smtp'
+import type { EmailProvider, EmailProviderConfig } from './types'
 
-const providers: Record<EmailProvider, EmailProviderInterface> = {
-  smtp: smtpProvider,
-  resend: resendProvider,
-  sendgrid: sendgridProvider
-}
-
-let activeProvider: EmailProviderInterface | null = null
-
-export function getProvider(): EmailProviderInterface | null {
-  if (activeProvider) return activeProvider
-
-  const explicitProvider = process.env.EMAIL_PROVIDER as EmailProvider | undefined
-  if (explicitProvider && providers[explicitProvider]?.isConfigured()) {
-    activeProvider = providers[explicitProvider]
-    emailLogger.info({ provider: activeProvider.name }, 'Email provider selected (explicit)')
-    return activeProvider
-  }
-
-  const preferenceOrder: EmailProvider[] = ['resend', 'sendgrid', 'smtp']
-  for (const name of preferenceOrder) {
-    if (providers[name].isConfigured()) {
-      activeProvider = providers[name]
-      emailLogger.info({ provider: activeProvider.name }, 'Email provider selected (auto-detect)')
-      return activeProvider
-    }
-  }
-
-  emailLogger.warn('No email provider configured')
-  return null
-}
-
-export async function sendEmail(message: EmailMessage): Promise<SendResult> {
-  const provider = getProvider()
-  if (!provider) {
-    return { success: false, error: 'No email provider configured' }
-  }
-  return provider.send(message)
-}
-
-export async function verifyProvider(): Promise<boolean> {
-  const provider = getProvider()
-  if (!provider) return false
-  return provider.verify()
-}
-
-export function isAnyProviderConfigured(): boolean {
-  return Object.values(providers).some((p) => p.isConfigured())
-}
-
-export function getProviderStatus(): {
-  active: EmailProvider | null
-  configured: EmailProvider[]
-} {
-  const configured = (Object.keys(providers) as EmailProvider[]).filter((name) =>
-    providers[name].isConfigured()
-  )
-
-  return {
-    active: getProvider()?.name || null,
-    configured
+/** Adding a provider is one case here, plus its branch in config/email.ts. */
+export function createEmailProvider(cfg: EmailProviderConfig): EmailProvider {
+  switch (cfg.name) {
+    case 'resend':
+      return createResendProvider(cfg)
+    case 'smtp':
+      return createSmtpProvider(cfg)
   }
 }
 
-export type { EmailMessage, EmailProvider, EmailProviderInterface, SendResult } from './types'
+let provider: EmailProvider | null = null
+
+/** One instance per process, and only when the config is `ready`. */
+export function getEmailProvider(): EmailProvider | null {
+  const delivery = config.email.delivery
+  if (delivery.status !== 'ready') return null
+  provider ??= createEmailProvider(delivery.provider)
+  return provider
+}
+
+/** Closes only a provider this process built, so shutdown never opens a pool. */
+export async function closeEmailProvider(): Promise<void> {
+  const current = provider
+  provider = null
+  await current?.close()
+}
+
+export { EmailSendError } from './types'

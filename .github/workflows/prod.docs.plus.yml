@@ -547,6 +547,15 @@ jobs:
             fi
           done
 
+          # Email must be an explicit choice. Without the last two, every
+          # unsubscribe link is rejected and the one-click header is dropped.
+          for k in EMAIL_PROVIDER EMAIL_FROM EMAIL_UNSUBSCRIBE_SECRET PUBLIC_RESTAPI_URL; do
+            if ! grep -Eq "^${k}=[\"']?[^\"'[:space:]]" "${ENV_FILE}"; then
+              echo "::error::${k} is missing or empty in ${ENV_SOURCE}. Email needs EMAIL_PROVIDER, EMAIL_FROM, EMAIL_UNSUBSCRIBE_SECRET and PUBLIC_RESTAPI_URL. Set it in the host env file, then redeploy."
+              exit 1
+            fi
+          done
+
           # Stash the previous successful tag (if any) for the rollback step.
           mkdir -p "${DEPLOY_STATE_DIR}"
           if [ -f "${LAST_GOOD_TAG_FILE}" ]; then

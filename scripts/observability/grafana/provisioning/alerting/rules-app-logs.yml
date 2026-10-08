@@ -172,3 +172,45 @@ groups:
               conditions:
                 - evaluator: { type: gt, params: [0] }
               refId: C
+
+      - uid: incident-email-config-invalid
+        title: Email config invalid (mail waiting)
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: 'The email config is invalid, so no mail is sent and pgmq email messages wait. The log line lists each problem. Fix the host env file, then redeploy.'
+        data:
+          - refId: A
+            queryType: instant
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: loki
+            model:
+              datasource: { type: loki, uid: loki }
+              # The worker repeats this line every 5 min while mail is held, so a
+              # 10 min window always sees it. rest-api logs it once at boot.
+              expr: 'sum(count_over_time({service=~"rest-api|hocuspocus.+"} |= "email config invalid" [10m])) or vector(0)'
+              queryType: instant
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C

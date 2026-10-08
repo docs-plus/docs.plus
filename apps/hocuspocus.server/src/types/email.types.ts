@@ -55,6 +55,8 @@ export interface EmailResult {
   error?: string
   queue_id?: string
   deduplicated?: boolean // True if this was an idempotent skip
+  /** Email is `off`: settle the rows 'skipped', never retry. */
+  skipped?: boolean
 }
 
 export interface EmailJobData {

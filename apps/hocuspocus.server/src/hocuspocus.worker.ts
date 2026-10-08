@@ -89,7 +89,9 @@ await pushGateway.initialize(true)
 workerLogger.info('🔔 Push gateway worker initialized')
 
 const pushConsumerStarted = startPushQueueConsumer()
-const emailConsumerStarted = startEmailQueueConsumer()
+// `invalid` holds mail: the pgmq messages stay unread until the config is fixed.
+const emailConfigStatus = config.email.delivery.status
+const emailConsumerStarted = emailConfigStatus !== 'invalid' && startEmailQueueConsumer()
 
 if (pushConsumerStarted) {
   workerLogger.info('📬 Push notification pgmq consumer started (polling every 2s)')
@@ -99,6 +101,8 @@ if (pushConsumerStarted) {
 
 if (emailConsumerStarted) {
   workerLogger.info('📧 Email notification pgmq consumer started (polling every 2s)')
+} else if (emailConfigStatus === 'invalid') {
+  workerLogger.warn('⚠️ Email notification pgmq consumer not started - email config invalid')
 } else {
   workerLogger.warn('⚠️ Email notification pgmq consumer not started - check Supabase config')
 }
@@ -175,7 +179,8 @@ healthApp.get('/health', async (c) => {
     !docWorkerPaused &&
     storeQueueLive &&
     pushConsumerHealth.running &&
-    emailConsumerHealth.running &&
+    // A held consumer is by design under `invalid`; it pages through its own log line.
+    (emailConsumerHealth.running || emailConfigStatus === 'invalid') &&
     dbHealthy &&
     redisHealthy
 
@@ -193,7 +198,8 @@ healthApp.get('/health', async (c) => {
       email: {
         pending: emailHealth.pending_jobs,
         failed: emailHealth.failed_jobs,
-        provider: emailHealth.provider
+        provider: emailHealth.provider,
+        configStatus: emailConfigStatus
       },
       push: {
         pending: pushHealth.pending_jobs,

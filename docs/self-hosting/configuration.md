@@ -88,6 +88,50 @@ Most misconfiguration here fails quietly rather than loudly. [Install](install.m
 
 **An upload cap under 1 MB is ignored** and floored to 10 MB, with a warning at startup. Next step: read the startup log after a cap change.
 
+## Email in 5 minutes
+
+Email is optional. Leave every email variable blank, and email is `off`. The server runs, and it sends no mail.
+
+To send mail, pick one provider. Set its block in the host `.env`, then redeploy.
+
+```
+# Resend
+EMAIL_PROVIDER=resend
+EMAIL_FROM="Acme Docs <notify@mail.acme.com>"
+RESEND_API_KEY=re_...
+
+# or SMTP
+EMAIL_PROVIDER=smtp
+EMAIL_FROM="Acme Docs <notify@acme.com>"
+SMTP_HOST=smtp.acme.com
+SMTP_PORT=465
+SMTP_USER=...   # leave both blank for a relay with no sign-in
+SMTP_PASS=...
+```
+
+Both providers also need `EMAIL_UNSUBSCRIBE_SECRET` and `PUBLIC_RESTAPI_URL`. Without `EMAIL_UNSUBSCRIBE_SECRET`, every unsubscribe link is rejected. Without `PUBLIC_RESTAPI_URL`, the one-click unsubscribe header is left out.
+
+A provider key without `EMAIL_PROVIDER` holds all mail. The worker then logs `email config invalid` with the reason. [`ENV.md`](../../apps/hocuspocus.server/ENV.md#email) lists every rule.
+
+Then add DNS records for the domain in `EMAIL_FROM`:
+
+- **SPF:** the record your provider gives you.
+- **DKIM:** the keys your provider gives you.
+- **DMARC:** start with `p=none`. Read the reports before you make the policy stricter.
+
+Without SPF and DKIM, most inboxes reject the mail or mark it as spam.
+
+People get email only after they opt in. Each person turns it on in Settings, on the Notifications tab. Until then, no notification or digest mail goes to them.
+
+### Your privacy duties
+
+When you run docs.plus for other people, the duties below are yours:
+
+- You are the controller of your users' data.
+- Sign your email provider's data processing agreement (DPA).
+- Each email carries short extracts of document and chat text. Your provider stores them.
+- Edit `apps/webapp/src/components/pages/legal/legalMetadata.ts` and the `/privacy` page before you go live. They name the docs.plus operator, not you.
+
 ## Turn on the MCP connector
 
 The MCP connector at `/api/mcp` lets people use docs.plus from Claude or ChatGPT. It needs the Supabase OAuth server. For the user side, see [Use docs.plus from Claude or ChatGPT](../mcp/README.md). For the tools and limits, see [MCP connector reference](../mcp/reference.md).

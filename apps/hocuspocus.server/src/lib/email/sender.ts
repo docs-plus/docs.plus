@@ -21,7 +21,8 @@ import { emailLogger } from '../logger'
 import { getServiceRoleClient } from '../supabase'
 import type { UnsubscribeAction } from '../unsubscribeToken'
 import { signUnsubscribeToken } from '../unsubscribeToken'
-import { sendEmail } from './providers'
+import { inlineIdempotencyKey, providerIdempotencyKey } from './jobIdentity'
+import { getEmailProvider } from './providers'
 import { oneClickUrl, unsubscribeLinkUrl } from './unsubscribeUrls'
 
 /**
@@ -53,7 +54,8 @@ const UNSUBSCRIBE_TEXT: Record<UnsubscribeAction, string> = {
  */
 export function resolveUnsubscribe(
   userId: string,
-  action: UnsubscribeAction
+  action: UnsubscribeAction,
+  nowSeconds?: number
 ): { footer: EmailFooter; oneClick?: string } | undefined {
   const secret = config.email.unsubscribeSecret
   if (!secret) {
@@ -61,7 +63,7 @@ export function resolveUnsubscribe(
     return undefined
   }
   const appUrl = config.email.appUrl
-  const token = signUnsubscribeToken({ userId, action, secret })
+  const token = signUnsubscribeToken({ userId, action, secret, nowSeconds })
   const apiOrigin = config.app.publicUrl
   return {
     footer: {
@@ -75,12 +77,32 @@ export function resolveUnsubscribe(
   }
 }
 
-export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailResult> {
-  const fromEmail = process.env.EMAIL_FROM || 'noreply@docs.plus'
+/** Seconds of the job's own time, so every retry renders the same body. */
+const jobSeconds = (createdAt: string): number => {
+  const parsed = Date.parse(createdAt)
+  return Math.floor((Number.isNaN(parsed) ? Date.now() : parsed) / 1000)
+}
+
+export async function sendEmailViaProvider(
+  data: EmailJobData,
+  options: { jobId?: string } = {}
+): Promise<EmailResult> {
+  const queue_id =
+    data.type === 'notification' ? (data.payload as NotificationEmailRequest).queue_id : undefined
+  const delivery = config.email.delivery
+  if (delivery.status === 'off') {
+    return { success: false, skipped: true, error: 'email not configured', queue_id }
+  }
+  const provider = getEmailProvider()
+  if (delivery.status !== 'ready' || !provider) {
+    return { success: false, error: 'email config invalid', queue_id }
+  }
+
   const appUrl = config.email.appUrl
+  const nowSeconds = jobSeconds(data.created_at)
 
   try {
-    let to: string
+    let to: string[]
     let subject: string
     let html: string
     let text: string
@@ -90,7 +112,7 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
     switch (data.type) {
       case 'notification': {
         const payload = data.payload as NotificationEmailRequest
-        to = payload.to
+        to = [payload.to]
         userId = payload.recipient_id
         subject = getEmailSubject(payload.notification_type, payload.sender_name)
 
@@ -108,7 +130,7 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
         }
 
         const unsub = userId
-          ? resolveUnsubscribe(userId, ACTION_FOR_TYPE[payload.notification_type])
+          ? resolveUnsubscribe(userId, ACTION_FOR_TYPE[payload.notification_type], nowSeconds)
           : undefined
         if (unsub?.oneClick) headers = buildListUnsubscribeHeaders(unsub.oneClick)
 
@@ -139,10 +161,10 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
 
       case 'digest': {
         const payload = data.payload as DigestEmailRequest
-        to = payload.to
+        to = [payload.to]
         userId = payload.recipient_id
 
-        const unsub = userId ? resolveUnsubscribe(userId, 'digest') : undefined
+        const unsub = userId ? resolveUnsubscribe(userId, 'digest', nowSeconds) : undefined
         if (unsub?.oneClick) headers = buildListUnsubscribeHeaders(unsub.oneClick)
 
         const digest = buildDigestEmail({
@@ -160,7 +182,7 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
 
       case 'generic': {
         const payload = data.payload as GenericEmailRequest
-        to = payload.to.join(', ')
+        to = payload.to
         subject = payload.subject
         html = payload.html
         text = payload.text || ''
@@ -171,29 +193,23 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
         return { success: false, error: `Unknown email type: ${data.type}` }
     }
 
-    const result = await sendEmail({ from: fromEmail, to, subject, html, text, headers })
+    const sent = await provider.send(
+      { from: delivery.from, to, subject, html, text, headers },
+      {
+        signal: AbortSignal.timeout(15_000),
+        idempotencyKey: options.jobId
+          ? providerIdempotencyKey(delivery.keyNamespace, options.jobId)
+          : inlineIdempotencyKey(delivery.keyNamespace)
+      }
+    )
 
-    return {
-      success: result.success,
-      message_id: result.messageId,
-      error: result.error,
-      queue_id:
-        data.type === 'notification'
-          ? (data.payload as NotificationEmailRequest).queue_id
-          : undefined
-    }
+    return { success: true, message_id: sent.messageId, queue_id }
   } catch (err) {
     const error = err instanceof Error ? err.message : String(err)
+    // `{ err }` carries err_code and err_responseCode, which incident-email-broken reads.
     emailLogger.error({ err }, 'Email send failed')
 
-    return {
-      success: false,
-      error,
-      queue_id:
-        data.type === 'notification'
-          ? (data.payload as NotificationEmailRequest).queue_id
-          : undefined
-    }
+    return { success: false, error, queue_id }
   }
 }
 

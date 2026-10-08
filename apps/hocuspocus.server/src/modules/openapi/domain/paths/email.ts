@@ -48,7 +48,7 @@ export const emailPaths: OpenApiPaths = {
       operationId: 'sendGenericEmail',
       summary: 'Send one email directly',
       description:
-        'Notification delivery normally runs through pgmq (`email_queue` → pg_cron → pgmq → worker → BullMQ → SMTP); this is an internal trigger, not that path. `POST /api/email/send` was removed.',
+        'Notification delivery normally runs through pgmq (`email_queue` → pg_cron → pgmq → worker → BullMQ → the configured provider, SMTP or Resend); this is an internal trigger, not that path. `POST /api/email/send` was removed.',
       tags,
       security,
       requestBody: {

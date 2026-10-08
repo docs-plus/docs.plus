@@ -72,6 +72,8 @@ Miss one and nothing complains. `NEXT_PUBLIC_PROVIDER_URL` and `NEXT_PUBLIC_REST
 
 `EMAIL_UNSUBSCRIBE_SECRET` fails the same quiet way. Unset, every email footer still shows an Unsubscribe link, and that link is rejected when a reader clicks it. Generate one with `openssl rand -base64 48`.
 
+Email itself is optional. Leave `EMAIL_PROVIDER` and every provider key blank, and email is `off`. If you set `EMAIL_PROVIDER`, also set `EMAIL_FROM`, `EMAIL_UNSUBSCRIBE_SECRET` and `PUBLIC_RESTAPI_URL`. [Email in 5 minutes](configuration.md#email-in-5-minutes) has the steps.
+
 `NEXT_PUBLIC_ADMIN_URL` is the one to skip. It sits in `.env.example`, and nothing in the repository reads it.
 
 Next step: set all eight before `make build`. The Traefik host rules are a separate job, and step 4 covers them.

@@ -10,6 +10,59 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ## [Unreleased]
 
+### Breaking
+
+- **Email needs an explicit provider ([#419](https://github.com/docs-plus/docs.plus/issues/419)).** To send mail, set
+  `EMAIL_PROVIDER` (`resend` or `smtp`) and `EMAIL_FROM`. With every provider
+  key unset, email is `off`: the server boots, and queued mail settles
+  `skipped`. A provider key without `EMAIL_PROVIDER` no longer picks a sender.
+  It now holds all mail and logs `email config invalid` at error level.
+- **SendGrid is removed.** `EMAIL_PROVIDER=sendgrid` is `invalid`.
+- **Both deploy workflows check four email keys.** The deploy stops when
+  `EMAIL_PROVIDER`, `EMAIL_FROM`, `EMAIL_UNSUBSCRIBE_SECRET` or
+  `PUBLIC_RESTAPI_URL` is empty in the host env file.
+
+### Migration
+
+**Email provider.** Before:
+
+```
+EMAIL_FROM=notify@example.com
+SMTP_HOST=smtp.example.com
+SMTP_USER=...
+SMTP_PASS=...
+```
+
+After:
+
+```
+EMAIL_PROVIDER=smtp
+EMAIL_FROM=notify@example.com
+SMTP_HOST=smtp.example.com
+SMTP_USER=...
+SMTP_PASS=...
+```
+
+- Set `EMAIL_PROVIDER` to the `provider` value that `GET /api/email/health`
+  reports today. Set `EMAIL_FROM` to today's sender: the old `EMAIL_FROM`, or
+  `noreply@docs.plus` when it was unset. Any other address changes the From
+  line and can break SPF or DMARC alignment.
+- A display name is optional, as `"Name <address>"`. A name changes the From
+  line that readers see.
+- `SMTP_FROM_NAME` was never read. Deleting it changes nothing.
+- SendGrid users switch to the SendGrid SMTP relay with `EMAIL_PROVIDER=smtp`,
+  `SMTP_HOST=smtp.sendgrid.net`, `SMTP_USER=apikey` and the API key as
+  `SMTP_PASS`.
+- An old `.env.local` with `SMTP_HOST` and no `EMAIL_PROVIDER` now resolves to
+  `invalid`. Add `EMAIL_PROVIDER=smtp`, or clear the SMTP keys to turn email
+  off.
+- Under `off`, a queued row now settles `skipped` with `email not configured`.
+  Before, it failed three times and went to the dead-letter queue.
+- An unset `SMTP_SECURE` on port 465 now means a secure connection. Before, it
+  meant `false`. `SMTP_SECURE` takes `true` or `false` in any letter case, or
+  an empty value.
+- `SMTP_USER` and `SMTP_PASS` are now optional. Set both, or neither.
+
 ### Added
 
 - **MCP connector at `/api/mcp`.** A person connects docs.plus to Claude or
@@ -225,6 +278,15 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Changed
 
+- **Email providers sit behind one small contract ([#419](https://github.com/docs-plus/docs.plus/issues/419)).**
+  `src/config/email.ts` resolves the config once, as `ready`, `off` or
+  `invalid`. Providers read `config.email.delivery`, never `process.env`. The
+  worker `/health` adds `workers.email.configStatus`. Under `invalid`, the held
+  email consumer no longer fails it. A Resend send carries an `Idempotency-Key` built from the
+  job id. A pgmq email message older than 24 hours settles `skipped` with
+  `stale`. The `Email job completed` line now carries `messageId`. The new
+  `incident-email-config-invalid` alert pages on `email config invalid`.
+
 - **`GET /changes` sections show only real edits, and name media and level
   changes ([#448](https://github.com/docs-plus/docs.plus/issues/448)).** A
   `runs` list never holds only `same` and `gap` runs. An edit of whitespace,
@@ -280,6 +342,18 @@ This file is the operator and API changelog. The pad product lives in the [root 
   its 0.5 CPU limit and was 83% throttled.
 
 ### Fixed
+
+- **A mail queued without an id could be skipped as already sent ([#419](https://github.com/docs-plus/docs.plus/issues/419)).**
+  BullMQ counter ids restart after a Redis reset, but the sent log keeps
+  `email:<id>` for 7 days. `queueEmail` now gives such a job a UUID. pgmq
+  notifications and digests already passed stable ids. So this fix reaches
+  only the service-role `/send-generic` and `/send-digest` routes, and a
+  notification with no `queue_id`.
+- **A retry renders the same body.** The unsubscribe token now takes its time
+  from the job's `created_at`, not the clock.
+- **SMTP works without a user and a password.** So local dev mail can reach
+  the Supabase mail catcher at `http://localhost:54324`. ENV.md, section Email,
+  lists the lines to set in `.env.local`.
 
 - **The Owner live list pins only your own Favorites.** `GET /documents`
   with your own `ownerId` ordered by the count of every user's Favorite
@@ -422,6 +496,11 @@ This file is the operator and API changelog. The pad product lives in the [root 
   stays open ([#396](https://github.com/docs-plus/docs.plus/issues/396)).
 
 ### Removed
+
+- The SendGrid provider. `SENDGRID_API_KEY` stays in the schema only so that
+  a leftover key reads `invalid`.
+- `SMTP_FROM_NAME`. Nothing ever read it, so its removal changes nothing.
+- The `noreply@docs.plus` fallback sender.
 
 - `latestSnapshot` from the `history.list` reply. It carried the head version's
   snapshot. The head now loads through `history.watch`, like every other

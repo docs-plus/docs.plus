@@ -40,7 +40,8 @@ export abstract class NotificationGatewayBase {
     if (enableWorker) {
       this.worker = this.hooks.createWorker()
       if (!this.worker) {
-        logger.error(`Failed to create ${label.toLowerCase()} worker - Redis may not be configured`)
+        // The cause is logged earlier: no Redis in createWorker, or a held email config in configure.
+        logger.error(`${label} worker not created`)
       }
     }
 

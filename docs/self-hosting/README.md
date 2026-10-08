@@ -36,7 +36,7 @@ None of these ship in the compose file.
 | **A PostgreSQL server**            | Documents and their version history             | The compose file has no database service. Managed or self-run, either is fine.                 |
 | **A Supabase project**             | Accounts, chat, notifications, storage policies | Cloud or self-hosted. It needs the `pg_cron` and `pgmq` extensions, which gate email and push. |
 | **S3-compatible object storage**   | Uploaded images, video, and audio               | A bucket, an endpoint, a region, and a key pair. Local disk does not work — see below.         |
-| **An email sender**                | Invitations, digests, notifications             | SMTP or Resend.                                                                                |
+| **An email sender**                | Invitations, digests, notifications             | SMTP or Resend. See [Email in 5 minutes](configuration.md#email-in-5-minutes).                 |
 | **A domain, with DNS you control** | TLS, and routing to the right service           | Traefik uses the HTTP challenge, so ports 80 and 443 must be reachable from the internet.      |
 
 Two are optional. A Google OAuth client, if you want Google sign-in. And a Virtuoso Message List licence, if you want the chat feed — that is a paid third-party dependency.

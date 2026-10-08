@@ -354,6 +354,17 @@ async function processNotificationMessage(
   }
 }
 
+/**
+ * An `invalid` config or a worker outage can stop this consumer for days.
+ * Mail older than this would tell people about things they already read.
+ */
+const EMAIL_MAX_AGE_MS = 24 * 60 * 60 * 1000
+
+const queueIdsOf = (payload: EmailQueuePayload): string[] => {
+  if (payload.type === 'digest') return payload.queue_ids || []
+  return payload.queue_id ? [payload.queue_id] : []
+}
+
 const consumer = createPgmqConsumer<EmailQueuePayload>({
   label: 'email',
   logger: emailLogger,
@@ -365,6 +376,17 @@ const consumer = createPgmqConsumer<EmailQueuePayload>({
   processMessage: async (payload, msgId, ctx) => {
     const client = ctx.getClient()
     if (!client) return false
+
+    // An unparseable time gives NaN, and NaN is never older: it counts as fresh.
+    const ageMs = Date.now() - Date.parse(payload.enqueued_at)
+    if (ageMs > EMAIL_MAX_AGE_MS) {
+      await Promise.all(
+        queueIdsOf(payload).map((id) => updateEmailStatus(client, id, 'skipped', 'stale'))
+      )
+      emailLogger.info({ msgId, ageMs, type: payload.type }, 'Stale email message skipped')
+      return true
+    }
+
     return payload.type === 'digest'
       ? processDigestMessage(client, msgId, payload)
       : processNotificationMessage(client, msgId, payload)

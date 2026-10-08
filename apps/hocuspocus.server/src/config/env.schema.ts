@@ -105,19 +105,18 @@ export const envSchema = z.object({
   DO_STORAGE_SECRET_ACCESS_KEY: z.string().optional().default(''),
   DO_STORAGE_MAX_FILE_SIZE: positiveByteString('10485760'),
 
-  // Read directly by lib/email/providers, not through config. EMAIL_PROVIDER
-  // picks the sender, otherwise the first configured of resend/sendgrid/smtp
-  // wins — so a leftover RESEND_API_KEY beats working SMTP settings.
+  // Parsed only. Email decisions live in config/email.ts; providers read
+  // config.email.delivery. Plain strings, so an odd value holds mail instead of
+  // stopping every service. SENDGRID_API_KEY stays only to flag a leftover key.
   EMAIL_PROVIDER: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   SENDGRID_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
-  SMTP_FROM_NAME: z.string().default('docs.plus'),
   SMTP_HOST: z.string().optional().default(''),
   SMTP_PORT: numericString('587'),
   SMTP_USER: z.string().optional().default(''),
   SMTP_PASS: z.string().optional().default(''),
-  SMTP_SECURE: booleanString,
+  SMTP_SECURE: z.string().optional(),
   NEW_DOCUMENT_NOTIFICATION_EMAILS: commaSeparatedList,
   APP_URL: z.string().default('https://docs.plus'),
 

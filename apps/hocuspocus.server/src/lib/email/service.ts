@@ -3,6 +3,7 @@
  * hocuspocus-worker calls `initialize(true)` — creates the worker that drains it.
  */
 
+import { config } from '../../config/env'
 import type {
   DigestEmailRequest,
   EmailGatewayHealth,
@@ -13,36 +14,74 @@ import type {
 } from '../../types/email.types'
 import { NotificationGatewayBase } from '../gateway'
 import { emailLogger } from '../logger'
-import { getProviderStatus, isAnyProviderConfigured, verifyProvider } from './providers'
+import { closeEmailProvider, EmailSendError, getEmailProvider } from './providers'
 import { closeEmailQueue, createEmailWorker, getEmailQueueHealth, queueEmail } from './queue'
 import { sendEmailViaProvider } from './sender'
 
+/** An `invalid` config holds mail, so the worker repeats the line that pages. */
+const CONFIG_INVALID_REPEAT_MS = 5 * 60 * 1000
+
+function logEmailConfig(): void {
+  const delivery = config.email.delivery
+  if (delivery.status === 'ready') {
+    emailLogger.info({ provider: delivery.provider.name }, 'email config ready')
+  } else if (delivery.status === 'off') {
+    emailLogger.info('email config off')
+  } else {
+    emailLogger.error({ problems: delivery.problems }, 'email config invalid')
+  }
+}
+
+// Logged as `{ err }` so a bad credential still pages at boot through
+// incident-email-broken (err_code EAUTH), and a transient 454 still does not.
+async function checkProviderConnection(): Promise<void> {
+  const provider = getEmailProvider()
+  if (!provider) return
+  const check = await provider.checkConnection({ signal: AbortSignal.timeout(10_000) })
+  if (check.ok) {
+    emailLogger.info({ provider: provider.name, note: check.note }, 'Email connection check passed')
+    return
+  }
+  const err = new EmailSendError(check.kind, check.code, check.message, {
+    responseCode: check.responseCode
+  })
+  emailLogger.error({ err, provider: provider.name }, 'Email connection check failed')
+}
+
 export class EmailGatewayService extends NotificationGatewayBase {
+  private invalidRepeat: ReturnType<typeof setInterval> | null = null
+
   constructor() {
     super({
       label: 'Email',
       logger: emailLogger,
-      configure: async () => {
-        const status = getProviderStatus()
-        if (status.active) {
-          emailLogger.info(
-            { provider: status.active, configured: status.configured },
-            'Email provider detected'
-          )
-          // Not awaited: the result only logs, so blocking boot on a provider
-          // round-trip delays the worker's signal handlers for no decision.
-          void verifyProvider().then((verified) => {
-            if (!verified) {
-              emailLogger.warn({ provider: status.active }, 'Email provider verification failed')
-            }
-          })
-        } else {
-          emailLogger.warn('No email provider configured - gateway in dry-run mode')
-        }
-      },
-      createWorker: createEmailWorker,
+      configure: logEmailConfig,
+      // `invalid` holds mail: no worker drains the queue until the config is fixed.
+      createWorker: () => (config.email.delivery.status === 'invalid' ? null : createEmailWorker()),
       closeQueue: closeEmailQueue
     })
+  }
+
+  override async initialize(enableWorker = false): Promise<void> {
+    if (this.initialized) return
+    await super.initialize(enableWorker)
+    if (!enableWorker) return
+
+    // Not awaited: the result only logs, so boot must not wait on a provider.
+    void checkProviderConnection().catch((err: unknown) => {
+      emailLogger.error({ err }, 'Email connection check failed')
+    })
+    if (config.email.delivery.status === 'invalid') {
+      this.invalidRepeat = setInterval(logEmailConfig, CONFIG_INVALID_REPEAT_MS)
+      this.invalidRepeat.unref()
+    }
+  }
+
+  override async shutdown(): Promise<void> {
+    if (this.invalidRepeat) clearInterval(this.invalidRepeat)
+    this.invalidRepeat = null
+    await super.shutdown()
+    await closeEmailProvider()
   }
 
   async sendNotificationEmail(request: NotificationEmailRequest): Promise<EmailResult> {
@@ -89,11 +128,12 @@ export class EmailGatewayService extends NotificationGatewayBase {
 
   async getHealth(): Promise<EmailGatewayHealth & { provider: string | null }> {
     const queueHealth = await getEmailQueueHealth()
-    const status = getProviderStatus()
+    const delivery = config.email.delivery
 
+    // Keys stay as they were: the admin Notifications page reads them.
     return {
-      provider: status.active,
-      smtp_configured: isAnyProviderConfigured(),
+      provider: delivery.status === 'ready' ? delivery.provider.name : null,
+      smtp_configured: delivery.status === 'ready',
       queue_connected: queueHealth.available,
       pending_jobs: queueHealth.waiting + queueHealth.delayed,
       failed_jobs: queueHealth.failed,
@@ -101,12 +141,8 @@ export class EmailGatewayService extends NotificationGatewayBase {
     }
   }
 
-  getProvider() {
-    return getProviderStatus()
-  }
-
   isOperational(): boolean {
-    return this.initialized && isAnyProviderConfigured()
+    return this.initialized && config.email.delivery.status === 'ready'
   }
 }
 

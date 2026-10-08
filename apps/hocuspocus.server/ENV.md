@@ -104,26 +104,58 @@ Read by `src/lib/prisma.ts` from the validated config only — there are no runt
 
 ## Email
 
-The sender is picked by `getProvider()` (`lib/email/providers/index.ts`): `EMAIL_PROVIDER` when it names a configured provider, otherwise the first configured one in the order `resend` → `sendgrid` → `smtp`. An unrecognized `EMAIL_PROVIDER` falls through to that auto-detect. A provider counts as configured when its key is present: `RESEND_API_KEY`, `SENDGRID_API_KEY`, or all three of `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS`. So a leftover `RESEND_API_KEY` silently wins over working SMTP settings.
+The provider is an explicit choice. `resolveEmailConfig` (`src/config/email.ts`) reads the variables once at boot. The result is one of three states:
 
-| Variable                           | Type    | Default             |
-| ---------------------------------- | ------- | ------------------- |
-| `EMAIL_PROVIDER`                   | string  | —                   |
-| `RESEND_API_KEY`                   | string  | —                   |
-| `SENDGRID_API_KEY`                 | string  | —                   |
-| `EMAIL_FROM`                       | string  | —                   |
-| `SMTP_FROM_NAME`                   | string  | `docs.plus`         |
-| `SMTP_HOST`                        | string  | `''`                |
-| `SMTP_PORT`                        | number  | `587`               |
-| `SMTP_USER`                        | string  | `''`                |
-| `SMTP_PASS`                        | string  | `''`                |
-| `SMTP_SECURE`                      | boolean | `false`             |
-| `NEW_DOCUMENT_NOTIFICATION_EMAILS` | list    | `[]`                |
-| `APP_URL`                          | string  | `https://docs.plus` |
-| `EMAIL_UNSUBSCRIBE_SECRET`         | string  | `''`                |
-| `EMAIL_WORKER_CONCURRENCY`         | number  | `3`                 |
-| `EMAIL_RATE_LIMIT_MAX`             | number  | `50`                |
-| `EMAIL_RATE_LIMIT_DURATION`        | number  | `60000`             |
+- **`ready`:** `EMAIL_PROVIDER` is `resend` or `smtp`, and every value that provider needs is set. Mail is sent.
+- **`off`:** `EMAIL_PROVIDER` is unset, and so are `RESEND_API_KEY`, `SMTP_HOST` and `SENDGRID_API_KEY`. The server boots, and each queued mail settles `skipped` with `email not configured`. Nothing retries.
+- **`invalid`:** anything else. The worker starts neither email consumer, so mail waits. It logs `email config invalid` with each problem at error level, at boot and every 5 minutes, and that line pages.
+
+The rules:
+
+- An empty value counts as unset.
+- A provider key without `EMAIL_PROVIDER` is `invalid`. A leftover key never picks the sender.
+- `EMAIL_FROM` is required. It may be `Name <address>`. There is no fallback address.
+- `resend` needs `RESEND_API_KEY`. `smtp` needs `SMTP_HOST`.
+- SMTP sign-in is optional. Set both `SMTP_USER` and `SMTP_PASS`, or neither. One without the other is `invalid`.
+- `SMTP_SECURE` is `true` or `false`, in any case. When it is empty or unset, the connection is secure only on port 465. Any other value is `invalid`.
+- SendGrid is not supported. `EMAIL_PROVIDER=sendgrid` is `invalid`. Use the SendGrid SMTP relay with `EMAIL_PROVIDER=smtp` instead. `SENDGRID_API_KEY` stays in the schema only so that a leftover key reads `invalid`.
+- `SMTP_FROM_NAME` was removed, because nothing read it. A display name goes in `EMAIL_FROM`.
+
+| Variable                           | Type   | Default             |
+| ---------------------------------- | ------ | ------------------- |
+| `EMAIL_PROVIDER`                   | string | —                   |
+| `EMAIL_FROM`                       | string | —                   |
+| `RESEND_API_KEY`                   | string | —                   |
+| `SENDGRID_API_KEY`                 | string | —                   |
+| `SMTP_HOST`                        | string | `''`                |
+| `SMTP_PORT`                        | number | `587`               |
+| `SMTP_USER`                        | string | `''`                |
+| `SMTP_PASS`                        | string | `''`                |
+| `SMTP_SECURE`                      | string | —                   |
+| `NEW_DOCUMENT_NOTIFICATION_EMAILS` | list   | `[]`                |
+| `APP_URL`                          | string | `https://docs.plus` |
+| `EMAIL_UNSUBSCRIBE_SECRET`         | string | `''`                |
+| `EMAIL_WORKER_CONCURRENCY`         | number | `3`                 |
+| `EMAIL_RATE_LIMIT_MAX`             | number | `50`                |
+| `EMAIL_RATE_LIMIT_DURATION`        | number | `60000`             |
+
+Production also needs `EMAIL_UNSUBSCRIBE_SECRET` and `PUBLIC_RESTAPI_URL`. Without the URL, the one-click `List-Unsubscribe` header is dropped. The docs.plus deploy workflows refuse to deploy when any of these four is empty: `EMAIL_PROVIDER`, `EMAIL_FROM`, `EMAIL_UNSUBSCRIBE_SECRET` and `PUBLIC_RESTAPI_URL`.
+
+The host of `PUBLIC_RESTAPI_URL`, or else of `APP_URL`, names the provider idempotency keys. Staging and production therefore never share a key.
+
+**Local mail.** The Supabase mail catcher takes SMTP on port 54325 (`smtp_port` in `packages/supabase/config.toml`) and shows the mail at <http://localhost:54324>. It takes no sign-in. Set these lines in `.env.local`, then restart the backend. The blank lines clear any old values from an earlier template.
+
+```
+EMAIL_PROVIDER=smtp
+EMAIL_FROM=dev@localhost
+SMTP_HOST=localhost
+SMTP_PORT=54325
+SMTP_USER=
+SMTP_PASS=
+SMTP_SECURE=
+```
+
+Under `docker-compose.dev.yml`, use `SMTP_HOST=host.docker.internal`. If Supabase was already running before `smtp_port` was set, restart it.
 
 `APP_URL` loses any trailing `/`, and an empty value falls back to
 `https://docs.plus` (`src/config/env.ts`). This one value feeds the production

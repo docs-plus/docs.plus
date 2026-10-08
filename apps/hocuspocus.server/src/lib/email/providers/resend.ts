@@ -1,78 +1,95 @@
-import { emailLogger } from '../../logger'
-import type { EmailMessage, EmailProviderInterface, SendResult } from './types'
+import type { ConnectionCheck, EmailProvider, EmailProviderConfig } from './types'
+import { EmailSendError } from './types'
 
-const RESEND_API_URL = 'https://api.resend.com/emails'
+type ResendConfig = Extract<EmailProviderConfig, { name: 'resend' }>
 
-export const resendProvider: EmailProviderInterface = {
-  name: 'resend',
+const RESEND_API_URL = 'https://api.resend.com'
 
-  async send(message: EmailMessage): Promise<SendResult> {
-    const apiKey = process.env.RESEND_API_KEY
-    if (!apiKey) {
-      return { success: false, error: 'RESEND_API_KEY not configured' }
-    }
+interface ResendErrorBody {
+  name?: string
+  message?: string
+}
 
-    try {
-      const response = await fetch(RESEND_API_URL, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          from: message.from,
-          to: message.to,
-          subject: message.subject,
-          html: message.html,
-          text: message.text,
-          reply_to: message.replyTo,
-          tags: message.tags?.map((tag) => ({ name: tag, value: 'true' })),
-          headers: message.headers
+const readErrorBody = async (response: Response): Promise<ResendErrorBody> =>
+  ((await response.json().catch(() => ({}))) as ResendErrorBody) ?? {}
+
+// Every failure is transient for now, so BullMQ retries it. `code` is Resend's
+// own error name, verbatim, so a later map can key on it.
+const httpError = async (response: Response): Promise<EmailSendError> => {
+  const body = await readErrorBody(response)
+  return new EmailSendError(
+    'transient',
+    body.name ?? `http_${response.status}`,
+    body.message ?? `HTTP ${response.status}`,
+    { responseCode: response.status }
+  )
+}
+
+const networkError = (err: unknown): EmailSendError =>
+  new EmailSendError(
+    'transient',
+    err instanceof Error ? err.name : 'unknown',
+    err instanceof Error ? err.message : String(err),
+    { cause: err }
+  )
+
+export function createResendProvider(cfg: ResendConfig): EmailProvider {
+  const authorization = `Bearer ${cfg.apiKey}`
+
+  return {
+    name: 'resend',
+
+    async send(message, { signal, idempotencyKey }) {
+      try {
+        const response = await fetch(`${RESEND_API_URL}/emails`, {
+          method: 'POST',
+          signal,
+          headers: {
+            Authorization: authorization,
+            'Content-Type': 'application/json',
+            'Idempotency-Key': idempotencyKey
+          },
+          body: JSON.stringify({
+            from: message.from,
+            to: message.to,
+            subject: message.subject,
+            html: message.html,
+            text: message.text,
+            reply_to: message.replyTo,
+            headers: message.headers,
+            tags: message.tags
+              ? Object.entries(message.tags).map(([name, value]) => ({ name, value }))
+              : undefined
+          })
         })
-      })
-
-      if (!response.ok) {
-        const errorData = (await response.json().catch(() => ({}))) as { message?: string }
-        const error = errorData.message || `HTTP ${response.status}`
-        emailLogger.error({ status: response.status, error, to: message.to }, 'Resend API error')
-        return { success: false, error }
+        if (!response.ok) throw await httpError(response)
+        const { id } = (await response.json()) as { id: string }
+        return { messageId: id }
+      } catch (err) {
+        throw err instanceof EmailSendError ? err : networkError(err)
       }
+    },
 
-      const data = (await response.json()) as { id: string }
-      emailLogger.info({ messageId: data.id, to: message.to }, 'Email sent via Resend')
-      return { success: true, messageId: data.id }
-    } catch (err) {
-      const error = err instanceof Error ? err.message : String(err)
-      emailLogger.error({ err, to: message.to }, 'Resend send failed')
-      return { success: false, error }
-    }
-  },
-
-  async verify(): Promise<boolean> {
-    const apiKey = process.env.RESEND_API_KEY
-    if (!apiKey) return false
-
-    try {
-      // Verify by fetching domains (lightweight API call). Bun's fetch has no
-      // default timeout and the worker awaits this at boot, ahead of its health
-      // listener and signal handlers. An unreachable API must not stall the boot.
-      const response = await fetch('https://api.resend.com/domains', {
-        headers: { Authorization: `Bearer ${apiKey}` },
-        signal: AbortSignal.timeout(10_000)
-      })
-
-      if (response.ok) {
-        emailLogger.info('Resend API verified')
-        return true
+    async checkConnection({ signal }): Promise<ConnectionCheck> {
+      try {
+        const response = await fetch(`${RESEND_API_URL}/domains`, {
+          headers: { Authorization: authorization },
+          signal
+        })
+        if (response.ok) return { ok: true }
+        const failure = await httpError(response)
+        // A send-only key cannot list domains, but it is valid for sending.
+        if (response.status === 401 && failure.code === 'restricted_api_key') {
+          return { ok: true, note: 'send_only_key' }
+        }
+        const { kind, code, message, responseCode } = failure
+        return { ok: false, kind, code, message, responseCode }
+      } catch (err) {
+        const { kind, code, message } = networkError(err)
+        return { ok: false, kind, code, message }
       }
-      return false
-    } catch (err) {
-      emailLogger.error({ err }, 'Resend verification failed')
-      return false
-    }
-  },
+    },
 
-  isConfigured(): boolean {
-    return !!process.env.RESEND_API_KEY
+    async close() {}
   }
 }

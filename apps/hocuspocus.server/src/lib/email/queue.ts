@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+
 import { Job, Queue, Worker } from 'bullmq'
 
 import { config } from '../../config/env'
@@ -12,6 +14,7 @@ import {
   bullmqWorkerConnectionOptions,
   createRedisConnection
 } from '../redis'
+import { EMAIL_DLQ_NAME, EMAIL_QUEUE_NAME, sentLogKey } from './jobIdentity'
 import { sendEmailViaProvider, updateSupabaseEmailStatus } from './sender'
 
 const redisClient = createRedisConnection(bullmqConnectionOptions)
@@ -22,7 +25,7 @@ if (!queueConnection) {
 }
 
 export const EmailQueue = queueConnection
-  ? new Queue<EmailJobData>('email-notifications', {
+  ? new Queue<EmailJobData>(EMAIL_QUEUE_NAME, {
       connection: queueConnection,
       defaultJobOptions: {
         attempts: 3,
@@ -47,7 +50,7 @@ export const EmailQueue = queueConnection
   : null
 
 export const EmailDeadLetterQueue = queueConnection
-  ? new Queue<EmailDLQData>('email-notifications-dlq', {
+  ? new Queue<EmailDLQData>(EMAIL_DLQ_NAME, {
       connection: queueConnection,
       defaultJobOptions: {
         removeOnComplete: {
@@ -70,7 +73,11 @@ const queueIdsOf = ({ payload }: EmailJobData): string[] => {
   return []
 }
 
-const settleQueueRows = (data: EmailJobData, status: 'sent' | 'failed', error?: string) =>
+const settleQueueRows = (
+  data: EmailJobData,
+  status: 'sent' | 'failed' | 'skipped',
+  error?: string
+) =>
   Promise.all(
     queueIdsOf(data).map((queue_id) =>
       updateSupabaseEmailStatus({
@@ -98,17 +105,18 @@ export function createEmailWorker() {
   }
 
   const worker = new Worker<EmailJobData>(
-    'email-notifications',
+    EMAIL_QUEUE_NAME,
     async (job: Job<EmailJobData>): Promise<EmailResult> => {
       const { data } = job
       const startTime = Date.now()
-      const idempotencyKey = `email:${job.id}`
+      const jobId = String(job.id)
+      const logKey = sentLogKey(jobId)
 
       emailLogger.info({ jobId: job.id, type: data.type }, 'Processing email job')
 
       try {
         const existingSend = await prisma.emailSentLog.findUnique({
-          where: { idempotencyKey }
+          where: { idempotencyKey: logKey }
         })
 
         if (existingSend) {
@@ -125,7 +133,14 @@ export function createEmailWorker() {
           }
         }
 
-        const result = await sendEmailViaProvider(data)
+        const result = await sendEmailViaProvider(data, { jobId })
+
+        // `off` is a decision, not a failure: no retry, no dead letter.
+        if (result.skipped) {
+          await settleQueueRows(data, 'skipped', result.error)
+          emailLogger.info({ jobId: job.id, type: data.type }, 'Email job skipped: not configured')
+          return result
+        }
 
         // Record the successful send before returning so a retry dedupes
         if (result.success) {
@@ -136,7 +151,7 @@ export function createEmailWorker() {
           await prisma.emailSentLog
             .create({
               data: {
-                idempotencyKey,
+                idempotencyKey: logKey,
                 messageId: result.message_id || null,
                 recipient: String(recipient),
                 emailType: data.type
@@ -161,6 +176,7 @@ export function createEmailWorker() {
             jobId: job.id,
             duration: `${duration}ms`,
             success: result.success,
+            messageId: result.message_id,
             queueIds: queueIdsOf(data)
           },
           'Email job completed'
@@ -239,19 +255,25 @@ export function createEmailWorker() {
 
 /**
  * A stable `jobId` (a pgmq business id) makes a redelivery re-add the same job
- * instead of a duplicate; the worker's `email:${job.id}` key follows it.
+ * instead of a duplicate. Without one, a UUID: BullMQ counter ids restart after
+ * a Redis reset, and the sent log would skip a new mail as already sent.
  */
 export async function queueEmail(data: EmailJobData, jobId?: string): Promise<string | null> {
   if (!EmailQueue) {
     emailLogger.warn('Email queue not available - sending synchronously')
     const result = await sendEmailViaProvider(data)
+    if (result.skipped) {
+      await settleQueueRows(data, 'skipped', result.error)
+      // Non-null, so a pgmq caller acks the message instead of redelivering it.
+      return 'sync-skip'
+    }
     await settleQueueRows(data, result.success ? 'sent' : 'failed', result.error)
     return result.success ? 'sync-send' : null
   }
 
   const job = await EmailQueue.add('send-email', data, {
     priority: data.type === 'notification' ? 1 : 2,
-    ...(jobId ? { jobId } : {})
+    jobId: jobId ?? randomUUID()
   })
 
   emailLogger.debug({ jobId: job.id, type: data.type }, 'Email queued')

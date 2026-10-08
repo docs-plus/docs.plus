@@ -22,8 +22,6 @@ export {
   startEmailQueueConsumer,
   stopEmailQueueConsumer
 } from './pgmqConsumer'
-export type { EmailMessage, EmailProvider, SendResult } from './providers'
-export { getProviderStatus, isAnyProviderConfigured, sendEmail, verifyProvider } from './providers'
 export { createEmailWorker, getEmailQueueHealth, queueEmail } from './queue'
 export { sendEmailViaProvider, updateSupabaseEmailStatus } from './sender'
 export { emailGateway, EmailGatewayService } from './service'
