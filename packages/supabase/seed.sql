@@ -9540,7 +9540,13 @@ GRANT SELECT ON public.workspaces TO authenticated;
 GRANT SELECT ON public.workspace_members TO authenticated;
 GRANT SELECT, INSERT ON public.channels TO authenticated;
 GRANT SELECT, INSERT ON public.channel_members TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON public.messages TO authenticated;
+GRANT SELECT ON public.messages TO authenticated;
+-- Some images add a default table-wide grant, so revoke it (#400). A table
+-- revoke also clears column grants, so it runs before them.
+REVOKE INSERT, UPDATE ON public.messages FROM authenticated;
+GRANT INSERT (id, channel_id, user_id, content, html, medias, type, metadata, reply_to_message_id)
+  ON public.messages TO authenticated;
+GRANT UPDATE (content, html, medias, type, deleted_at) ON public.messages TO authenticated;
 GRANT SELECT ON public.pinned_messages TO authenticated;
 GRANT SELECT ON public.channel_message_counts TO authenticated;
 GRANT SELECT, UPDATE ON public.notifications TO authenticated;
@@ -9689,8 +9695,9 @@ GRANT UPDATE (
 
 
 -- 2f. messages — visible iff channel is readable.
---     INSERT: as self into a readable channel.
---     UPDATE: only own row (covers edit + soft-delete via deleted_at).
+--     INSERT: as self into a readable channel. UPDATE: own row (edit, soft delete).
+--     Clients write only the columns granted at the top. Notice rows (type
+--     notification) are server-only: definer and service-role writers skip RLS.
 
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS messages_visible_select ON public.messages;
@@ -9706,12 +9713,19 @@ CREATE POLICY messages_self_insert ON public.messages
   WITH CHECK (
     user_id = (select auth.uid())
     AND internal.can_read_channel(channel_id)
+    AND type IS DISTINCT FROM 'notification'
   );
 
 CREATE POLICY messages_self_update ON public.messages
   FOR UPDATE TO authenticated
-  USING      (user_id = (select auth.uid()))
-  WITH CHECK (user_id = (select auth.uid()));
+  USING (
+    user_id = (select auth.uid())
+    AND type IS DISTINCT FROM 'notification'
+  )
+  WITH CHECK (
+    user_id = (select auth.uid())
+    AND type IS DISTINCT FROM 'notification'
+  );
 
 
 -- 2g. pinned_messages — readable iff channel is readable.

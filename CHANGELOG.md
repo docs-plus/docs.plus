@@ -297,6 +297,10 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   ([#401](https://github.com/docs-plus/docs.plus/issues/401),
   [#409](https://github.com/docs-plus/docs.plus/issues/409),
   [#410](https://github.com/docs-plus/docs.plus/issues/410)).
+- Stop a chat client from writing message fields that the server owns. A
+  client can no longer set a message's order or time, move it to another
+  channel, or post it as a system notice
+  ([#400](https://github.com/docs-plus/docs.plus/issues/400)).
 
 ### Removed
 
