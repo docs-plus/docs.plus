@@ -515,6 +515,7 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOSTNAME: '0.0.0.0'
+      SUPABASE_URL: ${SUPABASE_URL}
       # NEXT_PUBLIC vars for runtime
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
@@ -528,7 +529,6 @@ services:
       NEXT_PUBLIC_GLITCHTIP_DSN: ${NEXT_PUBLIC_GLITCHTIP_DSN:-}
       # Server-side API URL (internal Docker network)
       SERVER_RESTAPI_URL: http://rest-api:4000/api
-      SUPABASE_URL: ${SUPABASE_URL}
     networks:
       - docsplus-network
     labels:

@@ -2,7 +2,7 @@
 
 ## Docker Compose (Recommended)
 
-When running via Docker Compose (`make up-dev` or `make up-prod`), **all environment variables come from the root `.env.development` or `.env.production` file**. Package-level `.env` files are **ignored** by Docker Compose.
+When running via Docker Compose (`make up-dev` or `make up-prod`), Compose fills values from the root `.env.development` or `.env.production` file. The webapp container has no `env_file`. It gets only the keys listed under its `environment` block in the compose file. **Add each new runtime key there**, or it is unset at runtime. Package-level `.env` files are **ignored** by Docker Compose.
 
 ## Local Development (Without Docker)
 

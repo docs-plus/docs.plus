@@ -276,6 +276,8 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 
 ### Security
 
+- Close a Private document's chat to everyone but its owner
+  ([#396](https://github.com/docs-plus/docs.plus/issues/396)).
 - Stop document content from changing the page's styles
   ([#399](https://github.com/docs-plus/docs.plus/issues/399)).
 - Stop a viewer from changing the Pad title that other people see. The pad
@@ -301,7 +303,7 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   client can no longer set a message's order or time, move it to another
   channel, or post it as a system notice
   ([#400](https://github.com/docs-plus/docs.plus/issues/400)).
-- Keep the database grant fix from 28 September in the repository, so a fresh
+- Keep the database grant fix from 2026-09-28 in the repository, so a fresh
   install matches production. Guests and signed-in users can no longer read the
   analytics tables or call the admin, cron and notification helper functions.
   Monthly view tables now have row security on
