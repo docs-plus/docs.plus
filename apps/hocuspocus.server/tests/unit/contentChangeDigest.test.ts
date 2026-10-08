@@ -303,7 +303,7 @@ describe('enrichDigestDocuments', () => {
         computeChanges: async () =>
           changesResult({
             sections: [
-              // The preamble sanitises to '', and a nameless row is dropped.
+              // The preamble sanitises to '', and a nameless changed row is kept.
               section({ text: '', level: 0, tocId: 'preamble' }),
               section({
                 text: 'Alpha',
@@ -317,11 +317,38 @@ describe('enrichDigestDocuments', () => {
       })
     )
     expect(doc!.content_changes?.sections?.map((row) => row.text)).toEqual([
+      '',
       'Alpha',
       'Beta',
       'Sibling',
       'Gamma'
     ])
+  })
+
+  // The mail paints a mark or a label from these, and a changed heading is never dropped.
+  it('carries status and previousLevel, and keeps a nameless changed heading', async () => {
+    const [doc] = await enrichDigestDocuments(
+      [enrichableDoc()],
+      enrichDeps({
+        computeChanges: async () =>
+          changesResult({
+            sections: [
+              section({ text: 'Level', tocId: 'level', previousLevel: 2 }),
+              section({ text: '', tocId: 'nameless', status: 'added' }),
+              section({ text: 'Moved', tocId: 'moved', status: 'moved' })
+            ]
+          })
+      })
+    )
+    const rows = doc!.content_changes!.sections!
+    expect(rows.map((row) => [row.text, row.status, row.previousLevel])).toEqual([
+      ['Level', 'modified', 2],
+      ['', 'added', undefined],
+      ['Moved', 'moved', undefined]
+    ])
+    // A nameless row has no label to click, so it opens the document.
+    expect(rows[1]!.url).toBe(DOC_URL)
+    expect(rows[1]!.tocId).toBeUndefined()
   })
 
   // The fit drops a heading only when it came in for its chats alone. A wrong

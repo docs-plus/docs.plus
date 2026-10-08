@@ -225,6 +225,16 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Changed
 
+- **`GET /changes` sections show only real edits, and name media and level
+  changes ([#448](https://github.com/docs-plus/docs.plus/issues/448)).** A
+  `runs` list never holds only `same` and `gap` runs. An edit of whitespace,
+  U+00A0, a zero-width space, a zero-width joiner or U+FE0F alone gives no
+  `runs`, and the excerpts are cleared with it. An excerpt with no visible
+  text is left out. An added or removed image, video or embed reads `image`,
+  `video` or `embed` in `runs` and in a whole section's excerpt. A new
+  optional `previousLevel` holds the baseline level of a `modified` heading
+  whose level changed. Word counts do not change. A section measure that
+  throws now logs at warn.
 - **Admin notification stats read `users.notification_preferences`.** Push the
   Supabase migration `20260930120000_private_notification_preferences` before
   you deploy this server.

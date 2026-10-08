@@ -10,14 +10,14 @@ import { digestNotificationsUrl, type EmailFooter, footerLinksText, runText } fr
 import type { DigestChangeRun, DigestDocument, DigestFrequency, NotificationType } from './types'
 
 // Plain text has no colour, so markers keep removed and added words apart.
+function markRun(kind: 'added' | 'removed', text: string): string {
+  return kind === 'removed' ? `[-${text}-]` : `{+${text}+}`
+}
+
 function paintRuns(runs: readonly DigestChangeRun[]): string {
   const text = runs
     .map((run) =>
-      run.kind === 'removed'
-        ? `[-${run.text}-]`
-        : run.kind === 'added'
-          ? `{+${run.text}+}`
-          : runText(run)
+      run.kind === 'removed' || run.kind === 'added' ? markRun(run.kind, run.text) : runText(run)
     )
     .join('')
   return text ? `\n      ${text}` : ''
@@ -94,8 +94,13 @@ function paintDigestBlock(block: DigestBlock): string {
   switch (block.kind) {
     case 'sheet':
       return `${block.name}\n${block.url}`
-    case 'heading':
-      return `    ${block.text}\n      ${block.url}`
+    case 'heading': {
+      const text = block.mark ? markRun(block.mark, block.text) : block.text
+      const label = block.label ? ` (${block.label})` : ''
+      return `    ${text}${label}\n      ${block.url}`
+    }
+    case 'note':
+      return `      ${block.text}`
     case 'notice':
       return `      ${block.notice.sender_name}: ${block.notice.message_preview}\n      ${block.notice.action_url}`
     case 'runs':

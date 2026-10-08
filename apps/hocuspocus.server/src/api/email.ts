@@ -226,6 +226,7 @@ function digestPreviewDocuments(appUrl: string): DigestDocument[] {
           {
             text: 'Rate limiting',
             url: `${appUrl}/api-documentation?id=rate-limiting`,
+            status: 'modified',
             tocId: 'rate-limiting',
             excerpt: 'Requests over the cap wait.',
             removed: 'Requests over the cap fail.',
@@ -250,7 +251,41 @@ function digestPreviewDocuments(appUrl: string): DigestDocument[] {
           },
           {
             text: 'Error codes',
-            url: `${appUrl}/api-documentation?id=error-codes`
+            url: `${appUrl}/api-documentation?id=error-codes`,
+            status: 'modified',
+            tocId: 'error-codes'
+          },
+          {
+            text: 'Webhooks',
+            url: `${appUrl}/api-documentation?id=webhooks`,
+            status: 'added',
+            tocId: 'webhooks',
+            runs: [{ kind: 'added', text: 'We send a POST to your URL for each event.' }]
+          },
+          {
+            text: 'Legacy tokens',
+            url: `${appUrl}/api-documentation`,
+            status: 'removed',
+            runs: [{ kind: 'removed', text: 'Legacy tokens stop working on 1 March.' }]
+          },
+          {
+            text: 'Pagination',
+            url: `${appUrl}/api-documentation?id=pagination`,
+            status: 'moved',
+            tocId: 'pagination'
+          },
+          {
+            text: 'Authentication',
+            url: `${appUrl}/api-documentation?id=authentication`,
+            status: 'modified',
+            previousLevel: 2,
+            tocId: 'authentication'
+          },
+          {
+            text: '',
+            url: `${appUrl}/api-documentation`,
+            status: 'added',
+            runs: [{ kind: 'added', text: 'A paragraph under a heading with no name.' }]
           }
         ]
       }
@@ -260,6 +295,12 @@ function digestPreviewDocuments(appUrl: string): DigestDocument[] {
       slug: 'product-roadmap',
       url: `${appUrl}/product-roadmap`,
       workspace_id: 'Kp2Rt9x4471b8QaWLm3',
+      // No sections means no detail could be computed or placed, so the mail shows the note line.
+      content_changes: {
+        document_id: 'Kp2Rt9x4471b8QaWLm3',
+        since: new Date(Date.now() - 14400000).toISOString(),
+        fromLastLeft: false
+      },
       channels: [
         {
           name: 'q1-planning',

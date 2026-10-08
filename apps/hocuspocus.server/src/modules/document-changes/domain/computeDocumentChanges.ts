@@ -178,7 +178,7 @@ export const createComputeDocumentChanges = (deps: ComputeDeps): ComputeDocument
     const sections = diffSections(
       pairs,
       (error, tocId) =>
-        deps.logger.debug({ err: error, documentId, tocId }, 'Section magnitude failed'),
+        deps.logger.warn({ err: error, documentId, tocId }, 'Section magnitude failed'),
       movedTocIds(baselineSections, pairs)
     )
     return respond('computed', anchors, summary, sections)

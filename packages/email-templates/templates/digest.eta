@@ -33,8 +33,10 @@
 </table>
 <% } else if (block.kind === 'heading') { %>
 <p style="margin: 22px 0 0;">
-  <a href="<%= block.url %>" style="color: #0f172a; font-size: 18px; font-weight: 700; line-height: 1.25; text-decoration: none;"><%= block.text %></a>
+  <a href="<%= block.url %>" style="color: #0f172a; font-size: 18px; font-weight: 700; line-height: 1.25; text-decoration: none;"><% if (block.mark) { %><span style="<%= it.h.changeRunStyle(block.mark) %>"><%= block.text %></span><% } else { %><%= block.text %><% } %></a><% if (block.label) { %><span style="margin-left: 6px; color: <%= it.h.COLORS.textMuted %>; font-size: 12px; font-weight: 400;"><%= block.label %></span><% } %>
 </p>
+<% } else if (block.kind === 'note') { %>
+<p style="margin: 12px 0 0; color: <%= it.h.COLORS.textMuted %>; font-size: 15px; line-height: 1.45;"><%= block.text %></p>
 <% } else if (block.kind === 'notice') { %>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top: 12px;">
   <tr>

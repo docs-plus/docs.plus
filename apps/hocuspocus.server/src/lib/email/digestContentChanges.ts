@@ -72,7 +72,8 @@ function sectionUrl(docUrl: string, tocId: string | null): string {
 /**
  * One walk, so every Section keeps its document place. A heading chat moves
  * only under a live heading; a removed heading's chat keeps its channel row.
- * A nameless row is dropped: it would be a live link with no label.
+ * A nameless changed row is kept, because a changed heading is never dropped.
+ * It links to the document, and the walk names it.
  */
 function placeSections(
   tree: SectionNode[],
@@ -90,11 +91,13 @@ function placeSections(
       const live = node.status !== 'removed' && node.text.length > 0 ? node.tocId : null
       const chats = live ? (pending.get(live)?.notifications ?? []) : []
       if (live && chats.length > 0) pending.delete(live)
-      const changed = node.status !== 'unchanged' && node.text.length > 0
+      const changed = node.status !== 'unchanged'
       if (changed || chats.length > 0) {
         sections.push({
           text: node.text,
           url: sectionUrl(doc.url, live),
+          status: node.status,
+          ...(node.previousLevel !== undefined ? { previousLevel: node.previousLevel } : {}),
           ...(live ? { tocId: live } : {}),
           ...(node.excerpt ? { excerpt: node.excerpt } : {}),
           ...(node.removedExcerpt ? { removed: node.removedExcerpt } : {}),

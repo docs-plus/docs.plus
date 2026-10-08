@@ -174,3 +174,159 @@ describe('diffSections', () => {
     ).toBe(true)
   })
 })
+
+const IMAGE = { type: 'image', attrs: { src: 'https://x.test/1.png' } }
+const isChange = (run: { kind: string }) => run.kind === 'added' || run.kind === 'removed'
+const modifiedOf = (before: TiptapDocJson, after: TiptapDocJson) =>
+  changesOf(before, after).filter((row) => row.status === 'modified')
+
+// The live digest painted grey text with no green or red under these headings.
+describe('diffSections — an edit with no visible text paints no passage', () => {
+  test('a space swapped for U+00A0 after an emoji', () => {
+    const [section] = modifiedOf(
+      doc(heading(1, '🧰 Tools', 't1'), para(text('body'))),
+      doc(heading(1, '🧰\u00a0Tools', 't1'), para(text('body')))
+    )
+    expect(section.status).toBe('modified')
+    expect(section.runs).toBeUndefined()
+    expect(section.excerpt).toBeUndefined()
+    expect(section.removedExcerpt).toBeUndefined()
+  })
+
+  test('a trailing space trimmed from a heading does not echo the heading', () => {
+    const [section] = modifiedOf(
+      doc(heading(1, 'Intro ', 't1'), para(text('body'))),
+      doc(heading(1, 'Intro', 't1'), para(text('body')))
+    )
+    expect(section.runs).toBeUndefined()
+  })
+
+  test('an empty paragraph, or Enter after a paragraph, leaves no grey-only passage', () => {
+    const cases: [TiptapDocJson, TiptapDocJson][] = [
+      [doc(heading(1, 'Title', 't1')), doc(heading(1, 'Title', 't1'), { type: 'paragraph' })],
+      [
+        doc(heading(1, 'Title', 't1'), para(text('Hello world'))),
+        doc(heading(1, 'Title', 't1'), para(text('Hello world')), { type: 'paragraph' })
+      ]
+    ]
+    for (const [before, after] of cases) {
+      const [section] = modifiedOf(before, after)
+      const runs = section.runs ?? []
+      expect(runs.length === 0 || runs.some(isChange)).toBe(true)
+    }
+  })
+
+  test('a removed U+FE0F or ZWJ alone paints nothing', () => {
+    for (const mark of ['\ufe0f', '\u200d']) {
+      const [section] = modifiedOf(
+        doc(heading(1, 'Title', 't1'), para(text(`🧰${mark} tools`))),
+        doc(heading(1, 'Title', 't1'), para(text('🧰 tools')))
+      )
+      expect(section.runs).toBeUndefined()
+    }
+  })
+
+  test('an emoji-only context around a real word change stays', () => {
+    const [section] = modifiedOf(
+      doc(heading(1, 'Title', 't1'), para(text('🧰 alpha'))),
+      doc(heading(1, 'Title', 't1'), para(text('🧰 beta')))
+    )
+    expect(section.runs).toEqual([
+      { kind: 'same', text: '🧰 ' },
+      { kind: 'removed', text: 'alpha' },
+      { kind: 'added', text: 'beta' }
+    ])
+  })
+
+  test('no passage ends in a gap after an invisible change', () => {
+    const [section] = modifiedOf(
+      doc(
+        heading(1, 'Title', 't1'),
+        para(text('Alpha beta')),
+        para(text('Middle words here')),
+        para(text(' Gamma'))
+      ),
+      doc(
+        heading(1, 'Title', 't1'),
+        para(text('Alpha zeta')),
+        para(text('Middle words here')),
+        para(text('Gamma'))
+      )
+    )
+    expect(section.runs?.some(isChange)).toBe(true)
+    expect(section.runs?.at(-1)?.kind).not.toBe('gap')
+  })
+
+  test('an invisible edit between two real edits keeps the gap and the sentence start', () => {
+    const filler = 'Some filler words sit here. '.repeat(10)
+    const tail = 'the quick brown fox jumps over the lazy dog beta'
+    const [section] = modifiedOf(
+      doc(heading(1, 'Title', 't1'), para(text(`Alpha one. ${filler}Then x y ${tail} two.`))),
+      doc(heading(1, 'Title', 't1'), para(text(`Alpha ONE. ${filler}Then x\u00a0y ${tail} TWO.`)))
+    )
+    const runs = section.runs ?? []
+    const second = runs.findIndex((run) => run.kind === 'same' && run.text.startsWith('Then x'))
+    expect(second).toBeGreaterThan(0)
+    expect(runs[second - 1]).toEqual({ kind: 'gap', text: '' })
+  })
+})
+
+describe('diffSections — media reads as a word', () => {
+  test('an image added inside a paragraph reads "image"; a hard break alone paints nothing', () => {
+    const [withImage] = modifiedOf(
+      doc(heading(1, 'Title', 't1'), para(text('See here'))),
+      doc(heading(1, 'Title', 't1'), para(text('See '), IMAGE, text('here')))
+    )
+    expect(withImage.runs?.filter(isChange).map((run) => run.text.trim())).toEqual(['image'])
+
+    const [withBreak] = modifiedOf(
+      doc(heading(1, 'Title', 't1'), para(text('See here'))),
+      doc(heading(1, 'Title', 't1'), para(text('See here'), { type: 'hardBreak' }))
+    )
+    expect(withBreak.runs).toBeUndefined()
+  })
+
+  test('an added section that holds only an image reads "image" and keeps its count', () => {
+    const added = changesOf(
+      doc(heading(1, 'Title', 't1')),
+      doc(heading(1, 'Title', 't1'), heading(2, 'Pic', 'p1'), para(IMAGE))
+    ).find((s) => s.status === 'added')
+    expect(added?.runs).toEqual([{ kind: 'added', text: 'image' }])
+    expect(added?.excerpt).toBe('image')
+    expect(added?.magnitude).toEqual({
+      wordsAdded: 1,
+      wordsRemoved: 0,
+      blocksBefore: 0,
+      blocksAfter: 2
+    })
+  })
+
+  // The summary word counts read this magnitude, so a schema throw must not null it.
+  test('a body node the schema rejects keeps the magnitude and falls back to plain text', () => {
+    const added = changesOf(
+      doc(heading(1, 'Title', 't1')),
+      doc(heading(1, 'Title', 't1'), heading(2, 'New', 'n1'), {
+        type: 'notInTheSchema',
+        content: [text('x y')]
+      })
+    ).find((s) => s.status === 'added')
+    expect(added?.magnitude?.wordsAdded).toBe(3)
+    expect(added?.runs).toEqual([{ kind: 'added', text: 'x y' }])
+  })
+})
+
+describe('diffSections — previousLevel', () => {
+  test('a level change carries the baseline level; an unchanged level carries none', () => {
+    const [leveled] = modifiedOf(
+      doc(heading(1, 'Title', 't1'), heading(2, 'Section', 's1'), para(text('body'))),
+      doc(heading(1, 'Title', 't1'), heading(3, 'Section', 's1'), para(text('body')))
+    )
+    expect(leveled.previousLevel).toBe(2)
+
+    const [edited] = modifiedOf(
+      doc(heading(1, 'Title', 't1'), para(text('Hello alpha'))),
+      doc(heading(1, 'Title', 't1'), para(text('Hello beta')))
+    )
+    expect(edited.previousLevel).toBeUndefined()
+  })
+})

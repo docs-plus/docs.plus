@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 
-import type { DigestDocument } from '../types'
+import type { DigestChangedSection, DigestDocument } from '../types'
 import {
   buildDigestEmail,
   fitDigestDocuments,
@@ -74,11 +74,13 @@ const DIGEST_CHANGES_PARAMS = {
         sections: [
           {
             text: 'Rate limiting',
-            url: 'https://docs.plus/api-docs?id=rate-limiting'
+            url: 'https://docs.plus/api-docs?id=rate-limiting',
+            status: 'modified'
           },
           {
             text: 'Retries',
             url: 'https://docs.plus/api-docs?id=retries',
+            status: 'modified',
             tocId: 'retries',
             runs: [
               { kind: 'same', text: 'Retries use ' },
@@ -86,6 +88,12 @@ const DIGEST_CHANGES_PARAMS = {
               { kind: 'added', text: 'the same' },
               { kind: 'same', text: ' key.' }
             ]
+          },
+          {
+            text: 'Old limits',
+            url: 'https://docs.plus/api-docs',
+            status: 'removed',
+            runs: [{ kind: 'removed', text: 'Each key allows ten calls a minute.' }]
           }
         ]
       }
@@ -299,6 +307,7 @@ describe('buildDigestEmail', () => {
             {
               text: 'Bugs',
               url: 'https://docs.plus/pad?id=bugs',
+              status: 'modified' as const,
               runs: [
                 {
                   kind: 'same' as const,
@@ -357,6 +366,7 @@ describe('buildDigestEmail', () => {
             {
               text: 'Bugs',
               url: 'https://docs.plus/pad?id=bugs',
+              status: 'modified' as const,
               runs: [
                 { kind: 'added' as const, text: 'First edit' },
                 { kind: 'same' as const, text: ` stays. ${'context '.repeat(400)}` },
@@ -501,6 +511,76 @@ describe('buildDigestEmail', () => {
   it('snapshot — content changes', () => {
     const { html } = buildDigestEmail(DIGEST_CHANGES_PARAMS)
     expect(html).toMatchSnapshot()
+  })
+
+  describe('every changed heading shows what happened', () => {
+    const base = DIGEST_CHANGES_PARAMS.documents[0]
+    const withSections = (sections: DigestChangedSection[]) =>
+      buildDigestEmail({
+        ...DIGEST_CHANGES_PARAMS,
+        documents: [{ ...base, content_changes: { ...base.content_changes, sections } }]
+      })
+    const row = (over: Partial<DigestChangedSection>): DigestChangedSection => ({
+      text: 'Intro',
+      url: 'https://docs.plus/api-docs?id=intro',
+      status: 'modified',
+      ...over
+    })
+
+    it('washes a removed heading red and an added heading green', () => {
+      const removed = withSections([row({ status: 'removed', text: 'Old part' })])
+      expect(removed.html).toContain(
+        '<span style="background-color:#fee2e2;color:#4b5563;text-decoration:line-through;border-radius:2px;">Old part</span></a>'
+      )
+      expect(removed.text).toContain('    [-Old part-]\n')
+
+      const added = withSections([row({ status: 'added', text: 'New part' })])
+      expect(added.html).toContain(
+        '<span style="background-color:#d1fae5;border-radius:2px;">New part</span></a>'
+      )
+      expect(added.text).toContain('    {+New part+}\n')
+    })
+
+    it('labels a moved heading, an edit with no passage, and a level change', () => {
+      const cases: [Partial<DigestChangedSection>, string][] = [
+        [{ status: 'moved' }, 'Moved'],
+        [{ status: 'modified' }, 'Edited'],
+        // The level label wins over a passage.
+        [{ previousLevel: 2, runs: [{ kind: 'added', text: 'more' }] }, 'Heading level changed']
+      ]
+      for (const [over, label] of cases) {
+        const { html, text } = withSections([row(over)])
+        expect(html).toContain(`Intro</a><span style="margin-left: 6px;`)
+        expect(html).toContain(`>${label}</span>`)
+        expect(text).toContain(`    Intro (${label})\n`)
+      }
+    })
+
+    it('names a heading with no text "Untitled heading"', () => {
+      const { html, text } = withSections([row({ text: '', status: 'added' })])
+      expect(html).toContain('>Untitled heading</span></a>')
+      expect(text).toContain('{+Untitled heading+}')
+    })
+
+    it('says the document changed when the block has no sections', () => {
+      const note = 'This document changed. Open it to see the edits.'
+      const empty = withSections([])
+      expect(empty.html).toContain(note)
+      expect(empty.text).toContain(`      ${note}`)
+
+      const plain = buildDigestEmail(DIGEST_PARAMS)
+      expect(plain.html).not.toContain(note)
+      expect(plain.text).not.toContain(note)
+    })
+
+    // A job queued before the deploy carries no status. It must paint as before.
+    it('paints a section with no status with no mark and no label', () => {
+      const { status: _drop, ...old } = row({})
+      const { html, text } = withSections([old as DigestChangedSection])
+      expect(html).toContain('text-decoration: none;">Intro</a>\n</p>')
+      expect(html).not.toContain('Edited')
+      expect(text).toContain('    Intro\n')
+    })
   })
 
   // Gmail drops inline SVG, `position` and negative margins, which left a blank

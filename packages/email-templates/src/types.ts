@@ -48,6 +48,13 @@ export interface DigestChangedSection {
   text: string
   /** `${docUrl}?id=<tocId>`, or docUrl for the root and for a removed section. */
   url: string
+  /**
+   * The compute status. A job queued before this field existed carries none, so
+   * a reader compares it with one value and never switches over it.
+   */
+  status: 'added' | 'removed' | 'modified' | 'moved' | 'unchanged'
+  /** The baseline heading level. Set only on a modified heading whose level changed. */
+  previousLevel?: number
   excerpt?: string
   removed?: string
   runs?: DigestChangeRun[]

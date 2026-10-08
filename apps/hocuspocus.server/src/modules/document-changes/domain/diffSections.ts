@@ -4,6 +4,7 @@ import { StepMap } from '@tiptap/pm/transform'
 
 import { blockText } from '../../../lib/blockText'
 import { getMigrationSchema } from '../../../lib/migration-extensions'
+import { EMBED_NODE_TYPES } from '../../document-conversion/domain/portableJson'
 import type {
   Section,
   SectionChange,
@@ -27,12 +28,28 @@ const NOTHING: Quantified = { magnitude: null, excerpt: '', removedExcerpt: '', 
 
 const MAX_CONTEXT_CHARS = 800
 
+// JS `\s` already covers U+00A0. The zero-width space, the zero-width joiner
+// and the emoji variation selector draw nothing on their own, so an edit made
+// only of them is not a change.
+// An alternation, because ESLint rejects a class that holds U+200D or U+FE0F.
+const INVISIBLE = /\s|\u200b|\u200d|\ufe0f/gu
+const hasVisibleText = (text: string): boolean => text.replace(INVISIBLE, '').length > 0
+
+/** Media has no text, so an added or removed one would otherwise read as a space. */
+function leafWord(node: PMNode): string {
+  const name = node.type.name
+  if (name === 'image') return ' image '
+  // `video` is also in EMBED_NODE_TYPES, so it must be tested first.
+  if (name === 'video') return ' video '
+  return EMBED_NODE_TYPES.has(name) ? ' embed ' : ' '
+}
+
 function cleanRun(text: string): string {
+  if (!hasVisibleText(text)) return ''
   const flat = text.replace(/\s+/g, ' ')
   const lead = flat.startsWith(' ') ? ' ' : ''
   const trail = flat.endsWith(' ') ? ' ' : ''
   const core = flat.trim()
-  if (!core) return ''
   return `${lead}${core}${trail}`
 }
 
@@ -102,15 +119,18 @@ function runsAround(
   const runs: SectionChangeRun[] = []
   let cursor = 0
   for (const change of changes) {
+    const removed = docA.textBetween(change.fromA, change.toA, '\n', leafWord)
+    const added = docB.textBetween(change.fromB, change.toB, '\n', leafWord)
+    // An invisible edit gets no context either, or the passage paints grey only.
+    // It also leaves the cursor, so the next gap spans the skipped edit.
+    if (!hasVisibleText(removed) && !hasVisibleText(added)) continue
     const gap = docB.textBetween(cursor, change.fromB, '\n', ' ')
     const before = contextBefore(gap)
     // Without a marker, two edits far apart paint as one sentence.
     if (gap.trim().length > before.trim().length) pushGap(runs)
     if (before) pushRun(runs, 'same', before)
-    const removed = docA.textBetween(change.fromA, change.toA, '\n', ' ')
-    const added = docB.textBetween(change.fromB, change.toB, '\n', ' ')
-    if (removed) pushRun(runs, 'removed', removed)
-    if (added) pushRun(runs, 'added', added)
+    pushRun(runs, 'removed', removed)
+    pushRun(runs, 'added', added)
     cursor = change.toB
   }
   return capRuns(runs)
@@ -119,23 +139,33 @@ function runsAround(
 const sectionDoc = (section: Section): PMNode =>
   getMigrationSchema().nodeFromJSON({ type: 'doc', content: sectionNodes(section) })
 
+/**
+ * The body as a reader sees it, with media as a word. The schema throws on a
+ * node it does not know. The summary counts read the magnitude, so a throw falls
+ * back to plain text here and never reaches the caller's guard.
+ */
+const bodyText = (section: Section): string => {
+  try {
+    const body = getMigrationSchema().nodeFromJSON({ type: 'doc', content: section.nodes })
+    return body.textBetween(0, body.content.size, ' ', leafWord)
+  } catch {
+    return blockText(section.nodes, ' ')
+  }
+}
+
 /** A whole section arrived or went, so every word counts and no diff is needed. */
 const wholeSection = (section: Section, status: 'added' | 'removed'): Quantified => {
   const nodes = sectionNodes(section)
   const words = countWords(blockText(nodes, ' '))
+  const body = bodyText(section)
   return {
     magnitude:
       status === 'added'
         ? { wordsAdded: words, wordsRemoved: 0, blocksBefore: 0, blocksAfter: nodes.length }
         : { wordsAdded: 0, wordsRemoved: words, blocksBefore: nodes.length, blocksAfter: 0 },
-    excerpt: status === 'added' ? blockText(section.nodes, ' ') : '',
-    removedExcerpt: status === 'removed' ? blockText(section.nodes, ' ') : '',
-    runs: capRuns([
-      {
-        kind: status === 'added' ? 'added' : 'removed',
-        text: blockText(section.nodes, ' ')
-      }
-    ])
+    excerpt: status === 'added' ? body : '',
+    removedExcerpt: status === 'removed' ? body : '',
+    runs: capRuns([{ kind: status, text: body.trim() }])
   }
 }
 
@@ -188,7 +218,7 @@ const quantify = (baseline: Section, head: Section): Quantified => {
  * Status and magnitude per pair, in the order pairing produced. `onError` sees a
  * quantifier that threw, which reads the same as an unquantifiable edit in the
  * response and must not be confused with one in the logs. It carries the section
- * id rather than its text, so a debug log never holds document content.
+ * id, not its text, so the log never holds document content.
  */
 export const diffSections = (
   pairs: SectionPair[],
@@ -220,16 +250,36 @@ export const diffSections = (
       onError?.(error, section.tocId)
     }
 
-    const excerpt = sanitizeText(quantified.excerpt, EXCERPT_MAX_CHARS)
-    const removedExcerpt = sanitizeText(quantified.removedExcerpt, EXCERPT_MAX_CHARS)
+    // A passage with no green or red word is grey text only, so the runs and
+    // both excerpts go together.
+    const trimmed =
+      quantified.runs.at(-1)?.kind === 'gap' ? quantified.runs.slice(0, -1) : quantified.runs
+    const shown = trimmed.some(
+      (run) => (run.kind === 'added' || run.kind === 'removed') && hasVisibleText(run.text)
+    )
+    const runs = shown ? trimmed : []
+    const visible = (value: string): string => {
+      const clean = sanitizeText(value, EXCERPT_MAX_CHARS)
+      return shown && hasVisibleText(clean) ? clean : ''
+    }
+    const excerpt = visible(quantified.excerpt)
+    const removedExcerpt = visible(quantified.removedExcerpt)
+    const previousLevel =
+      pair.baseline !== null &&
+      pair.head !== null &&
+      status === 'modified' &&
+      pair.baseline.level !== pair.head.level
+        ? pair.baseline.level
+        : null
     return {
       tocId: section.tocId,
       text: section.headingText,
       level: section.level,
       status,
       magnitude: quantified.magnitude,
+      ...(previousLevel !== null ? { previousLevel } : {}),
       ...(excerpt.length > 0 ? { excerpt } : {}),
       ...(removedExcerpt.length > 0 ? { removedExcerpt } : {}),
-      ...(quantified.runs.length > 0 ? { runs: quantified.runs } : {})
+      ...(runs.length > 0 ? { runs } : {})
     }
   })

@@ -333,7 +333,7 @@ exports[`buildDigestEmail snapshot — content changes 1`] = `
 
 
 <p style="margin: 22px 0 0;">
-  <a href="https://docs.plus/api-docs?id=rate-limiting" style="color: #0f172a; font-size: 18px; font-weight: 700; line-height: 1.25; text-decoration: none;">Rate limiting</a>
+  <a href="https://docs.plus/api-docs?id=rate-limiting" style="color: #0f172a; font-size: 18px; font-weight: 700; line-height: 1.25; text-decoration: none;">Rate limiting</a><span style="margin-left: 6px; color: #69707e; font-size: 12px; font-weight: 400;">Edited</span>
 </p>
 
 
@@ -346,6 +346,18 @@ exports[`buildDigestEmail snapshot — content changes 1`] = `
 
 <p style="margin: 12px 0 0; color: #1f2937; font-size: 15px; line-height: 1.45;">
 <span style="">Retries use </span><span style="background-color:#fee2e2;color:#4b5563;text-decoration:line-through;border-radius:2px;">a new</span><span style="background-color:#d1fae5;border-radius:2px;">the same</span><span style=""> key.</span>
+</p>
+
+
+
+<p style="margin: 22px 0 0;">
+  <a href="https://docs.plus/api-docs" style="color: #0f172a; font-size: 18px; font-weight: 700; line-height: 1.25; text-decoration: none;"><span style="background-color:#fee2e2;color:#4b5563;text-decoration:line-through;border-radius:2px;">Old limits</span></a>
+</p>
+
+
+
+<p style="margin: 12px 0 0; color: #1f2937; font-size: 15px; line-height: 1.45;">
+<span style="background-color:#fee2e2;color:#4b5563;text-decoration:line-through;border-radius:2px;">Each key allows ten calls a minute.</span>
 </p>
 
 

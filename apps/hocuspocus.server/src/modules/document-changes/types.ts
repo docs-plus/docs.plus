@@ -55,6 +55,8 @@ export interface SectionChange {
   status: SectionStatus
   /** Null when nothing countable moved — a formatting-only edit, or a throw. */
   magnitude: SectionMagnitude | null
+  /** The baseline heading level. Set only on a `modified` section whose level changed. */
+  previousLevel?: number
   excerpt?: string
   removedExcerpt?: string
   runs?: SectionChangeRun[]

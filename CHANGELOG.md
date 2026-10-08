@@ -108,6 +108,13 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   digest window has been shortened to the retention limit. The old line named a
   date that could be months after you really left.
 
+- Show what happened to each changed heading in the digest email. An added
+  heading is washed green, and a removed one is red and struck through. A
+  heading can carry a small grey label: Moved, Edited, or Heading level
+  changed. A heading with no name reads "Untitled heading". When the email
+  cannot show the edits, it says that the document changed. An edit of spaces
+  alone no longer shows a grey passage with no green or red words.
+
 - Close the docked chat by dragging its top edge down, the way the table of
   contents folds into the tick rail. Let go below 160 px to close it. Let go
   between 160 and 320 px, and the panel returns to 320 px. The Close button

@@ -1,5 +1,13 @@
 import { changeWindowLine, contributorLine, DIGEST_CHANNEL_LINES } from './helpers'
-import type { DigestChangeRun, DigestDocument, DigestFrequency, DigestNotification } from './types'
+import type {
+  DigestChangedSection,
+  DigestChangeRun,
+  DigestDocument,
+  DigestFrequency,
+  DigestNotification
+} from './types'
+
+const CHANGED_NOTE = 'This document changed. Open it to see the edits.'
 
 function shownNotice(notice: DigestNotification, fallbackUrl: string): DigestNotification {
   const message_preview = notice.message_preview.trim() || 'media'
@@ -29,12 +37,30 @@ export type DigestBlock =
       recipientName: string
       notificationsUrl: string
     }
-  | { kind: 'heading'; text: string; url: string }
+  | { kind: 'heading'; text: string; url: string; mark?: 'added' | 'removed'; label?: string }
+  | { kind: 'note'; text: string }
   | { kind: 'notice'; notice: DigestNotification }
   | { kind: 'runs'; runs: DigestChangeRun[] }
   | { kind: 'more'; count: number }
   | { kind: 'status'; line: string }
   | { kind: 'home'; url: string }
+
+/** Equality checks only: a job queued before `status` existed paints as before. */
+function headingTags(
+  section: DigestChangedSection,
+  runs: DigestChangeRun[]
+): { mark?: 'added' | 'removed'; label?: string } {
+  const mark = section.status === 'added' || section.status === 'removed' ? section.status : null
+  const label =
+    section.previousLevel !== undefined
+      ? 'Heading level changed'
+      : section.status === 'moved'
+        ? 'Moved'
+        : section.status === 'modified' && runs.length === 0
+          ? 'Edited'
+          : null
+  return { ...(mark ? { mark } : {}), ...(label ? { label } : {}) }
+}
 
 export function walkDigest(input: {
   documents: readonly DigestDocument[]
@@ -59,12 +85,22 @@ export function walkDigest(input: {
       recipientName: input.recipientName,
       notificationsUrl: input.notificationsUrl
     })
-    for (const section of doc.content_changes?.sections ?? []) {
-      blocks.push({ kind: 'heading', text: section.text, url: section.url })
+    const sections = doc.content_changes?.sections ?? []
+    // A block with no rows means no detail could be computed or placed.
+    if (doc.content_changes && sections.length === 0) {
+      blocks.push({ kind: 'note', text: CHANGED_NOTE })
+    }
+    for (const section of sections) {
+      const runs = passageRuns(section)
+      blocks.push({
+        kind: 'heading',
+        text: section.text || 'Untitled heading',
+        url: section.url,
+        ...headingTags(section, runs)
+      })
       for (const notice of section.chats ?? []) {
         blocks.push({ kind: 'notice', notice: shownNotice(notice, section.url) })
       }
-      const runs = passageRuns(section)
       if (runs.length) blocks.push({ kind: 'runs', runs })
     }
     for (const channel of doc.channels) {
