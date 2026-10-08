@@ -165,7 +165,7 @@ async function processDigestMessage(
 
   try {
     const built = buildDigestDocuments(payload.notifications || [], appUrl)
-    const queueIds = payload.queue_ids || []
+    const queueIds = queueIdsOf(payload)
 
     // One batched read for the whole message, filtered by the audience rule
     // once. Both the rename and the block then read the same answer, so the
@@ -288,7 +288,7 @@ async function processDigestMessage(
 
     // Independent single-row updates; settle the failure marks in parallel.
     await Promise.all(
-      (payload.queue_ids || []).map((queueId) =>
+      queueIdsOf(payload).map((queueId) =>
         updateEmailStatus(client, queueId, 'failed', String(err))
       )
     )

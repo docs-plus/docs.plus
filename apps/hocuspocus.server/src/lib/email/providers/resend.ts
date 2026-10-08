@@ -5,18 +5,13 @@ type ResendConfig = Extract<EmailProviderConfig, { name: 'resend' }>
 
 const RESEND_API_URL = 'https://api.resend.com'
 
-interface ResendErrorBody {
-  name?: string
-  message?: string
-}
-
-const readErrorBody = async (response: Response): Promise<ResendErrorBody> =>
-  ((await response.json().catch(() => ({}))) as ResendErrorBody) ?? {}
-
 // Every failure is transient for now, so BullMQ retries it. `code` is Resend's
 // own error name, verbatim, so a later map can key on it.
 const httpError = async (response: Response): Promise<EmailSendError> => {
-  const body = await readErrorBody(response)
+  const body = ((await response.json().catch(() => null)) ?? {}) as {
+    name?: string
+    message?: string
+  }
   return new EmailSendError(
     'transient',
     body.name ?? `http_${response.status}`,
@@ -47,7 +42,7 @@ export function createResendProvider(cfg: ResendConfig): EmailProvider {
           headers: {
             Authorization: authorization,
             'Content-Type': 'application/json',
-            'Idempotency-Key': idempotencyKey
+            ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {})
           },
           body: JSON.stringify({
             from: message.from,
@@ -56,10 +51,7 @@ export function createResendProvider(cfg: ResendConfig): EmailProvider {
             html: message.html,
             text: message.text,
             reply_to: message.replyTo,
-            headers: message.headers,
-            tags: message.tags
-              ? Object.entries(message.tags).map(([name, value]) => ({ name, value }))
-              : undefined
+            headers: message.headers
           })
         })
         if (!response.ok) throw await httpError(response)
@@ -82,11 +74,9 @@ export function createResendProvider(cfg: ResendConfig): EmailProvider {
         if (response.status === 401 && failure.code === 'restricted_api_key') {
           return { ok: true, note: 'send_only_key' }
         }
-        const { kind, code, message, responseCode } = failure
-        return { ok: false, kind, code, message, responseCode }
+        return { ok: false, error: failure }
       } catch (err) {
-        const { kind, code, message } = networkError(err)
-        return { ok: false, kind, code, message }
+        return { ok: false, error: networkError(err) }
       }
     },
 

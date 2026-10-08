@@ -4,7 +4,7 @@ import { createSmtpProvider } from './smtp'
 import type { EmailProvider, EmailProviderConfig } from './types'
 
 /** Adding a provider is one case here, plus its branch in config/email.ts. */
-export function createEmailProvider(cfg: EmailProviderConfig): EmailProvider {
+function createEmailProvider(cfg: EmailProviderConfig): EmailProvider {
   switch (cfg.name) {
     case 'resend':
       return createResendProvider(cfg)
@@ -29,5 +29,3 @@ export async function closeEmailProvider(): Promise<void> {
   provider = null
   await current?.close()
 }
-
-export { EmailSendError } from './types'

@@ -15,7 +15,7 @@ export interface GatewayHooks {
   logger: Logger
   /** Provider/VAPID setup run on every initialize, before the worker is created. */
   configure: () => Promise<void> | void
-  /** Build the BullMQ worker (worker mode only); null when Redis is absent. */
+  /** Build the BullMQ worker (worker mode only); null when no worker should run. */
   createWorker: () => ClosableWorker | null
   /** Close the queue (and DLQ) connections. */
   closeQueue: () => Promise<void>
@@ -40,7 +40,7 @@ export abstract class NotificationGatewayBase {
     if (enableWorker) {
       this.worker = this.hooks.createWorker()
       if (!this.worker) {
-        // The cause is logged earlier: no Redis in createWorker, or a held email config in configure.
+        // The hooks log why.
         logger.error(`${label} worker not created`)
       }
     }

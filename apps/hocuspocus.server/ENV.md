@@ -119,7 +119,7 @@ The rules:
 - SMTP sign-in is optional. Set both `SMTP_USER` and `SMTP_PASS`, or neither. One without the other is `invalid`.
 - `SMTP_SECURE` is `true` or `false`, in any case. When it is empty or unset, the connection is secure only on port 465. Any other value is `invalid`.
 - SendGrid is not supported. `EMAIL_PROVIDER=sendgrid` is `invalid`. Use the SendGrid SMTP relay with `EMAIL_PROVIDER=smtp` instead. `SENDGRID_API_KEY` stays in the schema only so that a leftover key reads `invalid`.
-- `SMTP_FROM_NAME` was removed, because nothing read it. A display name goes in `EMAIL_FROM`.
+- There is no `SMTP_FROM_NAME`. Put a display name in `EMAIL_FROM`.
 
 | Variable                           | Type   | Default             |
 | ---------------------------------- | ------ | ------------------- |
@@ -155,7 +155,7 @@ SMTP_PASS=
 SMTP_SECURE=
 ```
 
-Under `docker-compose.dev.yml`, use `SMTP_HOST=host.docker.internal`. If Supabase was already running before `smtp_port` was set, restart it.
+If Supabase was already running before `smtp_port` was set, restart it.
 
 `APP_URL` loses any trailing `/`, and an empty value falls back to
 `https://docs.plus` (`src/config/env.ts`). This one value feeds the production

@@ -1,6 +1,6 @@
 import type { EmailProviderName } from '../../../config/email'
 
-export type { EmailProviderConfig, EmailProviderName } from '../../../config/email'
+export type { EmailProviderConfig } from '../../../config/email'
 
 /** What to send. No attachments, cc or bcc: no sender needs them yet. */
 export interface EmailMessage {
@@ -11,12 +11,12 @@ export interface EmailMessage {
   text: string
   replyTo?: string
   headers?: Record<string, string>
-  tags?: Record<string, string>
 }
 
 export interface SendOptions {
   signal: AbortSignal
-  idempotencyKey: string
+  /** Only a job has a stable id. A fresh key per call would dedupe nothing. */
+  idempotencyKey?: string
 }
 
 export interface SentEmail {
@@ -25,8 +25,7 @@ export interface SentEmail {
 }
 
 export type ConnectionCheck =
-  | { ok: true; note?: 'send_only_key' }
-  | { ok: false; kind: EmailErrorKind; code: string; message: string; responseCode?: number }
+  { ok: true; note?: 'send_only_key' } | { ok: false; error: EmailSendError }
 
 export interface EmailProvider {
   readonly name: EmailProviderName

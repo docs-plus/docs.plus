@@ -60,8 +60,7 @@ export function createSmtpProvider(cfg: SmtpConfig): EmailProvider {
         await transporter.verify()
         return { ok: true }
       } catch (err) {
-        const { kind, code, message, responseCode } = toSendError(err)
-        return { ok: false, kind, code, message, responseCode }
+        return { ok: false, error: toSendError(err) }
       }
     },
 

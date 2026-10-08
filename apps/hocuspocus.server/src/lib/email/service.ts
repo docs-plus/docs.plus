@@ -14,7 +14,7 @@ import type {
 } from '../../types/email.types'
 import { NotificationGatewayBase } from '../gateway'
 import { emailLogger } from '../logger'
-import { closeEmailProvider, EmailSendError, getEmailProvider } from './providers'
+import { closeEmailProvider, getEmailProvider } from './providers'
 import { closeEmailQueue, createEmailWorker, getEmailQueueHealth, queueEmail } from './queue'
 import { sendEmailViaProvider } from './sender'
 
@@ -42,10 +42,7 @@ async function checkProviderConnection(): Promise<void> {
     emailLogger.info({ provider: provider.name, note: check.note }, 'Email connection check passed')
     return
   }
-  const err = new EmailSendError(check.kind, check.code, check.message, {
-    responseCode: check.responseCode
-  })
-  emailLogger.error({ err, provider: provider.name }, 'Email connection check failed')
+  emailLogger.error({ err: check.error, provider: provider.name }, 'Email connection check failed')
 }
 
 export class EmailGatewayService extends NotificationGatewayBase {

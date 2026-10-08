@@ -21,7 +21,7 @@ import { emailLogger } from '../logger'
 import { getServiceRoleClient } from '../supabase'
 import type { UnsubscribeAction } from '../unsubscribeToken'
 import { signUnsubscribeToken } from '../unsubscribeToken'
-import { inlineIdempotencyKey, providerIdempotencyKey } from './jobIdentity'
+import { providerIdempotencyKey } from './jobIdentity'
 import { getEmailProvider } from './providers'
 import { oneClickUrl, unsubscribeLinkUrl } from './unsubscribeUrls'
 
@@ -107,6 +107,7 @@ export async function sendEmailViaProvider(
     let html: string
     let text: string
     let headers: Record<string, string> = {}
+    let replyTo: string | undefined
     let userId: string | undefined
 
     switch (data.type) {
@@ -186,20 +187,21 @@ export async function sendEmailViaProvider(
         subject = payload.subject
         html = payload.html
         text = payload.text || ''
+        replyTo = payload.reply_to
         break
       }
 
       default:
-        return { success: false, error: `Unknown email type: ${data.type}` }
+        return { success: false, error: `Unknown email type: ${data.type}`, queue_id }
     }
 
     const sent = await provider.send(
-      { from: delivery.from, to, subject, html, text, headers },
+      { from: delivery.from, to, subject, html, text, replyTo, headers },
       {
         signal: AbortSignal.timeout(15_000),
         idempotencyKey: options.jobId
           ? providerIdempotencyKey(delivery.keyNamespace, options.jobId)
-          : inlineIdempotencyKey(delivery.keyNamespace)
+          : undefined
       }
     )
 

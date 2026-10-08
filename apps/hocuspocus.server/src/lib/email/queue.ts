@@ -261,6 +261,8 @@ export function createEmailWorker() {
 export async function queueEmail(data: EmailJobData, jobId?: string): Promise<string | null> {
   if (!EmailQueue) {
     emailLogger.warn('Email queue not available - sending synchronously')
+    // No idempotency key: a pgmq redelivery rebuilds the body, and Resend
+    // refuses an old key with a new body (409), which strands the mail.
     const result = await sendEmailViaProvider(data)
     if (result.skipped) {
       await settleQueueRows(data, 'skipped', result.error)
@@ -271,14 +273,15 @@ export async function queueEmail(data: EmailJobData, jobId?: string): Promise<st
     return result.success ? 'sync-send' : null
   }
 
-  const job = await EmailQueue.add('send-email', data, {
+  const id = jobId ?? randomUUID()
+  await EmailQueue.add('send-email', data, {
     priority: data.type === 'notification' ? 1 : 2,
-    jobId: jobId ?? randomUUID()
+    jobId: id
   })
 
-  emailLogger.debug({ jobId: job.id, type: data.type }, 'Email queued')
+  emailLogger.debug({ jobId: id, type: data.type }, 'Email queued')
 
-  return job.id || null
+  return id
 }
 
 export async function getEmailQueueHealth() {

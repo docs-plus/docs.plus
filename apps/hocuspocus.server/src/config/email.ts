@@ -34,10 +34,10 @@ type EmailEnv = Pick<
 >
 
 // Compose and dotenv both turn a blank line into '', which is as absent as undefined.
-const value = (raw: string | undefined): string | undefined => raw?.trim() || undefined
+const nonBlank = (raw: string | undefined): string | undefined => raw?.trim() || undefined
 
 const hostOf = (raw: string | undefined): string | undefined => {
-  const url = value(raw)
+  const url = nonBlank(raw)
   if (!url) return undefined
   try {
     return new URL(url).host || undefined
@@ -52,11 +52,11 @@ const hostOf = (raw: string | undefined): string | undefined => {
  * so a leftover key can never pick the sender.
  */
 export function resolveEmailConfig(env: EmailEnv): EmailConfig {
-  const rawProvider = value(env.EMAIL_PROVIDER)
+  const rawProvider = nonBlank(env.EMAIL_PROVIDER)
   const provider = rawProvider?.toLowerCase()
 
   if (!provider) {
-    const leftover = [env.RESEND_API_KEY, env.SMTP_HOST, env.SENDGRID_API_KEY].some(value)
+    const leftover = [env.RESEND_API_KEY, env.SMTP_HOST, env.SENDGRID_API_KEY].some(nonBlank)
     return leftover
       ? { status: 'invalid', problems: ['set EMAIL_PROVIDER=resend or smtp'] }
       : { status: 'off' }
@@ -77,28 +77,28 @@ export function resolveEmailConfig(env: EmailEnv): EmailConfig {
   }
 
   const problems: string[] = []
-  const from = value(env.EMAIL_FROM)
+  const from = nonBlank(env.EMAIL_FROM)
   if (!from) problems.push('EMAIL_FROM is required')
 
   let providerConfig: EmailProviderConfig | undefined
   if (provider === 'resend') {
-    const apiKey = value(env.RESEND_API_KEY)
+    const apiKey = nonBlank(env.RESEND_API_KEY)
     if (!apiKey) problems.push('RESEND_API_KEY is required for EMAIL_PROVIDER=resend')
     else providerConfig = { name: 'resend', apiKey }
   } else {
-    const host = value(env.SMTP_HOST)
+    const host = nonBlank(env.SMTP_HOST)
     if (!host) problems.push('SMTP_HOST is required for EMAIL_PROVIDER=smtp')
 
-    const user = value(env.SMTP_USER)
-    const pass = value(env.SMTP_PASS)
+    const user = nonBlank(env.SMTP_USER)
+    const pass = nonBlank(env.SMTP_PASS)
     if (user && !pass) problems.push('SMTP_PASS is required when SMTP_USER is set')
     if (pass && !user) problems.push('SMTP_USER is required when SMTP_PASS is set')
 
-    const secureRaw = value(env.SMTP_SECURE)?.toLowerCase()
-    if (secureRaw && secureRaw !== 'true' && secureRaw !== 'false') {
+    const secureText = nonBlank(env.SMTP_SECURE)?.toLowerCase()
+    if (secureText && secureText !== 'true' && secureText !== 'false') {
       problems.push('SMTP_SECURE must be true or false')
     }
-    const secure = secureRaw ? secureRaw === 'true' : env.SMTP_PORT === 465
+    const secure = secureText ? secureText === 'true' : env.SMTP_PORT === 465
 
     if (host) {
       providerConfig = {

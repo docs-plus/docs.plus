@@ -282,7 +282,7 @@ SMTP_PASS=...
   `src/config/email.ts` resolves the config once, as `ready`, `off` or
   `invalid`. Providers read `config.email.delivery`, never `process.env`. The
   worker `/health` adds `workers.email.configStatus`. Under `invalid`, the held
-  email consumer no longer fails it. A Resend send carries an `Idempotency-Key` built from the
+  email consumer no longer fails it. A queued Resend send carries an `Idempotency-Key` built from the
   job id. A pgmq email message older than 24 hours settles `skipped` with
   `stale`. The `Email job completed` line now carries `messageId`. The new
   `incident-email-config-invalid` alert pages on `email config invalid`.
@@ -350,6 +350,9 @@ SMTP_PASS=...
   notifications and digests already passed stable ids. So this fix reaches
   only the service-role `/send-generic` and `/send-digest` routes, and a
   notification with no `queue_id`.
+- **`/send-generic` now sets the Reply-To header ([#419](https://github.com/docs-plus/docs.plus/issues/419)).**
+  The route accepted `replyTo` but dropped it, so the mail had no Reply-To
+  header. The generic send now passes it to the provider.
 - **A retry renders the same body.** The unsubscribe token now takes its time
   from the job's `created_at`, not the clock.
 - **SMTP works without a user and a password.** So local dev mail can reach
