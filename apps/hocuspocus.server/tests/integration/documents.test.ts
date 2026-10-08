@@ -686,7 +686,16 @@ describe('Documents API', () => {
         throw new Error('Database error')
       }
 
-      const response = await testServer.get('/api/documents/test-document')
+      // `bun run check:ci` passes NODE_ENV=development down, and development
+      // shows the raw text. Pin the production mask that this case asserts.
+      const originalNodeEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = 'production'
+      let response: Response
+      try {
+        response = await testServer.get('/api/documents/test-document')
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv
+      }
       const data = await response.json()
 
       // Errors flow through getErrorResponse: a raw throw is mapped to a
