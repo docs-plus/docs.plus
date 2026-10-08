@@ -93,14 +93,10 @@ function buildNotificationTitle(type, senderName) {
       return `${name} reacted to your message`;
     case "direct_message":
       return `Message from ${name}`;
-    case "thread_message":
-      return `${name} replied in thread`;
     case "message":
     case "channel_event":
-    case "channel_message":
       return `${name} sent a message`;
     case "invitation":
-    case "invite":
       return `${name} invited you`;
     // These two can come with no sender, so the title leaves the name out.
     case "content_change":
@@ -136,7 +132,7 @@ function buildNotificationBody(data) {
       return "You have a new reply";
     case "reaction":
       return data.reaction_emoji || "👍";
-    case "invite":
+    case "invitation":
       return "You have a new invitation";
     default:
       return "";
@@ -146,47 +142,34 @@ function buildNotificationBody(data) {
 // Handle incoming push notifications
 self.addEventListener("push", (event) => {
   // Chrome and Android can revoke the subscription when a push shows nothing,
-  // so a bad or empty payload still shows this generic notification.
-  let title = "New notification";
-  let options = {
-    icon: "/icons/android-chrome-192x192.png",
-    badge: "/icons/favicon-32x32.png",
-    data: { url: "/" },
-  };
-
+  // so a bad or empty payload still shows a generic notification.
+  let data = {};
   try {
-    const data = event.data ? event.data.json() : null;
-    if (data && typeof data === "object") {
-      title = buildNotificationTitle(data.type, data.sender_name);
-      const body = buildNotificationBody(data);
-
-      // Use sender avatar if available, otherwise fall back to app icon
-      // The sender_avatar comes from the push payload (set in 19-push-notifications.sql)
-      const notificationIcon = data.sender_avatar || "/icons/android-chrome-192x192.png";
-
-      // Use notification_id as tag so each notification is unique on iOS.
-      // iOS Safari does NOT support `renotify` — using a generic tag like "mention"
-      // would cause each new mention to silently replace the previous one.
-      const tag = data.notification_id || `${data.type}-${Date.now()}`;
-
-      options = {
-        body: body,
-        icon: notificationIcon,
-        badge: "/icons/favicon-32x32.png",
-        tag: tag,
-        renotify: true,
-        requireInteraction: false,
-        data: {
-          url: data.action_url || "/",
-          notification_id: data.notification_id,
-        },
-        // Include image preview if message has an attachment
-        ...(data.image_url && { image: data.image_url }),
-      };
-    }
+    const parsed = event.data?.json();
+    if (parsed && typeof parsed === "object") data = parsed;
   } catch (error) {
     console.warn("[SW Extension] Bad push payload, showing a generic notification", error);
   }
+
+  const title = buildNotificationTitle(data.type, data.sender_name);
+
+  // Use notification_id as tag so each notification is unique on iOS.
+  // iOS Safari does NOT support `renotify` — using a generic tag like "mention"
+  // would cause each new mention to silently replace the previous one.
+  const tag = data.notification_id || `${data.type}-${Date.now()}`;
+
+  const options = {
+    body: buildNotificationBody(data),
+    icon: data.sender_avatar || "/icons/android-chrome-192x192.png",
+    badge: "/icons/favicon-32x32.png",
+    tag,
+    renotify: true,
+    requireInteraction: false,
+    data: {
+      url: data.action_url || "/",
+      notification_id: data.notification_id,
+    },
+  };
 
   event.waitUntil(self.registration.showNotification(title, options));
 });

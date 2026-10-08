@@ -102,7 +102,7 @@ const useUpdateDocMetadata = () => {
 
       const next = plainTitle(data.title ?? '')
       setWorkspaceSetting('metadata', { ...settings.metadata, title: next })
-      sendDocTitleStateless(settings.hocuspocusProvider, next)
+      sendDocTitleStateless(settings.hocuspocusProvider)
     }
   })
 

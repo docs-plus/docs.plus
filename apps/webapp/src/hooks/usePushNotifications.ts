@@ -24,7 +24,6 @@ interface UsePushNotificationsReturn {
   isRecoverable: boolean
   subscribe: () => Promise<SubscribeResult>
   unsubscribe: () => Promise<boolean>
-  refreshSubscription: () => Promise<void>
 }
 
 export function usePushNotifications(): UsePushNotificationsReturn {
@@ -49,7 +48,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
     const initSubscription = async () => {
       try {
-        // Sync first so the toggle shows the repaired state. The RPCs need a session.
+        // Refresh first so the toggle shows the repaired state. The RPCs need a session.
         if (userId) await refreshSubscriptionIfNeeded()
         setIsSubscribed(await checkSubscribed())
       } catch {
@@ -162,28 +161,6 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     }
   }, [isSupported])
 
-  const refreshSubscription = useCallback(async (): Promise<void> => {
-    if (!isSupported || !isSubscribed) return
-
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const result = await refreshSubscriptionIfNeeded()
-      if (result === 'failed') {
-        setError('Failed to refresh subscription')
-        setErrorCode('SUBSCRIPTION_FAILED')
-        setIsRecoverable(true)
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
-      setErrorCode('UNKNOWN')
-      setIsRecoverable(true)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [isSupported, isSubscribed])
-
   return {
     isSupported,
     permission,
@@ -193,8 +170,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     errorCode,
     isRecoverable,
     subscribe,
-    unsubscribe,
-    refreshSubscription
+    unsubscribe
   }
 }
 

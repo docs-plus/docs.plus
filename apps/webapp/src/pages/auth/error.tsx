@@ -36,7 +36,7 @@ const AuthErrorPage = () => {
         }>
         <div className="alert alert-soft alert-error items-start px-3 py-2 text-sm">
           <LuCircleAlert size={16} className="text-error mt-0.5 shrink-0" aria-hidden />
-          <p className="text-base-content min-w-0 [overflow-wrap:anywhere]">{message}</p>
+          <p className="text-base-content">{message}</p>
         </div>
         <Button variant="primary" shape="block" onClick={handleRetry}>
           Try again

@@ -64,8 +64,7 @@ jest.mock('@hooks/usePushNotifications', () => ({
     errorCode: null,
     isRecoverable: false,
     subscribe: jest.fn(),
-    unsubscribe: jest.fn(),
-    refreshSubscription: jest.fn()
+    unsubscribe: jest.fn()
   })
 }))
 

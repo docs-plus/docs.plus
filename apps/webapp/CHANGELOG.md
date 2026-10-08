@@ -502,10 +502,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   segment shows its whole border.
 
 - **Push recovers on a signed-in load.** `refreshSubscriptionIfNeeded` saves
-  the subscription again at most once a day and never unsubscribes it. It
-  restores a missing subscription when permission is granted. It subscribes
-  again when the VAPID key changed. The old refresh ran every 30 days and
-  unsubscribed first, so it could break a working subscription
+  the subscription again at most once a day and never unsubscribes a working
+  subscription. It restores a missing subscription when permission is
+  granted. It subscribes again when the VAPID key changed. The old refresh
+  ran every 30 days and unsubscribed first, so it could break a working
+  subscription
   ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
 - **Sign-out unregisters this device's push subscription first.**
   `useSignOut` calls `unregisterPushSubscription` before `signOut()`, because
@@ -526,10 +527,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   `Highlight` checks `color` on parse and on render, because stored marks and
   Yjs updates skip parse. Document content can no longer add CSS to the page
   ([#399](https://github.com/docs-plus/docs.plus/issues/399)).
-- **`docTitle` is a refetch signal.** The relay has no access check, so
-  `DocTitle` and `MobilePadTitle` never apply its text.
-  `onDocTitleStateless` in `utils/titleWrite.ts` fetches the title over REST.
-  One fetch runs at a time, with a 2 s gap before a rerun
+- **`docTitle` is a refetch signal.** The relay has no access check, so the
+  signal carries no text. `useYdocAndProvider` routes it to
+  `onDocTitleStateless` in `utils/titleWrite.ts`, which fetches the title over
+  REST. One fetch runs at a time, with a 2 s gap before a rerun
   ([#406](https://github.com/docs-plus/docs.plus/issues/406)).
 - **The sign-in error page never shows text from the URL.** `proxy.ts`
   forwards `error_code` only. `/auth/error` shows fixed copy: one message for

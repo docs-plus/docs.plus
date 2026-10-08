@@ -3,6 +3,7 @@ import { useStore } from '@stores'
 import { applyAccessStateless } from '@utils/applyAccessStateless'
 import { captureCollabIssueOnce } from '@utils/observability'
 import { supabaseClient } from '@utils/supabase'
+import { onDocTitleStateless } from '@utils/titleWrite'
 import { useEffect, useRef } from 'react'
 import { IndexeddbPersistence } from 'y-indexeddb'
 import * as Y from 'yjs'
@@ -212,6 +213,11 @@ const useYdocAndProvider = ({
           if (data.msg === 'document:saved' && data.documentId === documentId) {
             console.info('📝 Document saved to DB:', data)
             setWorkspaceSetting('providerStatus', 'saved')
+            return
+          }
+
+          if (data.type === 'docTitle') {
+            onDocTitleStateless()
             return
           }
 

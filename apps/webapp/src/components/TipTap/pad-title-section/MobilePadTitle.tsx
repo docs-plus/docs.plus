@@ -27,7 +27,7 @@ import { onlineManager } from '@tanstack/react-query'
 import type { Editor } from '@tiptap/core'
 import { yUndoPluginKey } from '@tiptap/y-tiptap'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
-import { onDocTitleStateless, plainTitle } from '@utils/titleWrite'
+import { plainTitle } from '@utils/titleWrite'
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 import FilterBar from './FilterBar'
@@ -223,7 +223,6 @@ const MobilePadTitle = () => {
   const isEditable = useStore((state) => state.settings.editor.isEditable)
   const editor = useStore((state) => state.settings.editor.instance)
   const metadata = useStore((state) => state.settings.metadata)
-  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
   const openDialog = useStore((state) => state.openDialog)
   const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
   const profileId = useAuthStore((state) => state.profile?.id ?? state.session?.id)
@@ -256,16 +255,6 @@ const MobilePadTitle = () => {
 
   // Set by "Done" so focus lands on the title (not <body>) once the read cluster remounts.
   const focusTitleAfterExitRef = useRef(false)
-
-  // Mobile doesn't render DocTitle, so remote title changes need their own listener here.
-  useEffect(() => {
-    if (!hocuspocusProvider) return
-
-    const handler = ({ payload }: { payload: string }) => onDocTitleStateless(payload)
-
-    hocuspocusProvider.on('stateless', handler)
-    return () => hocuspocusProvider.off('stateless', handler)
-  }, [hocuspocusProvider])
 
   const handleTitleClick = () => {
     openDialog(<TitleEditContent />, { size: 'md', align: 'top', className: 'mt-14' })

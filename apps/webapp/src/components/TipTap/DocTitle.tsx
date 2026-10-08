@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { IoCheckmarkCircle } from 'react-icons/io5'
 
 import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
-import { onDocTitleStateless, plainTitle } from '../../utils/titleWrite'
+import { plainTitle } from '../../utils/titleWrite'
 
 const SAVED_INDICATOR_DURATION = 2000 // ms
 
@@ -17,7 +17,6 @@ const DocTitle = ({ className }: { className?: string }) => {
   const [showSaved, setShowSaved] = useState(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
   const docMetadata = useStore((state) => state.settings.metadata)
   const profileId = useAuthStore((state) => state.profile?.id ?? state.session?.id)
   const canEdit = useStore((state) => canEditDocumentMetadata(state.settings, profileId))
@@ -105,16 +104,6 @@ const DocTitle = ({ className }: { className?: string }) => {
     fallbackRange.collapse(false)
     newSelection.addRange(fallbackRange)
   }, [])
-
-  useEffect(() => {
-    if (!hocuspocusProvider) return
-
-    const docTitleHandler = ({ payload }: { payload: string }) => onDocTitleStateless(payload)
-
-    hocuspocusProvider.on('stateless', docTitleHandler)
-
-    return () => hocuspocusProvider.off('stateless', docTitleHandler)
-  }, [hocuspocusProvider])
 
   useEffect(() => {
     if (isSuccess && data) {

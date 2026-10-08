@@ -6,8 +6,8 @@ const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 
 const SUBSCRIPTION_TIMESTAMP_KEY = 'docsplus_push_subscription_timestamp'
 
-// Save again at most daily: the server may have switched this device off.
-const SUBSCRIPTION_MAX_AGE_MS = 24 * 60 * 60 * 1000
+// The server may have switched this device off.
+const RESAVE_INTERVAL_MS = 24 * 60 * 60 * 1000
 
 export type PushErrorCode =
   | 'NOT_SUPPORTED'
@@ -381,26 +381,22 @@ async function saveSubscriptionToDatabase(subscription: PushSubscription): Promi
   markSubscriptionFresh()
 }
 
-type RefreshResult = 'fresh' | 'refreshed' | 'failed' | 'not_subscribed'
-
-let refreshInFlight: Promise<RefreshResult> | null = null
+let refreshInFlight: Promise<void> | null = null
 
 /**
- * Load-path sync: re-saves a live subscription daily, restores a lost one, and replaces one
+ * Load-path refresh: re-saves a live subscription daily, restores a lost one, and replaces one
  * made with an old VAPID key. It never unsubscribes a working subscription or asks for
  * permission. Concurrent callers share one run, so two mounted hooks send one RPC.
  */
-export function refreshSubscriptionIfNeeded(): Promise<RefreshResult> {
-  refreshInFlight ??= syncSubscription().finally(() => {
+export function refreshSubscriptionIfNeeded(): Promise<void> {
+  refreshInFlight ??= runRefresh().finally(() => {
     refreshInFlight = null
   })
   return refreshInFlight
 }
 
-async function syncSubscription(): Promise<RefreshResult> {
-  if (!isPushSupported() || !VAPID_PUBLIC_KEY || Notification.permission !== 'granted') {
-    return 'not_subscribed'
-  }
+async function runRefresh(): Promise<void> {
+  if (!isPushSupported() || !VAPID_PUBLIC_KEY || Notification.permission !== 'granted') return
 
   try {
     const registration = await Promise.race([
@@ -412,20 +408,19 @@ async function syncSubscription(): Promise<RefreshResult> {
     const savedAt = readSubscriptionTimestamp()
 
     // No subscription and no stamp: never opted in here, or turned push off.
-    if (!existing && savedAt === null) return 'not_subscribed'
+    if (!existing && savedAt === null) return
     if (
       existing &&
       hasCurrentKey(existing, VAPID_PUBLIC_KEY) &&
       savedAt !== null &&
-      Date.now() - savedAt < SUBSCRIPTION_MAX_AGE_MS
+      Date.now() - savedAt < RESAVE_INTERVAL_MS
     ) {
-      return 'fresh'
+      return
     }
 
     await registerPushSubscription()
-    return 'refreshed'
   } catch {
-    return 'failed'
+    // Best effort: the next signed-in load tries again.
   }
 }
 

@@ -25,15 +25,10 @@ async function refetchTitle(): Promise<void> {
   setWorkspaceSetting('metadata', { ...settings.metadata, title })
 }
 
-// The relay has no authz, so anyone in the room can send docTitle. The payload is
-// only a signal; REST is the authority. One GET is in flight at a time, and the
-// trailing rerun waits REFETCH_GAP_MS, so a forged stream costs each viewer one GET per gap.
-export function onDocTitleStateless(payload: string): void {
-  try {
-    if ((JSON.parse(payload) as { type?: unknown } | null)?.type !== 'docTitle') return
-  } catch {
-    return
-  }
+// The relay has no access check, so anyone in the room can send docTitle. It is only
+// a signal; REST is the authority. One GET runs at a time, and a rerun waits
+// REFETCH_GAP_MS, so a forged stream costs each viewer one GET per gap.
+export function onDocTitleStateless(): void {
   if (inFlight) {
     again = true
     return
@@ -50,8 +45,7 @@ export function onDocTitleStateless(payload: string): void {
 }
 
 export function sendDocTitleStateless(
-  sender: { sendStateless: (payload: string) => void } | null | undefined,
-  title: string
+  sender: { sendStateless: (payload: string) => void } | null | undefined
 ): void {
-  sender?.sendStateless(JSON.stringify({ type: 'docTitle', state: { title: plainTitle(title) } }))
+  sender?.sendStateless(JSON.stringify({ type: 'docTitle' }))
 }

@@ -13,8 +13,8 @@ export const useSignOut = () => {
   const handleSignOut = async () => {
     setIsLoading(true)
     await flushPendingPreferenceWrites()
-    // Before signOut, because the RPC needs a live session. It stops the next person here
-    // getting this account's pushes.
+    // Before signOut, because the RPC needs a live session. The next person on this browser
+    // then gets no pushes for this account.
     if (isPushSupported()) await unregisterPushSubscription()
     const { error } = await signOut()
     if (error) {

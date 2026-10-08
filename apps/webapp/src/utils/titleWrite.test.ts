@@ -16,7 +16,6 @@ jest.mock('@stores', () => ({
 }))
 
 const fetchDocumentMock = fetchDocument as jest.Mock
-const docTitle = JSON.stringify({ type: 'docTitle', state: { title: 'x' } })
 
 describe('titleWrite', () => {
   afterEach(() => {
@@ -33,12 +32,12 @@ describe('titleWrite', () => {
     const pending: Array<(doc: { documentId: string; title: string }) => void> = []
     fetchDocumentMock.mockImplementation(() => new Promise((resolve) => pending.push(resolve)))
 
-    onDocTitleStateless(docTitle)
+    onDocTitleStateless()
     await jest.advanceTimersByTimeAsync(0)
     expect(fetchDocumentMock).toHaveBeenCalledTimes(1)
 
-    onDocTitleStateless(docTitle)
-    onDocTitleStateless(docTitle)
+    onDocTitleStateless()
+    onDocTitleStateless()
     pending[0]({ documentId: 'd1', title: 'Real' })
     await jest.advanceTimersByTimeAsync(REFETCH_GAP_MS - 1)
     expect(fetchDocumentMock).toHaveBeenCalledTimes(1)
