@@ -322,7 +322,7 @@ alter table public.workspaces add constraint check_slug_format check (slug ~ '^[
 comment on table public.workspaces is 'This table contains information about various workspaces, which are collections of channels for group discussions and messaging. Workspaces provide a higher-level organization structure within the application, allowing for segregation and grouping of channels.';
 
 comment on column public.workspaces.created_by is
-'First signed-in visitor to open the document: join_workspace() auto-bootstraps the workspace row and stamps auth.uid() of whoever got there first. NOT ownership — that is Prisma DocumentMetadata.ownerId. Nothing reads this column; workspaces_creator_insert only checks it on INSERT.';
+'First signed-in visitor to open the document: join_workspace() auto-bootstraps the workspace row and stamps auth.uid() of whoever got there first. NOT ownership — that is Prisma DocumentMetadata.ownerId. Nothing reads this column.';
 
 
 -- ============================================================================
@@ -683,6 +683,9 @@ as $$
 declare
     v_user_id uuid := auth.uid();
     v_next jsonb;
+    v_key text;
+    v_value jsonb;
+    v_ok boolean;
 begin
     if v_user_id is null then
         raise exception 'unauthenticated' using errcode = '42501';
@@ -690,6 +693,35 @@ begin
     if jsonb_typeof(p_patch) <> 'object' then
         raise exception 'patch_must_be_object' using errcode = '22023';
     end if;
+    for v_key, v_value in select key, value from jsonb_each(p_patch) loop
+        -- Null clears a key; the readers coalesce it.
+        continue when jsonb_typeof(v_value) = 'null';
+        v_ok := case
+            when v_key in (
+                'push_enabled', 'push_mentions', 'push_replies', 'push_reactions', 'push_content_changes',
+                'quiet_hours_enabled',
+                'email_enabled', 'email_mentions', 'email_replies', 'email_reactions', 'email_content_changes'
+            ) then jsonb_typeof(v_value) = 'boolean'
+            when v_key = 'email_frequency' then v_value #>> '{}' in ('immediate', 'daily', 'weekly', 'never')
+            when v_key in ('quiet_hours_start', 'quiet_hours_end', 'timezone') then jsonb_typeof(v_value) = 'string'
+            else true
+        end;
+        -- Run the same cast the readers run, so we accept exactly what will not crash them.
+        if v_ok and v_key in ('quiet_hours_start', 'quiet_hours_end', 'timezone') then
+            begin
+                if v_key = 'timezone' then
+                    perform now() at time zone (v_value #>> '{}');
+                else
+                    perform (v_value #>> '{}')::time;
+                end if;
+            exception when data_exception then
+                v_ok := false;
+            end;
+        end if;
+        if not v_ok then
+            raise exception 'invalid_preference_value' using errcode = '22023', detail = v_key;
+        end if;
+    end loop;
     update public.users
        set notification_preferences = notification_preferences || p_patch
      where id = v_user_id
@@ -2953,6 +2985,7 @@ begin
         and m.deleted_at is null
         and c.deleted_at is null
         and w.deleted_at is null
+        and internal.can_read_channel(m.channel_id)
         and (p_workspace_id is null or w.id = p_workspace_id)
         and (
             (p_archived = true and mb.archived_at is not null)
@@ -4802,9 +4835,9 @@ EXECUTE PROCEDURE public.handle_new_user();
 
 /**
  * Function: update_user_online_at
- * Description: Updates the online_at timestamp when a user's status changes
+ * Description: Updates the online_at timestamp on every status write
  * Trigger: Executes before UPDATE of status on public.users
- * Action: Sets the online_at timestamp to current UTC time when status changes
+ * Action: Sets online_at to now() on every status write, so the 60 s heartbeat keeps it fresh
  * Returns: The modified NEW record
  */
 CREATE OR REPLACE FUNCTION public.update_user_online_at()
@@ -4812,23 +4845,21 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    -- Check if the 'status' column is being updated
-    IF OLD.status IS DISTINCT FROM NEW.status THEN
-        -- Update 'online_at' to the current timestamp
-        NEW.online_at := timezone('utc', now());
-    END IF;
+    -- Stamp even when status is unchanged, so is_user_online sees the heartbeat.
+    -- now() is timestamptz, which matches online_at whatever the session TimeZone.
+    NEW.online_at := now();
     RETURN NEW;
 END;
 $$;
 
-COMMENT ON FUNCTION public.update_user_online_at() IS 'Updates the online_at timestamp whenever a user status changes, for tracking user activity.';
+COMMENT ON FUNCTION public.update_user_online_at() IS 'Stamps online_at on every status write, so the heartbeat keeps it fresh for is_user_online.';
 
 CREATE TRIGGER trigger_update_user_online_at
 BEFORE UPDATE OF status ON public.users
 FOR EACH ROW
 EXECUTE FUNCTION public.update_user_online_at();
 
-COMMENT ON TRIGGER trigger_update_user_online_at ON public.users IS 'Automatically updates the online_at timestamp when a user status changes.';
+COMMENT ON TRIGGER trigger_update_user_online_at ON public.users IS 'Stamps online_at on every status write, so the heartbeat keeps it fresh.';
 
 ----------------------------------------------------
 ----------------------------------------------------
@@ -6251,6 +6282,7 @@ execute function internal.enforce_media_workspace_quota();
 CREATE OR REPLACE FUNCTION set_replied_message_preview()
 RETURNS TRIGGER AS $$
 DECLARE
+    parent_channel_id public.messages.channel_id%TYPE;
     original_message_content TEXT;
     original_medias JSONB;
     original_type public.message_type;
@@ -6258,6 +6290,18 @@ DECLARE
 BEGIN
     -- Only proceed if this message is a reply
     IF NEW.reply_to_message_id IS NOT NULL THEN
+        -- A reply must stay in its parent's channel. No deleted_at filter:
+        -- create_reply_notification reads a soft-deleted parent too.
+        SELECT channel_id
+          INTO parent_channel_id
+          FROM public.messages
+         WHERE id = NEW.reply_to_message_id;
+
+        IF FOUND AND parent_channel_id IS DISTINCT FROM NEW.channel_id THEN
+            RAISE EXCEPTION 'Reply parent % is in another channel.', NEW.reply_to_message_id
+                USING ERRCODE = '22023';
+        END IF;
+
         -- Retrieve the content of the original message, only if not deleted
         SELECT content, medias, type
           INTO original_message_content, original_medias, original_type
@@ -9492,7 +9536,7 @@ GRANT EXECUTE ON FUNCTION internal.can_read_channel(varchar)    TO authenticated
 -- INVOKER RPCs (fetch_message_window, get_channel_aggregate_data, …) and
 -- PostgREST need GRANT-layer access or they 42501. Anon SELECT whitelist
 -- lives in 29-lint-hardening.sql §3; admin-table revokes stay in §4.
-GRANT SELECT, INSERT ON public.workspaces TO authenticated;
+GRANT SELECT ON public.workspaces TO authenticated;
 GRANT SELECT ON public.workspace_members TO authenticated;
 GRANT SELECT, INSERT ON public.channels TO authenticated;
 GRANT SELECT, INSERT ON public.channel_members TO authenticated;
@@ -9500,7 +9544,11 @@ GRANT SELECT, INSERT, UPDATE ON public.messages TO authenticated;
 GRANT SELECT ON public.pinned_messages TO authenticated;
 GRANT SELECT ON public.channel_message_counts TO authenticated;
 GRANT SELECT, UPDATE ON public.notifications TO authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.message_bookmarks TO authenticated;
+GRANT SELECT ON public.message_bookmarks TO authenticated;
+-- DEFINER RPCs are the only writers (join_workspace, the bookmark RPCs). The
+-- revoke also clears a default-privilege grant on images that still make one.
+REVOKE INSERT, UPDATE ON public.workspaces FROM authenticated;
+REVOKE INSERT, UPDATE, DELETE ON public.message_bookmarks FROM authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
 
 
@@ -9547,7 +9595,8 @@ GRANT UPDATE (
 ) ON public.users TO authenticated;
 
 
--- 2b. workspaces — visible to active members.
+-- 2b. workspaces — visible to active members. No client writes: join_workspace
+--     (SECURITY DEFINER) is the only writer, so there is no INSERT policy.
 
 ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS workspaces_member_select  ON public.workspaces;
@@ -9556,14 +9605,6 @@ DROP POLICY IF EXISTS workspaces_creator_insert ON public.workspaces;
 CREATE POLICY workspaces_member_select ON public.workspaces
   FOR SELECT TO authenticated
   USING (internal.is_workspace_member(id));
-
--- Auto-bootstrap path: client/SSR INSERT a workspace row when a new doc is
--- opened. Confined to the creating user; UPDATE remains gated through
--- SECURITY DEFINER paths (e.g. join_workspace) so name/slug stay immutable
--- from PostgREST.
-CREATE POLICY workspaces_creator_insert ON public.workspaces
-  FOR INSERT TO authenticated
-  WITH CHECK (created_by = (select auth.uid()));
 
 
 -- 2c. workspace_members — same-workspace members see each other.
@@ -9578,8 +9619,8 @@ CREATE POLICY workspace_members_select ON public.workspace_members
 
 -- 2d. channels — PUBLIC bypass + member visibility.
 --     INSERT: only as creator and only into a workspace I'm a member of.
---     UPDATE: any active member can update *mutable* columns; immutable
---     columns are locked via column-level GRANT below.
+--     UPDATE: none from the client. SECURITY DEFINER triggers keep the
+--     counters, previews and activity time current.
 
 ALTER TABLE public.channels ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS channels_visible_select  ON public.channels;
@@ -9597,20 +9638,7 @@ CREATE POLICY channels_member_insert ON public.channels
     AND internal.is_workspace_member(workspace_id)
   );
 
-CREATE POLICY channels_member_update ON public.channels
-  FOR UPDATE TO authenticated
-  USING      (internal.is_channel_member(id))
-  WITH CHECK (internal.is_channel_member(id));
-
--- Column-level grant: lock id/slug/workspace_id/created_by/type/member_count
--- /deleted_at/created_at/updated_at from direct FE update. RPCs (definer)
--- bypass column grants too.
 REVOKE UPDATE ON public.channels FROM authenticated;
-GRANT UPDATE (
-  name, description, member_limit, is_avatar_set,
-  allow_emoji_reactions, mute_in_app_notifications, metadata,
-  last_message_preview, last_activity_at
-) ON public.channels TO authenticated;
 
 
 -- 2e. channel_members — own row always, plus the full roster to channel members.
@@ -11168,8 +11196,8 @@ DECLARE
         'get_unread_notifications_paginated', 'get_channel_notif_state',
         'get_workspace_notifications', 'update_notification_preferences',
         'get_notification_preferences',
-        -- Mentions / DMs
-        'fetch_mentioned_users', 'create_direct_message_channel',
+        -- Mentions
+        'fetch_mentioned_users',
         -- Workspace / presence
         'join_workspace', 'update_user_online_at',
         -- Owned-documents member roster (Settings > Documents). Both are

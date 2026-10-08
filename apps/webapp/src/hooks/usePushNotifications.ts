@@ -1,3 +1,4 @@
+import { useAuthStore } from '@stores'
 import {
   getPermissionStatus,
   isPushSupported,
@@ -36,6 +37,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
   const [error, setError] = useState<string | null>(null)
   const [errorCode, setErrorCode] = useState<string | null>(null)
   const [isRecoverable, setIsRecoverable] = useState(false)
+  const userId = useAuthStore((s) => s.profile?.id)
 
   useEffect(() => {
     if (!isSupported) {
@@ -47,15 +49,9 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
     const initSubscription = async () => {
       try {
-        const subscribed = await checkSubscribed()
-        setIsSubscribed(subscribed)
-
-        if (subscribed) {
-          const refreshResult = await refreshSubscriptionIfNeeded()
-          if (refreshResult === 'failed') {
-            // Refresh failed, but don't show error to user - subscription might still work
-          }
-        }
+        // Sync first so the toggle shows the repaired state. The RPCs need a session.
+        if (userId) await refreshSubscriptionIfNeeded()
+        setIsSubscribed(await checkSubscribed())
       } catch {
         // Ignore errors during init
       } finally {
@@ -65,7 +61,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     }
 
     initSubscription()
-  }, [isSupported])
+  }, [isSupported, userId])
 
   // Fires when the user revokes permission in browser settings.
   useEffect(() => {

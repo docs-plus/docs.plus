@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { IoCheckmarkCircle } from 'react-icons/io5'
 
 import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
-import { parseDocTitlePayload, plainTitle } from '../../utils/titleWrite'
+import { onDocTitleStateless, plainTitle } from '../../utils/titleWrite'
 
 const SAVED_INDICATOR_DURATION = 2000 // ms
 
@@ -19,7 +19,6 @@ const DocTitle = ({ className }: { className?: string }) => {
 
   const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
   const docMetadata = useStore((state) => state.settings.metadata)
-  const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
   const profileId = useAuthStore((state) => state.profile?.id ?? state.session?.id)
   const canEdit = useStore((state) => canEditDocumentMetadata(state.settings, profileId))
 
@@ -110,17 +109,12 @@ const DocTitle = ({ className }: { className?: string }) => {
   useEffect(() => {
     if (!hocuspocusProvider) return
 
-    const docTitleHandler = ({ payload }: { payload: string }) => {
-      const next = parseDocTitlePayload(payload)
-      if (next === null) return
-      setTitle(next)
-      setWorkspaceSetting('metadata', { ...docMetadata, title: next })
-    }
+    const docTitleHandler = ({ payload }: { payload: string }) => onDocTitleStateless(payload)
 
     hocuspocusProvider.on('stateless', docTitleHandler)
 
     return () => hocuspocusProvider.off('stateless', docTitleHandler)
-  }, [hocuspocusProvider, docMetadata, setWorkspaceSetting])
+  }, [hocuspocusProvider])
 
   useEffect(() => {
     if (isSuccess && data) {

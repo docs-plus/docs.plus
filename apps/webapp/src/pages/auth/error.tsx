@@ -7,8 +7,12 @@ import { LuCircleAlert } from 'react-icons/lu'
 
 const AuthErrorPage = () => {
   const router = useRouter()
-  // proxy.ts forwards only `error_description`; getServerSideProps fills the query on first render.
-  const description = String(router.query.error_description ?? '')
+  // proxy.ts forwards only `error_code`; getServerSideProps fills the query on first render.
+  // URL text is never shown, so a crafted link cannot put its own words on this page.
+  const message =
+    router.query.error_code === 'otp_expired'
+      ? 'This sign-in link has expired or was already used. Request a new link and try again.'
+      : 'Sign-in did not finish. Try again, or contact support if it keeps failing.'
 
   const handleRetry = () => {
     router.back()
@@ -30,12 +34,10 @@ const AuthErrorPage = () => {
             <HomepageLink />
           </>
         }>
-        {description && (
-          <div className="alert alert-soft alert-error items-start px-3 py-2 text-sm">
-            <LuCircleAlert size={16} className="text-error mt-0.5 shrink-0" aria-hidden />
-            <p className="text-base-content min-w-0 [overflow-wrap:anywhere]">{description}</p>
-          </div>
-        )}
+        <div className="alert alert-soft alert-error items-start px-3 py-2 text-sm">
+          <LuCircleAlert size={16} className="text-error mt-0.5 shrink-0" aria-hidden />
+          <p className="text-base-content min-w-0 [overflow-wrap:anywhere]">{message}</p>
+        </div>
         <Button variant="primary" shape="block" onClick={handleRetry}>
           Try again
         </Button>

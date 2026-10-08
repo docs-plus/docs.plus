@@ -8,6 +8,13 @@ import type {
 } from '@tiptap/core'
 import { Highlight as BaseHighlight } from '@tiptap/extension-highlight'
 
+// Hex or a numeric rgb()/rgba(), as `style.backgroundColor` serializes it.
+// Anything else could smuggle extra declarations into `style`.
+const SAFE_COLOR = /^(#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})|rgba?\([\d\s.,]+\))$/i
+
+const safeColor = (value: unknown): string | null =>
+  typeof value === 'string' && SAFE_COLOR.test(value.trim()) ? value.trim() : null
+
 /**
  * docs.plus Highlight: the upstream mark plus `==text==` markdown import/export.
  * `@tiptap/extension-highlight` is third-party, so its markdown can't live in the
@@ -21,13 +28,12 @@ export const Highlight = BaseHighlight.extend({
       color: {
         default: null,
         parseHTML: (element: HTMLElement) =>
-          element.getAttribute('data-color') || element.style.backgroundColor || null,
+          safeColor(element.getAttribute('data-color') || element.style.backgroundColor),
+        // Stored marks and raw Yjs updates skip parseHTML, so render checks too.
         renderHTML: (attributes: { color?: string | null }) => {
-          if (!attributes.color) return {}
-          return {
-            'data-color': attributes.color,
-            style: `background-color: ${attributes.color}`
-          }
+          const color = safeColor(attributes.color)
+          if (!color) return {}
+          return { 'data-color': color, style: `background-color: ${color}` }
         }
       }
     }

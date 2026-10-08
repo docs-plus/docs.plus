@@ -131,6 +131,9 @@ export const createMockPrisma = (): Partial<PrismaClient> => {
       findUnique: async () => null,
       upsert: async (data: any) => ({ ...data.create })
     },
+    documentPurgeTombstone: {
+      findUnique: async () => null
+    },
     $queryRaw: async () => [{ result: 1 }],
     $executeRaw: async () => 0,
     $disconnect: async () => {}

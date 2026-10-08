@@ -106,7 +106,11 @@ export const getErrorResponse = (error: Error) => {
     return {
       success: false,
       error: {
-        message: error.message,
+        // A 5xx message can carry driver text (handlePrismaError); callers log the original.
+        message:
+          process.env.NODE_ENV === 'development' || error.statusCode < 500
+            ? error.message
+            : 'Internal server error',
         code: error.code,
         ...(process.env.NODE_ENV === 'development' && error.details
           ? { details: error.details }

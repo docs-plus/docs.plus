@@ -225,8 +225,13 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
       rel: {
         default: this.options.HTMLAttributes.rel
       },
+      // Never read or render `class` from content: a pasted `fixed inset-0`
+      // would apply page-level utilities. The developer's `HTMLAttributes.class`
+      // still reaches the `<a>` through `mergeAttributes` in renderHTML.
       class: {
-        default: this.options.HTMLAttributes.class
+        default: this.options.HTMLAttributes.class,
+        parseHTML: () => null,
+        rendered: false
       },
       title: {
         default: null

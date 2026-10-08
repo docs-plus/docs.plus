@@ -549,6 +549,18 @@ export const updateDocument = async (
 
     if (existing?.deletedAt) throw new NotFoundError('Document')
 
+    // A purged id must stay gone. Without this, a PUT from a stale tab would re-create
+    // its row and bring the erased document back under the old link.
+    if (
+      existing == null &&
+      (await prisma.documentPurgeTombstone.findUnique({
+        where: { documentId },
+        select: { documentId: true }
+      })) != null
+    ) {
+      throw new NotFoundError('Document')
+    }
+
     // The route is optionalUser because an open document accepts an anonymous
     // retitle. An owned one refuses every caller who is not its owner, private or
     // not, which is why resolvePrivateAccess is not consulted here any more.

@@ -27,7 +27,7 @@ import { onlineManager } from '@tanstack/react-query'
 import type { Editor } from '@tiptap/core'
 import { yUndoPluginKey } from '@tiptap/y-tiptap'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
-import { parseDocTitlePayload, plainTitle } from '@utils/titleWrite'
+import { onDocTitleStateless, plainTitle } from '@utils/titleWrite'
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 import FilterBar from './FilterBar'
@@ -224,7 +224,6 @@ const MobilePadTitle = () => {
   const editor = useStore((state) => state.settings.editor.instance)
   const metadata = useStore((state) => state.settings.metadata)
   const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
-  const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
   const openDialog = useStore((state) => state.openDialog)
   const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
   const profileId = useAuthStore((state) => state.profile?.id ?? state.session?.id)
@@ -255,27 +254,18 @@ const MobilePadTitle = () => {
     else openSettings(hashSettingsTab ?? undefined)
   }, [overlay, hashSettingsTab, user, openSettings])
 
-  // Mobile doesn't render DocTitle, so remote title changes need their own
-  // listener here. The ref keeps the handler on the latest metadata without
-  // re-subscribing the effect on every metadata change.
-  const metadataRef = useRef(metadata)
-  metadataRef.current = metadata
-
   // Set by "Done" so focus lands on the title (not <body>) once the read cluster remounts.
   const focusTitleAfterExitRef = useRef(false)
 
+  // Mobile doesn't render DocTitle, so remote title changes need their own listener here.
   useEffect(() => {
     if (!hocuspocusProvider) return
 
-    const handler = ({ payload }: { payload: string }) => {
-      const next = parseDocTitlePayload(payload)
-      if (next === null) return
-      setWorkspaceSetting('metadata', { ...metadataRef.current, title: next })
-    }
+    const handler = ({ payload }: { payload: string }) => onDocTitleStateless(payload)
 
     hocuspocusProvider.on('stateless', handler)
     return () => hocuspocusProvider.off('stateless', handler)
-  }, [hocuspocusProvider, setWorkspaceSetting])
+  }, [hocuspocusProvider])
 
   const handleTitleClick = () => {
     openDialog(<TitleEditContent />, { size: 'md', align: 'top', className: 'mt-14' })

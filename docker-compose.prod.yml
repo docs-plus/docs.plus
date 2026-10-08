@@ -481,7 +481,7 @@ services:
   # ===========================================================================
   webapp:
     image: docsplus-webapp:${DEPLOY_TAG:-latest}
-    env_file: .env.production
+    # No env_file: this container must not hold server secrets. List each runtime key under environment.
     build:
       context: .
       dockerfile: apps/webapp/docker/Dockerfile.bun
@@ -528,6 +528,7 @@ services:
       NEXT_PUBLIC_GLITCHTIP_DSN: ${NEXT_PUBLIC_GLITCHTIP_DSN:-}
       # Server-side API URL (internal Docker network)
       SERVER_RESTAPI_URL: http://rest-api:4000/api
+      SUPABASE_URL: ${SUPABASE_URL}
     networks:
       - docsplus-network
     labels:
@@ -579,7 +580,7 @@ services:
   # ===========================================================================
   admin-dashboard:
     image: docsplus-admin:${DEPLOY_TAG:-latest}
-    env_file: .env.production
+    # No env_file: this container must not hold server secrets. List each runtime key under environment.
     build:
       context: .
       dockerfile: apps/admin-dashboard/docker/Dockerfile.bun

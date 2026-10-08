@@ -148,6 +148,7 @@ begin
         and m.deleted_at is null
         and c.deleted_at is null
         and w.deleted_at is null
+        and internal.can_read_channel(m.channel_id)
         and (p_workspace_id is null or w.id = p_workspace_id)
         and (
             (p_archived = true and mb.archived_at is not null)

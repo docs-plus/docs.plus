@@ -6,6 +6,7 @@
 CREATE OR REPLACE FUNCTION set_replied_message_preview()
 RETURNS TRIGGER AS $$
 DECLARE
+    parent_channel_id public.messages.channel_id%TYPE;
     original_message_content TEXT;
     original_medias JSONB;
     original_type public.message_type;
@@ -13,6 +14,18 @@ DECLARE
 BEGIN
     -- Only proceed if this message is a reply
     IF NEW.reply_to_message_id IS NOT NULL THEN
+        -- A reply must stay in its parent's channel. No deleted_at filter:
+        -- create_reply_notification reads a soft-deleted parent too.
+        SELECT channel_id
+          INTO parent_channel_id
+          FROM public.messages
+         WHERE id = NEW.reply_to_message_id;
+
+        IF FOUND AND parent_channel_id IS DISTINCT FROM NEW.channel_id THEN
+            RAISE EXCEPTION 'Reply parent % is in another channel.', NEW.reply_to_message_id
+                USING ERRCODE = '22023';
+        END IF;
+
         -- Retrieve the content of the original message, only if not deleted
         SELECT content, medias, type
           INTO original_message_content, original_medias, original_type

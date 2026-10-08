@@ -26,6 +26,20 @@ describe('XSS guards — dangerous URL schemes blocked at every entry point', ()
     })
   })
 
+  describe('class attribute', () => {
+    // A pasted class could apply page-level utilities such as `fixed inset-0`.
+    it('drops a pasted class from the link and from getHTML()', () => {
+      cy.setEditorContent('<p><a href="https://example.com" class="fixed inset-0">x</a></p>')
+      cy.get('#editor a')
+        .should('exist')
+        .and('not.have.class', 'fixed')
+        .and('not.have.class', 'inset-0')
+      cy.getEditor().then((editor) => {
+        expect(editor.getHTML()).not.to.include('inset-0')
+      })
+    })
+  })
+
   describe('control characters embedded in the scheme', () => {
     // `&#9;` / `&#10;` decode to TAB / LF inside the attribute value.
     // Browsers strip ASCII controls when resolving URLs, so without the

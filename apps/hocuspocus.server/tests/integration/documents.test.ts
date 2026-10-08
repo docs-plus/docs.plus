@@ -686,6 +686,7 @@ describe('Documents API', () => {
       expect(response.status).toBe(500)
       expect(data.success).toBe(false)
       expect(data.error).toHaveProperty('code', 'DATABASE_ERROR')
+      expect(data.error.message).toBe('Internal server error')
     })
   })
 
@@ -1027,6 +1028,20 @@ describe('Documents API', () => {
       expect(data.success).toBe(true)
       expect(data.data.title).toBe('Brand New Document')
       expect(data.data).toHaveProperty('slug')
+    })
+
+    test('should return 404 and create nothing for a purged document id', async () => {
+      mockPrisma.documentPurgeTombstone.findUnique = async () => ({ documentId: 'purged-doc' })
+      let upserted = false
+      mockPrisma.documentMetadata.upsert = async () => {
+        upserted = true
+        return {}
+      }
+
+      const response = await testServer.put('/api/documents/purged-doc', { title: 'Revived' })
+
+      expect(response.status).toBe(404)
+      expect(upserted).toBe(false)
     })
   })
 

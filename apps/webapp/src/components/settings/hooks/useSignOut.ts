@@ -1,5 +1,6 @@
 import { signOut } from '@api'
 import * as toast from '@components/toast'
+import { isPushSupported, unregisterPushSubscription } from '@utils/push-notifications'
 import { supabaseClient } from '@utils/supabase'
 import { useState } from 'react'
 
@@ -12,6 +13,9 @@ export const useSignOut = () => {
   const handleSignOut = async () => {
     setIsLoading(true)
     await flushPendingPreferenceWrites()
+    // Before signOut, because the RPC needs a live session. It stops the next person here
+    // getting this account's pushes.
+    if (isPushSupported()) await unregisterPushSubscription()
     const { error } = await signOut()
     if (error) {
       // auth-js drops the local session even when the server call fails. Stay only if it did not,
