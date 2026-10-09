@@ -431,8 +431,11 @@ export interface EmailBounce {
 export interface DLQJob {
   id: string
   name: string
-  data: Record<string, unknown>
   timestamp: number
+  type?: string
+  failureKind?: string
+  failureCode?: string
+  to: string[]
   failedReason: string | null
 }
 
