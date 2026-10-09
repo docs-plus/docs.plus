@@ -36,6 +36,8 @@ Never ship it to a browser, a mobile application, or any client you do not contr
 
 **Service-role only.** Reading and writing document content, every document version route, the service-role email send and bounce routes, and the `content` and `ownerId` fields when creating a document.
 
+**A Resend webhook signature.** `POST /api/email/webhooks/resend` takes no key and no token. Resend signs each request with the endpoint's `whsec_` secret, and the server checks the `svix-signature` header. The route exists only when the server sets a valid `RESEND_WEBHOOK_SECRET`.
+
 **Either a user token or the service-role key.** Export and import. The key passes every document; a user token is checked against that document's privacy and lock.
 
 **An admin token.** Everything under `/api/admin/`.

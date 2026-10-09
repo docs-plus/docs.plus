@@ -46,6 +46,22 @@ const hostOf = (raw: string | undefined): string | undefined => {
   }
 }
 
+const WEBHOOK_SECRET_MIN_BYTES = 24
+const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
+
+/**
+ * Pure. A Standard Webhooks secret is base64 behind an optional `whsec_` prefix.
+ * A value that is not strict base64, or decodes to under 24 bytes, is `null`:
+ * the webhook route then stays unmounted, and product mail is never held for it.
+ */
+export function resolveWebhookSecret(raw: string | undefined): string | null {
+  const value = nonBlank(raw)
+  if (!value) return null
+  const encoded = value.startsWith('whsec_') ? value.slice('whsec_'.length) : value
+  if (!BASE64.test(encoded)) return null
+  return atob(encoded).length >= WEBHOOK_SECRET_MIN_BYTES ? value : null
+}
+
 /**
  * Pure and never throws. Only `ready` sends; `off` settles mail as skipped,
  * and `invalid` holds it. A provider key without EMAIL_PROVIDER is `invalid`,

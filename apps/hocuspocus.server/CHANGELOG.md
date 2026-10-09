@@ -81,6 +81,21 @@ SMTP_PASS=...
 
 ### Added
 
+- **Resend webhook at `POST /api/email/webhooks/resend` ([#422](https://github.com/docs-plus/docs.plus/issues/422)).**
+  Resend now reports delivery events back to the server. A permanent
+  bounce, a complaint or a suppression writes one `email_bounces` row through
+  `record_email_bounce`, which turns email off for that person. An
+  `email.failed` event writes nothing. It logs an `operator` error, so
+  `incident-email-operator` fires. The route checks the Svix signature over
+  the raw body, with a 5-minute clock window. It records each `svix-id`
+  once, so a redelivery writes nothing. An event from another environment's
+  `ns` tag is ignored. The route exists only when `RESEND_WEBHOOK_SECRET` is
+  set to a valid secret; otherwise it answers 404. An invalid secret logs
+  `email webhook secret invalid` and never holds mail. A new warning alert,
+  `incident-email-webhook-unauthorized`, fires on more than 50 rejected
+  signatures in 10 minutes. `POST /api/email/bounce` now writes through the
+  same function.
+
 - **MCP connector at `/api/mcp`.** A person connects docs.plus to Claude or
   ChatGPT and signs in as themselves through the Supabase OAuth server. The
   server is stateless, one MCP server per request, on

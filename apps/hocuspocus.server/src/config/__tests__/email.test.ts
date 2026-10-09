@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { type EmailConfig, resolveEmailConfig } from '../email'
+import { type EmailConfig, resolveEmailConfig, resolveWebhookSecret } from '../email'
 
 type EmailEnv = Parameters<typeof resolveEmailConfig>[0]
 
@@ -180,5 +180,28 @@ describe('resolveEmailConfig', () => {
         'docs.acme.com'
       )
     })
+  })
+})
+
+describe('resolveWebhookSecret', () => {
+  // 32 base64 characters decode to 24 bytes, the Standard Webhooks floor.
+  const SECRET_24 = 'whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw'
+
+  test.each([
+    ['a whsec_ secret of 24 bytes', SECRET_24, SECRET_24],
+    ['the same secret without the prefix', SECRET_24.slice(6), SECRET_24.slice(6)],
+    ['a value padded with spaces', `  ${SECRET_24} `, SECRET_24]
+  ])('%s is accepted', (_, raw, expected) => {
+    expect(resolveWebhookSecret(raw)).toBe(expected)
+  })
+
+  test.each([
+    ['unset', undefined],
+    ['blank', '   '],
+    ['18 bytes', 'whsec_plJ3nmyCDGBKInavdOK15jsl'],
+    ['not base64', 'whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2La!aSw'],
+    ['broken padding', 'whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaS']
+  ])('%s is refused', (_, raw) => {
+    expect(resolveWebhookSecret(raw)).toBeNull()
   })
 })

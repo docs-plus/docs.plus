@@ -97,7 +97,7 @@ export const emailPaths: OpenApiPaths = {
       }
     }
   },
-  '/api/email/webhooks/resendX': {
+  '/api/email/webhooks/resend': {
     post: {
       operationId: 'receiveResendWebhook',
       summary: 'Receive a Resend delivery event',
@@ -118,7 +118,7 @@ export const emailPaths: OpenApiPaths = {
           in: 'header',
           required: true,
           description: 'Unix seconds. Refused when more than 5 minutes from server time.',
-          schema: { type: 'string', pattern: '^\\d+$' }
+          schema: { type: 'string', pattern: '^\\d{1,12}$' }
         },
         {
           name: 'svix-signature',

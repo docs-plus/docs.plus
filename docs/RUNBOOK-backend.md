@@ -2,7 +2,7 @@
 
 What to do when a backend alert fires. It covers document persistence, Redis, the dead-letter queue, the collaboration container's memory, and email delivery. It does not cover the edge, Supabase, the webapp, or any other alert.
 
-Each section below matches one Grafana alert, except [Email](#email), which covers four. Each alert links here through its `runbook_url` annotation.
+Each section below matches one Grafana alert, except [Email](#email), which covers five. Each alert links here through its `runbook_url` annotation.
 
 ## Before you start
 
@@ -167,7 +167,7 @@ The email queue retries only a `transient` failure. It makes up to 6 attempts ov
 
 ## Email
 
-Grafana alerts: `Email send needs operator action` (critical), `Email transient failures` (warning) and `Email config invalid (mail waiting)` (critical). `Email broken (SMTP 535/EAUTH)` (critical) stays for now. It reads SMTP errors only, so it fires only after a rollback to SMTP. Then one bad SMTP login fires it together with the operator alert.
+Grafana alerts: `Email send needs operator action` (critical), `Email transient failures` (warning), `Email config invalid (mail waiting)` (critical) and `Email webhook signature failures` (warning). `Email broken (SMTP 535/EAUTH)` (critical) stays for now. It reads SMTP errors only, so it fires only after a rollback to SMTP. Then one bad SMTP login fires it together with the operator alert.
 
 Each failed send writes one `Email send failed` line. It carries `err_kind`, `err_code` and `err_responseCode`, and the masked address in `to`.
 
@@ -178,6 +178,8 @@ To redeploy, run the production workflow by `workflow_dispatch` on `main` with `
 - **Config `invalid`.** The worker logs `email config invalid` every 5 minutes, and the line lists each problem variable. After #423, the Email setup page names it too. Fix the host env file and redeploy. Messages older than 24 hours then settle `skipped` with `stale`.
 - **"I get no mail".** Check `users.notification_preferences` first, then `email_bounces`, then the Resend log, filtered by the `job_id` tag.
 - **"Email sign-in does nothing".** Supabase Auth sends sign-in mail with its own SMTP settings, not this server. Check the suppression list of the provider that those settings name. After #425, that is the one Resend team.
+- **Webhook signature failures.** Read the `reason` field on the `email webhook signature rejected` lines. `mismatch` after a secret rotation means the host env file still holds the old `RESEND_WEBHOOK_SECRET`; copy the new one and redeploy. `expired` means the server clock is off, or someone replayed a captured request. With no rotation, the requests are likely forged. They write nothing, and Svix retries real events, so no event is lost.
+- **`email.failed` from the webhook.** Resend accepted a send and failed it later. The `Email failed after send` line carries `err_kind` `operator` and the Resend reason in `err_code`, so the operator alert fires. Fix the cause as for **Quota reached**, but do not run the drain. The send succeeded, so no dead-letter entry exists, and nothing replays the mail. For queued notification mail, the `email_queue` row reads `sent`.
 - **Remove a suppression.** First remove it in Resend (Dashboard > Suppressions). Then reset the `email_bounces` row and `notification_preferences.email_enabled`. In the other order, the next send triggers `email.suppressed` and turns email off again.
 
 ## WS container out of memory

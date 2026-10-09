@@ -126,6 +126,7 @@ The rules:
 | `EMAIL_PROVIDER`                   | string | —                   |
 | `EMAIL_FROM`                       | string | —                   |
 | `RESEND_API_KEY`                   | string | —                   |
+| `RESEND_WEBHOOK_SECRET`            | string | —                   |
 | `SENDGRID_API_KEY`                 | string | —                   |
 | `SMTP_HOST`                        | string | `''`                |
 | `SMTP_PORT`                        | number | `587`               |
@@ -142,6 +143,8 @@ The rules:
 Production also needs `EMAIL_UNSUBSCRIBE_SECRET` and `PUBLIC_RESTAPI_URL`. Without the URL, the one-click `List-Unsubscribe` header is dropped. The docs.plus deploy workflows refuse to deploy when any of these four is empty: `EMAIL_PROVIDER`, `EMAIL_FROM`, `EMAIL_UNSUBSCRIBE_SECRET` and `PUBLIC_RESTAPI_URL`.
 
 The host of `PUBLIC_RESTAPI_URL`, or else of `APP_URL`, names the provider idempotency keys. Staging and production therefore never share a key.
+
+`RESEND_WEBHOOK_SECRET` is optional. It is the `whsec_` signing secret of the Resend webhook endpoint. When it is set and valid, REST mounts `POST /api/email/webhooks/resend`, which records bounces and complaints ([API.md](./API.md#post-apiemailwebhooksresend)). When it is unset, that path answers 404. A value that is not base64, or decodes to under 24 bytes, counts as unset. REST then logs `email webhook secret invalid` at error level. Product mail never waits for this secret, and no deploy check reads it.
 
 **Local mail.** The Supabase mail catcher takes SMTP on port 54325 (`smtp_port` in `packages/supabase/config.toml`) and shows the mail at <http://localhost:54324>. It takes no sign-in. Set these lines in `.env.local`, then restart the backend. The blank lines clear any old values from an earlier template.
 

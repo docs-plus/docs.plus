@@ -37,6 +37,7 @@ Three schemes apply, by route group:
 | Required Supabase user JWT            | `GET /api/documents?ownerId=…` / `?deleted=true`, `POST /api/documents`, document lifecycle (`DELETE /:id`, `/:id/restore`, `/:id/duplicate`, `/:id/favorite`, `/:id/opened`, `/:id/permanent`, `POST /trash/purge`, `/trash/restore`), `GET /api/connected-apps/redirects`, `POST /api/plugins/hypermultimedia/:documentId` (media upload; the service-role key is refused there — it is not a user token, so `requireUser` can resolve nobody from it) | `token: <jwt>`                                      |
 | Either of the two above               | `GET /api/documents/:documentId/export`, `POST /api/documents/:documentId/import` — the key passes every document, a user token is checked against the document's privacy and lock                                                                                                                                                                                                                                                                       | `token: <jwt>` or the service-role bearer           |
 | Supabase service-role key             | `/api/email/send-generic`, `/send-digest`, `/bounce`, `/preview/:type`, `GET`/`PATCH /api/documents/:documentId/content`, every `/api/documents/:documentId/versions` route, `GET /api/documents/:documentId/changes`, and the `content` / `ownerId` fields on `POST /api/documents`                                                                                                                                                                     | `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` |
+| Resend webhook signature              | `POST /api/email/webhooks/resend` — mounted only when `RESEND_WEBHOOK_SECRET` is valid                                                                                                                                                                                                                                                                                                                                                                   | `svix-id`, `svix-timestamp`, `svix-signature`       |
 | Supabase user JWT + `admin_users` row | `/api/admin/*`                                                                                                                                                                                                                                                                                                                                                                                                                                           | `Authorization: Bearer <jwt>`                       |
 | Supabase OAuth token with `client_id` | `/api/mcp` — see [MCP connector](#mcp-connector); admin routes refuse these tokens                                                                                                                                                                                                                                                                                                                                                                       | `Authorization: Bearer <jwt>`                       |
 
@@ -1147,7 +1148,7 @@ Errors (`400`) use this module's own shape — top-level `code` and `message`, n
 
 ## Email
 
-Base path `/api/email` (`src/api/email.ts`). Notification delivery runs through a pgmq consumer, not HTTP: `email_queue` → `pg_cron` → pgmq → worker → BullMQ → the configured provider, SMTP or Resend. **The `/api/email/send` endpoint was removed.** Most endpoints below are internal triggers and webhooks. `send-generic`, `send-digest`, `bounce` and `preview/:type` require the service-role key. `health`, `status`, `validate`, and both `unsubscribe` routes need no credential. A rejected JSON or query body on `send-generic`, `send-digest`, `bounce`, `validate`, and `POST /unsubscribe` is the house envelope (`VALIDATION_ERROR`), not a raw Zod body.
+Base path `/api/email` (`src/api/email.ts`). Notification delivery runs through a pgmq consumer, not HTTP: `email_queue` → `pg_cron` → pgmq → worker → BullMQ → the configured provider, SMTP or Resend. **The `/api/email/send` endpoint was removed.** Most endpoints below are internal triggers and webhooks. `send-generic`, `send-digest`, `bounce` and `preview/:type` require the service-role key. `webhooks/resend` takes a signature instead. `health`, `status`, `validate`, and both `unsubscribe` routes need no credential. A rejected JSON or query body on `send-generic`, `send-digest`, `bounce`, `validate`, and `POST /unsubscribe` is the house envelope (`VALIDATION_ERROR`), not a raw Zod body.
 
 ### POST /api/email/send-generic
 
@@ -1160,6 +1161,34 @@ Send a daily/weekly digest. Body: `to`, `frequency`, `documents[]`, optional `us
 ### POST /api/email/bounce
 
 Record a provider bounce event. Body: `email`, `bounce_type`, optional `provider`, `reason`. Hard bounces auto-suppress the user; returns `{ "success": true, "bounce_id": ..., "auto_suppressed": <bool> }`.
+
+### POST /api/email/webhooks/resend
+
+Receives Resend delivery events. The route exists only when `RESEND_WEBHOOK_SECRET` holds a valid secret. Otherwise it answers 404. The source is `src/modules/email-webhooks/`.
+
+The request carries no key. The route checks the Svix signature instead: an HMAC-SHA256 over `<svix-id>.<svix-timestamp>.<raw body>`, keyed by the decoded `whsec_` secret. It refuses a `svix-id` that does not match `^msg_[A-Za-z0-9]{1,64}$`. It refuses a timestamp more than 5 minutes from server time, in either direction. Every refusal answers the same `401` body and logs `email webhook signature rejected` with a `reason`.
+
+| Event              | Action                                                                  |
+| ------------------ | ----------------------------------------------------------------------- |
+| `email.bounced`    | `Permanent` only: a `hard` row, with the bounce `subType` as the reason |
+| `email.complained` | a `complaint` row                                                       |
+| `email.suppressed` | a `hard` row, reason `resend-suppressed`                                |
+| `email.failed`     | no row; an `operator` error line, so `incident-email-operator` fires    |
+| anything else      | none                                                                    |
+
+Each row goes through `record_email_bounce`, one row per address in `to`. An event with several addresses is not atomic. If a later address fails, the key is released, and the retry can write an earlier address again. A `hard` or `complaint` row turns email off for that person. An event whose `ns` tag names another environment is ignored. An event with no `ns` tag, such as Supabase Auth mail, still counts.
+
+Each `svix-id` is recorded once. The Redis key `email:webhook:<svix-id>` is `pending` for 60 s while one request records it, then `done` for 24 h. Without Redis there is no dedupe.
+
+| Status | Meaning                                                                                          |
+| ------ | ------------------------------------------------------------------------------------------------ |
+| `200`  | Recorded, ignored, or already recorded. Body `{ "success": true, "data": { "received": true } }` |
+| `400`  | The signed body is not JSON                                                                      |
+| `401`  | The signature check failed                                                                       |
+| `409`  | Another request is still recording this `svix-id`; Svix retries later                            |
+| `413`  | The body is over 64 KiB                                                                          |
+| `500`  | A row was not written; the key is released, so a retry records it                                |
+| `503`  | Redis failed before the claim, so nothing was written                                            |
 
 ### GET /api/email/health
 

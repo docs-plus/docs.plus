@@ -99,6 +99,7 @@ To send mail, pick one provider. Set its block in the host `.env`, then redeploy
 EMAIL_PROVIDER=resend
 EMAIL_FROM="Acme Docs <notify@mail.acme.com>"
 RESEND_API_KEY=re_...
+RESEND_WEBHOOK_SECRET=whsec_...   # optional: bounces and complaints
 
 # or SMTP
 EMAIL_PROVIDER=smtp
@@ -122,6 +123,19 @@ Then add DNS records for the domain in `EMAIL_FROM`:
 Without SPF and DKIM, most inboxes reject the mail or mark it as spam.
 
 People get email only after they opt in. Each person turns it on in Settings, on the Notifications tab. Until then, no notification or digest mail goes to them.
+
+### Bounces and complaints (Resend)
+
+This step is optional. Without it, Resend still sends mail, but the server never learns about a dead address or a spam report.
+
+1. In the Resend dashboard, open **Webhooks** and add an endpoint. The URL is `PUBLIC_RESTAPI_URL` followed by `/api/email/webhooks/resend`, for example `https://api.acme.com/api/email/webhooks/resend`.
+2. Pick four events: `email.bounced`, `email.complained`, `email.suppressed` and `email.failed`.
+3. Copy the endpoint's signing secret. It starts with `whsec_`.
+4. Set `RESEND_WEBHOOK_SECRET` to that value in the host `.env`, then redeploy.
+
+A permanent bounce, a complaint or a suppression turns email off for that person. The person sees a notice in the app and can turn email back on in Settings. An `email.failed` event writes nothing, and it logs an `operator` error instead.
+
+Without the secret, the URL answers 404. A secret that is not base64, or decodes to under 24 bytes, logs `email webhook secret invalid` at startup, and the URL stays at 404. Mail still sends in both cases.
 
 ### Your privacy duties
 

@@ -15,6 +15,8 @@ import hypermultimediaRouter, {
 import { config } from './config/env' // import runs env validation (fail-fast at boot)
 import { verifyServiceRole, verifySupabaseTokenOutcome } from './lib/auth'
 import { emailGateway } from './lib/email'
+import { recordEmailBounce } from './lib/email/bounces'
+import { resendTagValue } from './lib/email/providers/resend'
 import { AppError, getErrorResponse } from './lib/errors'
 import { captureHttpError, captureUnknown, flushObservability } from './lib/instrument'
 import { conversionLogger, logger, restApiLogger } from './lib/logger'
@@ -29,6 +31,7 @@ import * as documentChanges from './modules/document-changes'
 import * as documentContent from './modules/document-content'
 import * as documentConversion from './modules/document-conversion'
 import * as documentVersions from './modules/document-versions'
+import * as emailWebhooks from './modules/email-webhooks'
 import * as linkMetadata from './modules/link-metadata'
 import * as mcp from './modules/mcp'
 import * as openapi from './modules/openapi'
@@ -113,6 +116,24 @@ const documentConversionModule = documentConversion.init({
 app.route('/api/documents', documentConversionModule.router)
 app.route(HYPERMULTIMEDIA_MOUNT_PATH, hypermultimediaRouter)
 app.route('/api/email', emailRouter)
+// Optional: with no valid secret the route stays unmounted and answers 404.
+// An invalid secret never holds product mail; it only logs why.
+const { delivery, webhookSecret, webhookSecretInvalid } = config.email
+if (webhookSecret) {
+  const emailWebhooksModule = emailWebhooks.init({
+    webhookSecret,
+    namespaceTag: delivery.status === 'ready' ? resendTagValue(delivery.keyNamespace) : null,
+    redis: getRedisClient(),
+    recordEmailBounce: (event) => recordEmailBounce(getServiceRoleClient(), event),
+    logger: logger.child({ module: 'email-webhooks' })
+  })
+  app.route('/api/email/webhooks', emailWebhooksModule.router)
+} else if (webhookSecretInvalid) {
+  restApiLogger.error(
+    { variable: 'RESEND_WEBHOOK_SECRET', rule: 'base64 of at least 24 bytes' },
+    'email webhook secret invalid'
+  )
+}
 app.route('/api/admin', adminRouter)
 const linkMetadataModule = linkMetadata.init({
   redis: getRedisClient(),

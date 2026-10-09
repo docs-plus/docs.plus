@@ -5,6 +5,7 @@ import * as documentChanges from '../../../document-changes'
 import * as documentContent from '../../../document-content'
 import * as documentConversion from '../../../document-conversion'
 import * as documentVersions from '../../../document-versions'
+import * as emailWebhooks from '../../../email-webhooks'
 import * as linkMetadata from '../../../link-metadata'
 import { buildOpenApiDocument } from '../../domain/document'
 import type { OpenApiOperation } from '../../types'
@@ -58,7 +59,17 @@ const mounted = (): Set<string> => {
       '/api/documents',
       documentConversion.init({ prisma: stub, logger, mediaPublicBaseUrl: null }).router
     ],
-    ['/api/metadata', linkMetadata.init({ redis: null as never, logger }).router]
+    ['/api/metadata', linkMetadata.init({ redis: null as never, logger }).router],
+    [
+      '/api/email/webhooks',
+      emailWebhooks.init({
+        webhookSecret: 'whsec_test',
+        namespaceTag: null,
+        redis: null,
+        recordEmailBounce: async () => {},
+        logger
+      }).router
+    ]
   ] as const
 
   const out = new Set<string>()

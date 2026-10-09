@@ -302,3 +302,46 @@ groups:
               conditions:
                 - evaluator: { type: gt, params: [2] }
               refId: C
+
+      - uid: incident-email-webhook-unauthorized
+        title: Email webhook signature failures
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: 'More than 50 requests to the Resend webhook failed the signature check in 10 min. The reason field says malformed, expired or mismatch. Many mismatches after a secret rotation mean the host env file still holds the old RESEND_WEBHOOK_SECRET.'
+          runbook_url: 'https://github.com/docs-plus/docs.plus/blob/main/docs/RUNBOOK-backend.md#email'
+        data:
+          - refId: A
+            queryType: instant
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: loki
+            model:
+              datasource: { type: loki, uid: loki }
+              # Only rest-api serves the webhook. A few rejections are noise from
+              # scanners; a steady stream means a wrong secret or an attack.
+              expr: 'sum(count_over_time({service="rest-api"} |= "email webhook signature rejected" [10m])) or vector(0)'
+              queryType: instant
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [50] }
+              refId: C

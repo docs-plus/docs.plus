@@ -110,6 +110,8 @@ export const envSchema = z.object({
   // stopping every service. SENDGRID_API_KEY stays only to flag a leftover key.
   EMAIL_PROVIDER: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
+  // No refine: a bad webhook secret must never stop the boot or hold mail.
+  RESEND_WEBHOOK_SECRET: z.string().optional(),
   SENDGRID_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
   SMTP_HOST: z.string().optional().default(''),

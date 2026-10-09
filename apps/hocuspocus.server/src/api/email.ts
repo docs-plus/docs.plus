@@ -19,8 +19,8 @@ import { config } from '../config/env'
 import { houseEnvelopeHook } from '../http/envelope'
 import { verifyServiceRole } from '../lib/auth'
 import { emailGateway } from '../lib/email'
+import { recordEmailBounce } from '../lib/email/bounces'
 import { emailLogger } from '../lib/logger'
-import { maskEmail } from '../lib/maskEmail'
 import { getServiceRoleClient } from '../lib/supabase'
 import { verifyUnsubscribeToken } from '../lib/unsubscribeToken'
 import {
@@ -150,39 +150,17 @@ emailRouter.post('/bounce', zValidator('json', emailBounceSchema, houseEnvelopeH
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
+  const event = c.req.valid('json')
   try {
-    const { email, bounce_type, provider, reason } = c.req.valid('json')
-
-    const supabase = getServiceRoleClient()
-    if (!supabase) {
-      return c.json({ error: 'Supabase not configured' }, 500)
-    }
-
-    const { data, error } = await supabase.rpc('record_email_bounce', {
-      p_email: email,
-      p_bounce_type: bounce_type,
-      p_provider: provider || null,
-      p_reason: reason || null
-    })
-
-    if (error) {
-      emailLogger.error(
-        { err: error, to: maskEmail(email), bounce_type },
-        'Failed to record bounce'
-      )
-      return c.json({ error: 'Failed to record bounce' }, 500)
-    }
-
-    emailLogger.info({ to: maskEmail(email), bounce_type, provider }, 'Email bounce recorded')
-
+    const bounceId = await recordEmailBounce(getServiceRoleClient(), event)
     return c.json({
       success: true,
-      bounce_id: data,
-      auto_suppressed: bounce_type === 'hard'
+      bounce_id: bounceId,
+      auto_suppressed: event.bounce_type === 'hard'
     })
   } catch (err) {
     emailLogger.error({ err }, 'Error processing bounce webhook')
-    return c.json({ error: 'Internal server error' }, 500)
+    return c.json({ error: 'Failed to record bounce' }, 500)
   }
 })
 
