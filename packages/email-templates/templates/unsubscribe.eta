@@ -81,7 +81,8 @@
       min-height: 40px;
       padding: 0 16px;
       border-radius: <%= it.h.RADIUS.md %>;
-      background: <%= it.h.COLORS.primary %>;
+      --btn-bg: <%= it.h.COLORS.primary %>;
+      background: var(--btn-bg);
       color: <%= it.h.COLORS.white %>;
       text-decoration: none;
       font-size: 14px;
@@ -95,7 +96,7 @@
     }
     /* daisyUI btn hover: the same hue, 7% darker. */
     @media (hover: hover) {
-      .primary:hover { background: color-mix(in oklab, <%= it.h.COLORS.primary %>, #000 7%); }
+      .primary:hover { background: color-mix(in oklab, var(--btn-bg), #000 7%); }
     }
     .strip {
       display: flex;
@@ -128,10 +129,7 @@
       .card { background: #0b1220; border-color: #2d3f57; }
       .strip { border-top-color: #2d3f57; }
       .message, .strip { color: #a4a7ae; }
-      .primary { background: #6ea8ff; color: #0b1220; }
-      @media (hover: hover) {
-        .primary:hover { background: color-mix(in oklab, #6ea8ff, #000 7%); }
-      }
+      .primary { --btn-bg: #6ea8ff; color: #0b1220; }
       .quiet { color: #6ea8ff; }
       a:focus-visible, button:focus-visible { outline-color: #6ea8ff; }
     }

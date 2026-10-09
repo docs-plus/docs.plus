@@ -29,7 +29,12 @@ import type {
   OpenApiPaths,
   OpenApiResponse
 } from '../../types'
-import { envelopeOrLegacyResponse, envelopeResponse, rateLimitedRef } from '../components'
+import {
+  envelopeOrLegacyResponse,
+  envelopeResponse,
+  legacyResponse,
+  rateLimitedRef
+} from '../components'
 import { pathParam, toJsonSchema, toParameters } from '../jsonSchema'
 
 interface AdminRoute {
@@ -518,11 +523,9 @@ const routes: AdminRoute[] = [
       'Reads the account again first, because the list is cached. A user with blocking messages or owned documents outside Trash is soft-deleted: banned, with the public profile cleared. Others are hard-deleted.',
     pathSchema: ghostDeleteSchema,
     extraResponses: {
-      '409': {
-        description:
-          '`{ error }` names the refusal: `User not found`, `User is no longer a ghost account` or `User is an admin`. An unknown id is a 409, not a 404.',
-        content: { 'application/json': { schema: { $ref: '#/components/schemas/LegacyError' } } }
-      }
+      '409': legacyResponse(
+        '`{ error }` names the refusal: `User not found`, `User is no longer a ghost account` or `User is an admin`. An unknown id is a 409, not a 404.'
+      )
     }
   },
   {

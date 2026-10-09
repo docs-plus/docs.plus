@@ -668,7 +668,8 @@ exports[`renderUnsubscribePage snapshot — success 1`] = `
       min-height: 40px;
       padding: 0 16px;
       border-radius: 8px;
-      background: #1a73e8;
+      --btn-bg: #1a73e8;
+      background: var(--btn-bg);
       color: #ffffff;
       text-decoration: none;
       font-size: 14px;
@@ -682,7 +683,7 @@ exports[`renderUnsubscribePage snapshot — success 1`] = `
     }
     /* daisyUI btn hover: the same hue, 7% darker. */
     @media (hover: hover) {
-      .primary:hover { background: color-mix(in oklab, #1a73e8, #000 7%); }
+      .primary:hover { background: color-mix(in oklab, var(--btn-bg), #000 7%); }
     }
     .strip {
       display: flex;
@@ -715,10 +716,7 @@ exports[`renderUnsubscribePage snapshot — success 1`] = `
       .card { background: #0b1220; border-color: #2d3f57; }
       .strip { border-top-color: #2d3f57; }
       .message, .strip { color: #a4a7ae; }
-      .primary { background: #6ea8ff; color: #0b1220; }
-      @media (hover: hover) {
-        .primary:hover { background: color-mix(in oklab, #6ea8ff, #000 7%); }
-      }
+      .primary { --btn-bg: #6ea8ff; color: #0b1220; }
       .quiet { color: #6ea8ff; }
       a:focus-visible, button:focus-visible { outline-color: #6ea8ff; }
     }
@@ -848,7 +846,8 @@ exports[`renderUnsubscribePage snapshot — error 1`] = `
       min-height: 40px;
       padding: 0 16px;
       border-radius: 8px;
-      background: #1a73e8;
+      --btn-bg: #1a73e8;
+      background: var(--btn-bg);
       color: #ffffff;
       text-decoration: none;
       font-size: 14px;
@@ -862,7 +861,7 @@ exports[`renderUnsubscribePage snapshot — error 1`] = `
     }
     /* daisyUI btn hover: the same hue, 7% darker. */
     @media (hover: hover) {
-      .primary:hover { background: color-mix(in oklab, #1a73e8, #000 7%); }
+      .primary:hover { background: color-mix(in oklab, var(--btn-bg), #000 7%); }
     }
     .strip {
       display: flex;
@@ -895,10 +894,7 @@ exports[`renderUnsubscribePage snapshot — error 1`] = `
       .card { background: #0b1220; border-color: #2d3f57; }
       .strip { border-top-color: #2d3f57; }
       .message, .strip { color: #a4a7ae; }
-      .primary { background: #6ea8ff; color: #0b1220; }
-      @media (hover: hover) {
-        .primary:hover { background: color-mix(in oklab, #6ea8ff, #000 7%); }
-      }
+      .primary { --btn-bg: #6ea8ff; color: #0b1220; }
       .quiet { color: #6ea8ff; }
       a:focus-visible, button:focus-visible { outline-color: #6ea8ff; }
     }

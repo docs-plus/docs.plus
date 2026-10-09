@@ -358,29 +358,18 @@ export async function getEmailQueueHealth() {
     return {
       available: false,
       waiting: 0,
-      active: 0,
-      completed: 0,
       failed: 0,
       delayed: 0
     }
   }
 
-  const [waiting, active, completed, failed, delayed] = await Promise.all([
+  const [waiting, failed, delayed] = await Promise.all([
     EmailQueue.getWaitingCount(),
-    EmailQueue.getActiveCount(),
-    EmailQueue.getCompletedCount(),
     EmailQueue.getFailedCount(),
     EmailQueue.getDelayedCount()
   ])
 
-  return {
-    available: true,
-    waiting,
-    active,
-    completed,
-    failed,
-    delayed
-  }
+  return { available: true, waiting, failed, delayed }
 }
 
 export async function closeEmailQueue(): Promise<void> {

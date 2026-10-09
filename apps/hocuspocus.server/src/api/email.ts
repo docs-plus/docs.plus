@@ -409,16 +409,7 @@ async function applyUnsubscribeAsPage(c: Context, token: string): Promise<Respon
   try {
     const outcome = await processUnsubscribe(token)
 
-    if (outcome.status === 'unconfigured') return c.html(renderUnsubscribePage(SERVICE_ERROR_PAGE))
-
-    if (outcome.status === 'failed') {
-      return c.html(
-        renderUnsubscribePage({
-          title: 'Error',
-          message: 'Unable to process your request. Please try again later.'
-        })
-      )
-    }
+    if (outcome.status !== 'ok') return c.html(renderUnsubscribePage(SERVICE_ERROR_PAGE))
 
     const result = outcome.result
 

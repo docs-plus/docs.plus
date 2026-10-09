@@ -233,7 +233,7 @@ const jsonResponse = (description: string, ref: string): OpenApiResponse => ({
 export const envelopeResponse = (description: string): OpenApiResponse =>
   jsonResponse(description, '#/components/schemas/ErrorEnvelope')
 
-const legacyResponse = (description: string): OpenApiResponse =>
+export const legacyResponse = (description: string): OpenApiResponse =>
   jsonResponse(description, '#/components/schemas/LegacyError')
 
 /** One status, two writers: a handler sends the envelope, an older guard or backend the legacy body. */
