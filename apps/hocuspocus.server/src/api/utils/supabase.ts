@@ -5,8 +5,8 @@ import { getServiceRoleClient, SUPABASE_FETCH_TIMEOUT_MS } from '../../lib/supab
 export const getSupabaseClient = getServiceRoleClient
 
 /**
- * PostgREST fetch with apikey + Authorization headers merged in (extra headers
- * win on conflict). Null when the service-role key is not configured.
+ * PostgREST fetch with the service-role key merged into the headers (extra
+ * headers win on conflict). Null when the service-role key is not configured.
  */
 export async function supabaseRest(path: string, init?: RequestInit): Promise<Response | null> {
   const url = config.supabase.url
@@ -18,7 +18,10 @@ export async function supabaseRest(path: string, init?: RequestInit): Promise<Re
     signal: init?.signal ?? AbortSignal.timeout(SUPABASE_FETCH_TIMEOUT_MS),
     headers: {
       apikey: key,
-      Authorization: `Bearer ${key}`,
+      // An `sb_` key is not a JWT, so Supabase says to send it on `apikey`, not as a
+      // Bearer token. A legacy JWT key keeps the Bearer header, because PostgREST
+      // takes the role from Authorization.
+      ...(key.startsWith('sb_') ? {} : { Authorization: `Bearer ${key}` }),
       ...(init?.headers as Record<string, string> | undefined)
     }
   })

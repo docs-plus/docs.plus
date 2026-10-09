@@ -7,7 +7,7 @@ import {
   validateEmailBody
 } from '../../../../schemas/email.schema'
 import type { JsonSchema, OpenApiPaths } from '../../types'
-import { rateLimitedRef } from '../components'
+import { envelopeResponse, rateLimitedRef } from '../components'
 import { pathParam, toJsonSchema, toParameters } from '../jsonSchema'
 
 const tags = ['Email']
@@ -94,6 +94,66 @@ export const emailPaths: OpenApiPaths = {
           sendResult({ bounce_id: {}, auto_suppressed: { type: 'boolean' } })
         ),
         ...serviceRoleErrors
+      }
+    }
+  },
+  '/api/email/webhooks/resendX': {
+    post: {
+      operationId: 'receiveResendWebhook',
+      summary: 'Receive a Resend delivery event',
+      description:
+        'Mounted only when `RESEND_WEBHOOK_SECRET` is set and valid; otherwise 404. Authenticated by the Svix signature over the raw body, not by a key. A permanent bounce, a complaint or a suppression is recorded through `record_email_bounce`, which turns email off for that user. `email.failed` is logged for the operator alert. Each `svix-id` is recorded once; a redelivery answers 200 and writes nothing.',
+      tags,
+      security: [{}],
+      parameters: [
+        {
+          name: 'svix-id',
+          in: 'header',
+          required: true,
+          description: 'Message id, `msg_` then 1 to 64 letters or digits. The dedupe key.',
+          schema: { type: 'string', pattern: '^msg_[A-Za-z0-9]{1,64}$' }
+        },
+        {
+          name: 'svix-timestamp',
+          in: 'header',
+          required: true,
+          description: 'Unix seconds. Refused when more than 5 minutes from server time.',
+          schema: { type: 'string', pattern: '^\\d+$' }
+        },
+        {
+          name: 'svix-signature',
+          in: 'header',
+          required: true,
+          description:
+            'Space-separated `v1,<base64>` HMAC-SHA256 signatures of `<svix-id>.<svix-timestamp>.<raw body>`.',
+          schema: { type: 'string' }
+        }
+      ],
+      requestBody: {
+        required: true,
+        description: 'A Resend webhook event. At most 64 KiB.',
+        content: { 'application/json': { schema: { type: 'object', additionalProperties: true } } }
+      },
+      responses: {
+        '200': jsonOk('Recorded, ignored, or already recorded.', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', const: true },
+            data: {
+              type: 'object',
+              properties: { received: { type: 'boolean', const: true } },
+              required: ['received']
+            }
+          },
+          required: ['success', 'data']
+        }),
+        '400': envelopeResponse('The signed body is not JSON.'),
+        '401': envelopeResponse('Missing, malformed, stale or wrong signature. One body for all.'),
+        '409': envelopeResponse('Another request is still recording this `svix-id`. Retry later.'),
+        '413': envelopeResponse('Body exceeds 64 KiB.'),
+        '429': rateLimitedRef,
+        '500': envelopeResponse('The event was not recorded. Retry later.'),
+        '503': envelopeResponse('Redis failed, so nothing was recorded. Retry later.')
       }
     }
   },

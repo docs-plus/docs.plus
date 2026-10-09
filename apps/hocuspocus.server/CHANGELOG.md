@@ -278,6 +278,11 @@ SMTP_PASS=...
 
 ### Changed
 
+- **Admin routes are ready for an `sb_` secret key.** `supabaseRest` sent
+  the service-role key both as `apikey` and as a Bearer token. An `sb_` key
+  is not a JWT, and Supabase says to send it on `apikey`, not as a Bearer
+  token. An `sb_` key now goes on `apikey` only. A legacy JWT key still
+  sends both headers.
 - **Email retries only what time can fix ([#421](https://github.com/docs-plus/docs.plus/issues/421)).**
   A failed send is now `transient`, `permanent` or `operator`. A transient
   failure makes up to 6 attempts with a 30 s exponential backoff, about 15
