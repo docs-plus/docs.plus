@@ -4,7 +4,7 @@ import type { OpenApiOperation, OpenApiPaths } from '../../types'
 const probe = (operationId: string, summary: string, description: string): OpenApiOperation => ({
   operationId,
   summary,
-  description,
+  description: `${description} The result is cached for 5 seconds.`,
   tags: ['Health'],
   security: [{}],
   responses: {
@@ -29,7 +29,7 @@ export const healthPaths: OpenApiPaths = {
       operationId: 'getHealth',
       summary: 'Aggregate health check',
       description:
-        'Database, Redis and Supabase. Reports `degraded` (503) only when a critical service is unhealthy — Supabase may be down without failing the overall check.',
+        'Database, Redis and Supabase. Reports `degraded` (503) only when a critical service is unhealthy — Supabase may be down without failing the overall check. Each check result is cached for 5 seconds.',
       tags: ['Health'],
       security: [{}],
       responses: {

@@ -48,13 +48,13 @@ export const mediaPaths: OpenApiPaths = {
         },
         '400': {
           description:
-            'No `mediaFile` part (`LegacyError`), or `documentId` failed the path-charset check before the handler ran (`ZodValidationError`).',
+            'No `mediaFile` part (`LegacyError`), or `documentId` failed the path-charset check before the handler ran (`ErrorEnvelope`).',
           content: {
             'application/json': {
               schema: {
                 oneOf: [
                   { $ref: '#/components/schemas/LegacyError' },
-                  { $ref: '#/components/schemas/ZodValidationError' }
+                  { $ref: '#/components/schemas/ErrorEnvelope' }
                 ]
               }
             }
@@ -114,7 +114,7 @@ export const mediaPaths: OpenApiPaths = {
           description: 'The file, served with its own `Content-Type`.',
           content: { '*/*': { schema: { type: 'string', format: 'binary' } } }
         },
-        '400': { $ref: '#/components/responses/ZodValidationError' },
+        '400': { $ref: '#/components/responses/ValidationError' },
         '404': {
           description:
             'A document in Trash answers `ErrorEnvelope` with code `NOT_FOUND`, before storage is read. A missing file answers `LegacyError` from either storage backend.',

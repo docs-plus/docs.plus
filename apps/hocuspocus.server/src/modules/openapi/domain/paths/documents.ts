@@ -7,7 +7,10 @@ import {
   updateDocumentMetadataSchema,
   userIdQuerySchema
 } from '../../../../schemas/document.schema'
-import { MAX_DUPLICATE_MEDIA_OBJECTS } from '../../../../schemas/hypermultimedia.schema'
+import {
+  documentIdField,
+  MAX_DUPLICATE_MEDIA_OBJECTS
+} from '../../../../schemas/hypermultimedia.schema'
 import type { JsonSchema, OpenApiOperation, OpenApiPaths, SecurityRequirement } from '../../types'
 import { envelopeResponse, rateLimitedRef } from '../components'
 import {
@@ -97,7 +100,7 @@ export const documentsPaths: OpenApiPaths = {
         '200': okEnvelope('The created document.', {
           $ref: '#/components/schemas/DocumentSummary'
         }),
-        '400': { $ref: '#/components/responses/ZodValidationError' },
+        '400': { $ref: '#/components/responses/ValidationError' },
         '401': { $ref: '#/components/responses/Unauthorized' },
         '403': { $ref: '#/components/responses/Forbidden' },
         '409': { $ref: '#/components/responses/Conflict' },
@@ -129,7 +132,7 @@ export const documentsPaths: OpenApiPaths = {
         '200': okEnvelope('Document metadata, or a synthesized draft.', {
           $ref: '#/components/schemas/DocumentSummary'
         }),
-        '400': { $ref: '#/components/responses/ZodValidationError' },
+        '400': { $ref: '#/components/responses/ValidationError' },
         '403': {
           description: 'Private document, and the caller is not its owner.',
           content: {
@@ -161,13 +164,19 @@ export const documentsPaths: OpenApiPaths = {
         "Addressed by **`documentId`**. Every field is optional. `readOnly` and `isPrivate` are owner-only — a non-owner's change to either is silently ignored and logged server-side. `slug` is used only when the row is created; it never renames a document.",
       tags,
       security: optionalUserSecurity,
-      parameters: [pathParam('docRef', 'The 19-character `documentId`.')],
+      parameters: [
+        pathParam(
+          'docRef',
+          'The 19-character `documentId`. An id longer than 100 characters, or with a character outside `[A-Za-z0-9_-]`, is a 400.',
+          toJsonSchema(documentIdField)
+        )
+      ],
       requestBody: jsonBody(toJsonSchema(updateDocumentMetadataSchema)),
       responses: {
         '200': okEnvelope('The updated document.', {
           $ref: '#/components/schemas/DocumentSummary'
         }),
-        '400': { $ref: '#/components/responses/ZodValidationError' },
+        '400': { $ref: '#/components/responses/ValidationError' },
         '403': { $ref: '#/components/responses/Forbidden' },
         '404': { $ref: '#/components/responses/NotFound' },
         '429': rateLimitedRef
@@ -219,7 +228,7 @@ export const documentsPaths: OpenApiPaths = {
           },
           required: ['documentId', 'isFavorite']
         }),
-        '400': { $ref: '#/components/responses/ZodValidationError' },
+        '400': { $ref: '#/components/responses/ValidationError' },
         '401': { $ref: '#/components/responses/Unauthorized' },
         '403': { $ref: '#/components/responses/Forbidden' },
         '404': { $ref: '#/components/responses/NotFound' },
@@ -239,10 +248,10 @@ export const documentsPaths: OpenApiPaths = {
     post: ownedLifecycle(
       'duplicateDocument',
       'Duplicate a document',
-      `Owner-only. Copies the source's latest Yjs bytes into a fresh owner-owned document; the slug is \`<title> (copy)\`, uniquified. Media is cloned, not shared: the source's objects are copied under the copy's own prefix and the snapshot's URLs repointed there, so purging either document leaves the other intact. Capped at ${MAX_DUPLICATE_MEDIA_OBJECTS} media objects. A soft-deleted source is a 404.`,
+      `Owner-only. Copies the source's latest Yjs bytes into a fresh owner-owned document; the slug is \`<title> (copy)\`, uniquified. Media is cloned, not shared: the source's objects are copied under the copy's own prefix and the snapshot's URLs repointed there, so purging either document leaves the other intact. Capped at ${MAX_DUPLICATE_MEDIA_OBJECTS} media objects. Media under a document in Trash is not copied and does not count. A soft-deleted source is a 404.`,
       {
         '413': envelopeResponse(
-          `The source's snapshot names more than ${MAX_DUPLICATE_MEDIA_OBJECTS} media objects. Each one is copied inside the request, so the count is refused up front rather than left to time out.`
+          `The source's snapshot names more than ${MAX_DUPLICATE_MEDIA_OBJECTS} media objects outside Trash. Each one is copied inside the request, so the count is refused up front rather than left to time out.`
         )
       }
     )
@@ -282,7 +291,7 @@ export const documentsPaths: OpenApiPaths = {
           properties: { purged: { type: 'integer' } },
           required: ['purged']
         }),
-        '400': { $ref: '#/components/responses/ZodValidationError' },
+        '400': { $ref: '#/components/responses/ValidationError' },
         '401': { $ref: '#/components/responses/Unauthorized' },
         '429': rateLimitedRef,
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
@@ -303,7 +312,7 @@ export const documentsPaths: OpenApiPaths = {
           properties: { restored: { type: 'integer' } },
           required: ['restored']
         }),
-        '400': { $ref: '#/components/responses/ZodValidationError' },
+        '400': { $ref: '#/components/responses/ValidationError' },
         '401': { $ref: '#/components/responses/Unauthorized' },
         '429': rateLimitedRef,
         '503': { $ref: '#/components/responses/ServiceUnavailable' }

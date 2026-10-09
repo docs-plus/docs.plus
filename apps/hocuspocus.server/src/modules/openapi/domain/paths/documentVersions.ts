@@ -37,8 +37,6 @@ const okResponse = (description: string): OpenApiResponse => ({
   content: { 'application/json': { schema: opaqueData } }
 })
 
-// Every `zValidator` on these routes passes `houseEnvelopeHook`, so a rejected
-// request carries `ErrorEnvelope` — not the raw `ZodValidationError` shape.
 const versionErrors = {
   '400': { $ref: '#/components/responses/ValidationError' },
   '401': { $ref: '#/components/responses/Unauthorized' },

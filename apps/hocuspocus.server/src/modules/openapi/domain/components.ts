@@ -60,25 +60,6 @@ const errorEnvelope: JsonSchema = {
   required: ['success', 'error']
 }
 
-/** Verified against `@hono/zod-validator`'s default hook: a serialized ZodError, no `code`. */
-const zodValidationError: JsonSchema = {
-  type: 'object',
-  description:
-    'Raw `@hono/zod-validator` rejection. Routes without a custom hook return this instead of `ErrorEnvelope` — `error` is a serialized `ZodError`, so there is no `error.code`.',
-  properties: {
-    success: { type: 'boolean', const: false },
-    error: {
-      type: 'object',
-      properties: {
-        name: { type: 'string', const: 'ZodError' },
-        message: { type: 'string', description: 'JSON-encoded array of zod issues.' }
-      },
-      required: ['name', 'message']
-    }
-  },
-  required: ['success', 'error']
-}
-
 const legacyError: JsonSchema = {
   type: 'object',
   description:
@@ -271,7 +252,6 @@ export const components: OpenApiComponents = {
   securitySchemes,
   schemas: {
     ErrorEnvelope: errorEnvelope,
-    ZodValidationError: zodValidationError,
     LegacyError: legacyError,
     LinkMetadataError: linkMetadataError,
     RateLimitError: rateLimitError,
@@ -286,11 +266,7 @@ export const components: OpenApiComponents = {
   },
   responses: {
     ValidationError: envelopeResponse(
-      'Rejected by a handler or service guard (an `AppError`), so it carries the house envelope.'
-    ),
-    ZodValidationError: jsonResponse(
-      'Rejected by `zValidator` before the handler ran, on routes that do not pass `houseEnvelopeHook`. `error` is a serialized `ZodError`, so there is no `error.code`. Routes that pass the hook document `ValidationError` instead.',
-      '#/components/schemas/ZodValidationError'
+      'Rejected by `zValidator` through `houseEnvelopeHook`, with `fields` naming each bad input, or by a handler or service guard.'
     ),
     Unauthorized: envelopeResponse('Missing, invalid or expired credentials.'),
     Forbidden: envelopeResponse('Authenticated but not permitted.'),

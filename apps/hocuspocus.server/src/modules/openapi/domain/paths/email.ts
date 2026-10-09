@@ -16,7 +16,6 @@ const security = [{ serviceRoleKey: [] }]
 const legacyRef = { $ref: '#/components/schemas/LegacyError' }
 
 const serviceRoleErrors = {
-  // Every email zValidator uses houseEnvelopeHook, so 400 is ErrorEnvelope.
   '400': { $ref: '#/components/responses/ValidationError' },
   '401': { $ref: '#/components/responses/LegacyUnauthorized' },
   '429': rateLimitedRef,
@@ -102,7 +101,7 @@ export const emailPaths: OpenApiPaths = {
       operationId: 'receiveResendWebhook',
       summary: 'Receive a Resend delivery event',
       description:
-        'Mounted only when `RESEND_WEBHOOK_SECRET` is set and valid; otherwise 404. Authenticated by the Svix signature over the raw body, not by a key. A permanent bounce, a complaint or a suppression is recorded through `record_email_bounce`, which turns email off for that user. `email.failed` is logged for the operator alert. Each `svix-id` is recorded once; a redelivery answers 200 and writes nothing.',
+        'Mounted only when `RESEND_WEBHOOK_SECRET` is set and valid; otherwise 404. Authenticated by the Svix signature over the raw body, not by a key. A permanent bounce, a complaint or a suppression is recorded through `record_email_bounce`, which turns email off for that user. `email.failed` is logged for the operator alert. With Redis, each `svix-id` is recorded once for 24 hours, and a redelivery writes nothing.',
       tags,
       security: [{}],
       parameters: [
@@ -289,7 +288,7 @@ export const emailPaths: OpenApiPaths = {
       responses: {
         '200': {
           description:
-            'Unsubscribed (JSON), or the result page for a `confirm=yes` form post (HTML).',
+            'Unsubscribed (JSON). A `confirm=yes` form post with a token gets an HTML page, also when the unsubscribe fails.',
           content: {
             'application/json': {
               schema: {

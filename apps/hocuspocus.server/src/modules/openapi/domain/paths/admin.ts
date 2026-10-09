@@ -7,20 +7,29 @@ import {
   bulkDeleteSchema,
   daysQuerySchema,
   deleteDocumentSchema,
+  digestSettingsBodySchema,
   disableFailedSubsSchema,
   ghostAccountsQuerySchema,
   ghostBulkDeleteSchema,
   ghostCleanupAnonymousSchema,
+  ghostDeleteSchema,
   ghostResendSchema,
   listDocumentsQuerySchema,
+  mcpUsageQuerySchema,
   mediaStorageQuerySchema,
   paginationQuerySchema,
   staleDocumentsQuerySchema,
   trendQuerySchema,
   updateDocumentSchema
 } from '../../../../schemas/admin.schema'
-import type { HttpMethod, OpenApiOperation, OpenApiParameter, OpenApiPaths } from '../../types'
-import { rateLimitedRef } from '../components'
+import type {
+  HttpMethod,
+  OpenApiOperation,
+  OpenApiParameter,
+  OpenApiPaths,
+  OpenApiResponse
+} from '../../types'
+import { envelopeResponse, rateLimitedRef } from '../components'
 import { pathParam, toJsonSchema, toParameters } from '../jsonSchema'
 
 interface AdminRoute {
@@ -32,7 +41,11 @@ interface AdminRoute {
   description?: string
   query?: z.ZodType
   body?: z.ZodType
+  /** The path the router validates. `params` is for a path it does not validate. */
+  pathSchema?: z.ZodType
   params?: OpenApiParameter[]
+  /** Responses that differ from the shared map in `toOperation`. */
+  extraResponses?: Record<string, OpenApiResponse>
 }
 
 const idParam = pathParam('id', 'Target row id.')
@@ -66,6 +79,48 @@ const routes: AdminRoute[] = [
     id: 'adminGetEmailStats',
     summary: 'Email stats',
     group: 'Dashboard & users'
+  },
+  {
+    path: '/email/digest-grouping',
+    method: 'get',
+    id: 'adminGetDigestGrouping',
+    summary: 'Digest grouping and size cap',
+    group: 'Email digest'
+  },
+  {
+    path: '/email/digest-grouping',
+    method: 'put',
+    id: 'adminSetDigestGrouping',
+    summary: 'Set digest grouping or size cap',
+    group: 'Email digest',
+    description: 'Send `grouping`, `maxKb` or both. Stored in Redis, so `503` without Redis.',
+    body: digestSettingsBodySchema
+  },
+  {
+    path: '/mcp/usage',
+    method: 'get',
+    id: 'adminGetMcpUsage',
+    summary: 'MCP connector usage',
+    group: 'MCP connector usage',
+    description:
+      'Calls and distinct callers per UTC day, plus tool and app totals for the window. House envelope.',
+    query: mcpUsageQuerySchema,
+    extraResponses: {
+      '500': {
+        description:
+          'The usage read failed (`ErrorEnvelope`, code `MCP_USAGE_FAILED`), or the admin guard failed (`LegacyError`).',
+        content: {
+          'application/json': {
+            schema: {
+              oneOf: [
+                { $ref: '#/components/schemas/ErrorEnvelope' },
+                { $ref: '#/components/schemas/LegacyError' }
+              ]
+            }
+          }
+        }
+      }
+    }
   },
   {
     path: '/stats/push',
@@ -138,6 +193,8 @@ const routes: AdminRoute[] = [
     id: 'adminToggleAdminRole',
     summary: 'Grant or revoke admin',
     group: 'Dashboard & users',
+    description:
+      'Refuses your own id and the last admin with `403`. A revoke is one locked `admin_revoke_admin` call, so two revokes at once cannot leave zero admins.',
     params: [idParam]
   },
   {
@@ -400,7 +457,9 @@ const routes: AdminRoute[] = [
     method: 'get',
     id: 'adminGetDeadLetterQueue',
     summary: 'BullMQ dead-letter contents',
-    group: 'Notification audit'
+    group: 'Notification audit',
+    description:
+      'One summary per job: type, failure kind and code, masked `to` and the reason. Never the job data.'
   },
   {
     path: '/email/setup',
@@ -418,7 +477,27 @@ const routes: AdminRoute[] = [
     summary: 'Send a test email to yourself',
     group: 'Email setup',
     description:
-      "No body. Sends to the signed-in admin's own address. Answers `{ sent: true, messageId, to }`, with `to` masked, or `{ sent: false, kind, code }`. One per admin per minute: `429` past it, `503` without Redis, `400` when the account has no email."
+      "No body. Sends to the signed-in admin's own address. Answers `{ sent: true, messageId, to }`, with `to` masked, or `{ sent: false, kind, code }`.",
+    extraResponses: {
+      '400': envelopeResponse('Code `NO_EMAIL`: the admin account has no email address.'),
+      '429': envelopeResponse(
+        'Code `RATE_LIMITED`: one test email per admin per minute. The global limiter answers `RATE_LIMIT_EXCEEDED`.'
+      ),
+      '503': {
+        description:
+          'Redis is not available (`ErrorEnvelope`, code `SERVICE_UNAVAILABLE`), or the admin guard cannot reach Supabase auth (`LegacyError`).',
+        content: {
+          'application/json': {
+            schema: {
+              oneOf: [
+                { $ref: '#/components/schemas/ErrorEnvelope' },
+                { $ref: '#/components/schemas/LegacyError' }
+              ]
+            }
+          }
+        }
+      }
+    }
   },
 
   {
@@ -450,7 +529,16 @@ const routes: AdminRoute[] = [
     id: 'adminDeleteGhostAccount',
     summary: 'Smart-delete one ghost account',
     group: 'Ghost accounts audit',
-    params: [idParam]
+    description:
+      'Reads the account again first, because the list is cached. A user with blocking messages or owned documents outside Trash is soft-deleted: banned, with the public profile cleared. Others are hard-deleted.',
+    pathSchema: ghostDeleteSchema,
+    extraResponses: {
+      '409': {
+        description:
+          '`{ error }` names the refusal: `User not found`, `User is no longer a ghost account` or `User is an admin`. An unknown id is a 409, not a 404.',
+        content: { 'application/json': { schema: { $ref: '#/components/schemas/LegacyError' } } }
+      }
+    }
   },
   {
     path: '/audit/ghost-accounts/bulk-delete',
@@ -481,9 +569,10 @@ const routes: AdminRoute[] = [
 const toOperation = (route: AdminRoute): OpenApiOperation => {
   const parameters = [
     ...(route.params ?? []),
+    ...(route.pathSchema ? toParameters(route.pathSchema, 'path') : []),
     ...(route.query ? toParameters(route.query, 'query') : [])
   ]
-  const hasValidator = Boolean(route.query || route.body)
+  const hasValidator = Boolean(route.query || route.body || route.pathSchema)
 
   return {
     operationId: route.id,
@@ -507,12 +596,13 @@ const toOperation = (route: AdminRoute): OpenApiOperation => {
       },
       // zValidator is registered after adminAuthMiddleware, so a 400 here still
       // means the caller passed the admin gate.
-      ...(hasValidator ? { '400': { $ref: '#/components/responses/ZodValidationError' } } : {}),
+      ...(hasValidator ? { '400': { $ref: '#/components/responses/ValidationError' } } : {}),
       '401': { $ref: '#/components/responses/LegacyUnauthorized' },
       '403': { $ref: '#/components/responses/LegacyForbidden' },
       '429': rateLimitedRef,
       '500': { $ref: '#/components/responses/LegacyInternalError' },
-      '503': { $ref: '#/components/responses/LegacyInternalError' }
+      '503': { $ref: '#/components/responses/LegacyInternalError' },
+      ...route.extraResponses
     }
   }
 }
