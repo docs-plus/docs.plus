@@ -2,7 +2,7 @@ import type { EmailProviderName } from '../../../config/email'
 
 export type { EmailProviderConfig } from '../../../config/email'
 
-/** What to send. No attachments, cc or bcc: no sender needs them yet. */
+/** No attachments, cc or bcc: no sender needs them yet. */
 export interface EmailMessage {
   from: string
   to: string[]

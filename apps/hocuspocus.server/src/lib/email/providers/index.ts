@@ -15,7 +15,6 @@ function createEmailProvider(cfg: EmailProviderConfig): EmailProvider {
 
 let provider: EmailProvider | null = null
 
-/** One instance per process, and only when the config is `ready`. */
 export function getEmailProvider(): EmailProvider | null {
   const delivery = config.email.delivery
   if (delivery.status !== 'ready') return null

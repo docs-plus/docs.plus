@@ -1,4 +1,4 @@
-// The queue names and the job keys. Pure, so an import opens no Redis socket.
+// Pure, so an import opens no Redis socket.
 export const EMAIL_QUEUE_NAME = 'email-notifications'
 export const EMAIL_DLQ_NAME = 'email-notifications-dlq'
 

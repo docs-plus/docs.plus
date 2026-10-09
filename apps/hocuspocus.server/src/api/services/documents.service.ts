@@ -553,14 +553,11 @@ export const updateDocument = async (
     // A purged id must stay gone. Without this, a PUT from a stale tab would re-create
     // its row, or edit one the worker re-created, and bring the erased document back.
     // The WS gate reads the tombstone the same way.
-    if (
-      (await prisma.documentPurgeTombstone.findUnique({
-        where: { documentId },
-        select: { documentId: true }
-      })) != null
-    ) {
-      throw new NotFoundError('Document')
-    }
+    const tombstone = await prisma.documentPurgeTombstone.findUnique({
+      where: { documentId },
+      select: { documentId: true }
+    })
+    if (tombstone) throw new NotFoundError('Document')
 
     // The route is optionalUser because an open document accepts an anonymous
     // retitle. An owned one refuses every caller who is not its owner, private or
