@@ -11,7 +11,7 @@ import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
 import { DataTable } from '@/components/tables/DataTable'
 import { fetchEmailSetup, sendTestEmail } from '@/services/api'
-import type { EmailSetup } from '@/types'
+import type { EmailSetup, TestSendResult } from '@/types'
 import { formatRelative } from '@/utils/format'
 
 export const getServerSideProps: GetServerSideProps = async () => {
@@ -47,15 +47,18 @@ interface ValueRow {
   name: string
   value: string
   state?: 'set' | 'missing' | 'invalid'
+  /** Derived, not an env var, so it is not shown in code font. */
+  derived?: boolean
 }
 
 const STATE_BADGE = { set: 'badge-success', missing: 'badge-warning', invalid: 'badge-error' }
+const STATE_LABEL = { set: 'Set', missing: 'Missing', invalid: 'Invalid' }
 
 function toValueRows(setup: EmailSetup): ValueRow[] {
   const rows: ValueRow[] = [
     { name: 'EMAIL_PROVIDER', value: setup.provider ?? '-' },
     { name: 'EMAIL_FROM', value: setup.from ?? '-' },
-    { name: 'Key namespace', value: setup.namespace ?? '-' },
+    { name: 'Key namespace', value: setup.namespace ?? '-', derived: true },
     { name: 'PUBLIC_RESTAPI_URL', value: setup.publicUrl ?? '-' },
     { name: 'SMTP_HOST', value: setup.smtp.host ?? '-' },
     { name: 'SMTP_PORT', value: String(setup.smtp.port) }
@@ -75,19 +78,30 @@ const valueColumns = [
   {
     key: 'name',
     header: 'Setting',
-    render: (row: ValueRow) => <code className="text-sm">{row.name}</code>
+    render: (row: ValueRow) =>
+      row.derived ? (
+        <span className="text-sm">{row.name}</span>
+      ) : (
+        <code className="text-sm">{row.name}</code>
+      )
   },
   {
     key: 'value',
     header: 'Value',
     render: (row: ValueRow) =>
       row.state ? (
-        <span className={`badge badge-sm ${STATE_BADGE[row.state]}`}>{row.value}</span>
+        <span className={`badge badge-sm ${STATE_BADGE[row.state]}`}>{STATE_LABEL[row.state]}</span>
       ) : (
         <span className="text-sm break-all">{row.value}</span>
       )
   }
 ]
+
+function testSendAnnouncement(result: TestSendResult | undefined, error: Error | null): string {
+  if (error) return error.message
+  if (!result) return ''
+  return result.sent ? `Sent to ${result.to}.` : `Not sent: ${result.kind} ${result.code}`
+}
 
 export default function EmailSetupPage() {
   const { data, isLoading, error, refetch, isRefetching } = useQuery({
@@ -215,7 +229,10 @@ export default function EmailSetupPage() {
                       Copy
                     </button>
                   </div>
-                  <pre className="bg-base-200 rounded-field overflow-x-auto p-3 text-sm select-all">
+                  <pre
+                    tabIndex={0}
+                    aria-label="Lines to add"
+                    className="bg-base-200 rounded-field focus-visible:ring-primary overflow-x-auto p-3 text-sm select-all focus-visible:ring-2 focus-visible:outline-none">
                     {envBlock}
                   </pre>
                   <p className="text-base-content/60 text-sm">
@@ -237,6 +254,7 @@ export default function EmailSetupPage() {
                     type="button"
                     className="btn btn-primary btn-sm gap-2"
                     disabled={testSend.isPending}
+                    aria-busy={testSend.isPending}
                     onClick={() => testSend.mutate()}>
                     {testSend.isPending ? (
                       <span className="loading loading-spinner loading-xs" />
@@ -247,20 +265,22 @@ export default function EmailSetupPage() {
                   </button>
                 </div>
                 {testSend.data?.sent === true && (
-                  <p role="status" className="text-sm text-[var(--success-ink)]">
+                  <p className="text-sm text-[var(--success-ink)]">
                     Sent to {testSend.data.to}. Message id: <code>{testSend.data.messageId}</code>
                   </p>
                 )}
                 {testSend.data?.sent === false && (
-                  <p role="status" className="text-sm text-[var(--error-ink)]">
+                  <p className="text-sm text-[var(--error-ink)]">
                     Not sent: {testSend.data.kind} {testSend.data.code}
                   </p>
                 )}
                 {testSend.error && (
-                  <p role="status" className="text-sm text-[var(--error-ink)]">
-                    {testSend.error.message}
-                  </p>
+                  <p className="text-sm text-[var(--error-ink)]">{testSend.error.message}</p>
                 )}
+                {/* Always mounted, so a screen reader announces a result added later. */}
+                <p role="status" className="sr-only">
+                  {testSendAnnouncement(testSend.data, testSend.error)}
+                </p>
               </SectionCard>
             </>
           )}
