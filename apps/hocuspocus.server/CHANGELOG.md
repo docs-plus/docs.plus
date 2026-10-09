@@ -577,6 +577,20 @@ SMTP_PASS=...
   deploy this server, and run `scripts/backfill-document-access.ts` (a dry run
   first, then `--apply`). Until the backfill runs, Private documents' chat
   stays open ([#396](https://github.com/docs-plus/docs.plus/issues/396)).
+- **A local media purge refuses an id that is not one path segment.** On a
+  server with `PERSIST_TO_LOCAL_STORAGE=true`, a crafted document id could
+  reach another document's media folder, or a folder outside the storage root.
+  The purge now logs a warning and deletes nothing for such an id. The
+  WebSocket room name and `PUT /api/documents/:docId` now refuse an id outside
+  `[A-Za-z0-9_-]`, 1 to 100 characters. The PUT answers `400`, and the
+  WebSocket counts `ws_auth_rejections_total{reason="invalid-document-id"}`
+  ([#426](https://github.com/docs-plus/docs.plus/issues/426)).
+- **A signed-in WebSocket closes when its access token expires.** At the
+  token's `exp`, the server closes the socket with code `4408`. The webapp
+  reconnects with a fresh token, so `onAuthenticate` checks the identity again.
+  A token already past `exp` is refused like an invalid one. Each signed-in tab
+  reconnects about once per token lifetime, which is 1 hour by default
+  ([#430](https://github.com/docs-plus/docs.plus/issues/430)).
 
 ### Removed
 

@@ -1,6 +1,8 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
 import * as storageLocal from '../../src/lib/storage/storage.local'
-import { mkdir, rm } from 'fs/promises'
+import { existsSync } from 'fs'
+import { mkdir, mkdtemp, rm } from 'fs/promises'
+import os from 'os'
 import path from 'path'
 import { Hono } from 'hono'
 
@@ -106,6 +108,40 @@ describe('Local Storage - Error Handling', () => {
 
       // Restore
       delete process.env.LOCAL_STORAGE_PATH
+    })
+  })
+
+  describe('deleteByPrefix()', () => {
+    test('should delete only a one-segment id, and only its own folder', async () => {
+      const base = await mkdtemp(path.join(os.tmpdir(), 'media-'))
+      const root = path.join(base, 'root')
+      const victim = path.join(root, 'victim', 'f.txt')
+      const sibling = path.join(base, 'sibling', 'f.txt')
+      const originalPath = process.env.LOCAL_STORAGE_PATH
+      process.env.LOCAL_STORAGE_PATH = root
+
+      try {
+        await Bun.write(victim, 'victim')
+        await Bun.write(sibling, 'sibling')
+
+        for (const badId of ['a/../victim', '../sibling', '..', '.', '']) {
+          await storageLocal.deleteByPrefix(badId)
+          expect(existsSync(victim)).toBe(true)
+          expect(existsSync(sibling)).toBe(true)
+          expect(existsSync(root)).toBe(true)
+        }
+
+        await storageLocal.deleteByPrefix('victim')
+        expect(existsSync(path.join(root, 'victim'))).toBe(false)
+        expect(existsSync(sibling)).toBe(true)
+      } finally {
+        if (originalPath) {
+          process.env.LOCAL_STORAGE_PATH = originalPath
+        } else {
+          delete process.env.LOCAL_STORAGE_PATH
+        }
+        await rm(base, { recursive: true, force: true })
+      }
     })
   })
 })

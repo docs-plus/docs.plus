@@ -5,6 +5,7 @@ import { houseEnvelopeHook } from '../../http/envelope'
 import { contentBodyLimit } from '../../modules/document-content'
 import {
   createDocumentSchema,
+  docIdParamSchema,
   documentQuerySchema,
   setDocumentFavoriteSchema,
   trashPurgeSchema,
@@ -57,6 +58,7 @@ export const createDocumentsRouter = (deps: DocumentsRouterDeps): Hono => {
   documents.put(
     '/:docId',
     deps.optionalUser,
+    zValidator('param', docIdParamSchema, houseEnvelopeHook),
     zValidator('json', updateDocumentMetadataSchema, houseEnvelopeHook),
     controller.updateDocument
   )

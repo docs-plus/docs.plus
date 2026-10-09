@@ -129,11 +129,20 @@ export const copyObject = async (
   return true
 }
 
-// `force` makes a missing dir a no-op (the reaper retries); the falsy guard stops
-// an empty id from nuking the whole hypermultimedia tree.
+// A containment check is not enough: `a/../b` stays inside the root and names another
+// document. So the id must be exactly one segment. A refusal returns, because the purge
+// RPC has already run, and upload's id regex means such an id owns no media.
 export const deleteByPrefix = async (documentId: string): Promise<void> => {
-  if (!documentId) return
-  const dirPath = path.join(storageRoot(), documentId)
+  const root = storageRoot()
+  const dirPath = path.resolve(root, documentId)
+  if (!documentId || path.dirname(dirPath) !== root || path.basename(dirPath) !== documentId) {
+    storageLocalLogger.warn(
+      { documentId },
+      'Refusing a media purge for an id that is not one path segment'
+    )
+    return
+  }
+  // `force` makes a missing dir a no-op, so a reaper retry is safe.
   await rm(dirPath, { recursive: true, force: true })
   storageLocalLogger.info(
     { documentId, dirPath },

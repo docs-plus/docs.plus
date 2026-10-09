@@ -21,6 +21,7 @@ import { buildHealthReport, healthRoutes, redisSyncHealth } from '../lib/health'
 import { RedisSubscriberExtension } from '../extensions/redis-subscriber.extension'
 import { DocumentOccupancyExtension } from '../extensions/document-occupancy.extension'
 import { DocumentViewsExtension } from '../extensions/document-views.extension'
+import { TokenExpiryExtension } from '../extensions/token-expiry.extension'
 import { checkDatabaseHealth, prisma } from '../lib/prisma'
 import { captureDegraded, captureUnknown } from '../lib/instrument'
 import { dbLogger } from '../lib/logger'
@@ -375,6 +376,8 @@ const configureExtensions = (): { extensions: Extension[]; redisWired: boolean }
   if (config.redis.enabled) {
     extensions.push(new RedisSubscriberExtension())
   }
+
+  extensions.push(new TokenExpiryExtension())
 
   if (config.supabase.url && config.supabase.serviceRoleKey) {
     extensions.push(new DocumentViewsExtension())

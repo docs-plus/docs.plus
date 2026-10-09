@@ -207,6 +207,8 @@ Two further fields are accepted **only** under the service-role key: `content` (
 
 Upsert document metadata by `documentId`. All fields optional: `title`, `description`, `keywords` (`string[]`), `readOnly` (`boolean`), `isPrivate` (`boolean`), `slug` (`string`). A stored `title` is plain text. The schema strips HTML tags. `slug` sets the row's slug only when this call creates the row. It is ignored on every update and never renames a live document.
 
+A `docId` outside `[A-Za-z0-9_-]`, 1 to 100 characters, answers `400 VALIDATION_ERROR` with the house envelope.
+
 Access follows ownership. An **owned** document accepts writes only from its owner; every other caller gets `403`, private or not. An **ownerless** document is open: anyone, signed in or not, may set `title` / `description` / `keywords`. But its locks cannot move, because a document with no owner has nobody to be private for. Those changes are ignored and logged. Creating the row through this route makes a signed-in caller its owner, so they may set the locks in the same request. A soft-deleted document is `404`.
 
 A signed-in rename that changes Pad title posts a workspace-chat notice after the write. The PUT does not wait for that call. A missing RPC, a signed-out rename, a create, an unchanged title, or an empty title posts nothing. The Prisma write still succeeds.

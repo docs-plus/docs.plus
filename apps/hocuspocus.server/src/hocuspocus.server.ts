@@ -20,7 +20,7 @@ import { type SupabaseUser, verifyServiceRole, verifySupabaseTokenOutcome } from
 import { countActiveConnections } from './lib/health'
 import { handleHistoryStateless } from './lib/history-stateless'
 import { captureUnknown, flushObservability } from './lib/instrument'
-import { isConnectedAppToken } from './lib/jwtClaims'
+import { decodeJwtClaims, isConnectedAppToken } from './lib/jwtClaims'
 import { wsLogger } from './lib/logger'
 import {
   documentLoadDuration,
@@ -49,6 +49,7 @@ import * as documentContent from './modules/document-content'
 import type { RevertOutcome, VersionFailureReason, VersionOps } from './modules/document-versions'
 import * as documentVersions from './modules/document-versions'
 import { MAX_VERSION_NUMBER } from './modules/document-versions/types'
+import { documentIdField } from './schemas/hypermultimedia.schema'
 import type { HistoryPayload } from './types/document.types'
 import type { StoreDocumentContext } from './types/queue.types'
 
@@ -462,16 +463,29 @@ const serverConfig = {
   },
 
   async onAuthenticate({ token, documentName, connectionConfig }: onAuthenticatePayload) {
+    // The first edit writes a row under this name, and a purge later deletes media by it.
+    if (!documentIdField.safeParse(documentName).success) {
+      wsAuthRejectionsTotal.inc({ reason: 'invalid-document-id' })
+      throw new Error('Invalid document ID')
+    }
+
     // The room id is the bare documentId. Resolve the user first, then deny
     // anonymous access to admin-set private documents at one choke point.
     const isProd = process.env.NODE_ENV === 'production'
     // Expired/invalid Supabase tokens on (re)connect are expected and high-volume:
     // reject them so the client refreshes, but don't capture them as errors.
-    const INVALID_TOKEN_MESSAGE = 'Invalid authentication token'
+    // Outside production the caller falls back to anonymous instead.
+    const refuseInvalidToken = (): void => {
+      if (!isProd) return
+      wsLogger.info({ documentName }, 'Rejecting invalid/expired token')
+      wsAuthRejectionsTotal.inc({ reason: 'invalid-token' })
+      throw new Error('Invalid authentication token')
+    }
 
     let user: SupabaseUser | null = null
     let slug = ''
     let deviceType = 'desktop'
+    let tokenExp: number | undefined
 
     if (!token) {
       wsLogger.debug({ documentName }, 'No token provided - anonymous')
@@ -494,15 +508,26 @@ const serverConfig = {
       if (tokenData.accessToken) {
         const outcome = await verifySupabaseTokenOutcome(tokenData.accessToken)
         switch (outcome.kind) {
-          case 'user':
+          case 'user': {
             // In every environment: the dev fallback below would admit it as anonymous.
             if (isConnectedAppToken(tokenData.accessToken)) {
               wsAuthRejectionsTotal.inc({ reason: 'connected-app' })
               throw new Error('Connected apps cannot open documents over WebSocket')
             }
+            // The verify cache can return a token past its exp. Admitting it would arm
+            // a zero-delay expiry close, and the tab would reconnect in a loop.
+            const claimedExp = decodeJwtClaims(tokenData.accessToken)?.exp
+            const exp = typeof claimedExp === 'number' ? claimedExp : undefined
+            if (exp !== undefined && exp * 1000 <= Date.now()) {
+              refuseInvalidToken()
+              wsLogger.warn({ documentName }, 'Token already expired - allowing in dev')
+              break
+            }
             user = outcome.user
+            tokenExp = exp
             wsLogger.debug({ userId: user.sub, documentName }, 'Token verified')
             break
+          }
           case 'unavailable':
             // Keep slug/deviceType — only identity degrades to anonymous so a
             // transient auth outage cannot mint the wrong first-save slug.
@@ -511,11 +536,7 @@ const serverConfig = {
             break
           case 'invalid':
             user = null
-            if (isProd) {
-              wsLogger.info({ documentName }, 'Rejecting invalid/expired token')
-              wsAuthRejectionsTotal.inc({ reason: 'invalid-token' })
-              throw new Error(INVALID_TOKEN_MESSAGE)
-            }
+            refuseInvalidToken()
             wsLogger.warn({ documentName }, 'Token verification failed - allowing in dev')
             break
           default: {
@@ -588,7 +609,7 @@ const serverConfig = {
       connectionConfig.readOnly = true
     }
 
-    return { user, slug, documentId: documentName, deviceType }
+    return { user, slug, documentId: documentName, deviceType, tokenExp }
   }
 }
 

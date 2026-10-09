@@ -3,6 +3,7 @@ import { z } from 'zod'
 // Deep path on purpose: the module's `http/schema` is zod-only, so importing it
 // here never drags Tiptap or the transformer into this file's consumers.
 import { tiptapDocSchema } from '../modules/document-content/http/schema'
+import { documentIdField } from './hypermultimedia.schema'
 
 const plainTitle = (title: string): string => title.replace(/<[^>]*>/g, '')
 
@@ -15,6 +16,8 @@ export const createDocumentSchema = z.object({
   content: tiptapDocSchema.optional(),
   ownerId: z.string().optional()
 })
+
+export const docIdParamSchema = z.object({ docId: documentIdField })
 
 export const updateDocumentMetadataSchema = z.object({
   title: z.string().transform(plainTitle).optional(),

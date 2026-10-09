@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 // Strict charset blocks path-separator / traversal sequences before the id
 // ever reaches the filesystem (defense-in-depth with the storage-root check).
-const documentIdField = z
+export const documentIdField = z
   .string()
   .min(1, 'Document ID is required')
   .max(100)
