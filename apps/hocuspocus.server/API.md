@@ -62,7 +62,7 @@ The canonical error shape is defined by `getErrorResponse` in `src/lib/errors.ts
 
 A request-validation `400` (`VALIDATION_ERROR`) also carries `error.fields`: one `{ path, message }` per rejected input, so a caller can fix it without guessing.
 
-Outside development, `getErrorResponse` returns `Internal server error` as the `error.message` of every 5xx. The `code` is unchanged, and the server logs the original message. A handler that calls `fail()` keeps its own fixed 5xx message, which never carries driver text.
+Outside development, `getErrorResponse` returns `Internal server error` as the `error.message` of every 5xx. The `code` is unchanged, and the server logs the original message. A handler that calls `fail()` keeps its own fixed 5xx message, which never carries driver text. An admin handler that answers `{ error }` also sends a fixed `500` message and logs the original error ([#413](https://github.com/docs-plus/docs.plus/issues/413)).
 
 `error.details` is included only when `NODE_ENV=development`. `AppError` subclasses map to status codes and codes: `VALIDATION_ERROR` (400), `BAD_REQUEST` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403), `NOT_FOUND` (404), `CONFLICT` (409), `PAYLOAD_TOO_LARGE` (413), `UNSUPPORTED_MEDIA_TYPE` (415), `UNPROCESSABLE_ENTITY` (422), `RATE_LIMIT_EXCEEDED` (429), `INTERNAL_SERVER_ERROR` (500), `SERVICE_UNAVAILABLE` (503), `DATABASE_ERROR`. `handlePrismaError` maps Prisma codes (`P2002` → conflict, `P2025` → not found, etc.) into the same set. `AUTH_UNAVAILABLE` (503) sits outside this set: the auth middleware returns it, not an `AppError`, when Supabase token verification is unreachable.
 
@@ -1279,6 +1279,15 @@ Two audit routes are easy to misread. `/audit/media-storage` and `/audit/media-s
 
 The `dlq` route returns `push` and `email`, each with `jobs` and `count`. Each job is a summary: `id`, `name`, `timestamp`, `type`, `failureKind`, `failureCode`, a masked `to` list, and `failedReason`. It never returns the job data, which holds the raw address and the mail body.
 
+**Email digest**
+
+| Method | Path                     | Purpose                         |
+| ------ | ------------------------ | ------------------------------- |
+| GET    | `/email/digest-grouping` | Digest grouping and size cap    |
+| PUT    | `/email/digest-grouping` | Set digest grouping or size cap |
+
+Both answer `{ grouping, maxKb }`. `grouping` is `document` (one mail per document, the default) or `aggregate`. `maxKb` is an integer from 10 to 102. The `PUT` body takes either field or both. The values live in Redis, so the `PUT` answers `503` without Redis.
+
 **MCP connector usage**
 
 | Method | Path                    | Purpose                                               |
@@ -1302,16 +1311,17 @@ The module lives in `src/modules/email-setup/`. It is mounted in `src/index.ts` 
 
 **Ghost accounts audit**
 
-| Method                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Path                                        | Purpose                   |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- | ------------------------- |
-| GET                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | `/audit/ghost-accounts`                     | List ghost accounts       |
-| GET                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | `/audit/ghost-accounts/summary`             | Category summary          |
-| GET                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | `/audit/ghost-accounts/:id/impact`          | FK dependency check       |
-| DELETE                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `/audit/ghost-accounts/:id`                 | Smart-delete one          |
-| POST                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `/audit/ghost-accounts/bulk-delete`         | Bulk delete (max 50)      |
-| POST                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `/audit/ghost-accounts/resend-confirmation` | Resend magic link         |
-| POST                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `/audit/ghost-accounts/cleanup-anonymous`   | Clean stale anon sessions |
-| Both ghost-account delete routes check each id again before they delete. They refuse a user who signed in after the list loaded, an admin, and an unknown id. `DELETE /audit/ghost-accounts/:id` then answers `409` with `{ error }`. A non-uuid id answers `400` `VALIDATION_ERROR`. The bulk route counts a refused id under `failed` and adds a line to `errors`. A failed impact read or admin read also stops the delete. The single route answers `500`, and the bulk route counts the id as failed. A soft delete bans the user and clears the public profile: name, photo, bio and links. It also removes the `user_avatars` objects and sets the username to `deleted_` plus 12 hex characters of the id. |
+| Method | Path                                        | Purpose                   |
+| ------ | ------------------------------------------- | ------------------------- |
+| GET    | `/audit/ghost-accounts`                     | List ghost accounts       |
+| GET    | `/audit/ghost-accounts/summary`             | Category summary          |
+| GET    | `/audit/ghost-accounts/:id/impact`          | FK dependency check       |
+| DELETE | `/audit/ghost-accounts/:id`                 | Smart-delete one          |
+| POST   | `/audit/ghost-accounts/bulk-delete`         | Bulk delete (max 50)      |
+| POST   | `/audit/ghost-accounts/resend-confirmation` | Resend magic link         |
+| POST   | `/audit/ghost-accounts/cleanup-anonymous`   | Clean stale anon sessions |
+
+Both ghost-account delete routes check each id again before they delete. They refuse a user who signed in after the list loaded, an admin, and an unknown id. `DELETE /audit/ghost-accounts/:id` then answers `409` with `{ error }`. A non-uuid id answers `400` `VALIDATION_ERROR`. The bulk route counts a refused id under `failed` and adds a line to `errors`. A failed impact read or admin read also stops the delete. The single route answers `500`, and the bulk route counts the id as failed. A soft delete bans the user and clears the public profile: name, photo, bio and links. It also removes the `user_avatars` objects and sets the username to `deleted_` plus 12 hex characters of the id.
 
 ## Push notifications
 
@@ -1328,7 +1338,7 @@ await supabase.rpc('register_push_subscription', {
 await supabase.rpc('unregister_push_subscription', { p_device_id: 'unique-device-id' })
 ```
 
-Push has no public HTTP endpoint. Admins read the gateway status on `GET /api/admin/push/gateway`. It always answers `200` with the status, even when push is not set up.
+Admins read the gateway status on `GET /api/admin/push/gateway`: `vapid_configured`, `vapid_subject`, `queue_connected`, `pending_jobs`, `failed_jobs` and `sent_last_hour`. It always answers `200` with the status, even when push is not set up.
 
 ## Rate limiting
 
@@ -1349,12 +1359,16 @@ import { HocuspocusProvider } from '@hocuspocus/provider'
 
 const provider = new HocuspocusProvider({
   url: 'ws://localhost:4001',
-  name: 'document-slug',
-  token: JSON.stringify({ accessToken, slug, deviceType: 'desktop' })
+  name: documentId,
+  // A function, so a reconnect after the 4408 close sends a fresh token.
+  token: async () =>
+    JSON.stringify({ accessToken: await getAccessToken(), slug, deviceType: 'desktop' })
 })
 ```
 
-The document `name` is the room id (Prisma `documentId`); the server never trusts a client-supplied id in the token for authorization.
+The document `name` is the room id (Prisma `documentId`); the server never trusts a client-supplied id in the token for authorization. A room name outside `[A-Za-z0-9_-]`, 1 to 100 characters, is refused ([#426](https://github.com/docs-plus/docs.plus/issues/426)).
+
+A signed-in socket closes with code `4408` at its access token's `exp`. A client should reconnect with a fresh token, and the server then checks the identity again. The webapp provider does this. In production, a token already past `exp` is refused like an invalid one. Elsewhere, it falls back to anonymous ([#430](https://github.com/docs-plus/docs.plus/issues/430)).
 
 ### Private documents
 

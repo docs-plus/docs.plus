@@ -83,7 +83,7 @@ src/
 ├── hocuspocus.server.ts    # WebSocket entry (Hocuspocus)
 ├── hocuspocus.worker.ts    # Worker entry (pgmq + BullMQ)
 ├── api/                    # REST layer: routers, controllers, services, middleware, utils
-├── modules/                # Bounded modules (link-metadata, document-content, document-versions, document-changes, document-conversion, openapi)
+├── modules/                # Bounded modules (link-metadata, document-content, document-versions, document-changes, document-conversion, mcp, email-setup, email-webhooks, openapi)
 ├── config/                 # env.schema.ts, hocuspocus.config
 ├── extensions/             # Hocuspocus extensions
 ├── lib/                    # email, push, storage, prisma, redis, queue, logger, errors

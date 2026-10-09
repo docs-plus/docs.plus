@@ -34,6 +34,17 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Migration
 
+**Supabase migrations.** Run one `db push` before this server ships. It
+applies `20261009115900_scope_heading_channels`, the four migrations
+`20261009120000` to `20261009120300`, and `20261009120400_admin_revoke_admin`.
+Hold two migrations out of that push.
+`20261009120500_hide_user_presence_columns` waits at least 24 hours after the
+apps ship; see User status columns.
+`20261009130100_narrow_channel_insert_grant` waits until the new webapp is
+live ([#402](https://github.com/docs-plus/docs.plus/issues/402)). `db push`
+sends every pending file, so move these two files out of `migrations/` first.
+Restore them after the push. Push the two together, once both conditions hold.
+
 **Email health ([#423](https://github.com/docs-plus/docs.plus/issues/423)).** Before:
 `{ smtp_configured, provider, queue_connected, pending_jobs, failed_jobs, sent_last_hour }`.
 After: `{ status, queue_connected }`. Read the provider and the pending count
@@ -45,11 +56,12 @@ step below needs it.
 Supabase migration `20261009120400_admin_revoke_admin` before this server
 ships. Without it, every admin revoke answers `500`. Then check that only
 `service_role` can run `public.admin_revoke_admin(uuid)`.
+
 **User status columns ([#434](https://github.com/docs-plus/docs.plus/issues/434)).** Ship the
 webapp, this server and the admin dashboard first. Wait at least 24 hours,
-then apply the Supabase migration `20261009120500_hide_user_presence_columns`
-by hand. An older webapp tab still selects `status`, so an early migration
-breaks its sign-in and its heartbeat. After the push, check that
+then push the Supabase migration `20261009120500_hide_user_presence_columns`
+in the later push that Supabase migrations names. An older webapp tab still
+selects `status`, so an early migration breaks its sign-in and its heartbeat. After the push, check that
 `has_column_privilege` is false for `anon` and `authenticated` on
 `users.status` and `users.online_at`. Also check that `pg_publication_tables`
 has no `users` row.
@@ -563,7 +575,7 @@ SMTP_PASS=...
   that another document holds is never read or posted to. The change digest
   places a heading chat by `heading_id`. Migration
   `20261009115900_scope_heading_channels.sql` adds that column. Push it
-  alone before this deploy.
+  before this deploy, as Migration says.
 - **Media of a document in Trash stops serving ([#408](https://github.com/docs-plus/docs.plus/issues/408)).**
   `GET /api/plugins/hypermultimedia/:documentId/:mediaId` answers `404`
   `NOT_FOUND` while the document is in Trash. After Restore, it serves again.
@@ -583,7 +595,12 @@ SMTP_PASS=...
   the token too. The MCP tools use the service-role key, so they still work.
   Check the existing `pgrst.db_pre_request` first, as
   [configuration](../../docs/self-hosting/configuration.md#turn-on-the-mcp-connector)
-  says.
+  says. The Supabase Auth API has no such check, so also turn on the password
+  sign-in hook below. In production, turn on Secure password change too, as
+  [configuration](../../docs/self-hosting/configuration.md#turn-off-password-sign-in)
+  says ([#441](https://github.com/docs-plus/docs.plus/issues/441)). The local
+  `packages/supabase/config.toml` now sets `secure_password_change = true`. A
+  running local stack takes it after a Supabase stop and start.
 
 - **Supabase can refuse every password sign-in.** docs.plus does not use
   passwords. `packages/supabase/scripts/32-password-sign-in-hook.sql`, paired
@@ -594,17 +611,6 @@ SMTP_PASS=...
   Confirm email must stay on. The operator turns the hook on, as
   [configuration](../../docs/self-hosting/configuration.md#turn-off-password-sign-in)
   says. It stays off on the local stack.
-
-- **The MCP reference names what the Supabase gate covers ([#441](https://github.com/docs-plus/docs.plus/issues/441)).**
-  [The reference](../../docs/mcp/reference.md#authorization) said that
-  Supabase refuses a connected app's token, with no limit. The gate covers only
-  the Data API, Storage and Realtime. The Supabase Auth API has no such check,
-  so the reference now points to the password sign-in hook. In production, also
-  turn on Secure password change, as
-  [configuration](../../docs/self-hosting/configuration.md#turn-off-password-sign-in)
-  says. The local `packages/supabase/config.toml` now sets
-  `secure_password_change = true`. A running local stack takes it after a
-  Supabase stop and start.
 
 - **Outside development, `getErrorResponse` answers every 5xx with `Internal server error`.**
   The `code` is unchanged, and the server logs the original. A Prisma or
@@ -669,8 +675,8 @@ SMTP_PASS=...
 - **A picked chat mention notifies the user it was picked for.** A username
   change no longer sends it to the next holder of that name. A typed `@name`
   still notifies the current holder of that name. The Supabase migration
-  `20261009120300_resolve_mentions_by_user_id` carries the fix; push it by hand
-  ([#415](https://github.com/docs-plus/docs.plus/issues/415)).
+  `20261009120300_resolve_mentions_by_user_id` carries the fix. It goes in the
+  push before this deploy, as Migration says ([#415](https://github.com/docs-plus/docs.plus/issues/415)).
 - **A local media purge refuses an id that is not one path segment.** On a
   server with `PERSIST_TO_LOCAL_STORAGE=true`, a crafted document id could
   reach another document's media folder, or a folder outside the storage root.
@@ -695,6 +701,13 @@ SMTP_PASS=...
   `.env` before that deploy. Traefik then recreates once, so deploy in a quiet
   window. Staging and self-hosting keep the default
   ([#437](https://github.com/docs-plus/docs.plus/issues/437)).
+- **Monitoring containers get less access
+  ([#443](https://github.com/docs-plus/docs.plus/issues/443)).** Alloy no
+  longer mounts the Docker socket. It reads the Docker API through
+  `docker-socket-proxy`, with GET only and events off. A tmpfs hides the host
+  socket from node-exporter. `postgres-exporter` reads `POSTGRES_EXPORTER_DSN`,
+  a read-only `pg_monitor` login, when it is set. Otherwise it falls back to
+  `DATABASE_URL`.
 - **The ghost-account delete checks each account again before it deletes
   ([#412](https://github.com/docs-plus/docs.plus/issues/412)).**
   `DELETE /api/admin/audit/ghost-accounts/:id` answers `409` when the user
