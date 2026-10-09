@@ -1,6 +1,6 @@
 # Server-only observability stack deploy. Decoupled from the app's blue-green
 # release: no quality-gate dependency and outside the app deploy concurrency
-# group — deliberate (the self-hosted runner serializes jobs). See docs/observability.md.
+# group — deliberate (the self-hosted runner serializes jobs).
 name: CI/CD Observability
 
 on:
@@ -39,12 +39,11 @@ jobs:
     concurrency:
       group: observability-deploy
       cancel-in-progress: false
-    # Gate on the action input, NOT github.event_name: inside a reusable called via
-    # workflow_call, github.event_name is the CALLER's event ('push'), never
-    # 'workflow_call', so the old check skipped every orchestrated deploy. This
-    # workflow only triggers on workflow_call/workflow_dispatch (no push), and
-    # `action` defaults to 'setup' in both, so this runs unless it's a teardown.
-    if: inputs.action != 'down'
+    # Gate on the action input, NOT github.event_name: inside workflow_call that is
+    # the CALLER's event ('push'), so an event check skipped every orchestrated deploy.
+    # github.ref is the caller's ref too, so the push to main still runs, and a
+    # dispatch from any other branch skips (#437).
+    if: github.ref == 'refs/heads/main' && inputs.action != 'down'
     # No `environment: production` — it would inherit the production environment's
     # required-reviewer protection and gate every monitoring deploy on manual approval.
     permissions:
@@ -146,7 +145,7 @@ jobs:
     name: 🧹 Down
     runs-on: prod.docs.plus
     timeout-minutes: 10
-    if: github.event_name == 'workflow_dispatch' && inputs.action == 'down'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.action == 'down'
     permissions:
       contents: read
     steps:

@@ -1,6 +1,28 @@
 name: docsplus-observability
 
 services:
+  # Alloy reads the Docker API through this proxy, with GET only. CONTAINERS opens
+  # every GET under /containers, including inspect (Env) and file archives. So it
+  # stays off docsplus-network.
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:v0.5.0
+    container_name: docsplus-docker-socket-proxy
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      INFO: 1
+      NETWORKS: 1
+      VERSION: 1
+      PING: 1
+      EVENTS: 0
+      POST: 0
+      DISABLE_IPV6: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [docker-api]
+    logging: { driver: json-file, options: { max-size: '20m', max-file: '3' } }
+    deploy: { resources: { limits: { memory: 64M } } }
+
   loki:
     image: grafana/loki:3.7.3
     container_name: docsplus-loki
@@ -23,10 +45,11 @@ services:
     command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
     volumes:
       - ./scripts/observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - alloy-data:/var/lib/alloy/data
-    networks: [docsplus-network]
-    depends_on: { loki: { condition: service_started } }
+    networks: [docsplus-network, docker-api]
+    depends_on:
+      loki: { condition: service_started }
+      docker-socket-proxy: { condition: service_started }
     logging: { driver: json-file, options: { max-size: '20m', max-file: '3' } }
     # 256M was too tight — Alloy tails every container's logs; OOM-risk alert fired at 99.8%.
     deploy: { resources: { limits: { memory: 512M } } }
@@ -59,9 +82,9 @@ services:
       - --docker_only=true
       - --housekeeping_interval=30s
       - --disable_metrics=disk,diskIO,tcp,udp,percpu,sched,process,hugetlb
-    # Read-only host mounts + /dev/kmsg, NOT privileged — matches the spec's security
-    # model. If cAdvisor won't start on this kernel without privileged, that is a
-    # conscious escalation: update docs/observability.md §Security model if you make it.
+    # cAdvisor is not privileged, but /var/run still holds both host sockets (#443).
+    # The v0.55.1 Docker factory dials containerd at start, and without it every
+    # `name` label goes away without an error. `:ro` does not stop a socket connect.
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -83,6 +106,8 @@ services:
     pid: host
     volumes:
       - /:/host:ro,rslave
+    # The tmpfs hides the host /run and its docker.sock, which the root mount would show.
+    tmpfs: [/host/run]
     networks: [docsplus-network]
     logging: { driver: json-file, options: { max-size: '20m', max-file: '3' } }
     deploy: { resources: { limits: { memory: 64M } } }
@@ -245,7 +270,9 @@ services:
     container_name: docsplus-postgres-exporter
     restart: unless-stopped
     environment:
-      DATA_SOURCE_NAME: ${DATABASE_URL}
+      # Prefer the read-only pg_monitor login. DATABASE_URL is the fallback until
+      # the host env file sets POSTGRES_EXPORTER_DSN (#443).
+      DATA_SOURCE_NAME: ${POSTGRES_EXPORTER_DSN:-${DATABASE_URL}}
     networks: [docsplus-network]
     logging: { driver: json-file, options: { max-size: '20m', max-file: '3' } }
     deploy: { resources: { limits: { memory: 48M } } }
@@ -272,3 +299,5 @@ networks:
   docsplus-network:
     external: true
     name: docsplus-network
+  docker-api:
+    internal: true

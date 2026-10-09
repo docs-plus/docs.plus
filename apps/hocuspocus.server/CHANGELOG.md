@@ -616,6 +616,16 @@ SMTP_PASS=...
   A token already past `exp` is refused like an invalid one. Each signed-in tab
   reconnects about once per token lifetime, which is 1 hour by default
   ([#430](https://github.com/docs-plus/docs.plus/issues/430)).
+- **Production jobs run only from `main`, and Traefik reads a copy of its config.**
+  A manual `CI/CD Production` or `CI/CD Observability` run from another
+  branch now skips every job on the production runner. `docker-compose.prod.yml`
+  mounts Traefik's config from `${TRAEFIK_CONFIG_DIR:-./scripts/traefik}`. The
+  production deploy copies `scripts/traefik/` to
+  `/opt/projects/prod.docs.plus/.deploy/traefik` before `up -d traefik`. Set
+  `TRAEFIK_CONFIG_DIR=/opt/projects/prod.docs.plus/.deploy/traefik` in the host
+  `.env` before that deploy. Traefik then recreates once, so deploy in a quiet
+  window. Staging and self-hosting keep the default
+  ([#437](https://github.com/docs-plus/docs.plus/issues/437)).
 - **The ghost-account delete checks each account again before it deletes
   ([#412](https://github.com/docs-plus/docs.plus/issues/412)).**
   `DELETE /api/admin/audit/ghost-accounts/:id` answers `409` when the user

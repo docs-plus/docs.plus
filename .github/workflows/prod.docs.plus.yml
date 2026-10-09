@@ -430,7 +430,7 @@ jobs:
       always() &&
       needs.build.result == 'success' &&
       ((github.event_name == 'push' && needs.triage.outputs.app_deploy == 'true') ||
-       (github.event_name == 'workflow_dispatch' && inputs.force_deploy))
+       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.force_deploy))
     environment:
       name: production
       url: https://docs.plus
@@ -648,6 +648,18 @@ jobs:
           echo "🔧 Ensuring infrastructure..."
 
           docker network create docsplus-network 2>/dev/null || true
+
+          # Traefik reads this copy (TRAEFIK_CONFIG_DIR in the host env file), so a
+          # checkout on this runner never changes live routing. The bind mounts hold
+          # their inodes, so never delete or recreate these folders. Traefik watches
+          # dynamic/, so a changed file lands by rename and is never read half-written.
+          traefik_dir="${DEPLOY_STATE_DIR}/traefik"
+          mkdir -p "${traefik_dir}/dynamic"
+          cp scripts/traefik/traefik.yml "${traefik_dir}/traefik.yml"
+          for f in scripts/traefik/dynamic/*; do
+            dst="${traefik_dir}/dynamic/$(basename "$f")"
+            cmp -s "$f" "$dst" || { cp "$f" "${dst}.tmp" && mv -f "${dst}.tmp" "$dst"; }
+          done
 
           # No --no-recreate: neither service interpolates DEPLOY_TAG, so compose
           # recreates them only when their compose config actually changed.

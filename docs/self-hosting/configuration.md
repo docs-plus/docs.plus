@@ -62,6 +62,10 @@ The template is written for local development, so three of its defaults are wron
 
 **`ACME_EMAIL` is missing entirely.** Traefik falls back to the maintainer's address for Let's Encrypt registration. Add it.
 
+## Choose where Traefik reads its config
+
+`TRAEFIK_CONFIG_DIR` is optional. It names the folder that holds `traefik.yml` and `dynamic/`, and its default is `./scripts/traefik`.
+
 ## Values that do nothing
 
 These appear in the template and are read nowhere. Do not spend time on them.

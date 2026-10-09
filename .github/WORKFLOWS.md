@@ -9,6 +9,9 @@ This file is intentionally not named `README.md` so the repository root `README.
   - Triggers: push to `main`, PR to `main`, weekly schedule, and `workflow_dispatch`
   - Stages: triage (`parse-build-trigger.sh`) → quality gates → build verification → deploy chain (app → observability → uptime-kuma, fail-fast)
   - Deploy guard: `GLITCHTIP_DSN` and `NEXT_PUBLIC_GLITCHTIP_DSN` must be non-empty in the host `.env` or the deploy aborts before building
+  - A manual dispatch with `force_deploy` deploys only from `main`. From any other branch, the deploy job skips ([#437](https://github.com/docs-plus/docs.plus/issues/437))
+  - The deploy copies `scripts/traefik/` to `/opt/projects/prod.docs.plus/.deploy/traefik/` before `up -d traefik`. It rewrites only a changed dynamic file, by rename. Traefik reads that copy through `TRAEFIK_CONFIG_DIR` in the host `.env`, so a checkout on the runner does not change live routing
+  - Two GitHub settings are manual, not code ([#437](https://github.com/docs-plus/docs.plus/issues/437)). The `production` environment should allow only `main`. A `prod.docs.plus` runner group should accept only `prod.docs.plus.yml` and `observability.docs.plus.yml` from `main`
   - On success, posts a `deploy <sha>` annotation to Grafana; on failure, rolls back and notifies Telegram (credentials from the host's `.env.observability`). The failure message is three-way: aborted before touching prod (env guard/build — production unchanged), rolled back to the previous tag, or rollback failed (manual intervention)
 - `workflows/stage.docs.plus.yml`
   - Staging CI/CD pipeline (**not yet migrated** to the four-domain grammar; uses loose `contains()` on `front`/`back`)
@@ -28,7 +31,10 @@ This file is intentionally not named `README.md` so the repository root `README.
   - Server-only observability stack (Grafana + Loki + Alloy + Prometheus + GlitchTip)
   - Triggers: `workflow_call` (invoked by the prod orchestrator for deploy commits) and `workflow_dispatch` (`setup|update|restart|down` for manual ops)
   - Runner: self-hosted `prod.docs.plus`; no quality-gate dependency by design
+  - Both jobs run only on `main`. A dispatch from another branch skips them. Inside `workflow_call`, `github.ref` is the caller's ref, so the push to `main` still deploys ([#437](https://github.com/docs-plus/docs.plus/issues/437))
   - `DEADMAN_WEBHOOK_URL` is required in `.env.observability` (missing value fails the deploy — no placeholder fallback)
+  - `DATABASE_URL` is still required in `.env.observability`. `postgres-exporter` prefers the optional `POSTGRES_EXPORTER_DSN`, the connection string for a read-only `pg_monitor` login. It falls back to `DATABASE_URL` while that key is unset
+  - Alloy reaches the Docker API through `docker-socket-proxy` on the internal `docker-api` network ([#443](https://github.com/docs-plus/docs.plus/issues/443)). The proxy allows GET only, with events off, but any GET under `/containers` works, including inspect and file archives. cAdvisor still mounts `/var/run`, because v0.55.1 needs the containerd socket
   - Setup/update validates `prometheus.yml` with `promtool` before `up -d`, then restarts prometheus + grafana so mounted config edits load; failures notify Telegram
 - `workflows/runner-watchdog.yml`
   - Every 30 min (GitHub-hosted): checks the repo's self-hosted runner status and notifies Telegram when a runner is offline **or when zero runners are registered**. GitHub auto-deregisters runners dead >14 days, so an empty list is the terminal failure state, not health

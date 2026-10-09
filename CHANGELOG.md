@@ -324,11 +324,20 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 - Show guests only the chat files that a sent message uses. An upload that
   was never sent can no longer be listed with the public key
   ([#432](https://github.com/docs-plus/docs.plus/issues/432)).
+- Give the monitoring containers less access. Alloy no longer mounts the Docker
+  socket. It reads the Docker API through a proxy that allows only GET calls.
+  node-exporter no longer sees the host Docker socket. The Postgres exporter can
+  use `POSTGRES_EXPORTER_DSN`, the connection string for a read-only
+  `pg_monitor` login, in place of the app database URL
+  ([#443](https://github.com/docs-plus/docs.plus/issues/443)).
 
 ### Removed
 
 - Remove passkeys. Sign-in is Google or an email link. Settings → Security no longer
   lists passkeys. Local Auth has passkeys turned off.
+- Remove the unused Elastic APM keys from `.env.example`. No code read them,
+  and the `NEXT_PUBLIC_` prefix would put the secret token in the browser bundle
+  ([#446](https://github.com/docs-plus/docs.plus/issues/446)).
 
 ## [2.0.1] — 2026-08-31
 

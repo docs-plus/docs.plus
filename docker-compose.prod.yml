@@ -6,7 +6,8 @@
 #   Internet → Traefik (SSL/LB) → Services (webapp, rest-api, hocuspocus)
 #
 # Configuration:
-#   - Traefik static config: ./scripts/traefik/traefik.yml
+#   - Traefik static config: ${TRAEFIK_CONFIG_DIR:-./scripts/traefik}/traefik.yml
+#     Production sets TRAEFIK_CONFIG_DIR to the copy the deploy job writes.
 #   - Dynamic routing: Docker labels (below)
 #
 # Rolling-Deploy Strategy (best-effort, NOT true zero-downtime):
@@ -48,8 +49,8 @@ name: docsplus
 services:
   # ===========================================================================
   # TRAEFIK - Reverse Proxy & SSL
-  # Static config:  ./scripts/traefik/traefik.yml
-  # Dynamic config: ./scripts/traefik/dynamic/
+  # Static config:  ${TRAEFIK_CONFIG_DIR:-./scripts/traefik}/traefik.yml
+  # Dynamic config: ${TRAEFIK_CONFIG_DIR:-./scripts/traefik}/dynamic/
   # ===========================================================================
   traefik:
     image: traefik:v3.6
@@ -64,8 +65,8 @@ services:
       - '443:443'
       - '127.0.0.1:8080:8080'
     volumes:
-      - ./scripts/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./scripts/traefik/dynamic:/etc/traefik/dynamic:ro
+      - ${TRAEFIK_CONFIG_DIR:-./scripts/traefik}/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ${TRAEFIK_CONFIG_DIR:-./scripts/traefik}/dynamic:/etc/traefik/dynamic:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik-certs:/letsencrypt
     networks:
