@@ -1,12 +1,19 @@
 import { randomUUID } from 'node:crypto'
 
-import { Job, Queue, Worker } from 'bullmq'
+import { Job, Queue, UnrecoverableError, Worker } from 'bullmq'
 
 import { config } from '../../config/env'
-import type { EmailDLQData, EmailJobData, EmailResult } from '../../types/email.types'
+import type {
+  EmailDLQData,
+  EmailDlqDrainResult,
+  EmailJobData,
+  EmailResult,
+  QueuedEmail
+} from '../../types/email.types'
 import { toBullMQConnection } from '../../types/redis.types'
 import { captureUnknown } from '../instrument'
 import { emailLogger } from '../logger'
+import { maskEmailsIn } from '../maskEmail'
 import { recordJobOutcome } from '../metrics'
 import { prisma } from '../prisma'
 import {
@@ -14,8 +21,17 @@ import {
   bullmqWorkerConnectionOptions,
   createRedisConnection
 } from '../redis'
-import { EMAIL_DLQ_NAME, EMAIL_QUEUE_NAME, sentLogKey } from './jobIdentity'
-import { sendEmailViaProvider, updateSupabaseEmailStatus } from './sender'
+import { judgeEmailDlqEntry } from './dlqDisposition'
+import { decideEmailFailure, emailFailureKind } from './failureDecision'
+import { EMAIL_DLQ_NAME, EMAIL_QUEUE_NAME, providerIdempotencyKey, sentLogKey } from './jobIdentity'
+import { EmailSendError } from './providers/types'
+import {
+  buildEmailMessage,
+  deliverEmail,
+  readyEmailDelivery,
+  sendEmailInline,
+  updateSupabaseEmailStatus
+} from './sender'
 
 const redisClient = createRedisConnection(bullmqConnectionOptions)
 const queueConnection = toBullMQConnection(redisClient)
@@ -24,14 +40,18 @@ if (!queueConnection) {
   emailLogger.warn('Redis not configured - email queue will not be available')
 }
 
+// 30 + 60 + 120 + 240 + 480 s: about 15 min of retries, so a short provider
+// outage heals on its own. Only a transient failure uses the ladder.
+const EMAIL_JOB_ATTEMPTS = 6
+
 export const EmailQueue = queueConnection
   ? new Queue<EmailJobData>(EMAIL_QUEUE_NAME, {
       connection: queueConnection,
       defaultJobOptions: {
-        attempts: 3,
+        attempts: EMAIL_JOB_ATTEMPTS,
         backoff: {
           type: 'exponential',
-          delay: 5000
+          delay: 30_000
         },
         removeOnComplete: {
           count: 500,
@@ -133,88 +153,88 @@ export function createEmailWorker() {
           }
         }
 
-        const result = await sendEmailViaProvider(data, { jobId })
-
         // `off` is a decision, not a failure: no retry, no dead letter.
-        if (result.skipped) {
-          await settleQueueRows(data, 'skipped', result.error)
+        if (config.email.delivery.status === 'off') {
+          await settleQueueRows(data, 'skipped', 'email not configured')
           emailLogger.info({ jobId: job.id, type: data.type }, 'Email job skipped: not configured')
-          return result
+          return { success: false, skipped: true, error: 'email not configured' }
         }
 
-        // Record the successful send before returning so a retry dedupes
-        if (result.success) {
-          const recipient = Array.isArray(data.payload.to)
-            ? data.payload.to[0] || 'unknown'
-            : data.payload.to
+        const { keyNamespace } = readyEmailDelivery()
+        const sent = await deliverEmail(buildEmailMessage(data), {
+          jobId,
+          idempotencyKey: providerIdempotencyKey(keyNamespace, jobId)
+        })
 
-          await prisma.emailSentLog
-            .create({
-              data: {
-                idempotencyKey: logKey,
-                messageId: result.message_id || null,
-                recipient: String(recipient),
-                emailType: data.type
-              }
-            })
-            .catch((logErr: unknown) => {
-              // Log but don't fail - email was sent successfully
-              emailLogger.warn(
-                { err: logErr, jobId: job.id },
-                'Failed to record email send in idempotency log'
-              )
-            })
-        }
+        // Recorded before the settle, so a retry after a crash here dedupes.
+        const recipient = Array.isArray(data.payload.to)
+          ? data.payload.to[0] || 'unknown'
+          : data.payload.to
+        await prisma.emailSentLog
+          .create({
+            data: {
+              idempotencyKey: logKey,
+              messageId: sent.messageId,
+              recipient: String(recipient),
+              emailType: data.type
+            }
+          })
+          .catch((logErr: unknown) => {
+            // Log but don't fail - email was sent successfully
+            emailLogger.warn(
+              { err: logErr, jobId: job.id },
+              'Failed to record email send in idempotency log'
+            )
+          })
+        await settleQueueRows(data, 'sent')
 
-        // A failed attempt leaves the rows 'processing'; only the dead-letter
-        // branch below writes 'failed'.
-        if (result.success) await settleQueueRows(data, 'sent')
-
-        const duration = Date.now() - startTime
         emailLogger.info(
           {
             jobId: job.id,
-            duration: `${duration}ms`,
-            success: result.success,
-            messageId: result.message_id,
+            durationMs: Date.now() - startTime,
+            messageId: sent.messageId,
             queueIds: queueIdsOf(data)
           },
           'Email job completed'
         )
-
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to send email')
-        }
-
-        return result
+        return { success: true, message_id: sent.messageId }
       } catch (err) {
-        const error = err instanceof Error ? err : new Error(String(err))
-        emailLogger.error({ err: error, jobId: job.id }, 'Email job failed')
-
-        // Move to DLQ on final attempt (+1: attemptsMade counts prior
-        // attempts inside the processor — BullMQ increments after the throw)
-        if (job.attemptsMade + 1 >= (job.opts.attempts || 3)) {
-          emailLogger.error({ jobId: job.id }, 'Email exhausted retries, moving to DLQ')
-          captureUnknown(error)
-
-          await settleQueueRows(
-            data,
-            'failed',
-            `Permanent failure after ${job.attemptsMade} attempts: ${error.message}`
-          )
-
-          const dlqData: EmailDLQData = {
-            ...data,
-            originalJobId: job.id ?? undefined,
-            failureReason: error.message,
-            failedAt: new Date().toISOString()
-          }
-          await EmailDeadLetterQueue?.add('failed-email', dlqData).catch((dlqErr: unknown) => {
-            emailLogger.error({ err: dlqErr, jobId: job.id }, 'Failed to add email to DLQ')
-          })
+        const attempts = job.opts.attempts ?? EMAIL_JOB_ATTEMPTS
+        const action = decideEmailFailure(err, job.attemptsMade, attempts)
+        const failureKind = emailFailureKind(err)
+        // A Prisma or template error can quote an address too.
+        const message = maskEmailsIn(err instanceof Error ? err.message : String(err))
+        // deliverEmail already logged a provider error with `err`. A second
+        // `err` line here would count one failure twice in the err_kind alerts.
+        if (err instanceof EmailSendError) {
+          emailLogger.warn({ jobId: job.id, failureKind, action }, 'Email job failed')
+        } else {
+          emailLogger.error({ err, jobId: job.id, action }, 'Email job failed')
         }
+        if (action === 'retry') throw err
 
-        throw err
+        emailLogger.error({ jobId: job.id, failureKind }, 'Email moved to DLQ')
+        captureUnknown(err)
+        await settleQueueRows(
+          data,
+          'failed',
+          `${failureKind} failure on attempt ${job.attemptsMade + 1}: ${message}`
+        )
+
+        const dlqData: EmailDLQData = {
+          ...data,
+          originalJobId: job.id ?? undefined,
+          failureReason: message,
+          failureKind,
+          failureCode: err instanceof EmailSendError ? err.code : undefined,
+          failedAt: new Date().toISOString()
+        }
+        await EmailDeadLetterQueue?.add('failed-email', dlqData).catch((dlqErr: unknown) => {
+          emailLogger.error({ err: dlqErr, jobId: job.id }, 'Failed to add email to DLQ')
+        })
+
+        // The DLQ owns the mail now, so BullMQ must not retry it.
+        throw new UnrecoverableError(message)
       }
     },
     {
@@ -236,11 +256,14 @@ export function createEmailWorker() {
     emailLogger.debug({ jobId: job.id }, 'Email job completed')
   })
 
+  // A job that stalls past maxStalledCount fails here and never reaches the
+  // processor catch. No `err` key, so each err_kind count stays one line.
   worker.on('failed', (job, err) => {
     recordJobOutcome(worker.name, 'failed')
-    if (job) {
-      emailLogger.error({ jobId: job.id, err, attempts: job.attemptsMade }, 'Email job failed')
-    }
+    emailLogger.warn(
+      { jobId: job?.id, attempts: job?.attemptsMade, failedReason: maskEmailsIn(err.message) },
+      'Email job attempt failed'
+    )
   })
 
   worker.on('error', (err) => {
@@ -258,19 +281,16 @@ export function createEmailWorker() {
  * instead of a duplicate. Without one, a UUID: BullMQ counter ids restart after
  * a Redis reset, and the sent log would skip a new mail as already sent.
  */
-export async function queueEmail(data: EmailJobData, jobId?: string): Promise<string | null> {
+export async function queueEmail(data: EmailJobData, jobId?: string): Promise<QueuedEmail> {
   if (!EmailQueue) {
     emailLogger.warn('Email queue not available - sending synchronously')
-    // No idempotency key: a pgmq redelivery rebuilds the body, and Resend
-    // refuses an old key with a new body (409), which strands the mail.
-    const result = await sendEmailViaProvider(data)
-    if (result.skipped) {
-      await settleQueueRows(data, 'skipped', result.error)
-      // Non-null, so a pgmq caller acks the message instead of redelivering it.
-      return 'sync-skip'
-    }
-    await settleQueueRows(data, result.success ? 'sent' : 'failed', result.error)
-    return result.success ? 'sync-send' : null
+    const result = await sendEmailInline(data)
+    await settleQueueRows(
+      data,
+      result.success ? 'sent' : result.skipped ? 'skipped' : 'failed',
+      result.error
+    )
+    return { inline: result }
   }
 
   const id = jobId ?? randomUUID()
@@ -281,7 +301,52 @@ export async function queueEmail(data: EmailJobData, jobId?: string): Promise<st
 
   emailLogger.debug({ jobId: id, type: data.type }, 'Email queued')
 
-  return id
+  return { jobId: id }
+}
+
+// One hydrated slice per pass, like the store drain.
+const EMAIL_DLQ_DRAIN_BATCH = 50
+const EMAIL_DLQ_PARKED_STATES = ['waiting', 'delayed', 'prioritized'] as const
+
+/**
+ * Replays through queueEmail with the original job id, so the replay gets the
+ * full retry ladder and the same provider key. Never `job.retry()`: it keeps
+ * `attemptsMade`. The sent log still blocks a mail that already went out.
+ */
+export async function drainEmailDeadLetterQueue({
+  apply
+}: {
+  apply: boolean
+}): Promise<EmailDlqDrainResult> {
+  if (!EmailQueue || !EmailDeadLetterQueue) throw new Error('Redis not configured')
+
+  const counts = await EmailDeadLetterQueue.getJobCounts(...EMAIL_DLQ_PARKED_STATES)
+  const jobs = (
+    await EmailDeadLetterQueue.getJobs([...EMAIL_DLQ_PARKED_STATES], 0, EMAIL_DLQ_DRAIN_BATCH - 1)
+  ).slice(0, EMAIL_DLQ_DRAIN_BATCH)
+  const result: EmailDlqDrainResult = {
+    entries: [],
+    depth: Object.values(counts).reduce((sum, n) => sum + n, 0)
+  }
+
+  for (const job of jobs) {
+    const { originalJobId, failureKind, failedAt, type, payload, created_at } = job.data
+    const disposition = judgeEmailDlqEntry({ failureKind, failedAt }, Date.now())
+    result.entries.push({ id: job.id ?? '(no id)', failureKind, disposition })
+    if (!apply || disposition === 'unresolved') continue
+
+    if (disposition === 'replay') {
+      // BullMQ ignores an add whose id still names a job, and the failed
+      // original stays for up to 7 days.
+      const original = originalJobId ? await EmailQueue.getJob(originalJobId) : undefined
+      if (original && (await original.isFailed())) await original.remove()
+      await queueEmail({ type, payload, created_at }, originalJobId)
+    }
+    // Removed only after the replay is queued: a lost entry costs the mail.
+    await job.remove()
+  }
+
+  return result
 }
 
 export async function getEmailQueueHealth() {

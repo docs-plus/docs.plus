@@ -11,12 +11,12 @@ import { createComputeDocumentChanges } from '../../modules/document-changes/dom
 import type {
   DigestDocument,
   DigestEmailRequest,
-  EmailStatus,
   NotificationEmailRequest,
   NotificationType
 } from '../../types/email.types'
 import { captureUnknown } from '../instrument'
 import { emailLogger } from '../logger'
+import { maskEmail } from '../maskEmail'
 import { createPgmqConsumer, deterministicJobId } from '../pgmqConsumer'
 import { prisma } from '../prisma'
 import { getOwnerProfiles } from '../profiles'
@@ -37,7 +37,7 @@ import {
   visibleDigestDocuments
 } from './digestMessage'
 import { queueEmail } from './queue'
-import { resolveUnsubscribe } from './sender'
+import { resolveUnsubscribe, updateSupabaseEmailStatus } from './sender'
 
 const POLL_INTERVAL_MS = 2000
 const BATCH_SIZE = 50
@@ -62,25 +62,6 @@ interface EmailQueuePayload {
   frequency?: string
   queue_ids?: string[]
   notifications?: DigestRawNotification[]
-}
-
-async function updateEmailStatus(
-  client: SupabaseClient,
-  queueId: string,
-  status: EmailStatus,
-  errorMessage?: string
-): Promise<void> {
-  try {
-    // supabase-js reports a failure in the reply, never by throwing.
-    const { error } = await client.rpc('update_email_status', {
-      p_queue_id: queueId,
-      p_status: status,
-      p_error_message: errorMessage || null
-    })
-    if (error) emailLogger.error({ error, queueId, status }, 'Failed to update email status')
-  } catch (err) {
-    emailLogger.error({ err, queueId }, 'Error updating email status')
-  }
 }
 
 /** Building this only makes closures, so one set for the process is enough. */
@@ -214,15 +195,24 @@ async function processDigestMessage(
     // dedupe then suppresses the next fan-out. Returning false leaves the rows
     // 'processing' and lets pgmq redeliver once Prisma recovers.
     if (outcome.kind === 'defer') {
-      emailLogger.warn({ msgId, to: payload.recipient_email }, 'Digest deferred; re-read failed')
+      emailLogger.warn(
+        { msgId, to: maskEmail(payload.recipient_email) },
+        'Digest deferred; re-read failed'
+      )
       return false
     }
 
     if (outcome.kind === 'skip') {
       await Promise.all(
-        queueIds.map((id) => updateEmailStatus(client, id, 'skipped', 'No digest content'))
+        queueIds.map((id) =>
+          updateSupabaseEmailStatus({
+            queue_id: id,
+            status: 'skipped',
+            error_message: 'No digest content'
+          })
+        )
       )
-      emailLogger.info({ msgId, to: payload.recipient_email }, 'Digest email skipped')
+      emailLogger.info({ msgId, to: maskEmail(payload.recipient_email) }, 'Digest email skipped')
       return true
     }
 
@@ -259,14 +249,11 @@ async function processDigestMessage(
         grouping === 'aggregate'
           ? deterministicJobId('digest', payload.recipient_id, payload.frequency, queueKey)
           : deterministicJobId('digest', payload.recipient_id, payload.frequency, docKey, queueKey)
-      const jobId = await queueEmail(
+      // Without Redis the send runs inline and settles its rows; its failure is final.
+      await queueEmail(
         { type: 'digest', payload: digestPayload, created_at: new Date().toISOString() },
         idempotencyJobId
       )
-      if (!jobId) {
-        emailLogger.warn({ msgId, docKey }, 'Failed to queue digest email job')
-        return false
-      }
     }
 
     // The rows stay 'processing' until the email worker hears from the provider.
@@ -277,7 +264,7 @@ async function processDigestMessage(
         msgId,
         grouping,
         mails: groups.length,
-        to: payload.recipient_email,
+        to: maskEmail(payload.recipient_email),
         notifications: (payload.notifications || []).length
       },
       'Digest email queued from pgmq'
@@ -289,7 +276,11 @@ async function processDigestMessage(
     // Independent single-row updates; settle the failure marks in parallel.
     await Promise.all(
       pgmqQueueIds(payload).map((queueId) =>
-        updateEmailStatus(client, queueId, 'failed', String(err))
+        updateSupabaseEmailStatus({
+          queue_id: queueId,
+          status: 'failed',
+          error_message: String(err)
+        })
       )
     )
     return false
@@ -298,7 +289,6 @@ async function processDigestMessage(
 
 /** queue_id (the email_queue row id) is the stable BullMQ jobId. */
 async function processNotificationMessage(
-  client: SupabaseClient,
   msgId: number,
   payload: EmailQueuePayload
 ): Promise<boolean> {
@@ -307,7 +297,11 @@ async function processNotificationMessage(
   // is hand-deployed. Refusing here costs one carrier on a mis-ordered deploy;
   // trusting it would mail a private document to a non-owner.
   if (payload.notification_type === CONTENT_CHANGE_TYPE) {
-    await updateEmailStatus(client, payload.queue_id!, 'skipped', 'content_change is digest-only')
+    await updateSupabaseEmailStatus({
+      queue_id: payload.queue_id!,
+      status: 'skipped',
+      error_message: 'content_change is digest-only'
+    })
     emailLogger.warn({ msgId }, 'Refused a content_change on the immediate path')
     return true
   }
@@ -327,19 +321,15 @@ async function processNotificationMessage(
       document_slug: payload.document_slug || undefined
     }
 
-    const jobId = await queueEmail(
+    // Without Redis the send runs inline and settles its row; its failure is
+    // final, so the message is acked and never sent a second time.
+    const queued = await queueEmail(
       { type: 'notification', payload: emailPayload, created_at: new Date().toISOString() },
       payload.queue_id ? `email-${payload.queue_id}` : undefined
     )
 
-    if (!jobId) {
-      emailLogger.warn({ msgId }, 'Failed to queue email job - queue may be unavailable')
-      captureUnknown(new Error('pgmq email: BullMQ enqueue returned null'))
-      return false
-    }
-
     emailLogger.debug(
-      { msgId, jobId, to: payload.to, type: payload.notification_type },
+      { msgId, queued, to: maskEmail(payload.to), type: payload.notification_type },
       'Email notification queued from pgmq'
     )
     return true
@@ -348,7 +338,11 @@ async function processNotificationMessage(
     captureUnknown(err)
 
     if (payload.queue_id) {
-      await updateEmailStatus(client, payload.queue_id, 'failed', String(err))
+      await updateSupabaseEmailStatus({
+        queue_id: payload.queue_id,
+        status: 'failed',
+        error_message: String(err)
+      })
     }
     return false
   }
@@ -381,7 +375,9 @@ const consumer = createPgmqConsumer<EmailQueuePayload>({
     const ageMs = Date.now() - Date.parse(payload.enqueued_at)
     if (ageMs > EMAIL_MAX_AGE_MS) {
       await Promise.all(
-        pgmqQueueIds(payload).map((id) => updateEmailStatus(client, id, 'skipped', 'stale'))
+        pgmqQueueIds(payload).map((id) =>
+          updateSupabaseEmailStatus({ queue_id: id, status: 'skipped', error_message: 'stale' })
+        )
       )
       emailLogger.info({ msgId, ageMs, type: payload.type }, 'Stale email message skipped')
       return true
@@ -389,7 +385,7 @@ const consumer = createPgmqConsumer<EmailQueuePayload>({
 
     return payload.type === 'digest'
       ? processDigestMessage(client, msgId, payload)
-      : processNotificationMessage(client, msgId, payload)
+      : processNotificationMessage(msgId, payload)
   }
 })
 

@@ -11,12 +11,14 @@ export interface EmailMessage {
   text: string
   replyTo?: string
   headers?: Record<string, string>
+  /** `{ job_id, email_type, ns }`. `ns` lets the webhook ignore another environment's events. */
+  tags?: Record<string, string>
 }
 
 export interface SendOptions {
   signal: AbortSignal
-  /** Only a job has a stable id. A fresh key per call would dedupe nothing. */
-  idempotencyKey?: string
+  /** Stable per job, so a retry gets the first result instead of a second mail. */
+  idempotencyKey: string
 }
 
 export interface SentEmail {

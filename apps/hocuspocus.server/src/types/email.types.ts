@@ -1,6 +1,9 @@
 // The digest payload shape is declared once, in the package that renders it.
 import type { DigestDocument, DigestFrequency, NotificationType } from '@docs.plus/email-templates'
 
+import type { EmailDlqDisposition } from '../lib/email/dlqDisposition'
+import type { EmailErrorKind } from '../lib/email/providers/types'
+
 export type {
   DigestChangedSection,
   DigestChangeRun,
@@ -69,7 +72,26 @@ export interface EmailJobData {
 export interface EmailDLQData extends EmailJobData {
   originalJobId?: string
   failureReason: string
+  /** Absent on an entry written before failures were typed; the drain leaves those alone. */
+  failureKind?: EmailErrorKind
+  /** The provider's own code, verbatim. Absent when the error was not the provider's. */
+  failureCode?: string
   failedAt: string
+}
+
+/** `inline` happens only without Redis. That send is final: nothing retries it. */
+export type QueuedEmail = { jobId: string } | { inline: EmailResult }
+
+export interface EmailDlqEntry {
+  id: string
+  failureKind: EmailDLQData['failureKind']
+  disposition: EmailDlqDisposition
+}
+
+export interface EmailDlqDrainResult {
+  entries: EmailDlqEntry[]
+  /** The whole parked queue, which can be more than one pass reads. */
+  depth: number
 }
 
 // Digest notifications grouped by document → channel

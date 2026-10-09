@@ -1,8 +1,8 @@
 # Backend runbook
 
-What to do when one of five backend alerts fires. It covers document persistence, Redis, the dead-letter queue, and the collaboration container's memory. It does not cover the edge, Supabase, the webapp, or any other alert.
+What to do when a backend alert fires. It covers document persistence, Redis, the dead-letter queue, the collaboration container's memory, and email delivery. It does not cover the edge, Supabase, the webapp, or any other alert.
 
-Each section below matches one Grafana alert. That alert links here through its `runbook_url` annotation.
+Each section below matches one Grafana alert, except [Email](#email), which covers four. Each alert links here through its `runbook_url` annotation.
 
 ## Before you start
 
@@ -91,7 +91,7 @@ Grafana alert: `Redis down (redis_up==0)`. Severity critical, after 1 minute.
 
 Grafana alert: `Dead-letter queue not empty`. Severity warning, after 5 minutes. The alert names the queue.
 
-For `email-dlq` and `push-dlq`, inspect `GET /api/admin/audit/notifications/dlq` and stop here. The rest of this section is `store-documents-dlq` only, which holds document saves that exhausted their retries. Commands below use the `dc` alias and the replica index `<n>` from [Before you start](#before-you-start).
+For `push-notifications-dlq`, inspect `GET /api/admin/audit/notifications/dlq` and stop here. For `email-notifications-dlq`, go to [Email dead-letter drain](#email-dead-letter-drain). The numbered steps below are for `store-documents-dlq` only, which holds document saves that exhausted their retries. Commands below use the `dc` alias and the replica index `<n>` from [Before you start](#before-you-start).
 
 **Check the worker before you drain.** `--apply` puts the payload back behind a Redis claim-check key with a one-hour TTL. If the store worker is not consuming, that hour expires and the bytes are gone. The dead-letter entry was holding those same bytes with no TTL, so draining into a stalled worker destroys them.
 
@@ -126,6 +126,59 @@ For `email-dlq` and `push-dlq`, inspect `GET /api/admin/audit/notifications/dlq`
 5. Confirm the depth returns to zero and the alert clears.
 
 **Mechanism.** The drain re-enqueues, it never inserts. The worker's locked merge stays the only code that writes a version row. A direct insert would replace a newer head with an older snapshot and re-store the deleted text the merge path exists to drop.
+
+### Email dead-letter drain
+
+The email queue retries only a `transient` failure. It makes up to 6 attempts over about 15 minutes. A `permanent` or `operator` failure goes to `email-notifications-dlq` at once. Each entry carries `failureKind` and `failureCode`.
+
+1. Fix the cause first. [Email](#email) lists each case.
+
+2. Run the drain as a dry run. It is dry by default.
+
+   ```bash
+   dc exec -w /app/apps/hocuspocus.server --index <n> hocuspocus-worker \
+     bun scripts/drain-email-dlq.ts
+   ```
+
+3. Read the list. Each line shows the entry id, `failureKind` and the disposition.
+   - `replay`: an `operator` entry, or a `transient` entry whose last failure is less than 23.5 hours old. The drain queues it again with its original job id, so it gets the full retry ladder. The sent log still blocks a mail that already went out.
+   - `discard`: a `permanent` entry. The address cannot take this mail.
+   - `unresolved`: an older `transient` entry, or an entry written before failures had a kind. Resend may have accepted it before a timeout, and its idempotency key has expired. The drain leaves it in the queue.
+
+4. Apply.
+
+   ```bash
+   dc exec -w /app/apps/hocuspocus.server --index <n> hocuspocus-worker \
+     bun scripts/drain-email-dlq.ts --apply
+   ```
+
+   A replay that fails again returns to the queue with a new `failureKind`.
+
+5. Check each `unresolved` entry by hand, then remove it. Search the Resend log for the mail. An entry written since #421 carries the `job_id` tag. An older entry has no tags, so search by the masked recipient and the failure time. A mail this old is stale either way, so the drain never sends it. Remove the entry by the id that the drain printed:
+
+   ```bash
+   dc exec -w /app/apps/hocuspocus.server --index <n> hocuspocus-worker \
+     bun -e "const { EmailDeadLetterQueue: q } = await import('./src/lib/email/queue'); const job = await q?.getJob('<id>'); await job?.remove(); console.log(job ? 'removed' : 'no such entry'); process.exit(0)"
+   ```
+
+   Each pass reads only the first 50 entries, and an unresolved entry stays in that window. Remove the unresolved entries, or the rest of the queue never drains.
+
+6. Confirm that the depth falls to zero and the alert clears.
+
+## Email
+
+Grafana alerts: `Email send needs operator action` (critical), `Email transient failures` (warning) and `Email config invalid (mail waiting)` (critical). `Email broken (SMTP 535/EAUTH)` (critical) stays for now. It reads SMTP errors only, so it fires only after a rollback to SMTP. Then one bad SMTP login fires it together with the operator alert.
+
+Each failed send writes one `Email send failed` line. It carries `err_kind`, `err_code` and `err_responseCode`, and the masked address in `to`.
+
+To redeploy, run the production workflow by `workflow_dispatch` on `main` with `force_deploy=true`. Keep `skip_quality_gates=false`.
+
+- **Key revoked.** Sends fail as `operator`. Edit the host env file, redeploy, then run the [drain](#email-dead-letter-drain).
+- **Quota reached.** Sends fail as `operator`, or Resend accepts them and fails them later with `email.failed`. Raise the plan or wait for the reset, then run the drain.
+- **Config `invalid`.** The worker logs `email config invalid` every 5 minutes, and the line lists each problem variable. After #423, the Email setup page names it too. Fix the host env file and redeploy. Messages older than 24 hours then settle `skipped` with `stale`.
+- **"I get no mail".** Check `users.notification_preferences` first, then `email_bounces`, then the Resend log, filtered by the `job_id` tag.
+- **"Email sign-in does nothing".** Supabase Auth sends sign-in mail with its own SMTP settings, not this server. Check the suppression list of the provider that those settings name. After #425, that is the one Resend team.
+- **Remove a suppression.** First remove it in Resend (Dashboard > Suppressions). Then reset the `email_bounces` row and `notification_preferences.email_enabled`. In the other order, the next send triggers `email.suppressed` and turns email off again.
 
 ## WS container out of memory
 

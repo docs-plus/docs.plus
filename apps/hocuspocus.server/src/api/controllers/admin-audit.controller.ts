@@ -1,7 +1,8 @@
-import { Queue } from 'bullmq'
+import { type Job, Queue } from 'bullmq'
 
 import { EMAIL_DLQ_NAME } from '../../lib/email/jobIdentity'
 import { adminLogger } from '../../lib/logger'
+import { maskEmail } from '../../lib/maskEmail'
 import { createRedisConnection } from '../../lib/redis'
 import { mediaStorageQuerySchema } from '../../schemas/admin.schema'
 import type { AppContext } from '../../types/hono.types'
@@ -231,6 +232,19 @@ export async function disableFailedSubscriptions(c: AppContext) {
   }
 }
 
+// The job data holds the raw recipient and the mail body, so it never leaves.
+// A DLQ job never fails itself: its reason is in the data, not `failedReason`.
+const summarizeDlqJob = (j: Job) => ({
+  id: j.id,
+  name: j.name,
+  timestamp: j.timestamp,
+  type: j.data.type,
+  failureKind: j.data.failureKind,
+  failureCode: j.data.failureCode,
+  to: [j.data.payload?.to].flat().filter(Boolean).map(maskEmail),
+  failedReason: j.data.failureReason ?? j.failedReason
+})
+
 export async function getDeadLetterQueueContents(c: AppContext) {
   let redisConnection: ReturnType<typeof createRedisConnection> = null
   let pushDlq: Queue | null = null
@@ -267,23 +281,11 @@ export async function getDeadLetterQueueContents(c: AppContext) {
 
     return c.json({
       push: {
-        jobs: pushJobs.map((j) => ({
-          id: j.id,
-          name: j.name,
-          data: j.data,
-          timestamp: j.timestamp,
-          failedReason: j.failedReason
-        })),
+        jobs: pushJobs.map(summarizeDlqJob),
         count: (pushCount.waiting ?? 0) + (pushCount.delayed ?? 0)
       },
       email: {
-        jobs: emailJobs.map((j) => ({
-          id: j.id,
-          name: j.name,
-          data: j.data,
-          timestamp: j.timestamp,
-          failedReason: j.failedReason
-        })),
+        jobs: emailJobs.map(summarizeDlqJob),
         count: (emailCount.waiting ?? 0) + (emailCount.delayed ?? 0)
       }
     })

@@ -3,7 +3,7 @@ import { buildNewDocumentEmailText, renderNewDocumentEmail } from '@docs.plus/em
 import { config } from '../../config/env'
 import type { EmailJobData, GenericEmailRequest } from '../../types/email.types'
 import { emailLogger } from '../logger'
-import { sendEmailViaProvider } from './sender'
+import { sendEmailInline } from './sender'
 
 interface NewDocumentEmailParams {
   documentId: string
@@ -77,6 +77,6 @@ export const sendNewDocumentNotification = async (
     created_at: new Date().toISOString()
   }
 
-  const result = await sendEmailViaProvider(jobData)
+  const result = await sendEmailInline(jobData)
   return result.success
 }

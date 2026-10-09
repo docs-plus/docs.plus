@@ -138,6 +138,7 @@ groups:
           severity: critical
         annotations:
           summary: 'SMTP auth failure (5xx / EAUTH) in hocuspocus logs. Transient 4xx throttles are already excluded, so this is a real credential or provider failure.'
+          runbook_url: 'https://github.com/docs-plus/docs.plus/blob/main/docs/RUNBOOK-backend.md#email'
         data:
           - refId: A
             queryType: instant
@@ -183,6 +184,7 @@ groups:
           severity: critical
         annotations:
           summary: 'The email config is invalid, so no mail is sent and pgmq email messages wait. The log line lists each problem. Fix the host env file, then redeploy.'
+          runbook_url: 'https://github.com/docs-plus/docs.plus/blob/main/docs/RUNBOOK-backend.md#email'
         data:
           - refId: A
             queryType: instant
@@ -213,4 +215,90 @@ groups:
               expression: B
               conditions:
                 - evaluator: { type: gt, params: [0] }
+              refId: C
+
+      - uid: incident-email-operator
+        title: Email send needs operator action
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: 'A send, or the boot connection check, failed with an error only an operator can fix: a bad key, an unverified From domain, or a used-up quota. A failed send skips its retries and goes to the dead-letter queue. Fix the cause, then run scripts/drain-email-dlq.ts.'
+          runbook_url: 'https://github.com/docs-plus/docs.plus/blob/main/docs/RUNBOOK-backend.md#email'
+        data:
+          - refId: A
+            queryType: instant
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: loki
+            model:
+              datasource: { type: loki, uid: loki }
+              # Any line counts, so the boot connection check pages too. A
+              # duplicate line changes nothing at > 0.
+              expr: 'sum(count_over_time({service=~"rest-api|hocuspocus.+"} | json | err_kind = "operator" [10m])) or vector(0)'
+              queryType: instant
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C
+
+      - uid: incident-email-transient-surge
+        title: Email transient failures
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: '3 or more email sends failed with a transient error in 15 min. The jobs retry for about 15 min, so check the provider status. Raise the threshold when volume passes 500 mails a day.'
+          runbook_url: 'https://github.com/docs-plus/docs.plus/blob/main/docs/RUNBOOK-backend.md#email'
+        data:
+          - refId: A
+            queryType: instant
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: loki
+            model:
+              datasource: { type: loki, uid: loki }
+              # Anchored on the one line deliverEmail writes per failed send, so
+              # each failure counts once.
+              expr: 'sum(count_over_time({service=~"rest-api|hocuspocus.+"} |= "Email send failed" | json | err_kind = "transient" [15m])) or vector(0)'
+              queryType: instant
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [2] }
               refId: C

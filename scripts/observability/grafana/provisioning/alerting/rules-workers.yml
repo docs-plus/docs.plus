@@ -134,7 +134,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'DLQ {{ $labels.queue }} holds jobs that exhausted retries. store-documents-dlq: run apps/hocuspocus.server/scripts/drain-store-dlq.ts in hocuspocus-worker (dry run, then --apply) to replay them. email/push: inspect GET /api/admin/audit/notifications/dlq.'
+          summary: 'DLQ {{ $labels.queue }} holds failed jobs. store-documents-dlq: run apps/hocuspocus.server/scripts/drain-store-dlq.ts in hocuspocus-worker (dry run, then --apply) to replay them. email-notifications-dlq: run apps/hocuspocus.server/scripts/drain-email-dlq.ts the same way. push: inspect GET /api/admin/audit/notifications/dlq.'
           runbook_url: 'https://github.com/docs-plus/docs.plus/blob/main/docs/RUNBOOK-backend.md#dead-letter-queue-not-empty'
         data:
           - refId: A

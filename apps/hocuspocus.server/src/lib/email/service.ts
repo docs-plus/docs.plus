@@ -16,7 +16,6 @@ import { NotificationGatewayBase } from '../gateway'
 import { emailLogger } from '../logger'
 import { closeEmailProvider, getEmailProvider } from './providers'
 import { closeEmailQueue, createEmailWorker, getEmailQueueHealth, queueEmail } from './queue'
-import { sendEmailViaProvider } from './sender'
 
 /** An `invalid` config holds mail, so the worker repeats the line that pages. */
 const CONFIG_INVALID_REPEAT_MS = 5 * 60 * 1000
@@ -81,46 +80,25 @@ export class EmailGatewayService extends NotificationGatewayBase {
     await closeEmailProvider()
   }
 
-  async sendNotificationEmail(request: NotificationEmailRequest): Promise<EmailResult> {
-    const jobData: EmailJobData = {
-      type: 'notification',
-      payload: request,
-      created_at: new Date().toISOString()
-    }
-
-    const jobId = await queueEmail(jobData)
-    if (jobId) {
-      return { success: true, message_id: jobId, queue_id: request.queue_id }
-    }
-    return sendEmailViaProvider(jobData)
+  /** An inline result is final: sending again would mail twice after a timeout. */
+  private async send(data: EmailJobData, queue_id?: string): Promise<EmailResult> {
+    const queued = await queueEmail(data)
+    return 'jobId' in queued ? { success: true, message_id: queued.jobId, queue_id } : queued.inline
   }
 
-  async sendDigestEmail(request: DigestEmailRequest): Promise<EmailResult> {
-    const jobData: EmailJobData = {
-      type: 'digest',
-      payload: request,
-      created_at: new Date().toISOString()
-    }
-
-    const jobId = await queueEmail(jobData)
-    if (jobId) {
-      return { success: true, message_id: jobId }
-    }
-    return sendEmailViaProvider(jobData)
+  sendNotificationEmail(request: NotificationEmailRequest): Promise<EmailResult> {
+    return this.send(
+      { type: 'notification', payload: request, created_at: new Date().toISOString() },
+      request.queue_id
+    )
   }
 
-  async sendGenericEmail(request: GenericEmailRequest): Promise<EmailResult> {
-    const jobData: EmailJobData = {
-      type: 'generic',
-      payload: request,
-      created_at: new Date().toISOString()
-    }
+  sendDigestEmail(request: DigestEmailRequest): Promise<EmailResult> {
+    return this.send({ type: 'digest', payload: request, created_at: new Date().toISOString() })
+  }
 
-    const jobId = await queueEmail(jobData)
-    if (jobId) {
-      return { success: true, message_id: jobId }
-    }
-    return sendEmailViaProvider(jobData)
+  sendGenericEmail(request: GenericEmailRequest): Promise<EmailResult> {
+    return this.send({ type: 'generic', payload: request, created_at: new Date().toISOString() })
   }
 
   async getHealth(): Promise<EmailGatewayHealth & { provider: string | null }> {

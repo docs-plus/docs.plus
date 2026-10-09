@@ -278,6 +278,19 @@ SMTP_PASS=...
 
 ### Changed
 
+- **Email retries only what time can fix ([#421](https://github.com/docs-plus/docs.plus/issues/421)).**
+  A failed send is now `transient`, `permanent` or `operator`. A transient
+  failure makes up to 6 attempts with a 30 s exponential backoff, about 15
+  minutes in all. Before, it was 3 attempts in about 15 seconds. A permanent
+  or operator failure goes to the dead-letter queue at once, with
+  `failureKind` and `failureCode`. `scripts/drain-email-dlq.ts` replays
+  operator entries and fresh transient ones, and discards permanent ones. It
+  is a dry run unless you pass `--apply`. A Resend send times out after 15 s.
+  SMTP takes no deadline, so it sets a 30 s socket timeout instead. Resend
+  mail carries the tags `job_id`, `email_type` and `ns`. Email log lines mask
+  every address. Two new alerts fire: `incident-email-operator` (critical)
+  and `incident-email-transient-surge` (warning).
+
 - **Email providers sit behind one small contract ([#419](https://github.com/docs-plus/docs.plus/issues/419)).**
   `src/config/email.ts` resolves the config once, as `ready`, `off` or
   `invalid`. Providers read `config.email.delivery`, never `process.env`. The
@@ -343,6 +356,19 @@ SMTP_PASS=...
   its 0.5 CPU limit and was 83% throttled.
 
 ### Fixed
+
+- **Without Redis, a failed mail is no longer sent twice ([#421](https://github.com/docs-plus/docs.plus/issues/421)).**
+  The service sent again after an inline failure. Now an inline failure is
+  final: the row settles `failed`, and the pgmq message is acked. A skipped
+  inline send no longer reports success to `/send-generic` and `/send-digest`.
+- **A late `stale`, `skipped` or `failed` settle no longer overwrites a `sent`
+  row ([#421](https://github.com/docs-plus/docs.plus/issues/421)).** A pgmq
+  redelivery after the mail went out could mark it `skipped`.
+- **The Notifications DLQ table shows a Reason ([#421](https://github.com/docs-plus/docs.plus/issues/421)).**
+  A dead-letter job never fails itself, so its BullMQ `failedReason` was
+  always empty. `GET /api/admin/audit/notifications/dlq` now reads the reason
+  from the entry. It also returns a summary with a masked `to`, not the whole
+  job, which held the raw address and the mail body.
 
 - **A mail queued without an id could be skipped as already sent ([#419](https://github.com/docs-plus/docs.plus/issues/419)).**
   BullMQ counter ids restart after a Redis reset, but the sent log keeps

@@ -1143,7 +1143,7 @@ Base path `/api/email` (`src/api/email.ts`). Notification delivery runs through 
 
 ### POST /api/email/send-generic
 
-Send one email directly. Body: `to`, `subject`, `html`, optional `text`, `replyTo` (validated by `sendGenericEmailSchema`). Returns `{ "success": true, "message_id": "..." }`.
+Send one email directly. Body: `to`, `subject`, `html`, optional `text`, `replyTo` (validated by `sendGenericEmailSchema`). Returns `{ "success": true, "message_id": "..." }`, where `message_id` is the queue job id. Without Redis, the mail sends once, inline, and `message_id` is the provider's message id. A failed or skipped inline send answers 500 with `error`, and nothing sends it again.
 
 ### POST /api/email/send-digest
 
@@ -1244,6 +1244,8 @@ Two audit routes are easy to misread. `/audit/media-storage` and `/audit/media-s
 | GET    | `/audit/notifications/email-bounces`        | Bounce list                    |
 | POST   | `/audit/notifications/disable-failed`       | Disable dead subscriptions     |
 | GET    | `/audit/notifications/dlq`                  | BullMQ dead-letter contents    |
+
+The `dlq` route returns `push` and `email`, each with `jobs` and `count`. Each job is a summary: `id`, `name`, `timestamp`, `type`, `failureKind`, `failureCode`, a masked `to` list, and `failedReason`. It never returns the job data, which holds the raw address and the mail body.
 
 **MCP connector usage**
 

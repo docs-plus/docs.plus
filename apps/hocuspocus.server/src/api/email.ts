@@ -20,6 +20,7 @@ import { houseEnvelopeHook } from '../http/envelope'
 import { verifyServiceRole } from '../lib/auth'
 import { emailGateway } from '../lib/email'
 import { emailLogger } from '../lib/logger'
+import { maskEmail } from '../lib/maskEmail'
 import { getServiceRoleClient } from '../lib/supabase'
 import { verifyUnsubscribeToken } from '../lib/unsubscribeToken'
 import {
@@ -165,11 +166,14 @@ emailRouter.post('/bounce', zValidator('json', emailBounceSchema, houseEnvelopeH
     })
 
     if (error) {
-      emailLogger.error({ err: error, email, bounce_type }, 'Failed to record bounce')
+      emailLogger.error(
+        { err: error, to: maskEmail(email), bounce_type },
+        'Failed to record bounce'
+      )
       return c.json({ error: 'Failed to record bounce' }, 500)
     }
 
-    emailLogger.info({ email, bounce_type, provider }, 'Email bounce recorded')
+    emailLogger.info({ to: maskEmail(email), bounce_type, provider }, 'Email bounce recorded')
 
     return c.json({
       success: true,
