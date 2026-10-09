@@ -462,7 +462,10 @@ SMTP_PASS=...
   The `code` is unchanged, and the server logs the original. A Prisma or
   Supabase message used to reach production `500` responses. A handler that
   calls `fail()` keeps its own fixed message, which never carries driver text.
-  The admin resend-confirmation route now answers with a fixed message too
+  Five admin routes now answer a `500` with a fixed message and log the
+  Supabase error. They are resend confirmation, toggle admin, list admins,
+  list media storage and delete ghost account. The media storage export cap
+  still answers `400` with its own message
   ([#413](https://github.com/docs-plus/docs.plus/issues/413)).
 
 - **Service-role functions refuse `public`, `anon` and `authenticated`.** The

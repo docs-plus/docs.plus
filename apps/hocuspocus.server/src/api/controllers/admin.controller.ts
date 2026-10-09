@@ -141,7 +141,7 @@ export async function toggleAdminRole(c: AppContext) {
     if (result.status === 'last_admin') {
       return c.json({ error: 'Cannot remove the last admin' }, 403)
     }
-    if (result.status === 'error') return c.json({ error: result.message }, 500)
+    if (result.status === 'error') throw new Error(result.message)
     return c.json({ success: true, is_admin: result.is_admin })
   } catch (error) {
     adminLogger.error({ err: error }, 'Failed to toggle admin role')
@@ -264,7 +264,7 @@ export async function getAdminUserIds(c: AppContext) {
     if (!supabase) return c.json({ error: 'Supabase not configured' }, 500)
 
     const result = await stats.getAdminUserIds(supabase)
-    if (result.status === 'error') return c.json({ error: result.message }, 500)
+    if (result.status === 'error') throw new Error(result.message)
     return c.json(result.data)
   } catch (error) {
     adminLogger.error({ err: error }, 'Failed to fetch admin user IDs')

@@ -98,9 +98,9 @@ export async function listMediaStorage(c: AppContext) {
   const result = await mediaStorage.listMediaStorage(supabase, query)
 
   if (result.status === 'error') {
+    if (result.message.includes('Export exceeds')) return c.json({ error: result.message }, 400)
     adminLogger.error({ err: result.message }, 'Failed to list media storage')
-    const status = result.message.includes('Export exceeds') ? 400 : 500
-    return c.json({ error: result.message }, status)
+    return c.json({ error: 'Failed to list media storage' }, 500)
   }
 
   return c.json({
@@ -358,7 +358,7 @@ export async function deleteGhostAccount(c: AppContext) {
     if (!userId) return c.json({ error: 'Missing user id' }, 400)
 
     const result = await ghost.deleteGhostAccount(adminAuth, c.get('prisma'), userId)
-    if (result.status === 'error') return c.json({ error: result.message }, 500)
+    if (result.status === 'error') throw new Error(result.message)
     if (result.status === 'soft_delete') {
       return c.json({ success: true, strategy: 'soft_delete', reason: result.reason })
     }
