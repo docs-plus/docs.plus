@@ -89,7 +89,7 @@ describe('pad QR toggle (full stack)', () => {
     // Retrying width check: a click resizes the code over the 200ms panel tween.
     const codeWidthIs = (width: number) =>
       card()
-        .find('[role="img"] svg')
+        .find('[role="img"] > div')
         .should(($img) => expect($img[0].getBoundingClientRect().width).to.be.closeTo(width, 2))
 
     handle()
@@ -101,18 +101,18 @@ describe('pad QR toggle (full stack)', () => {
     card().realHover()
     handle().should('have.css', 'opacity', '1')
 
-    // The room cap is the size container's height less 84px (5.25rem), and never above 636.
+    // The room cap is the size container's height less 84px (5.25rem), and never above 1024.
     card()
       .parent()
       .then(($room) => {
-        const cap = Math.min(636, $room[0].clientHeight - 84)
+        const cap = Math.min(1024, $room[0].clientHeight - 84)
 
         handle().then(($handle) => {
           const box = $handle[0].getBoundingClientRect()
           const x = box.left + box.width / 2
           const y = box.top + box.height / 2
           // Down and left past the cap, with no scroll that would move the handle.
-          const to = { x: Math.max(x - 700, 1), y: Math.min(y + 700, VIEWPORT.height - 1) }
+          const to = { x: Math.max(x - 1000, 1), y: Math.min(y + 700, VIEWPORT.height - 1) }
           handle().realMouseDown({ position: 'center', scrollBehavior: false })
           cy.get('body').realMouseMove(to.x, to.y, {
             keepMouseDownButton: 'left',

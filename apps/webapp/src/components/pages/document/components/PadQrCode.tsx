@@ -6,11 +6,11 @@ import { type CSSProperties, useEffect, useRef, useState } from 'react'
 
 const QrCode = dynamic(() => import('@components/ui/QrCode'), {
   ssr: false,
-  loading: () => <div className="skeleton rounded-box size-32" />
+  loading: () => <div className="skeleton rounded-box aspect-square w-full" />
 })
 
 const MIN_SIZE = 128
-const MAX_SIZE = 636
+const MAX_SIZE = 1024
 const KEY_STEP = 16
 const TAP_PX = 8
 // With Find open the card top is 68px, plus a 2px border and a 14px gap: 84px = 5.25rem.
@@ -124,10 +124,10 @@ export function PadQrCode() {
           aria-label={`QR code for ${shareUrl.replace(/^https?:\/\//, '')}`}
           className={twMerge(popoverPanelClassName, 'w-auto')}
           style={{ '--pad-qr-size': `${size}px` } as CSSProperties}>
-          <QrCode
-            value={shareUrl}
-            className="w-[min(var(--pad-qr-size),calc(100cqh-5.25rem))] group-data-[dragging]/padqr:transition-none motion-safe:transition-[width] motion-safe:duration-[var(--motion-panel)] motion-safe:ease-out"
-          />
+          {/* The light margin is padding, not a module-sized quiet zone, so a large code keeps a thin margin. */}
+          <div className="w-[min(var(--pad-qr-size),calc(100cqh-5.25rem))] bg-[var(--qr-plate)] p-[clamp(0.75rem,calc(var(--pad-qr-size)*0.04),1.5rem)] group-data-[dragging]/padqr:transition-none motion-safe:transition-[width] motion-safe:duration-[var(--motion-panel)] motion-safe:ease-out">
+            <QrCode value={shareUrl} quietZone={0} className="w-full" />
+          </div>
         </div>
         <div
           role="slider"

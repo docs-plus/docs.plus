@@ -23,8 +23,9 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   encodes the same clean pad link as the share card, with no heading, chat or
   Filter terms. The card sits 14px under the toolbar, and below the Find bar
   while Find is open. Hover the card to show a resize handle on its
-  bottom-left corner. Drag it to size the code from 128px to 636px, or less
-  when docked chat or Find needs the room. A click on the handle switches
+  bottom-left corner. Drag it to size the code from 128px to 1024px, or less
+  when docked chat or Find needs the room. The white margin stays thin at
+  every size. A click on the handle switches
   between 128px and the largest size that fits. The arrow keys, Home and End
   work too, and hiding the card sets it back to 128px (#465). A Private pad
   shows no QR, and the toggle is off there. The card always shows while the
