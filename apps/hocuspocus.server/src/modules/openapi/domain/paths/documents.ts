@@ -1,5 +1,6 @@
 import {
   createDocumentSchema,
+  documentIdField,
   documentQuerySchema,
   setDocumentFavoriteSchema,
   trashPurgeSchema,
@@ -7,10 +8,7 @@ import {
   updateDocumentMetadataSchema,
   userIdQuerySchema
 } from '../../../../schemas/document.schema'
-import {
-  documentIdField,
-  MAX_DUPLICATE_MEDIA_OBJECTS
-} from '../../../../schemas/hypermultimedia.schema'
+import { MAX_DUPLICATE_MEDIA_OBJECTS } from '../../../../schemas/hypermultimedia.schema'
 import type { JsonSchema, OpenApiOperation, OpenApiPaths, SecurityRequirement } from '../../types'
 import { envelopeResponse, rateLimitedRef } from '../components'
 import {

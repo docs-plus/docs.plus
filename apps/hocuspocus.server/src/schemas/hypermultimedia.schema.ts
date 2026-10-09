@@ -2,8 +2,6 @@ import { z } from 'zod'
 
 import { documentIdField } from './document.schema'
 
-export { documentIdField }
-
 export const documentIdParamSchema = z.object({
   documentId: documentIdField
 })
