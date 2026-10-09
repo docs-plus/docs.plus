@@ -26,6 +26,9 @@ This file is the operator and API changelog. The pad product lives in the [root 
   `degraded`. An admin reads the provider and the pending count on
   `GET /api/admin/email/setup`. `smtp_configured`, `failed_jobs` and
   `sent_last_hour` are gone.
+- **Owner and author profiles drop `status` ([#434](https://github.com/docs-plus/docs.plus/issues/434)).**
+  The `ownerProfile` on `GET /api/documents/:docName`, the documents list
+  `owner`, and the `history.list` profiles no longer send it. See Security.
 
 ### Migration
 
