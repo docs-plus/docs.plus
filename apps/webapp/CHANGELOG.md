@@ -545,6 +545,17 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - **A notification click opens same-origin URLs only.** The service worker
   opens `/` for any other `action_url`
   ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
+- **Document page props carry no access token.** `documentServerSideProps`
+  sends `isAuthed` in its place, and the WS `token` callback reads
+  `getSession()` only. The service worker caches page props, and its header
+  rule cannot see a token in a body
+  ([#429](https://github.com/docs-plus/docs.plus/issues/429)).
+- **Sign-out clears chat drafts and the old document keys.** Once
+  `signOut()` leaves no session, `useSignOut` awaits `clearAllComposerDrafts()`.
+  It cancels queued draft writes first, so the pagehide flush cannot write one
+  back. Sign-out also removes the unused `docId`, `padName`, `slug` and
+  `title` keys, and `useDocumentMetadata` is deleted
+  ([#444](https://github.com/docs-plus/docs.plus/issues/444)).
 - **A live chat message takes its author's avatar from the profile, not from
   presence.** Any client can send a presence payload. A forged one could change
   the avatar on another user's live messages, and the name and avatar in the

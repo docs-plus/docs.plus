@@ -277,3 +277,19 @@ export function cancelPendingWrites(): void {
   debouncedWriters.forEach((debouncedFn) => debouncedFn.cancel())
   debouncedWriters.clear()
 }
+
+/**
+ * The draft key has no user id, so the next person on this browser would see these drafts.
+ * Cancel first, or the pagehide flush writes a queued draft back after the clear.
+ */
+export async function clearAllComposerDrafts(): Promise<void> {
+  cancelPendingWrites()
+  memory.clear()
+  try {
+    const db = await getDB()
+    await db.composer.clear()
+  } catch (err) {
+    // Drafts may remain on disk. With no IndexedDB, the memory map was the only store.
+    console.warn('[composerDB] clear failed', err)
+  }
+}

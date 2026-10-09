@@ -46,14 +46,12 @@ const requestPersistentStorage = () => {
 interface UseYdocAndProviderProps {
   documentId: string
   slug: string
-  accessToken: string
   deviceType?: DeviceType
 }
 
 const useYdocAndProvider = ({
   documentId,
   slug,
-  accessToken,
   deviceType = 'desktop'
 }: UseYdocAndProviderProps): void => {
   const ydocRef = useRef(new Y.Doc())
@@ -122,7 +120,7 @@ const useYdocAndProvider = ({
           )
         connectedWithSessionRef.current = Boolean(data.session?.user)
         return JSON.stringify({
-          accessToken: data.session?.access_token ?? (error ? '' : (accessToken ?? '')),
+          accessToken: data.session?.access_token ?? '',
           slug,
           deviceType
         })

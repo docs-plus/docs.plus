@@ -44,7 +44,7 @@ const Document = ({
   docMetadata,
   isMobile,
   deviceType,
-  accessToken,
+  isAuthed,
   gateVariant,
   slug,
   gateTitle
@@ -84,13 +84,12 @@ const Document = ({
   // whose document shell is ssr:false, so the server response would carry none of them.
   return (
     <>
-      {!hasProvider && <SlugPageLoader isMobile={isMobile} isAuthed={Boolean(accessToken)} />}
+      {!hasProvider && <SlugPageLoader isMobile={isMobile} isAuthed={isAuthed} />}
 
       <DocumentPage
         docMetadata={docMetadata}
         isMobile={isMobileDevice}
         deviceType={resolvedDeviceType}
-        accessToken={accessToken}
       />
     </>
   )

@@ -89,6 +89,7 @@ if (adapted !== EXPECTED_ADAPTED) {
 // A request with a token or Authorization header never enters Cache Storage.
 // supabase-js always sends Authorization. Sign-out does not clear the cache.
 // It sits first so rule 13 never sees these.
+// This rule reads request headers only, so page props must never carry a token.
 const credentialedRequestRule = {
   urlPattern: ({ request }) =>
     Boolean(request?.headers?.has('token') || request?.headers?.has('authorization')),

@@ -1,5 +1,6 @@
 import { signOut } from '@api'
 import * as toast from '@components/toast'
+import { clearAllComposerDrafts } from '@db/messageComposerDB'
 import { isPushSupported, unregisterPushSubscription } from '@utils/push-notifications'
 import { supabaseClient } from '@utils/supabase'
 import { useState } from 'react'
@@ -28,6 +29,14 @@ export const useSignOut = () => {
         setIsLoading(false)
         return
       }
+    }
+    // After signOut, so a failed sign-out keeps the drafts. The four keys are no longer
+    // written; this removes them from browsers that still hold them.
+    await clearAllComposerDrafts()
+    try {
+      for (const key of ['docId', 'padName', 'slug', 'title']) localStorage.removeItem(key)
+    } catch {
+      // Blocked storage holds no keys to remove.
     }
     // The returning-person row survives sign-out, or it would almost never appear.
     // "Not you?" on that row drops it.

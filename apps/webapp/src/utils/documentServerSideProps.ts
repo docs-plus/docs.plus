@@ -65,16 +65,16 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
 
     const docMetadata = await fetchDocument(documentSlug, session)
 
-    // Workspace upsert + channel hydration are client-side concerns
-    // (useMapDocumentAndWorkspace); shipping only the access token keeps the
-    // refresh token out of __NEXT_DATA__.
+    // Page props carry no token. The service worker caches the HTML and the
+    // `/_next/data` response, and its header rule cannot see a token in a body.
+    // The client reads the session from the same auth cookies.
     return {
       props: {
         docMetadata,
         isMobile,
         deviceType,
         os,
-        accessToken: session?.access_token ?? null
+        isAuthed: Boolean(session)
       }
     }
   } catch (error: unknown) {
@@ -104,8 +104,7 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
           docMetadata: null,
           isMobile,
           deviceType,
-          os,
-          accessToken: session?.access_token ?? null
+          os
         }
       }
     }

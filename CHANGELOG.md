@@ -308,6 +308,13 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   analytics tables or call the admin, cron and notification helper functions.
   Monthly view tables now have row security on
   ([#314](https://github.com/docs-plus/docs.plus/issues/314)).
+- Keep the access token out of the document page data. The offline cache
+  keeps that data, so the next person on a shared device could read the token
+  ([#429](https://github.com/docs-plus/docs.plus/issues/429)).
+- Clear chat drafts on sign-out. A draft belongs to a chat, not to a person,
+  so the next person on a shared browser could see unsent text. Sign-out also
+  removes four old document keys from browser storage
+  ([#444](https://github.com/docs-plus/docs.plus/issues/444)).
 
 ### Removed
 
