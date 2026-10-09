@@ -551,9 +551,9 @@ export const updateDocument = async (
     if (existing?.deletedAt) throw new NotFoundError('Document')
 
     // A purged id must stay gone. Without this, a PUT from a stale tab would re-create
-    // its row and bring the erased document back under the old link.
+    // its row, or edit one the worker re-created, and bring the erased document back.
+    // The WS gate reads the tombstone the same way.
     if (
-      existing == null &&
       (await prisma.documentPurgeTombstone.findUnique({
         where: { documentId },
         select: { documentId: true }
@@ -612,8 +612,7 @@ export const updateDocument = async (
     // Private on writes the mirror first, so a failed write leaves Prisma and the chat public.
     // A failed Prisma write after it leaves the mirror Private while Prisma is public or has no row,
     // so the chat stays closed.
-    const turnsPrivateOn = updateData.isPrivate === true && mayMutateAccess
-    if (turnsPrivateOn) {
+    if (updateData.isPrivate === true) {
       await writeDocumentAccessMirror({ documentId, isPrivate: true, ownerId: ownerAfterWrite })
     }
 
@@ -668,10 +667,8 @@ export const updateDocument = async (
 
     // Written even when the flag did not change, so a retry repairs a failed write.
     // It runs after the seal and the title notice, so a throw here loses neither.
-    // A failed Private-off write leaves the chat closed. Private on lands here only when a
-    // create race stored a different owner from the one the first write used.
-    const mirrorCurrent = turnsPrivateOn && upsertedDoc.ownerId === ownerAfterWrite
-    if (isPrivate !== undefined && mayMutateAccess && !mirrorCurrent) {
+    // A failed Private-off write leaves the chat closed.
+    if (isPrivate !== undefined && mayMutateAccess) {
       await writeDocumentAccessMirror({
         documentId,
         isPrivate: upsertedDoc.isPrivate,
