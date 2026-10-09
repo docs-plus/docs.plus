@@ -4,7 +4,7 @@
 
 -- Members keep read on every object in the channel. The upload readback and
 -- validate_message_medias read an unsent object, and both run as the uploader.
--- The path match is raw on purpose. The GC normalizer stops inlining and keeps signed URLs as is.
+-- The path match is raw on purpose. internal.normalize_chat_media_path stops inlining and keeps signed URLs as is.
 drop policy if exists "Authed can read chat media" on storage.objects;
 create policy "Authed can read chat media" on storage.objects
     for select to authenticated using (

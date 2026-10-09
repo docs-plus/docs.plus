@@ -88,9 +88,6 @@ create policy "Admins can delete others"
 -- ============================================================
 ALTER FUNCTION public.is_admin(check_user_id uuid) SET search_path = public;
 
--- -----------------------------------------------------------------------------
--- Function: public.admin_revoke_admin
--- -----------------------------------------------------------------------------
 -- Count and delete under one table lock, so two admins who revoke each other at
 -- the same moment cannot leave zero admins (#412). Returns false when the user
 -- holds no admin row. Raises 'last_admin' and deletes nothing for the last one.

@@ -1,6 +1,6 @@
 -- Issue #402. Key heading chat channels by (workspace_id, heading_id), not by a global id.
 -- Additive: an old webapp still inserts with `id`, and the fill trigger gives that row heading_id = id.
--- Push it alone, before the code that reads heading_id and before 20261009120000. Every statement can run twice.
+-- Push it with 20261009120000 to 20261009120400, before the apps that read heading_id. Every statement can run twice.
 -- Pairs with scripts/04-channels.sql, 10-2-func-channels.sql and 07-5-email-notifications-pgmq.sql.
 
 set local lock_timeout = '5s';
@@ -33,9 +33,7 @@ for each row
 execute function public.fill_channel_heading_id();
 
 -- A duplicate keeps its source's toc-ids and slugs, so neither key may be global.
-alter table public.channels drop constraint if exists channels_slug_key;
-
--- Production may name the global slug key differently, so drop any unique key on slug alone.
+-- Production may not call it channels_slug_key, so drop every unique key on slug alone.
 do $$
 declare
     v_name text;

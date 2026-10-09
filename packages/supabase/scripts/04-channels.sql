@@ -4,7 +4,6 @@
 create table public.channels (
     id                              varchar(36) default uuid_generate_v4() not null primary key,
     workspace_id                    varchar(36) not null references public.workspaces(id) on delete cascade,
-    -- The toc-id of the heading this chat belongs to. The workspace channel holds the documentId.
     -- fill_channel_heading_id copies id when an insert leaves it out (#402).
     heading_id                      varchar(36) not null,
     created_at                      timestamp with time zone default timezone('utc', now()) not null,

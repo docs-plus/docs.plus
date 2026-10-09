@@ -82,12 +82,10 @@ GRANT SELECT (
     profile_data, created_at, updated_at, deleted_at
 ) ON public.users TO authenticated;
 
--- Mirror the SELECT whitelist for UPDATE so PostgREST cannot accept a PATCH
--- against `email`, `id`, `created_at`, or any column outside the
--- user-editable profile surface. `online_at` is excluded because it's
--- trigger-maintained from `status` writes — granting it directly would
--- let a client antedate themselves and skew the online-window used by
--- push suppression. DEFINER RPCs bypass column grants.
+-- UPDATE allows only the user-editable profile columns, plus `status` for the heartbeat.
+-- `status` is write-only: SELECT does not grant it (#434). `online_at` stays out, because a trigger
+-- sets it from `status` and a direct write could skew the push-suppression online window.
+-- DEFINER RPCs bypass column grants.
 REVOKE UPDATE ON public.users FROM authenticated;
 GRANT UPDATE (
     username, full_name, avatar_url, avatar_updated_at, profile_data, status

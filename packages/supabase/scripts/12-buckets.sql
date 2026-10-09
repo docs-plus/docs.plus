@@ -149,7 +149,7 @@ drop policy if exists "User can delete own chat media" on storage.objects;
 
 -- The upload readback and validate_message_medias read an unsent object as the
 -- uploader, so the member arm must stay.
--- The path match is raw on purpose. The GC normalizer stops inlining and keeps signed URLs as is.
+-- The path match is raw on purpose. internal.normalize_chat_media_path stops inlining and keeps signed URLs as is.
 create policy "Authed can read chat media" on storage.objects
     for select to authenticated using (
         bucket_id = 'media'

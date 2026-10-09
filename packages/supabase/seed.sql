@@ -298,9 +298,6 @@ create policy "Admins can delete others"
 -- ============================================================
 ALTER FUNCTION public.is_admin(check_user_id uuid) SET search_path = public;
 
--- -----------------------------------------------------------------------------
--- Function: public.admin_revoke_admin
--- -----------------------------------------------------------------------------
 -- Count and delete under one table lock, so two admins who revoke each other at
 -- the same moment cannot leave zero admins (#412). Returns false when the user
 -- holds no admin row. Raises 'last_admin' and deletes nothing for the last one.
@@ -428,7 +425,6 @@ grant all on public.document_access to service_role;
 create table public.channels (
     id                              varchar(36) default uuid_generate_v4() not null primary key,
     workspace_id                    varchar(36) not null references public.workspaces(id) on delete cascade,
-    -- The toc-id of the heading this chat belongs to. The workspace channel holds the documentId.
     -- fill_channel_heading_id copies id when an insert leaves it out (#402).
     heading_id                      varchar(36) not null,
     created_at                      timestamp with time zone default timezone('utc', now()) not null,
@@ -9678,7 +9674,7 @@ drop policy if exists "User can delete own chat media" on storage.objects;
 
 -- The upload readback and validate_message_medias read an unsent object as the
 -- uploader, so the member arm must stay.
--- The path match is raw on purpose. The GC normalizer stops inlining and keeps signed URLs as is.
+-- The path match is raw on purpose. internal.normalize_chat_media_path stops inlining and keeps signed URLs as is.
 create policy "Authed can read chat media" on storage.objects
     for select to authenticated using (
         bucket_id = 'media'
@@ -9826,12 +9822,10 @@ GRANT SELECT (
     profile_data, created_at, updated_at, deleted_at
 ) ON public.users TO authenticated;
 
--- Mirror the SELECT whitelist for UPDATE so PostgREST cannot accept a PATCH
--- against `email`, `id`, `created_at`, or any column outside the
--- user-editable profile surface. `online_at` is excluded because it's
--- trigger-maintained from `status` writes — granting it directly would
--- let a client antedate themselves and skew the online-window used by
--- push suppression. DEFINER RPCs bypass column grants.
+-- UPDATE allows only the user-editable profile columns, plus `status` for the heartbeat.
+-- `status` is write-only: SELECT does not grant it (#434). `online_at` stays out, because a trigger
+-- sets it from `status` and a direct write could skew the push-suppression online window.
+-- DEFINER RPCs bypass column grants.
 REVOKE UPDATE ON public.users FROM authenticated;
 GRANT UPDATE (
     username, full_name, avatar_url, avatar_updated_at, profile_data, status

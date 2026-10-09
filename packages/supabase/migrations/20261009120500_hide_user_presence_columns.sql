@@ -1,6 +1,7 @@
 -- Issue #434. No client may read another user's status or last-active time.
 -- Pairs with scripts 13-RLS (authenticated grant), 29-lint-hardening (anon grant)
--- and 17-realtime-replica (publication). Apply after the webapp stops selecting both columns.
+-- and 17-realtime-replica (publication). Hold it out of the first push. Push it with
+-- 20261009130100, at least 24 hours after the apps ship.
 
 set local lock_timeout = '5s';
 
