@@ -223,6 +223,8 @@ Moved verbatim out of the repo-root [AGENTS.md](../../AGENTS.md). The `### Supab
 ### Admin API And Dashboard
 
 - **Any admin-only data path goes through an `is_admin()`-gated `SECURITY DEFINER` RPC or the `service_role` hocuspocus REST API — never a direct anon-key table read.** The browser client is RLS-scoped `authenticated`. Several admin tables/columns are revoked from that role (`users.email`, `push_subscriptions`, `email_queue`) or scoped to the caller's own rows. Direct reads therefore return wrong, zeroed, or `42501` results. Aggregations must paginate past the 1000-row cap.
+- **The ghost-account delete trusts no cached list (#412).** `assertDeletableGhost` (`src/api/services/adminGhostAccounts.service.ts`) is the one gate, and the single and bulk paths call it for each id. It re-reads the auth user and refuses a user who is no longer a ghost, an admin, or an unknown id. A hard delete cascades to `admin_users`, so it would bypass the last-admin guard. A failed impact read or admin read deletes nothing. Both paths lowercase the id first, because Prisma compares `ownerId` as text. Revoking admin goes only through `public.admin_revoke_admin`. Never count and delete in two calls, because two admins could then remove each other.
+- **Every user soft delete goes through `softDeleteUsers` (#427).** The `users` read policies are `USING (true)`, so `deleted_at` alone leaves the name, photo, bio and links public. The helper clears them and sets a `deleted_<12 hex>` username. It then removes the `user_avatars` objects and bans the user. A new deletion path must call the helper, never write `deleted_at` alone. Messages keep their author, because the row stays.
 
 ### Production And Docker Compose
 

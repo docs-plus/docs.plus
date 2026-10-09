@@ -16,6 +16,8 @@ const CACHE_TTL_MS = 5 * 60 * 1000
 // runaway user base. Logged (not silent) when reached.
 const MAX_AUTH_USERS = 50000
 const AUTH_PAGE_SIZE = 1000
+// Must match the bucket that packages/supabase/scripts/12-buckets.sql creates.
+const AVATAR_BUCKET = 'user_avatars'
 
 export type GhostType =
   | 'unconfirmed_magic_link'
@@ -88,6 +90,26 @@ function classifyGhost(user: AuthUser, minAgeDays: number): GhostType | null {
     return 'abandoned_sso'
   if (!user.email_confirmed_at && ageDays > 30) return 'stale_unconfirmed'
   if (!user.last_sign_in_at) return 'never_signed_in'
+  return null
+}
+
+/**
+ * The one gate before a ghost delete. The list is cached, so re-read the user,
+ * who may have signed in since. Refuse admins: a hard delete cascades past the
+ * last-admin guard. Returns the refusal reason, or null. A read fault throws.
+ */
+async function assertDeletableGhost(client: AdminClient, userId: string): Promise<string | null> {
+  const { data, error } = await client.auth.admin.getUserById(userId)
+  if (error || !data.user) return 'User not found'
+  if (!classifyGhost(data.user as AuthUser, 0)) return 'User is no longer a ghost account'
+
+  const admin = await client
+    .from('admin_users')
+    .select('user_id')
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (admin.error) throw admin.error
+  if (admin.data) return 'User is an admin'
   return null
 }
 
@@ -246,20 +268,13 @@ const EMPTY_GHOST_IMPACT: Required<GhostDeletionImpact> = {
   has_blocking_messages: false
 }
 
-async function fetchGhostDeletionImpact(
-  client: AdminClient,
-  userId: string
-): Promise<GhostDeletionImpact | null> {
-  const { data } = await client.rpc('get_user_deletion_impact', { p_user_id: userId })
-  return (Array.isArray(data) ? data[0] : data) ?? null
-}
-
+// A successful read with no row means no dependents.
 export async function getGhostDeletionImpact(
   client: AdminClient,
   userId: string | undefined
-): Promise<{ error: unknown } | { impact: GhostDeletionImpact }> {
+): Promise<{ error: string } | { impact: GhostDeletionImpact }> {
   const { data, error } = await client.rpc('get_user_deletion_impact', { p_user_id: userId })
-  if (error) return { error }
+  if (error) return { error: error.message }
   const impact = Array.isArray(data) ? data[0] : data
   return { impact: impact || EMPTY_GHOST_IMPACT }
 }
@@ -267,35 +282,92 @@ export async function getGhostDeletionImpact(
 export type DeleteGhostResult =
   | { status: 'soft_delete'; reason: string }
   | { status: 'hard_delete' }
+  | { status: 'refused'; reason: string }
   | { status: 'error'; message: string }
 
+const deletedUsername = (id: string): string => `deleted_${id.replace(/-/g, '').slice(0, 12)}`
+
+async function removeAvatarObjects(client: AdminClient, userId: string): Promise<void> {
+  const bucket = client.storage.from(AVATAR_BUCKET)
+  const { data, error } = await bucket.list(userId)
+  if (error) throw error
+  if (!data || data.length === 0) return
+  const removed = await bucket.remove(data.map((file) => `${userId}/${file.name}`))
+  if (removed.error) throw removed.error
+}
+
 /**
- * Smart-delete one ghost account. Soft-delete (deleted_at + ban) preserves
- * history when the user has blocking messages; otherwise hard-delete cascades.
+ * Every user soft delete goes through here. The `users` read policies are
+ * `USING (true)`, so a flag alone leaves the profile public. The row is cleared
+ * first, so a render never points at a deleted avatar. Avatar and ban failures log only.
+ */
+async function softDeleteUsers(
+  client: AdminClient,
+  userIds: string[]
+): Promise<{ id: string; error?: string }[]> {
+  const now = new Date().toISOString()
+  return Promise.all(
+    userIds.map(async (id) => {
+      const { error } = await client
+        .from('users')
+        .update({
+          deleted_at: now,
+          full_name: null,
+          avatar_url: null,
+          avatar_updated_at: null,
+          profile_data: {},
+          username: deletedUsername(id)
+        })
+        .eq('id', id)
+      if (error) return { id, error: error.message }
+
+      const [avatars, ban] = await Promise.allSettled([
+        removeAvatarObjects(client, id),
+        client.auth.admin.updateUserById(id, { ban_duration: '876600h' })
+      ])
+      if (avatars.status === 'rejected')
+        adminLogger.error({ err: avatars.reason, userId: id }, 'Failed to remove avatar objects')
+      const banError = ban.status === 'rejected' ? ban.reason : ban.value.error
+      if (banError)
+        adminLogger.error({ err: banError, userId: id }, 'Failed to ban soft-deleted user')
+      return { id }
+    })
+  )
+}
+
+/**
+ * Smart-delete one ghost account. A user with blocking messages or owned documents
+ * is soft-deleted: banned, with the profile and avatar cleared. Any other user is
+ * hard-deleted. A failed ghost check or impact read deletes nothing.
  */
 export async function deleteGhostAccount(
   client: AdminClient,
   prisma: PrismaClient,
-  userId: string
+  rawUserId: string
 ): Promise<DeleteGhostResult> {
-  const row = await fetchGhostDeletionImpact(client, userId)
+  // Prisma compares ownerId as text, so an uppercase id would count no documents.
+  const userId = rawUserId.toLowerCase()
+  const refusal = await assertDeletableGhost(client, userId)
+  if (refusal) {
+    invalidateGhostCaches()
+    return { status: 'refused', reason: refusal }
+  }
+
+  const read = await getGhostDeletionImpact(client, userId)
+  if ('error' in read) return { status: 'error', message: read.error }
+  const { impact } = read
+
   // Documents live in Postgres, not Supabase, so get_user_deletion_impact cannot
   // see them. Hard-deleting an owner leaves ownerId pointing at nothing, and an
   // ownerless private document is one no endpoint can ever open or delete again.
   const ownedDocuments = await prisma.documentMetadata.count({
     where: { ownerId: userId, deletedAt: null }
   })
-  const hasBlocking = (row?.has_blocking_messages ?? false) || ownedDocuments > 0
+  const hasBlocking = !!impact.has_blocking_messages || ownedDocuments > 0
 
   if (hasBlocking) {
-    const [updateResult, banResult] = await Promise.all([
-      client.from('users').update({ deleted_at: new Date().toISOString() }).eq('id', userId),
-      client.auth.admin.updateUserById(userId, { ban_duration: '876600h' })
-    ])
-
-    if (updateResult.error) return { status: 'error', message: updateResult.error.message }
-    if (banResult.error)
-      adminLogger.error({ err: banResult.error }, 'Failed to ban soft-deleted user')
+    const [result] = await softDeleteUsers(client, [userId])
+    if (result.error) return { status: 'error', message: result.error }
 
     invalidateGhostCaches()
     return {
@@ -303,7 +375,7 @@ export async function deleteGhostAccount(
       reason:
         ownedDocuments > 0
           ? `User owns ${ownedDocuments} document(s) — soft-deleted + banned so they keep an owner`
-          : `User has ${row?.message_count} messages — soft-deleted + banned to preserve history`
+          : `User has ${impact.message_count} messages — soft-deleted + banned to preserve history`
     }
   }
 
@@ -324,17 +396,23 @@ export interface BulkDeleteGhostResult {
 export async function bulkDeleteGhostAccounts(
   client: AdminClient,
   prisma: PrismaClient,
-  userIds: string[]
+  rawUserIds: string[]
 ): Promise<BulkDeleteGhostResult> {
+  const userIds = rawUserIds.map((id) => id.toLowerCase())
   const results: BulkDeleteGhostResult = { hard_deleted: 0, soft_deleted: 0, failed: 0, errors: [] }
 
-  const impactResults = await Promise.all(
+  // Ids are capped at 50 by ghostBulkDeleteSchema. A refused id, a failed impact
+  // read, or a throw counts as failed and is never deleted.
+  const checks = await Promise.all(
     userIds.map(async (userId: string) => {
       try {
-        const impact = await fetchGhostDeletionImpact(client, userId)
-        return { userId, impact }
-      } catch {
-        return { userId, impact: null }
+        const refusal = await assertDeletableGhost(client, userId)
+        if (refusal) return { userId, error: refusal }
+        const read = await getGhostDeletionImpact(client, userId)
+        if ('error' in read) return { userId, error: read.error }
+        return { userId, impact: read.impact }
+      } catch (err) {
+        return { userId, error: err instanceof Error ? err.message : 'Unknown error' }
       }
     })
   )
@@ -350,34 +428,25 @@ export async function bulkDeleteGhostAccounts(
 
   const hardDeleteIds: string[] = []
   const softDeleteIds: string[] = []
-  for (const { userId, impact } of impactResults) {
-    if (owners.has(userId)) {
-      softDeleteIds.push(userId)
+  for (const check of checks) {
+    if ('error' in check) {
+      results.failed++
+      results.errors.push(`${check.userId}: ${check.error}`)
       continue
     }
-    if (!impact) {
-      hardDeleteIds.push(userId)
-      continue
+    if (owners.has(check.userId) || check.impact.has_blocking_messages) {
+      softDeleteIds.push(check.userId)
+    } else {
+      hardDeleteIds.push(check.userId)
     }
-    if (impact.has_blocking_messages) softDeleteIds.push(userId)
-    else hardDeleteIds.push(userId)
   }
 
-  if (softDeleteIds.length > 0) {
-    const now = new Date().toISOString()
-    const { error: updateErr } = await client
-      .from('users')
-      .update({ deleted_at: now })
-      .in('id', softDeleteIds)
-
-    if (updateErr) {
-      results.failed += softDeleteIds.length
-      results.errors.push(`Soft-delete batch failed: ${updateErr.message}`)
+  for (const { id, error } of await softDeleteUsers(client, softDeleteIds)) {
+    if (error) {
+      results.failed++
+      results.errors.push(`${id}: ${error}`)
     } else {
-      await Promise.allSettled(
-        softDeleteIds.map((id) => client.auth.admin.updateUserById(id, { ban_duration: '876600h' }))
-      )
-      results.soft_deleted = softDeleteIds.length
+      results.soft_deleted++
     }
   }
 

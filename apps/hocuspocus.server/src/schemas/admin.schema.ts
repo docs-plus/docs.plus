@@ -95,7 +95,7 @@ export const ghostAccountsQuerySchema = z.object({
 })
 
 export const ghostDeleteSchema = z.object({
-  userId: z.string().uuid()
+  id: z.string().uuid()
 })
 
 export const ghostBulkDeleteSchema = z.object({

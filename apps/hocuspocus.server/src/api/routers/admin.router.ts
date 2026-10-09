@@ -14,6 +14,7 @@ import {
   ghostAccountsQuerySchema,
   ghostBulkDeleteSchema,
   ghostCleanupAnonymousSchema,
+  ghostDeleteSchema,
   ghostResendSchema,
   listDocumentsQuerySchema,
   mcpUsageQuerySchema,
@@ -219,7 +220,11 @@ admin.get('/audit/ghost-accounts/summary', adminController.getGhostAccountsSumma
 
 admin.get('/audit/ghost-accounts/:id/impact', adminController.getGhostDeletionImpact)
 
-admin.delete('/audit/ghost-accounts/:id', adminController.deleteGhostAccount)
+admin.delete(
+  '/audit/ghost-accounts/:id',
+  zValidator('param', ghostDeleteSchema, houseEnvelopeHook),
+  adminController.deleteGhostAccount
+)
 
 admin.post(
   '/audit/ghost-accounts/bulk-delete',

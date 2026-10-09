@@ -429,12 +429,9 @@ export async function toggleAdminRole(
     .maybeSingle()
 
   if (existing) {
-    const { count } = await supabase
-      .from('admin_users')
-      .select('user_id', { count: 'exact', head: true })
-    if ((count ?? 0) <= 1) return { status: 'last_admin' }
-
-    const { error } = await supabase.from('admin_users').delete().eq('user_id', userId)
+    // One locked call: a count and a delete in two calls let two admins remove each other.
+    const { error } = await supabase.rpc('admin_revoke_admin', { p_user_id: userId })
+    if (error?.message === 'last_admin') return { status: 'last_admin' }
     if (error) return { status: 'error', message: error.message }
     return { status: 'ok', is_admin: false }
   }

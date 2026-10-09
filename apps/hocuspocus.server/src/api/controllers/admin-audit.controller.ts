@@ -4,7 +4,7 @@ import { EMAIL_DLQ_NAME } from '../../lib/email/jobIdentity'
 import { adminLogger } from '../../lib/logger'
 import { maskEmail } from '../../lib/maskEmail'
 import { createRedisConnection } from '../../lib/redis'
-import { mediaStorageQuerySchema } from '../../schemas/admin.schema'
+import { type GhostDeleteInput, mediaStorageQuerySchema } from '../../schemas/admin.schema'
 import type { AppContext } from '../../types/hono.types'
 import { toBullMQConnection } from '../../types/redis.types'
 import * as ghost from '../services/adminGhostAccounts.service'
@@ -349,17 +349,17 @@ export async function getGhostDeletionImpact(c: AppContext) {
 
 /**
  * Smart-delete: hard-delete (cascades) when the account has no blocking messages
- * and owns no documents; otherwise soft-delete — set deleted_at and ban the user.
+ * and owns no documents; otherwise soft-delete. Answers 409 when the account is
+ * gone, no longer a ghost, or an admin, because the dashboard list can be stale.
  */
 export async function deleteGhostAccount(c: AppContext) {
   try {
     const adminAuth = getSupabaseClient()
     if (!adminAuth) return c.json({ error: 'Supabase not configured' }, 500)
 
-    const userId = c.req.param('id')
-    if (!userId) return c.json({ error: 'Missing user id' }, 400)
-
+    const { id: userId } = c.req.valid('param' as never) as GhostDeleteInput
     const result = await ghost.deleteGhostAccount(adminAuth, c.get('prisma'), userId)
+    if (result.status === 'refused') return c.json({ error: result.reason }, 409)
     if (result.status === 'error') throw new Error(result.message)
     if (result.status === 'soft_delete') {
       return c.json({ success: true, strategy: 'soft_delete', reason: result.reason })

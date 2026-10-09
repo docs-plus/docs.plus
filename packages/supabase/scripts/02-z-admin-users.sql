@@ -87,3 +87,37 @@ create policy "Admins can delete others"
 -- (idempotent — safe to re-run)
 -- ============================================================
 ALTER FUNCTION public.is_admin(check_user_id uuid) SET search_path = public;
+
+-- -----------------------------------------------------------------------------
+-- Function: public.admin_revoke_admin
+-- -----------------------------------------------------------------------------
+-- Count and delete under one table lock, so two admins who revoke each other at
+-- the same moment cannot leave zero admins (#412). Returns false when the user
+-- holds no admin row. Raises 'last_admin' and deletes nothing for the last one.
+create or replace function public.admin_revoke_admin(p_user_id uuid)
+returns boolean
+language plpgsql
+security invoker
+set search_path = public
+as $$
+begin
+  lock table public.admin_users in share row exclusive mode;
+
+  if not exists (select 1 from public.admin_users where user_id = p_user_id) then
+    return false;
+  end if;
+
+  if (select count(*) from public.admin_users) <= 1 then
+    raise exception 'last_admin' using errcode = 'P0001';
+  end if;
+
+  delete from public.admin_users where user_id = p_user_id;
+  return true;
+end;
+$$;
+
+comment on function public.admin_revoke_admin(uuid) is 'Revoke admin access atomically; refuses to remove the last admin';
+
+-- Only the admin REST API calls it, with the service role.
+revoke all on function public.admin_revoke_admin(uuid) from public, anon, authenticated;
+grant execute on function public.admin_revoke_admin(uuid) to service_role;

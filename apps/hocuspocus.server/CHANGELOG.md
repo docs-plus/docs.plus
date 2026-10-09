@@ -24,6 +24,11 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Migration
 
+**Admin revoke ([#412](https://github.com/docs-plus/docs.plus/issues/412)).** Apply the
+Supabase migration `20261009120400_admin_revoke_admin` before this server
+ships. Without it, every admin revoke answers `500`. Then check that only
+`service_role` can run `public.admin_revoke_admin(uuid)`.
+
 **Media objects ([#408](https://github.com/docs-plus/docs.plus/issues/408)).** New S3 uploads are
 private. Objects written before this release stay `public-read` until you
 change them. Deploy the server first, then set the existing objects private.
@@ -611,6 +616,21 @@ SMTP_PASS=...
   A token already past `exp` is refused like an invalid one. Each signed-in tab
   reconnects about once per token lifetime, which is 1 hour by default
   ([#430](https://github.com/docs-plus/docs.plus/issues/430)).
+- **The ghost-account delete checks each account again before it deletes
+  ([#412](https://github.com/docs-plus/docs.plus/issues/412)).**
+  `DELETE /api/admin/audit/ghost-accounts/:id` answers `409` when the user
+  signed in after the list loaded, is an admin, or does not exist. A non-uuid
+  id answers the house `400`. The bulk delete counts a refused id under `failed`.
+  A failed impact read or admin read now deletes nothing. Before, a failed
+  impact read could fall through to a hard delete. Revoking admin access is one
+  locked call to `public.admin_revoke_admin`, so two revokes at the same moment
+  cannot leave zero admins. See Migration.
+- **A soft delete clears the public profile
+  ([#427](https://github.com/docs-plus/docs.plus/issues/427)).** When a
+  ghost-account delete keeps the row, it now clears the name, photo, bio and
+  links. It sets the username to `deleted_` plus the first 12 hex characters
+  of the id, and removes the user's `user_avatars` objects. Messages keep their
+  author, who shows the placeholder name and the default avatar.
 
 ### Removed
 

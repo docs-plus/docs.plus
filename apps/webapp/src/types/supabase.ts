@@ -1181,6 +1181,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_revoke_admin: { Args: { p_user_id: string }; Returns: boolean }
       advance_read_cursor: {
         Args: { p_channel_id: string; p_up_to_seq: number }
         Returns: undefined
