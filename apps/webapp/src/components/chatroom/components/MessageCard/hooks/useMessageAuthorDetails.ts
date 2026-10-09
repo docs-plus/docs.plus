@@ -1,5 +1,6 @@
+import { getUserProfileForModal } from '@api'
 import type { MessageRowUserDetails } from '@components/chatroom/types/chat-items'
-import { useStore } from '@stores'
+import { useQuery } from '@tanstack/react-query'
 import type { TGroupedMsgRow } from '@types'
 import { useMemo } from 'react'
 
@@ -20,29 +21,39 @@ const toMessageAuthorDetails = (
   avatar_updated_at: raw.avatar_updated_at ?? null
 })
 
-/** Realtime `messages` rows omit `user_details`; fall back to workspace presence profile. */
+const fetchMessageAuthor = async (userId: string): Promise<MessageRowUserDetails> => {
+  const { data, error } = await getUserProfileForModal(userId)
+  if (error) throw error
+  return toMessageAuthorDetails(userId, data)
+}
+
+/**
+ * Realtime rows omit `user_details`, so load the author's public profile.
+ * Never use presence here, because any client can forge a presence payload.
+ */
 export const useMessageAuthorDetails = (message: TGroupedMsgRow): MessageRowUserDetails | null => {
-  const presenceProfile = useStore((state) =>
-    message.user_id ? state.usersPresence.get(message.user_id) : undefined
-  )
+  const userId = message.user_id
+  const { data: profile } = useQuery({
+    queryKey: ['chat-author', userId],
+    queryFn: () => fetchMessageAuthor(userId),
+    enabled: !message.user_details?.id && !!userId,
+    staleTime: Infinity,
+    // A missing user row stays missing, so a retry only delays the id-only avatar.
+    retry: false
+  })
 
   return useMemo((): MessageRowUserDetails | null => {
     const ud = message.user_details
     if (ud?.id) return toMessageAuthorDetails(ud.id, ud)
-
-    const userId = message.user_id
     if (!userId) return null
+    if (profile) return profile
 
-    if (!presenceProfile) {
-      return {
-        id: userId,
-        username: null,
-        fullname: null,
-        avatar_url: null,
-        avatar_updated_at: null
-      }
+    return {
+      id: userId,
+      username: null,
+      fullname: null,
+      avatar_url: null,
+      avatar_updated_at: null
     }
-
-    return toMessageAuthorDetails(userId, presenceProfile)
-  }, [message.user_details, message.user_id, presenceProfile])
+  }, [message.user_details, userId, profile])
 }

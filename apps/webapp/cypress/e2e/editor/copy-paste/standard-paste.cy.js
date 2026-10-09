@@ -56,4 +56,21 @@ describe('Standard Paste (Flat Schema)', () => {
     cy.get('h2[data-toc-id]').should('contain', 'My Heading')
     cy.get('.docy_editor .tiptap.ProseMirror p').should('contain', 'Plain paragraph text')
   })
+
+  it('should not create an upload placeholder from pasted HTML', () => {
+    cy.clearEditor()
+    cy.get('.docy_editor > .tiptap.ProseMirror').type('Paste Target{enter}')
+
+    cy.pasteWithMimeTypes({
+      'text/html':
+        '<div data-type="media-upload-placeholder" filetype="constructor"></div><p>after</p>',
+      'text/plain': 'after'
+    })
+
+    cy.get('.docy_editor .tiptap.ProseMirror p').should('contain', 'after')
+    cy.get('.media-upload-placeholder').should('not.exist')
+
+    cy.get('.docy_editor > .tiptap.ProseMirror').type(' still typing')
+    cy.get('.docy_editor .tiptap.ProseMirror').should('contain', 'still typing')
+  })
 })

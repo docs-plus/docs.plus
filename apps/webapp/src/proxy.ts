@@ -1,4 +1,5 @@
 import { logger } from '@utils/logger'
+import { randomDocumentSlug } from '@utils/sanitizeDocumentSlug'
 import { type NextRequest, NextResponse } from 'next/server'
 
 /** Runs on the Edge Runtime — keep it lightweight and free of Node-only APIs. */
@@ -10,7 +11,7 @@ export async function proxy(request: NextRequest) {
   // new.{domain} → a fresh random document, mirrored by the /new page route.
   const hostname = request.headers.get('host') || ''
   if (hostname.startsWith('new.')) {
-    const randomSlug = (Math.random() + 1).toString(36).substring(2)
+    const randomSlug = randomDocumentSlug()
     const mainHost = hostname.replace(/^new\./, '')
     return NextResponse.redirect(`${request.nextUrl.protocol}//${mainHost}/${randomSlug}`, 307)
   }

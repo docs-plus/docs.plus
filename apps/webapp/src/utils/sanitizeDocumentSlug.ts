@@ -4,9 +4,22 @@ import { isReservedSlug } from './reservedSlugs'
 
 const MIN_SLUG_LENGTH = 3
 const MAX_SLUG_LENGTH = 30
+const SLUG_ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz'
+const RANDOM_SLUG_LENGTH = 11
+// 252 is 36 x 7. A byte at or above it would favour the start of the alphabet.
+const UNBIASED_BYTE_LIMIT = 252
 
+/** The first signed-in edit owns a new document, so its slug must not be guessable. */
 export function randomDocumentSlug(): string {
-  return (Math.random() + 1).toString(36).substring(2)
+  let slug = ''
+  while (slug.length < RANDOM_SLUG_LENGTH) {
+    for (const byte of crypto.getRandomValues(new Uint8Array(16))) {
+      if (byte < UNBIASED_BYTE_LIMIT && slug.length < RANDOM_SLUG_LENGTH) {
+        slug += SLUG_ALPHABET[byte % SLUG_ALPHABET.length]
+      }
+    }
+  }
+  return slug
 }
 
 export function sanitizeDocumentSlug(input?: string): string {

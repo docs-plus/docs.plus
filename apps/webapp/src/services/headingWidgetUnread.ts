@@ -38,7 +38,9 @@ export function syncHeadingWidgetUnread(): void {
     })
 
   source.channels.forEach((_channel, channelId) => {
-    const headingEl = document.querySelector<HTMLElement>(`[data-toc-id="${channelId}"]`)
+    const headingEl = document.querySelector<HTMLElement>(
+      `[data-toc-id="${CSS.escape(channelId)}"]`
+    )
     if (!headingEl) return
     const el = headingEl.querySelector<HTMLElement>(
       `${headingChatBtnSelector}:not([data-heading-id])`

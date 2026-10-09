@@ -5,8 +5,8 @@ import type { MessageStatus } from '../../../types/message'
 /**
  * Author profile inlined by fetch_message_window / fetch_messages_since via
  * user_details_json(u). Optional because base-table inserts and realtime
- * `postgres_changes` payloads do not carry it; consumers must fall back to
- * the auth store for those rows.
+ * `postgres_changes` payloads do not carry it. For those rows,
+ * `useMessageAuthorDetails` loads the author's public profile.
  */
 export type MessageRowUserDetails = {
   id: string

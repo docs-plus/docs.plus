@@ -44,6 +44,7 @@ const MediaUploadPlaceholderComponent: React.FC<NodeViewProps> = ({ node, delete
 
 // The node type stays registered so stored docs containing zombie placeholders
 // from past sessions remain valid under enableContentCheck; nothing inserts it anymore.
+// It has no parseHTML, so a paste can never create it.
 export default Node.create({
   name: 'mediaUploadPlaceholder',
   group: 'block',
@@ -59,10 +60,6 @@ export default Node.create({
       width: { default: null },
       height: { default: null }
     }
-  },
-
-  parseHTML() {
-    return [{ tag: 'div[data-type="media-upload-placeholder"]' }]
   },
 
   renderHTML({ HTMLAttributes }) {

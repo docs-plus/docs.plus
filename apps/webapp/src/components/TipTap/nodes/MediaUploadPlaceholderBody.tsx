@@ -16,7 +16,7 @@ const FileTypeIcon: React.FC<{ fileType: FileType }> = ({ fileType }) => {
     audio: HiOutlineMusicalNote,
     image: HiOutlinePhoto
   }
-  const IconComponent = icons[fileType] || icons.image
+  const IconComponent = Object.hasOwn(icons, fileType) ? icons[fileType] : icons.image
   return <IconComponent className={ICON_CLASS} />
 }
 

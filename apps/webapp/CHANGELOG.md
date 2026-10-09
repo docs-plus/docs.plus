@@ -545,6 +545,20 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - **A notification click opens same-origin URLs only.** The service worker
   opens `/` for any other `action_url`
   ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
+- **A live chat message takes its author's avatar from the profile, not from
+  presence.** Any client can send a presence payload. A forged one could change
+  the avatar on another user's live messages, and the name and avatar in the
+  media viewer. Both now read the profile. One request serves every
+  message by that author
+  ([#428](https://github.com/docs-plus/docs.plus/issues/428)).
+- **A paste or a channel row can no longer crash a document page.** Pasted
+  HTML never creates an upload placeholder, and an unknown file type shows the
+  image icon. The heading unread sync escapes each channel id before it builds
+  a selector ([#436](https://github.com/docs-plus/docs.plus/issues/436)).
+- **A new document link comes from a cryptographic random source.** `/new`,
+  the `new.` host, the home page and shared files make an 11-character link
+  that nobody can predict and claim first
+  ([#442](https://github.com/docs-plus/docs.plus/issues/442)).
 
 ### Removed
 
