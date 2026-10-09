@@ -53,7 +53,7 @@ export default function PrivacyPage() {
       <LegalSection title="Who we share with">
         <ul className="list-disc space-y-2 pl-5">
           <li>Supabase runs sign-in and stores accounts.</li>
-          <li>A separate email provider sends sign-in links for Supabase.</li>
+          <li>Supabase sends your sign-in link through a separate email provider.</li>
           <li>Google runs sign-in and, when configured, Analytics.</li>
           <li>Resend sends notification and digest mail.</li>
         </ul>
@@ -111,6 +111,10 @@ export default function PrivacyPage() {
         <p>We keep account and document data while you use the service.</p>
         <p>A deleted document stays for 30 days. A purge then removes it.</p>
         <p>Resend keeps sent mail and the mail logs for 30 days.</p>
+        <p>
+          If mail to your address bounces, or you mark it as spam, Resend keeps your address on its
+          suppression list until we remove it.
+        </p>
       </LegalSection>
 
       <LegalSection title="Your choices">

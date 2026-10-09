@@ -1,5 +1,5 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
-import { useAuthStore, useChatStore } from '@stores'
+import { useAuthStore, useChatStore, useStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
 
 import MsgComposer from '../MessageComposer/MessageComposer'
@@ -18,6 +18,7 @@ const ChannelComposerWrapper = ({ children, className }: ChannelComposerProps) =
 const AccessControl = () => {
   const { channelId, error, isFeedReady, variant } = useChatroomContext()
   const user = useAuthStore((state) => state.profile)
+  const joinedWorkspace = useStore((state) => state.settings.joinedWorkspace) ?? false
   const channelSettings = useChatStore(
     (state) => state.workspaceSettings.channels.get(channelId) ?? null
   )
@@ -29,7 +30,11 @@ const AccessControl = () => {
   }
 
   // No channel row yet (#402). A visitor still gets the field, so Enter opens sign-in.
-  if (!channelId) return user ? null : <MsgComposer.ComposerLayout />
+  // A signed-in user waits for the join, which lets the row be created.
+  if (!channelId) {
+    if (!user) return <MsgComposer.ComposerLayout />
+    return joinedWorkspace ? null : <ChatroomComposerSkeleton variant={variant} />
+  }
 
   const { isUserChannelMember, isUserChannelOwner, isUserChannelAdmin, channelInfo } =
     channelSettings ?? {}
