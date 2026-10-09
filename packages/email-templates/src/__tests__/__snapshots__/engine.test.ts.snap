@@ -680,6 +680,10 @@ exports[`renderUnsubscribePage snapshot — success 1`] = `
       font-family: inherit;
       cursor: pointer;
     }
+    /* daisyUI btn hover: the same hue, 7% darker. */
+    @media (hover: hover) {
+      .primary:hover { background: color-mix(in oklab, #1a73e8, #000 7%); }
+    }
     .strip {
       display: flex;
       flex-wrap: wrap;
@@ -694,7 +698,7 @@ exports[`renderUnsubscribePage snapshot — success 1`] = `
       line-height: 20px;
     }
     .email { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
-    .strip nav { margin-left: auto; }
+    .strip nav { display: flex; gap: 16px; margin-left: auto; }
     .quiet {
       display: inline-flex;
       align-items: center;
@@ -712,6 +716,9 @@ exports[`renderUnsubscribePage snapshot — success 1`] = `
       .strip { border-top-color: #2d3f57; }
       .message, .strip { color: #a4a7ae; }
       .primary { background: #6ea8ff; color: #0b1220; }
+      @media (hover: hover) {
+        .primary:hover { background: color-mix(in oklab, #6ea8ff, #000 7%); }
+      }
       .quiet { color: #6ea8ff; }
       a:focus-visible, button:focus-visible { outline-color: #6ea8ff; }
     }
@@ -853,6 +860,10 @@ exports[`renderUnsubscribePage snapshot — error 1`] = `
       font-family: inherit;
       cursor: pointer;
     }
+    /* daisyUI btn hover: the same hue, 7% darker. */
+    @media (hover: hover) {
+      .primary:hover { background: color-mix(in oklab, #1a73e8, #000 7%); }
+    }
     .strip {
       display: flex;
       flex-wrap: wrap;
@@ -867,7 +878,7 @@ exports[`renderUnsubscribePage snapshot — error 1`] = `
       line-height: 20px;
     }
     .email { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
-    .strip nav { margin-left: auto; }
+    .strip nav { display: flex; gap: 16px; margin-left: auto; }
     .quiet {
       display: inline-flex;
       align-items: center;
@@ -885,6 +896,9 @@ exports[`renderUnsubscribePage snapshot — error 1`] = `
       .strip { border-top-color: #2d3f57; }
       .message, .strip { color: #a4a7ae; }
       .primary { background: #6ea8ff; color: #0b1220; }
+      @media (hover: hover) {
+        .primary:hover { background: color-mix(in oklab, #6ea8ff, #000 7%); }
+      }
       .quiet { color: #6ea8ff; }
       a:focus-visible, button:focus-visible { outline-color: #6ea8ff; }
     }
