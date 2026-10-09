@@ -36,6 +36,10 @@ const TableOfContentsLoader: React.FC<React.HTMLProps<HTMLDivElement>> = (props)
         <Row widthClassName="w-32" />
         <Nest>
           <Row widthClassName="w-36" />
+          <Nest>
+            <Row widthClassName="w-28" />
+            <Row widthClassName="w-20" />
+          </Nest>
           <Row widthClassName="w-24" />
           <Row widthClassName="w-32" />
         </Nest>
@@ -43,10 +47,22 @@ const TableOfContentsLoader: React.FC<React.HTMLProps<HTMLDivElement>> = (props)
         <Nest>
           <Row widthClassName="w-28" />
           <Row widthClassName="w-20" />
+          <Nest>
+            <Row widthClassName="w-32" />
+            <Nest>
+              <Row widthClassName="w-20" />
+              <Row widthClassName="w-28" />
+            </Nest>
+          </Nest>
         </Nest>
         <Row widthClassName="w-28" />
         <Nest>
           <Row widthClassName="w-32" />
+          <Row widthClassName="w-24" />
+        </Nest>
+        <Row widthClassName="w-20" />
+        <Nest>
+          <Row widthClassName="w-28" />
           <Row widthClassName="w-24" />
         </Nest>
       </div>
