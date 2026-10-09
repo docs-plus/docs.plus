@@ -570,6 +570,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   the `new.` host, the home page and shared files make an 11-character link
   that nobody can predict and claim first
   ([#442](https://github.com/docs-plus/docs.plus/issues/442)).
+- **Profile photos are never stored as SVG.** The `user_avatars` and
+  `channel_avatars` buckets accept JPEG, PNG, GIF and WebP only. Settings
+  converts other images, or shows an error
+  ([#431](https://github.com/docs-plus/docs.plus/issues/431)).
 
 ### Removed
 

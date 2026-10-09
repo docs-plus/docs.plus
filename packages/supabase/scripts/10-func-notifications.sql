@@ -33,11 +33,36 @@ create trigger skip_unopenable_notification
     when (new.channel_id is not null)
     execute function internal.skip_unopenable_notification();
 
--- One @ token rule serves the mention, @everyone and regular-message fan-outs.
--- A token is @ plus the longest run of [A-Za-z0-9_-]. The @ is at the start or
--- after a character outside that set. It names a user only on an exact match.
+-- A picked mention node names its user by data-id, so a rename keeps it (#415). A typed token
+-- is @ plus the longest run of [A-Za-z0-9_-], at the start or after a character outside that set.
+-- It names the exact username holder, unless it equals a node's data-label in the same message.
+-- A junk or 'everyone' id drops out. The @everyone WHEN clauses keep their own copy of the regex.
+create or replace function internal.mentioned_user_ids(p_content text, p_html text)
+returns setof uuid
+language sql
+stable
+set search_path = ''
+as $$
+    with nodes as (
+        select substring(tag[1] from '\sdata-id="([^"]*)"') as id,
+               substring(tag[1] from '\sdata-label="([^"]*)"') as label
+          from regexp_matches(coalesce(p_html, ''), '<span\s[^>]*>', 'g') as tag
+         where tag[1] ~ '\sdata-type="mention"'
+    )
+    select n.id::uuid
+      from nodes n
+     where n.id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    union
+    select u.id
+      from regexp_matches(coalesce(p_content, ''), '(?:^|[^A-Za-z0-9_-])@([A-Za-z0-9_-]+)', 'g') as token
+      join public.users u on u.username = token[1]
+     where token[1] <> 'everyone'
+       and not exists (select 1 from nodes n where n.label = token[1]);
+$$;
 
--- Fans out one notification per channel member mentioned by @username.
+revoke all on function internal.mentioned_user_ids(text, text) from public, anon, authenticated;
+
+-- Fans out one notification per mentioned channel member.
 CREATE OR REPLACE FUNCTION create_mention_notifications()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -77,8 +102,7 @@ BEGIN
     -- 3) Truncate message content for preview
     truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
-    -- 4) One row per distinct token that names a member who has not muted.
-    --    `everyone` belongs to create_everyone_notifications, never to a user.
+    -- 4) One row per mentioned member who has not muted.
     INSERT INTO public.notifications (
         receiver_user_id,
         sender_user_id,
@@ -89,21 +113,16 @@ BEGIN
         created_at
     )
     SELECT
-        u.id,
+        m.id,
         NEW.user_id,
         'mention',
         NEW.id,
         NEW.channel_id,
         truncated_content,
         timezone('utc', now())
-    FROM (
-        SELECT DISTINCT token_match[1] AS username
-          FROM regexp_matches(NEW.content, '(?:^|[^A-Za-z0-9_-])@([A-Za-z0-9_-]+)', 'g') AS token_match
-    ) AS tokens
-    JOIN public.users u ON u.username = tokens.username
-    JOIN public.channel_members cm ON cm.member_id = u.id AND cm.channel_id = NEW.channel_id
-    WHERE tokens.username <> 'everyone'
-      AND u.id <> NEW.user_id
+    FROM internal.mentioned_user_ids(NEW.content, NEW.html) AS m(id)
+    JOIN public.channel_members cm ON cm.member_id = m.id AND cm.channel_id = NEW.channel_id
+    WHERE m.id <> NEW.user_id
       AND cm.mute_in_app_notifications = false
       AND cm.notif_state <> 'MUTED';
 
@@ -293,7 +312,7 @@ EXECUTE FUNCTION create_everyone_notifications();
 COMMENT ON TRIGGER create_everyone_notifications ON public.messages IS 'Creates notifications for all channel members when @everyone is used.';
 
 -- Notifies offline, ALL-state, non-muted channel members for messages with no
--- @everyone and no @ token that names another channel member.
+-- @everyone and no mention of another channel member.
 CREATE OR REPLACE FUNCTION create_regular_message_notifications()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -323,14 +342,13 @@ BEGIN
         RETURN NEW; -- Sender doesn't exist or is deleted
     END IF;
 
-    -- 3) A token that names another member makes this a mention message.
+    -- 3) A mention of another member makes this a mention message.
     --    Membership alone decides it: a muted member still counts.
     IF EXISTS (
         SELECT 1
-          FROM regexp_matches(NEW.content, '(?:^|[^A-Za-z0-9_-])@([A-Za-z0-9_-]+)', 'g') AS token_match
-          JOIN public.users u ON u.username = token_match[1]
-          JOIN public.channel_members cm ON cm.member_id = u.id AND cm.channel_id = NEW.channel_id
-         WHERE u.id <> NEW.user_id
+          FROM internal.mentioned_user_ids(NEW.content, NEW.html) AS m(id)
+          JOIN public.channel_members cm ON cm.member_id = m.id AND cm.channel_id = NEW.channel_id
+         WHERE m.id <> NEW.user_id
     ) THEN
         RETURN NEW;
     END IF;
@@ -374,7 +392,7 @@ COMMENT ON FUNCTION create_regular_message_notifications() IS 'Creates notificat
 
 -- Trigger: create_regular_message_notifications
 -- A WHEN clause cannot hold a subquery, so it skips only @everyone here.
--- The function body skips a message whose token names another channel member.
+-- The function body skips a message that mentions another channel member.
 DROP TRIGGER IF EXISTS create_regular_message_notifications ON public.messages;
 CREATE TRIGGER create_regular_message_notifications
 AFTER INSERT ON public.messages

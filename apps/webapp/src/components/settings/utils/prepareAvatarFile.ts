@@ -1,5 +1,5 @@
 /** Bucket allowlist in `packages/supabase/scripts/12-buckets.sql` (`user_avatars`). */
-const BUCKET_MIME = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'])
+const BUCKET_MIME = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
 
 const EDGE_STEPS_PX = [512, 320, 192] as const
 
@@ -33,13 +33,6 @@ const canvasToFile = (
  * canvas when needed and emit a bucket-safe file (upload path stays avatar.png).
  */
 export async function prepareAvatarFile(file: File, maxBytes: number): Promise<File> {
-  if (file.type === 'image/svg+xml') {
-    if (file.size > maxBytes) {
-      throw new Error(`Avatar must be less than ${Math.round(maxBytes / 1024)}KB`)
-    }
-    return file
-  }
-
   if (BUCKET_MIME.has(file.type) && file.size <= maxBytes) {
     return file
   }

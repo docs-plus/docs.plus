@@ -318,6 +318,12 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   so the next person on a shared browser could see unsent text. Sign-out also
   removes four old document keys from browser storage
   ([#444](https://github.com/docs-plus/docs.plus/issues/444)).
+- Clear the text, files and comment quote of a chat message when it is
+  deleted. Before, a signed-in account could still read a deleted message
+  ([#435](https://github.com/docs-plus/docs.plus/issues/435)).
+- Show guests only the chat files that a sent message uses. An upload that
+  was never sent can no longer be listed with the public key
+  ([#432](https://github.com/docs-plus/docs.plus/issues/432)).
 
 ### Removed
 

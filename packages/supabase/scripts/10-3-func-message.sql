@@ -121,6 +121,33 @@ EXECUTE FUNCTION handle_message_soft_delete();
 
 COMMENT ON TRIGGER message_soft_delete ON public.messages IS 'Handles additional actions when a message is soft-deleted.';
 
+-- A delete must not leave readable text (#435). The AFTER trigger above cannot change NEW,
+-- and it still reads OLD.medias for media cleanup. The WHEN clause leaves out OLD, so a
+-- `deleted_at = deleted_at` write clears rows that are already deleted.
+CREATE OR REPLACE FUNCTION public.clear_deleted_message_text()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+BEGIN
+    NEW.content := NULL;
+    NEW.html := NULL;
+    NEW.medias := NULL;
+    -- The jsonb minus operator raises on a scalar, and metadata has no type check.
+    NEW.metadata := CASE WHEN jsonb_typeof(NEW.metadata) = 'object' THEN NEW.metadata - 'comment' ELSE NEW.metadata END;
+    RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION public.clear_deleted_message_text() IS 'Clears the text, files and comment quote of a soft-deleted message.';
+
+DROP TRIGGER IF EXISTS clear_deleted_message_text ON public.messages;
+CREATE TRIGGER clear_deleted_message_text
+BEFORE UPDATE OF deleted_at ON public.messages
+FOR EACH ROW
+WHEN (NEW.deleted_at IS NOT NULL)
+EXECUTE FUNCTION public.clear_deleted_message_text();
+
 /**
  * Function: update_message_preview_on_edit
  * Description: Updates message previews across the system when a message is edited

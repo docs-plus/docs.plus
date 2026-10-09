@@ -577,6 +577,11 @@ SMTP_PASS=...
   deploy this server, and run `scripts/backfill-document-access.ts` (a dry run
   first, then `--apply`). Until the backfill runs, Private documents' chat
   stays open ([#396](https://github.com/docs-plus/docs.plus/issues/396)).
+- **A picked chat mention notifies the user it was picked for.** A username
+  change no longer sends it to the next holder of that name. A typed `@name`
+  still notifies the current holder of that name. The Supabase migration
+  `20261009120300_resolve_mentions_by_user_id` carries the fix; push it by hand
+  ([#415](https://github.com/docs-plus/docs.plus/issues/415)).
 - **A local media purge refuses an id that is not one path segment.** On a
   server with `PERSIST_TO_LOCAL_STORAGE=true`, a crafted document id could
   reach another document's media folder, or a folder outside the storage root.

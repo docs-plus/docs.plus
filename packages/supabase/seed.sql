@@ -5595,6 +5595,33 @@ EXECUTE FUNCTION handle_message_soft_delete();
 
 COMMENT ON TRIGGER message_soft_delete ON public.messages IS 'Handles additional actions when a message is soft-deleted.';
 
+-- A delete must not leave readable text (#435). The AFTER trigger above cannot change NEW,
+-- and it still reads OLD.medias for media cleanup. The WHEN clause leaves out OLD, so a
+-- `deleted_at = deleted_at` write clears rows that are already deleted.
+CREATE OR REPLACE FUNCTION public.clear_deleted_message_text()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+BEGIN
+    NEW.content := NULL;
+    NEW.html := NULL;
+    NEW.medias := NULL;
+    -- The jsonb minus operator raises on a scalar, and metadata has no type check.
+    NEW.metadata := CASE WHEN jsonb_typeof(NEW.metadata) = 'object' THEN NEW.metadata - 'comment' ELSE NEW.metadata END;
+    RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION public.clear_deleted_message_text() IS 'Clears the text, files and comment quote of a soft-deleted message.';
+
+DROP TRIGGER IF EXISTS clear_deleted_message_text ON public.messages;
+CREATE TRIGGER clear_deleted_message_text
+BEFORE UPDATE OF deleted_at ON public.messages
+FOR EACH ROW
+WHEN (NEW.deleted_at IS NOT NULL)
+EXECUTE FUNCTION public.clear_deleted_message_text();
+
 /**
  * Function: update_message_preview_on_edit
  * Description: Updates message previews across the system when a message is edited
@@ -7088,11 +7115,36 @@ create trigger skip_unopenable_notification
     when (new.channel_id is not null)
     execute function internal.skip_unopenable_notification();
 
--- One @ token rule serves the mention, @everyone and regular-message fan-outs.
--- A token is @ plus the longest run of [A-Za-z0-9_-]. The @ is at the start or
--- after a character outside that set. It names a user only on an exact match.
+-- A picked mention node names its user by data-id, so a rename keeps it (#415). A typed token
+-- is @ plus the longest run of [A-Za-z0-9_-], at the start or after a character outside that set.
+-- It names the exact username holder, unless it equals a node's data-label in the same message.
+-- A junk or 'everyone' id drops out. The @everyone WHEN clauses keep their own copy of the regex.
+create or replace function internal.mentioned_user_ids(p_content text, p_html text)
+returns setof uuid
+language sql
+stable
+set search_path = ''
+as $$
+    with nodes as (
+        select substring(tag[1] from '\sdata-id="([^"]*)"') as id,
+               substring(tag[1] from '\sdata-label="([^"]*)"') as label
+          from regexp_matches(coalesce(p_html, ''), '<span\s[^>]*>', 'g') as tag
+         where tag[1] ~ '\sdata-type="mention"'
+    )
+    select n.id::uuid
+      from nodes n
+     where n.id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    union
+    select u.id
+      from regexp_matches(coalesce(p_content, ''), '(?:^|[^A-Za-z0-9_-])@([A-Za-z0-9_-]+)', 'g') as token
+      join public.users u on u.username = token[1]
+     where token[1] <> 'everyone'
+       and not exists (select 1 from nodes n where n.label = token[1]);
+$$;
 
--- Fans out one notification per channel member mentioned by @username.
+revoke all on function internal.mentioned_user_ids(text, text) from public, anon, authenticated;
+
+-- Fans out one notification per mentioned channel member.
 CREATE OR REPLACE FUNCTION create_mention_notifications()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -7132,8 +7184,7 @@ BEGIN
     -- 3) Truncate message content for preview
     truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
-    -- 4) One row per distinct token that names a member who has not muted.
-    --    `everyone` belongs to create_everyone_notifications, never to a user.
+    -- 4) One row per mentioned member who has not muted.
     INSERT INTO public.notifications (
         receiver_user_id,
         sender_user_id,
@@ -7144,21 +7195,16 @@ BEGIN
         created_at
     )
     SELECT
-        u.id,
+        m.id,
         NEW.user_id,
         'mention',
         NEW.id,
         NEW.channel_id,
         truncated_content,
         timezone('utc', now())
-    FROM (
-        SELECT DISTINCT token_match[1] AS username
-          FROM regexp_matches(NEW.content, '(?:^|[^A-Za-z0-9_-])@([A-Za-z0-9_-]+)', 'g') AS token_match
-    ) AS tokens
-    JOIN public.users u ON u.username = tokens.username
-    JOIN public.channel_members cm ON cm.member_id = u.id AND cm.channel_id = NEW.channel_id
-    WHERE tokens.username <> 'everyone'
-      AND u.id <> NEW.user_id
+    FROM internal.mentioned_user_ids(NEW.content, NEW.html) AS m(id)
+    JOIN public.channel_members cm ON cm.member_id = m.id AND cm.channel_id = NEW.channel_id
+    WHERE m.id <> NEW.user_id
       AND cm.mute_in_app_notifications = false
       AND cm.notif_state <> 'MUTED';
 
@@ -7348,7 +7394,7 @@ EXECUTE FUNCTION create_everyone_notifications();
 COMMENT ON TRIGGER create_everyone_notifications ON public.messages IS 'Creates notifications for all channel members when @everyone is used.';
 
 -- Notifies offline, ALL-state, non-muted channel members for messages with no
--- @everyone and no @ token that names another channel member.
+-- @everyone and no mention of another channel member.
 CREATE OR REPLACE FUNCTION create_regular_message_notifications()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -7378,14 +7424,13 @@ BEGIN
         RETURN NEW; -- Sender doesn't exist or is deleted
     END IF;
 
-    -- 3) A token that names another member makes this a mention message.
+    -- 3) A mention of another member makes this a mention message.
     --    Membership alone decides it: a muted member still counts.
     IF EXISTS (
         SELECT 1
-          FROM regexp_matches(NEW.content, '(?:^|[^A-Za-z0-9_-])@([A-Za-z0-9_-]+)', 'g') AS token_match
-          JOIN public.users u ON u.username = token_match[1]
-          JOIN public.channel_members cm ON cm.member_id = u.id AND cm.channel_id = NEW.channel_id
-         WHERE u.id <> NEW.user_id
+          FROM internal.mentioned_user_ids(NEW.content, NEW.html) AS m(id)
+          JOIN public.channel_members cm ON cm.member_id = m.id AND cm.channel_id = NEW.channel_id
+         WHERE m.id <> NEW.user_id
     ) THEN
         RETURN NEW;
     END IF;
@@ -7429,7 +7474,7 @@ COMMENT ON FUNCTION create_regular_message_notifications() IS 'Creates notificat
 
 -- Trigger: create_regular_message_notifications
 -- A WHEN clause cannot hold a subquery, so it skips only @everyone here.
--- The function body skips a message whose token names another channel member.
+-- The function body skips a message that mentions another channel member.
 DROP TRIGGER IF EXISTS create_regular_message_notifications ON public.messages;
 CREATE TRIGGER create_regular_message_notifications
 AFTER INSERT ON public.messages
@@ -9438,13 +9483,13 @@ on conflict (id) do nothing;
 -- User Avatars Bucket Configuration
 -- Purpose: Store user profile images.
 -- Max File Size: 1MB (1,048,576 bytes).
--- Allowed MIME Types: JPEG, PNG, SVG, GIF, WebP.
+-- Allowed MIME Types: JPEG, PNG, GIF, WebP. No SVG: a public bucket serves it inline (#431).
 insert into storage.buckets
     (id, name, public, file_size_limit, allowed_mime_types)
 values
     ('user_avatars', 'user_avatars', true, 1048576,
-     '{"image/jpeg", "image/png", "image/svg+xml", "image/gif", "image/webp"}')
-on conflict (id) do nothing;
+     '{"image/jpeg", "image/png", "image/gif", "image/webp"}')
+on conflict (id) do update set allowed_mime_types = excluded.allowed_mime_types;
 
 -- Policies for User Avatars Bucket.
 -- SELECT is scoped to the caller's own folder. Public-URL reads are
@@ -9484,13 +9529,13 @@ create policy "User can delete own avatar" on storage.objects
 -- Channel Avatars Bucket Configuration
 -- Purpose: Store images for chat channels.
 -- Max File Size: 1MB (1,048,576 bytes).
--- Allowed MIME Types: JPEG, PNG, SVG, GIF, WebP.
+-- Allowed MIME Types: JPEG, PNG, GIF, WebP. No SVG: a public bucket serves it inline (#431).
 insert into storage.buckets
     (id, name, public, file_size_limit, allowed_mime_types)
 values
     ('channel_avatars', 'channel_avatars', true, 1048576,
-     '{"image/jpeg", "image/png", "image/svg+xml", "image/gif", "image/webp"}')
-on conflict (id) do nothing;
+     '{"image/jpeg", "image/png", "image/gif", "image/webp"}')
+on conflict (id) do update set allowed_mime_types = excluded.allowed_mime_types;
 
 -- Policies for Channel Avatars Bucket
 -- Channel avatars: same SELECT-for-upload-readback rationale as above.
@@ -9548,9 +9593,9 @@ on conflict (id) do update set
 
 -- Path layout: `{userId}/{channelId}/{uuid}.ext` — ownership + channel membership gate reads.
 -- In EXISTS (FROM channels c), qualify objects.name: bare `name` binds to c.name.
--- Signed-in reads go through internal.can_read_channel and uploads through
--- internal.is_channel_member. Both carry the Private gate (#396), and a past member
--- (left_at set) loses both.
+-- Members read every object and upload through internal.is_channel_member. Anon and
+-- signed-in non-members read only objects that a live message names (#432).
+-- All arms carry the Private gate (#396), and a past member (left_at set) loses member read.
 drop policy if exists "Media files are publicly accessible" on storage.objects;
 drop policy if exists "User can upload media files" on storage.objects;
 drop policy if exists "User can update own media files" on storage.objects;
@@ -9563,10 +9608,26 @@ drop policy if exists "User can upload own channel chat media" on storage.object
 drop policy if exists "User can update own chat media" on storage.objects;
 drop policy if exists "User can delete own chat media" on storage.objects;
 
+-- The upload readback and validate_message_medias read an unsent object as the
+-- uploader, so the member arm must stay.
+-- The path match is raw on purpose. The GC normalizer stops inlining and keeps signed URLs as is.
 create policy "Authed can read chat media" on storage.objects
     for select to authenticated using (
         bucket_id = 'media'
-        and internal.can_read_channel((storage.foldername(objects.name))[2])
+        and (
+            internal.is_channel_member((storage.foldername(objects.name))[2])
+            or (
+                internal.can_read_channel((storage.foldername(objects.name))[2])
+                and exists (
+                    select 1
+                      from public.messages m
+                     cross join lateral jsonb_array_elements(coalesce(m.medias, '[]'::jsonb)) elem
+                     where m.channel_id = (storage.foldername(objects.name))[2]
+                       and m.deleted_at is null
+                       and coalesce(nullif(elem->>'path', ''), elem->>'url') = objects.name
+                )
+            )
+        )
     );
 
 create policy "Anon can read public channel chat media" on storage.objects
@@ -9578,6 +9639,14 @@ create policy "Anon can read public channel chat media" on storage.objects
              where c.id = (storage.foldername(objects.name))[2]
                and c.type = 'PUBLIC'
                and internal.can_open_document(c.workspace_id, null::uuid)
+        )
+        and exists (
+            select 1
+              from public.messages m
+             cross join lateral jsonb_array_elements(coalesce(m.medias, '[]'::jsonb)) elem
+             where m.channel_id = (storage.foldername(objects.name))[2]
+               and m.deleted_at is null
+               and coalesce(nullif(elem->>'path', ''), elem->>'url') = objects.name
         )
     );
 

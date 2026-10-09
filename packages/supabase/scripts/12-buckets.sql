@@ -22,13 +22,13 @@
 -- User Avatars Bucket Configuration
 -- Purpose: Store user profile images.
 -- Max File Size: 1MB (1,048,576 bytes).
--- Allowed MIME Types: JPEG, PNG, SVG, GIF, WebP.
+-- Allowed MIME Types: JPEG, PNG, GIF, WebP. No SVG: a public bucket serves it inline (#431).
 insert into storage.buckets
     (id, name, public, file_size_limit, allowed_mime_types)
 values
     ('user_avatars', 'user_avatars', true, 1048576,
-     '{"image/jpeg", "image/png", "image/svg+xml", "image/gif", "image/webp"}')
-on conflict (id) do nothing;
+     '{"image/jpeg", "image/png", "image/gif", "image/webp"}')
+on conflict (id) do update set allowed_mime_types = excluded.allowed_mime_types;
 
 -- Policies for User Avatars Bucket.
 -- SELECT is scoped to the caller's own folder. Public-URL reads are
@@ -68,13 +68,13 @@ create policy "User can delete own avatar" on storage.objects
 -- Channel Avatars Bucket Configuration
 -- Purpose: Store images for chat channels.
 -- Max File Size: 1MB (1,048,576 bytes).
--- Allowed MIME Types: JPEG, PNG, SVG, GIF, WebP.
+-- Allowed MIME Types: JPEG, PNG, GIF, WebP. No SVG: a public bucket serves it inline (#431).
 insert into storage.buckets
     (id, name, public, file_size_limit, allowed_mime_types)
 values
     ('channel_avatars', 'channel_avatars', true, 1048576,
-     '{"image/jpeg", "image/png", "image/svg+xml", "image/gif", "image/webp"}')
-on conflict (id) do nothing;
+     '{"image/jpeg", "image/png", "image/gif", "image/webp"}')
+on conflict (id) do update set allowed_mime_types = excluded.allowed_mime_types;
 
 -- Policies for Channel Avatars Bucket
 -- Channel avatars: same SELECT-for-upload-readback rationale as above.
@@ -132,9 +132,9 @@ on conflict (id) do update set
 
 -- Path layout: `{userId}/{channelId}/{uuid}.ext` — ownership + channel membership gate reads.
 -- In EXISTS (FROM channels c), qualify objects.name: bare `name` binds to c.name.
--- Signed-in reads go through internal.can_read_channel and uploads through
--- internal.is_channel_member. Both carry the Private gate (#396), and a past member
--- (left_at set) loses both.
+-- Members read every object and upload through internal.is_channel_member. Anon and
+-- signed-in non-members read only objects that a live message names (#432).
+-- All arms carry the Private gate (#396), and a past member (left_at set) loses member read.
 drop policy if exists "Media files are publicly accessible" on storage.objects;
 drop policy if exists "User can upload media files" on storage.objects;
 drop policy if exists "User can update own media files" on storage.objects;
@@ -147,10 +147,26 @@ drop policy if exists "User can upload own channel chat media" on storage.object
 drop policy if exists "User can update own chat media" on storage.objects;
 drop policy if exists "User can delete own chat media" on storage.objects;
 
+-- The upload readback and validate_message_medias read an unsent object as the
+-- uploader, so the member arm must stay.
+-- The path match is raw on purpose. The GC normalizer stops inlining and keeps signed URLs as is.
 create policy "Authed can read chat media" on storage.objects
     for select to authenticated using (
         bucket_id = 'media'
-        and internal.can_read_channel((storage.foldername(objects.name))[2])
+        and (
+            internal.is_channel_member((storage.foldername(objects.name))[2])
+            or (
+                internal.can_read_channel((storage.foldername(objects.name))[2])
+                and exists (
+                    select 1
+                      from public.messages m
+                     cross join lateral jsonb_array_elements(coalesce(m.medias, '[]'::jsonb)) elem
+                     where m.channel_id = (storage.foldername(objects.name))[2]
+                       and m.deleted_at is null
+                       and coalesce(nullif(elem->>'path', ''), elem->>'url') = objects.name
+                )
+            )
+        )
     );
 
 create policy "Anon can read public channel chat media" on storage.objects
@@ -162,6 +178,14 @@ create policy "Anon can read public channel chat media" on storage.objects
              where c.id = (storage.foldername(objects.name))[2]
                and c.type = 'PUBLIC'
                and internal.can_open_document(c.workspace_id, null::uuid)
+        )
+        and exists (
+            select 1
+              from public.messages m
+             cross join lateral jsonb_array_elements(coalesce(m.medias, '[]'::jsonb)) elem
+             where m.channel_id = (storage.foldername(objects.name))[2]
+               and m.deleted_at is null
+               and coalesce(nullif(elem->>'path', ''), elem->>'url') = objects.name
         )
     );
 
