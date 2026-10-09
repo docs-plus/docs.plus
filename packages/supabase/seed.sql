@@ -4181,10 +4181,15 @@ $$;
 -- 11. Grant Permissions for Admin Functions
 -- -----------------------------------------------------------------------------
 
-grant execute on function public.get_document_views_summary() to authenticated;
-grant execute on function public.get_top_viewed_documents(integer, integer) to authenticated;
-grant execute on function public.get_document_views_trend(text, integer) to authenticated;
-grant execute on function public.get_document_view_stats(text) to authenticated;
+-- Only the service_role admin API calls these. Mirrors migration 20260609092031.
+revoke execute on function public.get_document_views_summary() from public, anon, authenticated;
+revoke execute on function public.get_top_viewed_documents(integer, integer) from public, anon, authenticated;
+revoke execute on function public.get_document_views_trend(text, integer) from public, anon, authenticated;
+revoke execute on function public.get_document_view_stats(text) from public, anon, authenticated;
+grant execute on function public.get_document_views_summary() to service_role;
+grant execute on function public.get_top_viewed_documents(integer, integer) to service_role;
+grant execute on function public.get_document_views_trend(text, integer) to service_role;
+grant execute on function public.get_document_view_stats(text) to service_role;
 
 -- pg_cron runs these as the owner. No browser path calls them.
 revoke all on function public.create_document_views_partitions() from public, anon, authenticated;
