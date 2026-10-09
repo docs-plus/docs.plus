@@ -336,12 +336,8 @@ export async function isSubscribed(): Promise<boolean> {
 
 // The stamp doubles as the opt-in record: present means this device registered and kept push on.
 function readSubscriptionTimestamp(): number | null {
-  try {
-    const timestamp = localStorage.getItem(SUBSCRIPTION_TIMESTAMP_KEY)
-    return timestamp ? parseInt(timestamp, 10) : null
-  } catch {
-    return null
-  }
+  const timestamp = localStorage.getItem(SUBSCRIPTION_TIMESTAMP_KEY)
+  return timestamp ? parseInt(timestamp, 10) : null
 }
 
 function markSubscriptionFresh(): void {
@@ -407,12 +403,11 @@ async function runRefresh(): Promise<void> {
     const existing = await registration.pushManager.getSubscription()
     const savedAt = readSubscriptionTimestamp()
 
-    // No subscription and no stamp: never opted in here, or turned push off.
-    if (!existing && savedAt === null) return
+    // No stamp: never opted in here, or turned push off.
+    if (savedAt === null) return
     if (
       existing &&
       hasCurrentKey(existing, VAPID_PUBLIC_KEY) &&
-      savedAt !== null &&
       Date.now() - savedAt < RESAVE_INTERVAL_MS
     ) {
       return

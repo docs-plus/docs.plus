@@ -174,19 +174,6 @@ self.addEventListener("push", (event) => {
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
-// The worker has no user session, so it cannot save the new endpoint.
-// The client saves it at the first signed-in load after its daily stamp
-// expires, so within a day.
-self.addEventListener("pushsubscriptionchange", (event) => {
-  const key = event.oldSubscription?.options?.applicationServerKey;
-  if (!key) return;
-  event.waitUntil(
-    self.registration.pushManager
-      .subscribe({ userVisibleOnly: true, applicationServerKey: key })
-      .catch((error) => console.error("[SW Extension] Could not subscribe again", error))
-  );
-});
-
 // Handle notification click
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();

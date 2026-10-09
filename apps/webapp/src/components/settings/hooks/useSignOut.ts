@@ -14,8 +14,10 @@ export const useSignOut = () => {
     setIsLoading(true)
     await flushPendingPreferenceWrites()
     // Before signOut, because the RPC needs a live session. The next person on this browser
-    // then gets no pushes for this account.
-    if (isPushSupported()) await unregisterPushSubscription()
+    // then gets no pushes for this account. Without permission no live subscription is left.
+    if (isPushSupported() && Notification.permission === 'granted') {
+      await unregisterPushSubscription()
+    }
     const { error } = await signOut()
     if (error) {
       // auth-js drops the local session even when the server call fails. Stay only if it did not,
