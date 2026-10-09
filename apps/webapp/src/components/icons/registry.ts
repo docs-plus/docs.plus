@@ -65,7 +65,6 @@ import {
   LuMessageSquareText,
   LuMessagesSquare,
   LuMic,
-  LuMinimize2,
   LuMinus,
   LuMonitor,
   LuMoon,
@@ -194,7 +193,6 @@ export const Icons = {
   play: LuPlay,
   pause: LuPause,
   maximize2: LuMaximize2,
-  minimize2: LuMinimize2,
   fullscreen: LuFullscreen,
   qrCode: LuQrCode,
 

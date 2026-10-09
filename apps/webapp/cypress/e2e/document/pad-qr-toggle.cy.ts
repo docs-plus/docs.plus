@@ -8,6 +8,7 @@ const toggle = () => cy.get('[data-testid="toolbar-qr"]', { timeout: 40000 })
 const card = () => cy.get('[data-testid="pad-qr-code"]')
 const freshSlug = () => `e2e-qr-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 const modKey = Cypress.platform === 'darwin' ? 'Meta' : 'Control'
+const VIEWPORT = { width: 1680, height: 1050 }
 
 const intersects = (a: DOMRect, b: DOMRect) =>
   a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom
@@ -19,7 +20,7 @@ describe('pad QR toggle (full stack)', () => {
 
   beforeEach(() => {
     slug = freshSlug()
-    cy.viewport(1680, 1050)
+    cy.viewport(VIEWPORT.width, VIEWPORT.height)
   })
 
   it('is a toggle button with one name in both states', () => {
@@ -74,7 +75,7 @@ describe('pad QR toggle (full stack)', () => {
     })
   })
 
-  it('sits 14px under the toolbar and doubles on demand', () => {
+  it('sits 14px under the toolbar and resizes from its corner handle', () => {
     cy.visit(`/${slug}`)
     toggle().click()
     card().should('be.visible')
@@ -84,23 +85,47 @@ describe('pad QR toggle (full stack)', () => {
       })
     })
 
-    const size = () => cy.get('[data-testid="pad-qr-size"]')
-    // Retrying width check: the code grows over the 200ms panel tween.
+    const handle = () => card().find('[data-testid="pad-qr-resize"]')
+    // Retrying width check: a click resizes the code over the 200ms panel tween.
     const codeWidthIs = (width: number) =>
       card()
         .find('[role="img"] svg')
         .should(($img) => expect($img[0].getBoundingClientRect().width).to.be.closeTo(width, 2))
-    const veil = () => card().find('[data-testid="qr-veil"]')
-    veil().should('have.css', 'opacity', '0')
+
+    handle()
+      .should('have.attr', 'role', 'slider')
+      .and('have.attr', 'aria-label', 'Resize QR code')
+      .and('have.attr', 'aria-valuenow', '128')
+      .and('have.css', 'opacity', '0')
+    codeWidthIs(128)
     card().realHover()
-    veil().should('have.css', 'opacity', '1')
-    size().should('have.attr', 'aria-pressed', 'false')
-    codeWidthIs(128)
-    size().click()
-    size().should('have.attr', 'aria-pressed', 'true')
-    codeWidthIs(256)
-    size().click()
-    codeWidthIs(128)
+    handle().should('have.css', 'opacity', '1')
+
+    // The room cap is the size container's height less 84px (5.25rem), and never above 636.
+    card()
+      .parent()
+      .then(($room) => {
+        const cap = Math.min(636, $room[0].clientHeight - 84)
+
+        handle().then(($handle) => {
+          const box = $handle[0].getBoundingClientRect()
+          const x = box.left + box.width / 2
+          const y = box.top + box.height / 2
+          // Down and left past the cap, with no scroll that would move the handle.
+          const to = { x: Math.max(x - 700, 1), y: Math.min(y + 700, VIEWPORT.height - 1) }
+          handle().realMouseDown({ position: 'center', scrollBehavior: false })
+          cy.get('body').realMouseMove(to.x, to.y, {
+            keepMouseDownButton: 'left',
+            scrollBehavior: false
+          })
+          cy.get('body').realMouseUp({ ...to, scrollBehavior: false })
+        })
+        codeWidthIs(cap)
+
+        card().realHover()
+        handle().realClick({ scrollBehavior: false })
+        codeWidthIs(128)
+      })
   })
 
   it('shows the card on a narrow window too, and hides it with the toggle', () => {
