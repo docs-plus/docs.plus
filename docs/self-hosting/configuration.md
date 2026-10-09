@@ -235,6 +235,8 @@ The function is a Custom Access Token hook, which every Supabase plan has. It re
 
 **Hosted Supabase.** In the Supabase dashboard, open **Authentication > Hooks**. Add the **Customize Access Token (JWT) Claims** hook, choose **Postgres**, and pick that function. The hook runs each time Supabase issues a token. If sign-in or a token refresh fails after you turn it on, turn the hook off again.
 
+**Secure password change.** In the same dashboard, open the **Email** provider settings and turn on **Secure password change**. It asks for a recent sign-in before a password change. Supabase counts a session under 24 hours old as recent, so this setting is only an extra layer. The hook is the control that refuses a password sign-in.
+
 **Local stack.** `packages/supabase/config.toml` has the hook block, commented out.
 
 ```toml

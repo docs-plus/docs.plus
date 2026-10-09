@@ -526,7 +526,7 @@ SMTP_PASS=...
   Copies already in a browser cache stay until their one-year `immutable`
   entry expires. See Migration for existing objects.
 
-- **Supabase refuses a connected app's token.** Run
+- **Supabase refuses a connected app's token on the Data API, Storage and Realtime.** Run
   `packages/supabase/scripts/31-connected-app-token-gate.sql` once, or push
   the paired migration `20260928120000_refuse_connected_app_tokens`. The Data
   API answers `403` with the code `connected_app`. Storage and Realtime refuse
@@ -544,6 +544,17 @@ SMTP_PASS=...
   Confirm email must stay on. The operator turns the hook on, as
   [configuration](../../docs/self-hosting/configuration.md#turn-off-password-sign-in)
   says. It stays off on the local stack.
+
+- **The MCP reference names what the Supabase gate covers ([#441](https://github.com/docs-plus/docs.plus/issues/441)).**
+  [The reference](../../docs/mcp/reference.md#authorization) said that
+  Supabase refuses a connected app's token, with no limit. The gate covers only
+  the Data API, Storage and Realtime. The Supabase Auth API has no such check,
+  so the reference now points to the password sign-in hook. In production, also
+  turn on Secure password change, as
+  [configuration](../../docs/self-hosting/configuration.md#turn-off-password-sign-in)
+  says. The local `packages/supabase/config.toml` now sets
+  `secure_password_change = true`. A running local stack takes it after a
+  Supabase stop and start.
 
 - **Outside development, `getErrorResponse` answers every 5xx with `Internal server error`.**
   The `code` is unchanged, and the server logs the original. A Prisma or
