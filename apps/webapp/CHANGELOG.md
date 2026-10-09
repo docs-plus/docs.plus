@@ -503,21 +503,20 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 - **Push recovers on a signed-in load.** `refreshSubscriptionIfNeeded` saves
   the subscription again at most once a day and never unsubscribes a working
-  subscription. It restores a missing subscription when permission is
-  granted. It subscribes again when the VAPID key changed. The old refresh
+  subscription. It restores a missing subscription when push was on for this
+  device, so a subscription the browser replaced is saved at once. It
+  subscribes again when the VAPID key changed. The old refresh
   ran every 30 days and unsubscribed first, so it could break a working
   subscription
   ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
 - **Sign-out unregisters this device's push subscription first.**
-  `useSignOut` calls `unregisterPushSubscription` before `signOut()`, because
-  the RPC needs a live session. The next person on this browser no longer
+  `useSignOut` calls `unregisterPushSubscription` before `signOut()` when
+  notification permission is granted, because the RPC needs a live session. The next person on this browser no longer
   gets the old account's pushes
   ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
-- **The service worker keeps push alive.** It subscribes again on
-  `pushsubscriptionchange`. The client saves the new endpoint within a day, at
-  the first signed-in load after its daily stamp expires. A bad or empty
-  payload still shows a generic notification, because Chrome can revoke a
-  subscription that shows nothing. Every server type has a title,
+- **Every push shows a notification.** A bad or empty payload still shows a
+  generic notification, because Chrome can revoke a subscription that shows
+  nothing. Every server type has a title,
   `content_change` and `system_alert` included
   ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
 
