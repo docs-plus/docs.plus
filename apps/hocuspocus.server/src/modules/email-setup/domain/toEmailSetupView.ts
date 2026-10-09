@@ -51,7 +51,7 @@ const envLinesToAdd = (facts: EmailEnvFacts): string[] => {
   if (!facts.from) lines.push('EMAIL_FROM=')
   if (target === 'resend') {
     if (!facts.set.RESEND_API_KEY) lines.push('RESEND_API_KEY=')
-    if (facts.webhookSecret !== 'set') lines.push('RESEND_WEBHOOK_SECRET=')
+    if (facts.webhookSecretState !== 'set') lines.push('RESEND_WEBHOOK_SECRET=')
   } else {
     if (!facts.smtpHost) lines.push('SMTP_HOST=')
     if (facts.set.SMTP_USER && !facts.set.SMTP_PASS) lines.push('SMTP_PASS=')
@@ -85,7 +85,7 @@ export function toEmailSetupView(
     publicUrl: facts.publicUrl,
     secrets,
     webhook: {
-      secret: facts.webhookSecret,
+      secret: facts.webhookSecretState,
       url: facts.publicUrl
         ? `${facts.publicUrl.replace(/\/+$/, '')}/api/email/webhooks/resend`
         : null

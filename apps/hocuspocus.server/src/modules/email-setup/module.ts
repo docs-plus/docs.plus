@@ -1,7 +1,7 @@
 import type { Hono } from 'hono'
 
 import { createRouter } from './http/router'
-import { createLatestBounceReader } from './infra/latestBounce'
+import { createLatestBounceReader } from './infra/latestBounceReader'
 import { createTestSendBudget } from './infra/testSendBudget'
 import type { InitDeps } from './types'
 

@@ -64,18 +64,18 @@ export const createController =
   (deps: ControllerDeps): Handler =>
   async (c) => {
     const body = new Uint8Array(await c.req.arrayBuffer())
-    const messageId = c.req.header('svix-id')
+    const svixId = c.req.header('svix-id')
     const check = await verifySignature(
       deps.webhookSecret,
       {
-        id: messageId,
+        id: svixId,
         timestamp: c.req.header('svix-timestamp'),
         signature: c.req.header('svix-signature')
       },
       body,
       Math.floor(Date.now() / 1000)
     )
-    if (check !== 'valid' || !messageId) {
+    if (check !== 'valid' || !svixId) {
       deps.logger.warn({ reason: check }, 'email webhook signature rejected')
       return unauthorized(c)
     }
@@ -84,7 +84,7 @@ export const createController =
     try {
       payload = JSON.parse(new TextDecoder().decode(body))
     } catch {
-      deps.logger.warn({ svixId: messageId }, 'email webhook body is not JSON')
+      deps.logger.warn({ svixId }, 'email webhook body is not JSON')
       return fail(c, 400, 'BAD_REQUEST', 'Webhook body is not JSON')
     }
 
@@ -93,9 +93,9 @@ export const createController =
 
     let claim
     try {
-      claim = await deps.dedupe.claim(messageId)
+      claim = await deps.dedupe.claim(svixId)
     } catch (err) {
-      deps.logger.error({ err, svixId: messageId }, 'email webhook dedupe unavailable')
+      deps.logger.error({ err, svixId }, 'email webhook dedupe unavailable')
       return fail(c, 503, 'SERVICE_UNAVAILABLE', 'Event not recorded. Retry later.')
     }
     // `done` is a redelivery of a recorded event: a 409 would make Svix retry it.
@@ -107,19 +107,16 @@ export const createController =
     try {
       await applyEvent(event, deps)
     } catch (err) {
-      deps.logger.error(
-        { err, svixId: messageId, type: event.type },
-        'email webhook event not recorded'
-      )
-      await deps.dedupe.release(messageId).catch((releaseErr: unknown) => {
-        deps.logger.warn({ err: releaseErr, svixId: messageId }, 'email webhook key not released')
+      deps.logger.error({ err, svixId, type: event.type }, 'email webhook event not recorded')
+      await deps.dedupe.release(svixId).catch((releaseErr: unknown) => {
+        deps.logger.warn({ err: releaseErr, svixId }, 'email webhook key not released')
       })
       return fail(c, 500, 'INTERNAL_SERVER_ERROR', 'Event not recorded. Retry later.')
     }
 
     // The write stands. A lost done mark only lets a redelivery after 60 s write again.
-    await deps.dedupe.markDone(messageId).catch((err: unknown) => {
-      deps.logger.warn({ err, svixId: messageId }, 'email webhook key not marked done')
+    await deps.dedupe.markDone(svixId).catch((err: unknown) => {
+      deps.logger.warn({ err, svixId }, 'email webhook key not marked done')
     })
     return ok(c, { received: true })
   }

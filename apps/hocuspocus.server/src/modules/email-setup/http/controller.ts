@@ -4,6 +4,7 @@ import type { Handler } from 'hono'
 import type { Logger } from 'pino'
 
 import { fail, ok } from '../../../http/envelope'
+import { inlineIdempotencyKey } from '../../../lib/email/jobIdentity'
 import {
   EMAIL_CHECK_TIMEOUT_MS,
   type EmailMessage,
@@ -68,7 +69,7 @@ export const createGetSetup =
       queue: {
         connected: queue?.available ?? false,
         pending: queue ? queue.waiting + queue.delayed : 0,
-        dlqDepth: settled(dlqDepth, deps.logger, 'email DLQ depth')
+        dlqDepth: settled(dlqDepth, deps.logger, 'DLQ depth')
       }
     })
     return ok(c, view)
@@ -113,7 +114,7 @@ export const createTestSend =
     try {
       const sent = await deps.deliverEmail(testMessage(delivery.from, user.email), {
         jobId: id,
-        idempotencyKey: `${delivery.keyNamespace}/test/${id}`
+        idempotencyKey: inlineIdempotencyKey(delivery.keyNamespace, id)
       })
       return ok(c, {
         sent: true,

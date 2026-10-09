@@ -92,7 +92,7 @@ const valueColumns = [
 export default function EmailSetupPage() {
   const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['admin', 'email', 'setup'],
-    queryFn: fetchEmailSetup
+    queryFn: ({ signal }) => fetchEmailSetup({ signal })
   })
   const testSend = useMutation({ mutationFn: sendTestEmail })
 

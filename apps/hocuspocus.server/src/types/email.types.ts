@@ -110,7 +110,6 @@ export interface EmailGatewayHealth {
   queue_connected: boolean
   pending_jobs: number
   failed_jobs: number
-  sent_last_hour: number
 }
 
 export interface EmailStatusCallback {

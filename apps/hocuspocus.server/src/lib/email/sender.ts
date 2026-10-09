@@ -21,7 +21,7 @@ import type {
   NotificationType
 } from '../../types/email.types'
 import { emailLogger } from '../logger'
-import { maskEmail } from '../maskEmail'
+import { maskEmail, maskEmailsIn } from '../maskEmail'
 import { sanitizePlainText } from '../sanitizePlainText'
 import { getServiceRoleClient } from '../supabase'
 import type { UnsubscribeAction } from '../unsubscribeToken'
@@ -268,7 +268,11 @@ export async function sendEmailInline(data: EmailJobData): Promise<EmailResult> 
   } catch (err) {
     // deliverEmail already logged a provider failure, and `invalid` pages on its own line.
     if (!(err instanceof EmailSendError)) emailLogger.error({ err }, 'Email build failed')
-    return { success: false, error: err instanceof Error ? err.message : String(err), queue_id }
+    return {
+      success: false,
+      error: maskEmailsIn(err instanceof Error ? err.message : String(err)),
+      queue_id
+    }
   }
 }
 

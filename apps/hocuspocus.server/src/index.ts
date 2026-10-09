@@ -122,17 +122,17 @@ app.route(HYPERMULTIMEDIA_MOUNT_PATH, hypermultimediaRouter)
 app.route('/api/email', emailRouter)
 // Optional: with no valid secret the route stays unmounted and answers 404.
 // An invalid secret never holds product mail; it only logs why.
-const { delivery, webhookSecret, webhookSecretInvalid } = config.email
+const { delivery, webhookSecret, facts } = config.email
 if (webhookSecret) {
   const emailWebhooksModule = emailWebhooks.init({
     webhookSecret,
     namespaceTag: delivery.status === 'ready' ? resendTagValue(delivery.keyNamespace) : null,
     redis: getRedisClient(),
-    recordEmailBounce: (event) => recordEmailBounce(getServiceRoleClient(), event),
+    recordEmailBounce,
     logger: logger.child({ module: 'email-webhooks' })
   })
   app.route('/api/email/webhooks', emailWebhooksModule.router)
-} else if (webhookSecretInvalid) {
+} else if (facts.webhookSecretState === 'invalid') {
   restApiLogger.error(
     { variable: 'RESEND_WEBHOOK_SECRET', rule: 'base64 of at least 24 bytes' },
     'email webhook secret invalid'
@@ -142,7 +142,7 @@ if (webhookSecret) {
 // handler answers first, so `is_admin` runs once per request.
 const emailSetupModule = emailSetup.init({
   delivery,
-  facts: config.email.facts,
+  facts,
   adminAuth: adminAuthMiddleware,
   getEmailProvider,
   deliverEmail,

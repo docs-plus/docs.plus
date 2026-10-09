@@ -1,7 +1,7 @@
 /**
  * Email routes. There is no per-notification send endpoint. That mail takes the
  * queue path: Supabase email_queue → pg_cron → pgmq → pgmqConsumer → BullMQ →
- * SMTP. The worker delivers it, never a request to this router.
+ * the provider (SMTP or Resend). The worker delivers it, never a request to this router.
  */
 
 import { resolveMx } from 'node:dns/promises'
@@ -107,7 +107,7 @@ emailRouter.post(
   }
 )
 
-/** Public, so status only (#405). The admin Email setup page has the detail. */
+/** Public, so status only (#423). The admin Email setup page has the detail. */
 emailRouter.get('/health', async (c) => {
   try {
     const { queue_connected } = await emailGateway.getHealth()
@@ -154,7 +154,7 @@ emailRouter.post('/bounce', zValidator('json', emailBounceSchema, houseEnvelopeH
 
   const event = c.req.valid('json')
   try {
-    const bounceId = await recordEmailBounce(getServiceRoleClient(), event)
+    const bounceId = await recordEmailBounce(event)
     return c.json({
       success: true,
       bounce_id: bounceId,
@@ -353,6 +353,11 @@ type UnsubscribeOutcome =
   { status: 'ok'; result: UnsubscribeResult } | { status: 'unconfigured' } | { status: 'failed' }
 
 const INVALID_TOKEN_MESSAGE = 'This unsubscribe link is invalid or has expired.'
+const SERVICE_ERROR_PAGE = {
+  title: 'Service error',
+  message: 'Unable to process your request. Please try again later.'
+}
+const INVALID_TOKEN_PAGE = { title: 'Unable to unsubscribe', message: INVALID_TOKEN_MESSAGE }
 
 /** The one token check. GET and POST both call it, so they cannot disagree on a token. */
 function checkUnsubscribeToken(token: string): UnsubscribePayload | 'unconfigured' | null {
@@ -404,14 +409,7 @@ async function applyUnsubscribeAsPage(c: Context, token: string): Promise<Respon
   try {
     const outcome = await processUnsubscribe(token)
 
-    if (outcome.status === 'unconfigured') {
-      return c.html(
-        renderUnsubscribePage({
-          title: 'Service error',
-          message: 'Unable to process your request. Please try again later.'
-        })
-      )
-    }
+    if (outcome.status === 'unconfigured') return c.html(renderUnsubscribePage(SERVICE_ERROR_PAGE))
 
     if (outcome.status === 'failed') {
       return c.html(
@@ -445,7 +443,7 @@ async function applyUnsubscribeAsPage(c: Context, token: string): Promise<Respon
 
     return c.html(
       renderUnsubscribePage({
-        title: 'Unable to unsubscribe',
+        ...INVALID_TOKEN_PAGE,
         message: result.message || INVALID_TOKEN_MESSAGE
       })
     )
@@ -477,19 +475,8 @@ emailRouter.get('/unsubscribe', (c) => {
   }
 
   const payload = checkUnsubscribeToken(token)
-  if (payload === 'unconfigured') {
-    return c.html(
-      renderUnsubscribePage({
-        title: 'Service error',
-        message: 'Unable to process your request. Please try again later.'
-      })
-    )
-  }
-  if (!payload) {
-    return c.html(
-      renderUnsubscribePage({ title: 'Unable to unsubscribe', message: INVALID_TOKEN_MESSAGE })
-    )
-  }
+  if (payload === 'unconfigured') return c.html(renderUnsubscribePage(SERVICE_ERROR_PAGE))
+  if (!payload) return c.html(renderUnsubscribePage(INVALID_TOKEN_PAGE))
 
   return c.html(
     renderUnsubscribePage({

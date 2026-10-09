@@ -4,16 +4,16 @@ export type DedupeClaim = 'claimed' | 'pending' | 'done'
 
 export interface WebhookDedupe {
   /** Throws on a Redis error, so the caller answers 5xx and nothing is written unclaimed. */
-  claim(messageId: string): Promise<DedupeClaim>
-  markDone(messageId: string): Promise<void>
-  release(messageId: string): Promise<void>
+  claim(svixId: string): Promise<DedupeClaim>
+  markDone(svixId: string): Promise<void>
+  release(svixId: string): Promise<void>
 }
 
 const PENDING_TTL_SECONDS = 60
 // Svix retries for about 27 h. A retry after this key expires can write one more row.
 const DONE_TTL_SECONDS = 24 * 60 * 60
 
-const keyOf = (messageId: string): string => `email:webhook:${messageId}`
+const keyOf = (svixId: string): string => `email:webhook:${svixId}`
 
 /**
  * Three states per svix-id: absent, `pending` while one request records it, and
@@ -30,19 +30,19 @@ export function createWebhookDedupe(redis: RedisClient | null): WebhookDedupe {
   }
 
   return {
-    async claim(messageId) {
-      const key = keyOf(messageId)
+    async claim(svixId) {
+      const key = keyOf(svixId)
       if ((await redis.set(key, 'pending', 'EX', PENDING_TTL_SECONDS, 'NX')) === 'OK') {
         return 'claimed'
       }
       // A key that expired between the two calls reads as pending; the retry claims it.
       return (await redis.get(key)) === 'done' ? 'done' : 'pending'
     },
-    async markDone(messageId) {
-      await redis.set(keyOf(messageId), 'done', 'EX', DONE_TTL_SECONDS)
+    async markDone(svixId) {
+      await redis.set(keyOf(svixId), 'done', 'EX', DONE_TTL_SECONDS)
     },
-    async release(messageId) {
-      await redis.del(keyOf(messageId))
+    async release(svixId) {
+      await redis.del(keyOf(svixId))
     }
   }
 }

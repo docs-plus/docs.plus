@@ -58,7 +58,7 @@ export interface EmailSetupView {
   smtp: { host: string | null; port: number }
   publicUrl: string | null
   secrets: Record<EmailSecretName, 'set' | 'missing'>
-  webhook: { secret: EmailEnvFacts['webhookSecret']; url: string | null }
+  webhook: { secret: EmailEnvFacts['webhookSecretState']; url: string | null }
   connection: ConnectionView
   latestBounce: BounceView
   queue: EmailSetupExtras['queue']

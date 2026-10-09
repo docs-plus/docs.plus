@@ -350,7 +350,7 @@ export async function drainEmailDeadLetterQueue({
 export async function getEmailDlqDepth(): Promise<number | null> {
   if (!EmailDeadLetterQueue) return null
   const counts = await EmailDeadLetterQueue.getJobCounts(...EMAIL_DLQ_PARKED_STATES)
-  return EMAIL_DLQ_PARKED_STATES.reduce((sum, state) => sum + (counts[state] ?? 0), 0)
+  return Object.values(counts).reduce((sum, n) => sum + n, 0)
 }
 
 export async function getEmailQueueHealth() {

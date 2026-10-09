@@ -95,8 +95,6 @@ export const config = {
     appUrl,
     unsubscribeSecret: env.EMAIL_UNSUBSCRIBE_SECRET,
     webhookSecret,
-    // Set but invalid, so REST can say why the webhook route is not mounted.
-    webhookSecretInvalid: emailFacts.webhookSecret === 'invalid',
     gateway: {
       workerConcurrency: env.EMAIL_WORKER_CONCURRENCY,
       rateLimitMax: env.EMAIL_RATE_LIMIT_MAX,

@@ -74,7 +74,7 @@ export interface EmailEnvFacts {
   smtpHost: string | null
   smtpPort: number
   publicUrl: string | null
-  webhookSecret: 'set' | 'missing' | 'invalid'
+  webhookSecretState: 'set' | 'missing' | 'invalid'
   set: Record<EmailSecretName, boolean>
 }
 
@@ -89,7 +89,11 @@ export function describeEmailEnv(
     smtpHost: nonBlank(env.SMTP_HOST) ?? null,
     smtpPort: env.SMTP_PORT,
     publicUrl: nonBlank(env.PUBLIC_RESTAPI_URL) ?? null,
-    webhookSecret: !webhookRaw ? 'missing' : resolveWebhookSecret(webhookRaw) ? 'set' : 'invalid',
+    webhookSecretState: !webhookRaw
+      ? 'missing'
+      : resolveWebhookSecret(webhookRaw)
+        ? 'set'
+        : 'invalid',
     set: {
       RESEND_API_KEY: Boolean(nonBlank(env.RESEND_API_KEY)),
       SMTP_USER: Boolean(nonBlank(env.SMTP_USER)),

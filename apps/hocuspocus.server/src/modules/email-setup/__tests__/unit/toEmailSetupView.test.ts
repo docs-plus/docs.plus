@@ -21,7 +21,7 @@ const ALL_SET: EmailEnvFacts = {
   smtpHost: null,
   smtpPort: 587,
   publicUrl: 'https://prodback.docs.plus',
-  webhookSecret: 'set',
+  webhookSecretState: 'set',
   set: { RESEND_API_KEY: true, SMTP_USER: true, SMTP_PASS: true, EMAIL_UNSUBSCRIBE_SECRET: true }
 }
 
@@ -31,7 +31,7 @@ const NONE_SET: EmailEnvFacts = {
   smtpHost: null,
   smtpPort: 587,
   publicUrl: null,
-  webhookSecret: 'missing',
+  webhookSecretState: 'missing',
   set: {
     RESEND_API_KEY: false,
     SMTP_USER: false,

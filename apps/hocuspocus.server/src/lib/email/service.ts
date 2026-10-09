@@ -112,8 +112,7 @@ export class EmailGatewayService extends NotificationGatewayBase {
       provider: delivery.status === 'ready' ? delivery.provider.name : null,
       queue_connected: queueHealth.available,
       pending_jobs: queueHealth.waiting + queueHealth.delayed,
-      failed_jobs: queueHealth.failed,
-      sent_last_hour: queueHealth.completed
+      failed_jobs: queueHealth.failed
     }
   }
 
