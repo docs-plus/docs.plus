@@ -86,11 +86,11 @@ Then edit the five hard-coded hostname lines in `docker-compose.prod.yml`. Searc
 
 | Line | Currently                             | Serves                   |
 | ---- | ------------------------------------- | ------------------------ |
-| 220  | `prodback.docs.plus` and `/api`       | The REST API             |
-| 226  | `prodback.docs.plus` and `/health`    | Health checks            |
-| 322  | `prodback.docs.plus` and `/websocket` | The collaboration socket |
-| 522  | `docs.plus` and two aliases           | The editor               |
-| 598  | `admin.docs.plus`                     | The admin dashboard      |
+| 224  | `prodback.docs.plus` and `/api`       | The REST API             |
+| 230  | `prodback.docs.plus` and `/health`    | Health checks            |
+| 334  | `prodback.docs.plus` and `/websocket` | The collaboration socket |
+| 539  | `docs.plus` and two aliases           | The editor               |
+| 615  | `admin.docs.plus`                     | The admin dashboard      |
 
 Next step: replace each with your own domain. No environment variable covers these, so skipping this step means nothing routes.
 

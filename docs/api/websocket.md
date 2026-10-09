@@ -18,15 +18,18 @@ import { HocuspocusProvider } from '@hocuspocus/provider'
 const provider = new HocuspocusProvider({
   url: 'ws://localhost:4001',
   name: '<DOCUMENT_ID>',
-  token: JSON.stringify({
-    accessToken: '<jwt>',
-    slug: '<SLUG>',
-    deviceType: 'desktop'
-  })
+  token: async () =>
+    JSON.stringify({
+      accessToken: await getAccessToken(),
+      slug: '<SLUG>',
+      deviceType: 'desktop'
+    })
 })
 ```
 
-Three values to replace. `<DOCUMENT_ID>` is the 19-character id from a document read or a create call — see [Quickstart](quickstart.md). `<jwt>` is the access token Supabase Auth returns for a signed-in person. `<SLUG>` is that document's slug.
+Two values and one function to replace. `<DOCUMENT_ID>` is the 19-character id from a document read or a create call — see [Quickstart](quickstart.md). `<SLUG>` is that document's slug. `getAccessToken()` stands for your own code that returns a current Supabase access token for the signed-in person.
+
+**Pass `token` as a function.** The server closes a signed-in socket with code `4408` when its access token expires. The provider then reconnects and calls `token` again. A fixed string resends the expired token. In production, the server refuses a token that is already past its expiry.
 
 Install the provider with Bun:
 
@@ -36,7 +39,7 @@ bun add @hocuspocus/provider yjs
 
 ## The room name is the document id
 
-`name` is the room, and it must be the `documentId`. It is not the slug.
+`name` is the room, and it must be the `documentId`. It is not the slug. A name with a character outside `[A-Za-z0-9_-]`, or longer than 100 characters, is refused.
 
 The token also carries a `slug`, and the server uses it for context only. Authorisation reads the room name, never the id inside the token. So a client cannot reach another document by changing the token.
 

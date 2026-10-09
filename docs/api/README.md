@@ -96,12 +96,15 @@ Each of these returns `200` when healthy and `503` otherwise. None is rate limit
 
 | Path                   | Reports                                                                   |
 | ---------------------- | ------------------------------------------------------------------------- |
+| `GET /health/live`     | The process only. Calls no dependency                                     |
 | `GET /health`          | Overall status. Answers `200` while a non-critical dependency is degraded |
 | `GET /health/database` | PostgreSQL                                                                |
 | `GET /health/redis`    | Redis                                                                     |
 | `GET /health/supabase` | Supabase                                                                  |
 
-Use `GET /health/live` for a load-balancer check. It answers `200` while the process is up and calls no dependency. `GET /health` is the dependency report, so do not use it to route traffic. Next step: if you need a stricter gate, read the health section of the contract document, because the collaboration process has a separate database-gated path.
+Use `GET /health/live` for a load-balancer check. `GET /health` is the dependency report, so do not use it to route traffic. Next step: if you need a stricter gate, read the health section of the contract document, because the collaboration process has a separate database-gated path.
+
+Each REST API process reuses a dependency result for 5 seconds, so a burst of checks costs one call per dependency. A failed check returns only its status and time. The reason goes to the server log.
 
 ## What is not a public API
 
@@ -110,4 +113,4 @@ Some routes exist and are not for you to call. Building against one will break.
 - The internal listener on port `4003`. It carries service-role write endpoints and is never routed publicly.
 - `GET /metrics`. It is a Prometheus endpoint, and it is unrouted rather than authenticated.
 - `/api/admin/*`. The admin dashboard is the only intended client.
-- Most email routes. Delivery runs through a queue. `POST /api/email/validate` is the public magic-link check. The other email routes are internal.
+- The service-role email routes: `send-generic`, `send-digest`, `preview/:type` and `bounce`. Delivery runs through a queue. `POST /api/email/validate` is the public magic-link check. `POST /api/email/webhooks/resend` takes only Resend's signed calls.

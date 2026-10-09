@@ -30,11 +30,13 @@ Never ship it to a browser, a mobile application, or any client you do not contr
 
 **No credential needed.** The health paths, `GET /api/metadata`, reading one media file, the email unsubscribe pages, and `POST /api/email/validate`.
 
+The unsubscribe link carries its own `token`, and that token is its only credential. A `GET` of the link checks the token and shows a confirm page. It changes nothing, so a mail link scanner cannot unsubscribe a reader. The page's button posts `confirm=yes` and gets an HTML result. Any other `POST` body is the RFC 8058 one-click post from a mail client, and it gets JSON.
+
 **A user token, optional.** Listing documents without an owner filter, reading one document by slug, and updating document metadata. Sending a token here changes what you see rather than whether the call works.
 
 **A user token, required.** Listing your own documents, creating a document, the whole document lifecycle — delete, restore, duplicate, favorite or unfavorite, Last opened (`POST /api/documents/:documentId/opened`), permanently delete, empty the trash. Uploading media also requires a user token.
 
-**Service-role only.** Reading and writing document content, every document version route, the service-role email send and bounce routes, and the `content` and `ownerId` fields when creating a document.
+**Service-role only.** Reading and writing document content, every document version route, the service-role email send, preview and bounce routes, and the `content` and `ownerId` fields when creating a document.
 
 **A Resend webhook signature.** `POST /api/email/webhooks/resend` takes no key and no token. Resend signs each request with the endpoint's `whsec_` secret, and the server checks the `svix-signature` header. The route exists only when the server sets a valid `RESEND_WEBHOOK_SECRET`.
 

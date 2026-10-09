@@ -239,7 +239,7 @@ The function is a Custom Access Token hook, which every Supabase plan has. It re
 
 **Secure password change.** In the same dashboard, open the **Email** provider settings and turn on **Secure password change**. It asks for a recent sign-in before a password change. Supabase counts a session under 24 hours old as recent, so this setting is only an extra layer. The hook is the control that refuses a password sign-in.
 
-**Local stack.** `packages/supabase/config.toml` has the hook block, commented out.
+**Local stack.** `packages/supabase/config.toml` sets `secure_password_change = true` under `[auth.email]`. It has the hook block, commented out.
 
 ```toml
 # [auth.hook.custom_access_token]
@@ -247,7 +247,7 @@ The function is a Custom Access Token hook, which every Supabase plan has. It re
 # uri = "pg-functions://postgres/public/hook_block_password_tokens"
 ```
 
-It stays off locally, because the backend e2e scripts and document-swarm sign in with a password. With the hook on, those scripts fail. To turn it on, remove the `#` marks. Also set `enable_confirmations = true` under `[auth.email]`, so that a first email-link sign-in still works. Then restart Supabase. Run this at the repository root.
+The hook stays off locally, because the backend e2e scripts and document-swarm sign in with a password. With the hook on, those scripts fail. To turn it on, remove the `#` marks. Also set `enable_confirmations = true` under `[auth.email]`, so that a first email-link sign-in still works. Then restart Supabase. Run this at the repository root.
 
 ```bash
 bun --filter @docs.plus/supabase_back stop
