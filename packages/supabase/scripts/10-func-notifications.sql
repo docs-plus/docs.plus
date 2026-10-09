@@ -1,7 +1,37 @@
 -- Fan-out triggers for message-driven notifications (mentions, @everyone,
 -- replies, reactions, regular sends) and unread-count maintenance.
--- Each one skips a receiver who cannot open the document (#396). So a Private
--- document notifies only its owner, and push and email follow the bell rows.
+
+-- One receiver gate for every notification row (#396). It drops a row whose receiver
+-- cannot open the document, so the bell, push and email (all AFTER INSERT) never fire.
+-- A chat channel and a content_change row both resolve through channels.workspace_id.
+-- A row with no channel is account-wide and always passes.
+create or replace function internal.skip_unopenable_notification()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    if exists (
+        select 1
+          from public.channels c
+         where c.id = new.channel_id
+           and not internal.can_open_document(c.workspace_id, new.receiver_user_id)
+    ) then
+        return null;
+    end if;
+    return new;
+end;
+$$;
+
+revoke all on function internal.skip_unopenable_notification() from public, anon, authenticated;
+
+drop trigger if exists skip_unopenable_notification on public.notifications;
+create trigger skip_unopenable_notification
+    before insert on public.notifications
+    for each row
+    when (new.channel_id is not null)
+    execute function internal.skip_unopenable_notification();
 
 -- One @ token rule serves the mention, @everyone and regular-message fan-outs.
 -- A token is @ plus the longest run of [A-Za-z0-9_-]. The @ is at the start or
@@ -16,12 +46,11 @@ SET search_path = public
 AS $$
 DECLARE
     is_channel_muted BOOLEAN;
-    workspace_id_var VARCHAR(36);
     truncated_content TEXT;
 BEGIN
     -- 1) Check if the channel exists and notifications are not globally muted on the channel
-    SELECT mute_in_app_notifications, workspace_id
-      INTO is_channel_muted, workspace_id_var
+    SELECT mute_in_app_notifications
+      INTO is_channel_muted
       FROM public.channels
      WHERE id = NEW.channel_id;
 
@@ -76,8 +105,7 @@ BEGIN
     WHERE tokens.username <> 'everyone'
       AND u.id <> NEW.user_id
       AND cm.mute_in_app_notifications = false
-      AND cm.notif_state <> 'MUTED'
-      AND internal.can_open_document(workspace_id_var, u.id);
+      AND cm.notif_state <> 'MUTED';
 
     RETURN NEW;
 END;
@@ -113,7 +141,7 @@ BEGIN
     END IF;
 
     -- Get the original message and channel info
-    SELECT m.user_id, m.channel_id, c.mute_in_app_notifications, c.workspace_id
+    SELECT m.user_id, m.channel_id, c.mute_in_app_notifications
     INTO original_message
     FROM public.messages m
     JOIN public.channels c ON c.id = m.channel_id
@@ -130,11 +158,6 @@ BEGIN
 
     -- Skip if replying to own message
     IF original_message.user_id = NEW.user_id THEN
-        RETURN NEW;
-    END IF;
-
-    -- Skip an author who can no longer open a Private document
-    IF NOT internal.can_open_document(original_message.workspace_id, original_message.user_id) THEN
         RETURN NEW;
     END IF;
 
@@ -198,12 +221,11 @@ AS $$
 DECLARE
     channel_member_id UUID;
     is_channel_muted  BOOLEAN;
-    workspace_id_var  VARCHAR(36);
     truncated_content TEXT;
 BEGIN
     -- 1) Check if the channel exists and if it's globally muted
-    SELECT mute_in_app_notifications, workspace_id
-      INTO is_channel_muted, workspace_id_var
+    SELECT mute_in_app_notifications
+      INTO is_channel_muted
       FROM public.channels
      WHERE id = NEW.channel_id;
 
@@ -231,7 +253,6 @@ BEGIN
            AND cm.member_id != NEW.user_id
            AND cm.mute_in_app_notifications = false
            AND cm.notif_state != 'MUTED'
-           AND internal.can_open_document(workspace_id_var, cm.member_id)
     LOOP
         -- Insert the notification for each eligible member
         INSERT INTO public.notifications (
@@ -281,12 +302,11 @@ SET search_path = public
 AS $$
 DECLARE
     is_channel_muted  BOOLEAN;
-    workspace_id_var  VARCHAR(36);
     truncated_content TEXT;
 BEGIN
     -- 1) Check if the channel exists and if it's globally muted
-    SELECT mute_in_app_notifications, workspace_id
-      INTO is_channel_muted, workspace_id_var
+    SELECT mute_in_app_notifications
+      INTO is_channel_muted
       FROM public.channels
      WHERE id = NEW.channel_id;
 
@@ -344,8 +364,7 @@ BEGIN
       AND cm.member_id  != NEW.user_id
       AND (u.status IS NULL OR u.status != 'ONLINE')
       AND cm.mute_in_app_notifications = FALSE
-      AND cm.notif_state = 'ALL'
-      AND internal.can_open_document(workspace_id_var, cm.member_id);
+      AND cm.notif_state = 'ALL';
 
     RETURN NEW;
 END;
@@ -377,20 +396,14 @@ DECLARE
     sender_user_id    UUID;
     is_channel_muted  BOOLEAN;
     is_user_muted     BOOLEAN;
-    workspace_id_var  VARCHAR(36);
 BEGIN
     -- 1) Check if the channel is globally muted
-    SELECT mute_in_app_notifications, workspace_id
-      INTO is_channel_muted, workspace_id_var
+    SELECT mute_in_app_notifications
+      INTO is_channel_muted
       FROM public.channels
      WHERE id = NEW.channel_id;
 
     IF NOT FOUND OR is_channel_muted THEN
-        RETURN NEW;
-    END IF;
-
-    -- Skip a message author who can no longer open a Private document
-    IF NOT internal.can_open_document(workspace_id_var, OLD.user_id) THEN
         RETURN NEW;
     END IF;
 

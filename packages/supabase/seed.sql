@@ -7052,8 +7052,38 @@ grant  execute on function public.mark_document_connection_closed(varchar, uuid,
 
 -- Fan-out triggers for message-driven notifications (mentions, @everyone,
 -- replies, reactions, regular sends) and unread-count maintenance.
--- Each one skips a receiver who cannot open the document (#396). So a Private
--- document notifies only its owner, and push and email follow the bell rows.
+
+-- One receiver gate for every notification row (#396). It drops a row whose receiver
+-- cannot open the document, so the bell, push and email (all AFTER INSERT) never fire.
+-- A chat channel and a content_change row both resolve through channels.workspace_id.
+-- A row with no channel is account-wide and always passes.
+create or replace function internal.skip_unopenable_notification()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    if exists (
+        select 1
+          from public.channels c
+         where c.id = new.channel_id
+           and not internal.can_open_document(c.workspace_id, new.receiver_user_id)
+    ) then
+        return null;
+    end if;
+    return new;
+end;
+$$;
+
+revoke all on function internal.skip_unopenable_notification() from public, anon, authenticated;
+
+drop trigger if exists skip_unopenable_notification on public.notifications;
+create trigger skip_unopenable_notification
+    before insert on public.notifications
+    for each row
+    when (new.channel_id is not null)
+    execute function internal.skip_unopenable_notification();
 
 -- One @ token rule serves the mention, @everyone and regular-message fan-outs.
 -- A token is @ plus the longest run of [A-Za-z0-9_-]. The @ is at the start or
@@ -7068,12 +7098,11 @@ SET search_path = public
 AS $$
 DECLARE
     is_channel_muted BOOLEAN;
-    workspace_id_var VARCHAR(36);
     truncated_content TEXT;
 BEGIN
     -- 1) Check if the channel exists and notifications are not globally muted on the channel
-    SELECT mute_in_app_notifications, workspace_id
-      INTO is_channel_muted, workspace_id_var
+    SELECT mute_in_app_notifications
+      INTO is_channel_muted
       FROM public.channels
      WHERE id = NEW.channel_id;
 
@@ -7128,8 +7157,7 @@ BEGIN
     WHERE tokens.username <> 'everyone'
       AND u.id <> NEW.user_id
       AND cm.mute_in_app_notifications = false
-      AND cm.notif_state <> 'MUTED'
-      AND internal.can_open_document(workspace_id_var, u.id);
+      AND cm.notif_state <> 'MUTED';
 
     RETURN NEW;
 END;
@@ -7165,7 +7193,7 @@ BEGIN
     END IF;
 
     -- Get the original message and channel info
-    SELECT m.user_id, m.channel_id, c.mute_in_app_notifications, c.workspace_id
+    SELECT m.user_id, m.channel_id, c.mute_in_app_notifications
     INTO original_message
     FROM public.messages m
     JOIN public.channels c ON c.id = m.channel_id
@@ -7182,11 +7210,6 @@ BEGIN
 
     -- Skip if replying to own message
     IF original_message.user_id = NEW.user_id THEN
-        RETURN NEW;
-    END IF;
-
-    -- Skip an author who can no longer open a Private document
-    IF NOT internal.can_open_document(original_message.workspace_id, original_message.user_id) THEN
         RETURN NEW;
     END IF;
 
@@ -7250,12 +7273,11 @@ AS $$
 DECLARE
     channel_member_id UUID;
     is_channel_muted  BOOLEAN;
-    workspace_id_var  VARCHAR(36);
     truncated_content TEXT;
 BEGIN
     -- 1) Check if the channel exists and if it's globally muted
-    SELECT mute_in_app_notifications, workspace_id
-      INTO is_channel_muted, workspace_id_var
+    SELECT mute_in_app_notifications
+      INTO is_channel_muted
       FROM public.channels
      WHERE id = NEW.channel_id;
 
@@ -7283,7 +7305,6 @@ BEGIN
            AND cm.member_id != NEW.user_id
            AND cm.mute_in_app_notifications = false
            AND cm.notif_state != 'MUTED'
-           AND internal.can_open_document(workspace_id_var, cm.member_id)
     LOOP
         -- Insert the notification for each eligible member
         INSERT INTO public.notifications (
@@ -7333,12 +7354,11 @@ SET search_path = public
 AS $$
 DECLARE
     is_channel_muted  BOOLEAN;
-    workspace_id_var  VARCHAR(36);
     truncated_content TEXT;
 BEGIN
     -- 1) Check if the channel exists and if it's globally muted
-    SELECT mute_in_app_notifications, workspace_id
-      INTO is_channel_muted, workspace_id_var
+    SELECT mute_in_app_notifications
+      INTO is_channel_muted
       FROM public.channels
      WHERE id = NEW.channel_id;
 
@@ -7396,8 +7416,7 @@ BEGIN
       AND cm.member_id  != NEW.user_id
       AND (u.status IS NULL OR u.status != 'ONLINE')
       AND cm.mute_in_app_notifications = FALSE
-      AND cm.notif_state = 'ALL'
-      AND internal.can_open_document(workspace_id_var, cm.member_id);
+      AND cm.notif_state = 'ALL';
 
     RETURN NEW;
 END;
@@ -7429,20 +7448,14 @@ DECLARE
     sender_user_id    UUID;
     is_channel_muted  BOOLEAN;
     is_user_muted     BOOLEAN;
-    workspace_id_var  VARCHAR(36);
 BEGIN
     -- 1) Check if the channel is globally muted
-    SELECT mute_in_app_notifications, workspace_id
-      INTO is_channel_muted, workspace_id_var
+    SELECT mute_in_app_notifications
+      INTO is_channel_muted
       FROM public.channels
      WHERE id = NEW.channel_id;
 
     IF NOT FOUND OR is_channel_muted THEN
-        RETURN NEW;
-    END IF;
-
-    -- Skip a message author who can no longer open a Private document
-    IF NOT internal.can_open_document(workspace_id_var, OLD.user_id) THEN
         RETURN NEW;
     END IF;
 
@@ -9532,42 +9545,25 @@ on conflict (id) do update set
 
 -- Path layout: `{userId}/{channelId}/{uuid}.ext` — ownership + channel membership gate reads.
 -- In EXISTS (FROM channels c), qualify objects.name: bare `name` binds to c.name.
--- The read and upload policies also check internal.can_open_document, so a Private
--- document's media opens and uploads only for its owner (#396).
+-- Signed-in reads go through internal.can_read_channel and uploads through
+-- internal.is_channel_member. Both carry the Private gate (#396), and a past member
+-- (left_at set) loses both.
 drop policy if exists "Media files are publicly accessible" on storage.objects;
 drop policy if exists "User can upload media files" on storage.objects;
 drop policy if exists "User can update own media files" on storage.objects;
 drop policy if exists "User can delete own media files" on storage.objects;
 drop policy if exists "Authed can read public channel chat media" on storage.objects;
 drop policy if exists "Channel members can read chat media" on storage.objects;
+drop policy if exists "Authed can read chat media" on storage.objects;
 drop policy if exists "Anon can read public channel chat media" on storage.objects;
 drop policy if exists "User can upload own channel chat media" on storage.objects;
 drop policy if exists "User can update own chat media" on storage.objects;
 drop policy if exists "User can delete own chat media" on storage.objects;
 
-create policy "Channel members can read chat media" on storage.objects
+create policy "Authed can read chat media" on storage.objects
     for select to authenticated using (
         bucket_id = 'media'
-        and exists (
-            select 1
-              from public.channel_members cm
-              join public.channels c on c.id = cm.channel_id
-             where cm.channel_id = (storage.foldername(objects.name))[2]
-               and cm.member_id = (select auth.uid())
-               and internal.can_open_document(c.workspace_id, (select auth.uid()))
-        )
-    );
-
-create policy "Authed can read public channel chat media" on storage.objects
-    for select to authenticated using (
-        bucket_id = 'media'
-        and exists (
-            select 1
-              from public.channels c
-             where c.id = (storage.foldername(objects.name))[2]
-               and c.type = 'PUBLIC'
-               and internal.can_open_document(c.workspace_id, (select auth.uid()))
-        )
+        and internal.can_read_channel((storage.foldername(objects.name))[2])
     );
 
 create policy "Anon can read public channel chat media" on storage.objects
@@ -9585,15 +9581,8 @@ create policy "Anon can read public channel chat media" on storage.objects
 create policy "User can upload own channel chat media" on storage.objects
     for insert to authenticated with check (
         bucket_id = 'media'
-        and (storage.foldername(name))[1] = (select auth.uid())::text
-        and exists (
-            select 1
-              from public.channel_members cm
-              join public.channels c on c.id = cm.channel_id
-             where cm.channel_id = (storage.foldername(objects.name))[2]
-               and cm.member_id = (select auth.uid())
-               and internal.can_open_document(c.workspace_id, (select auth.uid()))
-        )
+        and (storage.foldername(objects.name))[1] = (select auth.uid())::text
+        and internal.is_channel_member((storage.foldername(objects.name))[2])
     );
 
 create policy "User can update own chat media" on storage.objects

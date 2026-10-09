@@ -132,42 +132,25 @@ on conflict (id) do update set
 
 -- Path layout: `{userId}/{channelId}/{uuid}.ext` — ownership + channel membership gate reads.
 -- In EXISTS (FROM channels c), qualify objects.name: bare `name` binds to c.name.
--- The read and upload policies also check internal.can_open_document, so a Private
--- document's media opens and uploads only for its owner (#396).
+-- Signed-in reads go through internal.can_read_channel and uploads through
+-- internal.is_channel_member. Both carry the Private gate (#396), and a past member
+-- (left_at set) loses both.
 drop policy if exists "Media files are publicly accessible" on storage.objects;
 drop policy if exists "User can upload media files" on storage.objects;
 drop policy if exists "User can update own media files" on storage.objects;
 drop policy if exists "User can delete own media files" on storage.objects;
 drop policy if exists "Authed can read public channel chat media" on storage.objects;
 drop policy if exists "Channel members can read chat media" on storage.objects;
+drop policy if exists "Authed can read chat media" on storage.objects;
 drop policy if exists "Anon can read public channel chat media" on storage.objects;
 drop policy if exists "User can upload own channel chat media" on storage.objects;
 drop policy if exists "User can update own chat media" on storage.objects;
 drop policy if exists "User can delete own chat media" on storage.objects;
 
-create policy "Channel members can read chat media" on storage.objects
+create policy "Authed can read chat media" on storage.objects
     for select to authenticated using (
         bucket_id = 'media'
-        and exists (
-            select 1
-              from public.channel_members cm
-              join public.channels c on c.id = cm.channel_id
-             where cm.channel_id = (storage.foldername(objects.name))[2]
-               and cm.member_id = (select auth.uid())
-               and internal.can_open_document(c.workspace_id, (select auth.uid()))
-        )
-    );
-
-create policy "Authed can read public channel chat media" on storage.objects
-    for select to authenticated using (
-        bucket_id = 'media'
-        and exists (
-            select 1
-              from public.channels c
-             where c.id = (storage.foldername(objects.name))[2]
-               and c.type = 'PUBLIC'
-               and internal.can_open_document(c.workspace_id, (select auth.uid()))
-        )
+        and internal.can_read_channel((storage.foldername(objects.name))[2])
     );
 
 create policy "Anon can read public channel chat media" on storage.objects
@@ -185,15 +168,8 @@ create policy "Anon can read public channel chat media" on storage.objects
 create policy "User can upload own channel chat media" on storage.objects
     for insert to authenticated with check (
         bucket_id = 'media'
-        and (storage.foldername(name))[1] = (select auth.uid())::text
-        and exists (
-            select 1
-              from public.channel_members cm
-              join public.channels c on c.id = cm.channel_id
-             where cm.channel_id = (storage.foldername(objects.name))[2]
-               and cm.member_id = (select auth.uid())
-               and internal.can_open_document(c.workspace_id, (select auth.uid()))
-        )
+        and (storage.foldername(objects.name))[1] = (select auth.uid())::text
+        and internal.is_channel_member((storage.foldername(objects.name))[2])
     );
 
 create policy "User can update own chat media" on storage.objects

@@ -208,34 +208,19 @@ CREATE POLICY workspaces_public_anon_select ON public.workspaces
     )
   );
 
--- 5. Chat media. Inside each EXISTS, objects.name names the storage row.
+-- 5. Chat media. The path is <uploaderId>/<channelId>/<file>, so segment 2 is the channel.
+-- One read policy for signed-in users replaces the member and the PUBLIC policies.
+-- A past member (left_at set) loses read and upload. That is deliberate.
 drop policy if exists "Channel members can read chat media" on storage.objects;
-create policy "Channel members can read chat media" on storage.objects
-    for select to authenticated using (
-        bucket_id = 'media'
-        and exists (
-            select 1
-              from public.channel_members cm
-              join public.channels c on c.id = cm.channel_id
-             where cm.channel_id = (storage.foldername(objects.name))[2]
-               and cm.member_id = (select auth.uid())
-               and internal.can_open_document(c.workspace_id, (select auth.uid()))
-        )
-    );
-
 drop policy if exists "Authed can read public channel chat media" on storage.objects;
-create policy "Authed can read public channel chat media" on storage.objects
+drop policy if exists "Authed can read chat media" on storage.objects;
+create policy "Authed can read chat media" on storage.objects
     for select to authenticated using (
         bucket_id = 'media'
-        and exists (
-            select 1
-              from public.channels c
-             where c.id = (storage.foldername(objects.name))[2]
-               and c.type = 'PUBLIC'
-               and internal.can_open_document(c.workspace_id, (select auth.uid()))
-        )
+        and internal.can_read_channel((storage.foldername(objects.name))[2])
     );
 
+-- Inside the EXISTS, objects.name names the storage row.
 drop policy if exists "Anon can read public channel chat media" on storage.objects;
 create policy "Anon can read public channel chat media" on storage.objects
     for select to anon using (
@@ -253,19 +238,11 @@ drop policy if exists "User can upload own channel chat media" on storage.object
 create policy "User can upload own channel chat media" on storage.objects
     for insert to authenticated with check (
         bucket_id = 'media'
-        and (storage.foldername(name))[1] = (select auth.uid())::text
-        and exists (
-            select 1
-              from public.channel_members cm
-              join public.channels c on c.id = cm.channel_id
-             where cm.channel_id = (storage.foldername(objects.name))[2]
-               and cm.member_id = (select auth.uid())
-               and internal.can_open_document(c.workspace_id, (select auth.uid()))
-        )
+        and (storage.foldername(objects.name))[1] = (select auth.uid())::text
+        and internal.is_channel_member((storage.foldername(objects.name))[2])
     );
 
--- 6. Read cursor: a Private non-owner gets no unread recount. The body sets its own
--- security definer and search_path, so no alter lines follow.
+-- 6. Read cursor: a Private non-owner gets no unread recount.
 create or replace function public.advance_read_cursor(
   p_channel_id varchar(36),
   p_up_to_seq  bigint
@@ -447,421 +424,40 @@ COMMENT ON FUNCTION join_workspace(VARCHAR(36)) IS
 Returns TRUE if successful or if user is already a member.
 Raises 42501 for a Private document the caller does not own.';
 
-alter function public.join_workspace(_workspace_id character varying) set search_path = public;
-
--- 9. Notification and unread fan-out. The alter lines copy 10-func-notifications.
--- They matter for the reaction and unread bodies, which set neither. The triggers stay bound.
-CREATE OR REPLACE FUNCTION create_mention_notifications()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-    is_channel_muted BOOLEAN;
-    workspace_id_var VARCHAR(36);
-    truncated_content TEXT;
-BEGIN
-    -- 1) Check if the channel exists and notifications are not globally muted on the channel
-    SELECT mute_in_app_notifications, workspace_id
-      INTO is_channel_muted, workspace_id_var
-      FROM public.channels
-     WHERE id = NEW.channel_id;
-
-    IF NOT FOUND THEN
-        -- Channel does not exist
-        RETURN NEW;
-    END IF;
-
-    IF is_channel_muted THEN
-        -- Channel-level mute is enabled, no notifications
-        RETURN NEW;
-    END IF;
-
-    -- 2) Verify that the sender exists (and is not deleted)
-    IF NOT EXISTS (
-        SELECT 1
-          FROM public.users
-         WHERE id = NEW.user_id
-    ) THEN
-        -- Sender does not exist
-        RETURN NEW;
-    END IF;
-
-    -- 3) Truncate message content for preview
-    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
-
-    -- 4) One row per distinct token that names a member who has not muted.
-    --    `everyone` belongs to create_everyone_notifications, never to a user.
-    INSERT INTO public.notifications (
-        receiver_user_id,
-        sender_user_id,
-        type,
-        message_id,
-        channel_id,
-        message_preview,
-        created_at
-    )
-    SELECT
-        u.id,
-        NEW.user_id,
-        'mention',
-        NEW.id,
-        NEW.channel_id,
-        truncated_content,
-        timezone('utc', now())
-    FROM (
-        SELECT DISTINCT token_match[1] AS username
-          FROM regexp_matches(NEW.content, '(?:^|[^A-Za-z0-9_-])@([A-Za-z0-9_-]+)', 'g') AS token_match
-    ) AS tokens
-    JOIN public.users u ON u.username = tokens.username
-    JOIN public.channel_members cm ON cm.member_id = u.id AND cm.channel_id = NEW.channel_id
-    WHERE tokens.username <> 'everyone'
-      AND u.id <> NEW.user_id
-      AND cm.mute_in_app_notifications = false
-      AND cm.notif_state <> 'MUTED'
-      AND internal.can_open_document(workspace_id_var, u.id);
-
-    RETURN NEW;
-END;
+-- 9. One receiver gate for every notification row. It drops a row whose receiver
+-- cannot open the document, so the bell, push and email (all AFTER INSERT) never fire.
+-- A chat channel and a content_change row both resolve through channels.workspace_id.
+-- A row with no channel is account-wide and always passes.
+create or replace function internal.skip_unopenable_notification()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    if exists (
+        select 1
+          from public.channels c
+         where c.id = new.channel_id
+           and not internal.can_open_document(c.workspace_id, new.receiver_user_id)
+    ) then
+        return null;
+    end if;
+    return new;
+end;
 $$;
 
-ALTER FUNCTION public.create_mention_notifications() SET search_path = public;
-ALTER FUNCTION public.create_mention_notifications() SECURITY DEFINER;
+revoke all on function internal.skip_unopenable_notification() from public, anon, authenticated;
 
-CREATE OR REPLACE FUNCTION create_reply_notification()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-    original_message RECORD;
-    truncated_content TEXT;
-BEGIN
-    -- Only process if this is a reply
-    IF NEW.reply_to_message_id IS NULL THEN
-        RETURN NEW;
-    END IF;
+drop trigger if exists skip_unopenable_notification on public.notifications;
+create trigger skip_unopenable_notification
+    before insert on public.notifications
+    for each row
+    when (new.channel_id is not null)
+    execute function internal.skip_unopenable_notification();
 
-    -- Get the original message and channel info
-    SELECT m.user_id, m.channel_id, c.mute_in_app_notifications, c.workspace_id
-    INTO original_message
-    FROM public.messages m
-    JOIN public.channels c ON c.id = m.channel_id
-    WHERE m.id = NEW.reply_to_message_id;
-
-    IF NOT FOUND THEN
-        RETURN NEW;
-    END IF;
-
-    -- Skip if channel is globally muted
-    IF original_message.mute_in_app_notifications THEN
-        RETURN NEW;
-    END IF;
-
-    -- Skip if replying to own message
-    IF original_message.user_id = NEW.user_id THEN
-        RETURN NEW;
-    END IF;
-
-    -- Skip an author who can no longer open a Private document
-    IF NOT internal.can_open_document(original_message.workspace_id, original_message.user_id) THEN
-        RETURN NEW;
-    END IF;
-
-    -- Skip if user has muted this channel
-    IF EXISTS (
-        SELECT 1 FROM public.channel_members
-        WHERE channel_id = NEW.channel_id
-          AND member_id = original_message.user_id
-          AND mute_in_app_notifications = TRUE
-    ) THEN
-        RETURN NEW;
-    END IF;
-
-    -- Truncate content for preview
-    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
-
-    -- Create the reply notification
-    INSERT INTO public.notifications (
-        receiver_user_id,
-        sender_user_id,
-        type,
-        message_id,
-        channel_id,
-        message_preview,
-        created_at
-    ) VALUES (
-        original_message.user_id,
-        NEW.user_id,
-        'reply'::notification_category,
-        NEW.id,
-        NEW.channel_id,
-        truncated_content,
-        timezone('utc', now())
-    );
-
-    RETURN NEW;
-END;
-$$;
-
-ALTER FUNCTION public.create_reply_notification() SET search_path = public;
-ALTER FUNCTION public.create_reply_notification() SECURITY DEFINER;
-
-CREATE OR REPLACE FUNCTION create_everyone_notifications()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-    channel_member_id UUID;
-    is_channel_muted  BOOLEAN;
-    workspace_id_var  VARCHAR(36);
-    truncated_content TEXT;
-BEGIN
-    -- 1) Check if the channel exists and if it's globally muted
-    SELECT mute_in_app_notifications, workspace_id
-      INTO is_channel_muted, workspace_id_var
-      FROM public.channels
-     WHERE id = NEW.channel_id;
-
-    IF NOT FOUND OR is_channel_muted THEN
-        RETURN NEW; -- Channel either doesn't exist or is muted globally
-    END IF;
-
-    -- 2) Verify the sender exists
-    IF NOT EXISTS (
-        SELECT 1
-          FROM public.users
-         WHERE id = NEW.user_id
-    ) THEN
-        RETURN NEW; -- Sender doesn't exist or is deleted
-    END IF;
-
-    -- 3) Truncate message content for preview
-    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
-
-    -- 4) Loop over channel members (excluding sender) who have not muted notifications
-    FOR channel_member_id IN
-        SELECT cm.member_id
-          FROM public.channel_members cm
-         WHERE cm.channel_id = NEW.channel_id
-           AND cm.member_id != NEW.user_id
-           AND cm.mute_in_app_notifications = false
-           AND cm.notif_state != 'MUTED'
-           AND internal.can_open_document(workspace_id_var, cm.member_id)
-    LOOP
-        -- Insert the notification for each eligible member
-        INSERT INTO public.notifications (
-            receiver_user_id,
-            sender_user_id,
-            type,
-            message_id,
-            channel_id,
-            message_preview,
-            created_at
-        )
-        VALUES (
-            channel_member_id,
-            NEW.user_id,
-            'channel_event',
-            NEW.id,
-            NEW.channel_id,
-            truncated_content,
-            timezone('utc', now())
-        );
-    END LOOP;
-
-    RETURN NEW;
-END;
-$$;
-
-ALTER FUNCTION public.create_everyone_notifications() SET search_path = public;
-ALTER FUNCTION public.create_everyone_notifications() SECURITY DEFINER;
-
-CREATE OR REPLACE FUNCTION create_regular_message_notifications()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-    is_channel_muted  BOOLEAN;
-    workspace_id_var  VARCHAR(36);
-    truncated_content TEXT;
-BEGIN
-    -- 1) Check if the channel exists and if it's globally muted
-    SELECT mute_in_app_notifications, workspace_id
-      INTO is_channel_muted, workspace_id_var
-      FROM public.channels
-     WHERE id = NEW.channel_id;
-
-    IF NOT FOUND OR is_channel_muted THEN
-        RETURN NEW; -- Channel doesn't exist or is globally muted
-    END IF;
-
-    -- 2) Verify the sender still exists
-    IF NOT EXISTS (
-        SELECT 1
-          FROM public.users
-         WHERE id = NEW.user_id
-    ) THEN
-        RETURN NEW; -- Sender doesn't exist or is deleted
-    END IF;
-
-    -- 3) A token that names another member makes this a mention message.
-    --    Membership alone decides it: a muted member still counts.
-    IF EXISTS (
-        SELECT 1
-          FROM regexp_matches(NEW.content, '(?:^|[^A-Za-z0-9_-])@([A-Za-z0-9_-]+)', 'g') AS token_match
-          JOIN public.users u ON u.username = token_match[1]
-          JOIN public.channel_members cm ON cm.member_id = u.id AND cm.channel_id = NEW.channel_id
-         WHERE u.id <> NEW.user_id
-    ) THEN
-        RETURN NEW;
-    END IF;
-
-    -- 4) Truncate message content for preview
-    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
-
-    -- 5) Create notifications only for members whose notif_state = 'ALL' and who are not online or the sender
-    INSERT INTO public.notifications (
-        receiver_user_id,
-        sender_user_id,
-        type,
-        message_id,
-        channel_id,
-        message_preview,
-        created_at
-    )
-    -- Reply notifications for the original-message author are emitted by
-    -- create_reply_notification; do not duplicate the row here.
-    SELECT
-        cm.member_id,
-        NEW.user_id,
-        'message'::notification_category,
-        NEW.id,
-        NEW.channel_id,
-        truncated_content,
-        timezone('utc', now())
-    FROM public.channel_members cm
-    JOIN public.users u ON u.id = cm.member_id
-    WHERE cm.channel_id = NEW.channel_id
-      AND cm.member_id  != NEW.user_id
-      AND (u.status IS NULL OR u.status != 'ONLINE')
-      AND cm.mute_in_app_notifications = FALSE
-      AND cm.notif_state = 'ALL'
-      AND internal.can_open_document(workspace_id_var, cm.member_id);
-
-    RETURN NEW;
-END;
-$$;
-
-ALTER FUNCTION public.create_regular_message_notifications() SET search_path = public;
-ALTER FUNCTION public.create_regular_message_notifications() SECURITY DEFINER;
-
-CREATE OR REPLACE FUNCTION create_reaction_notifications()
-RETURNS TRIGGER AS $$
-DECLARE
-    old_reactions     JSONB;
-    new_reactions     JSONB;
-    reaction_key      TEXT;
-    new_reaction      JSONB;
-    sender_user_id    UUID;
-    is_channel_muted  BOOLEAN;
-    is_user_muted     BOOLEAN;
-    workspace_id_var  VARCHAR(36);
-BEGIN
-    -- 1) Check if the channel is globally muted
-    SELECT mute_in_app_notifications, workspace_id
-      INTO is_channel_muted, workspace_id_var
-      FROM public.channels
-     WHERE id = NEW.channel_id;
-
-    IF NOT FOUND OR is_channel_muted THEN
-        RETURN NEW;
-    END IF;
-
-    -- Skip a message author who can no longer open a Private document
-    IF NOT internal.can_open_document(workspace_id_var, OLD.user_id) THEN
-        RETURN NEW;
-    END IF;
-
-    -- 2) Verify the message owner exists
-    IF NOT EXISTS (
-        SELECT 1 FROM public.users WHERE id = OLD.user_id
-    ) THEN
-        RETURN NEW;
-    END IF;
-
-    -- 3) Check if user has muted this channel (ignore notif_state for reactions)
-    SELECT cm.mute_in_app_notifications
-      INTO is_user_muted
-      FROM public.channel_members cm
-     WHERE cm.channel_id = NEW.channel_id
-       AND cm.member_id = OLD.user_id;
-
-    IF is_user_muted THEN
-        RETURN NEW;
-    END IF;
-
-    -- 4) Compare old and new reactions
-    old_reactions := COALESCE(OLD.reactions, '{}'::jsonb);
-    new_reactions := NEW.reactions;
-
-    -- 5) Loop through each reaction type
-    FOR reaction_key IN
-        SELECT jsonb_object_keys(new_reactions)
-    LOOP
-        FOR new_reaction IN
-            SELECT jsonb_array_elements(new_reactions -> reaction_key)
-        LOOP
-            sender_user_id := (new_reaction ->> 'user_id')::UUID;
-
-            -- Skip if reacting to own message
-            IF sender_user_id = OLD.user_id THEN
-                CONTINUE;
-            END IF;
-
-            -- Skip if reaction already existed
-            IF (old_reactions ? reaction_key)
-               AND (old_reactions -> reaction_key) @> jsonb_build_array(new_reaction)
-            THEN
-                CONTINUE;
-            END IF;
-
-            -- Verify sender exists and create notification
-            IF EXISTS (SELECT 1 FROM public.users WHERE id = sender_user_id) THEN
-                INSERT INTO public.notifications (
-                    receiver_user_id,
-                    sender_user_id,
-                    type,
-                    message_id,
-                    channel_id,
-                    message_preview,
-                    created_at
-                ) VALUES (
-                    OLD.user_id,
-                    sender_user_id,
-                    'reaction'::notification_category,
-                    NEW.id,
-                    NEW.channel_id,
-                    reaction_key,  -- Store the emoji
-                    timezone('utc', now())
-                );
-            END IF;
-        END LOOP;
-    END LOOP;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-ALTER FUNCTION public.create_reaction_notifications() SET search_path = public;
-ALTER FUNCTION public.create_reaction_notifications() SECURITY DEFINER;
-
+-- Unread fan-out. The body sets neither security definer nor search_path, and
+-- create or replace resets both, so the two alter lines after it are load-bearing.
 CREATE OR REPLACE FUNCTION increment_unread_count_on_new_message() RETURNS TRIGGER AS $$
 DECLARE
     workspace_id_var VARCHAR(36);
