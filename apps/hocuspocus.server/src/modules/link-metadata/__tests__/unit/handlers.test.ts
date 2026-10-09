@@ -1,16 +1,25 @@
+import * as dns from 'node:dns/promises'
+
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 
 import { runSpecialHandler } from '../../domain/stages/handlers'
 
 describe('runSpecialHandler', () => {
   let fetchSpy: ReturnType<typeof spyOn>
+  let dnsSpy: ReturnType<typeof spyOn>
 
   beforeEach(() => {
     fetchSpy = spyOn(globalThis, 'fetch')
+    // safeFetch resolves the host before it fetches. A live lookup made CI wait on
+    // a slow resolver until the stage timeout, so answer with a public address.
+    dnsSpy = spyOn(dns, 'lookup').mockResolvedValue([
+      { address: '93.184.216.34', family: 4 }
+    ] as never)
   })
 
   afterEach(() => {
     fetchSpy.mockRestore()
+    dnsSpy.mockRestore()
   })
 
   test('returns null for hosts without a special handler', async () => {
