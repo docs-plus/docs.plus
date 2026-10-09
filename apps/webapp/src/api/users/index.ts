@@ -1,6 +1,6 @@
 export * from './fetchLinkMetadata'
+export * from './getPublicUserProfile'
 export * from './getSimilarUsername'
 export * from './getUserById'
-export * from './getUserProfileForModal'
 export * from './updateProfile'
 export * from './updateUser'

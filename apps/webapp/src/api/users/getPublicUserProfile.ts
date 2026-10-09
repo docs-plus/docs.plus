@@ -1,7 +1,7 @@
 import { PostgrestSingleResponse } from '@supabase/supabase-js'
 import { supabaseClient } from '@utils/supabase'
 
-type UserProfileModal = {
+type PublicUserProfile = {
   id: string
   full_name: string | null
   avatar_url: string | null
@@ -10,9 +10,9 @@ type UserProfileModal = {
   profile_data: Record<string, any> | null
 }
 
-export const getUserProfileForModal = async (
+export const getPublicUserProfile = async (
   userId: string
-): Promise<PostgrestSingleResponse<UserProfileModal>> => {
+): Promise<PostgrestSingleResponse<PublicUserProfile>> => {
   return supabaseClient
     .from('users')
     .select('id, full_name, avatar_url, avatar_updated_at, username, profile_data')

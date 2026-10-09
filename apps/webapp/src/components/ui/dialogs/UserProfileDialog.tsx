@@ -1,4 +1,4 @@
-import { getUserProfileForModal } from '@api'
+import { getPublicUserProfile } from '@api'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { ModalHeading } from '@components/ui/Dialog'
@@ -19,7 +19,7 @@ interface UserProfileDialogProps {
   userId: string
 }
 
-type UserProfileResponse = Awaited<ReturnType<typeof getUserProfileForModal>>
+type UserProfileResponse = Awaited<ReturnType<typeof getPublicUserProfile>>
 type UserProfileRecord = NonNullable<UserProfileResponse['data']>
 
 export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
@@ -32,7 +32,7 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
     setData,
     error
   } = useAsyncRequest<UserProfileRecord | null, PostgrestError | null>(
-    getUserProfileForModal,
+    getPublicUserProfile,
     null,
     false
   )

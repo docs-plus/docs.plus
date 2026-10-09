@@ -2,7 +2,7 @@ import { PostgrestSingleResponse } from '@supabase/supabase-js'
 import { Database } from '@types'
 import { supabaseClient } from '@utils/supabase'
 
-// No client can read these columns; get_notification_preferences() serves the owner.
+// No client can read these columns (#434). get_notification_preferences() serves the owner's preferences.
 export type TUser = Omit<
   Database['public']['Tables']['users']['Row'],
   'notification_preferences' | 'status' | 'online_at'
@@ -11,7 +11,7 @@ export type TUser = Omit<
 /**
  * The column-level GRANT on `public.users` leaves out `email`, `status` and
  * `online_at` (#434), so `select('*')` fails for anon and authenticated. This
- * list mirrors the GRANT. `updateUser` reuses it, so the heartbeat never reads status back.
+ * list mirrors the GRANT.
  */
 export const USER_PROFILE_COLUMNS =
   'id, username, full_name, display_name, avatar_url, avatar_updated_at, profile_data, created_at, updated_at, deleted_at'

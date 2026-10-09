@@ -1,4 +1,4 @@
-import { getUserProfileForModal } from '@api'
+import { getPublicUserProfile } from '@api'
 import type { MessageRowUserDetails } from '@components/chatroom/types/chat-items'
 import { useQuery } from '@tanstack/react-query'
 import type { TGroupedMsgRow } from '@types'
@@ -22,7 +22,7 @@ const toMessageAuthorDetails = (
 })
 
 const fetchMessageAuthor = async (userId: string): Promise<MessageRowUserDetails> => {
-  const { data, error } = await getUserProfileForModal(userId)
+  const { data, error } = await getPublicUserProfile(userId)
   if (error) throw error
   return toMessageAuthorDetails(userId, data)
 }
@@ -46,14 +46,6 @@ export const useMessageAuthorDetails = (message: TGroupedMsgRow): MessageRowUser
     const ud = message.user_details
     if (ud?.id) return toMessageAuthorDetails(ud.id, ud)
     if (!userId) return null
-    if (profile) return profile
-
-    return {
-      id: userId,
-      username: null,
-      fullname: null,
-      avatar_url: null,
-      avatar_updated_at: null
-    }
+    return profile ?? toMessageAuthorDetails(userId, {})
   }, [message.user_details, userId, profile])
 }

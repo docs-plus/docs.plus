@@ -53,9 +53,9 @@ export default function PrivacyPage() {
       <LegalSection title="Who we share with">
         <ul className="list-disc space-y-2 pl-5">
           <li>Supabase runs sign-in and stores accounts.</li>
-          <li>Another email provider sends sign-in links for Supabase.</li>
+          <li>A separate email provider sends sign-in links for Supabase.</li>
           <li>Google runs sign-in and, when configured, Analytics.</li>
-          <li>Resend, our email provider, sends notification and digest mail.</li>
+          <li>Resend sends notification and digest mail.</li>
         </ul>
         <p>We do not sell personal data.</p>
       </LegalSection>
