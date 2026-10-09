@@ -32,7 +32,7 @@
     "bun-types": "catalog:",
     "eslint": "catalog:",
     "globals": "catalog:",
-    "playwright": "^1.63.0",
+    "playwright": "^1.64.0",
     "typescript": "catalog:"
   }
 }
