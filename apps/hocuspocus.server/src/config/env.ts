@@ -1,4 +1,4 @@
-import { resolveEmailConfig, resolveWebhookSecret } from './email'
+import { describeEmailEnv, resolveEmailConfig, resolveWebhookSecret } from './email'
 import { env } from './env.schema'
 
 export { env }
@@ -6,6 +6,7 @@ export { env }
 // `||` because Compose can set APP_URL to ''.
 const appUrl = (env.APP_URL || 'https://docs.plus').replace(/\/+$/, '')
 const webhookSecret = resolveWebhookSecret(env.RESEND_WEBHOOK_SECRET)
+const emailFacts = describeEmailEnv(env)
 
 export const config = {
   app: {
@@ -89,12 +90,13 @@ export const config = {
 
   email: {
     delivery: resolveEmailConfig(env),
+    facts: emailFacts,
     notificationEmails: env.NEW_DOCUMENT_NOTIFICATION_EMAILS.filter((email) => email.includes('@')),
     appUrl,
     unsubscribeSecret: env.EMAIL_UNSUBSCRIBE_SECRET,
     webhookSecret,
     // Set but invalid, so REST can say why the webhook route is not mounted.
-    webhookSecretInvalid: webhookSecret === null && Boolean(env.RESEND_WEBHOOK_SECRET?.trim()),
+    webhookSecretInvalid: emailFacts.webhookSecret === 'invalid',
     gateway: {
       workerConcurrency: env.EMAIL_WORKER_CONCURRENCY,
       rateLimitMax: env.EMAIL_RATE_LIMIT_MAX,

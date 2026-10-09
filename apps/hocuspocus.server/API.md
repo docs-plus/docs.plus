@@ -1190,7 +1190,7 @@ Each `svix-id` is recorded once. The Redis key `email:webhook:<svix-id>` is `pen
 
 ### GET /api/email/health
 
-Email gateway health (no auth).
+Email gateway status (no auth). Public, so it returns status only: `{ "status": "ok" | "degraded", "queue_connected": <bool> }`. `ok` means email is `ready` and the queue is connected. The provider, the config detail and the queue counts are on `GET /api/admin/email/setup` (see [Admin](#admin)).
 
 ### GET /api/email/status
 
@@ -1289,6 +1289,19 @@ The `dlq` route returns `push` and `email`, each with `jobs` and `count`. Each j
 | GET    | `/mcp/usage?days=1..35` | Tool call counts, distinct callers and connected apps |
 
 `days` defaults to 7. The data holds `available` (false when Redis is off), `days` (per UTC day, oldest first: `day`, `calls`, `callers`), `callers` (distinct across the window), `tools` (`tool`, `outcome`, `calls`), `apps` (calls grouped by app name) and `registeredApps` (each registered OAuth client: `name`, `createdAt`, `redirectOrigins`). Each `callers` value is a number, or the string `'<5'` for 1 to 4 people, so an exact small count never leaves the server. `registeredApps` is `null` when Supabase Auth cannot list the clients. Counts are grouped by app name, never by client id or caller. A deleted client counts as `Unknown app`, and so does every client when the list fails. The server asks for up to 1000 clients in one call. If Supabase Auth ever pages the list, the clients past that page also count as `Unknown app`, and the server logs a warning. Success uses the house envelope.
+
+**Email setup**
+
+| Method | Path                     | Purpose                                      |
+| ------ | ------------------------ | -------------------------------------------- |
+| GET    | `/email/setup`           | Email config status, checks and lines to add |
+| POST   | `/email/setup/test-send` | Send one test email to yourself              |
+
+The module lives in `src/modules/email-setup/`. It is mounted in `src/index.ts` ahead of the admin router and applies the same admin guard. Both routes use the house envelope. The page only reads: no route writes `.env` or any secret.
+
+`GET` returns `status` (`ready`, `off` or `invalid`), `problems` for `invalid`, `provider` and `from` (`EMAIL_FROM` in full). It also returns `namespace`, `smtp` (`host`, `port`), `publicUrl`, and `secrets`, which holds `set` or `missing` for `RESEND_API_KEY`, `SMTP_USER`, `SMTP_PASS` and `EMAIL_UNSUBSCRIBE_SECRET`. `webhook` holds the secret state (`set`, `missing` or `invalid`) and the webhook URL. `connection` is a live provider check on each read, bounded at 10 s. It is `ok`, `failed` with `kind` and `code`, `timeout`, or `skipped` when email is not `ready`. `latestBounce` is the newest `get_email_bounces` row with a masked address, no username, and a reason of at most 80 characters, or `none`, or `unavailable`. `queue` holds `connected`, `pending` and the email `dlqDepth`. `envToAdd` lists the `.env` lines to add, blank where the value is a secret.
+
+`POST /email/setup/test-send` takes no body. It sends through `deliverEmail` to the signed-in admin's own address, with the key `<namespace>/test/<uuid>`. It answers `{ "sent": true, "messageId", "to" }` with `to` masked, or `{ "sent": false, "kind", "code" }`. One send per admin per minute: past it, `429` `RATE_LIMITED`. Without Redis, `503`, because the limit fails closed. `400` `NO_EMAIL` when the account has no address.
 
 **Ghost accounts audit**
 

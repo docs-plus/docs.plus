@@ -6,6 +6,7 @@ import {
   LuGhost,
   LuHardDrive,
   LuLayoutDashboard,
+  LuMail,
   LuMessageSquare,
   LuPlug,
   LuShieldAlert,
@@ -25,6 +26,7 @@ export const navItems: NavItem[] = [
   { href: '/documents', label: 'Documents', icon: LuFileText },
   { href: '/channels', label: 'Channels', icon: LuMessageSquare },
   { href: '/notifications', label: 'Notifications', icon: LuBell },
+  { href: '/email', label: 'Email setup', icon: LuMail },
   { href: '/storage', label: 'Media Storage', icon: LuHardDrive },
   { href: '/mcp', label: 'MCP Usage', icon: LuPlug },
   { href: '/system', label: 'System', icon: LuActivity }

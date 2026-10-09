@@ -15,6 +15,7 @@ import type {
 import { NotificationGatewayBase } from '../gateway'
 import { emailLogger } from '../logger'
 import { closeEmailProvider, getEmailProvider } from './providers'
+import { EMAIL_CHECK_TIMEOUT_MS } from './providers/types'
 import { closeEmailQueue, createEmailWorker, getEmailQueueHealth, queueEmail } from './queue'
 
 /** An `invalid` config holds mail, so the worker repeats the line that pages. */
@@ -36,7 +37,9 @@ function logEmailConfig(): void {
 async function checkProviderConnection(): Promise<void> {
   const provider = getEmailProvider()
   if (!provider) return
-  const check = await provider.checkConnection({ signal: AbortSignal.timeout(10_000) })
+  const check = await provider.checkConnection({
+    signal: AbortSignal.timeout(EMAIL_CHECK_TIMEOUT_MS)
+  })
   if (check.ok) {
     emailLogger.info({ provider: provider.name, note: check.note }, 'Email connection check passed')
     return
@@ -105,10 +108,8 @@ export class EmailGatewayService extends NotificationGatewayBase {
     const queueHealth = await getEmailQueueHealth()
     const delivery = config.email.delivery
 
-    // Keys stay as they were: the admin Notifications page reads them.
     return {
       provider: delivery.status === 'ready' ? delivery.provider.name : null,
-      smtp_configured: delivery.status === 'ready',
       queue_connected: queueHealth.available,
       pending_jobs: queueHealth.waiting + queueHealth.delayed,
       failed_jobs: queueHealth.failed,

@@ -22,7 +22,7 @@ export {
   startEmailQueueConsumer,
   stopEmailQueueConsumer
 } from './pgmqConsumer'
-export { createEmailWorker, getEmailQueueHealth, queueEmail } from './queue'
+export { createEmailWorker, getEmailDlqDepth, getEmailQueueHealth, queueEmail } from './queue'
 export { updateSupabaseEmailStatus } from './sender'
 export { emailGateway, EmailGatewayService } from './service'
 export {

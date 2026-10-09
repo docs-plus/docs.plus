@@ -393,6 +393,24 @@ const routes: AdminRoute[] = [
     summary: 'BullMQ dead-letter contents',
     group: 'Notification audit'
   },
+  {
+    path: '/email/setup',
+    method: 'get',
+    id: 'adminGetEmailSetup',
+    summary: 'Email setup status',
+    group: 'Email setup',
+    description:
+      'Provider, config status, set or missing per secret, a live connection check, the newest bounce (masked) and the email DLQ depth. Never returns a secret value. House envelope.'
+  },
+  {
+    path: '/email/setup/test-send',
+    method: 'post',
+    id: 'adminSendTestEmail',
+    summary: 'Send a test email to yourself',
+    group: 'Email setup',
+    description:
+      "No body. Sends to the signed-in admin's own address. Answers `{ sent: true, messageId, to }`, with `to` masked, or `{ sent: false, kind, code }`. One per admin per minute: `429` past it, `503` without Redis, `400` when the account has no email."
+  },
 
   {
     path: '/audit/ghost-accounts',

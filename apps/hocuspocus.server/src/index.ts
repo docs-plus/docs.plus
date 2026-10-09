@@ -6,6 +6,7 @@ import type { ContentfulStatusCode } from 'hono/utils/http-status'
 
 import pkg from '../package.json'
 import emailRouter from './api/email'
+import { adminAuthMiddleware } from './api/middleware/adminAuth'
 import adminRouter from './api/routers/admin.router'
 import documentsRouter from './api/routers/documents.router'
 import healthRouter from './api/routers/health.router'
@@ -14,9 +15,11 @@ import hypermultimediaRouter, {
 } from './api/routers/hypermultimedia.router'
 import { config } from './config/env' // import runs env validation (fail-fast at boot)
 import { verifyServiceRole, verifySupabaseTokenOutcome } from './lib/auth'
-import { emailGateway } from './lib/email'
+import { emailGateway, getEmailDlqDepth, getEmailQueueHealth } from './lib/email'
 import { recordEmailBounce } from './lib/email/bounces'
+import { getEmailProvider } from './lib/email/providers'
 import { resendTagValue } from './lib/email/providers/resend'
+import { deliverEmail } from './lib/email/sender'
 import { AppError, getErrorResponse } from './lib/errors'
 import { captureHttpError, captureUnknown, flushObservability } from './lib/instrument'
 import { conversionLogger, logger, restApiLogger } from './lib/logger'
@@ -31,6 +34,7 @@ import * as documentChanges from './modules/document-changes'
 import * as documentContent from './modules/document-content'
 import * as documentConversion from './modules/document-conversion'
 import * as documentVersions from './modules/document-versions'
+import * as emailSetup from './modules/email-setup'
 import * as emailWebhooks from './modules/email-webhooks'
 import * as linkMetadata from './modules/link-metadata'
 import * as mcp from './modules/mcp'
@@ -134,6 +138,21 @@ if (webhookSecret) {
     'email webhook secret invalid'
   )
 }
+// Ahead of the admin router: the module carries the same admin guard, and its
+// handler answers first, so `is_admin` runs once per request.
+const emailSetupModule = emailSetup.init({
+  delivery,
+  facts: config.email.facts,
+  adminAuth: adminAuthMiddleware,
+  getEmailProvider,
+  deliverEmail,
+  getEmailQueueHealth,
+  getEmailDlqDepth,
+  supabase: getServiceRoleClient(),
+  redis: getRedisClient(),
+  logger: logger.child({ module: 'email-setup' })
+})
+app.route('/api/admin/email/setup', emailSetupModule.router)
 app.route('/api/admin', adminRouter)
 const linkMetadataModule = linkMetadata.init({
   redis: getRedisClient(),

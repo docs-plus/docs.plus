@@ -118,6 +118,8 @@ Both providers also need `EMAIL_UNSUBSCRIBE_SECRET` and `PUBLIC_RESTAPI_URL`. Wi
 
 A provider key without `EMAIL_PROVIDER` holds all mail. The worker then logs `email config invalid` with the reason. [`ENV.md`](../../apps/hocuspocus.server/ENV.md#email) lists every rule.
 
+To check the setup, open **Email setup** in the admin dashboard. It shows the status, each problem, and `set` or `missing` for each secret. It never shows a secret value. It also lists the `.env` lines to add, and **Send test email** sends one mail to your own address. The page only reads. To change a value, edit the host env file, then redeploy.
+
 Then add DNS records for the domain in `EMAIL_FROM`:
 
 - **SPF:** the record your provider gives you.

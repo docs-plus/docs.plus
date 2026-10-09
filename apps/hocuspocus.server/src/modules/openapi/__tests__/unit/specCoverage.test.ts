@@ -5,6 +5,7 @@ import * as documentChanges from '../../../document-changes'
 import * as documentContent from '../../../document-content'
 import * as documentConversion from '../../../document-conversion'
 import * as documentVersions from '../../../document-versions'
+import * as emailSetup from '../../../email-setup'
 import * as emailWebhooks from '../../../email-webhooks'
 import * as linkMetadata from '../../../link-metadata'
 import { buildOpenApiDocument } from '../../domain/document'
@@ -67,6 +68,21 @@ const mounted = (): Set<string> => {
         namespaceTag: null,
         redis: null,
         recordEmailBounce: async () => {},
+        logger
+      }).router
+    ],
+    [
+      '/api/admin/email/setup',
+      emailSetup.init({
+        delivery: { status: 'off' },
+        facts: stub,
+        adminAuth: async (_c, next) => next(),
+        getEmailProvider: () => null,
+        deliverEmail: stub,
+        getEmailQueueHealth: stub,
+        getEmailDlqDepth: async () => null,
+        supabase: null,
+        redis: null,
         logger
       }).router
     ]

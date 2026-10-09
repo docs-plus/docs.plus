@@ -107,7 +107,6 @@ export interface DigestEmailRequest {
 }
 
 export interface EmailGatewayHealth {
-  smtp_configured: boolean
   queue_connected: boolean
   pending_jobs: number
   failed_jobs: number

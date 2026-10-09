@@ -153,7 +153,6 @@ export interface EmailGatewayHealth {
   provider: string | null
   queueConnected: boolean
   pendingJobs?: number
-  failedJobs?: number
   error?: string
 }
 
@@ -551,3 +550,37 @@ export interface McpUsage {
   /** Null when Supabase Auth could not list the OAuth clients. */
   registeredApps: { name: string; createdAt: string; redirectOrigins: string[] }[] | null
 }
+
+/** `GET /api/admin/email/setup`. Secrets arrive only as `set` or `missing`. */
+export interface EmailSetup {
+  status: 'ready' | 'off' | 'invalid'
+  problems: string[]
+  provider: string | null
+  from: string | null
+  namespace: string | null
+  smtp: { host: string | null; port: number }
+  publicUrl: string | null
+  secrets: Record<string, 'set' | 'missing'>
+  webhook: { secret: 'set' | 'missing' | 'invalid'; url: string | null }
+  connection:
+    | { state: 'ok'; note?: 'send_only_key' }
+    | { state: 'failed'; kind: string; code: string }
+    | { state: 'timeout' }
+    | { state: 'skipped' }
+  latestBounce:
+    | { state: 'none' }
+    | { state: 'unavailable' }
+    | {
+        state: 'found'
+        email: string
+        bounceType: string
+        provider: string | null
+        reason: string | null
+        bouncedAt: string
+      }
+  queue: { connected: boolean; pending: number; dlqDepth: number | null }
+  envToAdd: string[]
+}
+
+export type TestSendResult =
+  { sent: true; messageId: string; to: string } | { sent: false; kind: string; code: string }

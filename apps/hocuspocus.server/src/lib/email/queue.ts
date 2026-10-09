@@ -320,14 +320,11 @@ export async function drainEmailDeadLetterQueue({
 }): Promise<EmailDlqDrainResult> {
   if (!EmailQueue || !EmailDeadLetterQueue) throw new Error('Redis not configured')
 
-  const counts = await EmailDeadLetterQueue.getJobCounts(...EMAIL_DLQ_PARKED_STATES)
+  const depth = (await getEmailDlqDepth()) ?? 0
   const jobs = (
     await EmailDeadLetterQueue.getJobs([...EMAIL_DLQ_PARKED_STATES], 0, EMAIL_DLQ_DRAIN_BATCH - 1)
   ).slice(0, EMAIL_DLQ_DRAIN_BATCH)
-  const result: EmailDlqDrainResult = {
-    entries: [],
-    depth: Object.values(counts).reduce((sum, n) => sum + n, 0)
-  }
+  const result: EmailDlqDrainResult = { entries: [], depth }
 
   for (const job of jobs) {
     const { originalJobId, failureKind, failedAt, type, payload, created_at } = job.data
@@ -347,6 +344,13 @@ export async function drainEmailDeadLetterQueue({
   }
 
   return result
+}
+
+/** Entries the drain would see. Null when there is no Redis. */
+export async function getEmailDlqDepth(): Promise<number | null> {
+  if (!EmailDeadLetterQueue) return null
+  const counts = await EmailDeadLetterQueue.getJobCounts(...EMAIL_DLQ_PARKED_STATES)
+  return EMAIL_DLQ_PARKED_STATES.reduce((sum, state) => sum + (counts[state] ?? 0), 0)
 }
 
 export async function getEmailQueueHealth() {

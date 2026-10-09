@@ -161,10 +161,19 @@ export const emailPaths: OpenApiPaths = {
     get: {
       operationId: 'getEmailHealth',
       summary: 'Email gateway health',
+      description:
+        'Public, so status only. `ok` when email is set up and the queue is connected. The detail is on `GET /api/admin/email/setup`.',
       tags,
       security: [{}],
       responses: {
-        '200': jsonOk('Gateway health report.', { type: 'object', additionalProperties: true }),
+        '200': jsonOk('Gateway status.', {
+          type: 'object',
+          properties: {
+            status: { type: 'string', enum: ['ok', 'degraded'] },
+            queue_connected: { type: 'boolean' }
+          },
+          required: ['status', 'queue_connected']
+        }),
         '429': rateLimitedRef,
         '500': { $ref: '#/components/responses/LegacyInternalError' }
       }

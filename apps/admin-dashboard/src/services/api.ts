@@ -13,6 +13,7 @@ import type {
   EmailBounce,
   EmailFailureSummary,
   EmailGatewayHealth,
+  EmailSetup,
   EmailStats,
   GhostAccountsResponse,
   GhostBulkDeleteResult,
@@ -39,6 +40,7 @@ import type {
   StaleDocumentsSummary,
   SupabaseStats,
   TableSize,
+  TestSendResult,
   TopViewedDocument,
   User,
   UserLifecycleSegments,
@@ -470,32 +472,35 @@ export async function checkPushGatewayHealth(): Promise<PushGatewayHealth> {
   }
 }
 
+export async function fetchEmailSetup(init?: RequestInit): Promise<EmailSetup> {
+  const body = await fetchApi<{ data: EmailSetup }>('/api/admin/email/setup', init)
+  return body.data
+}
+
+export async function sendTestEmail(): Promise<TestSendResult> {
+  const body = await fetchApi<{ data: TestSendResult }>('/api/admin/email/setup/test-send', {
+    method: 'POST'
+  })
+  return body.data
+}
+
+/**
+ * The public `/api/email/health` carries status only, so the card reads the setup view.
+ * Its live check can take 10 s, so the card gives up at 15 s and shows `down`.
+ */
 export async function checkEmailGatewayHealth(): Promise<EmailGatewayHealth> {
   const start = Date.now()
   try {
-    const response = await fetch(`${API_URL}/api/email/health`, {
-      signal: AbortSignal.timeout(5000)
-    })
-    const latency = Date.now() - start
-
-    if (!response.ok) {
-      return {
-        status: 'degraded',
-        latency,
-        provider: null,
-        queueConnected: false,
-        error: `HTTP ${response.status}`
-      }
-    }
-
-    const data = await response.json()
+    const setup = await fetchEmailSetup({ signal: AbortSignal.timeout(15_000) })
     return {
-      status: data.smtp_configured || data.provider ? 'healthy' : 'degraded',
-      latency,
-      provider: data.provider ?? null,
-      queueConnected: data.queue_connected ?? false,
-      pendingJobs: data.pending_jobs ?? 0,
-      failedJobs: data.failed_jobs ?? 0
+      status:
+        setup.status === 'ready' && setup.queue.connected && setup.connection.state === 'ok'
+          ? 'healthy'
+          : 'degraded',
+      latency: Date.now() - start,
+      provider: setup.provider,
+      queueConnected: setup.queue.connected,
+      pendingJobs: setup.queue.pending
     }
   } catch (err) {
     return {

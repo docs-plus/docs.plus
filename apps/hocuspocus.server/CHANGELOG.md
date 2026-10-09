@@ -21,8 +21,20 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - **Both deploy workflows check four email keys.** The deploy stops when
   `EMAIL_PROVIDER`, `EMAIL_FROM`, `EMAIL_UNSUBSCRIBE_SECRET` or
   `PUBLIC_RESTAPI_URL` is empty in the host env file.
+- **`GET /api/email/health` returns status only ([#423](https://github.com/docs-plus/docs.plus/issues/423)).**
+  The public body is now `{ status, queue_connected }`, with `status` `ok` or
+  `degraded`. An admin reads the provider and the pending count on
+  `GET /api/admin/email/setup`. `smtp_configured`, `failed_jobs` and
+  `sent_last_hour` are gone.
 
 ### Migration
+
+**Email health ([#423](https://github.com/docs-plus/docs.plus/issues/423)).** Before:
+`{ smtp_configured, provider, queue_connected, pending_jobs, failed_jobs, sent_last_hour }`.
+After: `{ status, queue_connected }`. Read the provider and the pending count
+on `GET /api/admin/email/setup` with an admin token. Read today's `provider`
+from `GET /api/email/health` before you deploy, because the Email provider
+step below needs it.
 
 **Admin revoke ([#412](https://github.com/docs-plus/docs.plus/issues/412)).** Apply the
 Supabase migration `20261009120400_admin_revoke_admin` before this server
@@ -94,6 +106,14 @@ SMTP_PASS=...
 
 ### Added
 
+- **Admin Email setup page ([#423](https://github.com/docs-plus/docs.plus/issues/423)).**
+  `GET /api/admin/email/setup` shows the email status, each problem, and `set`
+  or `missing` for each secret. It never returns a secret value. It also runs
+  a live connection check and shows the newest bounce, masked, and the email
+  DLQ depth. It lists the `.env` lines to add. A test send,
+  `POST /api/admin/email/setup/test-send`, mails the signed-in admin's own
+  address through `deliverEmail`, once per minute. Without Redis it answers
+  `503`. No route writes `.env`.
 - **Resend webhook at `POST /api/email/webhooks/resend` ([#422](https://github.com/docs-plus/docs.plus/issues/422)).**
   Resend now reports delivery events back to the server. A permanent
   bounce, a complaint or a suppression writes one `email_bounces` row through

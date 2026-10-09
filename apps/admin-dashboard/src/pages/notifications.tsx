@@ -330,8 +330,8 @@ export default function NotificationsPage() {
     refetch: refetchEmailGateway
   } = useQuery({
     queryKey: ['admin', 'email', 'gateway-health'],
-    queryFn: checkEmailGatewayHealth,
-    refetchInterval: 30000
+    // No poll: each read runs a live provider check.
+    queryFn: checkEmailGatewayHealth
   })
 
   const {

@@ -107,10 +107,12 @@ emailRouter.post(
   }
 )
 
+/** Public, so status only (#405). The admin Email setup page has the detail. */
 emailRouter.get('/health', async (c) => {
   try {
-    const health = await emailGateway.getHealth()
-    return c.json(health)
+    const { queue_connected } = await emailGateway.getHealth()
+    const ready = config.email.delivery.status === 'ready'
+    return c.json({ status: ready && queue_connected ? 'ok' : 'degraded', queue_connected })
   } catch (err) {
     emailLogger.error({ err }, 'Error getting email health')
     return c.json({ error: 'Failed to get health status' }, 500)

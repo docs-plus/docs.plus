@@ -62,6 +62,43 @@ export function resolveWebhookSecret(raw: string | undefined): string | null {
   return atob(encoded).length >= WEBHOOK_SECRET_MIN_BYTES ? value : null
 }
 
+/** The keys the setup page shows only as set or missing. SMTP_USER pairs with SMTP_PASS. */
+export type EmailSecretName =
+  'RESEND_API_KEY' | 'SMTP_USER' | 'SMTP_PASS' | 'EMAIL_UNSUBSCRIBE_SECRET'
+
+/** Presence only, plus values that are not secret. No secret value enters this object. */
+export interface EmailEnvFacts {
+  /** `EMAIL_PROVIDER` as written, so the setup page can name a wrong value. */
+  provider: string | null
+  from: string | null
+  smtpHost: string | null
+  smtpPort: number
+  publicUrl: string | null
+  webhookSecret: 'set' | 'missing' | 'invalid'
+  set: Record<EmailSecretName, boolean>
+}
+
+/** Pure. Feeds the admin Email setup page, which must never see a secret value. */
+export function describeEmailEnv(
+  env: EmailEnv & Pick<Env, 'RESEND_WEBHOOK_SECRET' | 'EMAIL_UNSUBSCRIBE_SECRET'>
+): EmailEnvFacts {
+  const webhookRaw = nonBlank(env.RESEND_WEBHOOK_SECRET)
+  return {
+    provider: nonBlank(env.EMAIL_PROVIDER) ?? null,
+    from: nonBlank(env.EMAIL_FROM) ?? null,
+    smtpHost: nonBlank(env.SMTP_HOST) ?? null,
+    smtpPort: env.SMTP_PORT,
+    publicUrl: nonBlank(env.PUBLIC_RESTAPI_URL) ?? null,
+    webhookSecret: !webhookRaw ? 'missing' : resolveWebhookSecret(webhookRaw) ? 'set' : 'invalid',
+    set: {
+      RESEND_API_KEY: Boolean(nonBlank(env.RESEND_API_KEY)),
+      SMTP_USER: Boolean(nonBlank(env.SMTP_USER)),
+      SMTP_PASS: Boolean(nonBlank(env.SMTP_PASS)),
+      EMAIL_UNSUBSCRIBE_SECRET: Boolean(nonBlank(env.EMAIL_UNSUBSCRIBE_SECRET))
+    }
+  }
+}
+
 /**
  * Pure and never throws. Only `ready` sends; `off` settles mail as skipped,
  * and `invalid` holds it. A provider key without EMAIL_PROVIDER is `invalid`,

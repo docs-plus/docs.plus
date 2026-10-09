@@ -29,6 +29,9 @@ export interface SentEmail {
 export type ConnectionCheck =
   { ok: true; note?: 'send_only_key' } | { ok: false; error: EmailSendError }
 
+/** SMTP ignores the signal, so a caller that needs a bound races its own timer. */
+export const EMAIL_CHECK_TIMEOUT_MS = 10_000
+
 export interface EmailProvider {
   readonly name: EmailProviderName
   /**
