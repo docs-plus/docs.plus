@@ -123,6 +123,7 @@ export interface McpUsage {
 }
 
 export interface ChatRoom {
+  /** The heading's toc-id (section_id), never the channel id (#402). */
   id: string
   messageCount: number
   lastActivityAt: string | null
@@ -140,15 +141,17 @@ export interface ChatMessage {
 
 export interface ChatStore {
   listRooms: (documentId: string) => Promise<ChatRoom[]>
-  hasRoom: (documentId: string, roomId: string) => Promise<boolean>
+  /** The channel id of one heading's room in this document, or null when it has none. */
+  findRoom: (documentId: string, headingId: string) => Promise<string | null>
   readThread: (
     documentId: string,
-    roomId: string,
+    channelId: string,
     page: { beforeSeq?: number; limit: number }
   ) => Promise<{ messages: ChatMessage[]; hasMore: boolean }>
   postMessage: (row: {
     id: string
-    roomId: string
+    /** From findRoom, so the insert cannot reach another document's room. */
+    channelId: string
     userId: string
     content: string
     html: string

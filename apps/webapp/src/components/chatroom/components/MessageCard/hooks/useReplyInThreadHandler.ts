@@ -1,6 +1,6 @@
 import { computeSection } from '@components/TipTap/extensions/shared'
 import { CHAT_OPEN } from '@services/eventsHub'
-import { useStore } from '@stores'
+import { useChatStore, useStore } from '@stores'
 import { TIPTAP_NODES, TMsgRow, TRANSACTION_META } from '@types'
 import PubSub from 'pubsub-js'
 import { useCallback } from 'react'
@@ -28,7 +28,8 @@ export const useReplyInThreadHandler = () => {
       if (!editor || !message) return
 
       const messageContent = message.content?.trim() || ''
-      const headingId = message.channel_id
+      // The open room's heading. A channel id is not a toc-id (#402).
+      const headingId = useChatStore.getState().chatRoom.headingId
 
       const { doc } = editor.state
       let headingPos: number | null = null

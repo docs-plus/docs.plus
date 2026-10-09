@@ -192,6 +192,7 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           description: string | null
+          heading_id: string
           id: string
           is_avatar_set: boolean | null
           last_activity_at: string
@@ -212,6 +213,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           description?: string | null
+          heading_id: string
           id?: string
           is_avatar_set?: boolean | null
           last_activity_at?: string
@@ -232,6 +234,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           description?: string | null
+          heading_id?: string
           id?: string
           is_avatar_set?: boolean | null
           last_activity_at?: string

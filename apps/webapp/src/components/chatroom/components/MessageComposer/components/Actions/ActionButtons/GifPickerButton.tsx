@@ -1,4 +1,3 @@
-import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import {
   fetchTrendingGifs,
   type GiphyGif,
@@ -20,7 +19,6 @@ type Props = React.ComponentProps<typeof Button> & {
 }
 
 export const GifPickerButton = ({ className, size: _size = 18, ...props }: Props) => {
-  const { channelId } = useChatroomContext()
   const user = useAuthStore((state) => state.profile)
   const { addFiles } = useComposerAttachmentActions()
   const [open, setOpen] = useState(false)
@@ -88,11 +86,11 @@ export const GifPickerButton = ({ className, size: _size = 18, ...props }: Props
 
   const onToggle = useCallback(() => {
     if (!user?.id) {
-      openComposerSignIn(channelId)
+      openComposerSignIn()
       return
     }
     setOpen((prev) => !prev)
-  }, [channelId, user?.id])
+  }, [user?.id])
 
   const onSelect = useCallback(
     (gif: GiphyGif) => {

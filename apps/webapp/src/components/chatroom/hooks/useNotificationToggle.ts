@@ -15,7 +15,8 @@ const getNextNotificationState = (current: NotificationState): NotificationState
 }
 
 export const useNotificationToggle = () => {
-  const chatRoom = useChatStore((state) => state.chatRoom)
+  // The resolved row, never the heading id (#402). A heading with no row has no setting.
+  const channelId = useChatStore((state) => state.chatRoom.channelId)
   const user = useAuthStore((state) => state.profile)
   const [notificationState, setNotificationState] = useState<NotificationState>('MENTIONS')
 
@@ -31,25 +32,25 @@ export const useNotificationToggle = () => {
   } = useApi(getChannelNotifState, null, false)
 
   useEffect(() => {
-    if (!chatRoom?.headingId) return
+    if (!channelId) return
 
     fetchNotifState({
-      _channel_id: chatRoom.headingId
+      _channel_id: channelId
     }).then(({ data }) => {
       setNotificationState((data as NotificationState) ?? 'MENTIONS')
     })
     // `user?.id` is a dependency because this state is per person. A background
     // sign-in would otherwise leave the anonymous answer on screen.
-  }, [chatRoom?.headingId, fetchNotifState, user?.id])
+  }, [channelId, fetchNotifState, user?.id])
 
   const handleToggle = useCallback(async () => {
-    if (!chatRoom?.headingId || !user?.id) return
+    if (!channelId || !user?.id) return
 
     const nextState = getNextNotificationState(notificationState)
     setNotificationState(nextState)
 
     const { error: apiError } = await updateNotifState({
-      channelId: chatRoom.headingId,
+      channelId,
       memberId: user.id,
       notifState: nextState
     })
@@ -58,7 +59,7 @@ export const useNotificationToggle = () => {
       setNotificationState(notificationState)
       console.error('Failed to update notification state:', apiError)
     }
-  }, [chatRoom?.headingId, user?.id, notificationState, updateNotifState])
+  }, [channelId, user?.id, notificationState, updateNotifState])
 
   return {
     notificationState,

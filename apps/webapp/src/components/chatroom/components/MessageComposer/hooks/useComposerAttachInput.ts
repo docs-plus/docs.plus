@@ -21,12 +21,12 @@ export function useComposerAttachInput() {
 
   const openFilePicker = useCallback(() => {
     if (!user?.id) {
-      openComposerSignIn(channelId)
+      openComposerSignIn()
       return
     }
     if (atLimit) return
     inputRef.current?.click()
-  }, [atLimit, channelId, user?.id])
+  }, [atLimit, user?.id])
 
   const onInputChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {

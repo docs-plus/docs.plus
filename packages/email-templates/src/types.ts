@@ -33,6 +33,8 @@ export interface DigestNotification {
 export interface DigestChannel {
   name: string
   id: string
+  /** The heading toc-id the chat belongs to. Absent on a payload queued before #402. */
+  heading_id?: string
   url: string
   notifications: DigestNotification[]
 }

@@ -529,6 +529,14 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Security
 
+- **A heading chat belongs to its own document.** The chat opens the channel
+  row that holds this document and this heading, never a row found by id
+  alone. So a copy of a document starts with empty heading chats, and a row
+  that another document made never opens here. A chat link opens a channel of
+  this document, or a heading of this document, and nothing else. A new
+  channel takes a server id, not the heading's toc-id. Old chats keep their
+  history, links, unread badges and media
+  ([#402](https://github.com/docs-plus/docs.plus/issues/402)).
 - **A highlight colour is a hex or numeric `rgb()` value, or nothing.**
   `Highlight` checks `color` on parse and on render, because stored marks and
   Yjs updates skip parse. Document content can no longer add CSS to the page

@@ -1,11 +1,10 @@
-import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import {
   buildCopyToDocContent,
   insertCopyToDocNodes
 } from '@components/chatroom/utils/copyChatMediaToDocument'
 import { computeSection } from '@components/TipTap/extensions/shared'
 import * as toast from '@components/toast'
-import { useStore } from '@stores'
+import { useChatStore, useStore } from '@stores'
 import { TIPTAP_NODES, TMsgRow, TRANSACTION_META } from '@types'
 import { useCallback } from 'react'
 
@@ -64,7 +63,7 @@ const createParagraphNodeJson = (message: TMsgRow) => {
 
 const findChatroomInsertPosition = (
   editor: NonNullable<ReturnType<typeof useStore.getState>['settings']['editor']['instance']>,
-  channelId: string
+  headingId: string
 ): number | null => {
   const { doc } = editor.state
   let headingPos: number | null = null
@@ -79,7 +78,7 @@ const findChatroomInsertPosition = (
 
     if (
       child.type.name === TIPTAP_NODES.HEADING_TYPE &&
-      (child.attrs['toc-id'] as string) === channelId
+      (child.attrs['toc-id'] as string) === headingId
     ) {
       headingPos = pos
       headingLevel = child.attrs.level as number
@@ -108,13 +107,14 @@ const findChatroomInsertPosition = (
 export const useCopyMessageToDocHandler = () => {
   const editor = useStore((state) => state.settings.editor.instance)
   const docMetadata = useStore((state) => state.settings.metadata)
-  const { channelId } = useChatroomContext()
+  // The open room's heading. A channel id is not a toc-id (#402).
+  const headingId = useChatStore((state) => state.chatRoom.headingId)
 
   const copyMessageToDocHandler = useCallback(
     (message: TMsgRow) => {
-      if (!message || !editor || !channelId) return
+      if (!message || !editor || !headingId) return
 
-      const insertPosition = findChatroomInsertPosition(editor, channelId)
+      const insertPosition = findChatroomInsertPosition(editor, headingId)
       if (insertPosition == null) return
 
       void (async () => {
@@ -136,7 +136,7 @@ export const useCopyMessageToDocHandler = () => {
         }
       })()
     },
-    [editor, channelId, docMetadata]
+    [editor, headingId, docMetadata]
   )
 
   return {

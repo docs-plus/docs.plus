@@ -636,6 +636,8 @@ begin
                 'sender_avatar_url', s.avatar_url,
                 'message_preview', coalesce(n.message_preview, ''),
                 'channel_id', n.channel_id,
+                -- The digest places a heading chat by this, not by channel_id (#402).
+                'heading_id', c.heading_id,
                 'channel_name', coalesce(c.name, 'General'),
                 'workspace_id', c.workspace_id,
                 'workspace_name', coalesce(w.name, c.slug),

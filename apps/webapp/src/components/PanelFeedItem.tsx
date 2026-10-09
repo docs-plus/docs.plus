@@ -1,14 +1,12 @@
 import Button, { dangerGhostClassName } from '@components/ui/Button'
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { Icons } from '@icons'
-import { CHAT_OPEN } from '@services/eventsHub'
-import { useChatStore } from '@stores'
+import { openChatFromLink } from '@services/openChatFromLink'
 import { formatTimeAgo } from '@utils/formatTime'
 import { buildBookmarkHref } from '@utils/link-helpers'
 import { messagePreviewKind } from '@utils/messagePreview'
 import { MOTION_OVERLAY_OUT_MS } from '@utils/motion'
 import { twMerge } from '@utils/twMerge'
-import PubSub from 'pubsub-js'
 import type { ReactNode } from 'react'
 import { LuLink } from 'react-icons/lu'
 
@@ -143,14 +141,11 @@ export function PanelFeedCopyLink({ messageId, channelId, disabled }: PanelFeedC
 
 /** Opens the chat at one message. An open room on that heading is torn down first, so it refetches. */
 export function openChatAtMessage(channelId: string | null, messageId: string | null) {
-  const { chatRoom, destroyChatRoom } = useChatStore.getState()
-  if (chatRoom.headingId === channelId) destroyChatRoom()
-
-  PubSub.publish(CHAT_OPEN, {
-    headingId: channelId,
-    toggleRoom: false,
-    fetchMsgsFromId: messageId,
-    scroll2Heading: true
+  if (!channelId) return
+  void openChatFromLink(channelId, {
+    fetchMsgsFromId: messageId ?? undefined,
+    scroll2Heading: true,
+    reopen: true
   })
 }
 

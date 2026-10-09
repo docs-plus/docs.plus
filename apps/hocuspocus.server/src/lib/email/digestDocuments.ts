@@ -22,6 +22,8 @@ export interface DigestRawNotification {
   sender_avatar_url: string | null
   message_preview: string
   channel_id: string | null
+  /** Absent on a message queued before #402. */
+  heading_id?: string | null
   channel_name: string
   workspace_id: string | null
   workspace_name: string
@@ -44,7 +46,10 @@ export function buildDigestDocuments(
       slug: string
       workspaceId?: string
       contentChanges?: DigestContentChanges
-      channels: Map<string, { name: string; id: string; notifications: DigestNotification[] }>
+      channels: Map<
+        string,
+        { name: string; id: string; heading_id?: string; notifications: DigestNotification[] }
+      >
     }
   >()
 
@@ -89,6 +94,7 @@ export function buildDigestDocuments(
       ws.channels.set(chKey, {
         name: n.channel_name || 'General',
         id: n.channel_id || '',
+        heading_id: n.heading_id || undefined,
         notifications: []
       })
     }
@@ -113,6 +119,7 @@ export function buildDigestDocuments(
     channels: Array.from(ws.channels.values()).map((ch): DigestChannel => ({
       name: ch.name,
       id: ch.id,
+      heading_id: ch.heading_id,
       url: ch.id ? `${appUrl}/${ws.slug}?chatroom=${ch.id}` : `${appUrl}/${ws.slug}`,
       notifications: ch.notifications
     })),

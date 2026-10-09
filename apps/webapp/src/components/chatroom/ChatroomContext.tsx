@@ -45,11 +45,14 @@ export const useChatroomContext = () => {
 }
 
 export const ChatroomProvider: React.FC<{
+  /** The resolved channel row, or '' while it resolves or when the heading has none. */
   channelId: string
+  /** A failed resolve (useHeadingChannel). It wins over loading, like a metadata error. */
+  resolveError?: unknown
   variant: keyof ChatroomVariant
   deepLinkMessageId?: string | null
   children: React.ReactNode
-}> = ({ channelId, variant, deepLinkMessageId = null, children }) => {
+}> = ({ channelId, resolveError = null, variant, deepLinkMessageId = null, children }) => {
   const listRef = useRef<VirtuosoMessageListMethods<ChatItem, unknown> | null>(null)
   const [atBottom, setAtBottom] = useState(true)
   const [newCount, setNewCount] = useState(0)
@@ -160,16 +163,12 @@ export const ChatroomProvider: React.FC<{
     await jumpTo()
   }, [jumpTo])
 
-  const onAuthRequired = useCallback(() => {
-    openComposerSignIn(channelId)
-  }, [channelId])
-
   const { send, retry } = useSendMessage({
     channelId,
     listRef,
     dataIncludesTailRef,
     snapToPresent,
-    onAuthRequired,
+    onAuthRequired: openComposerSignIn,
     feedMode
   })
 
@@ -248,8 +247,9 @@ export const ChatroomProvider: React.FC<{
   }, [])
 
   let errorMsg: string | null = null
-  if (metadataError) {
-    errorMsg = metadataError instanceof Error ? metadataError.message : String(metadataError)
+  const loadError = resolveError ?? metadataError
+  if (loadError) {
+    errorMsg = loadError instanceof Error ? loadError.message : String(loadError)
   }
 
   const isFeedReady = isChannelDataLoaded && !messagesLoading && !errorMsg

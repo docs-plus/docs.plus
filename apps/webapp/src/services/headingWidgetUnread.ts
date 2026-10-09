@@ -1,7 +1,7 @@
 import { HEADING_ACTIONS_CLASSES } from '@components/TipTap/extensions/HeadingActions/types'
 import { useChatStore } from '@stores'
 import { formatCappedCount } from '@utils/formatCappedCount'
-import { resolveUnreadCount } from '@utils/unreadDisplay'
+import { resolveHeadingUnreadCount, resolveUnreadCount } from '@utils/unreadDisplay'
 
 const headingChatBtnSelector = `.${HEADING_ACTIONS_CLASSES.chatBtn}`
 
@@ -34,12 +34,15 @@ export function syncHeadingWidgetUnread(): void {
     .forEach((el) => {
       const headingId = el.dataset.headingId
       if (!headingId) return
-      updateElement(el, resolveUnreadCount(headingId, source))
+      updateElement(el, resolveHeadingUnreadCount(headingId, source))
     })
 
-  source.channels.forEach((_channel, channelId) => {
+  // A channel id is not a toc-id (#402); the row's heading_id finds its heading.
+  source.channels.forEach((channel, channelId) => {
+    const headingId = channel?.heading_id
+    if (!headingId) return
     const headingEl = document.querySelector<HTMLElement>(
-      `[data-toc-id="${CSS.escape(channelId)}"]`
+      `[data-toc-id="${CSS.escape(headingId)}"]`
     )
     if (!headingEl) return
     const el = headingEl.querySelector<HTMLElement>(

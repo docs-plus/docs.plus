@@ -55,15 +55,19 @@ export const registerChatTools = (
   const openChat = (): ChatStore => deps.chat ?? refuse(CHAT_OFF_TEXT)
 
   // One gate for read and post: a live heading of this document that already has a chat room.
-  // The post's insert cannot filter, so it relies on this check running first.
-  const openChatRoom = async (doc: DocumentRecord, sectionId: string): Promise<ChatStore> => {
+  // The post's insert cannot filter, so it uses the channel id this gate resolved.
+  const openChatRoom = async (
+    doc: DocumentRecord,
+    sectionId: string
+  ): Promise<{ chat: ChatStore; channelId: string }> => {
     const chat = openChat()
     if (!findSection(await loadContent(doc), sectionId))
       return refuse(
         `section_id: no heading "${sectionId}" in this document. Call list_chat_rooms to list the heading rooms.`
       )
-    if (!(await chat.hasRoom(doc.documentId, sectionId))) return refuse(noRoomText(sectionId))
-    return chat
+    const channelId = await chat.findRoom(doc.documentId, sectionId)
+    if (!channelId) return refuse(noRoomText(sectionId))
+    return { chat, channelId }
   }
 
   server.registerTool(
@@ -131,8 +135,8 @@ export const registerChatTools = (
       'read_chat_thread',
       async ({ slug, section_id: sectionId, before_seq: beforeSeq, limit }) => {
         const doc = await openDocument(slug, 'read')
-        const chat = await openChatRoom(doc, sectionId)
-        const page = await chat.readThread(doc.documentId, sectionId, { beforeSeq, limit })
+        const { chat, channelId } = await openChatRoom(doc, sectionId)
+        const page = await chat.readThread(doc.documentId, channelId, { beforeSeq, limit })
 
         // Drop whole older messages past the cap, so before_seq stays a clean cursor.
         const lines = page.messages.map(renderChatMessage)
@@ -205,11 +209,11 @@ export const registerChatTools = (
           'text: it is too long once formatted. Use fewer line breaks or & characters, or shorter text.'
         )
       // A post into the main room or a deleted heading's room is one nobody sees on the pad.
-      const chat = await openChatRoom(doc, sectionId)
+      const { chat, channelId } = await openChatRoom(doc, sectionId)
       const id = crypto.randomUUID()
       let posted: { seq: number }
       try {
-        posted = await chat.postMessage({ id, roomId: sectionId, userId: caller.sub, ...message })
+        posted = await chat.postMessage({ id, channelId, userId: caller.sub, ...message })
       } catch (err) {
         // The insert can commit after the client gave up, so a blind retry may post twice.
         deps.logger.error({ err, tool: 'post_chat_message' }, 'MCP chat post not confirmed')

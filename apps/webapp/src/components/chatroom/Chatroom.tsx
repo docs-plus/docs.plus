@@ -4,6 +4,7 @@ import { ChatroomProvider } from './ChatroomContext'
 import ChannelComposer from './components/ChannelComposer/ChannelComposer'
 import ChatroomToolbar from './components/ChatroomToolbar/ChatroomToolbar'
 import MessageFeed from './components/MessageFeed/MessageFeed'
+import { useHeadingChannel } from './hooks/useHeadingChannel'
 import { ChatroomLayout } from './Layouts/ChatroomLayout'
 import { ChatroomProps } from './types/chatroom.types'
 
@@ -13,10 +14,12 @@ const ChatRoom = ({
   children,
   deepLinkMessageId = null
 }: ChatroomProps) => {
-  const chatRoom = useChatStore((state) => state.chatRoom)
+  const headingId = useChatStore((state) => state.chatRoom.headingId)
+  const channelId = useChatStore((state) => state.chatRoom.channelId)
   const storeMsgId = useChatStore((state) => state.chatRoom.fetchMsgsFromId) ?? null
+  const resolveError = useHeadingChannel()
 
-  if (!chatRoom?.headingId) return null
+  if (!headingId) return null
 
   // The four in-app deep-link entry points (BookmarkItem, hrefEventHandler,
   // NotificationItem, useNotificationClickBridge) push `fetchMsgsFromId` into the
@@ -31,11 +34,13 @@ const ChatRoom = ({
       {/* Provider wraps the layout, not the reverse. The pane header
           (breadcrumb + share/notify/close) consumes useChatroomContext
           as a sibling of {children}. Nesting the provider inside left it context-less. */}
+      {/* Keyed by the resolved row, so every hook inside reads and subscribes by its id. */}
       <ChatroomProvider
-        channelId={chatRoom?.headingId}
+        channelId={channelId ?? ''}
+        resolveError={resolveError}
         variant={variant}
         deepLinkMessageId={effectiveDeepLink}
-        key={chatRoom?.headingId}>
+        key={channelId || headingId}>
         <ChatroomLayout variant={variant}>{children}</ChatroomLayout>
       </ChatroomProvider>
     </div>

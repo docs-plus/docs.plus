@@ -45,6 +45,27 @@ execute function add_channel_creator_as_admin();
 
 comment on trigger channel_creator_as_admin on public.channels is
 'Automatically adds the channel creator as an admin member when a new channel is created.';
+
+/**
+ * The workspace-join writer, the DIRECT RPC and an old webapp insert no heading_id.
+ * Their id is already the key they mean, so copy it (#402).
+ */
+create or replace function public.fill_channel_heading_id()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+    new.heading_id := coalesce(new.heading_id, new.id);
+    return new;
+end;
+$$;
+
+drop trigger if exists fill_channel_heading_id on public.channels;
+create trigger fill_channel_heading_id
+before insert on public.channels
+for each row
+execute function public.fill_channel_heading_id();
 --INFO: Disable this trigger for now
 /**
  * Function: create_channel_notification

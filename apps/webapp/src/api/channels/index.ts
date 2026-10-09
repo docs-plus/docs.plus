@@ -1,4 +1,6 @@
+export * from './getChannelIdForHeading'
 export * from './getChannels'
+export * from './getHeadingIdForChannel'
 export * from './joinChannel'
 export * from './newChannel'
 export * from './updateChannelNotifState'

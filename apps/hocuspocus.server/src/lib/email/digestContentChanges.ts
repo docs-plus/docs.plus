@@ -72,6 +72,7 @@ function sectionUrl(docUrl: string, tocId: string | null): string {
 /**
  * One walk, so every Section keeps its document place. A heading chat moves
  * only under a live heading; a removed heading's chat keeps its channel row.
+ * Chats match by heading_id, because a new channel's id is not its toc-id (#402).
  * A nameless changed row is kept, because a changed heading is never dropped.
  * It links to the document, and `walkDigest` names it.
  */
@@ -79,8 +80,10 @@ function placeSections(
   tree: SectionNode[],
   doc: DigestDocument
 ): { sections: DigestChangedSection[]; channels: DigestDocument['channels'] } {
+  const headingOf = (channel: DigestDocument['channels'][number]): string =>
+    channel.heading_id || channel.id
   const pending = new Map(
-    doc.channels.filter((channel) => channel.id).map((channel) => [channel.id, channel])
+    doc.channels.filter((channel) => channel.id).map((channel) => [headingOf(channel), channel])
   )
   const sections: DigestChangedSection[] = []
 
@@ -110,7 +113,7 @@ function placeSections(
   walk(tree)
   return {
     sections,
-    channels: doc.channels.filter((channel) => !channel.id || pending.has(channel.id))
+    channels: doc.channels.filter((channel) => !channel.id || pending.has(headingOf(channel)))
   }
 }
 

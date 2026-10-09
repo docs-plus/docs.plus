@@ -78,6 +78,11 @@ export function stubChatroom() {
   cy.intercept('GET', '**/auth/v1/user*', { body: user })
   cy.intercept('POST', '**/auth/v1/token*', { body: session })
   cy.intercept({ method: /GET|PATCH/, url: '**/rest/v1/users*' }, { body: profile })
+  // The heading resolve read (#402). An existing room keeps id = heading_id, so echo the asked heading.
+  cy.intercept('GET', '**/rest/v1/channels*', (req) => {
+    const headingId = new URL(req.url).searchParams.get('heading_id')?.replace(/^eq\./, '')
+    req.reply({ body: headingId ? [{ id: headingId, heading_id: headingId }] : [] })
+  })
   cy.intercept('POST', '**/rest/v1/rpc/get_channel_aggregate_data*', {
     body: {
       channel_info: {

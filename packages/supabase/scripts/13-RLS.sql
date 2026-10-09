@@ -30,11 +30,14 @@ GRANT EXECUTE ON FUNCTION internal.can_read_channel(varchar)    TO authenticated
 -- lives in 29-lint-hardening.sql §3; admin-table revokes stay in §4.
 GRANT SELECT ON public.workspaces TO authenticated;
 GRANT SELECT ON public.workspace_members TO authenticated;
-GRANT SELECT, INSERT ON public.channels TO authenticated;
+GRANT SELECT ON public.channels TO authenticated;
 GRANT SELECT, INSERT ON public.channel_members TO authenticated;
 GRANT SELECT ON public.messages TO authenticated;
 -- Some images add a default table-wide grant, so each REVOKE below clears it.
 -- A table revoke also clears column grants, so it runs before them.
+-- A client never chooses a channel id, type or counter (#402).
+REVOKE INSERT ON public.channels FROM authenticated;
+GRANT INSERT (workspace_id, heading_id, created_by, name, slug) ON public.channels TO authenticated;
 REVOKE INSERT, UPDATE ON public.messages FROM authenticated;
 GRANT INSERT (id, channel_id, user_id, content, html, medias, type, metadata, reply_to_message_id)
   ON public.messages TO authenticated;
@@ -114,7 +117,9 @@ CREATE POLICY workspace_members_select ON public.workspace_members
 
 
 -- 2d. channels — PUBLIC bypass + member visibility.
---     INSERT: only as creator and only into a workspace I'm a member of.
+--     INSERT: only as creator and only into a workspace I'm a member of. The column
+--     grant above leaves out id, so a new row takes the default id and is keyed by
+--     (workspace_id, heading_id).
 --     UPDATE: none from the client. SECURITY DEFINER triggers keep the
 --     counters, previews and activity time current.
 

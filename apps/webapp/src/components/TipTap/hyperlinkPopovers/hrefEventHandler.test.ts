@@ -8,6 +8,8 @@ jest.mock(
   }),
   { virtual: true }
 )
+// The chat-link opener loads the Supabase client, which needs env this test does not set.
+jest.mock('../../../services/openChatFromLink', () => ({ openChatFromLink: jest.fn() }))
 
 describe('navigateHref', () => {
   const originalOpen = window.open

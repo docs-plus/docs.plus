@@ -1,6 +1,7 @@
 import { pushAppUrlThenNotifyHashChange } from '@components/pages/history/historyShareUrl'
 import { getDefaultController } from '@docs.plus/extension-hyperlink'
-import { APPLY_FILTER, CHAT_OPEN } from '@services/eventsHub'
+import { APPLY_FILTER } from '@services/eventsHub'
+import { openChatFromLink } from '@services/openChatFromLink'
 import { scrollToHeading } from '@utils/scrollToHeading'
 import PubSub from 'pubsub-js'
 
@@ -31,8 +32,7 @@ export function runInternalDocumentLink(link: InternalDocumentLink): void {
       scrollToHeading(link.headingId)
       return
     case 'chat':
-      PubSub.publish(CHAT_OPEN, {
-        headingId: link.channelId,
+      void openChatFromLink(link.channelId, {
         scroll2Heading: true,
         fetchMsgsFromId: link.messageId
       })

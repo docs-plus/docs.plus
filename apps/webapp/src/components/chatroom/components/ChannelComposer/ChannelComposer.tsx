@@ -22,11 +22,14 @@ const AccessControl = () => {
     (state) => state.workspaceSettings.channels.get(channelId) ?? null
   )
 
-  if (!channelId || error) return null
+  if (error) return null
 
   if (!isFeedReady) {
     return <ChatroomComposerSkeleton variant={variant} />
   }
+
+  // No channel row yet (#402). A visitor still gets the field, so Enter opens sign-in.
+  if (!channelId) return user ? null : <MsgComposer.ComposerLayout />
 
   const { isUserChannelMember, isUserChannelOwner, isUserChannelAdmin, channelInfo } =
     channelSettings ?? {}

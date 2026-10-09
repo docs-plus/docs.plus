@@ -428,9 +428,12 @@ grant all on public.document_access to service_role;
 create table public.channels (
     id                              varchar(36) default uuid_generate_v4() not null primary key,
     workspace_id                    varchar(36) not null references public.workspaces(id) on delete cascade,
+    -- The toc-id of the heading this chat belongs to. The workspace channel holds the documentId.
+    -- fill_channel_heading_id copies id when an insert leaves it out (#402).
+    heading_id                      varchar(36) not null,
     created_at                      timestamp with time zone default timezone('utc', now()) not null,
     updated_at                      timestamp with time zone default timezone('utc', now()) not null,
-    slug                            text not null unique,
+    slug                            text not null,
     name                            text not null check (length(name) <= 100),
     created_by                      uuid references public.users(id) on delete set null,
     description                     text check (length(description) <= 1000),
@@ -449,11 +452,19 @@ create table public.channels (
 -- Constraint: check_slug_format
 alter table public.channels add constraint check_slug_format check (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$');
 
+-- A heading chat is keyed per document, never by a global id (#402). A duplicate keeps
+-- its source's toc-ids and slugs, so neither key may be global.
+alter table public.channels
+    add constraint channels_workspace_heading_key unique (workspace_id, heading_id);
+alter table public.channels
+    add constraint channels_workspace_slug_key unique (workspace_id, slug);
+
 comment on table public.channels is 'This table contains information about various channels used for group discussions and messaging in the application, including settings for user interactions and notifications.';
 
 -- Column comments for better documentation
 comment on column public.channels.id is 'Unique identifier for the channel';
 comment on column public.channels.workspace_id is 'Reference to the workspace this channel belongs to';
+comment on column public.channels.heading_id is 'Heading toc-id of this chat, or the documentId for the workspace channel. Unique per workspace.';
 comment on column public.channels.slug is 'URL-friendly identifier for the channel';
 comment on column public.channels.name is 'Display name of the channel, limited to 100 characters';
 comment on column public.channels.created_by is 'Reference to the user who created this channel';
@@ -2471,6 +2482,8 @@ begin
                 'sender_avatar_url', s.avatar_url,
                 'message_preview', coalesce(n.message_preview, ''),
                 'channel_id', n.channel_id,
+                -- The digest places a heading chat by this, not by channel_id (#402).
+                'heading_id', c.heading_id,
                 'channel_name', coalesce(c.name, 'General'),
                 'workspace_id', c.workspace_id,
                 'workspace_name', coalesce(w.name, c.slug),
@@ -5156,6 +5169,27 @@ execute function add_channel_creator_as_admin();
 
 comment on trigger channel_creator_as_admin on public.channels is
 'Automatically adds the channel creator as an admin member when a new channel is created.';
+
+/**
+ * The workspace-join writer, the DIRECT RPC and an old webapp insert no heading_id.
+ * Their id is already the key they mean, so copy it (#402).
+ */
+create or replace function public.fill_channel_heading_id()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+    new.heading_id := coalesce(new.heading_id, new.id);
+    return new;
+end;
+$$;
+
+drop trigger if exists fill_channel_heading_id on public.channels;
+create trigger fill_channel_heading_id
+before insert on public.channels
+for each row
+execute function public.fill_channel_heading_id();
 --INFO: Disable this trigger for now
 /**
  * Function: create_channel_notification
@@ -9740,11 +9774,14 @@ GRANT EXECUTE ON FUNCTION internal.can_read_channel(varchar)    TO authenticated
 -- lives in 29-lint-hardening.sql §3; admin-table revokes stay in §4.
 GRANT SELECT ON public.workspaces TO authenticated;
 GRANT SELECT ON public.workspace_members TO authenticated;
-GRANT SELECT, INSERT ON public.channels TO authenticated;
+GRANT SELECT ON public.channels TO authenticated;
 GRANT SELECT, INSERT ON public.channel_members TO authenticated;
 GRANT SELECT ON public.messages TO authenticated;
 -- Some images add a default table-wide grant, so each REVOKE below clears it.
 -- A table revoke also clears column grants, so it runs before them.
+-- A client never chooses a channel id, type or counter (#402).
+REVOKE INSERT ON public.channels FROM authenticated;
+GRANT INSERT (workspace_id, heading_id, created_by, name, slug) ON public.channels TO authenticated;
 REVOKE INSERT, UPDATE ON public.messages FROM authenticated;
 GRANT INSERT (id, channel_id, user_id, content, html, medias, type, metadata, reply_to_message_id)
   ON public.messages TO authenticated;
@@ -9824,7 +9861,9 @@ CREATE POLICY workspace_members_select ON public.workspace_members
 
 
 -- 2d. channels — PUBLIC bypass + member visibility.
---     INSERT: only as creator and only into a workspace I'm a member of.
+--     INSERT: only as creator and only into a workspace I'm a member of. The column
+--     grant above leaves out id, so a new row takes the default id and is keyed by
+--     (workspace_id, heading_id).
 --     UPDATE: none from the client. SECURITY DEFINER triggers keep the
 --     counters, previews and activity time current.
 

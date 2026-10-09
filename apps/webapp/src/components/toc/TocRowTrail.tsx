@@ -2,7 +2,7 @@ import { AvatarStack } from '@components/ui/AvatarStack'
 import { Tooltip } from '@components/ui/Tooltip'
 import UnreadBadge from '@components/ui/UnreadBadge'
 import { usePresentUsers } from '@hooks/usePresentUsers'
-import { useUnreadCount } from '@hooks/useUnreadCount'
+import { useHeadingUnreadCount } from '@hooks/useUnreadCount'
 import { Icons } from '@icons'
 import { twMerge } from '@utils/twMerge'
 import type { MouseEvent } from 'react'
@@ -33,7 +33,7 @@ export function TocRowTrail({
   tooltipPlacement = 'top',
   maxAvatars = 4
 }: TocRowTrailProps) {
-  const unreadCount = useUnreadCount(headingId)
+  const unreadCount = useHeadingUnreadCount(headingId)
   const presentUsers = usePresentUsers(showPresence ? headingId : '')
 
   return (

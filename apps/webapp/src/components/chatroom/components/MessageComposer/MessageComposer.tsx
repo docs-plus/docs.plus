@@ -46,6 +46,7 @@ const MessageComposer = ({
   const [showFormattingToolbar, setShowFormattingToolbar] = useState(false)
   const setOrUpdateChatRoom = useChatStore((state) => state.setOrUpdateChatRoom)
   const focusRequest = useChatStore((state) => state.chatRoom.composerFocusRequest)
+  const headingId = useChatStore((state) => state.chatRoom.headingId)
   const isEmojiPickerOpen = useChatStore((state) =>
     isComposerInsertEmojiPickerOpen(state.emojiPicker)
   )
@@ -222,13 +223,13 @@ const MessageComposer = ({
   // request when it mounts. If the user moved focus while the feed loaded,
   // the composer does not take it.
   useEffect(() => {
-    if (!editor || focusRequest?.headingId !== channelId) return
+    if (!editor || !focusRequest || focusRequest.headingId !== headingId) return
     setOrUpdateChatRoom('composerFocusRequest', undefined)
     const active = document.activeElement
     if (!active || active === document.body || active === focusRequest.focusOrigin) {
       editor.commands.focus()
     }
-  }, [editor, channelId, focusRequest, setOrUpdateChatRoom])
+  }, [editor, headingId, focusRequest, setOrUpdateChatRoom])
 
   // Reactive boolean derived from the debounced `text` from useTiptapEditor.
   // Keeps the context value identity stable across keystrokes that don't

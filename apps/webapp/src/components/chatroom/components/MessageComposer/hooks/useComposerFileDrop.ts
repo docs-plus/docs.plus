@@ -2,11 +2,9 @@ import { openComposerSignIn } from '@components/chatroom/utils/openComposerSignI
 import { useAuthStore } from '@stores'
 import { type DragEvent, useCallback, useState } from 'react'
 
-import { useChatroomContext } from '../../../ChatroomContext'
 import { useComposerAttachmentActions } from '../context/ComposerAttachmentActionsContext'
 
 export function useComposerFileDrop() {
-  const { channelId } = useChatroomContext()
   const user = useAuthStore((state) => state.profile)
   const { addFiles } = useComposerAttachmentActions()
   const [isDragging, setIsDragging] = useState(false)
@@ -40,13 +38,13 @@ export function useComposerFileDrop() {
       event.preventDefault()
       setIsDragging(false)
       if (!user?.id) {
-        openComposerSignIn(channelId)
+        openComposerSignIn()
         return
       }
       if (!canAccept || !event.dataTransfer.files.length) return
       addFiles(event.dataTransfer.files)
     },
-    [addFiles, canAccept, channelId, user?.id]
+    [addFiles, canAccept, user?.id]
   )
 
   return {

@@ -90,16 +90,19 @@ export const eventsHub = (router: NextRouter) => {
     PubSub.subscribe(CHAT_CLOSE, (_msg, data: TCloseChatData) => {
       const { headingId } = data
       const {
+        chatRoom,
         destroyChatRoom,
         setReplyMessageMemory,
         setCommentMessageMemory,
         setEditMessageMemory
       } = useChatStore.getState()
 
-      if (headingId) {
-        setReplyMessageMemory(headingId, null)
-        setCommentMessageMemory(headingId, null)
-        setEditMessageMemory(headingId, null)
+      // A pending comment may still sit under the heading id; the composer keys by channel id.
+      for (const key of new Set([headingId, chatRoom.channelId])) {
+        if (!key) continue
+        setReplyMessageMemory(key, null)
+        setCommentMessageMemory(key, null)
+        setEditMessageMemory(key, null)
       }
       destroyChatRoom()
       focusHeadingChatTrigger(headingId)

@@ -1,27 +1,27 @@
-import { CHAT_OPEN } from '@services/eventsHub'
+import { openChatFromLink } from '@services/openChatFromLink'
 import { useAuthStore, useStore } from '@stores'
 import { useRouter } from 'next/router'
-import PubSub from 'pubsub-js'
 import { useEffect, useRef } from 'react'
 
-type ChatDeepLink = { headingId: string; fetchMsgsFromId?: string }
+/** `linkId` is a channel id or a heading id; openChatFromLink tells them apart (#402). */
+type ChatDeepLink = { linkId: string; fetchMsgsFromId?: string }
 
 // Cold-load chat deep link → room-open intent. Canonical is ?chatroom=&msg_id=;
 // ?act=ch&c_id=&m_id= is the legacy translator; ?open_heading_chat= is the
 // post-sign-in composer return. Read-only opens — never gated on auth.
 const resolveChatDeepLink = (url: URL): ChatDeepLink | null => {
   const openHeadingChatId = url.searchParams.get('open_heading_chat')
-  if (openHeadingChatId) return { headingId: openHeadingChatId }
+  if (openHeadingChatId) return { linkId: openHeadingChatId }
 
   const chatroomId = url.searchParams.get('chatroom')
   if (chatroomId) {
-    return { headingId: chatroomId, fetchMsgsFromId: url.searchParams.get('msg_id') || undefined }
+    return { linkId: chatroomId, fetchMsgsFromId: url.searchParams.get('msg_id') || undefined }
   }
 
   if (url.searchParams.get('act') === 'ch') {
     const channelId = url.searchParams.get('c_id')
     if (channelId) {
-      return { headingId: channelId, fetchMsgsFromId: url.searchParams.get('m_id') || undefined }
+      return { linkId: channelId, fetchMsgsFromId: url.searchParams.get('m_id') || undefined }
     }
   }
   return null
@@ -45,17 +45,13 @@ const useCheckUrlAndOpenHeadingChat = () => {
 
     // Deps re-fire on auth transition (anon → signed in); open each link once
     // per mount. toggleRoom:false so a re-fire can never auto-close the room.
-    const key = `${intent.headingId}:${intent.fetchMsgsFromId ?? ''}`
+    const key = `${intent.linkId}:${intent.fetchMsgsFromId ?? ''}`
     if (handledRef.current === key) return
     handledRef.current = key
 
     // TODO: we need better flag rather than using setTimeout
     const timer = setTimeout(() => {
-      PubSub.publish(CHAT_OPEN, {
-        headingId: intent.headingId,
-        toggleRoom: false,
-        fetchMsgsFromId: intent.fetchMsgsFromId
-      })
+      void openChatFromLink(intent.linkId, { fetchMsgsFromId: intent.fetchMsgsFromId })
     }, 800)
     return () => clearTimeout(timer)
   }, [editorLoading, providerSyncing, slugs, workspaceId, user])

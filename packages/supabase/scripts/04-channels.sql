@@ -4,9 +4,12 @@
 create table public.channels (
     id                              varchar(36) default uuid_generate_v4() not null primary key,
     workspace_id                    varchar(36) not null references public.workspaces(id) on delete cascade,
+    -- The toc-id of the heading this chat belongs to. The workspace channel holds the documentId.
+    -- fill_channel_heading_id copies id when an insert leaves it out (#402).
+    heading_id                      varchar(36) not null,
     created_at                      timestamp with time zone default timezone('utc', now()) not null,
     updated_at                      timestamp with time zone default timezone('utc', now()) not null,
-    slug                            text not null unique,
+    slug                            text not null,
     name                            text not null check (length(name) <= 100),
     created_by                      uuid references public.users(id) on delete set null,
     description                     text check (length(description) <= 1000),
@@ -25,11 +28,19 @@ create table public.channels (
 -- Constraint: check_slug_format
 alter table public.channels add constraint check_slug_format check (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$');
 
+-- A heading chat is keyed per document, never by a global id (#402). A duplicate keeps
+-- its source's toc-ids and slugs, so neither key may be global.
+alter table public.channels
+    add constraint channels_workspace_heading_key unique (workspace_id, heading_id);
+alter table public.channels
+    add constraint channels_workspace_slug_key unique (workspace_id, slug);
+
 comment on table public.channels is 'This table contains information about various channels used for group discussions and messaging in the application, including settings for user interactions and notifications.';
 
 -- Column comments for better documentation
 comment on column public.channels.id is 'Unique identifier for the channel';
 comment on column public.channels.workspace_id is 'Reference to the workspace this channel belongs to';
+comment on column public.channels.heading_id is 'Heading toc-id of this chat, or the documentId for the workspace channel. Unique per workspace.';
 comment on column public.channels.slug is 'URL-friendly identifier for the channel';
 comment on column public.channels.name is 'Display name of the channel, limited to 100 characters';
 comment on column public.channels.created_by is 'Reference to the user who created this channel';

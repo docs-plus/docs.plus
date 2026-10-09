@@ -557,6 +557,13 @@ SMTP_PASS=...
   `GET /api/admin/push/gateway`. That route always answers `200` with the
   status, even when push is not set up. `GET /api/email/health` stays public,
   because it already returns status only ([#423](https://github.com/docs-plus/docs.plus/issues/423)).
+- **A heading chat belongs to its own document ([#402](https://github.com/docs-plus/docs.plus/issues/402)).**
+  The MCP chat tools find a room by the document and the heading's
+  `section_id`, then read and post by that room's channel id. A channel row
+  that another document holds is never read or posted to. The change digest
+  places a heading chat by `heading_id`. Migration
+  `20261009115900_scope_heading_channels.sql` adds that column. Push it
+  alone before this deploy.
 - **Media of a document in Trash stops serving ([#408](https://github.com/docs-plus/docs.plus/issues/408)).**
   `GET /api/plugins/hypermultimedia/:documentId/:mediaId` answers `404`
   `NOT_FOUND` while the document is in Trash. After Restore, it serves again.

@@ -41,7 +41,7 @@ export function ComposerBar({ variant, className }: Props) {
     onSend: sendVoiceNote,
     attachmentCount: attachments.length,
     maxAttachments: CHAT_MEDIA_MAX_ATTACHMENTS,
-    onAuthRequired: () => openComposerSignIn(channelId),
+    onAuthRequired: openComposerSignIn,
     userId: user?.id
   })
 

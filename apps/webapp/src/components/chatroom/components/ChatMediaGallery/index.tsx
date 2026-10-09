@@ -49,7 +49,7 @@ export function ChatMediaGallery() {
   const step = useChatMediaGalleryStore((s) => s.step)
   const requestZoomIn = useChatMediaGalleryStore((s) => s.requestZoomIn)
   const requestZoomReset = useChatMediaGalleryStore((s) => s.requestZoomReset)
-  const activeChannelId = useChatStore((s) => s.chatRoom.headingId)
+  const activeChannelId = useChatStore((s) => s.chatRoom.channelId)
   const stageRef = useRef<HTMLDivElement>(null)
   const openerRef = useRef<Element | null>(null)
   const prevChannelIdRef = useRef<string | undefined>(undefined)

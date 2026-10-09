@@ -1,7 +1,6 @@
-import { fetchChannelInitialData, joinChannel, upsertChannel } from '@api'
+import { fetchChannelInitialData, joinChannel } from '@api'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { useEffect, useRef, useState } from 'react'
-import slugify from 'slugify'
 
 const readChannelMetadata = async (channelId: string, anchorMessageId: string | null) => {
   // message_limit: 0 — useChannelMessages owns the message window;
@@ -16,14 +15,13 @@ const readChannelMetadata = async (channelId: string, anchorMessageId: string | 
 }
 
 /**
- * channel_info null is the server's missing-row signal. A store entry is not a row.
+ * `channelId` is the resolved row (useHeadingChannel), so this never creates one.
  * Writes wait for the workspace join, because their RLS needs it. The read after a write
  * decides membership, because joinChannel returns its refusal. Later reads skip the
  * anchor: a stale ?msg_id= stays until Close, and it would fail the read of a new row.
  */
 const syncChannel = async (
   channelId: string,
-  workspaceId: string | undefined,
   uid: string,
   joinedWorkspace: boolean,
   anchorMessageId: string | null,
@@ -31,31 +29,6 @@ const syncChannel = async (
 ) => {
   let channelData = await readChannelMetadata(channelId, anchorMessageId)
   if (isCancelled()) return
-  // DocumentPage closes the chat on a document switch. As a second line, never create
-  // a chat row in the workspace of another document.
-  const chatDocumentId = useChatStore.getState().chatRoom.documentId
-  if (
-    joinedWorkspace &&
-    uid &&
-    workspaceId &&
-    !channelData.channel_info &&
-    (!chatDocumentId || chatDocumentId === workspaceId)
-  ) {
-    const slug = slugify(channelId, { strict: true, lower: true })
-    try {
-      await upsertChannel({
-        id: channelId,
-        workspace_id: workspaceId,
-        created_by: uid,
-        name: slug,
-        slug: 'c' + slug
-      })
-    } catch {
-      // A refused create is not an error. The next read decides what the chat shows.
-    }
-    channelData = await readChannelMetadata(channelId, null)
-    if (isCancelled()) return
-  }
   // The create trigger makes the creator an ADMIN member, so this join runs only
   // when the row existed or another user created it first.
   if (joinedWorkspace && uid && channelData.channel_info && !channelData.is_user_channel_member) {
@@ -71,20 +44,24 @@ const syncChannel = async (
 }
 
 /**
- * Visitors skip both writes, and a refused write shows no error badge. See chatroom
- * CLAUDE.md §Anonymous Chat Read Path.
+ * Visitors skip the join, and a refused join shows no error badge. See chatroom
+ * CLAUDE.md §Anonymous Chat Read Path. An empty `channelId` makes no read: the heading
+ * has no row yet, so the feed shows its empty state once the resolve says so.
  */
 export const useChannelMetadata = (channelId: string) => {
   const [error, setError] = useState<unknown>(null)
   const [isChannelDataLoaded, setIsChannelDataLoaded] = useState(false)
-  const workspaceId = useStore((state) => state.settings.metadata?.documentId)
+  const channelMissing = useChatStore((state) => state.chatRoom.channelId === null)
   const uid = useAuthStore((state) => state.profile?.id) ?? ''
   const joinedWorkspace = useStore((state) => state.settings.joinedWorkspace) ?? false
   // The uid whose sync ran with writes allowed. '' when none did, so the late effect runs it once.
   const writeSyncUidRef = useRef('')
 
   useEffect(() => {
-    if (!channelId) return
+    if (!channelId) {
+      setIsChannelDataLoaded(channelMissing)
+      return
+    }
     let cancelled = false
     setError(null)
     setIsChannelDataLoaded(false)
@@ -96,14 +73,7 @@ export const useChannelMetadata = (channelId: string) => {
       new URLSearchParams(location.search).get('msg_id')
     ;(async () => {
       try {
-        await syncChannel(
-          channelId,
-          workspaceId,
-          loadUid,
-          joinedAtLoad,
-          startMsgId,
-          () => cancelled
-        )
+        await syncChannel(channelId, loadUid, joinedAtLoad, startMsgId, () => cancelled)
       } catch (err) {
         if (!cancelled) setError(err)
       } finally {
@@ -113,7 +83,7 @@ export const useChannelMetadata = (channelId: string) => {
     return () => {
       cancelled = true
     }
-  }, [channelId, workspaceId])
+  }, [channelId, channelMissing])
 
   // The profile or the workspace join can land after the load (One Tap, a slow fetch).
   // Run the writes once then, and leave the loaded flag and the error alone.
@@ -122,13 +92,13 @@ export const useChannelMetadata = (channelId: string) => {
     if (writeSyncUidRef.current === uid) return
     writeSyncUidRef.current = uid
     let cancelled = false
-    syncChannel(channelId, workspaceId, uid, true, null, () => cancelled).catch((err) =>
+    syncChannel(channelId, uid, true, null, () => cancelled).catch((err) =>
       console.error('[chatroom] late channel sync failed', err)
     )
     return () => {
       cancelled = true
     }
-  }, [channelId, workspaceId, uid, joinedWorkspace, isChannelDataLoaded, error])
+  }, [channelId, uid, joinedWorkspace, isChannelDataLoaded, error])
 
   return { error, isChannelDataLoaded }
 }

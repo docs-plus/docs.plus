@@ -59,6 +59,13 @@ export const useChannelMessages = ({
   const mediaOnly = isMediaOnlyFeedMode(feedMode)
 
   useEffect(() => {
+    // No channel row yet: an empty window, and no read by any id (#402).
+    if (!channelId) {
+      newestSeqRef.current = 0
+      setHasMoreOlder(false)
+      setLoading(false)
+      return
+    }
     let cancelled = false
     setLoading(true)
 

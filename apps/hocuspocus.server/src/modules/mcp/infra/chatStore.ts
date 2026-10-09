@@ -14,7 +14,7 @@ const embedded = <T>(value: T | T[] | null | undefined): T | null =>
   Array.isArray(value) ? (value[0] ?? null) : (value ?? null)
 
 interface RoomRow {
-  id: string
+  heading_id: string
   last_activity_at: string | null
   channel_message_counts: { message_count: number } | { message_count: number }[] | null
 }
@@ -30,46 +30,46 @@ interface MessageRow {
 }
 
 /**
- * Service role, never the caller's token. The document gate in the tools
- * decides access; every query here scopes to the document, since `channels.id` is global.
+ * Service role, never the caller's token. The document gate in the tools decides access.
+ * A room is keyed by (workspace_id, heading_id), so every query scopes to the document (#402).
  */
 export const createChatStore = (supabase: SupabaseClient): ChatStore => ({
   listRooms: async (documentId) => {
     const { data, error } = await supabase
       .from('channels')
-      .select('id, last_activity_at, channel_message_counts(message_count)')
+      .select('heading_id, last_activity_at, channel_message_counts(message_count)')
       .eq('workspace_id', documentId)
       .eq('type', 'PUBLIC')
       .is('deleted_at', null)
       .limit(MAX_ROOMS)
     if (error) throw failed('listRooms', error)
     return ((data ?? []) as RoomRow[]).map((row) => ({
-      id: row.id,
+      id: row.heading_id,
       messageCount: embedded(row.channel_message_counts)?.message_count ?? 0,
       lastActivityAt: row.last_activity_at
     }))
   },
 
-  hasRoom: async (documentId, roomId) => {
+  findRoom: async (documentId, headingId) => {
     const { data, error } = await supabase
       .from('channels')
       .select('id')
       .eq('workspace_id', documentId)
-      .eq('id', roomId)
+      .eq('heading_id', headingId)
       .eq('type', 'PUBLIC')
       .is('deleted_at', null)
       .maybeSingle()
-    if (error) throw failed('hasRoom', error)
-    return data !== null
+    if (error) throw failed('findRoom', error)
+    return (data as { id: string } | null)?.id ?? null
   },
 
-  readThread: async (documentId, roomId, { beforeSeq, limit }) => {
+  readThread: async (documentId, channelId, { beforeSeq, limit }) => {
     let query = supabase
       .from('messages')
       .select(
         'seq, content, type, created_at, reply_to_message_id, medias, author:users!messages_user_id_fkey(username), room:channels!inner(workspace_id, type, deleted_at)'
       )
-      .eq('channel_id', roomId)
+      .eq('channel_id', channelId)
       .eq('room.workspace_id', documentId)
       .eq('room.type', 'PUBLIC')
       .is('room.deleted_at', null)
@@ -97,12 +97,12 @@ export const createChatStore = (supabase: SupabaseClient): ChatStore => ({
   },
 
   // The webapp's first-send shape (`persistChatMessage`), so the feed and triggers treat it alike.
-  postMessage: async ({ id, roomId, userId, content, html }) => {
+  postMessage: async ({ id, channelId, userId, content, html }) => {
     const { data, error } = await supabase
       .from('messages')
       .insert({
         id,
-        channel_id: roomId,
+        channel_id: channelId,
         user_id: userId,
         content,
         html,

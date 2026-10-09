@@ -1,6 +1,7 @@
 import { markNotificationAsRead } from '@api'
 import { trackClientRead } from '@components/notificationPanel/feed/readDedupe'
-import { CHAT_OPEN, NOTIFICATION_STATE_CHANGED } from '@services/eventsHub'
+import { NOTIFICATION_STATE_CHANGED } from '@services/eventsHub'
+import { openChatFromLink } from '@services/openChatFromLink'
 import { useStore } from '@stores'
 import { padSlugOf } from '@utils/filterRoute'
 import { isPushSupported } from '@utils/push-notifications'
@@ -47,10 +48,8 @@ const handleNotificationClick = async (event: MessageEvent) => {
     const messageId = urlObj.searchParams.get('msg_id')
 
     if (channelId && padSlugOf(urlObj.pathname) === padSlugOf(window.location.pathname)) {
-      // PubSub keeps navigation in-app, same as NotificationItem.
-      PubSub.publish(CHAT_OPEN, {
-        headingId: channelId,
-        toggleRoom: false,
+      // Stays in-app, same as NotificationItem. The id is resolved against this pad.
+      void openChatFromLink(channelId, {
         fetchMsgsFromId: messageId || undefined,
         scroll2Heading: true
       })

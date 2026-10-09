@@ -120,9 +120,13 @@ export function openHeadingChatroom({
   if (intent === 'comment') {
     if (!anchor) return
     dismissComposerEmojiAndMentionOverlays()
-    chatStore.setCommentMessageMemory(headingId, {
+    // Until the channel resolves, the comment waits under the heading id, and
+    // useHeadingChannel moves it to the channel id (#402). switchChatRoom above
+    // already cleared channelId for a new heading.
+    const memoryKey = useChatStore.getState().chatRoom.channelId || headingId
+    chatStore.setCommentMessageMemory(memoryKey, {
       anchor,
-      channel_id: headingId,
+      channel_id: memoryKey,
       workspace_id: workspaceId,
       user
     })

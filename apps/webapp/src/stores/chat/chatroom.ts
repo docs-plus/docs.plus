@@ -10,6 +10,11 @@ import { useStore } from '../useStore'
 type TChatRoom = {
   headingPath: Pick<HeadingAncestor, 'id' | 'text'>[]
   headingId?: string
+  /**
+   * The channel row of `headingId` in this document (#402). Undefined while it resolves,
+   * null when the heading has no row yet. Database reads and writes use this, never `headingId`.
+   */
+  channelId?: string | null
   documentId?: string
   /** Read only on mobile. Desktop sizes its docked panel from `panelHeight`. */
   paneMode: ChatPaneMode
@@ -32,7 +37,9 @@ interface IChatroomStore {
   setPaneMode: (mode: ChatPaneMode) => void
   setOrUpdateChatPanelHeight: (height: number) => void
   setOrUpdateChatRoom: <K extends keyof TChatRoom>(key: K, value: TChatRoom[K]) => void
-  switchChatRoom: (channelId: string) => void
+  /** Ignored when another heading opened while the channel resolved. */
+  setChatRoomChannel: (headingId: string, channelId: string | null) => void
+  switchChatRoom: (headingId: string) => void
 }
 
 const chatRoom = immer<IChatroomStore>((set, get) => ({
@@ -48,6 +55,7 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
 
   setChatRoom: (headingId, documentId, user, fetchMsgsFromId) => {
     set((state) => {
+      if (state.chatRoom.headingId !== headingId) state.chatRoom.channelId = undefined
       state.chatRoom.headingId = headingId
       state.chatRoom.documentId = documentId
       state.chatRoom.headingPath = []
@@ -65,6 +73,12 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
     set({ chatRoom: { ...get().chatRoom, [key]: value } })
   },
 
+  setChatRoomChannel: (headingId, channelId) => {
+    set((state) => {
+      if (state.chatRoom.headingId === headingId) state.chatRoom.channelId = channelId
+    })
+  },
+
   setOrUpdateChatPanelHeight: (height) => {
     set((state) => {
       state.chatRoom.panelHeight = height
@@ -77,15 +91,16 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
     })
   },
 
-  switchChatRoom: (channelId) => {
+  switchChatRoom: (headingId) => {
     set((state) => {
-      state.chatRoom.headingId = channelId
+      if (state.chatRoom.headingId !== headingId) state.chatRoom.channelId = undefined
+      state.chatRoom.headingId = headingId
     })
 
     const user = useAuthStore.getState().profile
     if (user) {
       const broadcaster = useStore.getState().settings?.broadcaster
-      sendPresenceBroadcast(broadcaster, user, channelId)
+      sendPresenceBroadcast(broadcaster, user, headingId)
     }
   },
 

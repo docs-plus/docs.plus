@@ -141,7 +141,7 @@ export const useComposerSubmit = ({
       e?.preventDefault?.()
 
       if (!user) {
-        openComposerSignIn(channelId)
+        openComposerSignIn()
         return
       }
       if (!isSubmittable() || !editor || probingRef.current) return
