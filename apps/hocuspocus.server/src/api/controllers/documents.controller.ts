@@ -412,8 +412,19 @@ export const getMedia = async (c: AppContext): Promise<Response> => {
   if (documentId === undefined || mediaId === undefined) {
     return c.json({ error: 'Missing document or media id' }, 400)
   }
+  const prisma = c.get('prisma')
 
   try {
+    // A missing row still serves: a purge already deleted its objects, and older
+    // media sits under ids that never had a row.
+    const meta = await prisma.documentMetadata.findUnique({
+      where: { documentId },
+      select: { deletedAt: true }
+    })
+    if (meta?.deletedAt) {
+      return fail(c, 404, 'NOT_FOUND', 'Document not found')
+    }
+
     return await mediaService.getMedia(documentId, mediaId, c)
   } catch (error) {
     return handleError(c, error, { documentId, mediaId })
@@ -428,10 +439,10 @@ export const uploadMedia = async (c: AppContext): Promise<Response> => {
   const userId = c.get('userId')
 
   try {
-    // The path segment is the storage prefix, so a session alone parks public-read
-    // bytes under an id no purge path can reach. Same gate the conversion import
-    // runs. Residual: a draft anchors on editor focus, so an upload racing that
-    // write by under a second 404s — allowing a row-less id reopens the hole.
+    // The path segment is the storage prefix, so a session alone parks publicly
+    // served bytes under an id no purge path can reach. Same gate the conversion
+    // import runs. Residual: a draft anchors on editor focus, so an upload racing
+    // that write by under a second 404s — allowing a row-less id reopens the hole.
     const meta = await prisma.documentMetadata.findUnique({
       where: { documentId },
       select: { ownerId: true, deletedAt: true, isPrivate: true, readOnly: true }

@@ -223,7 +223,7 @@ Clear `deletedAt` (owner-only). Idempotent; non-owner → `403`. A Private docum
 
 ### POST /api/documents/:documentId/duplicate
 
-Copy the source's latest Yjs bytes into a fresh owner-owned doc (owner-only). Slug is `<title> (copy)`, uniquified. Media is cloned, not shared: the source's objects are copied under the copy's own storage prefix, and the snapshot's URLs are repointed there. Each document therefore owns its media, and purging one never strips the other. The copy runs inside the request, so a source naming more than 32 media objects is refused up front → `413`. Non-owner → `403`; soft-deleted source → `404`.
+Copy the source's latest Yjs bytes into a fresh owner-owned doc (owner-only). Slug is `<title> (copy)`, uniquified. Media is cloned, not shared: the source's objects are copied under the copy's own storage prefix, and the snapshot's URLs are repointed there. Each document therefore owns its media, and purging one never strips the other. The copy runs inside the request, so a source naming more than 32 media objects outside soft-deleted documents is refused up front → `413`. Non-owner → `403`; soft-deleted source → `404`. Media whose prefix document is soft-deleted is not copied. That URL becomes a missing image in the copy, the same as for a purged source.
 
 ### PUT /api/documents/:documentId/favorite
 
@@ -1122,6 +1122,8 @@ A missing or invalid token is `401`. A body more than 1 MiB over that cap is ref
 ### GET /api/plugins/hypermultimedia/:documentId/:mediaId
 
 Stream a media file with its `Content-Type`. This read is charged to the larger media budget, not the global one — see [Rate limiting](#rate-limiting).
+
+The document row is checked before storage is read. A soft-deleted document is `404 NOT_FOUND` in the house envelope. After Restore, the file serves again. A document with no metadata row still serves. The check reads the document that the URL names, so media under another document's prefix follows that document. A missing file is `404` with the legacy `{ "error": "File not found" }` body. New S3 objects are private, so every public read of them goes through this route. Older objects stay public until the operator runs the Migration step in [CHANGELOG.md](./CHANGELOG.md).
 
 ## Link metadata
 

@@ -94,6 +94,17 @@ describe('Hypermultimedia API (Direct Route)', () => {
   })
 
   describe('GET /api/plugins/hypermultimedia/:documentId/:mediaId', () => {
+    test('should answer 404 NOT_FOUND for a document in Trash', async () => {
+      mockPrisma.documentMetadata.findUnique = async () => ({ deletedAt: new Date() })
+
+      const response = await testServer.get('/api/plugins/hypermultimedia/test-doc/x.jpg')
+      const data = await response.json()
+
+      expect(response.status).toBe(404)
+      expect(data.success).toBe(false)
+      expect(data.error).toHaveProperty('code', 'NOT_FOUND')
+    })
+
     test('should retrieve file from local storage when exists', async () => {
       process.env.PERSIST_TO_LOCAL_STORAGE = 'true'
       process.env.LOCAL_STORAGE_PATH = './temp/hypermultimedia'

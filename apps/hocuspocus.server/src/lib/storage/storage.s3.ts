@@ -54,15 +54,15 @@ export const upload = async (
   const contentType = mime.getType(fileName) || 'application/octet-stream'
   const startTime = performance.now()
 
-  // SVG/HTML render script at the object origin; the public-read Spaces URL
-  // bypasses our proxy, so stamp the stored object itself to force download.
+  // New objects are private, so every public read goes through the media route.
+  // SVG/HTML run script at the object origin, so this stamp guards a bucket made
+  // public by mistake.
   const contentDisposition = /svg\+xml|html/i.test(contentType) ? 'attachment' : undefined
 
   try {
     await withS3Deadline('write', key, () =>
       s3Client.write(key, fileContent, {
         type: contentType,
-        acl: 'public-read',
         ...(contentDisposition ? { contentDisposition } : {})
       })
     )
@@ -124,7 +124,7 @@ export const get = async (documentId: string, fileName: string, c: Context) => {
 }
 
 // Bun's S3 has no server-side copy, so read the object and re-write it through
-// `upload` — that keeps the acl and content-disposition policy in one place. The
+// `upload` — that keeps the content-disposition policy in one place. The
 // file name is preserved on purpose: it makes the caller's URL rewrite a pure id
 // swap. `false` means the source object is gone (its prefix was already purged).
 export const copyObject = async (

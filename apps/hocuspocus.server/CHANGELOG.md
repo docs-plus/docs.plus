@@ -24,6 +24,22 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Migration
 
+**Media objects ([#408](https://github.com/docs-plus/docs.plus/issues/408)).** New S3 uploads are
+private. Objects written before this release stay `public-read` until you
+change them. Deploy the server first, then set the existing objects private.
+The key prefix is the server's `NODE_ENV`, for example `production/`:
+
+```
+s3cmd setacl --acl-private --recursive s3://<bucket>/production/
+```
+
+- First, check that no document names a raw bucket URL. Media behind such a
+  URL stops loading after the change.
+- A CDN or a bucket policy can still make objects public. The object ACL alone
+  does not stop that.
+- The route reads with credentials, so private objects keep serving through
+  it at every step.
+
 **Email provider.** Before:
 
 ```
@@ -469,6 +485,18 @@ SMTP_PASS=...
   ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
 
 ### Security
+
+- **Media of a document in Trash stops serving ([#408](https://github.com/docs-plus/docs.plus/issues/408)).**
+  `GET /api/plugins/hypermultimedia/:documentId/:mediaId` answers `404`
+  `NOT_FOUND` while the document is in Trash. After Restore, it serves again.
+  A document with no metadata row still serves. Media that a live document
+  names under the prefix of a document in Trash also stops serving until
+  Restore. Older duplicates and pasted images can name another document's
+  prefix. New S3 objects are no longer `public-read`, so every public read goes
+  through the media route. A duplicate no longer copies media whose prefix
+  document is in Trash. That media becomes a missing image in the copy.
+  Copies already in a browser cache stay until their one-year `immutable`
+  entry expires. See Migration for existing objects.
 
 - **Supabase refuses a connected app's token.** Run
   `packages/supabase/scripts/31-connected-app-token-gate.sql` once, or push

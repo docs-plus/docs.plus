@@ -117,8 +117,17 @@ export const mediaPaths: OpenApiPaths = {
         '400': { $ref: '#/components/responses/ZodValidationError' },
         '404': {
           description:
-            'No such file under that document. Both storage backends emit `LegacyError`.',
-          content: { 'application/json': { schema: { $ref: '#/components/schemas/LegacyError' } } }
+            'A document in Trash answers `ErrorEnvelope` with code `NOT_FOUND`, before storage is read. A missing file answers `LegacyError` from either storage backend.',
+          content: {
+            'application/json': {
+              schema: {
+                oneOf: [
+                  { $ref: '#/components/schemas/LegacyError' },
+                  { $ref: '#/components/schemas/ErrorEnvelope' }
+                ]
+              }
+            }
+          }
         },
         '429': rateLimitedRef
       }

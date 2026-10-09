@@ -873,15 +873,26 @@ export const duplicateDocument = async (
     // leaves only orphans, which the catch removes.
     const rehosted = bytes ? rehostMediaUrls(bytes, documentId) : null
     if (rehosted?.data) {
+      // A URL may name a trashed document's prefix. Copying it would serve that media
+      // again under the copy's prefix. So the copy shows a missing image there, as for
+      // a purged one.
+      const prefixes = [...new Set(rehosted.references.map((ref) => ref.documentId))]
+      const trashed = await prisma.documentMetadata.findMany({
+        where: { documentId: { in: prefixes }, deletedAt: { not: null } },
+        select: { documentId: true }
+      })
+      const trashedIds = new Set(trashed.map((row) => row.documentId))
+      const live = rehosted.references.filter((ref) => !trashedIds.has(ref.documentId))
+
       // Refused before a single object is written, so nothing needs rolling back.
-      if (rehosted.references.length > MAX_DUPLICATE_MEDIA_OBJECTS) {
+      if (live.length > MAX_DUPLICATE_MEDIA_OBJECTS) {
         throw new PayloadTooLargeError(
-          `This document references ${rehosted.references.length} media objects, ` +
+          `This document references ${live.length} media objects, ` +
             `over the ${MAX_DUPLICATE_MEDIA_OBJECTS} a duplicate may copy`
         )
       }
       try {
-        await copyDocumentMedia(rehosted.references, documentId)
+        await copyDocumentMedia(live, documentId)
       } catch (error) {
         // An object-store outage is not a database fault; keep it out of
         // `handlePrismaError`, which would group it as a DatabaseError.
