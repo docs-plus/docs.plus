@@ -36,7 +36,7 @@ The unsubscribe link carries its own `token`, and that token is its only credent
 
 **A user token, required.** Listing your own documents, creating a document, the whole document lifecycle — delete, restore, duplicate, favorite or unfavorite, Last opened (`POST /api/documents/:documentId/opened`), permanently delete, empty the trash. Uploading media also requires a user token.
 
-**Service-role only.** Reading and writing document content, every document version route, the service-role email send, preview and bounce routes, and the `content` and `ownerId` fields when creating a document.
+**Service-role only.** Reading and writing document content, and every document version route. The service-role email send, preview and bounce routes. The `content` and `ownerId` fields when creating a document.
 
 **A Resend webhook signature.** `POST /api/email/webhooks/resend` takes no key and no token. Resend signs each request with the endpoint's `whsec_` secret, and the server checks the `svix-signature` header. The route exists only when the server sets a valid `RESEND_WEBHOOK_SECRET`.
 

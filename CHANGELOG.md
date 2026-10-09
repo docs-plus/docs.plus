@@ -368,11 +368,11 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   New uploads to S3 are private, so every read goes through the server
   ([#408](https://github.com/docs-plus/docs.plus/issues/408)).
 - Refuse a document id that is not one plain name. A crafted id could delete
-  another document's files on local storage. A signed-in live connection now
-  closes when its sign-in token expires, and the app reconnects with a fresh
-  token
-  ([#426](https://github.com/docs-plus/docs.plus/issues/426),
-  [#430](https://github.com/docs-plus/docs.plus/issues/430)).
+  another document's files on local storage
+  ([#426](https://github.com/docs-plus/docs.plus/issues/426)).
+- Close a signed-in live connection when its sign-in token expires. The app
+  reconnects with a fresh token
+  ([#430](https://github.com/docs-plus/docs.plus/issues/430)).
 - Check a ghost account again just before an admin deletes it. Revoking admin
   access can no longer leave zero admins. A deleted account now loses its
   public name, photo, bio and links
@@ -390,12 +390,12 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   `GET /api/admin/push/gateway`
   ([#433](https://github.com/docs-plus/docs.plus/issues/433)).
 - Take a live chat message's avatar from the author's profile, not from
-  presence, because any client can forge presence. A pasted node or a chat row
-  can no longer crash a document page. A new document link now comes from a
-  cryptographic random source
-  ([#428](https://github.com/docs-plus/docs.plus/issues/428),
-  [#436](https://github.com/docs-plus/docs.plus/issues/436),
-  [#442](https://github.com/docs-plus/docs.plus/issues/442)).
+  presence, because any client can forge presence
+  ([#428](https://github.com/docs-plus/docs.plus/issues/428)).
+- Stop a pasted node or a chat row from crashing a document page
+  ([#436](https://github.com/docs-plus/docs.plus/issues/436)).
+- Make each new document link from a cryptographic random source
+  ([#442](https://github.com/docs-plus/docs.plus/issues/442)).
 - Run production deploys only from `main`. When the host `.env` sets
   `TRAEFIK_CONFIG_DIR`, Traefik reads a copy that the deploy writes, so a
   runner checkout no longer changes live routing

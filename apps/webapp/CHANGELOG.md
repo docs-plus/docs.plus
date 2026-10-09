@@ -197,7 +197,7 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 ### Changed
 
 - **/privacy names Resend as the email provider.** Resend sends notification
-  and digest mail. Another email provider still sends sign-in links for
+  and digest mail. A separate email provider sends sign-in links for
   Supabase. A new "Where mail data goes" section says that Resend sends from
   Ireland and stores mail data in the United States. It says that the mail
   carries short extracts of document and chat text, and it names the transfer
@@ -567,18 +567,18 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - **A live chat message takes its author's avatar from the profile, not from
   presence.** Any client can send a presence payload. A forged one could change
   the avatar on another user's live messages, and the name and avatar in the
-  media viewer. Both now read the profile. One request serves every
+  media gallery. Both now read the profile. One request serves every
   message by that author
   ([#428](https://github.com/docs-plus/docs.plus/issues/428)).
 - **A paste or a channel row can no longer crash a document page.** Pasted
   HTML never creates an upload placeholder, and an unknown file type shows the
-  image icon. The heading unread sync escapes each channel id before it builds
-  a selector ([#436](https://github.com/docs-plus/docs.plus/issues/436)).
+  image icon. The heading unread sync no longer builds a selector from a
+  channel row ([#436](https://github.com/docs-plus/docs.plus/issues/436)).
 - **A new document link comes from a cryptographic random source.** `/new`,
   the `new.` host, the home page and shared files make an 11-character link
   that nobody can predict and claim first
   ([#442](https://github.com/docs-plus/docs.plus/issues/442)).
-- **Profile photos are never stored as SVG.** The `user_avatars` and
+- **New profile photos cannot be SVG.** The `user_avatars` and
   `channel_avatars` buckets accept JPEG, PNG, GIF and WebP only. Settings
   converts other images, or shows an error
   ([#431](https://github.com/docs-plus/docs.plus/issues/431)).

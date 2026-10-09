@@ -99,13 +99,14 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **Confirm** — unused Next `GET /api/auth/callback/confirm`. Deleted. No Hono stand-in and no Pages `auth/callback` page.
   _Avoid_: validate-email, updateUserStatus
 - **Email setup** — the admin dashboard page (`apps/admin-dashboard/src/pages/email.tsx`) and its two routes, `GET /api/admin/email/setup` and `POST /api/admin/email/setup/test-send`. It shows each secret as `set` or `missing`, never its value. No route writes `.env` (#423).
-  _Avoid_: email health (the public `GET /api/email/health`, which returns `status` and `queue_connected` only)
+  _Avoid_: email health (the public `GET /api/email/health` is the Email gateway status, which returns `status` and `queue_connected` only)
 - **Push gateway status** — `GET /api/admin/push/gateway`, admin only. It answers 200 even when push is not configured, so read the VAPID and queue flags in the body. The public `GET /health/push` is removed and answers 404 (#433).
   _Avoid_: push health
 
 ## Email delivery
 
 - **Failure kind** — the class of a failed send: `transient` (time fixes it), `permanent` (nothing fixes it) or `operator` (a person must act). Only `transient` retries, 6 attempts over about 15 minutes. The other two go to the email dead-letter queue at once. The entry carries `failureKind` and `failureCode` (#421).
+  _Avoid_: error kind
 
 ## MCP connector
 
@@ -116,7 +117,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 ## Heading chat
 
 - **Heading chat** — the chat of one heading in one document. Its `public.channels` row is keyed by `workspace_id` (the documentId) and `heading_id` (the heading's toc-id). `channels.id` is global, and a copied document keeps its source's toc-ids, so never find a heading chat by `id` alone (#402). `useHeadingChannel` is the one client resolve point.
-- **Workspace channel** — the chat of the whole document. Its row keeps `id` and `heading_id` equal to the documentId.
+- **Workspace chat** — the chat of the whole document. Its row keeps `id` and `heading_id` equal to the documentId.
 
 ## Presence awareness
 

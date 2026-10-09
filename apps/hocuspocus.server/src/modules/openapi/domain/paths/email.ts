@@ -7,8 +7,8 @@ import {
   validateEmailBody
 } from '../../../../schemas/email.schema'
 import type { JsonSchema, OpenApiPaths } from '../../types'
-import { envelopeResponse, rateLimitedRef } from '../components'
-import { pathParam, toJsonSchema, toParameters } from '../jsonSchema'
+import { envelopeOrLegacyResponse, envelopeResponse, rateLimitedRef } from '../components'
+import { dataEnvelope, pathParam, toJsonSchema, toParameters } from '../jsonSchema'
 
 const tags = ['Email']
 const security = [{ serviceRoleKey: [] }]
@@ -134,18 +134,14 @@ export const emailPaths: OpenApiPaths = {
         content: { 'application/json': { schema: { type: 'object', additionalProperties: true } } }
       },
       responses: {
-        '200': jsonOk('Recorded, ignored, or already recorded.', {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean', const: true },
-            data: {
-              type: 'object',
-              properties: { received: { type: 'boolean', const: true } },
-              required: ['received']
-            }
-          },
-          required: ['success', 'data']
-        }),
+        '200': jsonOk(
+          'Recorded, ignored, or already recorded.',
+          dataEnvelope({
+            type: 'object',
+            properties: { received: { type: 'boolean', const: true } },
+            required: ['received']
+          })
+        ),
         '400': envelopeResponse('The signed body is not JSON.'),
         '401': envelopeResponse('Missing, malformed, stale or wrong signature. One body for all.'),
         '409': envelopeResponse('Another request is still recording this `svix-id`. Retry later.'),
@@ -159,7 +155,7 @@ export const emailPaths: OpenApiPaths = {
   '/api/email/health': {
     get: {
       operationId: 'getEmailHealth',
-      summary: 'Email gateway health',
+      summary: 'Email gateway status',
       description:
         'Public, so status only. `ok` when email is set up and the queue is connected. The detail is on `GET /api/admin/email/setup`.',
       tags,
@@ -300,20 +296,9 @@ export const emailPaths: OpenApiPaths = {
             'text/html': { schema: { type: 'string' } }
           }
         },
-        '400': {
-          description:
-            'Missing token from zValidator (house envelope), or an invalid or expired token from the handler (`LegacyError`).',
-          content: {
-            'application/json': {
-              schema: {
-                oneOf: [
-                  { $ref: '#/components/schemas/ErrorEnvelope' },
-                  { $ref: '#/components/schemas/LegacyError' }
-                ]
-              }
-            }
-          }
-        },
+        '400': envelopeOrLegacyResponse(
+          'Missing token from zValidator (house envelope), or an invalid or expired token from the handler (`LegacyError`).'
+        ),
         '429': rateLimitedRef,
         '500': { $ref: '#/components/responses/LegacyInternalError' }
       }

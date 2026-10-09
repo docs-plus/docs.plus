@@ -92,7 +92,7 @@ The limit is low for bulk work. Next step: prefer one large write over many smal
 
 ## Health
 
-Each of these returns `200` when healthy and `503` otherwise. None is rate limited.
+Each dependency route returns `200` when healthy and `503` otherwise. `/health/live` always answers `200`. None is rate limited.
 
 | Path                   | Reports                                                                   |
 | ---------------------- | ------------------------------------------------------------------------- |

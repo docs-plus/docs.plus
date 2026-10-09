@@ -167,7 +167,7 @@ export const documentsPaths: OpenApiPaths = {
       parameters: [
         pathParam(
           'docRef',
-          'The 19-character `documentId`. An id longer than 100 characters, or with a character outside `[A-Za-z0-9_-]`, is a 400.',
+          'The `documentId` (19 characters for a new document).',
           toJsonSchema(documentIdField)
         )
       ],

@@ -4,7 +4,7 @@ import {
   mediaIdParamSchema
 } from '../../../../schemas/hypermultimedia.schema'
 import type { OpenApiPaths } from '../../types'
-import { rateLimitedRef } from '../components'
+import { envelopeOrLegacyResponse, rateLimitedRef } from '../components'
 import { DOCUMENT_ID_NOTE, toParameters } from '../jsonSchema'
 
 const tags = ['Media']
@@ -46,20 +46,9 @@ export const mediaPaths: OpenApiPaths = {
             'application/json': { schema: { type: 'object', additionalProperties: true } }
           }
         },
-        '400': {
-          description:
-            'No `mediaFile` part (`LegacyError`), or `documentId` failed the path-charset check before the handler ran (`ErrorEnvelope`).',
-          content: {
-            'application/json': {
-              schema: {
-                oneOf: [
-                  { $ref: '#/components/schemas/LegacyError' },
-                  { $ref: '#/components/schemas/ErrorEnvelope' }
-                ]
-              }
-            }
-          }
-        },
+        '400': envelopeOrLegacyResponse(
+          'No `mediaFile` part (`LegacyError`), or `documentId` failed the path-charset check before the handler ran (`ErrorEnvelope`).'
+        ),
         '401': { $ref: '#/components/responses/Unauthorized' },
         // `access` is optional here, unlike the slug read: the read-only arm
         // returns a plain envelope, and only the privacy arm carries the hint.
@@ -115,20 +104,9 @@ export const mediaPaths: OpenApiPaths = {
           content: { '*/*': { schema: { type: 'string', format: 'binary' } } }
         },
         '400': { $ref: '#/components/responses/ValidationError' },
-        '404': {
-          description:
-            'A document in Trash answers `ErrorEnvelope` with code `NOT_FOUND`, before storage is read. A missing file answers `LegacyError` from either storage backend.',
-          content: {
-            'application/json': {
-              schema: {
-                oneOf: [
-                  { $ref: '#/components/schemas/LegacyError' },
-                  { $ref: '#/components/schemas/ErrorEnvelope' }
-                ]
-              }
-            }
-          }
-        },
+        '404': envelopeOrLegacyResponse(
+          'A document in Trash answers `ErrorEnvelope` with code `NOT_FOUND`, before storage is read. A missing file answers `LegacyError` from either storage backend.'
+        ),
         '429': rateLimitedRef
       }
     }

@@ -236,6 +236,21 @@ export const envelopeResponse = (description: string): OpenApiResponse =>
 const legacyResponse = (description: string): OpenApiResponse =>
   jsonResponse(description, '#/components/schemas/LegacyError')
 
+/** One status, two writers: a handler sends the envelope, an older guard or backend the legacy body. */
+export const envelopeOrLegacyResponse = (description: string): OpenApiResponse => ({
+  description,
+  content: {
+    'application/json': {
+      schema: {
+        oneOf: [
+          { $ref: '#/components/schemas/ErrorEnvelope' },
+          { $ref: '#/components/schemas/LegacyError' }
+        ]
+      }
+    }
+  }
+})
+
 const rateLimited: OpenApiResponse = {
   description:
     'Global limiter tripped: `RATE_LIMIT_MAX` requests (default 100) per 15-minute window, keyed on client IP.',

@@ -22,13 +22,9 @@ This file is the operator and API changelog. The pad product lives in the [root 
   `EMAIL_PROVIDER`, `EMAIL_FROM`, `EMAIL_UNSUBSCRIBE_SECRET` or
   `PUBLIC_RESTAPI_URL` is empty in the host env file.
 - **`GET /api/email/health` returns status only ([#423](https://github.com/docs-plus/docs.plus/issues/423)).**
-  The public body is now `{ status, queue_connected }`, with `status` `ok` or
-  `degraded`. An admin reads the provider and the pending count on
-  `GET /api/admin/email/setup`. `smtp_configured`, `failed_jobs` and
-  `sent_last_hour` are gone.
+  See Migration.
 - **Owner and author profiles drop `status` ([#434](https://github.com/docs-plus/docs.plus/issues/434)).**
-  The `ownerProfile` on `GET /api/documents/:docName`, the documents list
-  `owner`, and the `history.list` profiles no longer send it. See Security.
+  See Security.
 - **`GET /health/push` is removed ([#433](https://github.com/docs-plus/docs.plus/issues/433)).**
   It now answers `404`. See Security.
 
@@ -52,10 +48,10 @@ on `GET /api/admin/email/setup` with an admin token. Read today's `provider`
 from `GET /api/email/health` before you deploy, because the Email provider
 step below needs it.
 
-**Admin revoke ([#412](https://github.com/docs-plus/docs.plus/issues/412)).** Apply the
-Supabase migration `20261009120400_admin_revoke_admin` before this server
-ships. Without it, every admin revoke answers `500`. Then check that only
-`service_role` can run `public.admin_revoke_admin(uuid)`.
+**Admin revoke ([#412](https://github.com/docs-plus/docs.plus/issues/412)).** Without
+`20261009120400_admin_revoke_admin`, every admin revoke answers `500`. After
+the push, check that only `service_role` can run
+`public.admin_revoke_admin(uuid)`.
 
 **User status columns ([#434](https://github.com/docs-plus/docs.plus/issues/434)).** Ship the
 webapp, this server and the admin dashboard first. Wait at least 24 hours,
@@ -564,8 +560,7 @@ SMTP_PASS=...
 ### Security
 
 - **Push gateway status needs an admin token ([#433](https://github.com/docs-plus/docs.plus/issues/433)).**
-  `GET /health/push` is removed and now answers `404`. It showed queue counts
-  and the VAPID subject with no auth. Admins read the same status on
+  `GET /health/push` showed queue counts and the VAPID subject with no auth. Admins read the same status on
   `GET /api/admin/push/gateway`. That route always answers `200` with the
   status, even when push is not set up. `GET /api/email/health` stays public,
   because it already returns status only ([#423](https://github.com/docs-plus/docs.plus/issues/423)).
@@ -688,7 +683,8 @@ SMTP_PASS=...
 - **A signed-in WebSocket closes when its access token expires.** At the
   token's `exp`, the server closes the socket with code `4408`. The webapp
   reconnects with a fresh token, so `onAuthenticate` checks the identity again.
-  A token already past `exp` is refused like an invalid one. Each signed-in tab
+  In production, a token already past `exp` is refused like an invalid one.
+  Each signed-in tab
   reconnects about once per token lifetime, which is 1 hour by default
   ([#430](https://github.com/docs-plus/docs.plus/issues/430)).
 - **Production jobs run only from `main`, and Traefik reads a copy of its config.**
@@ -696,7 +692,7 @@ SMTP_PASS=...
   branch now skips every job on the production runner. `docker-compose.prod.yml`
   mounts Traefik's config from `${TRAEFIK_CONFIG_DIR:-./scripts/traefik}`. The
   production deploy copies `scripts/traefik/` to
-  `/opt/projects/prod.docs.plus/.deploy/traefik` before `up -d traefik`. Set
+  `/opt/projects/prod.docs.plus/.deploy/traefik` before `up -d traefik redis`. Set
   `TRAEFIK_CONFIG_DIR=/opt/projects/prod.docs.plus/.deploy/traefik` in the host
   `.env` before that deploy. Traefik then recreates once, so deploy in a quiet
   window. Staging and self-hosting keep the default
@@ -724,9 +720,9 @@ SMTP_PASS=...
   of the id, and removes the user's `user_avatars` objects. Messages keep their
   author, who shows the placeholder name and the default avatar.
 - **Owner and author profiles no longer carry `status`
-  ([#434](https://github.com/docs-plus/docs.plus/issues/434)).** The
-  `ownerProfile` on `GET /api/documents/:docName`, the documents list `owner`,
-  and the `history.list` profiles leave it out. Anyone could read the first of
+  ([#434](https://github.com/docs-plus/docs.plus/issues/434)).** This covers
+  the `ownerProfile` on `GET /api/documents/:docName`, the documents list
+  `owner`, and the `history.list` profiles. Anyone could read the first of
   these without signing in. No client read the field.
 
 ### Removed

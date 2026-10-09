@@ -76,7 +76,7 @@ The documents controller emits this envelope on error and `{ "success": true, "d
 
 ## Health
 
-Health routes are exempt from rate limiting. Each returns `200` when healthy and `503` otherwise. Source: `src/api/routers/health.router.ts`, `src/api/services/health.service.ts`. Each dependency check is cached for 5 s per process, and concurrent callers share one check. A failed check returns no error text. The reason goes to the server log as a `Health check failed` warning. The `rest-api` container healthcheck reads `/health/database`, so a Redis stall does not mark the replicas unhealthy ([#405](https://github.com/docs-plus/docs.plus/issues/405)).
+Health routes are exempt from rate limiting. Each dependency route returns `200` when healthy and `503` otherwise. `/health/live` always answers `200`. Source: `src/api/routers/health.router.ts`, `src/api/services/health.service.ts`. Each dependency check is cached for 5 s per process, and concurrent callers share one check. A failed check returns no error text. The reason goes to the server log as a `Health check failed` warning. The `rest-api` container healthcheck reads `/health/database`, so a Redis stall does not mark the replicas unhealthy ([#405](https://github.com/docs-plus/docs.plus/issues/405)).
 
 ### GET /health
 
@@ -1303,11 +1303,11 @@ Both answer `{ grouping, maxKb }`. `grouping` is `document` (one mail per docume
 | GET    | `/email/setup`           | Email config status, checks and lines to add |
 | POST   | `/email/setup/test-send` | Send one test email to yourself              |
 
-The module lives in `src/modules/email-setup/`. It is mounted in `src/index.ts` ahead of the admin router and applies the same admin guard. Both routes use the house envelope. The page only reads: no route writes `.env` or any secret.
+The module lives in `src/modules/email-setup/`. Both routes use the house envelope. The page only reads: no route writes `.env` or any secret.
 
-`GET` returns `status` (`ready`, `off` or `invalid`), `problems` for `invalid`, `provider` and `from` (`EMAIL_FROM` in full). It also returns `namespace`, `smtp` (`host`, `port`), `publicUrl`, and `secrets`, which holds `set` or `missing` for `RESEND_API_KEY`, `SMTP_USER`, `SMTP_PASS` and `EMAIL_UNSUBSCRIBE_SECRET`. `webhook` holds the secret state (`set`, `missing` or `invalid`) and the webhook URL. `connection` is a live provider check on each read, bounded at 10 s. It is `ok`, `failed` with `kind` and `code`, `timeout`, or `skipped` when email is not `ready`. `latestBounce` is the newest `get_email_bounces` row with a masked address, no username, and a reason of at most 80 characters, or `none`, or `unavailable`. `queue` holds `connected`, `pending` and the email `dlqDepth`. `envToAdd` lists the `.env` lines to add, blank where the value is a secret.
+`GET` returns `status` (`ready`, `off` or `invalid`), `problems` for `invalid`, `provider` and `from` (`EMAIL_FROM` in full). It also returns `namespace`, `smtp` (`host`, `port`), `publicUrl`, and `secrets`, which holds `set` or `missing` for `RESEND_API_KEY`, `SMTP_USER`, `SMTP_PASS` and `EMAIL_UNSUBSCRIBE_SECRET`. `webhook` holds the secret state (`set`, `missing` or `invalid`) and the webhook URL. `connection` is a live provider check on each read, bounded at 10 s. It is an object with a `state`: `ok`, `failed` with `kind` and `code`, `timeout`, or `skipped` when email is not `ready`. An `ok` state can carry `note: 'send_only_key'`. `latestBounce` is also an object with a `state`: `none`, `unavailable` or `found`. A `found` bounce carries `email` (masked), `bounceType`, `provider`, `reason` (at most 80 characters) and `bouncedAt`. `queue` holds `connected`, `pending` and the email `dlqDepth`. `envToAdd` lists the `.env` lines to add, blank where the value is a secret or unknown.
 
-`POST /email/setup/test-send` takes no body. It sends through `deliverEmail` to the signed-in admin's own address, with the key `<namespace>/test/<uuid>`. It answers `{ "sent": true, "messageId", "to" }` with `to` masked, or `{ "sent": false, "kind", "code" }`. One send per admin per minute: past it, `429` `RATE_LIMITED`. Without Redis, `503`, because the limit fails closed. `400` `NO_EMAIL` when the account has no address.
+`POST /email/setup/test-send` takes no body. It sends through `deliverEmail` to the signed-in admin's own address, with the key `<namespace>/inline/<uuid>`. It answers `{ "sent": true, "messageId", "to" }` with `to` masked, or `{ "sent": false, "kind", "code" }`. One send per admin per minute: past it, `429` `RATE_LIMITED`. Without Redis, `503`, because the limit fails closed. `400` `NO_EMAIL` when the account has no address.
 
 **Ghost accounts audit**
 
@@ -1321,7 +1321,7 @@ The module lives in `src/modules/email-setup/`. It is mounted in `src/index.ts` 
 | POST   | `/audit/ghost-accounts/resend-confirmation` | Resend magic link         |
 | POST   | `/audit/ghost-accounts/cleanup-anonymous`   | Clean stale anon sessions |
 
-Both ghost-account delete routes check each id again before they delete. They refuse a user who signed in after the list loaded, an admin, and an unknown id. `DELETE /audit/ghost-accounts/:id` then answers `409` with `{ error }`. A non-uuid id answers `400` `VALIDATION_ERROR`. The bulk route counts a refused id under `failed` and adds a line to `errors`. A failed impact read or admin read also stops the delete. The single route answers `500`, and the bulk route counts the id as failed. A soft delete bans the user and clears the public profile: name, photo, bio and links. It also removes the `user_avatars` objects and sets the username to `deleted_` plus 12 hex characters of the id.
+Both ghost-account delete routes check each id again before they delete. They refuse a user who signed in after the list loaded, an admin, and an unknown id. `DELETE /audit/ghost-accounts/:id` then answers `409` with `{ error }`. A non-uuid id answers `400` `VALIDATION_ERROR`. The bulk route counts a refused id under `failed` and adds a line to `errors`. A failed impact read or admin read also stops the delete. So does an Auth read error other than `404`. The single route answers `500`, and the bulk route counts the id as failed. A soft delete bans the user and clears the public profile: name, photo, bio and links. It also removes the `user_avatars` objects and sets the username to `deleted_` plus 12 hex characters of the id.
 
 ## Push notifications
 

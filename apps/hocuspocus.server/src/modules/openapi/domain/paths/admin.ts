@@ -29,7 +29,7 @@ import type {
   OpenApiPaths,
   OpenApiResponse
 } from '../../types'
-import { envelopeResponse, rateLimitedRef } from '../components'
+import { envelopeOrLegacyResponse, envelopeResponse, rateLimitedRef } from '../components'
 import { pathParam, toJsonSchema, toParameters } from '../jsonSchema'
 
 interface AdminRoute {
@@ -41,7 +41,7 @@ interface AdminRoute {
   description?: string
   query?: z.ZodType
   body?: z.ZodType
-  /** The path the router validates. `params` is for a path it does not validate. */
+  /** Path params the router checks with zValidator. Use `params` for unchecked ones. */
   pathSchema?: z.ZodType
   params?: OpenApiParameter[]
   /** Responses that differ from the shared map in `toOperation`. */
@@ -50,6 +50,11 @@ interface AdminRoute {
 
 const idParam = pathParam('id', 'Target row id.')
 const slugParam = pathParam('slug', 'Document slug.')
+
+/** The Email setup router has no onError, so a throw reaches the app-wide envelope handler. */
+const setupInternalError = envelopeOrLegacyResponse(
+  'Unhandled error (`ErrorEnvelope`), or the admin guard failed (`LegacyError`).'
+)
 
 const routes: AdminRoute[] = [
   {
@@ -106,20 +111,9 @@ const routes: AdminRoute[] = [
       'Calls and distinct callers per UTC day, plus tool and app totals for the window. House envelope.',
     query: mcpUsageQuerySchema,
     extraResponses: {
-      '500': {
-        description:
-          'The usage read failed (`ErrorEnvelope`, code `MCP_USAGE_FAILED`), or the admin guard failed (`LegacyError`).',
-        content: {
-          'application/json': {
-            schema: {
-              oneOf: [
-                { $ref: '#/components/schemas/ErrorEnvelope' },
-                { $ref: '#/components/schemas/LegacyError' }
-              ]
-            }
-          }
-        }
-      }
+      '500': envelopeOrLegacyResponse(
+        'The usage read failed (`ErrorEnvelope`, code `MCP_USAGE_FAILED`), or the admin guard failed (`LegacyError`).'
+      )
     }
   },
   {
@@ -468,7 +462,8 @@ const routes: AdminRoute[] = [
     summary: 'Email setup status',
     group: 'Email setup',
     description:
-      'Provider, config status, set or missing per secret, a live connection check, the newest bounce (masked) and the email DLQ depth. Never returns a secret value. House envelope.'
+      'Provider, config status, set or missing per secret, a live connection check, the newest bounce (masked) and the email DLQ depth. Never returns a secret value. House envelope.',
+    extraResponses: { '500': setupInternalError }
   },
   {
     path: '/email/setup/test-send',
@@ -483,20 +478,10 @@ const routes: AdminRoute[] = [
       '429': envelopeResponse(
         'Code `RATE_LIMITED`: one test email per admin per minute. The global limiter answers `RATE_LIMIT_EXCEEDED`.'
       ),
-      '503': {
-        description:
-          'Redis is not available (`ErrorEnvelope`, code `SERVICE_UNAVAILABLE`), or the admin guard cannot reach Supabase auth (`LegacyError`).',
-        content: {
-          'application/json': {
-            schema: {
-              oneOf: [
-                { $ref: '#/components/schemas/ErrorEnvelope' },
-                { $ref: '#/components/schemas/LegacyError' }
-              ]
-            }
-          }
-        }
-      }
+      '500': setupInternalError,
+      '503': envelopeOrLegacyResponse(
+        'Redis is not available (`ErrorEnvelope`, code `SERVICE_UNAVAILABLE`), or the admin guard cannot reach Supabase auth (`LegacyError`).'
+      )
     }
   },
 
