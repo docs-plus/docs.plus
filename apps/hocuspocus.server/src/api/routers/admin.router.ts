@@ -51,6 +51,7 @@ admin.get(
 admin.get('/stats/push', adminController.getPushStatsAdmin)
 admin.get('/stats/push/pipeline', adminController.getPushPipelineAdmin)
 admin.get('/push/subscriptions', adminController.getPushSubscriptionsRaw)
+admin.get('/push/gateway', adminController.getPushGatewayAdmin)
 admin.get('/system/table-sizes', adminController.getTableSizes)
 admin.get('/users', adminController.listUsers)
 admin.get('/users/notification-subs', adminController.getUserNotificationSubs)

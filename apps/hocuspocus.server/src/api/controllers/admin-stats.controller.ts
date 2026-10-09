@@ -1,10 +1,11 @@
 /**
  * Runs through the service_role client. The browser anon-key is RLS-scoped,
  * and email/push/email_queue are revoked from `authenticated`, so these
- * counts cannot be computed client-side.
+ * counts cannot be computed client-side. The push gateway status reads process state.
  */
 
 import { adminLogger } from '../../lib/logger'
+import { pushGateway } from '../../lib/push'
 import type { AppContext } from '../../types/hono.types'
 import { getSupabaseClient } from '../utils/supabase'
 
@@ -203,6 +204,16 @@ export async function getPushStatsAdmin(c: AppContext) {
   } catch (error) {
     adminLogger.error({ err: error }, 'Failed to get push stats')
     return c.json({ error: 'Failed to fetch push statistics' }, 500)
+  }
+}
+
+/** Always 200 with the status, so the dashboard reads the VAPID and queue flags from the body. */
+export async function getPushGatewayAdmin(c: AppContext) {
+  try {
+    return c.json(await pushGateway.getHealth())
+  } catch (error) {
+    adminLogger.error({ err: error }, 'Failed to get push gateway status')
+    return c.json({ error: 'Failed to fetch push gateway status' }, 500)
   }
 }
 

@@ -12,7 +12,7 @@ import {
   renderUnsubscribePage
 } from '@docs.plus/email-templates'
 import { zValidator } from '@hono/zod-validator'
-import { Hono } from 'hono'
+import { type Context, Hono } from 'hono'
 import { z } from 'zod'
 
 import { config } from '../config/env'
@@ -22,7 +22,7 @@ import { emailGateway } from '../lib/email'
 import { recordEmailBounce } from '../lib/email/bounces'
 import { emailLogger } from '../lib/logger'
 import { getServiceRoleClient } from '../lib/supabase'
-import { verifyUnsubscribeToken } from '../lib/unsubscribeToken'
+import { type UnsubscribePayload, verifyUnsubscribeToken } from '../lib/unsubscribeToken'
 import {
   emailBounceSchema,
   sendDigestEmailSchema,
@@ -352,6 +352,18 @@ interface UnsubscribeResult {
 type UnsubscribeOutcome =
   { status: 'ok'; result: UnsubscribeResult } | { status: 'unconfigured' } | { status: 'failed' }
 
+const INVALID_TOKEN_MESSAGE = 'This unsubscribe link is invalid or has expired.'
+
+/** The one token check. GET and POST both call it, so they cannot disagree on a token. */
+function checkUnsubscribeToken(token: string): UnsubscribePayload | 'unconfigured' | null {
+  const secret = config.email.unsubscribeSecret
+  if (!secret) {
+    emailLogger.error('EMAIL_UNSUBSCRIBE_SECRET is not set — cannot verify unsubscribe tokens')
+    return 'unconfigured'
+  }
+  return verifyUnsubscribeToken({ token, secret })
+}
+
 /**
  * Identity comes from the token, which is verified here rather than in Postgres.
  * A missing secret and a missing client are both `unconfigured`: neither is the
@@ -363,21 +375,13 @@ async function processUnsubscribe(token: string): Promise<UnsubscribeOutcome> {
     emailLogger.error('Supabase service-role client is not configured for unsubscribe')
     return { status: 'unconfigured' }
   }
-  const secret = config.email.unsubscribeSecret
-  if (!secret) {
-    emailLogger.error('EMAIL_UNSUBSCRIBE_SECRET is not set — cannot verify unsubscribe tokens')
-    return { status: 'unconfigured' }
-  }
 
-  const payload = verifyUnsubscribeToken({ token, secret })
+  const payload = checkUnsubscribeToken(token)
+  if (payload === 'unconfigured') return { status: 'unconfigured' }
   if (!payload) {
     return {
       status: 'ok',
-      result: {
-        success: false,
-        error: 'invalid_token',
-        message: 'This unsubscribe link is invalid or has expired.'
-      }
+      result: { success: false, error: 'invalid_token', message: INVALID_TOKEN_MESSAGE }
     }
   }
 
@@ -393,21 +397,10 @@ async function processUnsubscribe(token: string): Promise<UnsubscribeOutcome> {
 }
 
 /**
- * One-click unsubscribe from an email link. The token is the only credential —
- * there is no session — and every outcome renders an HTML page, never a JSON error.
+ * Applies the unsubscribe, then renders the outcome as a page, never a JSON error.
+ * It writes, so only a POST may call it (#445).
  */
-emailRouter.get('/unsubscribe', async (c) => {
-  const token = c.req.query('token')
-
-  if (!token) {
-    return c.html(
-      renderUnsubscribePage({
-        title: 'Invalid link',
-        message: 'This unsubscribe link is missing required information.'
-      })
-    )
-  }
-
+async function applyUnsubscribeAsPage(c: Context, token: string): Promise<Response> {
   try {
     const outcome = await processUnsubscribe(token)
 
@@ -453,7 +446,7 @@ emailRouter.get('/unsubscribe', async (c) => {
     return c.html(
       renderUnsubscribePage({
         title: 'Unable to unsubscribe',
-        message: result.message || 'The unsubscribe link is invalid or has expired.'
+        message: result.message || INVALID_TOKEN_MESSAGE
       })
     )
   } catch (err) {
@@ -465,17 +458,63 @@ emailRouter.get('/unsubscribe', async (c) => {
       })
     )
   }
+}
+
+/**
+ * The email link. Mail link scanners open every link, so GET only checks the
+ * token and asks. It never writes (#445). The token is the only credential.
+ */
+emailRouter.get('/unsubscribe', (c) => {
+  const token = c.req.query('token')
+
+  if (!token) {
+    return c.html(
+      renderUnsubscribePage({
+        title: 'Invalid link',
+        message: 'This unsubscribe link is missing required information.'
+      })
+    )
+  }
+
+  const payload = checkUnsubscribeToken(token)
+  if (payload === 'unconfigured') {
+    return c.html(
+      renderUnsubscribePage({
+        title: 'Service error',
+        message: 'Unable to process your request. Please try again later.'
+      })
+    )
+  }
+  if (!payload) {
+    return c.html(
+      renderUnsubscribePage({ title: 'Unable to unsubscribe', message: INVALID_TOKEN_MESSAGE })
+    )
+  }
+
+  return c.html(
+    renderUnsubscribePage({
+      title: 'Unsubscribe?',
+      message: 'Press Unsubscribe to stop these emails. Nothing changes until you press it.',
+      confirm: true
+    })
+  )
 })
 
 /**
- * RFC 8058 List-Unsubscribe-Post: mail clients POST "List-Unsubscribe=One-Click"
- * in the body, so this answers JSON where the GET above answers HTML.
+ * The only write. The confirm page's form sends `confirm=yes` and gets a page.
+ * Any other body is an RFC 8058 mail client, which sends
+ * "List-Unsubscribe=One-Click" and gets JSON.
  */
 emailRouter.post(
   '/unsubscribe',
   zValidator('query', z.object({ token: z.string().min(1) }), houseEnvelopeHook),
   async (c) => {
     const { token } = c.req.valid('query')
+
+    const form: Record<string, unknown> = await c.req.parseBody().catch(() => ({}))
+    if (form.confirm === 'yes') {
+      return applyUnsubscribeAsPage(c, token)
+    }
 
     try {
       const outcome = await processUnsubscribe(token)

@@ -15,6 +15,5 @@ health.get('/live', healthController.checkLiveness)
 health.get('/database', healthController.checkDatabaseHealth)
 health.get('/redis', healthController.checkRedisHealth)
 health.get('/supabase', healthController.checkSupabaseHealth)
-health.get('/push', healthController.checkPushHealth)
 
 export default health

@@ -29,6 +29,8 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - **Owner and author profiles drop `status` ([#434](https://github.com/docs-plus/docs.plus/issues/434)).**
   The `ownerProfile` on `GET /api/documents/:docName`, the documents list
   `owner`, and the `history.list` profiles no longer send it. See Security.
+- **`GET /health/push` is removed ([#433](https://github.com/docs-plus/docs.plus/issues/433)).**
+  It now answers `404`. See Security.
 
 ### Migration
 
@@ -51,6 +53,12 @@ breaks its sign-in and its heartbeat. After the push, check that
 `has_column_privilege` is false for `anon` and `authenticated` on
 `users.status` and `users.online_at`. Also check that `pg_publication_tables`
 has no `users` row.
+
+**Push gateway status ([#433](https://github.com/docs-plus/docs.plus/issues/433)).** If you
+polled `GET /health/push`, call `GET /api/admin/push/gateway` with an admin
+token. That route always answers `200`, so read the VAPID and queue flags in
+the body, not the status code. Move or delete any uptime probe of the old
+path, because it now answers `404`.
 
 **Media objects ([#408](https://github.com/docs-plus/docs.plus/issues/408)).** New S3 uploads are
 private. Objects written before this release stay `public-read` until you
@@ -429,6 +437,12 @@ SMTP_PASS=...
 
 ### Fixed
 
+- **The unsubscribe link asks before it changes anything ([#445](https://github.com/docs-plus/docs.plus/issues/445)).**
+  `GET /api/email/unsubscribe` now checks the token and shows an Unsubscribe
+  button. It writes nothing, so a mail link scanner can no longer unsubscribe
+  a reader. The button posts `confirm=yes` to the same URL, and that post
+  writes. One-click unsubscribe from a mail client is unchanged. Links in
+  mail already sent still work, and they now open the confirm page.
 - **Without Redis, a failed mail is no longer sent twice ([#421](https://github.com/docs-plus/docs.plus/issues/421)).**
   The service sent again after an inline failure. Now an inline failure is
   final: the row settles `failed`, and the pgmq message is acked. A skipped
@@ -537,6 +551,12 @@ SMTP_PASS=...
 
 ### Security
 
+- **Push gateway status needs an admin token ([#433](https://github.com/docs-plus/docs.plus/issues/433)).**
+  `GET /health/push` is removed and now answers `404`. It showed queue counts
+  and the VAPID subject with no auth. Admins read the same status on
+  `GET /api/admin/push/gateway`. That route always answers `200` with the
+  status, even when push is not set up. `GET /api/email/health` stays public,
+  because it already returns status only ([#423](https://github.com/docs-plus/docs.plus/issues/423)).
 - **Media of a document in Trash stops serving ([#408](https://github.com/docs-plus/docs.plus/issues/408)).**
   `GET /api/plugins/hypermultimedia/:documentId/:mediaId` answers `404`
   `NOT_FOUND` while the document is in Trash. After Restore, it serves again.

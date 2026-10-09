@@ -437,22 +437,13 @@ function categorizeError(errorMsg: string): string {
 export async function checkPushGatewayHealth(): Promise<PushGatewayHealth> {
   const start = Date.now()
   try {
-    const response = await fetch(`${API_URL}/health/push`, {
-      signal: AbortSignal.timeout(5000)
-    })
+    const data = await fetchApi<{
+      vapid_configured?: boolean
+      queue_connected?: boolean
+      pending_jobs?: number
+      failed_jobs?: number
+    }>('/api/admin/push/gateway', { signal: AbortSignal.timeout(5000) })
     const latency = Date.now() - start
-
-    if (!response.ok) {
-      return {
-        status: 'degraded',
-        latency,
-        vapidConfigured: false,
-        queueConnected: false,
-        error: `HTTP ${response.status}`
-      }
-    }
-
-    const data = await response.json()
     return {
       status: data.vapid_configured && data.queue_connected ? 'healthy' : 'degraded',
       latency,

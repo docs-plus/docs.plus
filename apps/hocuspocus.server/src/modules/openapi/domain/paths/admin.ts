@@ -89,6 +89,15 @@ const routes: AdminRoute[] = [
     group: 'Dashboard & users'
   },
   {
+    path: '/push/gateway',
+    method: 'get',
+    id: 'adminGetPushGateway',
+    summary: 'Push gateway status',
+    group: 'Dashboard & users',
+    description:
+      'VAPID and queue flags with queue counts. Always 200 with the status, even when push is not configured.'
+  },
+  {
     path: '/system/table-sizes',
     method: 'get',
     id: 'adminGetTableSizes',

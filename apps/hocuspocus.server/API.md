@@ -112,10 +112,6 @@ Redis `PING`. `disabled` when Redis is not configured.
 
 Supabase reachability. `disabled` when `SUPABASE_URL`/`SUPABASE_ANON_KEY` are unset.
 
-### GET /health/push
-
-Push gateway status. `200` when VAPID is configured and the queue is connected.
-
 ## Documents
 
 Base path `/api/documents` (`src/api/routers/documents.router.ts`). Success responses use `{ "success": true, "data": ... }`.
@@ -1206,11 +1202,11 @@ Render a template (`notification` or `digest`) with sample data, as HTML. Servic
 
 ### GET /api/email/unsubscribe?token=
 
-One-click unsubscribe from an email link. No auth (the token is the credential). Verifies the token in `lib/unsubscribeToken.ts`, then applies the change through the `apply_unsubscribe` Supabase RPC, and returns an HTML confirmation page.
+The email link. No auth (the token is the credential). Verifies the token in `lib/unsubscribeToken.ts` and returns an HTML page with an Unsubscribe button. It changes nothing. Mail link scanners open every link, so a GET must never write.
 
 ### POST /api/email/unsubscribe?token=
 
-RFC 8058 `List-Unsubscribe-Post` handler for mail clients. Returns JSON (`{ "success": true }` or an `{ "error": ... }` body).
+The only route that writes. It applies the change through the `apply_unsubscribe` Supabase RPC. The confirm page's button posts the form field `confirm=yes` and gets an HTML result page. Any other body gets JSON (`{ "success": true }` or an `{ "error": ... }` body). That covers the RFC 8058 `List-Unsubscribe=One-Click` post from mail clients.
 
 ## Admin
 
@@ -1223,6 +1219,7 @@ Two audit routes are easy to misread. `/audit/media-storage` and `/audit/media-s
 | Method | Path                      | Purpose                  |
 | ------ | ------------------------- | ------------------------ |
 | GET    | `/stats`                  | Dashboard overview stats |
+| GET    | `/push/gateway`           | Push gateway status      |
 | GET    | `/users/document-counts`  | Document count per user  |
 | GET    | `/users/admins`           | All admin user IDs       |
 | POST   | `/users/:id/toggle-admin` | Grant or revoke admin    |
@@ -1331,7 +1328,7 @@ await supabase.rpc('register_push_subscription', {
 await supabase.rpc('unregister_push_subscription', { p_device_id: 'unique-device-id' })
 ```
 
-`GET /health/push` reports gateway status.
+Push has no public HTTP endpoint. Admins read the gateway status on `GET /api/admin/push/gateway`. It always answers `200` with the status, even when push is not set up.
 
 ## Rate limiting
 

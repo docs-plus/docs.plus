@@ -83,25 +83,5 @@ export const healthPaths: OpenApiPaths = {
       'Supabase health',
       'Reachability. Reports `disabled` when `SUPABASE_URL` / `SUPABASE_ANON_KEY` are unset.'
     )
-  },
-  '/health/push': {
-    get: {
-      operationId: 'getHealthPush',
-      summary: 'Push gateway health',
-      description:
-        'The only HTTP surface push has. Delivery runs through pgmq and devices register through the `register_push_subscription` / `unregister_push_subscription` Supabase RPCs — see the Push tag.',
-      tags: ['Health', 'Push'],
-      security: [{}],
-      responses: {
-        '200': {
-          description: 'VAPID configured and queue connected.',
-          content: { 'application/json': { schema: { $ref: '#/components/schemas/PushHealth' } } }
-        },
-        '503': {
-          description: 'VAPID unconfigured or queue disconnected.',
-          content: { 'application/json': { schema: { $ref: '#/components/schemas/PushHealth' } } }
-        }
-      }
-    }
   }
 }

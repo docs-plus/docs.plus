@@ -100,7 +100,6 @@ Each of these returns `200` when healthy and `503` otherwise. None is rate limit
 | `GET /health/database` | PostgreSQL                                                                |
 | `GET /health/redis`    | Redis                                                                     |
 | `GET /health/supabase` | Supabase                                                                  |
-| `GET /health/push`     | The web-push gateway                                                      |
 
 Use `GET /health/live` for a load-balancer check. It answers `200` while the process is up and calls no dependency. `GET /health` is the dependency report, so do not use it to route traffic. Next step: if you need a stricter gate, read the health section of the contract document, because the collaboration process has a separate database-gated path.
 

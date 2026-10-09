@@ -100,9 +100,11 @@ export function renderUnsubscribePage(params: {
   message: string
   email?: string
   showHomeLink?: boolean
+  /** Renders the Unsubscribe form, which posts back to the page's own URL. */
+  confirm?: boolean
 }): string {
   // A server-rendered twin of the webapp PageCard (design-system.md §PageCard).
-  // Manage is the one body primary; Go to docs.plus is the strip way out.
+  // One body primary: Unsubscribe on the confirm page, else Manage preferences.
   return eta.render(
     'unsubscribe',
     baseData({
@@ -110,7 +112,8 @@ export function renderUnsubscribePage(params: {
       message: params.message,
       email: params.email,
       manageUrl: `${APP_URL}/#settings?tab=notifications`,
-      homeUrl: params.showHomeLink ? APP_URL : undefined
+      homeUrl: params.showHomeLink ? APP_URL : undefined,
+      confirm: params.confirm
     })
   )
 }

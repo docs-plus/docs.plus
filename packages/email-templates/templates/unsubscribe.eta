@@ -27,7 +27,7 @@
       flex-direction: column;
       gap: 16px;
     }
-    a:focus-visible {
+    a:focus-visible, button:focus-visible {
       outline: 2px solid <%= it.h.COLORS.primary %>;
       outline-offset: 2px;
     }
@@ -87,6 +87,12 @@
       font-size: 14px;
       font-weight: 600;
     }
+    button.primary {
+      width: 100%;
+      border: 0;
+      font-family: inherit;
+      cursor: pointer;
+    }
     .strip {
       display: flex;
       flex-wrap: wrap;
@@ -120,7 +126,7 @@
       .message, .strip { color: #a4a7ae; }
       .primary { background: #6ea8ff; color: #0b1220; }
       .quiet { color: #6ea8ff; }
-      a:focus-visible { outline-color: #6ea8ff; }
+      a:focus-visible, button:focus-visible { outline-color: #6ea8ff; }
     }
   </style>
 </head>
@@ -137,16 +143,28 @@
             <h1 id="unsubscribe-title"><%= it.title %></h1>
             <p class="message"><%= it.message %></p>
           </div>
+          <% if (it.confirm) { %>
+          <form method="post">
+            <input type="hidden" name="confirm" value="yes">
+            <button class="primary" type="submit">Unsubscribe</button>
+          </form>
+          <% } else { %>
           <a class="primary" href="<%= it.manageUrl %>">Manage preferences</a>
+          <% } %>
         </div>
-        <% if (it.email || it.homeUrl) { %>
+        <% if (it.email || it.homeUrl || it.confirm) { %>
         <div class="strip">
           <% if (it.email) { %>
           <p class="email"><%= it.email %></p>
           <% } %>
-          <% if (it.homeUrl) { %>
+          <% if (it.homeUrl || it.confirm) { %>
           <nav aria-label="Other pages">
+            <% if (it.confirm) { %>
+            <a class="quiet" href="<%= it.manageUrl %>">Manage preferences</a>
+            <% } %>
+            <% if (it.homeUrl) { %>
             <a class="quiet" href="<%= it.homeUrl %>">Go to <%= it.h.APP_NAME %></a>
+            <% } %>
           </nav>
           <% } %>
         </div>

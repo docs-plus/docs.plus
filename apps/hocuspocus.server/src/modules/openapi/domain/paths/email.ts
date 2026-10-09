@@ -250,15 +250,15 @@ export const emailPaths: OpenApiPaths = {
   '/api/email/unsubscribe': {
     get: {
       operationId: 'unsubscribeViaLink',
-      summary: 'One-click unsubscribe from an email link',
+      summary: 'Ask the reader to confirm an unsubscribe',
       description:
-        'Verifies the token in the worker, applies the change through the `apply_unsubscribe` Supabase RPC, and always renders an HTML confirmation page — failures are rendered, not status-coded.',
+        'Verifies the token and renders a confirm page with an Unsubscribe button. Changes nothing, because mail link scanners open every link. Failures are rendered, not status-coded.',
       tags,
       security: [{}],
       parameters: unsubscribeTokenParam,
       responses: {
         '200': {
-          description: 'Confirmation or error page.',
+          description: 'Confirm or error page.',
           content: { 'text/html': { schema: { type: 'string' } } }
         },
         '429': rateLimitedRef
@@ -266,17 +266,41 @@ export const emailPaths: OpenApiPaths = {
     },
     post: {
       operationId: 'unsubscribeOneClick',
-      summary: 'RFC 8058 List-Unsubscribe-Post handler',
-      description: 'The JSON counterpart mail clients call.',
+      summary: 'Apply an unsubscribe',
+      description:
+        'The only route that writes. Applies the change through the `apply_unsubscribe` Supabase RPC. A form body with `confirm=yes`, sent by the confirm page, gets an HTML result page. Any other body, such as the RFC 8058 `List-Unsubscribe=One-Click` from a mail client, gets JSON.',
       tags,
       security: [{}],
       parameters: unsubscribeTokenParam,
+      requestBody: {
+        required: false,
+        content: {
+          'application/x-www-form-urlencoded': {
+            schema: {
+              type: 'object',
+              properties: {
+                confirm: { type: 'string', enum: ['yes'] },
+                'List-Unsubscribe': { type: 'string', enum: ['One-Click'] }
+              }
+            }
+          }
+        }
+      },
       responses: {
-        '200': jsonOk('Unsubscribed.', {
-          type: 'object',
-          properties: { success: { type: 'boolean', const: true } },
-          required: ['success']
-        }),
+        '200': {
+          description:
+            'Unsubscribed (JSON), or the result page for a `confirm=yes` form post (HTML).',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: { success: { type: 'boolean', const: true } },
+                required: ['success']
+              }
+            },
+            'text/html': { schema: { type: 'string' } }
+          }
+        },
         '400': {
           description:
             'Missing token from zValidator (house envelope), or an invalid or expired token from the handler (`LegacyError`).',

@@ -23,7 +23,7 @@ const DESCRIPTION = `REST surface of \`@docs.plus/hocuspocus\`. The collaboratio
 
 **Rate limiting.** Two Redis-backed limiters cover every non-\`OPTIONS\` request except \`/health\` and \`/health/*\`, both keyed on client IP. The global limiter allows \`RATE_LIMIT_MAX\` requests (default 100) per 15-minute window. Public media reads use a second limiter, holding ten times those points. That covers every \`GET\` under \`/api/plugins/hypermultimedia/\`, so a pad's pictures do not spend the global budget. The upload \`POST\` on that path stays on the global budget. When Redis is unavailable both are disabled and requests pass. Requests with neither \`x-forwarded-for\` nor \`x-real-ip\` skip both. Every response carries \`X-RateLimit-Limit\`, \`X-RateLimit-Remaining\` and \`X-RateLimit-Reset\`, reporting the limiter that handled it.
 
-**Push notifications** have no HTTP endpoint beyond \`GET /health/push\`. Delivery runs through pgmq and devices register through the \`register_push_subscription\` / \`unregister_push_subscription\` Supabase RPCs.
+**Push notifications** have no public HTTP endpoint. Delivery runs through pgmq and devices register through the \`register_push_subscription\` / \`unregister_push_subscription\` Supabase RPCs. Admins read the gateway status at \`GET /api/admin/push/gateway\`.
 
 **Not described here:** \`POST /internal/documents/{documentId}/content\`, \`POST /internal/documents/{documentId}/versions\` and \`POST /internal/documents/{documentId}/versions/{version}/restore\` live on the collaboration process's internal listener (\`HOCUSPOCUS_INTERNAL_HTTP_PORT\`, default 4003), not on this server, and are not reachable at any \`servers\` URL.`
 
@@ -58,12 +58,7 @@ const TAGS = [
     name: 'Email',
     description: 'Internal triggers and webhooks. Normal delivery runs through pgmq, not HTTP.'
   },
-  { name: 'Admin', description: 'Requires a Supabase JWT whose subject has an `admin_users` row.' },
-  {
-    name: 'Push',
-    description:
-      'No HTTP endpoint — registration is a Supabase RPC. Only the health probe is listed.'
-  }
+  { name: 'Admin', description: 'Requires a Supabase JWT whose subject has an `admin_users` row.' }
 ]
 
 export const buildOpenApiDocument = (deps: BuildDeps): OpenApiDocument => ({

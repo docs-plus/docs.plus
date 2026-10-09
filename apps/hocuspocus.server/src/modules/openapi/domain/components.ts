@@ -144,16 +144,6 @@ const overallHealth: JsonSchema = {
   required: ['status', 'timestamp', 'services']
 }
 
-const pushHealth: JsonSchema = {
-  type: 'object',
-  description: 'Push gateway status. 200 when VAPID is configured and the queue is connected.',
-  properties: {
-    vapid_configured: { type: 'boolean' },
-    queue_connected: { type: 'boolean' }
-  },
-  additionalProperties: true
-}
-
 /** Row shape is a Prisma projection plus a joined owner profile — not modelled field-by-field. */
 const documentSummary: JsonSchema = {
   type: 'object',
@@ -287,7 +277,6 @@ export const components: OpenApiComponents = {
     RateLimitError: rateLimitError,
     HealthCheckResult: healthCheckResult,
     OverallHealth: overallHealth,
-    PushHealth: pushHealth,
     DocumentSummary: documentSummary,
     DocumentListPage: documentListPage,
     TiptapDoc: toJsonSchema(tiptapDocSchema),

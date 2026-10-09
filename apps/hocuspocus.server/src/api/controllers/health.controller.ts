@@ -1,4 +1,3 @@
-import { pushGateway } from '../../lib/push'
 import type { HealthCheckResult } from '../../types'
 import type { AppContext } from '../../types/hono.types'
 import * as healthService from '../services/health.service'
@@ -42,13 +41,6 @@ export const checkRedisHealth = async (c: AppContext): Promise<Response> => {
 export const checkSupabaseHealth = async (c: AppContext): Promise<Response> => {
   const result = await healthService.checkSupabaseHealth()
   const statusCode = result.status === 'healthy' ? 200 : 503
-
-  return c.json(result, statusCode)
-}
-
-export const checkPushHealth = async (c: AppContext): Promise<Response> => {
-  const result = await pushGateway.getHealth()
-  const statusCode = result.vapid_configured && result.queue_connected ? 200 : 503
 
   return c.json(result, statusCode)
 }

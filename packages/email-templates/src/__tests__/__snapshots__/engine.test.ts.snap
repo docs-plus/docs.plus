@@ -614,7 +614,7 @@ exports[`renderUnsubscribePage snapshot — success 1`] = `
       flex-direction: column;
       gap: 16px;
     }
-    a:focus-visible {
+    a:focus-visible, button:focus-visible {
       outline: 2px solid #1a73e8;
       outline-offset: 2px;
     }
@@ -674,6 +674,12 @@ exports[`renderUnsubscribePage snapshot — success 1`] = `
       font-size: 14px;
       font-weight: 600;
     }
+    button.primary {
+      width: 100%;
+      border: 0;
+      font-family: inherit;
+      cursor: pointer;
+    }
     .strip {
       display: flex;
       flex-wrap: wrap;
@@ -707,7 +713,7 @@ exports[`renderUnsubscribePage snapshot — success 1`] = `
       .message, .strip { color: #a4a7ae; }
       .primary { background: #6ea8ff; color: #0b1220; }
       .quiet { color: #6ea8ff; }
-      a:focus-visible { outline-color: #6ea8ff; }
+      a:focus-visible, button:focus-visible { outline-color: #6ea8ff; }
     }
   </style>
 </head>
@@ -724,7 +730,9 @@ exports[`renderUnsubscribePage snapshot — success 1`] = `
             <h1 id="unsubscribe-title">Unsubscribed</h1>
             <p class="message">You have been unsubscribed.</p>
           </div>
+          
           <a class="primary" href="https://docs.plus/#settings?tab=notifications">Manage preferences</a>
+          
         </div>
         
         <div class="strip">
@@ -733,7 +741,10 @@ exports[`renderUnsubscribePage snapshot — success 1`] = `
           
           
           <nav aria-label="Other pages">
+            
+            
             <a class="quiet" href="https://docs.plus">Go to docs.plus</a>
+            
           </nav>
           
         </div>
@@ -776,7 +787,7 @@ exports[`renderUnsubscribePage snapshot — error 1`] = `
       flex-direction: column;
       gap: 16px;
     }
-    a:focus-visible {
+    a:focus-visible, button:focus-visible {
       outline: 2px solid #1a73e8;
       outline-offset: 2px;
     }
@@ -836,6 +847,12 @@ exports[`renderUnsubscribePage snapshot — error 1`] = `
       font-size: 14px;
       font-weight: 600;
     }
+    button.primary {
+      width: 100%;
+      border: 0;
+      font-family: inherit;
+      cursor: pointer;
+    }
     .strip {
       display: flex;
       flex-wrap: wrap;
@@ -869,7 +886,7 @@ exports[`renderUnsubscribePage snapshot — error 1`] = `
       .message, .strip { color: #a4a7ae; }
       .primary { background: #6ea8ff; color: #0b1220; }
       .quiet { color: #6ea8ff; }
-      a:focus-visible { outline-color: #6ea8ff; }
+      a:focus-visible, button:focus-visible { outline-color: #6ea8ff; }
     }
   </style>
 </head>
@@ -886,7 +903,9 @@ exports[`renderUnsubscribePage snapshot — error 1`] = `
             <h1 id="unsubscribe-title">Invalid Link</h1>
             <p class="message">The link is expired.</p>
           </div>
+          
           <a class="primary" href="https://docs.plus/#settings?tab=notifications">Manage preferences</a>
+          
         </div>
         
       </article>
