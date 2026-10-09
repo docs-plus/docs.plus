@@ -53,10 +53,28 @@ export default function PrivacyPage() {
       <LegalSection title="Who we share with">
         <ul className="list-disc space-y-2 pl-5">
           <li>Supabase runs sign-in and stores accounts.</li>
+          <li>Another email provider sends sign-in links for Supabase.</li>
           <li>Google runs sign-in and, when configured, Analytics.</li>
-          <li>Our email provider sends sign-in links and notification mail.</li>
+          <li>Resend, our email provider, sends notification and digest mail.</li>
         </ul>
         <p>We do not sell personal data.</p>
+      </LegalSection>
+
+      <LegalSection title="Where mail data goes">
+        <p>
+          Resend sends notification and digest mail from Ireland. It stores your email address, each
+          mail, and the mail logs in the United States.
+        </p>
+        <p>
+          Notification and digest mail include short extracts of document and chat text. Resend
+          stores those extracts with the mail.
+        </p>
+        <p>
+          Resend's data processing agreement covers the transfer to the United States from the
+          United Kingdom and the European Union. It uses Standard Contractual Clauses, with the UK
+          Addendum for United Kingdom data. It also states that Resend complies with the EU-US Data
+          Privacy Framework and its UK Extension.
+        </p>
       </LegalSection>
 
       <LegalSection title="Connected AI apps">
@@ -92,6 +110,7 @@ export default function PrivacyPage() {
       <LegalSection title="How long we keep data">
         <p>We keep account and document data while you use the service.</p>
         <p>A deleted document stays for 30 days. A purge then removes it.</p>
+        <p>Resend keeps sent mail and the mail logs for 30 days.</p>
       </LegalSection>
 
       <LegalSection title="Your choices">
