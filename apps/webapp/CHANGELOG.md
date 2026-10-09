@@ -574,6 +574,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   `channel_avatars` buckets accept JPEG, PNG, GIF and WebP only. Settings
   converts other images, or shows an error
   ([#431](https://github.com/docs-plus/docs.plus/issues/431)).
+- **The profile read no longer asks for online status or last-active time.**
+  The status heartbeat still writes `status` and does not read it back.
+  Deploy this at least 24 hours before the Supabase migration. Otherwise, an
+  older open tab fails to sign in
+  ([#434](https://github.com/docs-plus/docs.plus/issues/434)).
 
 ### Removed
 

@@ -58,7 +58,6 @@ export type DocumentOwner = {
   display_name: string | null
   avatar_url: string | null
   avatar_updated_at: string | null
-  status: string | null
 }
 
 export type DocumentGridPreview = {

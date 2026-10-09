@@ -12,13 +12,12 @@ export interface ProfileLite {
   avatar_updated_at: string | null
   full_name: string | null
   display_name: string | null
-  status: string | null
 }
 
 export type GetOwnerProfiles = (userIds: string[]) => Promise<ProfileLite[]>
 
-/** The exact column list every attribution surface reads. */
-const OWNER_PROFILE_COLUMNS = 'id, avatar_url, avatar_updated_at, full_name, display_name, status'
+/** The exact column list every attribution surface reads. Never add status or online_at (#434). */
+const OWNER_PROFILE_COLUMNS = 'id, avatar_url, avatar_updated_at, full_name, display_name'
 
 /**
  * Contractually fail-soft: `[]` rather than a throw. Attribution decorates a

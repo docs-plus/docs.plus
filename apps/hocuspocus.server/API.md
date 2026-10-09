@@ -476,8 +476,7 @@ Metadata for the document's versions, newest first. No snapshot bytes — read t
           "avatar_url": "https://example.test/ada.png",
           "avatar_updated_at": "2026-07-01T09:12:00.000Z",
           "full_name": "Ada Lovelace",
-          "display_name": "Ada",
-          "status": "online"
+          "display_name": "Ada"
         },
         "contributors": [],
         "createdAt": "2026-07-25T13:58:40.117Z"
@@ -739,8 +738,7 @@ It reads Postgres in the REST process and never opens the live document. Neither
           "avatar_url": "https://example.test/ada.png",
           "avatar_updated_at": "2026-07-01T09:12:00.000Z",
           "full_name": "Ada Lovelace",
-          "display_name": "Ada",
-          "status": "online"
+          "display_name": "Ada"
         }
       ]
     }

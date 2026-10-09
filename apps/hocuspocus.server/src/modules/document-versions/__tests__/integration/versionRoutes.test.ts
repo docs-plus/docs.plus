@@ -49,8 +49,7 @@ const profile = (id: string): ProfileLite => ({
   avatar_url: null,
   avatar_updated_at: null,
   full_name: `Full ${id}`,
-  display_name: `Display ${id}`,
-  status: 'online'
+  display_name: `Display ${id}`
 })
 
 interface Harness {

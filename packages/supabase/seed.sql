@@ -9764,10 +9764,9 @@ GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
 -- =====================================================================
 
 -- 2a. users — readable by every authenticated user (mention picker, sender
---     info, avatars). Column-level GRANT excludes `email` from both anon
---     (in 29-lint-hardening.sql §3) and authenticated (below), so the row
---     policy stays `USING (true)` while email never leaves SECURITY DEFINER
---     RPCs that legitimately need it (e.g. create_direct_message_channel).
+--     info, avatars). Column-level GRANT excludes `email`, `status` and
+--     `online_at` from both anon (29-lint-hardening.sql §3) and authenticated
+--     (below), so the row policy stays `USING (true)`. Definer code reads them (#434).
 
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS users_select       ON public.users;
@@ -9782,12 +9781,12 @@ CREATE POLICY users_self_update ON public.users
   USING      (id = (select auth.uid()))
   WITH CHECK (id = (select auth.uid()));
 
--- Mirror the anon column whitelist for authenticated. `email` is excluded;
--- DEFINER RPCs bypass column grants so legitimate readers are unaffected.
+-- Mirror the anon column whitelist for authenticated. `email`, `status` and
+-- `online_at` are excluded; DEFINER RPCs bypass column grants.
 REVOKE SELECT ON public.users FROM authenticated;
 GRANT SELECT (
     id, username, full_name, display_name, avatar_url, avatar_updated_at,
-    profile_data, status, online_at, created_at, updated_at, deleted_at
+    profile_data, created_at, updated_at, deleted_at
 ) ON public.users TO authenticated;
 
 -- Mirror the SELECT whitelist for UPDATE so PostgREST cannot accept a PATCH
@@ -10227,12 +10226,8 @@ drop publication if exists supabase_realtime;
 -- Create a new publication named 'supabase_realtime'.
 -- 31-connected-app-token-gate.sql gates each table listed here. Adding a table
 -- later needs that gate block in the same migration.
--- `users` is in the publication because the admin dashboard subscribes to
--- postgres_changes on it (packages/admin-dashboard/src/pages/users.tsx).
--- Webapp consumers use Realtime Presence (channel.track) instead, so the
--- per-cron-tick fanout cost only hits admin clients.
+-- `users` is not published: its rows carry status and online_at (#434).
 create publication supabase_realtime for table
-  public.users,                 -- admin-dashboard users page
   public.channels,              -- Track changes in the 'channels' table
   public.messages,              -- Track changes in the 'messages' table
   public.channel_members,       -- Track changes in the 'channel_members' table
@@ -11305,10 +11300,10 @@ GRANT SELECT ON public.channel_message_counts TO anon;
 GRANT SELECT ON public.pinned_messages        TO anon;
 GRANT SELECT ON public.workspaces             TO anon;
 
--- users: column-level only — `email` is excluded from anon visibility.
+-- users: column-level only — `email`, `status` and `online_at` stay hidden from anon (#434).
 GRANT SELECT (
     id, username, full_name, display_name, avatar_url, avatar_updated_at,
-    profile_data, status, online_at, created_at, updated_at, deleted_at
+    profile_data, created_at, updated_at, deleted_at
 ) ON public.users TO anon;
 
 -- channel_members + message_bookmarks: the read RPCs join these to

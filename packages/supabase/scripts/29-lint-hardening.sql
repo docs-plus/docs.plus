@@ -87,10 +87,10 @@ GRANT SELECT ON public.channel_message_counts TO anon;
 GRANT SELECT ON public.pinned_messages        TO anon;
 GRANT SELECT ON public.workspaces             TO anon;
 
--- users: column-level only — `email` is excluded from anon visibility.
+-- users: column-level only — `email`, `status` and `online_at` stay hidden from anon (#434).
 GRANT SELECT (
     id, username, full_name, display_name, avatar_url, avatar_updated_at,
-    profile_data, status, online_at, created_at, updated_at, deleted_at
+    profile_data, created_at, updated_at, deleted_at
 ) ON public.users TO anon;
 
 -- channel_members + message_bookmarks: the read RPCs join these to

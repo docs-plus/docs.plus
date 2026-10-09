@@ -95,8 +95,7 @@ const harness = (options: { rows?: Row[]; missing?: boolean; profilesThrow?: boo
             avatar_url: null,
             avatar_updated_at: null,
             full_name: null,
-            display_name: id,
-            status: null
+            display_name: id
           }))
         }
       }),

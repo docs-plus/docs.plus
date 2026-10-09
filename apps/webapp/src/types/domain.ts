@@ -36,10 +36,11 @@ export type TypingIndicatorPayload = {
   user: { id: string }
 }
 
-// No client can read notification_preferences; get_notification_preferences() serves the owner.
+// No client can read notification_preferences, status or online_at (#434).
+// `status` stays in the type because the client sets it locally.
 export type Profile = Omit<
   Database['public']['Tables']['users']['Row'],
-  'profile_data' | 'notification_preferences'
+  'profile_data' | 'notification_preferences' | 'online_at'
 > & {
   profile_data?: ProfileData
   channelId?: string | null

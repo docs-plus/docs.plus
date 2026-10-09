@@ -41,8 +41,7 @@ describe('createComputeDocumentChanges', () => {
         avatar_url: null,
         avatar_updated_at: null,
         full_name: null,
-        display_name: null,
-        status: null
+        display_name: null
       })
       const second = await summaryOf()
       expect(second.triggers).toEqual([])

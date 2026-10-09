@@ -510,8 +510,7 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
           id: ownerProfile.id,
           avatar_url: ownerProfile.avatar_url,
           avatar_updated_at: ownerProfile.avatar_updated_at,
-          display_name: ownerProfile.display_name || ownerProfile.full_name,
-          status: ownerProfile.status
+          display_name: ownerProfile.display_name || ownerProfile.full_name
         }
       }
     })

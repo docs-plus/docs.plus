@@ -28,6 +28,14 @@ This file is the operator and API changelog. The pad product lives in the [root 
 Supabase migration `20261009120400_admin_revoke_admin` before this server
 ships. Without it, every admin revoke answers `500`. Then check that only
 `service_role` can run `public.admin_revoke_admin(uuid)`.
+**User status columns ([#434](https://github.com/docs-plus/docs.plus/issues/434)).** Ship the
+webapp, this server and the admin dashboard first. Wait at least 24 hours,
+then apply the Supabase migration `20261009120500_hide_user_presence_columns`
+by hand. An older webapp tab still selects `status`, so an early migration
+breaks its sign-in and its heartbeat. After the push, check that
+`has_column_privilege` is false for `anon` and `authenticated` on
+`users.status` and `users.online_at`. Also check that `pg_publication_tables`
+has no `users` row.
 
 **Media objects ([#408](https://github.com/docs-plus/docs.plus/issues/408)).** New S3 uploads are
 private. Objects written before this release stay `public-read` until you
@@ -641,6 +649,11 @@ SMTP_PASS=...
   links. It sets the username to `deleted_` plus the first 12 hex characters
   of the id, and removes the user's `user_avatars` objects. Messages keep their
   author, who shows the placeholder name and the default avatar.
+- **Owner and author profiles no longer carry `status`
+  ([#434](https://github.com/docs-plus/docs.plus/issues/434)).** The
+  `ownerProfile` on `GET /api/documents/:docName`, the documents list `owner`,
+  and the `history.list` profiles leave it out. Anyone could read the first of
+  these without signing in. No client read the field.
 
 ### Removed
 

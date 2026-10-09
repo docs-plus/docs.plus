@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
-import { LuCircle, LuFileText, LuRadio, LuShieldCheck, LuShieldOff } from 'react-icons/lu'
+import { LuCircle, LuFileText, LuShieldCheck, LuShieldOff } from 'react-icons/lu'
 
 import { SectionCard } from '@/components/cards/SectionCard'
 import { AdminLayout } from '@/components/layout/AdminLayout'
@@ -12,7 +12,6 @@ import { DataTable } from '@/components/tables/DataTable'
 import { Avatar } from '@/components/ui/Avatar'
 import { NotificationBadges } from '@/components/ui/NotificationBadges'
 import { SearchInput } from '@/components/ui/SearchInput'
-import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { useTableParams } from '@/hooks/useTableParams'
 import { supabase } from '@/lib/supabase'
 import {
@@ -104,26 +103,6 @@ export default function UsersPage() {
       }
     })
   }, [data?.data, docCounts, notifSubs, adminIdSet])
-
-  // Real-time subscription to users table. Webapp presence/status writes fire
-  // often, so debounce the refetch to collapse bursts into one query against
-  // the shared DB instead of one per event.
-  const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const handleRealtimeChange = useCallback(() => {
-    if (refetchTimer.current) clearTimeout(refetchTimer.current)
-    refetchTimer.current = setTimeout(() => refetch(), 1500)
-  }, [refetch])
-  useEffect(
-    () => () => {
-      if (refetchTimer.current) clearTimeout(refetchTimer.current)
-    },
-    []
-  )
-
-  useRealtimeSubscription({
-    table: 'users',
-    onChange: handleRealtimeChange
-  })
 
   const handleExport = () => {
     if (!usersWithExtras.length) {
@@ -300,14 +279,7 @@ export default function UsersPage() {
       <AdminLayout>
         <Header
           title="Users"
-          subtitle={
-            <span className="flex items-center gap-2">
-              {data?.total || 0} total users
-              <span className="badge badge-success badge-xs gap-1">
-                <LuRadio className="h-3 w-3" /> Live
-              </span>
-            </span>
-          }
+          subtitle={`${data?.total || 0} total users`}
           onRefresh={() => refetch()}
           refreshing={isRefetching}
           onExport={handleExport}

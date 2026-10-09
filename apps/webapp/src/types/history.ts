@@ -22,7 +22,6 @@ export interface HistoryProfile {
   avatar_updated_at: string | null
   full_name: string | null
   display_name: string | null
-  status: string | null
 }
 
 /** Uid -> profile. Authors repeat across a page, so it ships once per response. */
