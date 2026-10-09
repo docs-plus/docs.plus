@@ -1,7 +1,7 @@
 import type { ChatroomVariant } from '@components/chatroom/types/chatroom.types'
 import { twMerge } from '@utils/twMerge'
 
-import { AccentBlockSkeleton, AccentPanelSkeleton } from './ChatroomFeedMediaSkeleton'
+import { AccentPanelSkeleton } from './ChatroomFeedMediaSkeleton'
 
 type Props = {
   variant?: keyof ChatroomVariant
@@ -31,7 +31,7 @@ function TextLinesSkeleton({
         <div
           key={index}
           className={twMerge(
-            'skeleton rounded-field h-3',
+            'skeleton h-3',
             align === 'end' ? 'w-28' : (widths[index] ?? 'w-[45%]')
           )}
         />
@@ -46,30 +46,23 @@ function SkeletonBody({
   align = 'start',
   panelClassName
 }: {
-  accent?: 'block' | 'panel'
+  accent?: 'panel'
   lines?: number
   align?: 'start' | 'end'
   panelClassName?: string
 }) {
   if (accent === 'panel') return <AccentPanelSkeleton className={panelClassName} />
-  if (accent === 'block') return <AccentBlockSkeleton />
   return <TextLinesSkeleton lines={lines} align={align} />
 }
 
-function DesktopGroupStartSkeleton({
-  lines = 2,
-  accent
-}: {
-  lines?: number
-  accent?: 'block' | 'panel'
-}) {
+function DesktopGroupStartSkeleton({ lines = 2, accent }: { lines?: number; accent?: 'panel' }) {
   return (
     <div className="flex w-full items-start gap-1.5 px-2.5 py-1.5" aria-hidden>
       <div className="skeleton size-8 shrink-0 rounded-full" />
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex items-center gap-1.5">
-          <div className="skeleton rounded-field h-2.5 w-16" />
-          <div className="skeleton rounded-field h-2 w-7" />
+          <div className="skeleton h-2.5 w-16" />
+          <div className="skeleton h-2 w-7" />
         </div>
         <SkeletonBody accent={accent} lines={lines} />
       </div>
@@ -81,7 +74,7 @@ function DesktopCompactSkeleton() {
   return (
     <div className="flex w-full items-start gap-1.5 px-2.5 py-1" aria-hidden>
       <div className="w-8 shrink-0" aria-hidden />
-      <div className="skeleton rounded-field h-3 w-[62%]" />
+      <div className="skeleton h-3 w-[62%]" />
     </div>
   )
 }
@@ -91,7 +84,7 @@ function MobileIncomingSkeleton({
   accent
 }: {
   groupStart?: boolean
-  accent?: 'block' | 'panel'
+  accent?: 'panel'
 }) {
   return (
     <div className={twMerge('flex w-full gap-2 px-2', groupStart ? 'mt-1' : 'mt-0.5')} aria-hidden>
@@ -101,7 +94,7 @@ function MobileIncomingSkeleton({
         <span className="size-8 shrink-0" aria-hidden />
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-px">
-        {groupStart && <div className="skeleton rounded-field h-2.5 w-14" />}
+        {groupStart && <div className="skeleton h-2.5 w-14" />}
         <SkeletonBody
           accent={accent}
           lines={groupStart ? 2 : 1}
@@ -126,9 +119,9 @@ type RowSpec =
   | { kind: 'day' }
   | { kind: 'desktop-start'; lines?: number }
   | { kind: 'desktop-compact' }
-  | { kind: 'desktop-accent'; accent: 'block' | 'panel' }
+  | { kind: 'desktop-accent'; accent: 'panel' }
   | { kind: 'mobile-in'; groupStart?: boolean }
-  | { kind: 'mobile-accent'; accent: 'block' | 'panel' }
+  | { kind: 'mobile-accent'; accent: 'panel' }
   | { kind: 'mobile-out'; lines?: number }
 
 const DESKTOP_ROWS: RowSpec[] = [
@@ -146,7 +139,6 @@ const MOBILE_ROWS: RowSpec[] = [
   { kind: 'mobile-in', groupStart: true },
   { kind: 'mobile-in', groupStart: false },
   { kind: 'mobile-out', lines: 2 },
-  { kind: 'mobile-accent', accent: 'block' },
   { kind: 'mobile-in', groupStart: true },
   { kind: 'mobile-in', groupStart: false },
   { kind: 'mobile-out', lines: 1 },

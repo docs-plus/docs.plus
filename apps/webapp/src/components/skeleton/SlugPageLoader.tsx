@@ -60,7 +60,11 @@ const DesktopSkeleton = ({ tocWidth, isAuthed }: { tocWidth: number; isAuthed: b
             <div className="skeleton size-12 rounded-full" />
           </>
         ) : (
-          <div className="skeleton rounded-field h-10 w-20" />
+          <>
+            <div className="skeleton size-10 rounded-full" />
+            <div className="skeleton size-10 rounded-full" />
+            <div className="skeleton rounded-field h-10 w-20" />
+          </>
         )}
       </div>
     </header>
@@ -121,7 +125,7 @@ export const SlugPageLoader = ({
   const tocWidth = usePersistedTocWidth()
 
   return (
-    <div className="bg-base-200 flex h-dvh w-full flex-col overflow-hidden">
+    <div className="bg-base-100 flex h-dvh w-full flex-col overflow-hidden">
       <div aria-hidden="true" className="flex h-full min-h-0 flex-1 flex-col">
         {isMobile ? (
           <MobileSkeleton isAuthed={isAuthed} />

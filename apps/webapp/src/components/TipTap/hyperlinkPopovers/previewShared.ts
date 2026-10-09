@@ -138,8 +138,11 @@ export const createMetadataContent = (data: MetadataResponse | null, href: strin
 
 const createLoadingSkeleton = (): HTMLElement => {
   const skeleton = createHTMLElement('div', { className: 'metadata-content metadata-loading' })
-  const favicon = createHTMLElement('div', { className: 'skeleton-favicon' })
-  const bar = createHTMLElement('div', { className: 'skeleton-bar' })
+  const favicon = createHTMLElement('div', {
+    className: 'skeleton size-[18px] shrink-0 rounded-full'
+  })
+  // The 200px `.metadata` row does not grow, so an empty flex-1 bar needs its own floor.
+  const bar = createHTMLElement('div', { className: 'skeleton h-3 min-w-20 flex-1' })
   skeleton.append(favicon, bar)
   return skeleton
 }

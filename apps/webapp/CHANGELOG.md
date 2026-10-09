@@ -360,6 +360,18 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- **The pad loading skeleton matches the loaded pad.** The document bones stay
+  inside the sheet. The outline skeleton draws thin title lines on the
+  real row positions, with nest rails, instead of filled slabs. The signed-out
+  header shows History and Theme bones. On a phone, the page floor keeps its
+  colour through the load (#463).
+
+- **Chat, panels and popovers share one skeleton look.** Text bones are plain
+  lines, not pills. The tab track bones show in every theme. The Filter,
+  Document settings and Insert media loaders open with the real panel header,
+  so the header does not move when the panel loads. The link preview loader
+  uses the house skeleton (#464).
+
 - **The Add link form takes your typing at once.** After you select text and
   press the toolbar link button, the URL field has focus, so the first letter
   you type lands there (#366).

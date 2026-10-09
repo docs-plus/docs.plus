@@ -1,20 +1,6 @@
 import { twMerge } from '@utils/twMerge'
 
-/** Pale accent block — doc-style skeleton hint for rich content (media, embeds). */
-export function AccentBlockSkeleton({ className }: { className?: string }) {
-  return (
-    <div
-      className={twMerge(
-        'skeleton rounded-field h-10 w-full max-w-[12rem]',
-        'bg-[color-mix(in_oklch,var(--color-info)_20%,var(--color-base-300))]',
-        className
-      )}
-      aria-hidden
-    />
-  )
-}
-
-/** Wider accent panel — single image / gallery placeholder. */
+/** Accent panel that stands in for a single image or a gallery. */
 export function AccentPanelSkeleton({ className }: { className?: string }) {
   return (
     <div

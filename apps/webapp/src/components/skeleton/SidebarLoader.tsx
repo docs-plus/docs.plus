@@ -1,16 +1,10 @@
+import { PanelTabBarSkeleton } from '@components/PanelSurfaceSkeleton'
+
 /** Body bones for HistorySidebar. The sidebar renders them inside its real frame and header. */
 const SidebarLoader = ({ tabs = false }: { tabs?: boolean }) => {
   return (
     <div aria-hidden className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      {/* Mirrors the PanelTabBar track, so the tabs do not jump when they load. */}
-      {tabs && (
-        <div className="shrink-0 px-4 py-2.5">
-          <div className="bg-base-300 rounded-box flex gap-1 p-1">
-            <div className="skeleton rounded-field h-9 flex-1" />
-            <div className="skeleton rounded-field h-9 flex-1" />
-          </div>
-        </div>
-      )}
+      {tabs && <PanelTabBarSkeleton tabCount={2} />}
 
       {[1, 2, 3].map((day) => (
         <div key={day}>

@@ -422,9 +422,9 @@ function mountSectionPreview(host: HTMLElement, headingId: string, fallback: str
 function PreviewSkeleton() {
   return (
     <div className="flex flex-col gap-1.5 px-2.5 py-2.5" aria-hidden>
-      <div className="skeleton rounded-field h-3.5 w-3/5" />
-      <div className="skeleton rounded-field h-2.5 w-full" />
-      <div className="skeleton rounded-field h-2.5 w-4/5" />
+      <div className="skeleton h-3.5 w-3/5" />
+      <div className="skeleton h-2.5 w-full" />
+      <div className="skeleton h-2.5 w-4/5" />
     </div>
   )
 }

@@ -45,8 +45,8 @@ export function UserReadStatus({ message }: Props) {
 
   const body = readUsersLoading ? (
     <>
-      <div className="skeleton ml-2 h-4 w-4 rounded-full p-0"></div>
-      <div className="skeleton h-4 w-10 rounded-full"></div>
+      <div className="skeleton ml-2 size-4"></div>
+      <div className="skeleton h-4 w-10"></div>
       <AvatarStackLoader size="sm" repeat={3} className="ml-auto pr-1" />
     </>
   ) : (

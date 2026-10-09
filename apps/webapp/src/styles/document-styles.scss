@@ -221,15 +221,6 @@
   }
 }
 
-@keyframes hyperlink-preview-shimmer {
-  0% {
-    background-position: -200px 0;
-  }
-  100% {
-    background-position: 200px 0;
-  }
-}
-
 .metadata-title {
   white-space: nowrap;
   overflow: hidden;
@@ -250,39 +241,6 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-
-  .skeleton-favicon,
-  .skeleton-bar {
-    background: linear-gradient(
-      90deg,
-      color-mix(in oklch, var(--color-base-content) 8%, transparent) 0%,
-      color-mix(in oklch, var(--color-base-content) 16%, transparent) 50%,
-      color-mix(in oklch, var(--color-base-content) 8%, transparent) 100%
-    );
-    background-size: 400px 100%;
-    animation: hyperlink-preview-shimmer 1.2s ease-in-out infinite;
-    border-radius: 4px;
-  }
-
-  .skeleton-favicon {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .skeleton-bar {
-    height: 12px;
-    flex: 1;
-    min-width: 80px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .skeleton-favicon,
-    .skeleton-bar {
-      animation: none;
-    }
-  }
 }
 
 .message--card__content,
