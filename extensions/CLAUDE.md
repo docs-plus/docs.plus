@@ -8,8 +8,6 @@ Moved verbatim out of the repo-root [AGENTS.md](../AGENTS.md) so it loads only w
 
 ### Standalone Extension Development
 
-- Standalone packages: `extension-hyperlink`, `extension-hypermultimedia`, `extension-indent`, `extension-inline-code`, `extension-placeholder`.
-- Shared structure: TypeScript + tsup build + `@tiptap/core` peer dep.
 - Each README is a short npm start page, and the detail lives in `docs/*.md`. The spine, the link rules and the npm-first install lines are in the [release-extensions](../.cursor/skills/release-extensions/SKILL.md) skill §Extension Package Contract.
 - `examples/vanilla` is the README Quickstart word for word, and the README "Open in StackBlitz" button runs it. `scripts/extension-preflight.sh` fails when they drift. After a Quickstart edit, run `bun scripts/check-quickstart-example.ts --write <extension-dir>`.
 - `bun run docs:gif` (hyperlink and hypermultimedia) re-records the README hero GIFs and needs `ffmpeg`. Run it with `docs:screenshots` after any popover or toolbar UI change.
@@ -61,7 +59,6 @@ Extension-internal rules (schema, commands, click handling, safety/normalization
   - `previewShared.ts::TYPE_TO_ICON` maps `SpecialUrlType` to Lucide icons from `Icons` (`@components/icons/registry`), typed `Partial<Record<SpecialUrlType, IconType>>` (`IconType` from `react-icons`).
   - It is intentionally partial so domain-catalog types such as `meet` or web `github` can be absent; favicon wins for `https://` URLs.
   - Use Lucide React components only.
-  - `createSvgIcon(Icon)` renders with `renderToStaticMarkup(createElement(Icon, { size: 20, 'aria-hidden': true }))`.
   - Do not reintroduce per-platform `Fa*` / `Si*` icons or hard-coded SVG strings.
 
 ### Composer Link Dialog And Internal Links
@@ -101,12 +98,10 @@ Extension-internal rules (schema, commands, click handling, safety/normalization
 
 - Keep pad `TipTap.tsx` and chat composer `useTiptapEditor` on the same `Indent.configure({ indentChars: '\t' })`, or widen both together.
 - Literal indent/outdent is gated by `allowedIndentContexts`, an allowlist of `{ textblock, parent }` TipTap type-name pairs.
-- Default literal indent contexts: paragraphs under `doc` and `blockquote`.
 - `[]` disables literal indent.
 - Tab / Shift-Tab order:
   1. sink/lift list (`listItem` / `taskItem` when schema supports it);
   2. table cell navigation when table extension exists;
   3. literal indent/outdent.
-- Extension priority is 25 plus delegation.
 - Other textblocks need explicit `allowedIndentContexts` rules.
 - Cypress: webapp suite under `apps/webapp/cypress/e2e/editor/indent/` plus the package clean-room suite (see §Test Orchestration And Authoring for ports and the run order); Jest lives under `extensions/extension-indent`.

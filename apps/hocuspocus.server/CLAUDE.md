@@ -86,14 +86,8 @@ Moved verbatim out of the repo-root [AGENTS.md](../../AGENTS.md). The `### Supab
 - New backend HTTP features go to the `hocuspocus.server` app (`@docs.plus/hocuspocus`, Hono), not webapp `pages/api/`. Next `pages/api` keeps only Health. See [`apps/webapp/CLAUDE.md`](../webapp/CLAUDE.md) §Next Product APIs and [`CONTEXT.md`](../../CONTEXT.md) §Product HTTP.
 - **Validate lives on the email router, not a `modules/` folder.** `POST /validate` on `src/api/email.ts`, already mounted at `/api/email`. Public. `security: [{}]`. Body schema is `validateEmailBody` in `src/schemas/email.schema.ts`. House regex, then `resolveMx`. Both answers are 200 `{ isValid }`. Do not wrap success in `ok()`. `zValidator` still uses `houseEnvelopeHook` (400). Do not use `z.string().email()`.
 - **Status is not a Hono route.** Presence writes stay on Supabase. Do not add a rest-api Status endpoint.
-- New endpoints live under `apps/hocuspocus.server/src/modules/<feature>/`:
-  - `domain/`: pure logic and pipeline stages.
-  - `http/`: controller, router, zod schema.
-  - `infra/`: Redis cache and external SDK adapters.
-  - `__tests__/`: unit and integration tests.
-- A `module.ts` exports `init({ deps }): { router }`.
+- New endpoints live under `apps/hocuspocus.server/src/modules/<feature>/`. Copy the layout of an existing module.
 - A module may additionally export an `initWs*(deps)` factory returning `{ app, … }` when a feature needs an endpoint inside the WS process. `document-content`'s `initWsApply(deps): { app }` is the precedent. Content injection must run where the live Y.Doc is, so the collaboration process serves that app on its internal listener.
-- `src/index.ts` mounts with `app.route('/api/<path>', module.init({ ... }).router)`.
 - Modules must have no top-level side effects.
 - **`document-conversion` writes no content.** Export renders the persisted head. Import returns Tiptap JSON, and the caller applies it through `PATCH /content`, the only write path that enforces the read-only lock (`hocuspocus.server.ts`). Persisting inside import routes around that lock and silently edits locked documents. It is not side-effect free: `infra/imageUpload.ts` rehosts embedded Word images to object storage, so a discarded import leaves orphans. Say "no database write, no content mutation", never "nothing is written".
 - **DOCX export takes the socket away from the converter (`@turbodocx/html-to-docx`), and the order is load-bearing.** The origin allowlist runs first (`mediaPublicBaseUrl`, in `renderDocumentHtml`). That src is ordinary pad content any editor can set, so a service-role export would otherwise fetch cloud-metadata or intranet URLs on demand. Only an origin allowlist holds, because the converter follows redirects past anything a denylist could refuse. `inlineExportImages` then fetches each survivor itself and inlines it as a `data:` URI, so the converter never opens a connection. **Origin first, bytes second — reversed, the sniff in `inlineExportImages` becomes the SSRF the origin allowlist exists to prevent.** ODT degrades images to links and Markdown never fetches, so this stays a DOCX-only concern.
@@ -117,9 +111,6 @@ Moved verbatim out of the repo-root [AGENTS.md](../../AGENTS.md). The `### Supab
   - **Do not raise the number on that evidence.** The fixture is ordinary prose. This cap defends against hostile input, and nobody has re-tested that. Raising it needs an adversarial fixture set and a maintainer ruling.
 - The link-metadata feature was migrated out of `webapp/src/pages/api/metadata.ts`; do not reintroduce server endpoints there.
 - Link-metadata vocabulary is `stage`, never `tier`.
-- Stages are cache -> oembed -> special (host handlers) -> htmlScrape -> fallback.
-- `STAGE_TIMEOUT_MS` and the base User-Agent constant live in `domain/types.ts`.
-- Host handlers live under `domain/stages/handlers/`.
 - `htmlScrape` appends `facebookexternalhit/1.1`; Reddit uses the plain base UA `DocsplusBot/1.0`. Keep them intentionally different.
 - Test files mirror source filenames one-to-one, e.g. `htmlScrape.ts` -> `htmlScrape.test.ts`.
 
@@ -216,14 +207,10 @@ Moved verbatim out of the repo-root [AGENTS.md](../../AGENTS.md). The `### Supab
 
 ### Admin API And Dashboard
 
-- Admin media-storage REST: `GET /api/admin/audit/media-storage/summary` (standalone rollup) and `GET /api/admin/audit/media-storage` (Zod `mediaStorageQuerySchema`; one fleet RPC returns `{ summary, data, pagination }`; `scope=all` exports the filtered fleet, capped at 10k rows). List/search/sort/paginate logic lives in `adminMediaStorage.service.ts`.
-- **`@docs.plus/admin-dashboard`** `/storage` uses summary + paginated list — the same `StatCard` / `DataTable` / `useTableParams` shell as the dashboard's other audit pages (e.g. `pages/documents/stale.tsx`). It talks to hocuspocus REST on `NEXT_PUBLIC_API_URL` (port 4000 locally).
-- Admin access is a `public.admin_users` row checked via the `is_admin` RPC.
 - **Any admin-only data path goes through an `is_admin()`-gated `SECURITY DEFINER` RPC or the `service_role` hocuspocus REST API — never a direct anon-key table read.** The browser client is RLS-scoped `authenticated`. Several admin tables/columns are revoked from that role (`users.email`, `push_subscriptions`, `email_queue`) or scoped to the caller's own rows. Direct reads therefore return wrong, zeroed, or `42501` results. Aggregations must paginate past the 1000-row cap.
 
 ### Production And Docker Compose
 
-- Production uses `docker-compose.prod.yml` with Traefik.
 - Dev compose backend services need `context: .` at repo root to match `Dockerfile.bun`.
 - Hocuspocus image:
   - `migration-extensions.ts` imports `@docs.plus/extension-hypermultimedia` and `@docs.plus/extension-inline-code` at runtime.

@@ -27,7 +27,6 @@ bun run migrate:nested-to-flat
 - Editor uses a flat heading schema: `heading block*`.
 - Sections are decoration-based.
 - `attrs['toc-id']` renders as `data-toc-id`.
-- Shared heading utilities live in `TipTap/extensions/shared/`: `computeSection`, `moveSection`, `canMapDecorations`, `transactionAffectsNodeType`, `matchSections`.
 - Section reorder is TOC-only via `useTocDrag` / `moveHeading` + `moveSection`. There is no in-editor heading drag handle extension.
 - Toolbar **Block style** (Title / Subtitle / H1–H6 / Normal) is outline role. Read and apply it through `TipTap/block-style/blockStyle`. Do not treat the H number as font size — that is HeadingScale. Names: [CONTEXT.md](../../../../../CONTEXT.md) §Pad outline.
 - **Clear formatting never changes Block style** (#392). One command, `ClearFormatting` in `TipTap/clearFormatting.ts`, serves the pad toolbar, the mobile format drawer, the chat composer and `Mod-\`. It removes every mark except `hyperlink` and `link`, in one transaction. A collapsed caret changes no text. It sets the stored marks to the caret's link marks only, so the next typed text is plain and a link is not split. Never call `clearNodes`, `setNode` or `lift` from it: a demoted heading loses its section, TOC row and Heading chat. The disabled state is `editor.can().clearFormatting()`. A selection or caret that holds only a link counts as nothing to clear. The pad and the composer both load it next to `ListGapJoin`.
@@ -81,7 +80,7 @@ bun run migrate:nested-to-flat
 
 ### Editor State And References
 
-- **Store discipline.** `useStore` (the main app store in `stores/useStore.ts`) combines six slices: `workspaceStore`, `usersPresence`, `history`, `notification`, `virtualKeyboardStore`, `dialogStore`. Standalone stores (`authStore`, `focusedHeadingStore`, `sheetStore`, `themeStore`, the chat-domain `useChatStore`) live alongside but are not folded in. All `useStore` calls must use leaf selectors; never select `(state) => state` or `(state) => state.settings`.
+- **Store discipline.** All `useStore` calls must use leaf selectors; never select `(state) => state` or `(state) => state.settings`.
 - **Canonical editor handle:**
 
 ```ts
@@ -89,7 +88,6 @@ useStore((state) => state.settings.editor.instance)
 ```
 
 - Registered by `useEditorAndProvider.ts` via `setWorkspaceEditorSetting('instance', editor)`.
-- Consumers: `EditorContent.tsx`, `components/toc/hooks/tocActions.ts`, the toolbar, collaboration-document features.
 - `window._editor` and `window._store` are set only by `pages/editor.tsx` (standalone playground); both are undefined on real document/collab routes. Do not add new `window._editor` readers to document-route features.
 - React mobile sheets that need an editor reference use typed `SheetDataMap` payloads (e.g. `linkPreview`, `linkEditor`), not globals.
 - **ProseMirror state pitfalls:**
