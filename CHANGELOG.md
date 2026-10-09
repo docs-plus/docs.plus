@@ -82,6 +82,17 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 - Name how many people contributed in the digest email, under the changed-since
   line. The count covers the same window as the sections beneath it. It is a
   floor, not a head count, and it is left out when nobody is named.
+- Check the email setup from the admin dashboard. The new Email setup page
+  names each problem, and shows each secret only as set or missing. It runs a
+  live connection check, and shows the newest bounce and the email dead-letter
+  queue. Send test email sends one mail to your own address, at most once a
+  minute
+  ([#423](https://github.com/docs-plus/docs.plus/issues/423)).
+- Turn email off for a reader whose mail bounces or who reports it as spam.
+  When `RESEND_WEBHOOK_SECRET` is set, Resend reports delivery events to the
+  server. A permanent bounce, a complaint or a suppression turns that person's
+  email off
+  ([#422](https://github.com/docs-plus/docs.plus/issues/422)).
 
 ### Changed
 
@@ -101,8 +112,8 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 - Fix the email footer links. View All Notifications opens the document and its
   notifications panel. Manage preferences opens Settings on Notifications. Both
   used to open a blank document named after the link, because the app has no
-  page at those addresses. Unsubscribe is unchanged and still works. The same
-  fix reaches the Manage Preferences button on the unsubscribe page.
+  page at those addresses. Unsubscribe still works. The same fix reaches the
+  Manage Preferences button on the unsubscribe page.
 
 - Say "Changed in the last day" instead of "Changed since you left" when the
   digest window has been shortened to the retention limit. The old line named a
@@ -143,6 +154,17 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   and Delete. The right-click menu, the phone long-press menu, and the ⋯ menu
   match, and Edit sits above Delete in each. A message with files keeps Copy
   Link, where it used to say Share message link.
+
+- Retry only an email failure that time can fix. A failed send is now
+  transient, permanent or operator. Only a transient failure retries, for about
+  15 minutes. The other two go to the dead-letter queue at once. A script
+  replays the entries that are safe to send again. Without `--apply`, it only
+  reports them
+  ([#421](https://github.com/docs-plus/docs.plus/issues/421)).
+
+- Name Resend as the email provider on the privacy page. A new section says
+  where mail data goes. Resend keeps sent mail and its logs for 30 days
+  ([#424](https://github.com/docs-plus/docs.plus/issues/424)).
 
 ### Fixed
 
@@ -273,6 +295,13 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 - Give every notification type a real title. A document change or an account
   notice no longer arrives as "New notification"
   ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
+- Stop a mail link scanner from unsubscribing a reader. The unsubscribe link
+  now opens a confirm page, and only its Unsubscribe button changes your mail
+  settings. A mail client's one-click unsubscribe still works
+  ([#445](https://github.com/docs-plus/docs.plus/issues/445)).
+- Notify the person that a picked chat mention names, even after a rename. A
+  typed @name still notifies whoever holds that name now
+  ([#415](https://github.com/docs-plus/docs.plus/issues/415)).
 
 ### Security
 
@@ -330,6 +359,47 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   use `POSTGRES_EXPORTER_DSN`, the connection string for a read-only
   `pg_monitor` login, in place of the app database URL
   ([#443](https://github.com/docs-plus/docs.plus/issues/443)).
+- Keep each heading chat inside its own document. A client could open, and
+  post in, a chat that another document held. A copy of a document now starts
+  with empty heading chats. A later database step also stops a client from
+  choosing a new chat's id
+  ([#402](https://github.com/docs-plus/docs.plus/issues/402)).
+- Stop serving the files of a document in Trash. Restore serves them again.
+  New uploads to S3 are private, so every read goes through the server
+  ([#408](https://github.com/docs-plus/docs.plus/issues/408)).
+- Refuse a document id that is not one plain name. A crafted id could delete
+  another document's files on local storage. A signed-in live connection now
+  closes when its sign-in token expires, and the app reconnects with a fresh
+  token
+  ([#426](https://github.com/docs-plus/docs.plus/issues/426),
+  [#430](https://github.com/docs-plus/docs.plus/issues/430)).
+- Check a ghost account again just before an admin deletes it. Revoking admin
+  access can no longer leave zero admins. A deleted account now loses its
+  public name, photo, bio and links
+  ([#412](https://github.com/docs-plus/docs.plus/issues/412),
+  [#427](https://github.com/docs-plus/docs.plus/issues/427)).
+- Stop profile photos in SVG. A public bucket shows an SVG as a page, and an
+  SVG can carry script
+  ([#431](https://github.com/docs-plus/docs.plus/issues/431)).
+- Hide each person's online status and last-active time from other people.
+  The webapp stops reading both now. The database change that removes access
+  ships at least 24 hours later
+  ([#434](https://github.com/docs-plus/docs.plus/issues/434)).
+- Take the push gateway status off the public `/health/push` route. That route
+  now answers 404. Admins read the push gateway status on
+  `GET /api/admin/push/gateway`
+  ([#433](https://github.com/docs-plus/docs.plus/issues/433)).
+- Take a live chat message's avatar from the author's profile, not from
+  presence, because any client can forge presence. A pasted node or a chat row
+  can no longer crash a document page. A new document link now comes from a
+  cryptographic random source
+  ([#428](https://github.com/docs-plus/docs.plus/issues/428),
+  [#436](https://github.com/docs-plus/docs.plus/issues/436),
+  [#442](https://github.com/docs-plus/docs.plus/issues/442)).
+- Run production deploys only from `main`. When the host `.env` sets
+  `TRAEFIK_CONFIG_DIR`, Traefik reads a copy that the deploy writes, so a
+  runner checkout no longer changes live routing
+  ([#437](https://github.com/docs-plus/docs.plus/issues/437)).
 
 ### Removed
 

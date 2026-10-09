@@ -95,15 +95,28 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **rest-api** — the Hono HTTP process on port 4000. The browser base is `NEXT_PUBLIC_RESTAPI_URL`, which already ends in `/api`.
 - **Health** — Next `GET /api/health` only (`apps/webapp/src/pages/api/health.ts`). Do not retarget Traefik, Docker HEALTHCHECK, compose, or CI.
 - **Validate** — `POST /api/email/validate` on rest-api. Public. Body `{ email }`. Success is `{ isValid }` on 200. House regex, then MX. Not the house envelope.
-- **Status** — writing `users.status`. Heartbeat and visibility stay `updateUser` plus RLS. Tab close is a keepalive `PATCH` to Supabase REST. Not a Hono route.
+- **Status** — writing `users.status`. Heartbeat and visibility stay `updateUser` plus RLS. Tab close is a keepalive `PATCH` to Supabase REST. The client never reads it back, and migration `20261009120500` removes the client SELECT grant once it is applied (#434). Not a Hono route.
 - **Confirm** — unused Next `GET /api/auth/callback/confirm`. Deleted. No Hono stand-in and no Pages `auth/callback` page.
   _Avoid_: validate-email, updateUserStatus
+- **Email setup** — the admin dashboard page (`apps/admin-dashboard/src/pages/email.tsx`) and its two routes, `GET /api/admin/email/setup` and `POST /api/admin/email/setup/test-send`. It shows each secret as `set` or `missing`, never its value. No route writes `.env` (#423).
+  _Avoid_: email health (the public `GET /api/email/health`, which returns `status` and `queue_connected` only)
+- **Push gateway status** — `GET /api/admin/push/gateway`, admin only. It answers 200 even when push is not configured, so read the VAPID and queue flags in the body. The public `GET /health/push` is removed and answers 404 (#433).
+  _Avoid_: push health
+
+## Email delivery
+
+- **Failure kind** — the class of a failed send: `transient` (time fixes it), `permanent` (nothing fixes it) or `operator` (a person must act). Only `transient` retries, 6 attempts over about 15 minutes. The other two go to the email dead-letter queue at once. The entry carries `failureKind` and `failureCode` (#421).
 
 ## MCP connector
 
 - **MCP connector** — the docs.plus endpoint at `/api/mcp` that a connected app calls. In Claude and ChatGPT, the entry a person adds that points at this endpoint is also called a connector.
 - **Connected app** — an AI app, such as Claude or ChatGPT, that a person connected to docs.plus through the Supabase OAuth server. Its token carries a `client_id` claim (`isConnectedAppToken` in `apps/hocuspocus.server/src/lib/jwtClaims.ts`). The docs.plus server accepts the token only at `/api/mcp`; its other REST routes and the WebSocket refuse it. It reads what the person can open, creates documents the person owns, and writes or posts only in documents the person owns. The person sees and disconnects each one in Settings > Connected apps. That tab and the consent page judge an app by its registered redirect URIs, never by its name (`apps/webapp/src/utils/appTrust.ts`). User docs: `docs/mcp/README.md`.
   _Avoid_: host (only docs/mcp/reference.md uses it, as the MCP word), client (the OAuth registration), integration
+
+## Heading chat
+
+- **Heading chat** — the chat of one heading in one document. Its `public.channels` row is keyed by `workspace_id` (the documentId) and `heading_id` (the heading's toc-id). `channels.id` is global, and a copied document keeps its source's toc-ids, so never find a heading chat by `id` alone (#402). `useHeadingChannel` is the one client resolve point.
+- **Workspace channel** — the chat of the whole document. Its row keeps `id` and `heading_id` equal to the documentId.
 
 ## Presence awareness
 
