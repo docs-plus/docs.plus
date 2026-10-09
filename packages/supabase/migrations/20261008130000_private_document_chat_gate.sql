@@ -242,7 +242,7 @@ create policy "User can upload own channel chat media" on storage.objects
         and internal.is_channel_member((storage.foldername(objects.name))[2])
     );
 
--- 6. Read cursor: a Private non-owner gets no unread recount.
+-- 6. Read cursor.
 create or replace function public.advance_read_cursor(
   p_channel_id varchar(36),
   p_up_to_seq  bigint
@@ -325,7 +325,7 @@ using (
   and internal.is_channel_member(substr(realtime.messages.topic, 15))
 );
 
--- 8. join_workspace refuses a non-owner before any write.
+-- 8. join_workspace.
 CREATE OR REPLACE FUNCTION join_workspace(
     _workspace_id VARCHAR(36)
 )
@@ -530,8 +530,7 @@ $$ LANGUAGE plpgsql;
 ALTER FUNCTION public.increment_unread_count_on_new_message() SET search_path = public;
 ALTER FUNCTION public.increment_unread_count_on_new_message() SECURITY DEFINER;
 
--- 10. Bookmark toggle reads through can_read_channel, so a non-owner cannot
--- bookmark, or probe for, a message in a Private document's chat.
+-- 10. Bookmark toggle.
 create or replace function public.toggle_message_bookmark(
     p_message_id uuid
 )

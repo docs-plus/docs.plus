@@ -6,7 +6,6 @@
 
 set local lock_timeout = '5s';
 
--- Turn RLS on for each monthly partition, and revoke every browser role.
 do $$
 declare r record;
 begin

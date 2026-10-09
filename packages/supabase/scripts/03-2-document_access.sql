@@ -1,8 +1,6 @@
 -- Table: public.document_access
--- The Private mirror: the Supabase copy of a document's Private flag and owner. Prisma holds the source.
--- Hocuspocus writes it with the service role when a request sets the Private flag,
--- and when a Private document leaves Trash (#396).
--- A missing row means the document is public. internal.can_open_document reads it.
+-- The Private mirror. Hocuspocus writes it when a request sets the Private flag
+-- and when a Private document leaves Trash (#396). internal.can_open_document reads it.
 create table if not exists public.document_access (
     document_id varchar(36) primary key, -- The documentId verbatim, the same value as channels.workspace_id.
     is_private  boolean not null,

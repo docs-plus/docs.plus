@@ -103,7 +103,7 @@ as $$
 declare
     v_jwt_role text;
 begin
-    -- Only service_role holds EXECUTE, so this guard can no longer refuse anyone.
+    -- Only service_role holds EXECUTE, so this guard is redundant.
     -- Drop it in the next migration that recreates this function.
     v_jwt_role := coalesce(current_setting('request.jwt.claim.role', true), '');
 
