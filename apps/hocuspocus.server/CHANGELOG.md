@@ -499,6 +499,15 @@ SMTP_PASS=...
   still answers `400` with its own message
   ([#413](https://github.com/docs-plus/docs.plus/issues/413)).
 
+- **REST health checks are cached, and their bodies carry no error text.**
+  Each database, Redis and Supabase check is cached for 5 s per process. A
+  `/health` flood then costs at most one call per dependency every 5 s on
+  each replica. A failed check no longer returns driver error text. The
+  server logs the reason instead. The `rest-api` container healthcheck now
+  reads `/health/database`, so a Redis stall no longer marks both replicas
+  unhealthy and drops every `/api` route
+  ([#405](https://github.com/docs-plus/docs.plus/issues/405)).
+
 - **Service-role functions refuse `public`, `anon` and `authenticated`.** The
   Supabase migration `20261006130000_close_client_write_and_grant_gaps`
   revokes them. It also moves the three `28-ghost-accounts-audit.sql`

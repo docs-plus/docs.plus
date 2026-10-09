@@ -223,6 +223,7 @@ Moved verbatim out of the repo-root [AGENTS.md](../../AGENTS.md). The `### Supab
 ### Production And Docker Compose
 
 - Dev compose backend services need `context: .` at repo root to match `Dockerfile.bun`.
+- **The `rest-api` Docker healthcheck reads `/health/database` on purpose ([#405](https://github.com/docs-plus/docs.plus/issues/405)).** Do not point it back at `/health`. Both replicas share one Redis, so a Redis stall marks both unhealthy, and Traefik then has no server for any `/api` route. Do not point it at `/health/live` either. The deploy waits on this status, so it needs a real dependency. Each REST health check is cached for 5 s per process, and a failure body carries no error text. The Settled rule against a Docker HEALTHCHECK change covers only the webapp Next probe.
 - Hocuspocus image:
   - `migration-extensions.ts` imports `@docs.plus/extension-hypermultimedia` and `@docs.plus/extension-inline-code` at runtime.
   - Root `.dockerignore` excludes `**/dist`.

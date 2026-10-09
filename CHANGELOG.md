@@ -287,6 +287,9 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   error from the shared error handler says only "Internal server error".
   A handler that sets its own message keeps it
   ([#413](https://github.com/docs-plus/docs.plus/issues/413)).
+- Keep database and Redis error text out of the REST health responses, and
+  stop a Redis stall from taking every `/api` route down
+  ([#405](https://github.com/docs-plus/docs.plus/issues/405)).
 - Show a plain, fixed message on the sign-in error page. An expired or used
   sign-in link says so. Every other error shows one general message
   ([#411](https://github.com/docs-plus/docs.plus/issues/411)).

@@ -121,7 +121,6 @@ const healthCheckResult: JsonSchema = {
   properties: {
     status: { type: 'string', enum: ['healthy', 'unhealthy', 'disabled'] },
     lastCheck: { type: 'string', format: 'date-time' },
-    error: { type: 'string' },
     metadata: { type: 'object', additionalProperties: true }
   },
   required: ['status', 'lastCheck']

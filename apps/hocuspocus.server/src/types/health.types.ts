@@ -3,7 +3,6 @@ export type HealthStatus = 'healthy' | 'unhealthy' | 'disabled'
 export interface HealthCheckResult {
   status: HealthStatus
   lastCheck: Date
-  error?: string
   metadata?: any
 }
 

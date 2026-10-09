@@ -129,7 +129,7 @@ services:
           'CMD',
           'bun',
           '-e',
-          "fetch('http://localhost:4000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+          "fetch('http://localhost:4000/health/database').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
         ]
       interval: 10s
       timeout: 5s

@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client'
 
+import { restApiLogger } from '../../lib/logger'
 import { getRedisStats } from '../../lib/redis'
 import { getAnonClient } from '../../lib/supabase'
 import type { HealthCheckResult, OverallHealthResult, RedisClient } from '../../types'
@@ -10,12 +11,28 @@ import type { HealthCheckResult, OverallHealthResult, RedisClient } from '../../
 // default is 60 s, so a slow dependency failed the probe on the clock.
 const HEALTH_CHECK_TIMEOUT_MS = 2000
 
-// postgrest-js rejects with a plain object, not an Error, so an instanceof test
-// alone dropped the real reason and reported "Unknown error" to the operator.
-const errorMessage = (error: unknown): string =>
-  error instanceof Error
-    ? error.message
-    : ((error as { message?: string } | null)?.message ?? 'Unknown error')
+// A /health flood must not cost a dependency call per request (#405). Each check
+// catches its own error and never rejects, so a cached promise never holds a rejection.
+const HEALTH_CACHE_MS = 5000
+const cache = new Map<string, { at: number; result: Promise<HealthCheckResult> }>()
+
+export const clearHealthCache = (): void => cache.clear()
+
+// Keyed on the check alone: prod hands every request the same clients.
+const memo = (check: string, run: () => Promise<HealthCheckResult>): Promise<HealthCheckResult> => {
+  const hit = cache.get(check)
+  if (hit && Date.now() - hit.at < HEALTH_CACHE_MS) return hit.result
+  const result = run()
+  cache.set(check, { at: Date.now(), result })
+  return result
+}
+
+// The body carries no driver text, because it can name a host and a port. The
+// reason goes to the log instead.
+const unhealthy = (check: string, error: unknown): HealthCheckResult => {
+  restApiLogger.warn({ err: error, check }, 'Health check failed')
+  return { status: 'unhealthy', lastCheck: new Date() }
+}
 
 const withDeadline = async <T>(work: Promise<T>, label: string): Promise<T> => {
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -36,7 +53,7 @@ const withDeadline = async <T>(work: Promise<T>, label: string): Promise<T> => {
   }
 }
 
-export const checkDatabaseHealth = async (prisma: PrismaClient): Promise<HealthCheckResult> => {
+const runDatabaseCheck = async (prisma: PrismaClient): Promise<HealthCheckResult> => {
   try {
     await withDeadline(prisma.$queryRaw`SELECT 1`, 'database')
 
@@ -45,15 +62,11 @@ export const checkDatabaseHealth = async (prisma: PrismaClient): Promise<HealthC
       lastCheck: new Date()
     }
   } catch (error) {
-    return {
-      status: 'unhealthy',
-      lastCheck: new Date(),
-      error: errorMessage(error)
-    }
+    return unhealthy('database', error)
   }
 }
 
-export const checkRedisHealth = async (redis: RedisClient | null): Promise<HealthCheckResult> => {
+const runRedisCheck = async (redis: RedisClient | null): Promise<HealthCheckResult> => {
   if (!redis) {
     return {
       status: 'disabled',
@@ -80,15 +93,11 @@ export const checkRedisHealth = async (redis: RedisClient | null): Promise<Healt
         : undefined
     }
   } catch (error) {
-    return {
-      status: 'unhealthy',
-      lastCheck: new Date(),
-      error: errorMessage(error)
-    }
+    return unhealthy('redis', error)
   }
 }
 
-export const checkSupabaseHealth = async (): Promise<HealthCheckResult> => {
+const runSupabaseCheck = async (): Promise<HealthCheckResult> => {
   try {
     // Inside the try on purpose. SUPABASE_URL is validated as a non-empty string
     // only, so a malformed value throws here, and checkAllServices below would
@@ -115,13 +124,18 @@ export const checkSupabaseHealth = async (): Promise<HealthCheckResult> => {
       lastCheck: new Date()
     }
   } catch (error) {
-    return {
-      status: 'unhealthy',
-      lastCheck: new Date(),
-      error: errorMessage(error)
-    }
+    return unhealthy('supabase', error)
   }
 }
+
+export const checkDatabaseHealth = (prisma: PrismaClient): Promise<HealthCheckResult> =>
+  memo('database', () => runDatabaseCheck(prisma))
+
+export const checkRedisHealth = (redis: RedisClient | null): Promise<HealthCheckResult> =>
+  memo('redis', () => runRedisCheck(redis))
+
+export const checkSupabaseHealth = (): Promise<HealthCheckResult> =>
+  memo('supabase', runSupabaseCheck)
 
 export const checkAllServices = async (
   prisma: PrismaClient,

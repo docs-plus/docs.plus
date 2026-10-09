@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeAll, beforeEach, mock } from 'bun:test'
 import { Hono } from 'hono'
 import healthRouter from '../../src/api/routers/health.router'
+import { clearHealthCache } from '../../src/api/services/health.service'
 import { TestServer, createMockPrisma, createMockRedis } from '../helpers/test-server'
 
 // Mutable reference updated per-test so the mock factory always reads current value.
@@ -24,6 +25,8 @@ describe('Health Check API', () => {
   })
 
   beforeEach(() => {
+    // Each test swaps the mocks, so a cached result would read the last test.
+    clearHealthCache()
     mockPrisma = createMockPrisma()
     mockRedis = createMockRedis()
     // Default: no Supabase client → checkSupabaseHealth returns 'disabled' instantly.
@@ -85,22 +88,21 @@ describe('Health Check API', () => {
 
       expect(response.status).toBe(503)
       expect(data.status).toBe('unhealthy')
-      expect(data).toHaveProperty('error')
-      expect(data.error).toBe('Database connection failed')
+      expect(data).not.toHaveProperty('error')
       expect(data).toHaveProperty('lastCheck')
     })
 
-    test('should handle non-Error exceptions', async () => {
+    test('should share one database query across calls inside the cache window', async () => {
+      let calls = 0
       mockPrisma.$queryRaw = async () => {
-        throw 'String error'
+        calls += 1
+        return [{ '?column?': 1 }]
       }
 
-      const response = await testServer.get('/health/database')
-      const data = await response.json()
+      await testServer.get('/health/database')
+      await testServer.get('/health/database')
 
-      expect(response.status).toBe(503)
-      expect(data.status).toBe('unhealthy')
-      expect(data.error).toBe('Unknown error')
+      expect(calls).toBe(1)
     })
   })
 
@@ -142,22 +144,8 @@ describe('Health Check API', () => {
 
       expect(response.status).toBe(503)
       expect(data.status).toBe('unhealthy')
-      expect(data).toHaveProperty('error')
-      expect(data.error).toBe('Redis connection refused')
+      expect(data).not.toHaveProperty('error')
       expect(data).toHaveProperty('lastCheck')
-    })
-
-    test('should handle non-Error exceptions in redis', async () => {
-      mockRedis.ping = async () => {
-        throw 'String error'
-      }
-
-      const response = await testServer.get('/health/redis')
-      const data = await response.json()
-
-      expect(response.status).toBe(503)
-      expect(data.status).toBe('unhealthy')
-      expect(data.error).toBe('Unknown error')
     })
   })
 
@@ -183,7 +171,7 @@ describe('Health Check API', () => {
 
       expect(response.status).toBe(503)
       expect(data.status).toBe('unhealthy')
-      expect(data).toHaveProperty('error')
+      expect(data).not.toHaveProperty('error')
       expect(data).toHaveProperty('lastCheck')
     })
 

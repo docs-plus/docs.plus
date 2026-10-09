@@ -75,7 +75,7 @@ The documents controller emits this envelope on error and `{ "success": true, "d
 
 ## Health
 
-Health routes are exempt from rate limiting. Each returns `200` when healthy and `503` otherwise. Source: `src/api/routers/health.router.ts`, `src/api/services/health.service.ts`.
+Health routes are exempt from rate limiting. Each returns `200` when healthy and `503` otherwise. Source: `src/api/routers/health.router.ts`, `src/api/services/health.service.ts`. Each dependency check is cached for 5 s per process, and concurrent callers share one check. A failed check returns no error text. The reason goes to the server log as a `Health check failed` warning. The `rest-api` container healthcheck reads `/health/database`, so a Redis stall does not mark the replicas unhealthy ([#405](https://github.com/docs-plus/docs.plus/issues/405)).
 
 ### GET /health
 
@@ -86,7 +86,7 @@ Aggregate check across database, Redis, and Supabase. Returns `degraded` (`503`)
   "status": "ok",
   "timestamp": "2026-06-15T12:00:00.000Z",
   "services": {
-    "database": { "status": "healthy", "lastCheck": "...", "metadata": { "pool": {} } },
+    "database": { "status": "healthy", "lastCheck": "..." },
     "redis": { "status": "healthy", "lastCheck": "...", "metadata": {} },
     "supabase": { "status": "healthy", "lastCheck": "..." }
   }
@@ -95,9 +95,13 @@ Aggregate check across database, Redis, and Supabase. Returns `degraded` (`503`)
 
 Per-service `status` is one of `healthy`, `unhealthy`, or `disabled` (Redis/Supabase when not configured).
 
+### GET /health/live
+
+Liveness only. Answers `200` while the process is up. It calls no dependency, so it never answers `503`. The Traefik probe reads it. Use it for a load-balancer check.
+
 ### GET /health/database
 
-Database connectivity (`SELECT 1`) plus pool metadata.
+Database connectivity (`SELECT 1`).
 
 ### GET /health/redis
 

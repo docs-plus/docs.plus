@@ -68,11 +68,7 @@ export const healthPaths: OpenApiPaths = {
     }
   },
   '/health/database': {
-    get: probe(
-      'getHealthDatabase',
-      'Database health',
-      'Connectivity (`SELECT 1`) plus pool metadata.'
-    )
+    get: probe('getHealthDatabase', 'Database health', 'Connectivity (`SELECT 1`).')
   },
   '/health/redis': {
     get: probe(

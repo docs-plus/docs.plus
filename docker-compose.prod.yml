@@ -240,16 +240,17 @@ services:
       - 'traefik.http.services.rest-api.loadbalancer.healthcheck.path=/health/live'
       - 'traefik.http.services.rest-api.loadbalancer.healthcheck.interval=5s'
       - 'traefik.http.services.rest-api.loadbalancer.healthcheck.timeout=3s'
-    # Dependencies, not /health/live. The deploy waits on this container status
-    # before it stops the old replicas. A port-open-only answer would then retire
-    # working replicas in favour of broken ones.
+    # This check reads the database, not /health or /health/live (#405). The deploy
+    # waits on this status, and REST cannot serve without its database. Redis stays
+    # out: both replicas share one Redis, so a stall would drop both from Traefik.
+    # REST runs without Redis, because its limiter fails open.
     healthcheck:
       test:
         [
           'CMD',
           'bun',
           '-e',
-          "fetch('http://localhost:4000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+          "fetch('http://localhost:4000/health/database').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
         ]
       interval: 10s
       timeout: 5s
