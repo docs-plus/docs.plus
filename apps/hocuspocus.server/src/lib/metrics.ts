@@ -2,6 +2,7 @@ import type { MiddlewareHandler } from 'hono'
 import { collectDefaultMetrics, Counter, Gauge, Histogram, Registry } from 'prom-client'
 
 import pkg from '../../package.json'
+import { EMAIL_QUEUE_NAME } from './email/jobIdentity'
 
 // One shared registry for every service; runtime defaults (heap, RSS, CPU,
 // event-loop lag, GC where Bun exposes them) attach here once at import time.
@@ -321,7 +322,7 @@ export const seedWsAlertSeries = (): void => {
 }
 
 export const seedWorkerAlertSeries = (): void => {
-  for (const queue of ['store-documents', 'email-notifications', 'push-notifications']) {
+  for (const queue of ['store-documents', EMAIL_QUEUE_NAME, 'push-notifications']) {
     jobsTotal.inc({ queue, status: 'failed' }, 0)
   }
 }

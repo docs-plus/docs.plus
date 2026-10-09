@@ -278,6 +278,7 @@ describe('buildDigestEmail', () => {
             {
               text: 'Bugs',
               url: 'https://docs.plus/pad?id=bugs',
+              status: 'modified' as const,
               runs: [
                 {
                   kind: 'same' as const,
@@ -336,6 +337,7 @@ describe('buildDigestEmail', () => {
             {
               text: 'Bugs',
               url: 'https://docs.plus/pad?id=bugs',
+              status: 'modified' as const,
               runs: [
                 { kind: 'added' as const, text: 'First edit' },
                 { kind: 'same' as const, text: ` stays. ${'context '.repeat(400)}` },
@@ -540,15 +542,6 @@ describe('buildDigestEmail', () => {
       const plain = buildDigestEmail(DIGEST_PARAMS)
       expect(plain.html).not.toContain(note)
       expect(plain.text).not.toContain(note)
-    })
-
-    // A job queued before the deploy carries no status. It must paint as before.
-    it('paints a section with no status with no mark and no label', () => {
-      const { status: _drop, ...old } = row({})
-      const { html, text } = withSections([old])
-      expect(html).toContain('text-decoration: none;">Intro</a>\n</p>')
-      expect(html).not.toContain('Edited')
-      expect(text).toContain('    Intro\n')
     })
   })
 

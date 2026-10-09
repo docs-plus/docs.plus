@@ -165,7 +165,7 @@ async function processDigestMessage(
 
   try {
     const built = buildDigestDocuments(payload.notifications || [], appUrl)
-    const queueIds = queueIdsOf(payload)
+    const queueIds = pgmqQueueIds(payload)
 
     // One batched read for the whole message, filtered by the audience rule
     // once. Both the rename and the block then read the same answer, so the
@@ -288,7 +288,7 @@ async function processDigestMessage(
 
     // Independent single-row updates; settle the failure marks in parallel.
     await Promise.all(
-      queueIdsOf(payload).map((queueId) =>
+      pgmqQueueIds(payload).map((queueId) =>
         updateEmailStatus(client, queueId, 'failed', String(err))
       )
     )
@@ -360,7 +360,7 @@ async function processNotificationMessage(
  */
 const EMAIL_MAX_AGE_MS = 24 * 60 * 60 * 1000
 
-const queueIdsOf = (payload: EmailQueuePayload): string[] => {
+const pgmqQueueIds = (payload: EmailQueuePayload): string[] => {
   if (payload.type === 'digest') return payload.queue_ids || []
   return payload.queue_id ? [payload.queue_id] : []
 }
@@ -381,7 +381,7 @@ const consumer = createPgmqConsumer<EmailQueuePayload>({
     const ageMs = Date.now() - Date.parse(payload.enqueued_at)
     if (ageMs > EMAIL_MAX_AGE_MS) {
       await Promise.all(
-        queueIdsOf(payload).map((id) => updateEmailStatus(client, id, 'skipped', 'stale'))
+        pgmqQueueIds(payload).map((id) => updateEmailStatus(client, id, 'skipped', 'stale'))
       )
       emailLogger.info({ msgId, ageMs, type: payload.type }, 'Stale email message skipped')
       return true

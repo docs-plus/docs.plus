@@ -33,7 +33,6 @@ export type DigestBlock =
   | { kind: 'status'; line: string }
   | { kind: 'home'; url: string }
 
-/** Equality checks only: a job queued before `status` existed paints as before. */
 function headingTags(
   section: DigestChangedSection,
   runs: DigestChangeRun[]

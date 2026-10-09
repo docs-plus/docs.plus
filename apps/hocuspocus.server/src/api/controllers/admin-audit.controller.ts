@@ -1,5 +1,6 @@
 import { Queue } from 'bullmq'
 
+import { EMAIL_DLQ_NAME } from '../../lib/email/jobIdentity'
 import { adminLogger } from '../../lib/logger'
 import { createRedisConnection } from '../../lib/redis'
 import { mediaStorageQuerySchema } from '../../schemas/admin.schema'
@@ -252,7 +253,7 @@ export async function getDeadLetterQueueContents(c: AppContext) {
     const limit = Math.min(parseInt(c.req.query('limit') || '20'), 100)
 
     pushDlq = new Queue('push-notifications-dlq', { connection })
-    emailDlq = new Queue('email-notifications-dlq', { connection })
+    emailDlq = new Queue(EMAIL_DLQ_NAME, { connection })
 
     const [pushJobs, emailJobs] = await Promise.all([
       pushDlq.getJobs(['waiting', 'delayed'], 0, limit).catch(() => []),
