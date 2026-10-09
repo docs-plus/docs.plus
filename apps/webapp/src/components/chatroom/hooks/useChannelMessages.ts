@@ -59,10 +59,8 @@ export const useChannelMessages = ({
   const mediaOnly = isMediaOnlyFeedMode(feedMode)
 
   useEffect(() => {
-    // No channel row yet: no read by any id (#402). The window is not loaded, so
-    // newestSeqRef stays null; 0 would start realtime catch-up before the first load.
+    // No channel row yet (#402): no read; the provider remounts when the row resolves.
     if (!channelId) {
-      newestSeqRef.current = null
       setHasMoreOlder(false)
       setLoading(false)
       return

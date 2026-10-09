@@ -1,14 +1,14 @@
 import { HEADING_ACTIONS_CLASSES } from '@components/TipTap/extensions/HeadingActions/types'
 import { useChatStore } from '@stores'
 import { formatCappedCount } from '@utils/formatCappedCount'
-import { resolveHeadingUnreadCount, resolveUnreadCount } from '@utils/unreadDisplay'
+import { resolveHeadingUnreadCount } from '@utils/unreadDisplay'
 
 const headingChatBtnSelector = `.${HEADING_ACTIONS_CLASSES.chatBtn}`
 
 /**
  * Write capped unread onto ProseMirror `.ha-chat-btn` widgets (CSS ::before path). Must
  * stay Decoration.widget DOM, because attribute writes are ignored by DOMObserver.
- * TOC/header use React UnreadBadge; both share `resolveUnreadCount`.
+ * TOC/header use React UnreadBadge. The TOC shares `resolveHeadingUnreadCount` with these widgets.
  */
 export function syncHeadingWidgetUnread(): void {
   const source = useChatStore.getState()
@@ -36,18 +36,4 @@ export function syncHeadingWidgetUnread(): void {
       if (!headingId) return
       updateElement(el, resolveHeadingUnreadCount(headingId, source))
     })
-
-  // A channel id is not a toc-id (#402); the row's heading_id finds its heading.
-  source.channels.forEach((channel, channelId) => {
-    const headingId = channel?.heading_id
-    if (!headingId) return
-    const headingEl = document.querySelector<HTMLElement>(
-      `[data-toc-id="${CSS.escape(headingId)}"]`
-    )
-    if (!headingEl) return
-    const el = headingEl.querySelector<HTMLElement>(
-      `${headingChatBtnSelector}:not([data-heading-id])`
-    )
-    if (el) updateElement(el, resolveUnreadCount(channelId, source))
-  })
 }

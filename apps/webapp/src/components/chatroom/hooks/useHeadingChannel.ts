@@ -40,7 +40,7 @@ const adoptChannel = (headingId: string, channelId: string | null) => {
   if (channelId) {
     store.setOrUpdateChannel(channelId, { id: channelId, heading_id: headingId } as never)
   }
-  store.setChatRoomChannel(headingId, channelId)
+  store.setOrUpdateChatRoom('channelId', channelId)
 }
 
 /**

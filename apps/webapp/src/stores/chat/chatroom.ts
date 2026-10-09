@@ -37,8 +37,6 @@ interface IChatroomStore {
   setPaneMode: (mode: ChatPaneMode) => void
   setOrUpdateChatPanelHeight: (height: number) => void
   setOrUpdateChatRoom: <K extends keyof TChatRoom>(key: K, value: TChatRoom[K]) => void
-  /** Ignored when another heading opened while the channel resolved. */
-  setChatRoomChannel: (headingId: string, channelId: string | null) => void
   switchChatRoom: (headingId: string) => void
 }
 
@@ -71,12 +69,6 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
   // A plain object, not a recipe: immer's Draft type rejects a TipTap Editor.
   setOrUpdateChatRoom: (key, value) => {
     set({ chatRoom: { ...get().chatRoom, [key]: value } })
-  },
-
-  setChatRoomChannel: (headingId, channelId) => {
-    set((state) => {
-      if (state.chatRoom.headingId === headingId) state.chatRoom.channelId = channelId
-    })
   },
 
   setOrUpdateChatPanelHeight: (height) => {

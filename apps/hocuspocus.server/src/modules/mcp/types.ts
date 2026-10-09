@@ -123,8 +123,7 @@ export interface McpUsage {
 }
 
 export interface ChatRoom {
-  /** The heading's toc-id (section_id), never the channel id (#402). */
-  id: string
+  sectionId: string
   messageCount: number
   lastActivityAt: string | null
 }

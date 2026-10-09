@@ -6,14 +6,14 @@ import PubSub from 'pubsub-js'
 
 import { pickLinkedHeading } from './pickLinkedHeading'
 
-type ChatLinkOpen = {
+type ChatLinkOptions = {
   fetchMsgsFromId?: string
   scroll2Heading?: boolean
   /** Tear down an open room on the same heading first, so it refetches at the message. */
   reopen?: boolean
 }
 
-const channelHeadingInDocument = async (
+const findChannelHeadingId = async (
   documentId: string,
   channelId: string
 ): Promise<string | null> => {
@@ -31,10 +31,13 @@ const channelHeadingInDocument = async (
  * share and sign-in return links carry a heading id. Only this document's channels and
  * headings open, so a channel of another document opens nothing.
  */
-export async function openChatFromLink(linkId: string, open: ChatLinkOpen = {}): Promise<void> {
+export async function openChatFromLink(
+  linkId: string,
+  options: ChatLinkOptions = {}
+): Promise<void> {
   const { workspaceId, editor } = useStore.getState().settings
   if (!linkId || !workspaceId) return
-  const channelHeadingId = await channelHeadingInDocument(workspaceId, linkId)
+  const channelHeadingId = await findChannelHeadingId(workspaceId, linkId)
   const instance = editor.instance
   const isLiveHeading = Boolean(instance && headingAncestry(instance, linkId).length > 0)
   const headingId = pickLinkedHeading({
@@ -46,12 +49,12 @@ export async function openChatFromLink(linkId: string, open: ChatLinkOpen = {}):
   if (!headingId || useStore.getState().settings.workspaceId !== workspaceId) return
 
   const { chatRoom, destroyChatRoom } = useChatStore.getState()
-  if (open.reopen && chatRoom.headingId === headingId) destroyChatRoom()
+  if (options.reopen && chatRoom.headingId === headingId) destroyChatRoom()
 
   PubSub.publish(CHAT_OPEN, {
     headingId,
     toggleRoom: false,
-    fetchMsgsFromId: open.fetchMsgsFromId,
-    scroll2Heading: open.scroll2Heading
+    fetchMsgsFromId: options.fetchMsgsFromId,
+    scroll2Heading: options.scroll2Heading
   })
 }

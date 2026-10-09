@@ -62,7 +62,7 @@ export const ChatroomProvider: React.FC<{
   const currentUserId = profile?.id ?? null
   const currentUsername = profile?.username ?? null
 
-  // TOC + jump chip share persisted unread via useUnreadCount.
+  // The jump chip reads persisted unread through useUnreadCount.
   const unreadCount = useUnreadCount(channelId)
 
   const anchorKind: AnchorKind = useMemo(

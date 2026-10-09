@@ -7,7 +7,6 @@ import type {
   DigestChannel,
   DigestContentChanges,
   DigestDocument,
-  DigestNotification,
   NotificationType
 } from '../../types/email.types'
 import { sanitizePlainText } from '../sanitizePlainText'
@@ -46,10 +45,7 @@ export function buildDigestDocuments(
       slug: string
       workspaceId?: string
       contentChanges?: DigestContentChanges
-      channels: Map<
-        string,
-        { name: string; id: string; heading_id?: string; notifications: DigestNotification[] }
-      >
+      channels: Map<string, Omit<DigestChannel, 'url'>>
     }
   >()
 

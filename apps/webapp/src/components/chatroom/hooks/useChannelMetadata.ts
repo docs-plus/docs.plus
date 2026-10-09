@@ -15,10 +15,9 @@ const readChannelMetadata = async (channelId: string, anchorMessageId: string | 
 }
 
 /**
- * `channelId` is the resolved row (useHeadingChannel), so this never creates one.
- * Writes wait for the workspace join, because their RLS needs it. The read after a write
- * decides membership, because joinChannel returns its refusal. Later reads skip the
- * anchor: a stale ?msg_id= stays until Close, and it would fail the read of a new row.
+ * `channelId` is the resolved row (useHeadingChannel). Writes wait for the workspace join,
+ * because their RLS needs it. The read after a write decides membership, because joinChannel
+ * returns its refusal. The read after the join skips the anchor; the first read checked it.
  */
 const syncChannel = async (
   channelId: string,

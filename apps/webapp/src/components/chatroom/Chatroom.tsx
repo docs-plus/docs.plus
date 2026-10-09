@@ -31,11 +31,10 @@ const ChatRoom = ({
 
   return (
     <div className={`chatroom chatroom--${variant} ${className}`}>
-      {/* Provider wraps the layout, not the reverse. The pane header
-          (breadcrumb + share/notify/close) consumes useChatroomContext
-          as a sibling of {children}. Nesting the provider inside left it context-less. */}
-      {/* Keyed by the heading and its resolve state, so the provider remounts when the row
-          resolves, even when the row id equals the heading id. No hook keeps '' state. */}
+      {/* Provider wraps the layout: the pane header, a sibling of {children}, reads the
+          context. Keyed by the heading and its resolve state, it remounts when the row resolves,
+          even when the row id equals the heading id. So no hook holds a value from the
+          unresolved state. */}
       <ChatroomProvider
         channelId={channelId ?? ''}
         resolveError={resolveError}

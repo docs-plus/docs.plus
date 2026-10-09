@@ -43,8 +43,8 @@ const useCheckUrlAndOpenHeadingChat = () => {
     const intent = resolveChatDeepLink(new URL(window.location.href))
     if (!intent) return
 
-    // Deps re-fire on auth transition (anon → signed in); open each link once
-    // per mount. toggleRoom:false so a re-fire can never auto-close the room.
+    // Deps re-fire on auth transition (anon → signed in). Open each link once
+    // per mount; openChatFromLink never toggles a room closed.
     const key = `${intent.linkId}:${intent.fetchMsgsFromId ?? ''}`
     if (handledRef.current === key) return
     handledRef.current = key

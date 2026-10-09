@@ -44,7 +44,7 @@ export const createChatStore = (supabase: SupabaseClient): ChatStore => ({
       .limit(MAX_ROOMS)
     if (error) throw failed('listRooms', error)
     return ((data ?? []) as RoomRow[]).map((row) => ({
-      id: row.heading_id,
+      sectionId: row.heading_id,
       messageCount: embedded(row.channel_message_counts)?.message_count ?? 0,
       lastActivityAt: row.last_activity_at
     }))
