@@ -242,7 +242,7 @@ const summarizeDlqJob = (j: Job) => ({
   failureKind: j.data.failureKind,
   failureCode: j.data.failureCode,
   to: [j.data.payload?.to].flat().filter(Boolean).map(maskEmail),
-  failedReason: j.data.failureReason ?? j.failedReason
+  failedReason: j.data.failureReason
 })
 
 export async function getDeadLetterQueueContents(c: AppContext) {

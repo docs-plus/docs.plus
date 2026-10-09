@@ -3,7 +3,14 @@ import { z } from 'zod'
 // Deep path on purpose: the module's `http/schema` is zod-only, so importing it
 // here never drags Tiptap or the transformer into this file's consumers.
 import { tiptapDocSchema } from '../modules/document-content/http/schema'
-import { documentIdField } from './hypermultimedia.schema'
+
+// Strict charset blocks path-separator / traversal sequences before the id
+// ever reaches the filesystem (defense-in-depth with the storage-root check).
+export const documentIdField = z
+  .string()
+  .min(1, 'Document ID is required')
+  .max(100)
+  .regex(/^[A-Za-z0-9_-]+$/, 'Invalid document ID')
 
 const plainTitle = (title: string): string => title.replace(/<[^>]*>/g, '')
 

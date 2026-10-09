@@ -98,8 +98,9 @@ function classifyGhost(user: AuthUser, minAgeDays: number): GhostType | null {
  * who may have signed in since. Refuse admins: a hard delete cascades past the
  * last-admin guard. Returns the refusal reason, or null. A read fault throws.
  */
-async function assertDeletableGhost(client: AdminClient, userId: string): Promise<string | null> {
+async function ghostDeleteRefusal(client: AdminClient, userId: string): Promise<string | null> {
   const { data, error } = await client.auth.admin.getUserById(userId)
+  if (error && error.status !== 404) throw error
   if (error || !data.user) return 'User not found'
   if (!classifyGhost(data.user as AuthUser, 0)) return 'User is no longer a ghost account'
 
@@ -347,7 +348,7 @@ export async function deleteGhostAccount(
 ): Promise<DeleteGhostResult> {
   // Prisma compares ownerId as text, so an uppercase id would count no documents.
   const userId = rawUserId.toLowerCase()
-  const refusal = await assertDeletableGhost(client, userId)
+  const refusal = await ghostDeleteRefusal(client, userId)
   if (refusal) {
     invalidateGhostCaches()
     return { status: 'refused', reason: refusal }
@@ -406,7 +407,7 @@ export async function bulkDeleteGhostAccounts(
   const checks = await Promise.all(
     userIds.map(async (userId: string) => {
       try {
-        const refusal = await assertDeletableGhost(client, userId)
+        const refusal = await ghostDeleteRefusal(client, userId)
         if (refusal) return { userId, error: refusal }
         const read = await getGhostDeletionImpact(client, userId)
         if ('error' in read) return { userId, error: read.error }

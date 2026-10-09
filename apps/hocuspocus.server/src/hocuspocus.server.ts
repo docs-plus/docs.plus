@@ -49,7 +49,7 @@ import * as documentContent from './modules/document-content'
 import type { RevertOutcome, VersionFailureReason, VersionOps } from './modules/document-versions'
 import * as documentVersions from './modules/document-versions'
 import { MAX_VERSION_NUMBER } from './modules/document-versions/types'
-import { documentIdField } from './schemas/hypermultimedia.schema'
+import { documentIdField } from './schemas/document.schema'
 import type { HistoryPayload } from './types/document.types'
 import type { StoreDocumentContext } from './types/queue.types'
 

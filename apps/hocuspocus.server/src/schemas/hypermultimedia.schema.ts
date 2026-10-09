@@ -1,12 +1,8 @@
 import { z } from 'zod'
 
-// Strict charset blocks path-separator / traversal sequences before the id
-// ever reaches the filesystem (defense-in-depth with the storage-root check).
-export const documentIdField = z
-  .string()
-  .min(1, 'Document ID is required')
-  .max(100)
-  .regex(/^[A-Za-z0-9_-]+$/, 'Invalid document ID')
+import { documentIdField } from './document.schema'
+
+export { documentIdField }
 
 export const documentIdParamSchema = z.object({
   documentId: documentIdField

@@ -207,15 +207,8 @@ export async function getPushStatsAdmin(c: AppContext) {
   }
 }
 
-/** Always 200 with the status, so the dashboard reads the VAPID and queue flags from the body. */
-export async function getPushGatewayAdmin(c: AppContext) {
-  try {
-    return c.json(await pushGateway.getHealth())
-  } catch (error) {
-    adminLogger.error({ err: error }, 'Failed to get push gateway status')
-    return c.json({ error: 'Failed to fetch push gateway status' }, 500)
-  }
-}
+/** Answers 200 even when push is down, so the dashboard reads the VAPID and queue flags from the body. */
+export const getPushGatewayAdmin = async (c: AppContext) => c.json(await pushGateway.getHealth())
 
 export async function getPushPipelineAdmin(c: AppContext) {
   const supabase = getSupabaseClient()
