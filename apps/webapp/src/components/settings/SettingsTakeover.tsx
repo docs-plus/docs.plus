@@ -1,6 +1,6 @@
 import { ChunkLoadFallback } from '@components/ChunkLoadFallback'
 import { Modal, ModalBody, ModalClose, ModalContent } from '@components/ui/Dialog'
-import { selectIsSignedIn, useAuthStore } from '@stores'
+import { selectSettingsMayOpen, useAuthStore } from '@stores'
 import dynamic, { type DynamicOptionsLoadingProps } from 'next/dynamic'
 import { createContext, useContext } from 'react'
 
@@ -26,10 +26,6 @@ function SettingsPanelLoading(props: DynamicOptionsLoadingProps) {
 const SettingsPanel = dynamic(() => import('./SettingsPanel'), {
   loading: SettingsPanelLoading
 })
-
-/** Settings opens on its skeleton while auth still answers. Signed out, it stays shut. */
-export const selectSettingsMayOpen: typeof selectIsSignedIn = (state) =>
-  state.loading || selectIsSignedIn(state)
 
 export interface SettingsTakeoverProps {
   open: boolean

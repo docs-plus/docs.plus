@@ -1,12 +1,9 @@
 import { PanelSurfaceShell } from '@components/PanelSurfaceShell'
-import { ToggleRowSkeleton } from '@components/settings/ToggleRowSkeleton'
 import { SheetPrimaryFooter } from '@components/SheetPrimaryFooter'
 import * as toast from '@components/toast'
-import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import Textarea from '@components/ui/Textarea'
-import { ToggleRow } from '@components/ui/ToggleRow'
 import { canEditDocumentMetadata } from '@hooks/canEditDocumentMetadata'
 import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { useDismissPanel } from '@hooks/useDismissPanel'
@@ -18,6 +15,7 @@ import { type PanelSurfaceVariant } from '@types'
 import React, { useState } from 'react'
 
 import { useDocumentFollow } from '../useDocumentFollow'
+import { DocumentAccessWell } from './DocumentAccessWell'
 import { documentSettingsRows } from './documentSettingsRows'
 import ImportExportSection from './ImportExportSection'
 import { KeywordTagsField } from './KeywordTagsField'
@@ -33,7 +31,7 @@ const DocumentSettingsPanel = ({ variant = 'popover' }: DocumentSettingsPanelPro
   const editor = useStore((state) => state.settings.editor.instance)
   const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
   const docMetadata = useStore((state) => state.settings.metadata)
-  const joinedWorkspace = useStore((state) => state.settings.joinedWorkspace)
+  const joinedWorkspace = useStore((state) => state.settings.workspaceJoin === 'joined')
   const editingLocked = useStore((state) => selectDocumentEditingLocked(state.settings, user?.id))
   const profileId = useAuthStore((state) => state.profile?.id ?? state.session?.id)
   const canEditMetadata = useStore((state) => canEditDocumentMetadata(state.settings, profileId))
@@ -48,17 +46,16 @@ const DocumentSettingsPanel = ({ variant = 'popover' }: DocumentSettingsPanelPro
     readOnly: Boolean(docMetadata.readOnly)
   })
 
-  const { isPrivate, readOnly, isOwner, showFollow } = documentSettingsRows({
+  const rows = documentSettingsRows({
     userId: user?.id,
     isAuthServiceAvailable,
     metadata: docMetadata
   })
-  const identity = isAuthServiceAvailable ? docMetadata?.ownerProfile : undefined
   const { following, canToggle, toggle, readPending } = useDocumentFollow({
     documentId: docMetadata.documentId,
     // Membership, not sign-in. join_workspace writes the row the RPC matches,
     // so a read before it lands answers null and paints a false "off".
-    enabled: showFollow && Boolean(joinedWorkspace)
+    enabled: rows.showFollow && joinedWorkspace
   })
 
   const saveDescriptionHandler = () => {
@@ -87,75 +84,21 @@ const DocumentSettingsPanel = ({ variant = 'popover' }: DocumentSettingsPanelPro
   }
 
   const softWell = (
-    <div className="bg-base-200 border-base-300 flex flex-col border-b">
-      {identity ? (
-        <div className="flex items-center gap-3 px-4 py-3">
-          <Avatar
-            face={{ ...identity, avatar_url: identity.avatar_url || identity.default_avatar_url }}
-            alt={identity.full_name}
-            clickable={false}
-            size="sm"
-            className="shrink-0"
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-base-content/70 text-meta font-semibold">Owned by</p>
-            <p className="text-base-content truncate text-sm font-medium">{identity.full_name}</p>
-          </div>
-        </div>
-      ) : null}
-      {identity ? <div className="border-base-300 border-t" /> : null}
-      <div className="flex flex-col px-4 py-2">
-        {isOwner && isAuthServiceAvailable ? (
-          <>
-            <ToggleRow
-              label="Private"
-              description="Only you can open this document."
-              checked={isPrivate}
-              disabled={isControlDisabled('isPrivate')}
-              onChange={() => setPrivate(!isPrivate)}
-              className="min-h-11 py-2 sm:min-h-0"
-            />
-            <ToggleRow
-              label="Read-only"
-              description={
-                isPrivate
-                  ? 'Not used while the document is private.'
-                  : 'Viewers can’t edit this document.'
-              }
-              checked={readOnly}
-              disabled={isControlDisabled('readOnly')}
-              onChange={() => setReadOnly(!readOnly)}
-              className="min-h-11 py-2 sm:min-h-0"
-            />
-          </>
-        ) : (
-          <div className="flex flex-wrap gap-2 py-2">
-            <span className="badge badge-sm badge-soft">{isPrivate ? 'Private' : 'Public'}</span>
-            <span className="badge badge-sm badge-soft">{readOnly ? 'Read-only' : 'Editable'}</span>
-          </div>
-        )}
-        {showFollow ? (
-          // A pending read paints "on", so the switch is a bone while the read is in flight.
-          readPending ? (
-            <ToggleRowSkeleton
-              label="Follow"
-              description="Notify me when this document changes."
-              className="min-h-11 py-2 sm:min-h-0"
-            />
-          ) : (
-            <ToggleRow
-              label="Follow"
-              description="Notify me when this document changes."
-              checked={following}
+    <DocumentAccessWell
+      rows={rows}
+      access={{ setPrivate, setReadOnly, isControlDisabled }}
+      // A pending read paints "on", so the switch is a bone while the read is in flight.
+      follow={
+        readPending
+          ? undefined
+          : {
+              checked: following,
               // `set_document_follow` is UPDATE-only, so it needs the membership row first.
-              disabled={!joinedWorkspace || !canToggle}
-              onChange={() => void toggle()}
-              className="min-h-11 py-2 sm:min-h-0"
-            />
-          )
-        ) : null}
-      </div>
-    </div>
+              disabled: !joinedWorkspace || !canToggle,
+              onChange: () => void toggle()
+            }
+      }
+    />
   )
 
   const settingsBody = (

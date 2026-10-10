@@ -35,9 +35,8 @@ export type Workspace = {
   authorizedScope?: string | null
   deviceDetect?: any
   isAuthServiceAvailable?: boolean
-  joinedWorkspace?: boolean
-  /** The join RPC failed for this user and document, so nothing waits on `joinedWorkspace`. */
-  joinWorkspaceFailed?: boolean
+  /** The workspace join RPC for this user and document. `joined` means it succeeded. */
+  workspaceJoin: 'pending' | 'joined' | 'failed'
 }
 
 export interface IWorkspaceStore {
@@ -66,8 +65,7 @@ const workspaceStore = immer<IWorkspaceStore>((set) => ({
     },
     hocuspocusProvider: undefined,
     authorizedScope: null,
-    joinedWorkspace: false,
-    joinWorkspaceFailed: false
+    workspaceJoin: 'pending'
   },
   setWorkspaceSetting: (key, value) => {
     return set((state) => ({

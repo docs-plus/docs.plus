@@ -1,7 +1,7 @@
 import { CommandJump } from '@components/commandJump/CommandJump'
 import { ownerDocumentsPrefix } from '@components/settings/documentsQueryKey'
 import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
-import { selectSettingsMayOpen, SettingsTakeover } from '@components/settings/SettingsTakeover'
+import { SettingsTakeover } from '@components/settings/SettingsTakeover'
 import type { TabType } from '@components/settings/types'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
@@ -10,7 +10,7 @@ import { TextLink } from '@components/ui/TextLink'
 import { clearOverlayHash, useHashOverlay } from '@hooks/useHashOverlay'
 import { useNavigateToDocument } from '@hooks/useNavigateToDocument'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
-import { selectIsSignedIn, useAuthStore, useStore } from '@stores'
+import { selectIsSignedIn, selectSettingsMayOpen, useAuthStore, useStore } from '@stores'
 import { useQueryClient } from '@tanstack/react-query'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { twMerge } from '@utils/twMerge'
@@ -56,12 +56,11 @@ interface HomePageProps {
 const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
   const user = useAuthStore((state) => state.profile)
   const isSignedIn = useAuthStore(selectIsSignedIn)
-  // Home is static, so auth settles after paint. The slot holds a bone until then.
-  const authLoading = useAuthStore((state) => state.loading)
   const [displayHostname, setDisplayHostname] = useState(hostname)
   const { isOpen: isProfileOpen, setIsOpen: setIsProfileOpen } = useSettingsModal()
   const [settingsTab, setSettingsTab] = useState<TabType | undefined>(undefined)
   const { overlay, settingsTab: hashSettingsTab } = useHashOverlay()
+  // Home is static, so auth settles after paint. The avatar slot holds a bone until then.
   const settingsMayOpen = useAuthStore(selectSettingsMayOpen)
   const { navigateToDocument, isLoading } = useNavigateToDocument()
   useVirtualKeyboard({ activeMq: HOME_MOBILE_MQ, clearStoreOnDisable: true })
@@ -137,7 +136,7 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
                   tooltipPlacement="bottom">
                   <Avatar face={user} clickable={false} size="lg" className="pointer-events-none" />
                 </Button>
-              ) : isSignedIn || authLoading ? (
+              ) : settingsMayOpen ? (
                 <div
                   className={twMerge(
                     'skeleton shrink-0 rounded-full',

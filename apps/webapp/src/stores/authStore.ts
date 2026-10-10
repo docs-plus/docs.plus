@@ -37,3 +37,7 @@ export const useAuthStore = createSelectors(authStore)
  */
 export const selectIsSignedIn = (state: IAuthStore): boolean =>
   state.profile?.id ? true : Boolean(state.session?.id) && !state.profileError
+
+/** Settings opens on its skeleton while auth still answers. Signed out, it stays shut. */
+export const selectSettingsMayOpen = (state: IAuthStore): boolean =>
+  state.loading || selectIsSignedIn(state)

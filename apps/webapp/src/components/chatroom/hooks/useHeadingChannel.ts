@@ -52,7 +52,7 @@ export const useHeadingChannel = (): unknown => {
   const headingId = useChatStore((state) => state.chatRoom.headingId)
   const workspaceId = useStore((state) => state.settings.metadata?.documentId)
   const uid = useAuthStore((state) => state.profile?.id) ?? ''
-  const joinedWorkspace = useStore((state) => state.settings.joinedWorkspace) ?? false
+  const joinedWorkspace = useStore((state) => state.settings.workspaceJoin === 'joined')
   const canWrite = Boolean(uid && joinedWorkspace)
   const [error, setError] = useState<unknown>(null)
 

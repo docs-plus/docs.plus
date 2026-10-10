@@ -52,7 +52,7 @@ export const useChannelMetadata = (channelId: string) => {
   const [isChannelDataLoaded, setIsChannelDataLoaded] = useState(false)
   const channelMissing = useChatStore((state) => state.chatRoom.channelId === null)
   const uid = useAuthStore((state) => state.profile?.id) ?? ''
-  const joinedWorkspace = useStore((state) => state.settings.joinedWorkspace) ?? false
+  const joinedWorkspace = useStore((state) => state.settings.workspaceJoin === 'joined')
   // The uid whose sync ran with writes allowed. '' when none did, so the late effect runs it once.
   const writeSyncUidRef = useRef('')
 
@@ -65,7 +65,7 @@ export const useChannelMetadata = (channelId: string) => {
     setError(null)
     setIsChannelDataLoaded(false)
     const loadUid = useAuthStore.getState()?.profile?.id || ''
-    const joinedAtLoad = Boolean(useStore.getState().settings.joinedWorkspace)
+    const joinedAtLoad = useStore.getState().settings.workspaceJoin === 'joined'
     writeSyncUidRef.current = joinedAtLoad ? loadUid : ''
     const startMsgId =
       useChatStore.getState().chatRoom.fetchMsgsFromId ||

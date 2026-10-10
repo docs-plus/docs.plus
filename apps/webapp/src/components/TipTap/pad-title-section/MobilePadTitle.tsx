@@ -1,5 +1,6 @@
+import { useFadeAfterFirstSync } from '@components/pages/document/hooks/useFadeAfterFirstSync'
 import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
-import { selectSettingsMayOpen, SettingsTakeover } from '@components/settings/SettingsTakeover'
+import { SettingsTakeover } from '@components/settings/SettingsTakeover'
 import type { TabType } from '@components/settings/types'
 import { indicatorDotClassName } from '@components/TipTap/toolbar/indicatorDot'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
@@ -18,6 +19,7 @@ import { releasePadEditMode } from '@services/openHeadingChatroom'
 import {
   selectInProgressBookmarkCount,
   selectIsSignedIn,
+  selectSettingsMayOpen,
   useAuthStore,
   useChatStore,
   useSheetStore,
@@ -234,6 +236,7 @@ const MobilePadTitle = () => {
   const profileId = useAuthStore((state) => state.profile?.id ?? state.session?.id)
   const canEditMetadata = useStore((state) => canEditDocumentMetadata(state.settings, profileId))
   const isSignedIn = useAuthStore(selectIsSignedIn)
+  const [fadeIn] = useFadeAfterFirstSync()
   // The read↔edit crossfade plays from the first mode swap on, never on mount. At the
   // S0→S1 swap the S0 header already sits here, so a fade would blink it.
   const [initialEditable] = useState(isEditable)
@@ -284,7 +287,12 @@ const MobilePadTitle = () => {
 
   return (
     <>
-      <header className="bg-base-100 sticky top-0 left-0 z-30 w-full">
+      {/* Opacity only — no transforms next to the sticky/visualViewport machinery. */}
+      <header
+        className={twMerge(
+          'bg-base-100 sticky top-0 left-0 z-30 w-full',
+          fadeIn && 'motion-safe:animate-[doc-content-in_220ms_ease-out_both]'
+        )}>
         <div className="border-base-300 flex min-h-12 w-full flex-col border-b px-2 py-2">
           <div className="flex w-full items-center justify-between gap-2">
             {/* Keyed so the read↔edit control swap crossfades (opacity only:
