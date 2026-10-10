@@ -1,6 +1,7 @@
 import * as toast from '@components/toast'
 import Button, { dangerGhostClassName } from '@components/ui/Button'
 import { EmptyState } from '@components/ui/EmptyState'
+import { TextLine } from '@components/ui/TextLine'
 import { useEffect, useId, useRef, useState } from 'react'
 import { LuArrowLeft, LuFileText, LuRotateCcw, LuTrash2, LuX } from 'react-icons/lu'
 
@@ -15,9 +16,7 @@ const TrashBodySkeleton = () => (
   <div aria-hidden>
     <div className="border-base-300 flex items-center gap-3 border-b px-2 pb-2">
       <div className="skeleton rounded-selector size-5 shrink-0" />
-      <div className="flex h-5 items-center">
-        <div className="skeleton h-3 w-14" />
-      </div>
+      <TextLine bone="h-3 w-14" />
     </div>
     <div className="divide-base-300 divide-y">
       {[0, 1, 2, 3].map((i) => (
@@ -25,12 +24,8 @@ const TrashBodySkeleton = () => (
           <div className="skeleton rounded-selector size-5 shrink-0" />
           <LuFileText size={18} aria-hidden className="text-base-content/60 shrink-0" />
           <div className="min-w-0 flex-1">
-            <div className="flex h-5 items-center">
-              <div className="skeleton h-3.5 w-1/2" />
-            </div>
-            <div className="flex h-5 items-center">
-              <div className="skeleton h-3 w-32" />
-            </div>
+            <TextLine bone="h-3.5 w-1/2" />
+            <TextLine bone="h-3 w-32" />
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <div className="skeleton rounded-field h-8 w-24" />

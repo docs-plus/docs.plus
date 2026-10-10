@@ -1,6 +1,7 @@
 import { Avatar } from '@components/ui/Avatar'
 import { EmptyState } from '@components/ui/EmptyState'
 import { popoverPanelClassName } from '@components/ui/Popover'
+import { TextLine } from '@components/ui/TextLine'
 import { formatTimeAgo } from '@utils/formatTime'
 import { twMerge } from '@utils/twMerge'
 
@@ -38,12 +39,8 @@ function DocumentMembersRoster({ workspaceId, memberCount }: DocumentMembersRost
             <div key={i} className="flex items-center gap-2.5 px-3 py-2" aria-hidden>
               <div className="skeleton size-8 shrink-0 rounded-full" />
               <div className="min-w-0 flex-1">
-                <div className="flex h-5 items-center">
-                  <div className="skeleton h-3.5 w-2/3" />
-                </div>
-                <div className="flex h-5 items-center">
-                  <div className="skeleton h-3 w-1/2" />
-                </div>
+                <TextLine bone="h-3.5 w-2/3" />
+                <TextLine bone="h-3 w-1/2" />
               </div>
             </div>
           ))

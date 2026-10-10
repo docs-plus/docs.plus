@@ -1,6 +1,9 @@
-import { PanelTabBarSkeleton } from '@components/PanelSurfaceSkeleton'
 import { EmptyState } from '@components/ui/EmptyState'
+import { FieldSkeleton } from '@components/ui/FieldSkeleton'
+import { PanelTabBarSkeleton } from '@components/ui/PanelTabBarSkeleton'
 import { ScrollArea } from '@components/ui/ScrollArea'
+import { TextLine } from '@components/ui/TextLine'
+import { ToggleRowSkeleton } from '@components/ui/ToggleRowSkeleton'
 import { Icons } from '@icons'
 import { useAuthStore, useThemeStore } from '@stores'
 import { sheetSafeAreaPadMobileClassName } from '@utils/sheetBodyPadding'
@@ -39,27 +42,11 @@ import {
   SETTINGS_TABS,
   supportRowsFor
 } from './constants'
-import { ToggleRowSkeleton } from './ToggleRowSkeleton'
 import type { LinkItem, TabType } from './types'
 import { isMobileSurface } from './utils/isMobileSurface'
 import { signInProvidersOf } from './utils/signInProviders'
 
 const navLabelWidth = (label: string) => Math.max(48, label.length * 8 + 8)
-
-/** A text bone inside a line box of the real line height, so the swap moves no pixel. */
-export const TextLine = ({
-  box = 'h-5',
-  bone,
-  className
-}: {
-  box?: string
-  bone: string
-  className?: string
-}) => (
-  <div className={twMerge('flex items-center', box, className)}>
-    <div className={`skeleton ${bone}`} />
-  </div>
-)
 
 /** Mirrors `SettingsCardHeader`. The lead icon is static, so it is drawn, not boned. */
 const CardHeaderSkeleton = ({
@@ -77,22 +64,6 @@ const CardHeaderSkeleton = ({
       <div className={`skeleton h-4 ${titleWidth}`} />
     </div>
     {description && <TextLine bone="h-3 w-72 max-w-full" />}
-  </div>
-)
-
-/** A field with its label above: a 20px label line, then the field (40px for an input). */
-export const FieldSkeleton = ({
-  labelWidth = 'w-16',
-  fieldHeight = 'h-10',
-  className
-}: {
-  labelWidth?: string
-  fieldHeight?: string
-  className?: string
-}) => (
-  <div className={twMerge('flex flex-col gap-1.5', className)}>
-    <TextLine bone={`h-3 ${labelWidth}`} />
-    <div className={`skeleton rounded-field w-full ${fieldHeight}`} />
   </div>
 )
 

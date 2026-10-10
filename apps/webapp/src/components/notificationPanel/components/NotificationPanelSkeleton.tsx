@@ -1,3 +1,4 @@
+import { PanelFeedSkeleton } from '@components/PanelFeedSkeleton'
 import { PanelSurfaceSkeleton } from '@components/PanelSurfaceSkeleton'
 import { useStore } from '@stores'
 import { LuCheckCheck } from 'react-icons/lu'
@@ -18,9 +19,10 @@ export const NotificationPanelSkeleton = () => {
             <div className="skeleton h-3.5 w-20" />
           </div>
         ) : null
-      }
-      typeIcon
-      count={4}
-    />
+      }>
+      <div className="max-h-96 min-h-48 overflow-hidden p-3">
+        <PanelFeedSkeleton count={4} typeIcon />
+      </div>
+    </PanelSurfaceSkeleton>
   )
 }

@@ -1,33 +1,6 @@
-import { PanelFeedSkeleton } from '@components/PanelFeedSkeleton'
-import { twMerge } from '@utils/twMerge'
+import { PanelTabBarSkeleton } from '@components/ui/PanelTabBarSkeleton'
+import { TextLine } from '@components/ui/TextLine'
 import type { ReactNode } from 'react'
-
-/**
- * A `skeleton` bone does not show on the `base-300` track, so the first pill is a static
- * `base-100` fill. `className` goes to the wrapper, as on the real `PanelTabBar`.
- */
-export function PanelTabBarSkeleton({
-  tabCount,
-  className
-}: {
-  tabCount: number
-  className?: string
-}) {
-  return (
-    <div className={twMerge('shrink-0 px-4 py-2.5', className)}>
-      <div className="bg-base-300 rounded-box flex p-1">
-        {Array.from({ length: tabCount }, (_, index) => (
-          <div
-            key={index}
-            className={
-              index === 0 ? 'bg-base-100 rounded-field min-h-9 flex-1 shadow-sm' : 'min-h-9 flex-1'
-            }
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
 
 type PanelSurfaceSkeletonProps = {
   /** No tab track when absent. */
@@ -36,10 +9,7 @@ type PanelSurfaceSkeletonProps = {
   titleWidthClassName?: string
   /** Drawn before the close bone, like the real `headerActions`. */
   headerActions?: ReactNode
-  typeIcon?: boolean
-  count?: number
-  /** Replaces the default feed body, so `count` and `typeIcon` then do nothing. */
-  children?: ReactNode
+  children: ReactNode
 }
 
 /** The popover `PanelSurfaceShell` while its chunk loads: header, tab track, then body bones. */
@@ -47,27 +17,19 @@ export function PanelSurfaceSkeleton({
   tabCount,
   titleWidthClassName = 'w-24',
   headerActions,
-  typeIcon = false,
-  count = 3,
   children
 }: PanelSurfaceSkeletonProps) {
   return (
     <div className="bg-base-100 flex w-full flex-col" aria-hidden>
       <div className="border-base-300 flex items-center justify-between border-b px-4 py-3">
-        <div className="flex h-6 items-center">
-          <div className={`skeleton h-4 ${titleWidthClassName}`} />
-        </div>
+        <TextLine box="h-6" bone={`h-4 ${titleWidthClassName}`} />
         <div className="flex items-center gap-1">
           {headerActions}
           <div className="skeleton rounded-field size-8" />
         </div>
       </div>
       {tabCount != null && <PanelTabBarSkeleton tabCount={tabCount} />}
-      {children ?? (
-        <div className="max-h-96 min-h-48 overflow-hidden p-3">
-          <PanelFeedSkeleton count={count} typeIcon={typeIcon} />
-        </div>
-      )}
+      {children}
     </div>
   )
 }

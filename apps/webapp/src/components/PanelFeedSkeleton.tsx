@@ -1,3 +1,5 @@
+import { TextLine } from '@components/ui/TextLine'
+
 function PanelFeedItemSkeleton({ typeIcon }: { typeIcon: boolean }) {
   return (
     <div className="rounded-box border-base-300 bg-base-100 flex w-full items-start gap-3 border p-3">
@@ -10,9 +12,7 @@ function PanelFeedItemSkeleton({ typeIcon }: { typeIcon: boolean }) {
               <div className="skeleton h-3.5 w-28" />
             </div>
             <div className="bg-base-200 rounded-field px-2 py-1">
-              <div className="flex h-5 items-center">
-                <div className="skeleton h-3.5 w-full" />
-              </div>
+              <TextLine bone="h-3.5 w-full" />
             </div>
           </div>
           <div className="skeleton rounded-field size-8 shrink-0" />

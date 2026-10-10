@@ -19,6 +19,8 @@ interface UsePushNotificationsReturn {
   permission: NotificationPermission | 'unsupported'
   isSubscribed: boolean
   isLoading: boolean
+  /** True until the first subscription check ends; a later subscribe does not set it again. */
+  isChecking: boolean
   error: string | null
   errorCode: string | null
   isRecoverable: boolean
@@ -33,6 +35,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
   )
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [isChecking, setIsChecking] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [errorCode, setErrorCode] = useState<string | null>(null)
   const [isRecoverable, setIsRecoverable] = useState(false)
@@ -41,10 +44,14 @@ export function usePushNotifications(): UsePushNotificationsReturn {
   useEffect(() => {
     if (!isSupported) {
       setIsLoading(false)
+      setIsChecking(false)
       return
     }
 
-    const timeoutId = setTimeout(() => setIsLoading(false), 3000)
+    const timeoutId = setTimeout(() => {
+      setIsLoading(false)
+      setIsChecking(false)
+    }, 3000)
 
     const initSubscription = async () => {
       try {
@@ -56,6 +63,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       } finally {
         clearTimeout(timeoutId)
         setIsLoading(false)
+        setIsChecking(false)
       }
     }
 
@@ -166,6 +174,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     permission,
     isSubscribed,
     isLoading,
+    isChecking,
     error,
     errorCode,
     isRecoverable,

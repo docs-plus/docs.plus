@@ -1,4 +1,4 @@
-import { PanelTabBarSkeleton } from '@components/PanelSurfaceSkeleton'
+import { PanelTabBarSkeleton } from '@components/ui/PanelTabBarSkeleton'
 import { Icons } from '@icons'
 import { twMerge } from '@utils/twMerge'
 

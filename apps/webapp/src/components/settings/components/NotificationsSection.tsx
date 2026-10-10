@@ -6,6 +6,7 @@ import Button from '@components/ui/Button'
 import { EmptyState } from '@components/ui/EmptyState'
 import Select from '@components/ui/Select'
 import { ToggleRow } from '@components/ui/ToggleRow'
+import { ToggleRowSkeleton } from '@components/ui/ToggleRowSkeleton'
 import {
   notificationPreferencesKey,
   useNotificationPreferences
@@ -20,7 +21,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { LuBell, LuClock, LuMail, LuSmartphone } from 'react-icons/lu'
 
 import { NotificationsSkeleton } from '../SettingsPanelSkeleton'
-import { ToggleRowSkeleton } from '../ToggleRowSkeleton'
 import { registerPendingPreferenceFlush } from '../utils/pendingPreferenceWrites'
 import { getBrowserTimezone, TIME_OPTIONS } from '../utils/timezoneOptions'
 import SettingsCard, { SettingsCardHeader } from './SettingsCard'
@@ -120,12 +120,17 @@ const NotificationsSection = () => {
   // iOS in Safari (not PWA) — push won't work, show install guidance
   const isIOSBrowser = platform === 'ios' && !isPWAInstalled
 
-  const { isSupported, isSubscribed, isLoading, permission, error, subscribe, unsubscribe } =
-    usePushNotifications()
-  // `isLoading` is also true while a subscribe runs, so latch the end of the first check.
-  // Until then the switch is a bone: a subscribed person would otherwise see it off, then on.
-  const [pushChecked, setPushChecked] = useState(!isLoading)
-  if (!isLoading && !pushChecked) setPushChecked(true)
+  const {
+    isSupported,
+    isSubscribed,
+    isLoading,
+    isChecking,
+    permission,
+    error,
+    subscribe,
+    unsubscribe
+  } = usePushNotifications()
+  // Until the first check ends, the switch is a bone: a subscribed person would see it off, then on.
 
   const queryClient = useQueryClient()
   const { data: saved, isError, isFetching, refetch } = useNotificationPreferences()
@@ -281,7 +286,7 @@ const NotificationsSection = () => {
           <IOSPWANotice iosSupportsWebPush={iosSupportsWebPush} />
         ) : (
           <div className="divide-base-300 divide-y">
-            {pushChecked ? (
+            {!isChecking ? (
               <ToggleRow
                 id="push-notifications"
                 label="Enable push notifications"

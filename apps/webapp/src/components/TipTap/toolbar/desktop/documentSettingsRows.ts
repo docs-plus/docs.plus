@@ -1,7 +1,14 @@
+import type { FaceSource } from '@utils/avatarFace'
+
 type DocumentSettingsRowsArgs = {
   userId?: string
   isAuthServiceAvailable?: boolean
-  metadata: { isPrivate?: boolean; readOnly?: boolean; ownerId?: string }
+  metadata: {
+    isPrivate?: boolean
+    readOnly?: boolean
+    ownerId?: string
+    ownerProfile?: FaceSource & { default_avatar_url?: string | null }
+  }
 }
 
 /** Which soft-well rows the panel shows. Its chunk loader reads the same answer. */
@@ -17,5 +24,13 @@ export function documentSettingsRows({
   // that case. A visitor still follows, because the owner can edit.
   const showFollow =
     Boolean(isAuthServiceAvailable && userId) && (!isOwner || (!isPrivate && !readOnly))
-  return { isPrivate, readOnly, isOwner, showFollow }
+  return {
+    isPrivate,
+    readOnly,
+    canManageAccess: isOwner && Boolean(isAuthServiceAvailable),
+    showFollow,
+    identity: isAuthServiceAvailable ? metadata.ownerProfile : undefined
+  }
 }
+
+export type DocumentSettingsRows = ReturnType<typeof documentSettingsRows>
