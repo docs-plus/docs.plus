@@ -1,5 +1,3 @@
-import { Banner } from '@components/ui/Banner'
-import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { twMerge } from '@utils/twMerge'
 import React from 'react'
@@ -174,25 +172,3 @@ export const PlaceholderBody: React.FC<{
     </div>
   )
 }
-
-/** A placeholder node from a past session. Its upload is gone, so it shows no progress. */
-export const UnfinishedUploadBody: React.FC<{ fileName: string; onRemove: () => void }> = ({
-  fileName,
-  onRemove
-}) => (
-  // `note`, not the warning default `status`: no live region may sit inside the editor.
-  <div className="my-4">
-    <Banner
-      tone="warning"
-      role="note"
-      title="Upload did not finish"
-      className="mx-auto max-w-md"
-      actions={
-        <Button variant="quiet" onClick={onRemove}>
-          Remove
-        </Button>
-      }>
-      {fileName && <span className="truncate">{fileName}</span>}
-    </Banner>
-  </div>
-)

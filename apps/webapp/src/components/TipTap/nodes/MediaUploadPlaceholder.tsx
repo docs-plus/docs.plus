@@ -1,8 +1,9 @@
+import { Banner } from '@components/ui/Banner'
+import Button from '@components/ui/Button'
 import { mergeAttributes, Node } from '@tiptap/core'
 import { NodeViewProps, NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react'
 import React from 'react'
 
-import { UnfinishedUploadBody } from './MediaUploadPlaceholderBody'
 import { createMediaUploadPlaceholderPlugin } from './mediaUploadPlaceholderPlugin'
 
 export {
@@ -24,7 +25,21 @@ const MediaUploadPlaceholderComponent: React.FC<NodeViewProps> = ({ node, delete
 
   return (
     <NodeViewWrapper className="media-upload-placeholder" data-upload-id={uploadId}>
-      <UnfinishedUploadBody fileName={fileName} onRemove={() => deleteNode?.()} />
+      {/* `note`, not the warning default `status`: no live region may sit inside the editor. */}
+      <div className="my-4">
+        <Banner
+          tone="warning"
+          role="note"
+          title="Upload did not finish"
+          className="mx-auto max-w-md"
+          actions={
+            <Button variant="quiet" onClick={() => deleteNode?.()}>
+              Remove
+            </Button>
+          }>
+          {fileName && <span className="truncate">{fileName}</span>}
+        </Banner>
+      </div>
     </NodeViewWrapper>
   )
 }

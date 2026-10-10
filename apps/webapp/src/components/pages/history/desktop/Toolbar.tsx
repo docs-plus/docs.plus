@@ -15,7 +15,6 @@ const ICON_SIZE = 16
 
 const Toolbar = () => {
   const activeHistory = useStore((state) => state.activeHistory)
-  const loadingHistory = useStore((state) => state.loadingHistory)
   const versionInfo = useGetVersionInfo()
   const { requestRestore, restoring, canRestore, allowRestore } = useVersionRestore()
   const { compareMode, compareBaseItem, canCompare, toggleCompare, exitCompare } =
@@ -47,7 +46,6 @@ const Toolbar = () => {
             restoring={restoring}
             canRestore={canRestore}
             allowRestore={allowRestore}
-            loading={loadingHistory}
           />
         </div>
       </header>

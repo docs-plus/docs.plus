@@ -9,10 +9,10 @@ import { type ReactNode, useState } from 'react'
 import { HistoryAuthorsBody } from './components/HistoryAuthorsBody'
 import { HistorySidebarBody } from './components/HistorySidebarBody'
 import { HistorySidebarSkeleton } from './components/HistorySidebarSkeleton'
-import { useDocumentHistory } from './hooks/useDocumentHistory'
 import { useHistoryCompare } from './hooks/useHistoryCompare'
 import { useHistorySidebarRows } from './hooks/useHistorySidebarRows'
 import { useVersionContent } from './hooks/useVersionContent'
+import { requestOlderHistoryPage } from './statelessMessageHandlers'
 import { HISTORY_SIDEBAR_VIRTUALIZE_THRESHOLD } from './types'
 
 function SidebarHeader({
@@ -95,7 +95,6 @@ const HistorySidebar = ({
   const { compareMode, selectCompareBase } = useHistoryCompare()
   const [tab, setTab] = useState<HistoryTab>('Versions')
   const historyHasMore = useStore((state) => state.historyHasMore)
-  const { fetchOlderHistory } = useDocumentHistory()
   const { historyList, activeVersion, rows, openDays, toggleDay, toggleSession } =
     useHistorySidebarRows()
 
@@ -143,7 +142,7 @@ const HistorySidebar = ({
         <HistorySidebarBody
           rows={rows}
           hasMore={historyHasMore}
-          onShowOlder={fetchOlderHistory}
+          onShowOlder={requestOlderHistoryPage}
           // Virtualize while more pages exist, so one Show older press does not swap trees.
           virtualize={
             variant === 'desktop' &&

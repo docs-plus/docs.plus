@@ -1,4 +1,5 @@
 import Button from '@components/ui/Button'
+import { useStore } from '@stores'
 
 import { formatVersionDate } from '../helpers'
 import { useHistoryHash } from '../historyShareUrl'
@@ -12,8 +13,6 @@ type Props = {
   canRestore?: boolean
   /** Signed-in writer only. Visitors never see Restore. */
   allowRestore?: boolean
-  /** The list is loading, so the note or Restore and the date show as bones. */
-  loading: boolean
 }
 
 export function HistoryToolbarVersionBlock({
@@ -21,10 +20,10 @@ export function HistoryToolbarVersionBlock({
   onRequestRestore,
   restoring = false,
   canRestore = false,
-  allowRestore = false,
-  loading
+  allowRestore = false
 }: Props) {
   const { version: linkedVersion } = useHistoryHash()
+  const loading = useStore((state) => state.loadingHistory)
 
   if (!versionInfo) {
     if (!loading) return null

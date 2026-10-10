@@ -90,16 +90,24 @@ function isDeepLinkWalk(list: HistoryItem[]): boolean {
   return store().loadingHistory && store().pendingWatchVersion == null && deepLinkBelowLoaded(list)
 }
 
+/**
+ * The one sender for an older page, shared by Show older and the deep-link walk.
+ * One page at a time: a second copy of the same request trips the list cooldown.
+ */
+export function requestOlderHistoryPage(): void {
+  const { settings, historyNextBefore: beforeVersion, pendingOlderBefore } = store()
+  const provider = settings.hocuspocusProvider
+  if (!provider || beforeVersion == null || pendingOlderBefore != null) return
+  store().setPendingOlderBefore(beforeVersion)
+  sendHistoryListRequest(provider, settings.metadata?.documentId, { beforeVersion })
+}
+
 function pageTowardDeepLink() {
-  // One timer only: a second copy of the same request trips the list cooldown.
   clearTimeout(walkTimer)
   walkTimer = setTimeout(() => {
     walkTimer = undefined
     // A null provider unmounts the history view, and the next mount cancels the walk.
-    const { hocuspocusProvider, metadata } = store().settings
-    const beforeVersion = store().historyNextBefore
-    if (!hocuspocusProvider || beforeVersion == null || !isDeepLinkWalk(store().historyList)) return
-    sendHistoryListRequest(hocuspocusProvider, metadata?.documentId, { beforeVersion })
+    if (isDeepLinkWalk(store().historyList)) requestOlderHistoryPage()
   }, HISTORY_LIST_GAP_MS)
 }
 

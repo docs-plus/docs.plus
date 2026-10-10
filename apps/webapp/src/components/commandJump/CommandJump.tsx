@@ -19,9 +19,6 @@ import { buildPlaceRows, type CommandJumpSurface, type PlaceRow } from './buildP
 // #247's Owner live list key: empty search under Last opened. Do not fork it.
 const PAD_SORT: DocumentSortKey = 'lastOpenedAt_desc'
 const SEARCH_DEBOUNCE_MS = 350
-// Shared with the loading bones, so the swap moves no pixel.
-const GROUP_LABEL_PAD = 'px-3 pt-1 pb-1'
-const ROW_INSET = 'mx-1.5'
 
 // Every house modal guard stamps the page behind it; sheets without a trap only show in the store.
 function isAnotherLayerOpen(): boolean {
@@ -126,7 +123,7 @@ function CommandJumpPanel({ places, userId, onPick, navigate }: PanelProps) {
     const headingId = `${baseId}-${label.toLowerCase()}`
     return (
       <div role="group" aria-labelledby={headingId} className="py-1">
-        <ListGroupLabel as="div" id={headingId} className={GROUP_LABEL_PAD}>
+        <ListGroupLabel as="div" id={headingId} className="px-3 pt-1 pb-1">
           {label}
         </ListGroupLabel>
         {group.map((item, i) => {
@@ -144,7 +141,7 @@ function CommandJumpPanel({ places, userId, onPick, navigate }: PanelProps) {
               onMouseDown={(event) => event.preventDefault()}
               onMouseMove={() => !isActive && setActive(index)}
               onClick={() => onPick(item.run)}
-              className={ROW_INSET}>
+              className="mx-1.5">
               <ContextMenuRow active={isActive} icon={<Icon size={16} aria-hidden />}>
                 <span className="flex min-w-0 items-center gap-2.5">
                   <span className="truncate">{item.label}</span>
@@ -189,20 +186,23 @@ function CommandJumpPanel({ places, userId, onPick, navigate }: PanelProps) {
           spellCheck={false}
         />
       </div>
-      <div id={listId} role="listbox" aria-label="Results" className="min-h-0 overflow-y-auto">
-        {renderGroup('Places', placeItems, 0)}
-        {renderGroup('Documents', padItems, placeItems.length)}
+      {/* One scroll box for the rows and the bones, so loaded Documents land where the bones sat. */}
+      <div className="min-h-0 overflow-y-auto">
+        <div id={listId} role="listbox" aria-label="Results">
+          {renderGroup('Places', placeItems, 0)}
+          {renderGroup('Documents', padItems, placeItems.length)}
+        </div>
+        {/* The bones hold the Documents slot, under any Places rows, while a search shows no documents. */}
+        {isSearching && padItems.length === 0 ? (
+          <DocumentRowsSkeleton />
+        ) : (
+          items.length === 0 && (
+            <p aria-hidden className="text-base-content/60 px-3 py-6 text-center text-sm">
+              {emptyStatus}
+            </p>
+          )
+        )}
       </div>
-      {/* The bones hold the Documents slot, under any Places rows, while a search shows no documents. */}
-      {isSearching && padItems.length === 0 ? (
-        <DocumentRowsSkeleton />
-      ) : (
-        items.length === 0 && (
-          <p aria-hidden className="text-base-content/60 px-3 py-6 text-center text-sm">
-            {emptyStatus}
-          </p>
-        )
-      )}
       <p className="sr-only" aria-live="polite">
         {items.length === 0
           ? emptyStatus
@@ -221,11 +221,11 @@ function CommandJumpPanel({ places, userId, onPick, navigate }: PanelProps) {
 function DocumentRowsSkeleton() {
   return (
     <div aria-hidden className="py-1">
-      <ListGroupLabel as="div" className={GROUP_LABEL_PAD}>
+      <ListGroupLabel as="div" className="px-3 pt-1 pb-1">
         Documents
       </ListGroupLabel>
       {['w-2/3', 'w-1/2'].map((width) => (
-        <div key={width} className={ROW_INSET}>
+        <div key={width} className="mx-1.5">
           <ContextMenuRow className="cursor-default" icon={<Icons.fileText size={16} />}>
             <span className="flex h-5 items-center">
               <span className={`skeleton h-3.5 ${width}`} />

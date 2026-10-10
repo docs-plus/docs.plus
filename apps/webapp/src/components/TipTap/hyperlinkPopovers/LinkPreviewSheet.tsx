@@ -47,17 +47,25 @@ const ExternalLinkHeader = ({ data: payload }: LinkPreviewSheetProps) => {
   const description = data?.description
   const showHrefLine = Boolean(data?.title && data.title !== href)
 
-  const loading = status === 'loading'
+  if (status === 'loading') {
+    return (
+      <div className="flex items-start gap-3">
+        <span className="sr-only">Loading link details</span>
+        <span aria-hidden className="inline-flex size-6 shrink-0 items-center justify-center">
+          <span className="skeleton size-5" />
+        </span>
+        {/* 22px: the title's text-base leading-snug line. */}
+        <div aria-hidden className="flex h-5.5 min-w-0 flex-1 items-center">
+          <div className="skeleton h-4 w-48" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex items-start gap-3">
-      {loading && <span className="sr-only">Loading link details</span>}
-      <span
-        aria-hidden={loading || undefined}
-        className="inline-flex size-6 shrink-0 items-center justify-center">
-        {loading ? (
-          <span className="skeleton size-5" />
-        ) : imageUrl ? (
+      <span className="inline-flex size-6 shrink-0 items-center justify-center">
+        {imageUrl ? (
           <img
             src={imageUrl}
             alt={data?.image?.alt || title}
@@ -70,30 +78,21 @@ const ExternalLinkHeader = ({ data: payload }: LinkPreviewSheetProps) => {
           <span className="bg-base-300 size-5 rounded" aria-hidden />
         )}
       </span>
-      {loading ? (
-        // 22px: the title's text-base leading-snug line.
-        <div aria-hidden className="flex h-5.5 min-w-0 flex-1 items-center">
-          <div className="skeleton h-4 w-48" />
-        </div>
-      ) : (
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className="text-base-content m-0 text-base leading-snug font-medium break-words">
-            {title}
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <p className="text-base-content m-0 text-base leading-snug font-medium break-words">
+          {title}
+        </p>
+        {description && (
+          <p className="text-base-content/70 m-0 text-sm leading-snug break-words">{description}</p>
+        )}
+        {showHrefLine && (
+          <p
+            className="text-base-content/60 m-0 line-clamp-2 text-sm leading-snug break-all"
+            title={href}>
+            {href}
           </p>
-          {description && (
-            <p className="text-base-content/70 m-0 text-sm leading-snug break-words">
-              {description}
-            </p>
-          )}
-          {showHrefLine && (
-            <p
-              className="text-base-content/60 m-0 line-clamp-2 text-sm leading-snug break-all"
-              title={href}>
-              {href}
-            </p>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

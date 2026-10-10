@@ -124,24 +124,23 @@ export function HyperlinkSuggestions({
           {statusMessage}
         </div>
 
-        <div
-          role="listbox"
-          id={`${rowIdPrefix}-listbox`}
-          className="max-h-72 overflow-y-auto"
-          aria-label="Link suggestions">
-          {renderSection('Headings', headings, 0, 'h')}
-          {renderSection('Bookmarks', bookmarks, headings.length, 'b')}
+        {/* One scroll box for the rows and the bones, so loaded Bookmarks land where the bones sat. */}
+        <div className="max-h-72 overflow-y-auto">
+          <div role="listbox" id={`${rowIdPrefix}-listbox`} aria-label="Link suggestions">
+            {renderSection('Headings', headings, 0, 'h')}
+            {renderSection('Bookmarks', bookmarks, headings.length, 'b')}
 
-          {!isLoading && totalRows === 0 && (
-            <div className={`text-base-content/60 py-3 text-sm ${layout.listPad}`}>
-              No matches. Try a shorter or different query.
-            </div>
+            {!isLoading && totalRows === 0 && (
+              <div className={`text-base-content/60 py-3 text-sm ${layout.listPad}`}>
+                No matches. Try a shorter or different query.
+              </div>
+            )}
+          </div>
+
+          {isLoading && bookmarks.length === 0 && (
+            <SuggestionsSkeleton sectionPad={layout.sectionPad} rowPad={layout.rowPad} />
           )}
         </div>
-
-        {isLoading && bookmarks.length === 0 && (
-          <SuggestionsSkeleton sectionPad={layout.sectionPad} rowPad={layout.rowPad} />
-        )}
       </div>
     </div>
   )
