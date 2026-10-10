@@ -27,13 +27,11 @@ describe('chatroom scroll and prepend', () => {
     cy.get('[data-key="pagination-loader"]').should('be.visible')
     cy.wait('@olderWindow').its('request.body.p_anchor_value').should('equal', '1')
     cy.get('[data-key="pagination-loader"]').should('not.exist')
-    // Virtuoso measures the prepended rows, then compensates the scroll on two frames.
-    cy.window().then(
-      (win) =>
-        new Promise<void>((resolve) =>
-          win.requestAnimationFrame(() => win.requestAnimationFrame(() => resolve()))
-        )
-    )
+    // Virtuoso keeps the old first row in place by moving scrollTop off 0 some frames after
+    // the prepend. A scroll sent before that shift lands is overwritten, so wait for the shift.
+    cy.get('[data-testid="virtuoso-scroller"]').should(($scroller) => {
+      expect($scroller[0].scrollTop).to.be.greaterThan(0)
+    })
   })
 
   it('prepends the older page without losing the loaded page', () => {

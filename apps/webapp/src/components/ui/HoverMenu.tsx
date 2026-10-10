@@ -231,7 +231,9 @@ function useHoverMenu({
   const context = data.context
 
   const hover = useHover(context, {
-    move: false,
+    // A card can mount or slide under a still pointer while hover is off, so its only
+    // mouseenter is lost. Opening on the first move inside the card recovers it.
+    move: true,
     enabled: !disabled && !scrollLocked && isInViewport,
     delay,
     handleClose: safePolygon({

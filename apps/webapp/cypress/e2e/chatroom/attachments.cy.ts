@@ -725,9 +725,12 @@ describe('chatroom attachments', () => {
 
     it('lists the hover menu rows in the ruled order', () => {
       const messageId = 'hover-order-1'
+      // Real uploads carry image dims. Without them the 16:9 placeholder shrinks to the
+      // 32px fixture under the cursor, and the mouseleave cancels the menu's open delay.
+      const image = { path: storagePath, url: storagePath, type: 'image', name: 'photo.png' }
       visitFeed(
         [
-          mediaRow([{ path: storagePath, url: storagePath, type: 'image', name: 'photo.png' }], {
+          mediaRow([{ ...image, width: 32, height: 32 }], {
             id: messageId,
             seq: 4,
             content: 'hello'
@@ -736,6 +739,16 @@ describe('chatroom attachments', () => {
         messageId
       )
       assertImageControlReady()
+      // The short feed still slides to the bottom after load. Hover once it rests there.
+      cy.get('[data-testid="virtuoso-scroller"]').should(($scroller) => {
+        const scroller = $scroller[0]
+        const card = scroller.querySelector(`[data-msg-id="${messageId}"]`)!
+        expect(scroller.scrollHeight).to.equal(scroller.clientHeight)
+        expect(card.getBoundingClientRect().bottom).to.be.closeTo(
+          scroller.getBoundingClientRect().bottom,
+          1
+        )
+      })
       cy.get(`[data-msg-id="${messageId}"]`).realHover()
       cy.get('button[aria-label="More actions"]').should('be.visible').realClick()
       cy.get('[role="menu"] [role="menuitem"]').should(($rows) => {
