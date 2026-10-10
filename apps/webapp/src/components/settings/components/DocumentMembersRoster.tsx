@@ -23,7 +23,7 @@ const seenAfterJoin = (joined: string, lastVisit: string) =>
 
 /** Lazy-fetches on open — the host only mounts inside PopoverContent. */
 function DocumentMembersRoster({ workspaceId, memberCount }: DocumentMembersRosterProps) {
-  const { data: members, isLoading, isError, refetch } = useDocumentRoster(workspaceId)
+  const { data: members, isLoading, isError, isFetching, refetch } = useDocumentRoster(workspaceId)
 
   return (
     <div className={twMerge(popoverPanelClassName, 'w-64 overflow-hidden p-0')}>
@@ -33,12 +33,17 @@ function DocumentMembersRoster({ workspaceId, memberCount }: DocumentMembersRost
 
       <div className="max-h-72 overflow-y-auto py-1">
         {isLoading ? (
-          [0, 1, 2].map((i) => (
-            <div key={i} className="flex items-center gap-2.5 px-3 py-2">
+          // One row per member; five already fill the `max-h-72` body.
+          Array.from({ length: Math.min(memberCount, 5) }, (_, i) => (
+            <div key={i} className="flex items-center gap-2.5 px-3 py-2" aria-hidden>
               <div className="skeleton size-8 shrink-0 rounded-full" />
-              <div className="flex-1 space-y-1.5">
-                <div className="skeleton h-3 w-2/3" />
-                <div className="skeleton h-2.5 w-1/2" />
+              <div className="min-w-0 flex-1">
+                <div className="flex h-5 items-center">
+                  <div className="skeleton h-3.5 w-2/3" />
+                </div>
+                <div className="flex h-5 items-center">
+                  <div className="skeleton h-3 w-1/2" />
+                </div>
               </div>
             </div>
           ))
@@ -49,6 +54,7 @@ function DocumentMembersRoster({ workspaceId, memberCount }: DocumentMembersRost
             title="Couldn’t load people."
             className="px-3"
             onRetry={refetch}
+            retrying={isFetching}
           />
         ) : (
           (members ?? []).map((m) => (

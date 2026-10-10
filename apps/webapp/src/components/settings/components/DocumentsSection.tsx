@@ -117,7 +117,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
   if (!userId) return null
 
   return (
-    <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both] max-md:flex max-md:min-h-full max-md:flex-col">
+    <div className="space-y-4 max-md:flex max-md:min-h-full max-md:flex-col">
       <SettingsCard className="max-md:flex max-md:min-h-0 max-md:flex-1 max-md:flex-col max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:p-0">
         {showTrash && hasTrash ? (
           <div className="max-md:min-h-0 max-md:flex-1 max-md:p-4">
@@ -195,7 +195,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
             </div>
 
             {isLoading ? (
-              <div className="max-md:px-4 max-md:pt-3">
+              <div className="max-md:px-4 max-md:pt-1">
                 <DocumentsBodySkeleton viewMode={viewMode} />
               </div>
             ) : isError ? (
@@ -204,6 +204,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                 title="Couldn’t load documents."
                 className="max-md:flex-1 max-md:justify-center"
                 onRetry={refetch}
+                retrying={isFetching}
               />
             ) : docs.length === 0 ? (
               searchQuery ? (
@@ -240,9 +241,10 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
               )
             ) : (
               <div
-                className={`max-md:px-4 max-md:pt-1 max-md:pb-4 ${
-                  isFetching && !isLoading ? 'transition-opacity motion-safe:opacity-60' : ''
-                }`}>
+                className={twMerge(
+                  'motion-safe:transition-opacity max-md:px-4 max-md:pt-1 max-md:pb-4',
+                  isFetching && 'opacity-60'
+                )}>
                 <p aria-live="polite" className="sr-only">
                   {total} {total === 1 ? 'document' : 'documents'}
                 </p>

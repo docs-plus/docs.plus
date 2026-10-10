@@ -20,6 +20,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { LuBell, LuClock, LuMail, LuSmartphone } from 'react-icons/lu'
 
 import { NotificationsSkeleton } from '../SettingsPanelSkeleton'
+import { ToggleRowSkeleton } from '../ToggleRowSkeleton'
 import { registerPendingPreferenceFlush } from '../utils/pendingPreferenceWrites'
 import { getBrowserTimezone, TIME_OPTIONS } from '../utils/timezoneOptions'
 import SettingsCard, { SettingsCardHeader } from './SettingsCard'
@@ -121,6 +122,10 @@ const NotificationsSection = () => {
 
   const { isSupported, isSubscribed, isLoading, permission, error, subscribe, unsubscribe } =
     usePushNotifications()
+  // `isLoading` is also true while a subscribe runs, so latch the end of the first check.
+  // Until then the switch is a bone: a subscribed person would otherwise see it off, then on.
+  const [pushChecked, setPushChecked] = useState(!isLoading)
+  if (!isLoading && !pushChecked) setPushChecked(true)
 
   const queryClient = useQueryClient()
   const { data: saved, isError, isFetching, refetch } = useNotificationPreferences()
@@ -226,6 +231,12 @@ const NotificationsSection = () => {
       ? 'Blocked. On iOS this setting lives in the Settings app, under docs.plus.'
       : 'Blocked. This setting lives in the browser site settings, reached from the address bar.'
 
+  const pushDescription = isPushBlocked
+    ? blockedDescription
+    : isSupported
+      ? 'Get notified about mentions, replies, and reactions.'
+      : 'Push notifications are not supported in this browser.'
+
   // Saved settings that read a timezone but hold none run on UTC. Write this browser's once.
   const repairedTimezoneRef = useRef(false)
   useEffect(() => {
@@ -239,7 +250,15 @@ const NotificationsSection = () => {
   }, [saved])
 
   if (!saved) {
-    if (!isError) return <NotificationsSkeleton />
+    if (!isError) {
+      return (
+        <NotificationsSkeleton
+          pushNotice={
+            isIOSBrowser ? <IOSPWANotice iosSupportsWebPush={iosSupportsWebPush} /> : undefined
+          }
+        />
+      )
+    }
     return (
       <SettingsCard>
         <EmptyState
@@ -254,7 +273,7 @@ const NotificationsSection = () => {
   }
 
   return (
-    <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
+    <div className="space-y-4">
       <SettingsCard>
         <SettingsCardHeader icon={LuBell} title="Push notifications" />
 
@@ -262,20 +281,18 @@ const NotificationsSection = () => {
           <IOSPWANotice iosSupportsWebPush={iosSupportsWebPush} />
         ) : (
           <div className="divide-base-300 divide-y">
-            <ToggleRow
-              id="push-notifications"
-              label="Enable push notifications"
-              description={
-                isPushBlocked
-                  ? blockedDescription
-                  : isSupported
-                    ? 'Get notified about mentions, replies, and reactions.'
-                    : 'Push notifications are not supported in this browser.'
-              }
-              checked={isPushEnabled}
-              onChange={handlePushChange}
-              disabled={isLoading || !isSupported || isPushBlocked}
-            />
+            {pushChecked ? (
+              <ToggleRow
+                id="push-notifications"
+                label="Enable push notifications"
+                description={pushDescription}
+                checked={isPushEnabled}
+                onChange={handlePushChange}
+                disabled={isLoading || !isSupported || isPushBlocked}
+              />
+            ) : (
+              <ToggleRowSkeleton label="Enable push notifications" description={pushDescription} />
+            )}
 
             <ToggleRow
               id="push-mentions"

@@ -14,7 +14,7 @@ export function useDocumentFollow(args: { documentId: string; enabled: boolean }
   const [optimistic, setOptimistic] = useState<boolean | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['document-follow', documentId],
     // Both follow RPCs are revoked from `anon`, so an unguarded read 403s.
     enabled: enabled && Boolean(documentId),
@@ -47,5 +47,6 @@ export function useDocumentFollow(args: { documentId: string; enabled: boolean }
     queryClient.setQueryData(['document-follow', documentId], next)
   }, [documentId, following, queryClient])
 
-  return { following, canToggle: isMember && !saving, toggle }
+  // In flight only: a disabled or paused read is not loading, so no caller waits on it forever.
+  return { following, canToggle: isMember && !saving, toggle, readPending: isLoading }
 }

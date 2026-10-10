@@ -9,6 +9,7 @@ import { useOwnerDocuments } from '@components/settings/hooks/useOwnerDocuments'
 import Button from '@components/ui/Button'
 import { EmptyState } from '@components/ui/EmptyState'
 import { useNavigateToDocument } from '@hooks/useNavigateToDocument'
+import { twMerge } from '@utils/twMerge'
 import { useMemo, useState } from 'react'
 
 import { isHomeMobileLayout } from './homeMobileLayout'
@@ -122,7 +123,7 @@ export function HomeDocuments({ userId, onSeeAll }: HomeDocumentsProps) {
           actions={listActions}
           // The keyboard collapses this card on a phone, so rename moves to a dialog.
           renameInDialog={isHomeMobileLayout}
-          className={isPlaceholderData ? 'transition-opacity motion-safe:opacity-60' : undefined}
+          className={twMerge('motion-safe:transition-opacity', isPlaceholderData && 'opacity-60')}
         />
       )}
       {emptyText && (

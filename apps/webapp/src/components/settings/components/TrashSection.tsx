@@ -2,7 +2,7 @@ import * as toast from '@components/toast'
 import Button, { dangerGhostClassName } from '@components/ui/Button'
 import { EmptyState } from '@components/ui/EmptyState'
 import { useEffect, useId, useRef, useState } from 'react'
-import { LuArrowLeft, LuRotateCcw, LuTrash2, LuX } from 'react-icons/lu'
+import { LuArrowLeft, LuFileText, LuRotateCcw, LuTrash2, LuX } from 'react-icons/lu'
 
 import { useTrashCache } from '../hooks/documentsCache'
 import useDeleteDocument from '../hooks/useDeleteDocument'
@@ -12,17 +12,33 @@ import type { OwnedDocument } from '../types'
 import TrashListRow from './TrashListRow'
 
 const TrashBodySkeleton = () => (
-  <div className="divide-base-300 divide-y">
-    {[0, 1, 2, 3].map((i) => (
-      <div key={i} className="flex items-center gap-3 py-3">
-        <div className="skeleton size-[18px] shrink-0 rounded" />
-        <div className="flex-1 space-y-2">
-          <div className="skeleton h-4 w-1/2" />
-          <div className="skeleton h-3 w-24" />
-        </div>
-        <div className="skeleton rounded-field h-8 w-20" />
+  <div aria-hidden>
+    <div className="border-base-300 flex items-center gap-3 border-b px-2 pb-2">
+      <div className="skeleton rounded-selector size-5 shrink-0" />
+      <div className="flex h-5 items-center">
+        <div className="skeleton h-3 w-14" />
       </div>
-    ))}
+    </div>
+    <div className="divide-base-300 divide-y">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="flex items-center gap-3 px-2 py-3">
+          <div className="skeleton rounded-selector size-5 shrink-0" />
+          <LuFileText size={18} aria-hidden className="text-base-content/60 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="flex h-5 items-center">
+              <div className="skeleton h-3.5 w-1/2" />
+            </div>
+            <div className="flex h-5 items-center">
+              <div className="skeleton h-3 w-32" />
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <div className="skeleton rounded-field h-8 w-24" />
+            <div className="skeleton rounded-field size-8" />
+          </div>
+        </div>
+      ))}
+    </div>
   </div>
 )
 
@@ -40,8 +56,16 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
   const { restoreDocument, permanentlyDeleteDocument, purgeTrash, bulkRestoreDocuments } =
     useDeleteDocument()
 
-  const { data, isLoading, isError, isFetchingNextPage, fetchNextPage, hasNextPage, refetch } =
-    useTrashedDocuments(userId)
+  const {
+    data,
+    isLoading,
+    isError,
+    isFetching,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+    refetch
+  } = useTrashedDocuments(userId)
 
   const docs = data?.pages.flatMap((p) => p.docs) ?? []
   const backRef = useRef<HTMLButtonElement>(null)
@@ -307,7 +331,12 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
       {isLoading ? (
         <TrashBodySkeleton />
       ) : isError ? (
-        <EmptyState tone="error" title="Couldn’t load trash." onRetry={refetch} />
+        <EmptyState
+          tone="error"
+          title="Couldn’t load trash."
+          onRetry={refetch}
+          retrying={isFetching}
+        />
       ) : docs.length === 0 ? (
         <EmptyState icon={LuTrash2} title="Trash is empty." />
       ) : (

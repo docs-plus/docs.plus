@@ -1,4 +1,5 @@
 import { PanelSurfaceShell } from '@components/PanelSurfaceShell'
+import { ToggleRowSkeleton } from '@components/settings/ToggleRowSkeleton'
 import { SheetPrimaryFooter } from '@components/SheetPrimaryFooter'
 import * as toast from '@components/toast'
 import { Avatar } from '@components/ui/Avatar'
@@ -54,7 +55,7 @@ const DocumentSettingsPanel = ({ variant = 'popover' }: DocumentSettingsPanelPro
   // Hide when nobody else can edit. The owner of a private or read-only pad is
   // that case. A visitor still follows, because the owner can edit.
   const showFollow = canFollow && (!isOwner || (!isPrivate && !readOnly))
-  const { following, canToggle, toggle } = useDocumentFollow({
+  const { following, canToggle, toggle, readPending } = useDocumentFollow({
     documentId: docMetadata.documentId,
     // Membership, not sign-in. join_workspace writes the row the RPC matches,
     // so a read before it lands answers null and paints a false "off".
@@ -135,15 +136,24 @@ const DocumentSettingsPanel = ({ variant = 'popover' }: DocumentSettingsPanelPro
           </div>
         )}
         {showFollow ? (
-          <ToggleRow
-            label="Follow"
-            description="Notify me when this document changes."
-            checked={following}
-            // `set_document_follow` is UPDATE-only, so it needs the membership row first.
-            disabled={!joinedWorkspace || !canToggle}
-            onChange={() => void toggle()}
-            className="min-h-11 py-2 sm:min-h-0"
-          />
+          // A pending read paints "on", so the switch is a bone while the read is in flight.
+          readPending ? (
+            <ToggleRowSkeleton
+              label="Follow"
+              description="Notify me when this document changes."
+              className="min-h-11 py-2 sm:min-h-0"
+            />
+          ) : (
+            <ToggleRow
+              label="Follow"
+              description="Notify me when this document changes."
+              checked={following}
+              // `set_document_follow` is UPDATE-only, so it needs the membership row first.
+              disabled={!joinedWorkspace || !canToggle}
+              onChange={() => void toggle()}
+              className="min-h-11 py-2 sm:min-h-0"
+            />
+          )
         ) : null}
       </div>
     </div>

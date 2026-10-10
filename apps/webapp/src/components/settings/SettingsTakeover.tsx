@@ -1,12 +1,21 @@
+import { ChunkLoadFallback } from '@components/ChunkLoadFallback'
 import { Modal, ModalContent } from '@components/ui/Dialog'
 import { useAuthStore } from '@stores'
 import dynamic from 'next/dynamic'
+import { createContext, useContext } from 'react'
 
 import SettingsPanelSkeleton from './SettingsPanelSkeleton'
 import type { TabType } from './types'
 
+// next/dynamic gives `loading` only its own props, so a context carries the tab.
+const SkeletonTabContext = createContext<TabType | undefined>(undefined)
+
+function SettingsPanelLoading() {
+  return <SettingsPanelSkeleton defaultTab={useContext(SkeletonTabContext)} />
+}
+
 const SettingsPanel = dynamic(() => import('./SettingsPanel'), {
-  loading: () => <SettingsPanelSkeleton />
+  loading: (p) => <ChunkLoadFallback {...p} skeleton={<SettingsPanelLoading />} />
 })
 
 export interface SettingsTakeoverProps {
@@ -34,7 +43,9 @@ export function SettingsTakeover({ open, onOpenChange, defaultTab }: SettingsTak
           tab caps at `max-w-2xl` and just centers, so the extra width costs it nothing.
           `aria-label` is the sole accessible name — the panel's `<h2>` is not a `ModalHeading`. */}
       <ModalContent size="5xl" mobileTakeover aria-label="Settings" className="p-0">
-        <SettingsPanel defaultTab={defaultTab} onClose={() => onOpenChange(false)} />
+        <SkeletonTabContext.Provider value={defaultTab}>
+          <SettingsPanel defaultTab={defaultTab} onClose={() => onOpenChange(false)} />
+        </SkeletonTabContext.Provider>
       </ModalContent>
     </Modal>
   )
