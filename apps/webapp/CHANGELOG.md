@@ -373,6 +373,66 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   so the header does not move when the panel loads. The link preview loader
   uses the house skeleton (#464).
 
+- **History, link pickers and the outline preview load in place.** The
+  History sidebar and its Authors tab show bones in the real row positions.
+  The History toolbar keeps its copy-link button and shows bones for the
+  version text. Show older versions shows a spinner and sends one request.
+  The outline preview card uses the real paddings and does not open when a
+  section has nothing to show. The link preview, the mobile Link sheet, the
+  link suggestions and Command jump show bone rows like their loaded rows.
+  An upload left unfinished by an earlier session now says so, with Remove,
+  instead of a spinner that never ends (#463, #464).
+
+- **Chat media and emoji keep their place while they load.** A feed image
+  keeps its bone until the image has loaded, and mosaic bones have square
+  corners. The audio bar, the file card copy slot and the lightbox slides load
+  at their real size. Emoji-only messages and reaction pills keep their size
+  before the emoji paints. The reaction sheet holds the picker height. The
+  emoji-mart picker and its data no longer load with the app shell, because
+  the picker loads them in its own chunk. Comment embed previews load on the
+  real line sizes and gaps, and a failed stacked preview shows the image tile
+  (#463, #464).
+- **The chat loaders match the loaded chat.** Feed bones sit where the
+  avatars, names and lines land, with no tinted panel. The day separator
+  keeps its two hairlines. The composer skeleton draws the placeholder line,
+  not a filled field. A non-member sees the Join bar as soon as the channel
+  loads. The breadcrumb keeps its real chevron and ends on a deleted heading.
+  Participants show at once. The notification toggle shows a bone while it
+  reads its state. A live message from another person now shows its author's
+  name. A jump to a reply, a pin or the latest messages shows a spinner while
+  it loads (#464).
+- **Settings loaders match the loaded settings.** The Settings skeleton shows
+  the tab that will open, so the toolbar opens on Documents bones. With a
+  named tab, a phone shows that tab's pane. Each section skeleton draws the
+  real cards, headers, fields and rows, including your saved links and
+  sign-in methods. Document settings opens its loader with the first card
+  open and the same rows that the panel will show. Trash, the people list and
+  the profile dialog keep their real line heights. The push and Follow
+  switches show a bone while their state loads. Try again shows that it is
+  busy while it reloads. The Documents list dims while it reloads, also with
+  reduced motion on (#463, #464).
+- **Panel loaders match the loaded panels.** The Bookmarks and Notifications
+  loaders keep the real body height, so the popover does not jump when the
+  feed loads. Feed card bones keep the real preview frame and a slot for the
+  Copy link button. The Notifications loader shows Mark all read only when
+  you have unread notifications. A bookmark image shows a bone of the thumb
+  size while its link loads, and offers a retry if the link fails. The Filter
+  and Insert media loaders use the real body padding, and Insert media no
+  longer draws a drop zone (#463, #464).
+- **The phone outline drawer shows its frame while the pad loads.** Before
+  the first sync, an opened drawer showed only the dimmed page. It now shows
+  the header, the document title, the footer and outline bones at the phone
+  row size. Find stays disabled until the editor is ready. Bookmarks no
+  longer pops into the footer late for a signed-in user. On a computer, the
+  outline no longer fades in after its bones (#463).
+
+- **The pad skeleton is in the first page load again.** The page shows the
+  loading skeleton before any script runs. The skeleton header and toolbar
+  now match the loaded ones control for control. The loaded header, the Edit
+  button and the document no longer fade in when the skeleton leaves. A
+  signed-in reader no longer sees Sign in while the profile loads; the avatar
+  slot holds a round bone (#463, #464).
+
 - **The Add link form takes your typing at once.** After you select text and
   press the toolbar link button, the URL field has focus, so the first letter
   you type lands there (#366).
