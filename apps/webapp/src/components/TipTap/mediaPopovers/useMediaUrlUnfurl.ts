@@ -20,6 +20,7 @@ export interface UseMediaUrlUnfurlResult {
 }
 
 const DEBOUNCE_MS = 400
+const IDLE: UseMediaUrlUnfurlResult = { status: 'idle', data: null }
 
 const hostnameOf = (url: string): string => {
   try {
@@ -41,31 +42,22 @@ const project = (data: MetadataResponse): MediaUnfurl => ({
  * cache-first so a known URL skips the debounce, no-ops when disabled.
  */
 export function useMediaUrlUnfurl(url: string, enabled: boolean): UseMediaUrlUnfurlResult {
-  const [state, setState] = useState<UseMediaUrlUnfurlResult>({ status: 'idle', data: null })
+  // Keyed by URL: a result for an older URL never paints for the new one.
+  const [fetched, setFetched] = useState<(UseMediaUrlUnfurlResult & { url: string }) | null>(null)
+  const active = enabled && url.trim() !== ''
 
   useEffect(() => {
-    if (!enabled || !url.trim()) {
-      setState({ status: 'idle', data: null })
-      return
-    }
-
     // L2 session cache is synchronous: undefined = miss, null = cached failure.
-    const cached = getCachedMetadata(url)
-    if (cached) {
-      setState({ status: 'loaded', data: project(cached) })
-      return
-    }
-    if (cached === null) {
-      setState({ status: 'error', data: null })
-      return
-    }
-
-    setState({ status: 'loading', data: null })
+    if (!active || getCachedMetadata(url) !== undefined) return
     const controller = new AbortController()
     const timer = setTimeout(() => {
       void fetchMetadata(url, { signal: controller.signal }).then((data) => {
         if (controller.signal.aborted) return
-        setState(data ? { status: 'loaded', data: project(data) } : { status: 'error', data: null })
+        setFetched(
+          data
+            ? { url, status: 'loaded', data: project(data) }
+            : { url, status: 'error', data: null }
+        )
       })
     }, DEBOUNCE_MS)
 
@@ -73,14 +65,12 @@ export function useMediaUrlUnfurl(url: string, enabled: boolean): UseMediaUrlUnf
       clearTimeout(timer)
       controller.abort()
     }
-  }, [url, enabled])
+  }, [url, active])
 
-  // The effect runs after the first paint. Answer from the cache or report loading now, so the
-  // first frame is already the final state or the loader.
-  if (state.status === 'idle' && enabled && url.trim()) {
-    const cached = getCachedMetadata(url)
-    if (cached) return { status: 'loaded', data: project(cached) }
-    return { status: cached === null ? 'error' : 'loading', data: null }
-  }
-  return state
+  if (!active) return IDLE
+  if (fetched?.url === url) return fetched
+  // Read in render, so the first frame is already the final state or the loader.
+  const cached = getCachedMetadata(url)
+  if (cached) return { status: 'loaded', data: project(cached) }
+  return { status: cached === null ? 'error' : 'loading', data: null }
 }

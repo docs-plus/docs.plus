@@ -139,7 +139,7 @@ export function HyperlinkSuggestions({
           )}
         </div>
 
-        {isLoading && totalRows === 0 && (
+        {isLoading && bookmarks.length === 0 && (
           <SuggestionsSkeleton sectionPad={layout.sectionPad} rowPad={layout.rowPad} />
         )}
       </div>
@@ -155,7 +155,7 @@ function suggestionStatusMessage(isLoading: boolean, totalRows: number): string 
 
 /**
  * Sits after the listbox, which may own only options and groups. Headings come from the
- * editor at once, so only Bookmarks can still be loading here.
+ * editor at once, so only Bookmarks can still be loading, under any heading rows.
  */
 function SuggestionsSkeleton({
   sectionPad,
@@ -165,20 +165,17 @@ function SuggestionsSkeleton({
   rowPad: string
 }): ReactNode {
   return (
-    <div aria-hidden className="mb-1">
-      <div className={sectionPad}>
-        <div className="flex h-5 items-center">
-          <div className="skeleton h-3 w-16" />
-        </div>
-      </div>
-      {['w-2/3', 'w-1/2'].map((width) => (
-        <div key={width} className={`flex min-h-11 items-center gap-2 py-2 ${rowPad}`}>
-          <Icons.bookmark size={16} className="text-base-content/70 shrink-0" />
-          <div className="flex h-5 flex-1 items-center">
-            <div className={`skeleton h-3.5 ${width}`} />
+    <div aria-hidden>
+      <Section label="Bookmarks" labelClassName={sectionPad}>
+        {['w-2/3', 'w-1/2'].map((width) => (
+          <div key={width} className={`flex min-h-11 items-center gap-2 py-2 ${rowPad}`}>
+            <Icons.bookmark size={16} className="text-base-content/70 shrink-0" />
+            <div className="flex h-5 flex-1 items-center">
+              <div className={`skeleton h-3.5 ${width}`} />
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </Section>
     </div>
   )
 }

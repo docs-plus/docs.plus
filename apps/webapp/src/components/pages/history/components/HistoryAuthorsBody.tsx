@@ -23,19 +23,18 @@ const TRIGGER_NOTE: Partial<Record<VersionTrigger, string>> = {
   'schema-migration': 'This version came from a schema migration, so its writers were not recorded.'
 }
 
+// Fixed copy, so the loader shows it as real text too.
+const RosterNote = () => (
+  <p className="text-base-content/60 text-xs">
+    This list shows whose text is still here. The Versions list shows who saved.
+  </p>
+)
+
 /** Mirrors the roster below: the two intro notes, then None and two person rows. */
 function AuthorsBodySkeleton() {
   return (
     <div className="space-y-3 px-3 py-3">
-      {/* The first note wraps to two lines at the sidebar width. */}
-      <div aria-hidden>
-        <div className="flex h-4 items-center">
-          <div className="skeleton h-3 w-full" />
-        </div>
-        <div className="flex h-4 items-center">
-          <div className="skeleton h-3 w-2/5" />
-        </div>
-      </div>
+      <RosterNote />
       <div aria-hidden className="flex h-4 items-center">
         <div className="skeleton h-3 w-3/4" />
       </div>
@@ -168,9 +167,7 @@ export function HistoryAuthorsBody() {
 
   return (
     <div className="space-y-3 px-3 py-3">
-      <p className="text-base-content/60 text-xs">
-        This list shows whose text is still here. The Versions list shows who saved.
-      </p>
+      <RosterNote />
       <p className="text-base-content/60 text-xs">
         {`${roster.knownCount} of ${parts(roster.totalCount)} ${roster.knownCount === 1 ? 'has' : 'have'} text from a known person.`}
       </p>

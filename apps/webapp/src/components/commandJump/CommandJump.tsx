@@ -19,6 +19,9 @@ import { buildPlaceRows, type CommandJumpSurface, type PlaceRow } from './buildP
 // #247's Owner live list key: empty search under Last opened. Do not fork it.
 const PAD_SORT: DocumentSortKey = 'lastOpenedAt_desc'
 const SEARCH_DEBOUNCE_MS = 350
+// Shared with the loading bones, so the swap moves no pixel.
+const GROUP_LABEL_PAD = 'px-3 pt-1 pb-1'
+const ROW_INSET = 'mx-1.5'
 
 // Every house modal guard stamps the page behind it; sheets without a trap only show in the store.
 function isAnotherLayerOpen(): boolean {
@@ -123,7 +126,7 @@ function CommandJumpPanel({ places, userId, onPick, navigate }: PanelProps) {
     const headingId = `${baseId}-${label.toLowerCase()}`
     return (
       <div role="group" aria-labelledby={headingId} className="py-1">
-        <ListGroupLabel as="div" id={headingId} className="px-3 pt-1 pb-1">
+        <ListGroupLabel as="div" id={headingId} className={GROUP_LABEL_PAD}>
           {label}
         </ListGroupLabel>
         {group.map((item, i) => {
@@ -141,7 +144,7 @@ function CommandJumpPanel({ places, userId, onPick, navigate }: PanelProps) {
               onMouseDown={(event) => event.preventDefault()}
               onMouseMove={() => !isActive && setActive(index)}
               onClick={() => onPick(item.run)}
-              className="mx-1.5">
+              className={ROW_INSET}>
               <ContextMenuRow active={isActive} icon={<Icon size={16} aria-hidden />}>
                 <span className="flex min-w-0 items-center gap-2.5">
                   <span className="truncate">{item.label}</span>
@@ -212,23 +215,22 @@ function CommandJumpPanel({ places, userId, onPick, navigate }: PanelProps) {
 }
 
 /**
- * Mirrors a Documents group of `ContextMenuRow`s.
- * It sits after the listbox, which owns only options.
+ * The real Documents label and rows, with bones for the titles. No parent carries `group`,
+ * so the rows show no hover fill. It sits after the listbox, which owns only options.
  */
 function DocumentRowsSkeleton() {
   return (
     <div aria-hidden className="py-1">
-      <div className="px-3 pt-1 pb-1">
-        <div className="flex h-5 items-center">
-          <div className="skeleton h-3 w-16" />
-        </div>
-      </div>
+      <ListGroupLabel as="div" className={GROUP_LABEL_PAD}>
+        Documents
+      </ListGroupLabel>
       {['w-2/3', 'w-1/2'].map((width) => (
-        <div key={width} className="mx-1.5 flex items-center gap-2.5 px-2.5 py-2">
-          <Icons.fileText size={16} className="shrink-0 opacity-70" />
-          <div className="flex h-5 flex-1 items-center">
-            <div className={`skeleton h-3.5 ${width}`} />
-          </div>
+        <div key={width} className={ROW_INSET}>
+          <ContextMenuRow className="cursor-default" icon={<Icons.fileText size={16} />}>
+            <span className="flex h-5 items-center">
+              <span className={`skeleton h-3.5 ${width}`} />
+            </span>
+          </ContextMenuRow>
         </div>
       ))}
     </div>

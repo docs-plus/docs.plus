@@ -243,8 +243,8 @@ function handleHistoryFailed(payload: HistoryStatelessPayload, deps: HistoryStat
       store().setSilentListRefresh(false)
       return
     }
-    // A loaded list means an older page failed. That request never set loading or the
-    // watch slot, so skip the shared tail.
+    // A loaded list keeps the sidebar. The failed request is an older page or a first-page
+    // re-list, and neither set loading or the watch slot, so skip the shared tail.
     if (store().historyList.length > 0) {
       // Match the echo: a failed first page must not free a Show older still in flight.
       if (payload.beforeVersion === store().pendingOlderBefore) store().setPendingOlderBefore(null)
@@ -290,6 +290,13 @@ function handleHistoryRevert(payload: HistoryStatelessPayload) {
   )
 }
 
+// A new cursor drops any older-page reply in flight, so it also frees Show older.
+function applyListCursor(hasMore: boolean, nextBefore: number | null) {
+  store().setHistoryHasMore(hasMore)
+  store().setHistoryNextBefore(nextBefore)
+  store().setPendingOlderBefore(null)
+}
+
 function handleHistoryList(payload: HistoryStatelessPayload, deps: HistoryStatelessHandlerDeps) {
   const raw = payload.response as HistoryListWireResponse | null | undefined
 
@@ -307,9 +314,7 @@ function handleHistoryList(payload: HistoryStatelessPayload, deps: HistoryStatel
     ]
     store().setHistoryList(merged)
     store().setProfiles({ ...store().profiles, ...(raw.profiles ?? {}) })
-    store().setHistoryHasMore(Boolean(raw.hasMore))
-    store().setHistoryNextBefore(raw.nextBefore ?? null)
-    store().setPendingOlderBefore(null)
+    applyListCursor(Boolean(raw.hasMore), raw.nextBefore ?? null)
     if (walking) {
       deepLinkRetried = false
       openListTarget(merged, deps)
@@ -335,9 +340,7 @@ function handleHistoryList(payload: HistoryStatelessPayload, deps: HistoryStatel
     list = raw
     profiles = {}
     clientAuthors = []
-    store().setHistoryHasMore(false)
-    store().setHistoryNextBefore(null)
-    store().setPendingOlderBefore(null)
+    applyListCursor(false, null)
   } else {
     const page = raw.versions ?? []
     const current = store().historyList
@@ -362,10 +365,7 @@ function handleHistoryList(payload: HistoryStatelessPayload, deps: HistoryStatel
     } else {
       list = page
       profiles = raw.profiles ?? {}
-      store().setHistoryHasMore(Boolean(raw.hasMore))
-      store().setHistoryNextBefore(raw.nextBefore ?? null)
-      // A replaced cursor drops the older-page reply in flight, so free Show older.
-      store().setPendingOlderBefore(null)
+      applyListCursor(Boolean(raw.hasMore), raw.nextBefore ?? null)
     }
   }
 

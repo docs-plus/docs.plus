@@ -140,7 +140,7 @@ const createLoadingSkeleton = (): HTMLElement => {
   const skeleton = createHTMLElement('div', { className: 'metadata-content metadata-loading' })
   // `.metadata img` paints the loaded icon at 18px, round, with an 8px end margin.
   const favicon = createHTMLElement('div', {
-    className: 'skeleton me-2 size-[18px] shrink-0 rounded-full'
+    className: 'skeleton me-2 size-4.5 shrink-0 rounded-full'
   })
   // The 200px `.metadata` row does not grow, so an empty flex-1 bar needs its own floor.
   const bar = createHTMLElement('div', { className: 'skeleton h-3.5 min-w-20 flex-1' })

@@ -1,6 +1,7 @@
 import Button from '@components/ui/Button'
 
 import { formatVersionDate } from '../helpers'
+import { useHistoryHash } from '../historyShareUrl'
 import type { HistoryToolbarVersion } from '../hooks/useGetVersionInfo'
 
 type Props = {
@@ -11,8 +12,8 @@ type Props = {
   canRestore?: boolean
   /** Signed-in writer only. Visitors never see Restore. */
   allowRestore?: boolean
-  /** The list is loading, so the note and the date show as bones. */
-  loading?: boolean
+  /** The list is loading, so the note or Restore and the date show as bones. */
+  loading: boolean
 }
 
 export function HistoryToolbarVersionBlock({
@@ -21,20 +22,28 @@ export function HistoryToolbarVersionBlock({
   restoring = false,
   canRestore = false,
   allowRestore = false,
-  loading = false
+  loading
 }: Props) {
+  const { version: linkedVersion } = useHistoryHash()
+
   if (!versionInfo) {
-    // A first load opens the latest version, so the current-version note shows too.
-    return loading ? (
+    if (!loading) return null
+    // A plain first load opens the latest version and its note. A version link opens
+    // an older one, which shows Restore to a writer and nothing to a visitor.
+    return (
       <div aria-hidden className="flex items-center justify-end gap-2">
-        <div className="flex h-5 items-center">
-          <div className="skeleton h-3.5 w-44" />
-        </div>
+        {linkedVersion == null ? (
+          <div className="flex h-5 items-center">
+            <div className="skeleton h-3.5 w-44" />
+          </div>
+        ) : (
+          allowRestore && <div className="skeleton rounded-field h-8 w-40" />
+        )}
         <div className="flex h-5 items-center">
           <div className="skeleton h-3.5 w-32" />
         </div>
       </div>
-    ) : null
+    )
   }
 
   const { date, time } = formatVersionDate(versionInfo.createdAt)
