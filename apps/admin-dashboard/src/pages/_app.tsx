@@ -5,6 +5,8 @@ import type { AppProps } from 'next/app'
 import dynamic from 'next/dynamic'
 import { type DefaultToastOptions, Toaster } from 'react-hot-toast'
 
+import { Loading } from '@/components/ui/Loading'
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -37,12 +39,7 @@ const toastOptions: DefaultToastOptions = {
 // Auth needs the client-side router, so the guard never renders on the server.
 const AuthGuard = dynamic(() => import('@/components/auth/AuthGuard'), {
   ssr: false,
-  loading: () => (
-    <div role="status" className="bg-base-200 flex min-h-screen items-center justify-center">
-      <span className="loading loading-spinner loading-lg" aria-hidden />
-      <span className="sr-only">Loading</span>
-    </div>
-  )
+  loading: () => <Loading className="bg-base-200 min-h-screen" />
 })
 
 export default function App({ Component, pageProps }: AppProps) {

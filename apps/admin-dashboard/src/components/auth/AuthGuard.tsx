@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router'
 
+import { Loading } from '@/components/ui/Loading'
 import { useAdminAuth } from '@/hooks/useAdminAuth'
 
 const publicPages = ['/login', '/unauthorized']
@@ -17,12 +18,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   }
 
   if (loading) {
-    return (
-      <div role="status" className="bg-base-200 flex min-h-screen items-center justify-center">
-        <span className="loading loading-spinner loading-lg" aria-hidden />
-        <span className="sr-only">Loading</span>
-      </div>
-    )
+    return <Loading className="bg-base-200 min-h-screen" />
   }
 
   // Not admin - redirect is handled by hook, show nothing

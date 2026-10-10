@@ -25,8 +25,7 @@ function ProgressBar({
   icon: Icon
 }: {
   label: string
-  /** The value is undefined while the data loads, so the value and the bar show bones. */
-  value?: number
+  value: number | undefined
   total: number
   color: string
   icon?: IconType
@@ -66,7 +65,7 @@ function MiniStat({
   trend
 }: {
   label: string
-  value?: number
+  value: number | undefined
   trend: 'up' | 'down'
 }) {
   return (
@@ -90,7 +89,7 @@ function MiniStat({
 }
 
 export function PushSubscriptionStats() {
-  const { data, isError, error, refetch, isRefetching } = useQuery({
+  const { data, isError, error, refetch, isFetching, isRefetching } = useQuery({
     queryKey: ['admin', 'push', 'analytics'],
     queryFn: fetchPushSubscriptionAnalytics,
     staleTime: 60000 // 1 minute
@@ -101,7 +100,7 @@ export function PushSubscriptionStats() {
       <h2 className="text-lg font-semibold">Push Subscription Analytics</h2>
       <button
         onClick={() => refetch()}
-        disabled={isRefetching || !data}
+        disabled={isFetching}
         className="btn btn-ghost btn-sm gap-1">
         <LuRefreshCw className={`h-4 w-4 ${isRefetching ? 'motion-safe:animate-spin' : ''}`} />
         Refresh
@@ -118,16 +117,13 @@ export function PushSubscriptionStats() {
           <span>
             {error instanceof Error ? error.message : 'Failed to load push subscription analytics.'}
           </span>
-          <button onClick={() => refetch()} disabled={isRefetching} className="btn btn-sm">
-            {isRefetching && <span className="loading loading-spinner loading-xs" />}
-            Retry
-          </button>
         </div>
       </div>
     )
   }
 
   // While loading, the cards keep their real frame and titles; only the data becomes bones.
+  // The Desktop row, the stale banner and the errors block are optional regions with no bones.
   const total = data?.platforms.total ?? 0
 
   return (

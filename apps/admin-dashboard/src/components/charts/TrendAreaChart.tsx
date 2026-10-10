@@ -10,6 +10,8 @@ import {
   YAxis
 } from 'recharts'
 
+import { Loading } from '@/components/ui/Loading'
+
 export interface TrendAreaSeries<T> {
   yKey: keyof T & string
   label: string
@@ -46,12 +48,7 @@ export function TrendAreaChart<T extends object>({
   }, [data, xKey])
 
   if (loading) {
-    return (
-      <div role="status" className="flex items-center justify-center" style={{ height }}>
-        <span className="loading loading-spinner loading-lg" aria-hidden />
-        <span className="sr-only">Loading</span>
-      </div>
-    )
+    return <Loading style={{ height }} />
   }
 
   if (!data.length) {
