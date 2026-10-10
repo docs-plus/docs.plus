@@ -727,14 +727,25 @@ describe('chatroom attachments', () => {
       const messageId = 'hover-order-1'
       // Real uploads carry image dims. Without them the 16:9 placeholder shrinks to the
       // 32px fixture under the cursor, and the mouseleave cancels the menu's open delay.
-      const image = { path: storagePath, url: storagePath, type: 'image', name: 'photo.png' }
       visitFeed(
         [
-          mediaRow([{ ...image, width: 32, height: 32 }], {
-            id: messageId,
-            seq: 4,
-            content: 'hello'
-          })
+          mediaRow(
+            [
+              {
+                path: storagePath,
+                url: storagePath,
+                type: 'image',
+                name: 'photo.png',
+                width: 32,
+                height: 32
+              }
+            ],
+            {
+              id: messageId,
+              seq: 4,
+              content: 'hello'
+            }
+          )
         ],
         messageId
       )

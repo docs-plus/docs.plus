@@ -89,7 +89,7 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
   if (!hasItems) {
     return (
       <div className={className}>
-        <ul className={`${TOC_CLASSES.listMenu} w-full p-0`}>{headerItem}</ul>
+        <ul className={TOC_CLASSES.listMenu}>{headerItem}</ul>
         <TocEmptyState />
       </div>
     )
@@ -103,7 +103,7 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
         modifiers={[tocDragModifier]}
         {...handlers}>
         <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
-          <ul className={`${TOC_CLASSES.listMenu} w-full p-0 ${activeId ? 'is-dragging' : ''}`}>
+          <ul className={`${TOC_CLASSES.listMenu} ${activeId ? 'is-dragging' : ''}`}>
             {headerItem}
             <ContextMenu
               aria-label="Section options"

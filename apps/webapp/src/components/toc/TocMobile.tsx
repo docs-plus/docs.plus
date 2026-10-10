@@ -23,7 +23,7 @@ function TocMobileComponent({ className = '' }: TocMobileProps) {
         <TocEmptyState />
       ) : (
         <>
-          <ul className={`${TOC_CLASSES.listMenu} my-2 w-full p-0`}>
+          <ul className={`${TOC_CLASSES.listMenu} my-2`}>
             {nestedItems.map(({ item, nodes }) => (
               <TocItemBody
                 key={item.id}

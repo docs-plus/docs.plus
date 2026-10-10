@@ -8,8 +8,8 @@ export const TOC_CLASSES = {
   header: 'toc__header',
   headerRow: 'toc__header-row',
   list: 'toc__list',
-  /** daisyUI menu + product list shell (call sites add width/padding utilities). */
-  listMenu: 'toc__list menu',
+  /** daisyUI menu + product list shell. `w-full p-0` lives here: a phone list once missed it. */
+  listMenu: 'toc__list menu w-full p-0',
   item: 'toc__item',
   /** Leading, link, and trail are siblings (never nest buttons in `<a>`). */
   row: 'toc__row',
