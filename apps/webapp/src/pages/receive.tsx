@@ -7,6 +7,7 @@ import {
 } from '@components/pages/receive/receiveSharedFile'
 import Button from '@components/ui/Button'
 import { GlobalDialog } from '@components/ui/GlobalDialog'
+import { Loading } from '@components/ui/Loading'
 import { useAuthStore } from '@stores'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import type { GetServerSideProps } from 'next'
@@ -101,14 +102,19 @@ const ReceivePage = () => {
   } else {
     card = {
       title: 'Import a file',
-      content: (
-        <p role="status" className="text-base-content/70 flex items-center gap-2 text-sm">
-          <span className="loading loading-spinner loading-sm shrink-0" aria-hidden />
-          <span className="min-w-0 [overflow-wrap:anywhere]">
-            {view.kind === 'working' ? `Creating a document from ${view.filename}…` : 'Loading…'}
-          </span>
-        </p>
-      )
+      // The import names its file, so it keeps the inline spinner row. Loading sits at the row
+      // start, so the swap to that row moves no pixel.
+      content:
+        view.kind === 'working' ? (
+          <p role="status" className="text-base-content/70 flex items-center gap-2 text-sm">
+            <span className="loading loading-spinner loading-sm shrink-0" aria-hidden />
+            <span className="min-w-0 [overflow-wrap:anywhere]">
+              Creating a document from {view.filename}…
+            </span>
+          </p>
+        ) : (
+          <Loading size="sm" className="text-base-content/70 justify-start" />
+        )
     }
   }
 

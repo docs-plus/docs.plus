@@ -4,6 +4,7 @@ import { Avatar } from '@components/ui/Avatar'
 import Button, { quietActionClassName } from '@components/ui/Button'
 import { DialogActions } from '@components/ui/Dialog'
 import { GlobalDialog } from '@components/ui/GlobalDialog'
+import { Loading } from '@components/ui/Loading'
 import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
 import type { AuthError, OAuthAuthorizationDetails, OAuthRedirect } from '@supabase/supabase-js'
@@ -150,7 +151,7 @@ const OAuthConsentPage = () => {
         title="Returning you to the app"
         description="You can close this tab if the app has opened."
         actions={<HomepageLink />}>
-        <span className="loading loading-spinner loading-sm text-base-content/70" aria-hidden />
+        <Loading size="sm" className="text-base-content/70 justify-start" />
       </PageCard>
     )
   } else if (view.kind === 'invalid') {
@@ -175,10 +176,7 @@ const OAuthConsentPage = () => {
   } else {
     content = (
       <PageCard title="Connect an app to docs.plus" actions={<HomepageLink />}>
-        <p role="status" className="text-base-content/70 flex items-center gap-2 text-sm">
-          <span className="loading loading-spinner loading-sm" aria-hidden />
-          Loading…
-        </p>
+        <Loading size="sm" className="text-base-content/70 justify-start" />
       </PageCard>
     )
   }

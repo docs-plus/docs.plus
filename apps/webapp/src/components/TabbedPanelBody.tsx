@@ -1,3 +1,4 @@
+import { Loading } from '@components/ui/Loading'
 import { PanelTabBar, type PanelTabOption } from '@components/ui/PanelTabBar'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { usePanelTabSwipe } from '@hooks/usePanelTabSwipe'
@@ -97,7 +98,7 @@ export function TabbedPanelBody<TTab extends string, TItem>({
 
               {hasMore && (
                 <div ref={sentinelRef} className="flex justify-center py-3">
-                  {isLoadingMore && <div className="loading loading-spinner loading-sm" />}
+                  {isLoadingMore && <Loading size="sm" label="Loading more" />}
                 </div>
               )}
             </div>
