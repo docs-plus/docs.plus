@@ -1,3 +1,4 @@
+import { ChunkLoadFallback } from '@components/ChunkLoadFallback'
 import { popoverPanelClassName } from '@components/ui/Popover'
 import { usePadShareUrl } from '@hooks/usePadShareUrl'
 import { twMerge } from '@utils/twMerge'
@@ -6,7 +7,13 @@ import { type CSSProperties, useEffect, useRef, useState } from 'react'
 
 const QrCode = dynamic(() => import('@components/ui/QrCode'), {
   ssr: false,
-  loading: () => <div className="skeleton rounded-box aspect-square w-full" />
+  loading: (p) => (
+    <ChunkLoadFallback
+      {...p}
+      skeleton={<div className="skeleton aspect-square w-full rounded-none" />}
+      className="bg-base-100 px-2 py-4"
+    />
+  )
 })
 
 const MIN_SIZE = 128

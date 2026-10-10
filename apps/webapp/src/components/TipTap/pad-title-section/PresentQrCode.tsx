@@ -1,3 +1,4 @@
+import { ChunkLoadFallback } from '@components/ChunkLoadFallback'
 import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
 import { QrVeil } from '@components/ui/QrVeil'
@@ -12,7 +13,12 @@ const ICON_SIZE = 20
 
 const QrCode = dynamic(() => import('@components/ui/QrCode'), {
   ssr: false,
-  loading: () => <div className="skeleton rounded-box aspect-square w-full" />
+  loading: (p) => (
+    <ChunkLoadFallback
+      {...p}
+      skeleton={<div className="skeleton rounded-box aspect-square w-full" />}
+    />
+  )
 })
 
 interface PresentQrCodeProps {
@@ -67,15 +73,18 @@ export function PresentQrCode({ value, title }: PresentQrCodeProps) {
 
   return (
     <>
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={open}
-        aria-label={`Present QR code for ${displayUrl}`}
-        className="group/qr-veil rounded-box focus-visible:ring-primary relative block w-full cursor-pointer focus-visible:ring-2 focus-visible:outline-none max-sm:mx-auto max-sm:max-w-56">
+      {/* The button sits over the code, not around it, because a failed load puts Try again in this box. */}
+      <div className="group/qr-box relative w-full max-sm:mx-auto max-sm:max-w-56">
         <QrCode value={value} quietZone={2} className="rounded-box w-full" />
-        <QrVeil icon={Icons.fullscreen} />
-      </button>
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={open}
+          aria-label={`Present QR code for ${displayUrl}`}
+          className="group/qr-veil rounded-box focus-visible:ring-primary absolute inset-0 cursor-pointer group-has-[[role=alert]]/qr-box:hidden focus-visible:ring-2 focus-visible:outline-none">
+          <QrVeil icon={Icons.fullscreen} />
+        </button>
+      </div>
 
       <dialog
         ref={dialogRef}
@@ -88,7 +97,9 @@ export function PresentQrCode({ value, title }: PresentQrCodeProps) {
           ref={stageRef}
           onClick={handleStageClick}
           className="bg-base-100 relative grid h-full w-full items-center justify-items-center gap-[5vh] px-[5vw] py-[5vh] text-center md:grid-cols-[auto_minmax(0,1fr)] md:justify-items-start md:gap-[5vw] md:text-left">
-          <QrCode value={value} className="rounded-box w-[min(80vw,55vh)] md:w-[min(86vh,52vw)]" />
+          <div className="w-[min(80vw,55vh)] md:w-[min(86vh,52vw)]">
+            <QrCode value={value} className="rounded-box w-full" />
+          </div>
           <div className="grid min-w-0 gap-[2.4vh]">
             <p className="text-base-content/60 text-[clamp(0.75rem,1.6vh,1.25rem)] font-semibold tracking-wide uppercase">
               Scan to open on your phone

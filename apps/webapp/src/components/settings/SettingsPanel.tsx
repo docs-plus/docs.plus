@@ -1,3 +1,4 @@
+import { ChunkLoadFallback } from '@components/ChunkLoadFallback'
 import { Avatar } from '@components/ui/Avatar'
 import Button, { dangerGhostClassName } from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
@@ -27,22 +28,22 @@ import {
 import type { SettingsPanelProps, SupportInk, SupportRow, TabType } from './types'
 
 const ProfileSection = dynamic(() => import('./components/ProfileSection'), {
-  loading: () => <ProfileSkeleton />
+  loading: (p) => <ChunkLoadFallback {...p} skeleton={<ProfileSkeleton />} />
 })
 const DocumentsSection = dynamic(() => import('./components/DocumentsSection'), {
-  loading: () => <DocumentsSkeleton />
+  loading: (p) => <ChunkLoadFallback {...p} skeleton={<DocumentsSkeleton />} />
 })
 const AppearanceSection = dynamic(() => import('./components/AppearanceSection'), {
-  loading: () => <AppearanceSkeleton />
+  loading: (p) => <ChunkLoadFallback {...p} skeleton={<AppearanceSkeleton />} />
 })
 const SecuritySection = dynamic(() => import('./components/SecuritySection'), {
-  loading: () => <SecuritySkeleton />
+  loading: (p) => <ChunkLoadFallback {...p} skeleton={<SecuritySkeleton />} />
 })
 const NotificationsSection = dynamic(() => import('./components/NotificationsSection'), {
-  loading: () => <NotificationsSkeleton />
+  loading: (p) => <ChunkLoadFallback {...p} skeleton={<NotificationsSkeleton />} />
 })
 const ConnectedAppsSection = dynamic(() => import('./components/ConnectedAppsSection'), {
-  loading: () => <ConnectedAppsSkeleton />
+  loading: (p) => <ChunkLoadFallback {...p} skeleton={<ConnectedAppsSkeleton />} />
 })
 
 const STAR_SPARK_ANGLES = [0, 60, 120, 180, 240, 300] as const
