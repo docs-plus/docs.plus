@@ -53,8 +53,14 @@ export const EmojiBody = () => {
       {emojiArray.map((emoji: string, index: number) => (
         <Tooltip key={index} title={emojiTitles[index] || 'emoji'} placement="top">
           <div className="hover:bg-base-200 rounded-box flex items-center justify-center p-1 transition-colors">
+            {/* A fixed host box holds the cell before emoji-mart init paints the glyph. */}
             {/* @ts-expect-error – em-emoji is a web component from emoji-mart; host styled theme-aware in globals.scss */}
-            <em-emoji native={emoji} set="native" size="4rem" />
+            <em-emoji
+              native={emoji}
+              set="native"
+              size="4rem"
+              className="flex size-16 items-center justify-center leading-none"
+            />
           </div>
         </Tooltip>
       ))}

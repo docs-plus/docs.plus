@@ -75,7 +75,9 @@ export function MessageMediaFileCard({ media }: { media: MessageMediaItem }) {
           }}>
           Retry
         </Button>
-      ) : null}
+      ) : (
+        <div className="skeleton rounded-field size-6 shrink-0" aria-hidden />
+      )}
     </div>
   )
 }

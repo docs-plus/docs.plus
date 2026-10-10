@@ -143,7 +143,7 @@ export const GifPickerButton = ({ className, size: _size = 18, ...props }: Props
           </div>
           {loading ? (
             <div className="flex justify-center py-6">
-              <span className="loading loading-spinner loading-sm text-primary" />
+              <span className="loading loading-spinner loading-sm" />
             </div>
           ) : error ? (
             <p className="text-base-content/60 px-1 py-4 text-center text-xs">{error}</p>

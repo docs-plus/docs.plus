@@ -862,7 +862,7 @@ $msg-flash-rest-2: 78%;
 
 /* em-emoji-picker (emoji-mart 5.6) — L1 frame through the vars its shadow DOM reads. Its text,
    accent and panel colours read `--rgb-*` "r, g, b" triplets that tokens cannot produce, so the
-   dark-theme sheet in `EmojiPanel/Picker.tsx` still paints those. */
+   dark-theme sheet in `EmojiPanel/EmojiMartPicker.tsx` still paints those. */
 /* stylelint-disable-next-line selector-type-no-unknown -- em-emoji-picker is a custom element */
 em-emoji-picker {
   border: 1px solid var(--color-base-300);

@@ -8,9 +8,18 @@ import {
 } from '@components/chatroom/stores/chatMediaGalleryStore'
 import { useFeedSpoilerGate } from '@components/chatroom/utils/feedSpoilerReveal'
 import { type GalleryMediaItem, mediaKey } from '@components/chatroom/utils/galleryPlaylist'
+import { positiveMediaDims } from '@components/chatroom/utils/messageMediaPaths'
 import { prefersReducedMotion } from '@utils/motion'
 import { twMerge } from '@utils/twMerge'
-import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from 'react'
+import {
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useState
+} from 'react'
 
 import { MediaUnavailable } from '../MessageCard/components/MessageContent/components/MediaUnavailable'
 
@@ -46,16 +55,58 @@ function GallerySlideShell({
   )
 }
 
-function GalleryLoadingBone({ kind, className }: { kind: SlideKind; className?: string }) {
-  if (kind === 'audio') {
-    return <div className={twMerge('skeleton h-24 w-full max-w-md', className)} aria-hidden />
+// One padding owner for the loaded slide and its loader, so the swap moves no pixel.
+const SLIDE_SHELL_CLASS: Record<SlideKind, string> = {
+  image: 'px-4',
+  video: 'px-4',
+  audio: 'flex-col px-6'
+}
+
+// The bone and the loaded img or video take this box from the stored size. So the media
+// does not collapse or jump while its bytes arrive.
+function visualBoxStyle(media: GalleryMediaItem): CSSProperties | undefined {
+  const dims = positiveMediaDims(media.width, media.height)
+  if (!dims) return undefined
+  const ratio = dims.width / dims.height
+  return {
+    aspectRatio: `${dims.width} / ${dims.height}`,
+    width: `min(96vw, 1200px, ${dims.width}px, calc((100dvh - 7rem) * ${ratio}))`
   }
+}
+
+function GalleryAudioLabel({ label }: { label: string }) {
+  return <p className="mb-4 max-w-md truncate text-center text-sm text-white/70">{label}</p>
+}
+
+function GalleryLoadingBone({
+  media,
+  kind,
+  label,
+  className
+}: {
+  media: GalleryMediaItem
+  kind: SlideKind
+  label: string
+  className?: string
+}) {
+  if (kind === 'audio') {
+    // The label is known before the URL, so only the native audio control is a bone.
+    return (
+      <div className={twMerge('flex w-full max-w-md flex-col items-center', className)}>
+        <GalleryAudioLabel label={label} />
+        <div className="skeleton h-[54px] w-full rounded-full" aria-hidden />
+      </div>
+    )
+  }
+  const style = visualBoxStyle(media)
   return (
     <div
       className={twMerge(
-        'skeleton max-h-[calc(100dvh-7rem)] w-full max-w-[min(96vw,1200px)]',
+        'skeleton max-h-[calc(100dvh-7rem)] max-w-[min(96vw,1200px)] shrink-0 rounded-none',
+        !style && 'aspect-video w-full',
         className
       )}
+      style={style}
       aria-hidden
     />
   )
@@ -63,16 +114,22 @@ function GalleryLoadingBone({ kind, className }: { kind: SlideKind; className?: 
 
 function GallerySpoilerChipShell({
   visibilityRef,
+  media,
   kind,
+  label,
   reveal
 }: {
   visibilityRef: VisibilityRef
+  media: GalleryMediaItem
   kind: SlideKind
+  label: string
   reveal: () => void
 }) {
   return (
-    <GallerySlideShell visibilityRef={visibilityRef} className="relative px-4">
-      <GalleryLoadingBone kind={kind} className="scale-110 blur-xl" />
+    <GallerySlideShell
+      visibilityRef={visibilityRef}
+      className={twMerge('relative', SLIDE_SHELL_CLASS[kind])}>
+      <GalleryLoadingBone media={media} kind={kind} label={label} className="scale-110 blur-xl" />
       <GallerySpoilerRevealControl kind={kind} reveal={reveal} variant="chip" />
     </GallerySlideShell>
   )
@@ -162,11 +219,19 @@ function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlid
 
   if (isLoading) {
     if (isSpoiler) {
-      return <GallerySpoilerChipShell visibilityRef={visibilityRef} kind="image" reveal={reveal} />
+      return (
+        <GallerySpoilerChipShell
+          visibilityRef={visibilityRef}
+          media={media}
+          kind="image"
+          label={alt}
+          reveal={reveal}
+        />
+      )
     }
     return (
-      <GallerySlideShell visibilityRef={visibilityRef}>
-        <GalleryLoadingBone kind="image" />
+      <GallerySlideShell visibilityRef={visibilityRef} className={SLIDE_SHELL_CLASS.image}>
+        <GalleryLoadingBone media={media} kind="image" label={alt} />
       </GallerySlideShell>
     )
   }
@@ -204,7 +269,10 @@ function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlid
       alt={alt}
       className={imageClassName}
       draggable={false}
-      style={transform ? { transform, transformOrigin: 'center center' } : undefined}
+      style={{
+        ...visualBoxStyle(media),
+        ...(transform && { transform, transformOrigin: 'center center' })
+      }}
       onError={() => setImgFailed(true)}
     />
   )
@@ -226,7 +294,8 @@ function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlid
         connectHostRef(node)
       }}
       className={[
-        'relative flex h-full w-full touch-none items-center justify-center overflow-hidden px-4',
+        'relative flex h-full w-full touch-none items-center justify-center overflow-hidden',
+        SLIDE_SHELL_CLASS.image,
         isZoomed && 'overscroll-none'
       ]
         .filter(Boolean)
@@ -274,7 +343,15 @@ function GalleryAvSlide({
   }, [canPlay, isActive, kind, slideKey, togglePlayback])
 
   if (isSpoiler) {
-    return <GallerySpoilerChipShell visibilityRef={visibilityRef} kind={kind} reveal={reveal} />
+    return (
+      <GallerySpoilerChipShell
+        visibilityRef={visibilityRef}
+        media={media}
+        kind={kind}
+        label={label}
+        reveal={reveal}
+      />
+    )
   }
 
   if (signFailed) {
@@ -291,15 +368,15 @@ function GalleryAvSlide({
 
   if (!resolvedUrl) {
     return (
-      <GallerySlideShell visibilityRef={visibilityRef}>
-        <GalleryLoadingBone kind={kind} />
+      <GallerySlideShell visibilityRef={visibilityRef} className={SLIDE_SHELL_CLASS[kind]}>
+        <GalleryLoadingBone media={media} kind={kind} label={label} />
       </GallerySlideShell>
     )
   }
 
   if (kind === 'video') {
     return (
-      <GallerySlideShell visibilityRef={visibilityRef} className="px-4">
+      <GallerySlideShell visibilityRef={visibilityRef} className={SLIDE_SHELL_CLASS.video}>
         <video
           ref={mediaRef as RefObject<HTMLVideoElement>}
           src={resolvedUrl}
@@ -307,6 +384,7 @@ function GalleryAvSlide({
           autoPlay={autoPlay}
           playsInline
           className="max-h-[calc(100dvh-7rem)] max-w-[min(96vw,1200px)] bg-black object-contain"
+          style={visualBoxStyle(media)}
           aria-label={label}
         />
       </GallerySlideShell>
@@ -314,8 +392,8 @@ function GalleryAvSlide({
   }
 
   return (
-    <GallerySlideShell visibilityRef={visibilityRef} className="flex-col px-6">
-      <p className="mb-4 max-w-md truncate text-center text-sm text-white/70">{label}</p>
+    <GallerySlideShell visibilityRef={visibilityRef} className={SLIDE_SHELL_CLASS.audio}>
+      <GalleryAudioLabel label={label} />
       <audio
         ref={mediaRef as RefObject<HTMLAudioElement>}
         src={resolvedUrl}

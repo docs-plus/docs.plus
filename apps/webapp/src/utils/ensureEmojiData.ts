@@ -1,19 +1,29 @@
 let scheduled = false
 let loadPromise: Promise<unknown> | null = null
+let dataPromise: Promise<unknown> | null = null
 
-const load = () =>
-  (loadPromise ??= Promise.all([import('emoji-mart'), import('@emoji-mart/data')])
-    .then(([{ init }, data]) => init({ data: data.default }))
+/** The one emoji data source. The picker reads it too, so emoji-mart never sees two sets. */
+export const loadEmojiData = () =>
+  (dataPromise ??= import('@emoji-mart/data')
+    .then((module) => module.default)
     .catch((error) => {
       // A failed chunk load must not poison the cache — allow a later retry.
+      dataPromise = null
+      throw error
+    }))
+
+const load = () =>
+  (loadPromise ??= Promise.all([import('emoji-mart'), loadEmojiData()])
+    .then(([{ init }, data]) => init({ data }))
+    .catch((error) => {
       loadPromise = null
       console.error('[emoji] init failed', error)
     }))
 
 /**
- * Emoji data is ~600KB parsed — keep it off the page entry chunk. Must be the FIRST
- * init emoji-mart sees, or its components self-initialize from a CDN fetch; chat-open
- * paths pass `immediate` to skip the idle wait.
+ * Emoji data is ~600KB parsed — keep it off the page entry chunk. Every emoji-mart init
+ * must pass the set from `loadEmojiData`, because an init with no data fetches a set from a CDN.
+ * Chat-open paths pass `immediate` to skip the idle wait.
  */
 export const ensureEmojiData = (immediate = false) => {
   if (typeof window === 'undefined') return

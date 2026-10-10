@@ -77,7 +77,7 @@ export function MessageMediaVideoPoster({ media, onOpen, className, onDimensions
           )}
         </>
       ) : (
-        <div className="skeleton absolute inset-0" aria-hidden />
+        <div className="skeleton absolute inset-0 rounded-none" aria-hidden />
       )}
     </button>
   )

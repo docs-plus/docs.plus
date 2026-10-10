@@ -68,7 +68,11 @@ const ReactionList = ({ className }: Props) => {
                 native={emoji}
                 set="native"
                 size="1.2rem"
-                className={`flex-shrink-0 pl-[4px] ${count <= 1 && 'pr-[4px]'}`}
+                // A fixed content box holds the pill width before emoji-mart init paints the glyph.
+                className={twMerge(
+                  'box-content flex size-[1.2rem] shrink-0 items-center justify-center pl-[4px] leading-none',
+                  count <= 1 && 'pr-[4px]'
+                )}
               />
 
               {count > 1 && (

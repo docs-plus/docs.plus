@@ -54,7 +54,13 @@ function mosaicTileContent(
     )
   }
   return (
-    <MessageMediaImageLink key={key} media={media} onOpen={onOpen} onDimensions={onDimensions} />
+    <MessageMediaImageLink
+      key={key}
+      media={media}
+      className="rounded-none"
+      onOpen={onOpen}
+      onDimensions={onDimensions}
+    />
   )
 }
 

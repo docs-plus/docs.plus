@@ -38,6 +38,7 @@ export function MessageMediaAudio({ media, onOpen }: Props) {
   const [playbackFailed, setPlaybackFailed] = useState(false)
   const unavailable = signFailed || playbackFailed
   const playable = !isSpoiler && resolvedUrl && !unavailable
+  const expandable = Boolean(onOpen) && !isSpoiler && !unavailable
 
   const nameRow = voice ? null : (
     <p className="text-base-content truncate text-xs font-medium">
@@ -50,8 +51,8 @@ export function MessageMediaAudio({ media, onOpen }: Props) {
       ref={visibilityRef}
       className={twMerge(
         'group/audio rounded-field relative flex max-w-sm items-center gap-2.5 border px-3 py-2.5',
-        // The expand button sits top-right and stays visible on phones; keep the speed chip clear of it.
-        playable && onOpen && 'pr-10',
+        // Keeps the speed chip and the loading bar clear of the top-right Expand button.
+        expandable && 'pr-10',
         theme.cardBorder,
         theme.cardSurface
       )}>
@@ -96,12 +97,12 @@ export function MessageMediaAudio({ media, onOpen }: Props) {
                 }}
               />
             ) : (
-              <div className="skeleton mt-1 h-8 w-full min-w-[180px]" aria-hidden />
+              <div className="skeleton rounded-field h-8 w-full min-w-[180px]" aria-hidden />
             )}
           </div>
         </>
       )}
-      {playable && onOpen ? (
+      {expandable && resolvedUrl ? (
         <button
           type="button"
           onClick={onExpand}

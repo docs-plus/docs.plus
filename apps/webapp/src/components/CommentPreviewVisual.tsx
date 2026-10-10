@@ -16,7 +16,6 @@ type LayoutTokens = {
   insertMediaClass: string
   inlineWrapperClass: string
   stackedWrapperClass: string
-  skeletonMaxH: string
 }
 
 const BASE_LAYOUT = {
@@ -25,12 +24,21 @@ const BASE_LAYOUT = {
   insertMediaClass: 'mx-auto max-h-48 w-auto object-contain',
   inlineWrapperClass: 'relative overflow-hidden',
   stackedWrapperClass: 'relative w-full max-w-[10rem] shrink-0 overflow-hidden rounded-field'
-} satisfies Omit<LayoutTokens, 'stacked' | 'compact' | 'skeletonMaxH'>
+} satisfies Omit<LayoutTokens, 'stacked' | 'compact'>
 
 const LAYOUT: Record<CommentPreviewLayout, LayoutTokens> = {
-  'insert-inline': { ...BASE_LAYOUT, stacked: false, compact: false, skeletonMaxH: 'max-h-32' },
-  'stacked-feed': { ...BASE_LAYOUT, stacked: true, compact: true, skeletonMaxH: 'max-h-24' },
-  'stacked-composer': { ...BASE_LAYOUT, stacked: true, compact: false, skeletonMaxH: 'max-h-32' }
+  'insert-inline': { ...BASE_LAYOUT, stacked: false, compact: false },
+  'stacked-feed': { ...BASE_LAYOUT, stacked: true, compact: true },
+  'stacked-composer': { ...BASE_LAYOUT, stacked: true, compact: false }
+}
+
+// The stacked thumb slot when an unfurl has no thumbnail or fails: one static image tile.
+function StackedImageTile() {
+  return (
+    <span className="bg-base-300 rounded-field flex aspect-video max-h-24 w-full max-w-[10rem] items-center justify-center">
+      <Icons.image size={20} />
+    </span>
+  )
 }
 
 function MediaTypeIcon({ nodeType }: { nodeType: string }) {
@@ -45,23 +53,32 @@ function UnfurlPreview({ src, layout }: { src: string; layout: CommentPreviewLay
   const thumbClass =
     layout === 'insert-inline' ? 'size-16 shrink-0 rounded-field object-cover' : tokens.feedThumb
 
+  // Only the response says whether a thumbnail exists, so the loader always draws the thumb.
   if (unfurl.status === 'loading') {
     if (layout === 'insert-inline') {
       return (
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3">
           <div className="skeleton rounded-field size-16 shrink-0" />
-          <div className="flex flex-1 flex-col justify-center gap-2">
-            <div className="skeleton h-3.5 w-3/4" />
-            <div className="skeleton h-3 w-1/3" />
+          <div className="min-w-0 flex-1">
+            <div className="flex h-5 items-center">
+              <div className="skeleton h-3.5 w-3/4" />
+            </div>
+            <div className="flex h-4 items-center">
+              <div className="skeleton h-3 w-1/3" />
+            </div>
           </div>
         </div>
       )
     }
     return (
-      <div className="flex w-full max-w-[10rem] flex-col gap-1.5">
-        <div className={`skeleton rounded-field aspect-video w-full ${tokens.skeletonMaxH}`} />
-        <div className="skeleton h-3 w-3/4" />
-        <div className="skeleton h-2.5 w-1/2" />
+      <div className="flex w-full max-w-[10rem] flex-col gap-1">
+        <div className="skeleton rounded-field aspect-video max-h-24 w-full" />
+        <div className="flex h-5 items-center">
+          <div className="skeleton h-3.5 w-3/4" />
+        </div>
+        <div className="flex h-4 items-center">
+          <div className="skeleton h-3 w-1/2" />
+        </div>
       </div>
     )
   }
@@ -86,15 +103,17 @@ function UnfurlPreview({ src, layout }: { src: string; layout: CommentPreviewLay
         {thumbnail ? (
           <img src={thumbnail} alt="" className={thumbClass} onError={hideOnError} />
         ) : (
-          <span className="bg-base-300 rounded-field flex aspect-video max-h-24 w-full max-w-[10rem] items-center justify-center">
-            <Icons.image size={20} />
-          </span>
+          <StackedImageTile />
         )}
         <p className="m-0 truncate text-sm font-medium">{title}</p>
         <p className="text-base-content/60 m-0 truncate text-xs">{hostname}</p>
       </div>
     )
   }
+
+  // MediaUrlPreview drops the whole insert card on a failure, so only the stacked layouts
+  // keep a tile in the slot the loader held.
+  if (unfurl.status === 'error' && tokens.stacked) return <StackedImageTile />
 
   return null
 }

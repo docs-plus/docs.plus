@@ -75,5 +75,12 @@ export function useMediaUrlUnfurl(url: string, enabled: boolean): UseMediaUrlUnf
     }
   }, [url, enabled])
 
+  // The effect runs after the first paint. Answer from the cache or report loading now, so the
+  // first frame is already the final state or the loader.
+  if (state.status === 'idle' && enabled && url.trim()) {
+    const cached = getCachedMetadata(url)
+    if (cached) return { status: 'loaded', data: project(cached) }
+    return { status: cached === null ? 'error' : 'loading', data: null }
+  }
   return state
 }

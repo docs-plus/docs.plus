@@ -1,73 +1,51 @@
-import { closeMessageReaction } from '@components/chatroom/utils/messageReaction'
-import data from '@emoji-mart/data/sets/14/native.json'
-import EmojiPicker from '@emoji-mart/react'
-import { isLightTheme, useChatStore, useThemeStore } from '@stores'
-import { useLayoutEffect, useRef } from 'react'
+import { EmptyState } from '@components/ui/EmptyState'
+import { Loading } from '@components/ui/Loading'
+import { loadEmojiData } from '@utils/ensureEmojiData'
+import dynamic, { type DynamicOptionsLoadingProps } from 'next/dynamic'
 
 import { useEmojiPanelContext } from './context/EmojiPanelContext'
+import type { EmojiMartPickerProps } from './EmojiMartPicker'
 
-// emoji-mart paints with `rgb(var(--rgb-*))`, so it needs "r, g, b" triplets that tokens cannot
-// give. A probe resolves each token in the live theme; a 1px canvas turns it into sRGB.
-const PICKER_RGB_TOKENS = {
-  '--rgb-background': 'var(--color-base-100)',
-  '--rgb-input': 'var(--color-base-200)',
-  '--rgb-color': 'var(--color-base-content)',
-  '--rgb-accent': 'var(--color-primary)'
-}
+type PickerProps = Omit<EmojiMartPickerProps, 'data'>
 
-function paintPickerRgbVars(host: HTMLElement) {
-  const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true })
-  if (!ctx) return
-  const probe = host.appendChild(document.createElement('span'))
-  for (const [name, token] of Object.entries(PICKER_RGB_TOKENS)) {
-    probe.style.color = token
-    ctx.clearRect(0, 0, 1, 1)
-    ctx.fillStyle = getComputedStyle(probe).color
-    ctx.fillRect(0, 0, 1, 1)
-    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data
-    host.style.setProperty(name, `${r}, ${g}, ${b}`)
-  }
-  probe.remove()
-}
+// BottomSheet mounts on every route, so emoji-mart and its data load only when a picker mounts.
+// The body gets the resolved data object: a data function makes emoji-mart await before it
+// claims its shared set, and two inits in that gap would both change it.
+const EmojiMartPicker = dynamic<PickerProps>(
+  () =>
+    Promise.all([import('./EmojiMartPicker'), loadEmojiData()]).then(([module, data]) => {
+      const LoadedPicker = (props: PickerProps) => <module.EmojiMartPicker {...props} data={data} />
+      return LoadedPicker
+    }),
+  { ssr: false, loading: PickerFallback }
+)
 
-type Props = {
-  emojiSelectHandler: (emoji: any) => void
-}
-export const Picker = ({ emojiSelectHandler }: Props) => {
+function PickerFallback({ error, retry }: DynamicOptionsLoadingProps) {
   const { variant } = useEmojiPanelContext()
-  const isOpen = useChatStore((s) => s.emojiPicker.isOpen)
-  const resolvedTheme = useThemeStore((s) => s.resolvedTheme)
-  const isDark = !isLightTheme(resolvedTheme)
-  const wrapperRef = useRef<HTMLDivElement>(null)
-
-  // The theme store writes the DOM before it sets state, so this reads the new tokens.
-  useLayoutEffect(() => {
-    if (wrapperRef.current) paintPickerRgbVars(wrapperRef.current)
-  }, [resolvedTheme])
-
+  const body = error ? (
+    <EmptyState
+      tone="error"
+      title="Couldn’t load emoji."
+      onRetry={retry}
+      className="flex-1 justify-center"
+    />
+  ) : (
+    <Loading label="Loading emoji" className="flex-1" />
+  )
+  if (variant !== 'desktop') return body
+  // The desktop host has no frame of its own, so the fallback draws the emoji-mart card:
+  // 9 × 36px emoji plus 28px of padding, a 1px border and a 435px host.
   return (
-    <div ref={wrapperRef}>
-      <EmojiPicker
-        data={data}
-        dynamicWidth={variant === 'mobile' ? true : false}
-        navPosition="bottom"
-        previewPosition="none"
-        searchPosition="sticky"
-        skinTonePosition="search"
-        {...(variant === 'mobile' && {
-          emojiSize: 34,
-          emojiButtonSize: 42
-        })}
-        emojiVersion="14"
-        set="native"
-        theme={isDark ? 'dark' : 'light'}
-        onClickOutside={() => {
-          // Closes the reaction sheet too. Closing only the picker left the sheet
-          // open with no message selected, so the next tap wrote no reaction.
-          if (isOpen) closeMessageReaction()
-        }}
-        onEmojiSelect={emojiSelectHandler}
-      />
+    <div className="rounded-box border-base-300 bg-base-100 flex h-[435px] w-[354px] flex-col border shadow-[var(--shadow-overlay)]">
+      {body}
     </div>
   )
 }
+
+// emoji-mart 5.6 sizes its host at a fixed 435px. The fallback holds that height, so a
+// content-detent sheet does not grow when the picker paints.
+export const Picker = ({ emojiSelectHandler }: PickerProps) => (
+  <div className="flex min-h-[435px] flex-col">
+    <EmojiMartPicker emojiSelectHandler={emojiSelectHandler} />
+  </div>
+)

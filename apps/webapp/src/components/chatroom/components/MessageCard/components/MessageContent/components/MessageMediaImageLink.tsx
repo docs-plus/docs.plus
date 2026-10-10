@@ -19,6 +19,8 @@ type Props = {
 export function MessageMediaImageLink({ media, className, onOpen, onDimensions }: Props) {
   const { url: resolvedUrl, ref: visibilityRef, signFailed, retry } = useFeedMediaDisplayUrl(media)
   const [imgFailed, setImgFailed] = useState(false)
+  // The cover paints from the cache once the hidden img has loaded that URL; until then the bone stays.
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null)
   const { isSpoiler, onActivate } = useSpoilerGatedActivate(media, onOpen)
   const hasSpoiler = Boolean(media.spoiler)
   const alt = media.name?.trim() || 'Image attachment'
@@ -28,14 +30,15 @@ export function MessageMediaImageLink({ media, className, onOpen, onDimensions }
     retry()
   }
   const coverStyle =
-    resolvedUrl && !showUnavailable
-      ? ({ backgroundImage: `url(${JSON.stringify(resolvedUrl)})` } satisfies CSSProperties)
+    loadedUrl && !showUnavailable
+      ? ({ backgroundImage: `url(${JSON.stringify(loadedUrl)})` } satisfies CSSProperties)
       : undefined
 
+  // The cover classes go on only with the image: bg-cover beats the skeleton's background-size
+  // and freezes its shimmer.
   const imageLayerClass = twMerge(
-    'bg-cover bg-center bg-no-repeat',
-    isSpoiler && resolvedUrl && 'scale-110 blur-xl',
-    !resolvedUrl && 'bg-base-200 skeleton'
+    loadedUrl ? 'bg-cover bg-center bg-no-repeat' : !showUnavailable && 'skeleton rounded-none',
+    isSpoiler && loadedUrl && 'scale-110 blur-xl'
   )
 
   const testId = isSpoiler ? 'feed-spoiler-reveal' : 'feed-image-open'
@@ -44,7 +47,7 @@ export function MessageMediaImageLink({ media, className, onOpen, onDimensions }
     return (
       <div
         ref={visibilityRef}
-        className={twMerge('bg-base-200 skeleton absolute inset-0', className)}
+        className={twMerge('skeleton absolute inset-0', className)}
         aria-hidden
       />
     )
@@ -86,6 +89,7 @@ export function MessageMediaImageLink({ media, className, onOpen, onDimensions }
           className="sr-only"
           loading="lazy"
           onLoad={(event) => {
+            setLoadedUrl(resolvedUrl)
             const { naturalWidth, naturalHeight } = event.currentTarget
             const dims = positiveMediaDims(naturalWidth, naturalHeight)
             if (dims) onDimensions?.(dims.width, dims.height)
