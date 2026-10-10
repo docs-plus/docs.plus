@@ -22,7 +22,9 @@ const Editor = () => {
       id={PAD_MAIN_ID}
       tabIndex={-1}
       className="editor editorWrapper scrollbar-custom relative flex min-h-0 w-full max-w-full flex-1 scrollbar-thin flex-col justify-start overflow-y-auto scroll-smooth outline-none">
-      <EditorContent />
+      {/* 16px is the --tiptap-inline-pad-end of _mobile.scss. The bones need it from this
+          class; on the loaded editor it repeats the SCSS value. */}
+      <EditorContent className="pr-4" />
     </main>
   )
 }

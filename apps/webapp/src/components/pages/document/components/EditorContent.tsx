@@ -18,8 +18,9 @@ const EditorContent = ({ className }: { className?: string }) => {
   const editorElement = useRef<HTMLDivElement>(null)
   const { enableAndFocus, isKeyboardOpen } = useEnableEditor()
 
-  // Entry fade plays once on mount; the flag keeps it from replaying on re-render.
-  const [entryFadeDone, setEntryFadeDone] = useState(false)
+  // No fade at the S0→S1 swap, where this mount drew the bones first. A mount after the
+  // first sync (a return from history) fades once; the flag stops a replay on re-render.
+  const [fadeIn, setFadeIn] = useState(() => !useStore.getState().settings.editor.providerSyncing)
 
   useMediaPasteUpload(editor)
 
@@ -59,13 +60,13 @@ const EditorContent = ({ className }: { className?: string }) => {
         ref={editorElement}
         className={twMerge(
           'tiptap__editor docy_editor relative w-full',
-          !entryFadeDone && 'motion-safe:animate-[doc-content-in_240ms_ease-out_both]',
+          fadeIn && 'motion-safe:animate-[doc-content-in_240ms_ease-out_both]',
           className
         )}
         editor={editor}
         onTouchEnd={handleDoubleTap}
         onAnimationEnd={(e) => {
-          if (e.animationName === 'doc-content-in') setEntryFadeDone(true)
+          if (e.animationName === 'doc-content-in') setFadeIn(false)
         }}
       />
     </>

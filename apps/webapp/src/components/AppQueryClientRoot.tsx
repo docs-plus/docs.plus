@@ -5,9 +5,10 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { ReactNode } from 'react'
 
-const DocumentShellInner = dynamic(
-  () => import('./DocumentShellInner').then((module) => module.DocumentShellInner),
-  { ssr: false }
+// A split chunk keeps the shell out of the landing bundle. It still renders on the
+// server, so the pad skeleton is in the first HTML (Skeleton doctrine).
+const DocumentShellInner = dynamic(() =>
+  import('./DocumentShellInner').then((module) => module.DocumentShellInner)
 )
 
 // Inside the provider but above the lazy DocumentShellInner, so sync starts with the page.

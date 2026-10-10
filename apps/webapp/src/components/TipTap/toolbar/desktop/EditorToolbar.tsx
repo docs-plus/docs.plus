@@ -1,4 +1,5 @@
 import { BookmarkPanelSkeleton } from '@components/bookmarkPanel/components/BookmarkPanelSkeleton'
+import { ChunkLoadFallback } from '@components/ChunkLoadFallback'
 import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
 import { SettingsTakeover } from '@components/settings/SettingsTakeover'
 import ToolbarSkeleton from '@components/skeleton/ToolbarSkeleton'
@@ -37,20 +38,20 @@ import {
 import StyleSelect from './StyleSelect'
 
 const MediaInsertPanel = dynamic(() => import('../../mediaPopovers/MediaInsertPanel'), {
-  loading: () => <MediaInsertPanelSkeleton />
+  loading: (p) => <ChunkLoadFallback {...p} skeleton={<MediaInsertPanelSkeleton />} />
 })
 
 const DocumentSettingsPanel = dynamic(() => import('./DocumentSettingsPanel'), {
-  loading: () => <DocumentSettingsSkeleton />
+  loading: (p) => <ChunkLoadFallback {...p} skeleton={<DocumentSettingsSkeleton />} />
 })
 
 const BookmarkPanel = dynamic(
   () => import('@components/bookmarkPanel').then((m) => m.BookmarkPanel),
-  { loading: () => <BookmarkPanelSkeleton /> }
+  { loading: (p) => <ChunkLoadFallback {...p} skeleton={<BookmarkPanelSkeleton />} /> }
 )
 
 const FilterPanel = dynamic(() => import('./FilterPanel'), {
-  loading: () => <FilterSkeleton />
+  loading: (p) => <ChunkLoadFallback {...p} skeleton={<FilterSkeleton />} />
 })
 
 const ICON_SIZE = 16
@@ -69,6 +70,8 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
     (state) => state.settings.editor.filterResult.sortedSlugs.length > 0
   )
   const user = useAuthStore((state) => state.profile)
+  // The S0 skeleton keys on the session cookie, so the S1 bones key on the session too.
+  const isSignedIn = useAuthStore((state) => Boolean(state.profile?.id ?? state.session?.id))
   const inProgressBookmarks = useChatStore(selectInProgressBookmarkCount)
   const { isOpen: isDocumentsOpen, setIsOpen: setDocumentsOpen } = useSettingsModal()
 
@@ -94,7 +97,8 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [editor, createComment])
 
-  if (loading || providerSyncing || !editor) return <ToolbarSkeleton />
+  if (loading || providerSyncing || !editor)
+    return <ToolbarSkeleton isAuthed={isSignedIn} hasQr={Boolean(qr)} />
 
   return (
     <>

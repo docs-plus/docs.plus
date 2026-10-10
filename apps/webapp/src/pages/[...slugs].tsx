@@ -80,8 +80,7 @@ const Document = ({
     )
   }
 
-  // Title and OG tags live in _app.tsx. A <Head> here renders inside AppQueryClientRoot,
-  // whose document shell is ssr:false, so the server response would carry none of them.
+  // Title and OG tags live in _app.tsx (DocumentHead).
   return (
     <>
       {!hasProvider && <SlugPageLoader isMobile={isMobile} isAuthed={isAuthed} />}

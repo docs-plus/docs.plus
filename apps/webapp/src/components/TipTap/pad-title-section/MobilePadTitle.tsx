@@ -28,6 +28,7 @@ import type { Editor } from '@tiptap/core'
 import { yUndoPluginKey } from '@tiptap/y-tiptap'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { plainTitle } from '@utils/titleWrite'
+import { twMerge } from '@utils/twMerge'
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 import FilterBar from './FilterBar'
@@ -41,6 +42,7 @@ interface UserProfileButtonProps {
     avatar_updated_at?: string | null
     avatar_url?: string | null
   } | null
+  isSignedIn: boolean
   onProfileClick: () => void
 }
 
@@ -84,7 +86,7 @@ const EditableToggle = ({ isEditable, onDone }: { isEditable: boolean; onDone: (
   )
 }
 
-const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => {
+const UserProfileButton = ({ user, isSignedIn, onProfileClick }: UserProfileButtonProps) => {
   if (user) {
     return (
       <Button
@@ -100,6 +102,9 @@ const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => 
       </Button>
     )
   }
+
+  // The session lands before the profile, so hold the avatar slot rather than show Sign in.
+  if (isSignedIn) return <div className="skeleton size-10 shrink-0 rounded-full" aria-hidden />
 
   return (
     <Button variant="neutral" size="sm" onClick={onProfileClick}>
@@ -227,6 +232,13 @@ const MobilePadTitle = () => {
   const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
   const profileId = useAuthStore((state) => state.profile?.id ?? state.session?.id)
   const canEditMetadata = useStore((state) => canEditDocumentMetadata(state.settings, profileId))
+  // The session lands before the profile fetch, so a signed-in user never sees Sign in first.
+  const isSignedIn = Boolean(profileId)
+  // The read↔edit crossfade plays from the first mode swap on, never on mount. At the
+  // S0→S1 swap the S0 header already sits here, so a fade would blink it.
+  const [initialEditable] = useState(isEditable)
+  const [crossfade, setCrossfade] = useState(false)
+  if (!crossfade && isEditable !== initialEditable) setCrossfade(true)
   const { isOpen: isProfileModalOpen, setIsOpen: setProfileModalOpen } = useSettingsModal()
   const [settingsTab, setSettingsTab] = useState<TabType | undefined>(undefined)
   const { overlay, settingsTab: hashSettingsTab } = useHashOverlay()
@@ -276,7 +288,10 @@ const MobilePadTitle = () => {
                 the sticky header rides the visualViewport machinery) */}
             <div
               key={isEditable ? 'edit' : 'read'}
-              className="flex min-w-0 flex-1 items-center gap-1 motion-safe:animate-[doc-content-in_120ms_ease-out_both]">
+              className={twMerge(
+                'flex min-w-0 flex-1 items-center gap-1',
+                crossfade && 'motion-safe:animate-[doc-content-in_120ms_ease-out_both]'
+              )}>
               <EditableToggle isEditable={isEditable} onDone={exitEditMode} />
 
               {isEditable ? (
@@ -302,9 +317,10 @@ const MobilePadTitle = () => {
               <ProviderSyncStatus compact />
               <PrivateIndicator />
               <ReadOnlyIndicator />
-              {user && <NotificationButton />}
+              {isSignedIn && <NotificationButton />}
               <UserProfileButton
                 user={user}
+                isSignedIn={isSignedIn}
                 onProfileClick={user ? () => openSettings() : () => openInlineSignInDialog()}
               />
             </div>

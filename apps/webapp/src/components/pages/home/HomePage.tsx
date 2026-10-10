@@ -55,6 +55,10 @@ interface HomePageProps {
 
 const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
   const user = useAuthStore((state) => state.profile)
+  // The session lands before the profile fetch, so a signed-in user never sees Sign in first.
+  const isSignedIn = useAuthStore((state) => Boolean(state.profile?.id ?? state.session?.id))
+  // Home is static, so auth settles after paint. The slot holds a bone until then.
+  const authLoading = useAuthStore((state) => state.loading)
   const [displayHostname, setDisplayHostname] = useState(hostname)
   const { isOpen: isProfileOpen, setIsOpen: setIsProfileOpen } = useSettingsModal()
   const [settingsTab, setSettingsTab] = useState<TabType | undefined>(undefined)
@@ -132,6 +136,14 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
                   tooltipPlacement="bottom">
                   <Avatar face={user} clickable={false} size="lg" className="pointer-events-none" />
                 </Button>
+              ) : isSignedIn || authLoading ? (
+                <div
+                  className={twMerge(
+                    'skeleton shrink-0 rounded-full',
+                    isSignedIn ? 'size-12' : 'size-11 sm:size-12'
+                  )}
+                  aria-hidden
+                />
               ) : (
                 <Button
                   shape="circle"

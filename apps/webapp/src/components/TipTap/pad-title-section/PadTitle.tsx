@@ -1,3 +1,4 @@
+import { ChunkLoadFallback } from '@components/ChunkLoadFallback'
 import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
 import { SettingsTakeover } from '@components/settings/SettingsTakeover'
 import type { TabType } from '@components/settings/types'
@@ -19,6 +20,7 @@ import { useStore } from '@stores'
 import { useAuthStore } from '@stores'
 import { useThemeStore } from '@stores'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
+import { twMerge } from '@utils/twMerge'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import React, { useCallback, useEffect, useState } from 'react'
@@ -37,11 +39,16 @@ const NotificationPanel = dynamic(
     import('../../notificationPanel/desktop/NotificationPanel').then(
       (mod) => mod.NotificationPanel
     ),
-  { loading: () => <NotificationPanelSkeleton /> }
+  { loading: (p) => <ChunkLoadFallback {...p} skeleton={<NotificationPanelSkeleton />} /> }
 )
 
 const PadTitle = () => {
   const user = useAuthStore((state) => state.profile)
+  // The session lands before the profile fetch, so a signed-in user never sees Sign in first.
+  const isSignedIn = useAuthStore((state) => Boolean(state.profile?.id ?? state.session?.id))
+  // Fade in only on a return from history. At the S0→S1 swap the S0 header already
+  // sits here, so a fade would blink it.
+  const [fadeIn] = useState(() => !useStore.getState().settings.editor.providerSyncing)
   const themePreference = useThemeStore((state) => state.preference)
   const setThemePreference = useThemeStore((state) => state.setPreference)
   const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
@@ -75,7 +82,11 @@ const PadTitle = () => {
   return (
     <>
       {/* Header bar; `border-b` is the sole line under the title row (toolbar uses `border-b` only, no `border-t` — see EditorToolbar). */}
-      <header className="border-base-300 bg-base-100 relative z-30 flex h-14 w-full shrink-0 items-center border-b px-3 motion-safe:animate-[doc-region-in_220ms_ease-out_both]">
+      <header
+        className={twMerge(
+          'border-base-300 bg-base-100 relative z-30 flex h-14 w-full shrink-0 items-center border-b px-3',
+          fadeIn && 'motion-safe:animate-[doc-region-in_220ms_ease-out_both]'
+        )}>
         {/* Left section: Logo + Document info */}
         <div className="flex flex-1 items-center gap-2">
           {/* Logo */}
@@ -105,7 +116,7 @@ const PadTitle = () => {
           {/* Share button */}
           <Button
             variant="primary"
-            btnStyle={user ? 'outline' : undefined}
+            btnStyle={isSignedIn ? 'outline' : undefined}
             startIcon={Icons.share}
             onClick={() => setShareModalOpen(true)}>
             Share
@@ -123,7 +134,7 @@ const PadTitle = () => {
           </Button>
 
           {/* Notifications - authenticated users only */}
-          {isAuthServiceAvailable && user && (
+          {isAuthServiceAvailable && isSignedIn && (
             <Popover
               placement="bottom-end"
               open={isNotificationsOpen}
@@ -168,6 +179,8 @@ const PadTitle = () => {
                   tooltipPlacement="bottom">
                   <Avatar face={user} clickable={false} size="lg" className="pointer-events-none" />
                 </Button>
+              ) : isSignedIn ? (
+                <div className="skeleton size-12 shrink-0 rounded-full" aria-hidden />
               ) : (
                 <>
                   {/* A signed-out reader cannot open Settings, so the theme
