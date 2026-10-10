@@ -9,7 +9,10 @@ type Props = {
 /** Mirrors ComposerBar's input row. The field paints no box, so only its placeholder is a bone. */
 export const ChatroomComposerSkeleton = ({ variant = 'desktop', className }: Props) => {
   const isDesktop = variant === 'desktop'
-  const button = twMerge('skeleton rounded-field shrink-0', isDesktop ? 'size-8' : 'size-11')
+  const buttonBoneClass = twMerge(
+    'skeleton rounded-field shrink-0',
+    isDesktop ? 'size-8' : 'size-11'
+  )
 
   return (
     <div
@@ -29,7 +32,7 @@ export const ChatroomComposerSkeleton = ({ variant = 'desktop', className }: Pro
             'flex w-full items-center',
             isDesktop ? 'gap-1.5 px-3 py-2' : 'min-h-11 gap-1 px-3 py-2'
           )}>
-          <div className={button} />
+          <div className={buttonBoneClass} />
           <div className={twMerge('flex min-w-0 flex-1 items-center', isDesktop ? 'h-8' : 'h-11')}>
             <div className="skeleton h-4 w-32" />
           </div>
@@ -38,8 +41,8 @@ export const ChatroomComposerSkeleton = ({ variant = 'desktop', className }: Pro
               'flex shrink-0 items-center sm:gap-1.5',
               isDesktop ? 'gap-1' : 'gap-0.5'
             )}>
-            <div className={button} />
-            <div className={button} />
+            <div className={buttonBoneClass} />
+            <div className={buttonBoneClass} />
           </div>
         </div>
       </div>

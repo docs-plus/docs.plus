@@ -1,6 +1,6 @@
 import { getChannelIdForHeading, upsertChannel } from '@api'
 import { useAuthStore, useChatStore, useStore } from '@stores'
-import { useEffect, useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import slugify from 'slugify'
 
 const resolveHeadingChannel = async (
@@ -56,7 +56,9 @@ export const useHeadingChannel = (): unknown => {
   const canWrite = Boolean(uid && joinedWorkspace)
   const [error, setError] = useState<unknown>(null)
 
-  useEffect(() => {
+  // A layout effect, so a retry's undefined write lands before paint. Otherwise the
+  // composer paints one null frame between the join and the retry.
+  useLayoutEffect(() => {
     setError(null)
     if (!headingId || !workspaceId) return
     const { channelId, documentId } = useChatStore.getState().chatRoom

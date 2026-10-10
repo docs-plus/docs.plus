@@ -21,7 +21,9 @@ export default function useJoinWorkspace({
   // and a late answer for an old pair does nothing.
   useEffect(() => {
     joinKeyRef.current = joinKey
-    if (useStore.getState().settings.joinedWorkspace) setWorkspaceSetting('joinedWorkspace', false)
+    const { joinedWorkspace, joinWorkspaceFailed } = useStore.getState().settings
+    if (joinedWorkspace) setWorkspaceSetting('joinedWorkspace', false)
+    if (joinWorkspaceFailed) setWorkspaceSetting('joinWorkspaceFailed', false)
     return () => {
       joinKeyRef.current = ''
     }
@@ -37,6 +39,7 @@ export default function useJoinWorkspace({
       })
       .catch((error) => {
         console.error('[workspace], joinWorkspaceRequest!', error)
+        if (joinKeyRef.current === joinKey) setWorkspaceSetting('joinWorkspaceFailed', true)
       })
   }, [userId, documentId, channelsLoading, joinKey, setWorkspaceSetting])
 }

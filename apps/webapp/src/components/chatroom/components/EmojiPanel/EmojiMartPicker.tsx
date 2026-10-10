@@ -30,7 +30,7 @@ function paintPickerRgbVars(host: HTMLElement) {
 }
 
 export type EmojiMartPickerProps = {
-  emojiSelectHandler: (emoji: any) => void
+  emojiSelectHandler: (emoji: { native: string }) => void
   /** The set `loadEmojiData` resolved, so every init sees one source. */
   data: unknown
 }

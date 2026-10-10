@@ -1,3 +1,4 @@
+import { useBusyAction } from '@components/chatroom/hooks/useBusyAction'
 import { Icons } from '@icons'
 import { useChatStore } from '@stores'
 import { useEffect, useMemo, useState } from 'react'
@@ -21,7 +22,8 @@ export const PinnedMessagesBar = ({
     [channelPinned]
   )
   const [index, setIndex] = useState(0)
-  const [busy, setBusy] = useState(false)
+  // A pin outside the loaded window fetches it first. An in-window jump settles before paint.
+  const [busy, jump] = useBusyAction(onJumpToMessage)
   // Clamp the index when the underlying list shrinks (unpin from another
   // tab, etc.); otherwise the user lands on an empty slot.
   useEffect(() => {
@@ -37,16 +39,6 @@ export const PinnedMessagesBar = ({
   const onNext = (e: React.MouseEvent) => {
     e.stopPropagation()
     setIndex((i) => (i + 1) % pinned.length)
-  }
-  // A pin outside the loaded window fetches it first. An in-window jump settles before paint.
-  const onJump = async () => {
-    if (busy) return
-    setBusy(true)
-    try {
-      await onJumpToMessage(current.id)
-    } finally {
-      setBusy(false)
-    }
   }
   return (
     <div
@@ -64,7 +56,7 @@ export const PinnedMessagesBar = ({
       <button
         key={current.id}
         type="button"
-        onClick={() => void onJump()}
+        onClick={() => void jump(current.id)}
         aria-busy={busy || undefined}
         className="focus-visible:ring-primary block min-w-0 flex-1 truncate px-3 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset">
         {current.content ?? ''}

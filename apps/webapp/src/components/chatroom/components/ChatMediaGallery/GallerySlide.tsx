@@ -94,6 +94,7 @@ function GalleryLoadingBone({
     return (
       <div className={twMerge('flex w-full max-w-md flex-col items-center', className)}>
         <GalleryAudioLabel label={label} />
+        {/* Chrome's native audio control is 54px tall. */}
         <div className="skeleton h-[54px] w-full rounded-full" aria-hidden />
       </div>
     )

@@ -11,7 +11,7 @@ type PickerProps = Omit<EmojiMartPickerProps, 'data'>
 // BottomSheet mounts on every route, so emoji-mart and its data load only when a picker mounts.
 // The body gets the resolved data object: a data function makes emoji-mart await before it
 // claims its shared set, and two inits in that gap would both change it.
-const EmojiMartPicker = dynamic<PickerProps>(
+const LazyEmojiMartPicker = dynamic<PickerProps>(
   () =>
     Promise.all([import('./EmojiMartPicker'), loadEmojiData()]).then(([module, data]) => {
       const LoadedPicker = (props: PickerProps) => <module.EmojiMartPicker {...props} data={data} />
@@ -34,7 +34,7 @@ function PickerFallback({ error, retry }: DynamicOptionsLoadingProps) {
   )
   if (variant !== 'desktop') return body
   // The desktop host has no frame of its own, so the fallback draws the emoji-mart card:
-  // 9 × 36px emoji plus 28px of padding, a 1px border and a 435px host.
+  // 9 × 36px emoji plus 28px of padding and a 1px border, at the host height (see Picker).
   return (
     <div className="rounded-box border-base-300 bg-base-100 flex h-[435px] w-[354px] flex-col border shadow-[var(--shadow-overlay)]">
       {body}
@@ -46,6 +46,6 @@ function PickerFallback({ error, retry }: DynamicOptionsLoadingProps) {
 // content-detent sheet does not grow when the picker paints.
 export const Picker = ({ emojiSelectHandler }: PickerProps) => (
   <div className="flex min-h-[435px] flex-col">
-    <EmojiMartPicker emojiSelectHandler={emojiSelectHandler} />
+    <LazyEmojiMartPicker emojiSelectHandler={emojiSelectHandler} />
   </div>
 )

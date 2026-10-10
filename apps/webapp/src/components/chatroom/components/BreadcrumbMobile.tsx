@@ -1,30 +1,16 @@
 import { Icons } from '@icons'
 import { useChatStore, useStore } from '@stores'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 
-import { type HeadingBreadcrumbItem, resolveHeadingBreadcrumbs } from '../utils/buildHeadingPath'
+import { useHeadingBreadcrumbPath } from '../hooks/useHeadingBreadcrumbPath'
 import { ChatroomBreadcrumbSkeleton } from './skeleton'
 
 const BreadcrumbMobile = () => {
-  const setOrUpdateChatRoom = useChatStore((state) => state.setOrUpdateChatRoom)
-  const { headingId } = useChatStore((state) => state.chatRoom)
-  // null while it resolves; empty when the heading cannot resolve, so the skeleton ends.
-  const [headingPath, setHeadingPath] = useState<HeadingBreadcrumbItem[] | null>(null)
+  const headingId = useChatStore((state) => state.chatRoom.headingId)
+  const headingPath = useHeadingBreadcrumbPath()
 
   const workspaceId = useStore((state) => state.settings.workspaceId)
   const metadata = useStore((state) => state.settings.metadata)
-  const editor = useStore((state) => state.settings.editor.instance)
-  const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
-  const loading = useStore((state) => state.settings.editor.loading)
-
-  useEffect(() => {
-    if (!editor || providerSyncing || !headingId) return
-    if (workspaceId === headingId) return
-
-    const headingAddress = resolveHeadingBreadcrumbs(editor, headingId)
-    if (headingAddress) setOrUpdateChatRoom('headingPath', headingAddress)
-    setHeadingPath(headingAddress ?? [])
-  }, [headingId, editor, providerSyncing, loading, workspaceId, setOrUpdateChatRoom])
 
   if (workspaceId === headingId) {
     return (

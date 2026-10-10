@@ -19,6 +19,7 @@ const AccessControl = () => {
   const { channelId, error, isChannelDataLoaded, isFeedReady, variant } = useChatroomContext()
   const user = useAuthStore((state) => state.profile)
   const joinedWorkspace = useStore((state) => state.settings.joinedWorkspace) ?? false
+  const joinFailed = useStore((state) => state.settings.joinWorkspaceFailed) ?? false
   const channelSettings = useChatStore(
     (state) => state.workspaceSettings.channels.get(channelId) ?? null
   )
@@ -27,20 +28,18 @@ const AccessControl = () => {
 
   const skeleton = <ChatroomComposerSkeleton variant={variant} />
   if (!isChannelDataLoaded) return skeleton
-  // A late workspace join auto-joins the channel, so membership is not final yet.
-  if (user && !joinedWorkspace && !isFeedReady) return skeleton
+  // A late workspace join auto-joins the channel, so membership is not final yet. With no
+  // channel row (#402), the join's retry may create one (useHeadingChannel). A failed join
+  // ends the wait, so the composer below falls back to the Join surface or nothing.
+  if (user && !joinedWorkspace && !joinFailed && (!isFeedReady || !channelId)) return skeleton
 
   // Membership is known once the channel data lands, so a Join surface paints then.
   // Only the live field waits for the feed.
   const composer = isFeedReady ? <MsgComposer.ComposerLayout /> : skeleton
 
-  // No channel row (#402). A visitor still gets the field, so Enter opens sign-in.
-  // A signed-in user waits for the join, whose retry resolves again (useHeadingChannel).
-  // A row still missing after that retry is final, so the composer ends.
-  if (!channelId) {
-    if (!user) return composer
-    return joinedWorkspace ? null : skeleton
-  }
+  // A visitor still gets the field, so Enter opens sign-in. For a signed-in user, a row
+  // still missing after the retry is final, so the composer ends.
+  if (!channelId) return user ? null : composer
 
   const { isUserChannelMember, isUserChannelOwner, isUserChannelAdmin, channelInfo } =
     channelSettings ?? {}

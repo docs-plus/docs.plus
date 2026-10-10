@@ -1,10 +1,10 @@
+import { useBusyAction } from '@components/chatroom/hooks/useBusyAction'
 import { backlogCount } from '@components/chatroom/utils/backlogCount'
 import Button from '@components/ui/Button'
 import UnreadBadge from '@components/ui/UnreadBadge'
 import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
-import { useState } from 'react'
 
 export type JumpToPresentButtonProps = {
   atBottom: boolean
@@ -28,17 +28,9 @@ export const JumpToPresentButton = ({
   subdued = false
 }: JumpToPresentButtonProps) => {
   const isAuthed = !!useAuthStore((state) => state.profile?.id)
-  const [busy, setBusy] = useState(false)
+  const [busy, jump] = useBusyAction(onTap)
   if (atBottom) return null
   const count = backlogCount(unreadCount, newCount)
-  const jump = async () => {
-    setBusy(true)
-    try {
-      await onTap()
-    } finally {
-      setBusy(false)
-    }
-  }
   return (
     <Button
       onClick={() => void jump()}

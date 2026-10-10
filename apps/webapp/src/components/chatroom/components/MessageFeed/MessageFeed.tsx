@@ -68,8 +68,7 @@ const MessageFeed = ({ className, showScrollToBottom = true }: Props) => {
         <div
           className={twMerge(
             'flex min-h-0 flex-1 flex-col',
-            !isFeedReady && 'pointer-events-none opacity-0',
-            isFeedReady && 'motion-safe:animate-[doc-content-in_200ms_ease-out_both]'
+            !isFeedReady && 'pointer-events-none opacity-0'
           )}>
           <PinnedMessagesBar channelId={channelId} onJumpToMessage={scrollToMessage} />
           {showNewMessagesBanner && (

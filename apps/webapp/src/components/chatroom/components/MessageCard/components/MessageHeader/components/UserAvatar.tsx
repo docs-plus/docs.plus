@@ -1,5 +1,6 @@
 import { Avatar } from '@components/ui/Avatar'
 import { TGroupedMsgRow } from '@types'
+import { SIZE_CLASSES } from '@utils/avatarStackGeometry'
 import { twMerge } from '@utils/twMerge'
 
 import { useMessageAuthorDetails } from '../../../hooks/useMessageAuthorDetails'
@@ -18,7 +19,7 @@ export const ProfilePic = ({ message }: { message: TGroupedMsgRow }) => {
   return (
     <div className={isGroupStart ? 'block' : 'hidden'}>
       {isLoading ? (
-        <div className="skeleton size-10 rounded-full" aria-hidden />
+        <div className={twMerge('skeleton rounded-full', SIZE_CLASSES.md)} aria-hidden />
       ) : (
         <Avatar face={{ ...author, id: userId }} size="md" />
       )}

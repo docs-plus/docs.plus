@@ -1,5 +1,5 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
-import { useState } from 'react'
+import { useBusyAction } from '@components/chatroom/hooks/useBusyAction'
 
 import { useMessageCardContext } from '../../../MessageCardContext'
 import { ReferenceJumpButton } from './ReferenceJumpButton'
@@ -16,21 +16,11 @@ function formatReplyTime(iso: string | undefined): string | null {
 export const ReplyReference = () => {
   const { message } = useMessageCardContext()
   const { scrollToMessage } = useChatroomContext()
-  const [busy, setBusy] = useState(false)
+  // An unloaded target fetches its window first. An in-window jump settles before paint.
+  const [busy, jump] = useBusyAction(scrollToMessage)
   const replyToId = message.reply_to_message_id
 
   if (!replyToId) return null
-
-  // An unloaded target fetches its window first. An in-window jump settles before paint.
-  const jump = async () => {
-    if (busy) return
-    setBusy(true)
-    try {
-      await scrollToMessage(replyToId)
-    } finally {
-      setBusy(false)
-    }
-  }
 
   const repliedUser = message.replied_message_details?.user
   const userReplyTo = repliedUser?.fullname || repliedUser?.username
@@ -42,7 +32,7 @@ export const ReplyReference = () => {
       kind="reply"
       dataKey={`reply-ref-${replyToId}`}
       ariaLabel={userReplyTo ? `Jump to message from ${userReplyTo}` : 'Jump to replied message'}
-      onJump={() => void jump()}
+      onJump={() => void jump(replyToId)}
       busy={busy}
       header={
         <>
