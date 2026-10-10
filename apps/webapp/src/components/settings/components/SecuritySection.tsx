@@ -8,19 +8,17 @@ import { LuKeyRound, LuMail, LuPlugZap, LuShield } from 'react-icons/lu'
 import { useConnectedApps } from '../hooks/useConnectedApps'
 import type { TabType } from '../types'
 import { appsWithAccessText } from '../utils/appsWithAccessText'
+import { type SignInProvider, signInProvidersOf } from '../utils/signInProviders'
 import SettingsCard, { SettingsCardHeader } from './SettingsCard'
 
 interface SignInMethod {
-  provider: string
   name: string
   icon: IconType
   note: (user: User) => string
 }
 
-// Fixed order; providers not listed here are not shown.
-const SIGN_IN_METHODS: SignInMethod[] = [
-  {
-    provider: 'google',
+const SIGN_IN_METHODS: Record<SignInProvider, SignInMethod> = {
+  google: {
     name: 'Google',
     icon: FcGoogle,
     note: (user) => {
@@ -29,19 +27,11 @@ const SIGN_IN_METHODS: SignInMethod[] = [
       return email ? `Connected to ${email}` : 'Connected'
     }
   },
-  {
-    provider: 'email',
+  email: {
     name: 'Email link',
     icon: LuMail,
     note: () => 'We email you a link each time you sign in.'
   }
-]
-
-const userProviders = (user: User | null): Set<string> => {
-  if (!user) return new Set()
-  const fromIdentities = user.identities?.map((identity) => identity.provider) ?? []
-  const providers = fromIdentities.length ? fromIdentities : (user.app_metadata?.providers ?? [])
-  return new Set<string>(providers)
 }
 
 const AccountEmailCard = () => {
@@ -58,18 +48,18 @@ const AccountEmailCard = () => {
 
 const SignInMethodsCard = () => {
   const user = useAuthStore((s) => s.session)
-  const providers = userProviders(user)
-  const methods = SIGN_IN_METHODS.filter((method) => providers.has(method.provider))
+  const providers = signInProvidersOf(user)
 
   return (
     <SettingsCard>
       <SettingsCardHeader icon={LuKeyRound} title="How you sign in" />
-      {user && methods.length > 0 && (
+      {user && providers.length > 0 && (
         <ul className="border-base-300 rounded-box divide-base-300 mb-3 divide-y border">
-          {methods.map((method) => {
+          {providers.map((provider) => {
+            const method = SIGN_IN_METHODS[provider]
             const Icon = method.icon
             return (
-              <li key={method.provider} className="flex items-center gap-3 p-3 sm:p-4">
+              <li key={provider} className="flex items-center gap-3 p-3 sm:p-4">
                 <span
                   aria-hidden
                   className="bg-base-200 rounded-field text-base-content/70 flex size-9 shrink-0 items-center justify-center">

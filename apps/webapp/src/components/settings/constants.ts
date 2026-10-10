@@ -1,4 +1,5 @@
 import config from '@config'
+import type { ThemePreference } from '@stores'
 import { isDocumentReportPath } from '@utils/reportContent'
 import type { IconType } from 'react-icons'
 import {
@@ -20,8 +21,36 @@ export const MAX_LINKS = 20
 export const MIN_PHONE_DIGITS = 7
 
 export type DocumentViewMode = 'list' | 'grid'
-// The skeleton reads it too, so the loading bones match the restored view.
 export const DOCUMENTS_VIEW_STORAGE_KEY = 'docsplus:my-docs-view'
+
+/** The restored view. The skeleton reads it too, so the loading bones match it. */
+export const readDocumentsViewMode = (): DocumentViewMode => {
+  if (typeof window === 'undefined') return 'list'
+  return window.sessionStorage.getItem(DOCUMENTS_VIEW_STORAGE_KEY) === 'grid' ? 'grid' : 'list'
+}
+
+/** Picker entries are the explicit (non-`system`) preferences; `system` is a separate row. */
+export type PickerTheme = Exclude<ThemePreference, 'system'>
+
+export type ThemeChoice = {
+  value: PickerTheme
+  label: string
+  premium?: boolean
+}
+
+// The Appearance picker and its skeleton draw the same lists in the same order.
+export const LIGHT_THEMES: ThemeChoice[] = [
+  { value: 'light', label: 'Light' },
+  { value: 'graphite-light', label: 'Graphite', premium: true },
+  { value: 'paper-light', label: 'Paper', premium: true }
+]
+
+export const DARK_THEMES: ThemeChoice[] = [
+  { value: 'dark', label: 'Dark' },
+  { value: 'graphite-dark', label: 'Graphite', premium: true },
+  { value: 'paper-dark', label: 'Paper', premium: true },
+  { value: 'dark-hc', label: 'High contrast' }
+]
 
 /** The `scope` the documents list sends. Settings and Home default to `all`; Command
  *  jump reads `owned`. An unknown stored value falls back to `all`. */

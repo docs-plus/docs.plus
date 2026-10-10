@@ -1,5 +1,5 @@
 import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
-import { SettingsTakeover } from '@components/settings/SettingsTakeover'
+import { selectSettingsMayOpen, SettingsTakeover } from '@components/settings/SettingsTakeover'
 import type { TabType } from '@components/settings/types'
 import { indicatorDotClassName } from '@components/TipTap/toolbar/indicatorDot'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
@@ -17,6 +17,7 @@ import { Icons } from '@icons'
 import { releasePadEditMode } from '@services/openHeadingChatroom'
 import {
   selectInProgressBookmarkCount,
+  selectIsSignedIn,
   useAuthStore,
   useChatStore,
   useSheetStore,
@@ -29,7 +30,7 @@ import { yUndoPluginKey } from '@tiptap/y-tiptap'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { plainTitle } from '@utils/titleWrite'
 import { twMerge } from '@utils/twMerge'
-import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import React, { useCallback, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 import FilterBar from './FilterBar'
 import PrivateIndicator from './PrivateIndicator'
@@ -232,8 +233,7 @@ const MobilePadTitle = () => {
   const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
   const profileId = useAuthStore((state) => state.profile?.id ?? state.session?.id)
   const canEditMetadata = useStore((state) => canEditDocumentMetadata(state.settings, profileId))
-  // The session lands before the profile fetch, so a signed-in user never sees Sign in first.
-  const isSignedIn = Boolean(profileId)
+  const isSignedIn = useAuthStore(selectIsSignedIn)
   // The read↔edit crossfade plays from the first mode swap on, never on mount. At the
   // S0→S1 swap the S0 header already sits here, so a fade would blink it.
   const [initialEditable] = useState(isEditable)
@@ -242,6 +242,7 @@ const MobilePadTitle = () => {
   const { isOpen: isProfileModalOpen, setIsOpen: setProfileModalOpen } = useSettingsModal()
   const [settingsTab, setSettingsTab] = useState<TabType | undefined>(undefined)
   const { overlay, settingsTab: hashSettingsTab } = useHashOverlay()
+  const settingsMayOpen = useAuthStore(selectSettingsMayOpen)
 
   // Settings is navigation, not a typing continuation — drop the keyboard before the takeover.
   // No argument means the avatar button, which must not reopen the tab a hash asked for.
@@ -256,14 +257,16 @@ const MobilePadTitle = () => {
     [isKeyboardOpen, editor, setProfileModalOpen]
   )
 
-  // The hash is a one-shot instruction. Clear it first, so the replaceState lands before
-  // useSettingsModal pushes its takeover entry and not on top of it.
-  useEffect(() => {
-    if (!overlay || !user) return
-    clearOverlayHash()
-    if (overlay === 'notifications') useSheetStore.getState().openSheet('notifications')
-    else openSettings(hashSettingsTab ?? undefined)
-  }, [overlay, hashSettingsTab, user, openSettings])
+  // The hash is a one-shot instruction. A layout effect, so the replaceState lands before
+  // useSettingsModal pushes its takeover entry and not on top of it. While auth loads,
+  // Settings opens on its skeleton and the hash waits for the profile.
+  useLayoutEffect(() => {
+    if (!overlay) return
+    if (user) clearOverlayHash()
+    if (overlay === 'notifications') {
+      if (user) useSheetStore.getState().openSheet('notifications')
+    } else if (settingsMayOpen) openSettings(hashSettingsTab ?? undefined)
+  }, [overlay, hashSettingsTab, user, settingsMayOpen, openSettings])
 
   // Set by "Done" so focus lands on the title (not <body>) once the read cluster remounts.
   const focusTitleAfterExitRef = useRef(false)

@@ -11,6 +11,7 @@ import { ScrollArea } from '@components/ui/ScrollArea'
 import { DocsPlusIcon, Icons } from '@icons'
 import {
   selectInProgressBookmarkCount,
+  selectIsSignedIn,
   useAuthStore,
   useChatStore,
   useSheetStore,
@@ -51,8 +52,8 @@ function TocModalIconButton({
 
 const TocModal = () => {
   const { close: closeModal } = useModal() || {}
-  // The session lands before the profile, so Bookmarks does not pop into the tray late.
-  const isSignedIn = useAuthStore((state) => Boolean(state.profile?.id ?? state.session?.id))
+  // Keyed on the session as well as the profile, so Bookmarks does not pop into the tray late.
+  const isSignedIn = useAuthStore(selectIsSignedIn)
   const openSheet = useSheetStore((state) => state.openSheet)
   const loading = useStore((state) => state.settings.editor.loading)
   const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)

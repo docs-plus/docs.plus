@@ -5,10 +5,10 @@ const SelectBone = () => <div className="skeleton rounded-field h-8 w-[42px] shr
 
 // Mirrors EditorToolbar control for control, so the swap moves no pixel.
 const ToolbarSkeleton = ({
-  isAuthed = false,
+  isSignedIn = false,
   hasQr = false
 }: {
-  isAuthed?: boolean
+  isSignedIn?: boolean
   hasQr?: boolean
 }) => {
   return (
@@ -40,7 +40,7 @@ const ToolbarSkeleton = ({
         <ButtonBone />
         <ToolbarDivider />
         <ButtonBone />
-        {isAuthed && (
+        {isSignedIn && (
           <>
             {/* Documents, then Bookmarks */}
             <ButtonBone />

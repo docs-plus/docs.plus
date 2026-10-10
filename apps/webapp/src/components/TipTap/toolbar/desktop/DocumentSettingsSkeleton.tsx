@@ -5,7 +5,7 @@ import { Icons } from '@icons'
 import { useAuthStore, useStore } from '@stores'
 import type { IconType } from 'react-icons'
 
-const TOGGLE_ROW_CLASS = 'min-h-11 py-2 sm:min-h-0'
+import { documentSettingsRows } from './documentSettingsRows'
 
 // The real `collapse` classes keep the title padding and the arrow; the bone sits in a 24px line.
 const AccordionTitleSkeleton = ({ icon: Icon, width }: { icon: IconType; width: string }) => (
@@ -20,20 +20,19 @@ export const DocumentSettingsSkeleton = () => {
   const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
   const metadata = useStore((state) => state.settings.metadata)
 
-  // The soft well rows follow the same store fields as `DocumentSettingsPanel`.
-  const isPrivate = Boolean(metadata.isPrivate)
-  const readOnly = Boolean(metadata.readOnly)
-  const isOwner = Boolean(user?.id && user.id === metadata.ownerId)
+  const { isPrivate, readOnly, isOwner, showFollow } = documentSettingsRows({
+    userId: user?.id,
+    isAuthServiceAvailable,
+    metadata
+  })
   const hasIdentity = Boolean(isAuthServiceAvailable && metadata.ownerProfile)
-  const showFollow =
-    Boolean(isAuthServiceAvailable && user?.id) && (!isOwner || (!isPrivate && !readOnly))
 
   return (
     <PanelSurfaceSkeleton titleWidthClassName="w-36">
       <div className="bg-base-200 border-base-300 flex flex-col border-b">
         {hasIdentity ? (
           <>
-            <div className="flex items-center gap-3 px-4 py-3" aria-hidden>
+            <div className="flex items-center gap-3 px-4 py-3">
               <div className="skeleton size-8 shrink-0 rounded-full" />
               <div className="min-w-0 flex-1">
                 <TextLine bone="h-3 w-14" />
@@ -49,7 +48,7 @@ export const DocumentSettingsSkeleton = () => {
               <ToggleRowSkeleton
                 label="Private"
                 description="Only you can open this document."
-                className={TOGGLE_ROW_CLASS}
+                className="min-h-11 py-2 sm:min-h-0"
               />
               <ToggleRowSkeleton
                 label="Read-only"
@@ -58,7 +57,7 @@ export const DocumentSettingsSkeleton = () => {
                     ? 'Not used while the document is private.'
                     : 'Viewers can’t edit this document.'
                 }
-                className={TOGGLE_ROW_CLASS}
+                className="min-h-11 py-2 sm:min-h-0"
               />
             </>
           ) : (
@@ -73,13 +72,13 @@ export const DocumentSettingsSkeleton = () => {
             <ToggleRowSkeleton
               label="Follow"
               description="Notify me when this document changes."
-              className={TOGGLE_ROW_CLASS}
+              className="min-h-11 py-2 sm:min-h-0"
             />
           ) : null}
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 p-4" aria-hidden>
+      <div className="flex flex-col gap-4 p-4">
         {/* Document preferences opens by default, so its body is drawn too. */}
         <div className="collapse-arrow collapse-open rounded-box border-base-300 bg-base-100 collapse border">
           <AccordionTitleSkeleton icon={Icons.fileText} width="w-40" />

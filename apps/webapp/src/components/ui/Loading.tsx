@@ -19,8 +19,8 @@ export interface LoadingProps {
 
 /**
  * The one block spinner. It stays hidden for 300ms, then shows at once, so fast loads never
- * flash and a loader never fades in. The delay is CSS and not motion-gated, because it is
- * functional. Ink is inherited `currentColor`, because a spinner is status, not interaction.
+ * flash and a loader never fades in. `step-end` turns the `doc-content-in` fade into that gate.
+ * The delay is CSS and not motion-gated, because it is functional. Ink is `currentColor`.
  */
 export function Loading({ size = 'md', label = 'Loading', className }: LoadingProps) {
   return (

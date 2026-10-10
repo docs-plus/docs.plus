@@ -18,6 +18,7 @@ import { type PanelSurfaceVariant } from '@types'
 import React, { useState } from 'react'
 
 import { useDocumentFollow } from '../useDocumentFollow'
+import { documentSettingsRows } from './documentSettingsRows'
 import ImportExportSection from './ImportExportSection'
 import { KeywordTagsField } from './KeywordTagsField'
 
@@ -47,14 +48,12 @@ const DocumentSettingsPanel = ({ variant = 'popover' }: DocumentSettingsPanelPro
     readOnly: Boolean(docMetadata.readOnly)
   })
 
-  const isPrivate = Boolean(docMetadata.isPrivate)
-  const readOnly = Boolean(docMetadata.readOnly)
-  const isOwner = Boolean(user?.id && user.id === docMetadata?.ownerId)
+  const { isPrivate, readOnly, isOwner, showFollow } = documentSettingsRows({
+    userId: user?.id,
+    isAuthServiceAvailable,
+    metadata: docMetadata
+  })
   const identity = isAuthServiceAvailable ? docMetadata?.ownerProfile : undefined
-  const canFollow = Boolean(isAuthServiceAvailable && user?.id)
-  // Hide when nobody else can edit. The owner of a private or read-only pad is
-  // that case. A visitor still follows, because the owner can edit.
-  const showFollow = canFollow && (!isOwner || (!isPrivate && !readOnly))
   const { following, canToggle, toggle, readPending } = useDocumentFollow({
     documentId: docMetadata.documentId,
     // Membership, not sign-in. join_workspace writes the row the RPC matches,

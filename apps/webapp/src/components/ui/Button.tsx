@@ -169,12 +169,12 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}>
         {loading ? (
           busyLabel ? (
-            <span className="flex items-center gap-2 motion-safe:animate-[doc-content-in_120ms_ease-out_both]">
+            <span className="flex items-center gap-2">
               <span className="loading loading-spinner loading-sm" aria-hidden />
               <span>{busyLabel}</span>
             </span>
           ) : (
-            <span className="loading loading-spinner motion-safe:animate-[doc-content-in_120ms_ease-out_both]" />
+            <span className="loading loading-spinner" />
           )
         ) : (
           <>

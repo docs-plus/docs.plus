@@ -50,7 +50,7 @@ describe('pad QR toggle (full stack)', () => {
     toggle().click()
 
     card().should('be.visible')
-    card().find('[role="img"]').should('have.attr', 'aria-label', `QR code for ${host}/${slug}`)
+    card().find('svg[role="img"]').should('have.attr', 'aria-label', `QR code for ${host}/${slug}`)
 
     card().then(($card) => {
       const qr = $card[0].getBoundingClientRect()
@@ -89,8 +89,9 @@ describe('pad QR toggle (full stack)', () => {
     // Retrying width check: a click resizes the code over the 200ms panel tween.
     const codeWidthIs = (width: number) =>
       card()
-        .find('[role="img"] > div')
-        .should(($img) => expect($img[0].getBoundingClientRect().width).to.be.closeTo(width, 2))
+        .find('svg[role="img"]')
+        .parent()
+        .should(($box) => expect($box[0].getBoundingClientRect().width).to.be.closeTo(width, 2))
 
     handle()
       .should('have.attr', 'role', 'slider')

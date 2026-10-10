@@ -3,29 +3,8 @@ import { PREFERENCE_TO_THEME, type ThemePreference, useThemeStore } from '@store
 import { useRef } from 'react'
 import { LuCheck, LuPalette } from 'react-icons/lu'
 
+import { DARK_THEMES, LIGHT_THEMES, type PickerTheme, type ThemeChoice } from '../constants'
 import SettingsCard, { SettingsCardHeader } from './SettingsCard'
-
-/** Picker entries are the explicit (non-`system`) preferences; `system` is a separate row. */
-type PickerTheme = Exclude<ThemePreference, 'system'>
-
-type ThemeChoice = {
-  value: PickerTheme
-  label: string
-  premium?: boolean
-}
-
-const LIGHT_THEMES: ThemeChoice[] = [
-  { value: 'light', label: 'Light' },
-  { value: 'graphite-light', label: 'Graphite', premium: true },
-  { value: 'paper-light', label: 'Paper', premium: true }
-]
-
-const DARK_THEMES: ThemeChoice[] = [
-  { value: 'dark', label: 'Dark' },
-  { value: 'graphite-dark', label: 'Graphite', premium: true },
-  { value: 'paper-dark', label: 'Paper', premium: true },
-  { value: 'dark-hc', label: 'High contrast' }
-]
 
 // Flat traversal order for roving-tabindex arrow-key navigation (matches DOM order).
 const NAV_ORDER: ThemePreference[] = [

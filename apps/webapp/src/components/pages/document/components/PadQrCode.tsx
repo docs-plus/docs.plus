@@ -126,14 +126,18 @@ export function PadQrCode() {
         ref={cardRef}
         data-testid="pad-qr-code"
         className="group/padqr pointer-events-auto absolute top-3.5 right-[calc(var(--scrollbar-size-thin)+0.875rem)] z-50 hidden group-has-[.caret-find-bar]/padcol:top-17 [@container_(min-height:13.5rem)]:block">
+        {/* The svg carries the image role, so a failed chunk's Try again stays reachable. */}
         <div
-          role="img"
-          aria-label={`QR code for ${shareUrl.replace(/^https?:\/\//, '')}`}
           className={twMerge(popoverPanelClassName, 'w-auto')}
           style={{ '--pad-qr-size': `${size}px` } as CSSProperties}>
           {/* The light margin is padding, not a module-sized quiet zone, so a large code keeps a thin margin. */}
           <div className="w-[min(var(--pad-qr-size),calc(100cqh-5.25rem))] bg-[var(--qr-plate)] p-[clamp(0.75rem,calc(var(--pad-qr-size)*0.04),1.5rem)] group-data-[dragging]/padqr:transition-none motion-safe:transition-[width] motion-safe:duration-[var(--motion-panel)] motion-safe:ease-out">
-            <QrCode value={shareUrl} quietZone={0} className="w-full" />
+            <QrCode
+              value={shareUrl}
+              quietZone={0}
+              className="w-full"
+              label={`QR code for ${shareUrl.replace(/^https?:\/\//, '')}`}
+            />
           </div>
         </div>
         <div

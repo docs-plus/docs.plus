@@ -1,10 +1,11 @@
 import { selectPadOwnsKeyboard } from '@components/chatroom/utils/selectPadOwnsKeyboard'
+import { useFadeAfterFirstSync } from '@components/pages/document/hooks/useFadeAfterFirstSync'
 import Button from '@components/ui/Button'
 import { useEnableEditor } from '@hooks/useCaretPosition'
 import { Icons } from '@icons'
-import { useChatStore, useStore } from '@stores'
+import { useChatStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useRef } from 'react'
 
 /**
  * Same `enableAndFocus()` as double-tap on the editor. On iOS, `click` on a `fixed`
@@ -17,9 +18,8 @@ const EditFAB = () => {
   const padOwnsKeyboard = useChatStore(selectPadOwnsKeyboard)
   const suppressClickRef = useRef(false)
   const hidden = isKeyboardOpen || !padOwnsKeyboard
-  // Fade in when the FAB comes back after the keyboard, the pane or history. Never fade at
-  // the S0→S1 swap, because the S0 skeleton already drew a FAB bone here.
-  const [fadeIn, setFadeIn] = useState(() => !useStore.getState().settings.editor.providerSyncing)
+  // Also fade in when the FAB comes back after the keyboard or the pane.
+  const [fadeIn, setFadeIn] = useFadeAfterFirstSync()
   if (hidden && !fadeIn) setFadeIn(true)
 
   const activate = useCallback(() => {

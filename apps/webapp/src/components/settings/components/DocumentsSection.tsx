@@ -11,7 +11,8 @@ import { LuFileText, LuLayoutGrid, LuList, LuSearch, LuTrash2, LuX } from 'react
 import {
   DOCUMENTS_EMPTY_TEXT,
   DOCUMENTS_VIEW_STORAGE_KEY,
-  type DocumentViewMode
+  type DocumentViewMode,
+  readDocumentsViewMode
 } from '../constants'
 import type { DocumentsListScope } from '../documentsQueryKey'
 import { useDocumentsListActions } from '../hooks/useDocumentsListActions'
@@ -41,10 +42,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
   const [inputValue, setInputValue] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const { listScope, sortKey } = useDocumentsListPrefs()
-  const [viewMode, setViewMode] = useState<DocumentViewMode>(() => {
-    if (typeof window === 'undefined') return 'list'
-    return window.sessionStorage.getItem(DOCUMENTS_VIEW_STORAGE_KEY) === 'grid' ? 'grid' : 'list'
-  })
+  const [viewMode, setViewMode] = useState<DocumentViewMode>(readDocumentsViewMode)
   // Trash is a sub-view of this same card: swaps the whole body, not a nav tab.
   const [showTrash, setShowTrash] = useState(false)
   // The entry shows only once the trash total is known and above 0, so it never flashes.

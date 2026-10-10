@@ -1,4 +1,4 @@
-import { PanelFeedSkeleton } from '@components/PanelFeedItem'
+import { PanelFeedSkeleton } from '@components/PanelFeedSkeleton'
 import { PanelSurfaceShell } from '@components/PanelSurfaceShell'
 import { TabbedPanelBody } from '@components/TabbedPanelBody'
 import { EmptyState } from '@components/ui/EmptyState'
@@ -9,6 +9,7 @@ import { LuInbox } from 'react-icons/lu'
 import { NotificationItem } from '../components/NotificationItem'
 import { NotificationMarkAllReadButton } from '../components/NotificationMarkAllReadButton'
 import { useNotificationPanelFeed } from '../feed/useNotificationPanelFeed'
+import { unreadCountOf } from '../utils/unreadCountOf'
 
 interface NotificationPanelProps {
   variant?: PanelSurfaceVariant
@@ -19,7 +20,7 @@ export const NotificationPanel = ({ variant = 'popover' }: NotificationPanelProp
   const notificationTabs = useStore((state) => state.notificationTabs)
   const setNotificationActiveTab = useStore((state) => state.setNotificationActiveTab)
   const isSheet = variant === 'sheet'
-  const unreadCount = notificationTabs.find((tab) => tab.label === 'Unread')?.count ?? 0
+  const unreadCount = unreadCountOf(notificationTabs)
 
   const { notifications, isLoading, isLoadingMore, hasMore, isError, retry, sentinelRef } =
     useNotificationPanelFeed()

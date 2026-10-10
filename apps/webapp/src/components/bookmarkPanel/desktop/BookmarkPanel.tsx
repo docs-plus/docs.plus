@@ -1,4 +1,4 @@
-import { PanelFeedSkeleton } from '@components/PanelFeedItem'
+import { PanelFeedSkeleton } from '@components/PanelFeedSkeleton'
 import { PanelSurfaceShell } from '@components/PanelSurfaceShell'
 import { TabbedPanelBody } from '@components/TabbedPanelBody'
 import { EmptyState } from '@components/ui/EmptyState'

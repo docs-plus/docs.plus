@@ -1,5 +1,6 @@
 import SessionExpiredBanner from '@components/pages/document/components/SessionExpiredBanner'
 import SyncErrorCard from '@components/pages/document/components/SyncErrorCard'
+import { useFadeAfterFirstSync } from '@components/pages/document/hooks/useFadeAfterFirstSync'
 import EditorContentSkeleton from '@components/skeleton/EditorContentSkeleton'
 import { useMediaPasteUpload } from '@components/TipTap/mediaPopovers/useMediaPasteUpload'
 import { useEditorFocusScroll, useEnableEditor } from '@hooks/useCaretPosition'
@@ -8,7 +9,7 @@ import { useStore } from '@stores'
 import { EditorContent as TiptapEditor } from '@tiptap/react'
 import { isSessionExpired, shouldShowSyncErrorWhileLoading } from '@utils/providerCollabStatus'
 import { twMerge } from '@utils/twMerge'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useRef } from 'react'
 
 const EditorContent = ({ className }: { className?: string }) => {
   const editor = useStore((state) => state.settings.editor.instance)
@@ -18,9 +19,8 @@ const EditorContent = ({ className }: { className?: string }) => {
   const editorElement = useRef<HTMLDivElement>(null)
   const { enableAndFocus, isKeyboardOpen } = useEnableEditor()
 
-  // No fade at the S0→S1 swap, where this mount drew the bones first. A mount after the
-  // first sync (a return from history) fades once; the flag stops a replay on re-render.
-  const [fadeIn, setFadeIn] = useState(() => !useStore.getState().settings.editor.providerSyncing)
+  // The flag also stops a replay on re-render.
+  const [fadeIn, setFadeIn] = useFadeAfterFirstSync()
 
   useMediaPasteUpload(editor)
 

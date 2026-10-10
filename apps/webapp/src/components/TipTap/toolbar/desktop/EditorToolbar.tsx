@@ -15,6 +15,7 @@ import useCopyDocumentToClipboard from '@pages/document/hooks/useCopyDocumentToC
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
 import {
   selectInProgressBookmarkCount,
+  selectIsSignedIn,
   useAuthStore,
   useChatStore,
   useStore,
@@ -69,9 +70,8 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
   const hasActiveFilters = useStore(
     (state) => state.settings.editor.filterResult.sortedSlugs.length > 0
   )
-  const user = useAuthStore((state) => state.profile)
-  // The S0 skeleton keys on the session cookie, so the S1 bones key on the session too.
-  const isSignedIn = useAuthStore((state) => Boolean(state.profile?.id ?? state.session?.id))
+  // The bones and the loaded bar share one rule, so the swap moves no control.
+  const isSignedIn = useAuthStore(selectIsSignedIn)
   const inProgressBookmarks = useChatStore(selectInProgressBookmarkCount)
   const { isOpen: isDocumentsOpen, setIsOpen: setDocumentsOpen } = useSettingsModal()
 
@@ -98,7 +98,7 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
   }, [editor, createComment])
 
   if (loading || providerSyncing || !editor)
-    return <ToolbarSkeleton isAuthed={isSignedIn} hasQr={Boolean(qr)} />
+    return <ToolbarSkeleton isSignedIn={isSignedIn} hasQr={Boolean(qr)} />
 
   return (
     <>
@@ -288,15 +288,15 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
             </span>
           </ToolbarButton>
 
-          {isAuthServiceAvailable && user && (
+          {isAuthServiceAvailable && isSignedIn && (
             <ToolbarButton onClick={() => setDocumentsOpen(true)} tooltip="Documents">
               <Icons.documents size={ICON_SIZE} />
             </ToolbarButton>
           )}
 
-          {user && <ToolbarDivider />}
+          {isSignedIn && <ToolbarDivider />}
 
-          {user && (
+          {isSignedIn && (
             <Popover placement="bottom-end">
               <PopoverTrigger asChild>
                 <ToolbarButton

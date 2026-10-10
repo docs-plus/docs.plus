@@ -1,10 +1,20 @@
-import { PanelFeedSkeleton } from '@components/PanelFeedItem'
+import { PanelFeedSkeleton } from '@components/PanelFeedSkeleton'
+import { twMerge } from '@utils/twMerge'
 import type { ReactNode } from 'react'
 
-/** A `skeleton` bone does not show on the `base-300` track, so the first pill is a static `base-100` fill. */
-export function PanelTabBarSkeleton({ tabCount }: { tabCount: number }) {
+/**
+ * A `skeleton` bone does not show on the `base-300` track, so the first pill is a static
+ * `base-100` fill. `className` goes to the wrapper, as on the real `PanelTabBar`.
+ */
+export function PanelTabBarSkeleton({
+  tabCount,
+  className
+}: {
+  tabCount: number
+  className?: string
+}) {
   return (
-    <div className="shrink-0 px-4 py-2.5">
+    <div className={twMerge('shrink-0 px-4 py-2.5', className)}>
       <div className="bg-base-300 rounded-box flex p-1">
         {Array.from({ length: tabCount }, (_, index) => (
           <div

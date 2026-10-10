@@ -87,7 +87,7 @@ const DesktopSkeleton = ({ tocWidth, isAuthed }: { tocWidth: number; isAuthed: b
 
     {/* DesktopEditor's toolbars wrapper: below 640px the bar sits at the bottom. */}
     <div className="toolbars bg-base-100 border-base-300 fixed bottom-0 z-[9] h-auto w-full border-t sm:relative sm:block sm:border-t-0">
-      <ToolbarSkeleton isAuthed={isAuthed} hasQr />
+      <ToolbarSkeleton isSignedIn={isAuthed} hasQr />
     </div>
 
     <div className="editor flex min-h-0 w-full flex-1 flex-row-reverse bg-[var(--pad-well)]">

@@ -38,9 +38,11 @@ interface QrCodeProps {
   value: string
   quietZone?: number
   className?: string
+  /** Names the code as an image. Without it the code is decoration. */
+  label?: string
 }
 
-export function QrCode({ value, quietZone = STANDARD_QUIET_ZONE, className }: QrCodeProps) {
+export function QrCode({ value, quietZone = STANDARD_QUIET_ZONE, className, label }: QrCodeProps) {
   const { size, modulePath } = useMemo(() => {
     const { data, size } = encode(value, { ecc: 'M', border: 0 })
     return { size, modulePath: buildModulePath(data) }
@@ -57,7 +59,9 @@ export function QrCode({ value, quietZone = STANDARD_QUIET_ZONE, className }: Qr
     <svg
       viewBox={`${-quietZone} ${-quietZone} ${viewSize} ${viewSize}`}
       className={twMerge('block bg-[var(--qr-plate)] [forced-color-adjust:none]', className)}
-      aria-hidden="true"
+      role={label ? 'img' : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : true}
       focusable="false">
       <path d={modulePath} className="fill-[var(--qr-ink)]" />
       {finders.map(([x, y]) => (

@@ -14,10 +14,15 @@ export type SignedInProfileOutcome = 'signed-in' | 'profile-missing' | 'profile-
  * `error` is transient; a null row is the missing-row rule and must sign out.
  */
 export async function applySignedInProfile(user: User): Promise<SignedInProfileOutcome> {
-  useAuthStore.getState().setSession(user)
+  const auth = useAuthStore.getState()
+  auth.setSession(user)
+  auth.setProfileError(false)
 
   const { data: profile, error: profileError } = await getUserById(user.id)
-  if (profileError) return 'profile-error'
+  if (profileError) {
+    useAuthStore.getState().setProfileError(true)
+    return 'profile-error'
+  }
   if (!profile) {
     console.warn('No public.users row for authenticated user; signing out.')
     await supabaseClient.auth.signOut()

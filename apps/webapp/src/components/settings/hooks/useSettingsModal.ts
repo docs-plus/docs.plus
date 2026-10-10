@@ -21,7 +21,8 @@ export const consumeSettingsTakeoverEntry = (): Promise<void> => {
  * (ComposerEmojiPanel precedent). X/Esc/scrim close consumes the entry.
  */
 export const useSettingsModal = () => {
-  // Signed out, `SettingsTakeover` renders nothing, so there is no entry to push.
+  // The entry waits for the profile. Signed out, `SettingsTakeover` renders nothing. While
+  // auth loads, a hash host clears its hash first, so this push never lands under it.
   const signedIn = useAuthStore((state) => !!state.profile)
   const [isOpen, setIsOpen] = useState(false)
   const ownsHistoryEntryRef = useRef(false)

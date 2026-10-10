@@ -7,7 +7,8 @@ import { SettingsTakeover } from './SettingsTakeover'
 let profile: { id: string } | null = null
 
 jest.mock('@stores', () => ({
-  useAuthStore: (selector: (state: { profile: unknown }) => unknown) => selector({ profile })
+  useAuthStore: (selector: (state: { profile: unknown }) => unknown) => selector({ profile }),
+  selectIsSignedIn: (state: { profile: unknown }) => Boolean(state.profile)
 }))
 
 // `SettingsPanelSkeleton` is the `dynamic()` fallback, and it reads the route.

@@ -1,6 +1,7 @@
 import { ChunkLoadFallback } from '@components/ChunkLoadFallback'
+import { useFadeAfterFirstSync } from '@components/pages/document/hooks/useFadeAfterFirstSync'
 import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
-import { SettingsTakeover } from '@components/settings/SettingsTakeover'
+import { selectSettingsMayOpen, SettingsTakeover } from '@components/settings/SettingsTakeover'
 import type { TabType } from '@components/settings/types'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
@@ -16,14 +17,13 @@ import { clearOverlayHash, useHashOverlay } from '@hooks/useHashOverlay'
 import { useNotificationCount } from '@hooks/useNotificationCount'
 import { DocsPlusIcon } from '@icons'
 import { Icons } from '@icons'
-import { useStore } from '@stores'
-import { useAuthStore } from '@stores'
+import { selectIsSignedIn, useAuthStore, useStore } from '@stores'
 import { useThemeStore } from '@stores'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { twMerge } from '@utils/twMerge'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useLayoutEffect, useState } from 'react'
 
 import { NotificationPanelSkeleton } from '../../notificationPanel/components/NotificationPanelSkeleton'
 import DocTitle from '../DocTitle'
@@ -44,11 +44,8 @@ const NotificationPanel = dynamic(
 
 const PadTitle = () => {
   const user = useAuthStore((state) => state.profile)
-  // The session lands before the profile fetch, so a signed-in user never sees Sign in first.
-  const isSignedIn = useAuthStore((state) => Boolean(state.profile?.id ?? state.session?.id))
-  // Fade in only on a return from history. At the S0→S1 swap the S0 header already
-  // sits here, so a fade would blink it.
-  const [fadeIn] = useState(() => !useStore.getState().settings.editor.providerSyncing)
+  const isSignedIn = useAuthStore(selectIsSignedIn)
+  const [fadeIn] = useFadeAfterFirstSync()
   const themePreference = useThemeStore((state) => state.preference)
   const setThemePreference = useThemeStore((state) => state.setPreference)
   const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
@@ -57,6 +54,7 @@ const PadTitle = () => {
   const [isNotificationsOpen, setNotificationsOpen] = useState(false)
   const [settingsTab, setSettingsTab] = useState<TabType | undefined>(undefined)
   const { overlay, settingsTab: hashSettingsTab } = useHashOverlay()
+  const settingsMayOpen = useAuthStore(selectSettingsMayOpen)
   const workspaceId = useStore((state) => state.settings.workspaceId)
 
   const unreadCount = useNotificationCount({ workspaceId })
@@ -70,14 +68,16 @@ const PadTitle = () => {
     [setProfileModalOpen]
   )
 
-  // The hash is a one-shot instruction. Clear it first, before Settings pushes its own
-  // mobile history entry. A signed-out reader keeps the hash, so signing in still lands.
-  useEffect(() => {
-    if (!overlay || !user) return
-    clearOverlayHash()
-    if (overlay === 'notifications') setNotificationsOpen(true)
-    else openSettings(hashSettingsTab ?? undefined)
-  }, [overlay, hashSettingsTab, user, openSettings])
+  // The hash is a one-shot instruction. A layout effect clears it before Settings pushes
+  // its mobile history entry. While auth loads, Settings opens on its skeleton and the hash
+  // waits for the profile. A signed-out reader keeps the hash, so signing in still lands.
+  useLayoutEffect(() => {
+    if (!overlay) return
+    if (user) clearOverlayHash()
+    if (overlay === 'notifications') {
+      if (user) setNotificationsOpen(true)
+    } else if (settingsMayOpen) openSettings(hashSettingsTab ?? undefined)
+  }, [overlay, hashSettingsTab, user, settingsMayOpen, openSettings])
 
   return (
     <>

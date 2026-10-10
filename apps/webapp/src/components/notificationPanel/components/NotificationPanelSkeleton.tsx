@@ -2,11 +2,11 @@ import { PanelSurfaceSkeleton } from '@components/PanelSurfaceSkeleton'
 import { useStore } from '@stores'
 import { LuCheckCheck } from 'react-icons/lu'
 
+import { unreadCountOf } from '../utils/unreadCountOf'
+
 /** The panel shows Mark all read only while Unread is above 0, so the loader reads the same count. */
 export const NotificationPanelSkeleton = () => {
-  const hasUnread = useStore(
-    (state) => (state.notificationTabs.find((tab) => tab.label === 'Unread')?.count ?? 0) > 0
-  )
+  const hasUnread = useStore((state) => unreadCountOf(state.notificationTabs) > 0)
   return (
     <PanelSurfaceSkeleton
       tabCount={3}

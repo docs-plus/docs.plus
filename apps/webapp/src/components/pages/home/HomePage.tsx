@@ -1,7 +1,7 @@
 import { CommandJump } from '@components/commandJump/CommandJump'
 import { ownerDocumentsPrefix } from '@components/settings/documentsQueryKey'
 import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
-import { SettingsTakeover } from '@components/settings/SettingsTakeover'
+import { selectSettingsMayOpen, SettingsTakeover } from '@components/settings/SettingsTakeover'
 import type { TabType } from '@components/settings/types'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
@@ -10,12 +10,12 @@ import { TextLink } from '@components/ui/TextLink'
 import { clearOverlayHash, useHashOverlay } from '@hooks/useHashOverlay'
 import { useNavigateToDocument } from '@hooks/useNavigateToDocument'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
-import { useAuthStore, useStore } from '@stores'
+import { selectIsSignedIn, useAuthStore, useStore } from '@stores'
 import { useQueryClient } from '@tanstack/react-query'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { twMerge } from '@utils/twMerge'
 import dynamic from 'next/dynamic'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { LuUser } from 'react-icons/lu'
 
 import { BrandLockup } from './BrandLockup'
@@ -55,14 +55,14 @@ interface HomePageProps {
 
 const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
   const user = useAuthStore((state) => state.profile)
-  // The session lands before the profile fetch, so a signed-in user never sees Sign in first.
-  const isSignedIn = useAuthStore((state) => Boolean(state.profile?.id ?? state.session?.id))
+  const isSignedIn = useAuthStore(selectIsSignedIn)
   // Home is static, so auth settles after paint. The slot holds a bone until then.
   const authLoading = useAuthStore((state) => state.loading)
   const [displayHostname, setDisplayHostname] = useState(hostname)
   const { isOpen: isProfileOpen, setIsOpen: setIsProfileOpen } = useSettingsModal()
   const [settingsTab, setSettingsTab] = useState<TabType | undefined>(undefined)
   const { overlay, settingsTab: hashSettingsTab } = useHashOverlay()
+  const settingsMayOpen = useAuthStore(selectSettingsMayOpen)
   const { navigateToDocument, isLoading } = useNavigateToDocument()
   useVirtualKeyboard({ activeMq: HOME_MOBILE_MQ, clearStoreOnDisable: true })
   const keyboardCompact = useStore((state) => state.isKeyboardOpen)
@@ -78,13 +78,14 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
     [setIsProfileOpen]
   )
 
-  // The hash is a one-shot instruction. Clear it first, before the panel pushes its own
-  // mobile history entry. A signed-out visitor keeps the hash, so signing in still lands.
-  useEffect(() => {
-    if (overlay !== 'settings' || !user) return
-    clearOverlayHash()
+  // The hash is a one-shot instruction. A layout effect clears it before the panel pushes
+  // its mobile history entry. While auth loads, Settings opens on its skeleton and the hash
+  // waits for the profile. A signed-out visitor keeps the hash, so signing in still lands.
+  useLayoutEffect(() => {
+    if (overlay !== 'settings' || !settingsMayOpen) return
+    if (user) clearOverlayHash()
     openSettings(hashSettingsTab ?? undefined)
-  }, [overlay, hashSettingsTab, user, openSettings])
+  }, [overlay, hashSettingsTab, user, settingsMayOpen, openSettings])
 
   // A rename re-sorts and a Trash restore returns rows only on a refetch, and closing
   // Settings fires no focus event. Watch the state: mobile back skips `onOpenChange`.

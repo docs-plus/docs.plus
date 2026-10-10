@@ -1,3 +1,4 @@
+import { PanelTabBarSkeleton } from '@components/PanelSurfaceSkeleton'
 import { EmptyState } from '@components/ui/EmptyState'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { Icons } from '@icons'
@@ -30,15 +31,18 @@ import { SiModelcontextprotocol } from 'react-icons/si'
 
 import SettingsCard from './components/SettingsCard'
 import {
-  DOCUMENTS_VIEW_STORAGE_KEY,
+  DARK_THEMES,
   type DocumentViewMode,
+  LIGHT_THEMES,
   MAX_LINKS,
+  readDocumentsViewMode,
   SETTINGS_TABS,
   supportRowsFor
 } from './constants'
 import { ToggleRowSkeleton } from './ToggleRowSkeleton'
 import type { LinkItem, TabType } from './types'
 import { isMobileSurface } from './utils/isMobileSurface'
+import { signInProvidersOf } from './utils/signInProviders'
 
 const navLabelWidth = (label: string) => Math.max(48, label.length * 8 + 8)
 
@@ -93,8 +97,10 @@ export const FieldSkeleton = ({
 )
 
 // Saved links are in the profile already, so the row count is known before the chunk.
+// Before the profile lands the count is unknown, so no empty state claims zero links.
 const SocialLinksSkeleton = () => {
   const links = useAuthStore((s) => s.profile?.profile_data?.linkTree as LinkItem[] | undefined)
+  const profileKnown = useAuthStore((s) => s.profile != null)
   const count = links?.length ?? 0
 
   return (
@@ -127,13 +133,13 @@ const SocialLinksSkeleton = () => {
             </div>
           ))}
         </div>
-      ) : (
+      ) : profileKnown ? (
         <EmptyState
           layout="inline"
           title="No links added yet."
           body="Add your social profiles above."
         />
-      )}
+      ) : null}
     </div>
   )
 }
@@ -228,9 +234,7 @@ export const DocumentsBodySkeleton = ({ viewMode }: { viewMode: DocumentViewMode
 
 export const DocumentsSkeleton = () => {
   // Match the persisted view so the loading bones do not flip layout once the section mounts.
-  const isGrid =
-    typeof window !== 'undefined' &&
-    window.sessionStorage.getItem(DOCUMENTS_VIEW_STORAGE_KEY) === 'grid'
+  const viewMode = readDocumentsViewMode()
 
   return (
     <div className="space-y-4 max-md:flex max-md:min-h-full max-md:flex-col">
@@ -251,7 +255,7 @@ export const DocumentsSkeleton = () => {
           </div>
 
           <div className="max-md:px-4 max-md:pt-1">
-            <DocumentsBodySkeleton viewMode={isGrid ? 'grid' : 'list'} />
+            <DocumentsBodySkeleton viewMode={viewMode} />
           </div>
         </div>
       </SettingsCard>
@@ -259,16 +263,9 @@ export const DocumentsSkeleton = () => {
   )
 }
 
-// Same provider filter as `SecuritySection`: one row per listed method the session holds.
-const SIGN_IN_PROVIDERS = ['google', 'email']
-
 export const SecuritySkeleton = () => {
   const session = useAuthStore((s) => s.session)
-  const fromIdentities = session?.identities?.map((identity) => identity.provider) ?? []
-  const providers = new Set<string>(
-    fromIdentities.length ? fromIdentities : (session?.app_metadata?.providers ?? [])
-  )
-  const methods = SIGN_IN_PROVIDERS.filter((provider) => providers.has(provider))
+  const methods = signInProvidersOf(session)
 
   return (
     <div className="space-y-4">
@@ -317,12 +314,6 @@ const ThemeCardSkeleton = ({ selected }: { selected: boolean }) => (
   </div>
 )
 
-// Same order as the picker: three light themes, then four dark ones.
-const THEME_GROUPS = [
-  ['light', 'graphite-light', 'paper-light'],
-  ['dark', 'graphite-dark', 'paper-dark', 'dark-hc']
-] as const
-
 export const AppearanceSkeleton = () => {
   const preference = useThemeStore((s) => s.preference)
   const systemSelected = preference === 'system'
@@ -351,11 +342,11 @@ export const AppearanceSkeleton = () => {
             </span>
           )}
         </div>
-        {THEME_GROUPS.map((group) => (
-          <div key={group[0]}>
+        {[LIGHT_THEMES, DARK_THEMES].map((group) => (
+          <div key={group[0].value}>
             <TextLine bone="h-3 w-10" className="mt-4 mb-2" />
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-              {group.map((value) => (
+              {group.map(({ value }) => (
                 <ThemeCardSkeleton key={value} selected={preference === value} />
               ))}
             </div>
@@ -403,10 +394,10 @@ export const NotificationsSkeleton = ({ pushNotice }: { pushNotice?: ReactNode }
 )
 
 // Bone widths sit near the real labels, so the badges wrap the same way.
-const MCP_ABILITIES: { icon: IconType; width: string }[] = [
-  { icon: Icons.search, width: 'w-32' },
-  { icon: LuFilePlus, width: 'w-18' },
-  { icon: LuPencil, width: 'w-36' }
+const MCP_ABILITIES: { name: string; icon: IconType; width: string }[] = [
+  { name: 'read', icon: Icons.search, width: 'w-32' },
+  { name: 'create', icon: LuFilePlus, width: 'w-18' },
+  { name: 'edit', icon: LuPencil, width: 'w-36' }
 ]
 
 // The Apps with access card renders nothing while its list loads, so it has no bones here.
@@ -430,8 +421,8 @@ export const ConnectedAppsSkeleton = () => {
         </div>
         <TextLine bone="h-3.5 w-full max-w-md" />
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {MCP_ABILITIES.map(({ icon: Icon, width }) => (
-            <span key={width} className="badge badge-soft badge-sm gap-1.5">
+          {MCP_ABILITIES.map(({ name, icon: Icon, width }) => (
+            <span key={name} className="badge badge-soft badge-sm gap-1.5">
               <Icon size={12} aria-hidden className="text-base-content/70 shrink-0" />
               <span className={`skeleton h-3 ${width}`} />
             </span>
@@ -452,21 +443,7 @@ export const ConnectedAppsSkeleton = () => {
           </div>
         ) : (
           <>
-            {/* The `PanelTabBar p-0` track. `PanelTabBarSkeleton` has a fixed inset, and its module
-                pulls the chat services into this eager file. A bone would not show on the
-                base-300 track, so the first pill is the static base-100 fill. */}
-            <div className="bg-base-300 rounded-box flex p-1">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className={
-                    i === 0
-                      ? 'bg-base-100 rounded-field min-h-9 flex-1 shadow-sm'
-                      : 'min-h-9 flex-1'
-                  }
-                />
-              ))}
-            </div>
+            <PanelTabBarSkeleton tabCount={5} className="p-0" />
             <div className="mt-5">
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <TextLine bone="h-3.5 w-40" />

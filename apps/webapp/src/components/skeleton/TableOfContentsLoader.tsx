@@ -78,18 +78,15 @@ const Outline = ({ Row }: { Row: React.FC<RowProps> }) => (
   </>
 )
 
-type TableOfContentsLoaderProps = React.HTMLProps<HTMLDivElement> & {
+type TableOfContentsLoaderProps = {
   /** `mobile` mirrors `TocMobile` in the drawer body; the drawer renders `TocHeader` itself. */
   density?: 'desktop' | 'mobile'
 }
 
-const TableOfContentsLoader: React.FC<TableOfContentsLoaderProps> = ({
-  density = 'desktop',
-  ...props
-}) => {
+const TableOfContentsLoader = ({ density = 'desktop' }: TableOfContentsLoaderProps) => {
   if (density === 'mobile') {
     return (
-      <div {...props} className={['w-full pt-2 pb-6', props.className].filter(Boolean).join(' ')}>
+      <div className="w-full pt-2 pb-6">
         <div className="my-2 ps-2.5 pe-1.5">
           <Outline Row={MobileRow} />
         </div>
@@ -98,11 +95,7 @@ const TableOfContentsLoader: React.FC<TableOfContentsLoaderProps> = ({
   }
 
   return (
-    <div
-      {...props}
-      className={['flex h-full min-h-0 w-full flex-col', props.className]
-        .filter(Boolean)
-        .join(' ')}>
+    <div className="flex h-full min-h-0 w-full flex-col">
       <div className="ps-2.5 pe-1.5">
         <div className="border-base-300 mb-1 border-b pt-2 pb-1">
           <div className="flex min-h-8 items-center gap-2 px-3 py-1.5">
