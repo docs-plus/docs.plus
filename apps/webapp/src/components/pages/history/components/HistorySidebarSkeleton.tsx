@@ -1,15 +1,13 @@
-import {
-  HistoryLatestBadge,
-  HistoryTimelineDot
-} from '@components/pages/history/components/HistorySidebarRowParts'
 import { PanelTabBarSkeleton } from '@components/PanelSurfaceSkeleton'
 import { Icons } from '@icons'
 import { twMerge } from '@utils/twMerge'
 
+import { HistoryLatestBadge, HistoryTimelineDot } from './HistorySidebarRowParts'
+
 const SESSIONS = ['active', 'closed'] as const
 
 /** Body bones for HistorySidebar. The sidebar renders them inside its real frame and header. */
-const SidebarLoader = ({ tabs = false }: { tabs?: boolean }) => {
+const HistorySidebarSkeleton = ({ tabs = false }: { tabs?: boolean }) => {
   return (
     <div aria-hidden className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {tabs && <PanelTabBarSkeleton tabCount={2} />}
@@ -98,4 +96,4 @@ function ActiveSessionVersions() {
   )
 }
 
-export default SidebarLoader
+export default HistorySidebarSkeleton

@@ -1,4 +1,3 @@
-import SidebarLoader from '@components/skeleton/SidebarLoader'
 import CloseButton from '@components/ui/CloseButton'
 import { EmptyState } from '@components/ui/EmptyState'
 import { PanelTabBar } from '@components/ui/PanelTabBar'
@@ -9,6 +8,7 @@ import { type ReactNode, useState } from 'react'
 
 import { HistoryAuthorsBody } from './components/HistoryAuthorsBody'
 import { HistorySidebarBody } from './components/HistorySidebarBody'
+import HistorySidebarSkeleton from './components/HistorySidebarSkeleton'
 import { useDocumentHistory } from './hooks/useDocumentHistory'
 import { useHistoryCompare } from './hooks/useHistoryCompare'
 import { useHistorySidebarRows } from './hooks/useHistorySidebarRows'
@@ -103,7 +103,7 @@ const HistorySidebar = ({
   if (loadingHistory && historyList.length === 0) {
     return (
       <SidebarFrame className={className} count={null} onClose={onClose}>
-        <SidebarLoader tabs={variant === 'desktop'} />
+        <HistorySidebarSkeleton tabs={variant === 'desktop'} />
       </SidebarFrame>
     )
   }
