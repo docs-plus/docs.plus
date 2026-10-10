@@ -142,7 +142,7 @@ export default function EmailSetupPage() {
             </div>
           )}
 
-          {isLoading && <div className="skeleton h-24 w-full" />}
+          {isLoading && <div className="skeleton rounded-box h-24 w-full" />}
 
           {data && (
             <>

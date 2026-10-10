@@ -3,6 +3,7 @@ import type { IconType } from 'react-icons'
 import {
   LuApple,
   LuChrome,
+  LuCircleAlert,
   LuClock,
   LuMonitor,
   LuRefreshCw,
@@ -64,20 +65,53 @@ function MiniStat({ label, value, trend }: { label: string; value: number; trend
 }
 
 export function PushSubscriptionStats() {
-  const { data, isLoading, refetch, isRefetching } = useQuery({
+  const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['admin', 'push', 'analytics'],
     queryFn: fetchPushSubscriptionAnalytics,
     staleTime: 60000 // 1 minute
   })
 
-  if (isLoading || !data) {
+  const header = (
+    <div className="flex items-center justify-between">
+      <h2 className="text-lg font-semibold">Push Subscription Analytics</h2>
+      <button
+        onClick={() => refetch()}
+        disabled={isRefetching || !data}
+        className="btn btn-ghost btn-sm gap-1">
+        <LuRefreshCw className={`h-4 w-4 ${isRefetching ? 'motion-safe:animate-spin' : ''}`} />
+        Refresh
+      </button>
+    </div>
+  )
+
+  if (isError && !data) {
     return (
-      <div className="space-y-4">
-        <div className="skeleton h-8 w-48" />
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="skeleton h-32" />
-          <div className="skeleton h-32" />
-          <div className="skeleton h-32" />
+      <div className="space-y-6">
+        {header}
+        <div role="alert" className="alert alert-error">
+          <LuCircleAlert className="h-5 w-5" />
+          <span>
+            {error instanceof Error ? error.message : 'Failed to load push subscription analytics.'}
+          </span>
+          <button onClick={() => refetch()} disabled={isRefetching} className="btn btn-sm">
+            {isRefetching && <span className="loading loading-spinner loading-xs" />}
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (isLoading || !data) {
+    // Base-case card heights: 239px for the bar cards, 146px for Lifecycle until the lg row stretches it.
+    // The optional rows (Desktop, stale warning, errors) make a loaded card taller.
+    return (
+      <div className="space-y-6">
+        {header}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="skeleton rounded-box h-[239px]" />
+          <div className="skeleton rounded-box h-[239px]" />
+          <div className="skeleton rounded-box h-[146px] lg:h-[239px]" />
         </div>
       </div>
     )
@@ -85,16 +119,7 @@ export function PushSubscriptionStats() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Push Subscription Analytics</h2>
-        <button
-          onClick={() => refetch()}
-          disabled={isRefetching}
-          className="btn btn-ghost btn-sm gap-1">
-          <LuRefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
-      </div>
+      {header}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <SectionCard className="p-4">

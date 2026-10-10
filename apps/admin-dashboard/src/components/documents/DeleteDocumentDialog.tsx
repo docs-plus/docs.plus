@@ -60,7 +60,7 @@ export function DeleteDocumentDialog({
 
         {loading ? (
           <div className="flex flex-col items-center justify-center gap-3 py-8">
-            <span className="loading loading-spinner loading-md text-primary" />
+            <span className="loading loading-spinner loading-md" />
             <p className="text-base-content/60 text-sm">{loadingLabel}</p>
           </div>
         ) : (

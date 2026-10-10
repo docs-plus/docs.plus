@@ -18,11 +18,9 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
   if (loading) {
     return (
-      <div className="bg-base-200 flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <span className="loading loading-spinner loading-lg text-primary" />
-          <p className="text-base-content/60 mt-4">Loading...</p>
-        </div>
+      <div role="status" className="bg-base-200 flex min-h-screen items-center justify-center">
+        <span className="loading loading-spinner loading-lg" aria-hidden />
+        <span className="sr-only">Loading</span>
       </div>
     )
   }

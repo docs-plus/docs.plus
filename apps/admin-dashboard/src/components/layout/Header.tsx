@@ -43,7 +43,7 @@ export function Header({
               disabled={refreshing}
               aria-label="Refresh"
               className="btn btn-ghost btn-sm gap-2">
-              <LuRefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <LuRefreshCw className={`h-4 w-4 ${refreshing ? 'motion-safe:animate-spin' : ''}`} />
               <span className="hidden sm:inline">Refresh</span>
             </button>
           )}
