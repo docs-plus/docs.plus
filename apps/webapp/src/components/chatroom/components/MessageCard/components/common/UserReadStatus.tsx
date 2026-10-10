@@ -4,11 +4,10 @@ import { usePeerReadSeq } from '@components/chatroom/hooks'
 import AvatarStackLoader from '@components/skeleton/AvatarStackLoader'
 import { AvatarStack } from '@components/ui/AvatarStack'
 import { ContextMenuDivider } from '@components/ui/ContextMenu'
-import { useApi } from '@hooks/useApi'
 import { Icons } from '@icons'
+import { useQuery } from '@tanstack/react-query'
 import { TMsgRow } from '@types'
 import { toStackUser } from '@utils/avatarFace'
-import { useEffect, useState } from 'react'
 
 type Props = {
   message: TMsgRow
@@ -23,32 +22,25 @@ export function UserReadStatus({ message }: Props) {
   const peerReadSeq = usePeerReadSeq(channelId)
   const isSeen = typeof message.seq === 'number' && message.seq <= peerReadSeq
 
-  // null until the first read lands, so the first frame shows the bones, not "0 seen".
-  const [readUsers, setReadUsers] = useState<ChannelMemberReadUpdate[] | null>(null)
-  const [failed, setFailed] = useState(false)
-  const { request: fetchReadUsers } = useApi(
-    getChannelMembersByLastReadUpdate,
-    [message.channel_id, message.created_at],
-    false
-  )
+  // gcTime 0 drops the answer on close, so each open fetches again and shows the bones first.
+  const { data: readUsers, isError } = useQuery({
+    queryKey: ['read-users', message.channel_id, message.created_at],
+    queryFn: async () => {
+      const { data, error } = await getChannelMembersByLastReadUpdate(
+        message.channel_id,
+        message.created_at
+      )
+      if (error) throw error
+      // The API wrapper types the rows as `PostgrestResponse<T[]>`, one array too deep.
+      return (data ?? []) as unknown as ChannelMemberReadUpdate[]
+    },
+    enabled: isSeen,
+    gcTime: 0,
+    retry: false
+  })
 
-  useEffect(() => {
-    if (!isSeen) return
-    let cancelled = false
-    fetchReadUsers(message.channel_id, message.created_at)
-      .then(({ data }) => {
-        if (!cancelled) setReadUsers((data as ChannelMemberReadUpdate[]) ?? [])
-      })
-      // useApi logs and rethrows. The footer cannot hold a retry, so a failure hides it.
-      .catch(() => {
-        if (!cancelled) setFailed(true)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [isSeen, fetchReadUsers, message.channel_id, message.created_at])
-
-  if (!isSeen || failed) return null
+  // The footer cannot hold a retry, so a failure hides it.
+  if (!isSeen || isError) return null
 
   // A footer, not a menuitem, so screen readers do not count or announce it as an action.
   // No aria-label: a global attribute would undo role=none.

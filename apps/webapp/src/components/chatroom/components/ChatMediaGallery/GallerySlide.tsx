@@ -33,8 +33,6 @@ type GallerySlideProps = {
 
 type GalleryImageSlideProps = Pick<GallerySlideProps, 'media' | 'isActive' | 'onZoomedChange'>
 
-type SlideKind = 'image' | 'video' | 'audio'
-
 type VisibilityRef = (node: HTMLElement | null) => void
 
 function GallerySlideShell({
@@ -55,13 +53,6 @@ function GallerySlideShell({
   )
 }
 
-// One padding owner for the loaded slide and its loader, so the swap moves no pixel.
-const SLIDE_SHELL_CLASS: Record<SlideKind, string> = {
-  image: 'px-4',
-  video: 'px-4',
-  audio: 'flex-col px-6'
-}
-
 // The bone and the loaded img or video take this box from the stored size. So the media
 // does not collapse or jump while its bytes arrive.
 function visualBoxStyle(media: GalleryMediaItem): CSSProperties | undefined {
@@ -74,31 +65,7 @@ function visualBoxStyle(media: GalleryMediaItem): CSSProperties | undefined {
   }
 }
 
-function GalleryAudioLabel({ label }: { label: string }) {
-  return <p className="mb-4 max-w-md truncate text-center text-sm text-white/70">{label}</p>
-}
-
-function GalleryLoadingBone({
-  media,
-  kind,
-  label,
-  className
-}: {
-  media: GalleryMediaItem
-  kind: SlideKind
-  label: string
-  className?: string
-}) {
-  if (kind === 'audio') {
-    // The label is known before the URL, so only the native audio control is a bone.
-    return (
-      <div className={twMerge('flex w-full max-w-md flex-col items-center', className)}>
-        <GalleryAudioLabel label={label} />
-        {/* Chrome's native audio control is 54px tall. */}
-        <div className="skeleton h-[54px] w-full rounded-full" aria-hidden />
-      </div>
-    )
-  }
+function GalleryVisualBone({ media, className }: { media: GalleryMediaItem; className?: string }) {
   const style = visualBoxStyle(media)
   return (
     <div
@@ -110,29 +77,6 @@ function GalleryLoadingBone({
       style={style}
       aria-hidden
     />
-  )
-}
-
-function GallerySpoilerChipShell({
-  visibilityRef,
-  media,
-  kind,
-  label,
-  reveal
-}: {
-  visibilityRef: VisibilityRef
-  media: GalleryMediaItem
-  kind: SlideKind
-  label: string
-  reveal: () => void
-}) {
-  return (
-    <GallerySlideShell
-      visibilityRef={visibilityRef}
-      className={twMerge('relative', SLIDE_SHELL_CLASS[kind])}>
-      <GalleryLoadingBone media={media} kind={kind} label={label} className="scale-110 blur-xl" />
-      <GallerySpoilerRevealControl kind={kind} reveal={reveal} variant="chip" />
-    </GallerySlideShell>
   )
 }
 
@@ -219,20 +163,10 @@ function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlid
   }
 
   if (isLoading) {
-    if (isSpoiler) {
-      return (
-        <GallerySpoilerChipShell
-          visibilityRef={visibilityRef}
-          media={media}
-          kind="image"
-          label={alt}
-          reveal={reveal}
-        />
-      )
-    }
     return (
-      <GallerySlideShell visibilityRef={visibilityRef} className={SLIDE_SHELL_CLASS.image}>
-        <GalleryLoadingBone media={media} kind="image" label={alt} />
+      <GallerySlideShell visibilityRef={visibilityRef} className="relative px-4">
+        <GalleryVisualBone media={media} className={isSpoiler ? 'scale-110 blur-xl' : undefined} />
+        {isSpoiler && <GallerySpoilerRevealControl kind="image" reveal={reveal} variant="chip" />}
       </GallerySlideShell>
     )
   }
@@ -280,7 +214,7 @@ function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlid
 
   if (isSpoiler) {
     return (
-      <GallerySlideShell visibilityRef={visibilityRef} className="relative">
+      <GallerySlideShell visibilityRef={visibilityRef} className="relative px-4">
         <GallerySpoilerRevealControl kind="image" reveal={reveal} variant="veil">
           {imageNode}
         </GallerySpoilerRevealControl>
@@ -295,8 +229,7 @@ function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlid
         connectHostRef(node)
       }}
       className={[
-        'relative flex h-full w-full touch-none items-center justify-center overflow-hidden',
-        SLIDE_SHELL_CLASS.image,
+        'relative flex h-full w-full touch-none items-center justify-center overflow-hidden px-4',
         isZoomed && 'overscroll-none'
       ]
         .filter(Boolean)
@@ -343,19 +276,7 @@ function GalleryAvSlide({
     return () => registerGalleryMediaController(slideKey, null)
   }, [canPlay, isActive, kind, slideKey, togglePlayback])
 
-  if (isSpoiler) {
-    return (
-      <GallerySpoilerChipShell
-        visibilityRef={visibilityRef}
-        media={media}
-        kind={kind}
-        label={label}
-        reveal={reveal}
-      />
-    )
-  }
-
-  if (signFailed) {
+  if (signFailed && !isSpoiler) {
     return (
       <GallerySlideShell visibilityRef={visibilityRef} className="px-6">
         <MediaUnavailable
@@ -367,34 +288,35 @@ function GalleryAvSlide({
     )
   }
 
-  if (!resolvedUrl) {
-    return (
-      <GallerySlideShell visibilityRef={visibilityRef} className={SLIDE_SHELL_CLASS[kind]}>
-        <GalleryLoadingBone media={media} kind={kind} label={label} />
-      </GallerySlideShell>
-    )
-  }
-
-  if (kind === 'video') {
-    return (
-      <GallerySlideShell visibilityRef={visibilityRef} className={SLIDE_SHELL_CLASS.video}>
-        <video
-          ref={mediaRef as RefObject<HTMLVideoElement>}
-          src={resolvedUrl}
-          controls
-          autoPlay={autoPlay}
-          playsInline
-          className="max-h-[calc(100dvh-7rem)] max-w-[min(96vw,1200px)] bg-black object-contain"
-          style={visualBoxStyle(media)}
-          aria-label={label}
+  const blur = isSpoiler ? 'scale-110 blur-xl' : undefined
+  // One shell per kind. Only the player swaps with its bone, so nothing moves when it loads.
+  let player: ReactNode
+  if (!resolvedUrl || isSpoiler) {
+    player =
+      kind === 'video' ? (
+        <GalleryVisualBone media={media} className={blur} />
+      ) : (
+        // Chrome's native audio control is 54px tall.
+        <div
+          className={twMerge('skeleton h-[54px] w-full max-w-md rounded-full', blur)}
+          aria-hidden
         />
-      </GallerySlideShell>
+      )
+  } else if (kind === 'video') {
+    player = (
+      <video
+        ref={mediaRef as RefObject<HTMLVideoElement>}
+        src={resolvedUrl}
+        controls
+        autoPlay={autoPlay}
+        playsInline
+        className="max-h-[calc(100dvh-7rem)] max-w-[min(96vw,1200px)] bg-black object-contain"
+        style={visualBoxStyle(media)}
+        aria-label={label}
+      />
     )
-  }
-
-  return (
-    <GallerySlideShell visibilityRef={visibilityRef} className={SLIDE_SHELL_CLASS.audio}>
-      <GalleryAudioLabel label={label} />
+  } else {
+    player = (
       <audio
         ref={mediaRef as RefObject<HTMLAudioElement>}
         src={resolvedUrl}
@@ -403,6 +325,20 @@ function GalleryAvSlide({
         className="w-full max-w-md"
         aria-label={label}
       />
+    )
+  }
+
+  return (
+    <GallerySlideShell
+      visibilityRef={visibilityRef}
+      className={kind === 'video' ? 'relative px-4' : 'relative flex-col px-6'}>
+      {kind === 'audio' && (
+        <p className={twMerge('mb-4 max-w-md truncate text-center text-sm text-white/70', blur)}>
+          {label}
+        </p>
+      )}
+      {player}
+      {isSpoiler && <GallerySpoilerRevealControl kind={kind} reveal={reveal} variant="chip" />}
     </GallerySlideShell>
   )
 }

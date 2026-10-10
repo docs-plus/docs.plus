@@ -4,7 +4,6 @@ import { twMerge } from '@utils/twMerge'
 type Props = {
   variant?: keyof ChatroomVariant
   className?: string
-  count?: number
 }
 
 /** The real FeedSeparator row: two hairlines and a 12px label, of which only the label is a bone. */
@@ -113,62 +112,38 @@ function MobileOutgoingSkeleton({ lines = 2 }: { lines?: number }) {
   )
 }
 
-type RowSpec =
-  | { kind: 'day' }
-  | { kind: 'desktop-start'; lines?: number }
-  | { kind: 'desktop-compact' }
-  | { kind: 'mobile-in'; groupStart?: boolean }
-  | { kind: 'mobile-out'; lines?: number }
+const DESKTOP_ROWS = (
+  <>
+    <DaySeparatorSkeleton />
+    <DesktopGroupStartSkeleton lines={2} />
+    <DesktopCompactSkeleton />
+    <DesktopGroupStartSkeleton lines={2} />
+    <DesktopCompactSkeleton />
+    <DesktopGroupStartSkeleton lines={1} />
+    <DesktopCompactSkeleton />
+  </>
+)
 
-const DESKTOP_ROWS: RowSpec[] = [
-  { kind: 'day' },
-  { kind: 'desktop-start', lines: 2 },
-  { kind: 'desktop-compact' },
-  { kind: 'desktop-start', lines: 2 },
-  { kind: 'desktop-compact' },
-  { kind: 'desktop-start', lines: 1 },
-  { kind: 'desktop-compact' }
-]
+const MOBILE_ROWS = (
+  <>
+    <DaySeparatorSkeleton />
+    <MobileIncomingSkeleton groupStart />
+    <MobileIncomingSkeleton groupStart={false} />
+    <MobileOutgoingSkeleton lines={2} />
+    <MobileIncomingSkeleton groupStart />
+    <MobileIncomingSkeleton groupStart={false} />
+    <MobileOutgoingSkeleton lines={1} />
+    <MobileIncomingSkeleton groupStart />
+    <MobileIncomingSkeleton groupStart={false} />
+    <MobileOutgoingSkeleton lines={2} />
+    <MobileIncomingSkeleton groupStart />
+    <MobileOutgoingSkeleton lines={1} />
+    <MobileIncomingSkeleton groupStart={false} />
+  </>
+)
 
-const MOBILE_ROWS: RowSpec[] = [
-  { kind: 'day' },
-  { kind: 'mobile-in', groupStart: true },
-  { kind: 'mobile-in', groupStart: false },
-  { kind: 'mobile-out', lines: 2 },
-  { kind: 'mobile-in', groupStart: true },
-  { kind: 'mobile-in', groupStart: false },
-  { kind: 'mobile-out', lines: 1 },
-  { kind: 'mobile-in', groupStart: true },
-  { kind: 'mobile-in', groupStart: false },
-  { kind: 'mobile-out', lines: 2 },
-  { kind: 'mobile-in', groupStart: true },
-  { kind: 'mobile-out', lines: 1 },
-  { kind: 'mobile-in', groupStart: false }
-]
-
-function renderRow(spec: RowSpec, index: number) {
-  switch (spec.kind) {
-    case 'day':
-      return <DaySeparatorSkeleton key={index} />
-    case 'desktop-start':
-      return <DesktopGroupStartSkeleton key={index} lines={spec.lines} />
-    case 'desktop-compact':
-      return <DesktopCompactSkeleton key={index} />
-    case 'mobile-in':
-      return <MobileIncomingSkeleton key={index} groupStart={spec.groupStart} />
-    case 'mobile-out':
-      return <MobileOutgoingSkeleton key={index} lines={spec.lines} />
-    default: {
-      const _exhaustive: never = spec
-      return _exhaustive
-    }
-  }
-}
-
-export const ChatroomFeedSkeleton = ({ variant = 'desktop', className, count }: Props) => {
+export const ChatroomFeedSkeleton = ({ variant = 'desktop', className }: Props) => {
   const isMobile = variant === 'mobile'
-  const template = isMobile ? MOBILE_ROWS : DESKTOP_ROWS
-  const rows = count != null ? template.slice(0, count) : template
 
   return (
     <div
@@ -182,7 +157,7 @@ export const ChatroomFeedSkeleton = ({ variant = 'desktop', className, count }: 
       role="status"
       aria-busy="true"
       aria-label="Loading messages">
-      {rows.map((spec, index) => renderRow(spec, index))}
+      {isMobile ? MOBILE_ROWS : DESKTOP_ROWS}
     </div>
   )
 }

@@ -2,7 +2,7 @@ import { getChannelNotifState, updateChannelNotifState } from '@api'
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { useApi } from '@hooks/useApi'
 import { useAuthStore, useChatStore } from '@stores'
-import { useCallback, useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 type NotificationState = 'ALL' | 'MENTIONS' | 'MUTED'
 
@@ -18,62 +18,55 @@ const getNextNotificationState = (current: NotificationState): NotificationState
 export const useNotificationToggle = () => {
   // The resolved row, never the heading id (#402). A heading with no row has no setting.
   const channelId = useChatStore((state) => state.chatRoom.channelId)
-  const user = useAuthStore((state) => state.profile)
+  const userId = useAuthStore((state) => state.profile?.id)
   // A failed channel resolve leaves the row undefined, so the room error ends the bone.
   const { error: roomError } = useChatroomContext()
-  const [notificationState, setNotificationState] = useState<NotificationState>('MENTIONS')
-  // The channel and person whose read has settled. Until then, and while the row still
-  // resolves (undefined), the toggle shows its bone. useApi's loading turns on only after paint.
-  const [readFor, setReadFor] = useState<string | null>(null)
-  const readKey = `${channelId}:${user?.id ?? ''}`
+  const queryClient = useQueryClient()
+  // The state is per person, so a background sign-in does not keep the anonymous answer.
+  const queryKey = ['channel-notif-state', channelId, userId]
 
-  const {
-    request: updateNotifState,
-    loading: updateLoading,
-    error: updateError
-  } = useApi(updateChannelNotifState, null, false)
-  const { request: fetchNotifState, error: fetchError } = useApi(getChannelNotifState, null, false)
-  const fetchLoading = !roomError && channelId !== null && readFor !== readKey
+  const { data, isLoading } = useQuery({
+    queryKey,
+    queryFn: async (): Promise<NotificationState> => {
+      const { data, error } = await getChannelNotifState({ _channel_id: channelId as string })
+      if (error) throw error
+      return (data as NotificationState) ?? 'MENTIONS'
+    },
+    // A visitor has no setting and the toggle hides, so the read never runs for one.
+    enabled: Boolean(channelId && userId),
+    // A failed read keeps the default state at once, so the bone ends.
+    retry: false
+  })
+  const notificationState = data ?? 'MENTIONS'
+  // A disabled query is not loading, so an unresolved row (undefined) keeps the bone too.
+  const fetchLoading = !roomError && (channelId === undefined || isLoading)
 
-  useEffect(() => {
-    if (!channelId) return
+  const { request: updateNotifState, loading: updateLoading } = useApi(
+    updateChannelNotifState,
+    null,
+    false
+  )
 
-    fetchNotifState({
-      _channel_id: channelId
-    })
-      .then(({ data }) => {
-        setNotificationState((data as NotificationState) ?? 'MENTIONS')
-      })
-      // useApi logs and rethrows. A failed read keeps the default state.
-      .catch(() => {})
-      .finally(() => setReadFor(readKey))
-    // `readKey` holds `user?.id`, because this state is per person. A background
-    // sign-in would otherwise leave the anonymous answer on screen.
-  }, [channelId, fetchNotifState, readKey])
-
-  const handleToggle = useCallback(async () => {
-    if (!channelId || !user?.id) return
+  const handleToggle = async () => {
+    if (!channelId || !userId) return
 
     const nextState = getNextNotificationState(notificationState)
-    setNotificationState(nextState)
+    // A focus refetch in flight would overwrite the optimistic state.
+    await queryClient.cancelQueries({ queryKey })
+    queryClient.setQueryData(queryKey, nextState)
 
-    const { error: apiError } = await updateNotifState({
-      channelId,
-      memberId: user.id,
-      notifState: nextState
-    })
-
-    if (apiError) {
-      setNotificationState(notificationState)
-      console.error('Failed to update notification state:', apiError)
+    try {
+      await updateNotifState({ channelId, memberId: userId, notifState: nextState })
+    } catch {
+      // useApi logs and rethrows, so the old state comes back here.
+      queryClient.setQueryData(queryKey, notificationState)
     }
-  }, [channelId, user?.id, notificationState, updateNotifState])
+  }
 
   return {
     notificationState,
     loading: fetchLoading || updateLoading,
     fetchLoading,
-    error: fetchError || updateError,
     handleToggle
   }
 }

@@ -49,6 +49,12 @@ export const useMessageAuthorDetails = (message: TGroupedMsgRow) => {
     if (!userId) return null
     return profile ?? toMessageAuthorDetails(userId, {})
   }, [message.user_details, userId, profile])
+  // `display_name` and `email` are legacy fallbacks for payloads that still carry them.
+  const displayName =
+    author?.fullname ||
+    message.user_details?.display_name ||
+    author?.username ||
+    message.user_details?.email
 
-  return { author, isLoading }
+  return { author, displayName, isLoading }
 }

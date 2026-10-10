@@ -18,7 +18,7 @@ const ChatPaneHeader = () => {
       <div className="ml-auto flex shrink-0 items-center gap-1">
         <div className="bg-base-200 rounded-field flex items-center">
           <ShareButton size="sm" iconSize={20} />
-          <NotificationToggle size="sm" iconSize={20} />
+          <NotificationToggle iconSize={20} />
           <CloseButton onClick={destroyChatRoom} size="sm" iconSize={20} aria-label="Close chat" />
         </div>
       </div>

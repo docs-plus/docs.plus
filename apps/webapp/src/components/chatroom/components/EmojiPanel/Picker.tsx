@@ -1,4 +1,4 @@
-import { EmptyState } from '@components/ui/EmptyState'
+import { ChunkLoadFallback } from '@components/ChunkLoadFallback'
 import { Loading } from '@components/ui/Loading'
 import { loadEmojiData } from '@utils/ensureEmojiData'
 import dynamic, { type DynamicOptionsLoadingProps } from 'next/dynamic'
@@ -20,17 +20,15 @@ const LazyEmojiMartPicker = dynamic<PickerProps>(
   { ssr: false, loading: PickerFallback }
 )
 
-function PickerFallback({ error, retry }: DynamicOptionsLoadingProps) {
+// A named loader, because it reads the variant to draw the desktop frame.
+function PickerFallback(props: DynamicOptionsLoadingProps) {
   const { variant } = useEmojiPanelContext()
-  const body = error ? (
-    <EmptyState
-      tone="error"
-      title="Couldn’t load emoji."
-      onRetry={retry}
+  const body = (
+    <ChunkLoadFallback
+      {...props}
+      skeleton={<Loading label="Loading emoji" className="flex-1" />}
       className="flex-1 justify-center"
     />
-  ) : (
-    <Loading label="Loading emoji" className="flex-1" />
   )
   if (variant !== 'desktop') return body
   // The desktop host has no frame of its own, so the fallback draws the emoji-mart card:
