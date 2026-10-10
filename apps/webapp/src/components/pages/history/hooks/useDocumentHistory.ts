@@ -7,6 +7,7 @@ export const useDocumentHistory = () => {
   const documentId = useStore((state) => state.settings.metadata?.documentId)
   const setLoadingHistory = useStore((state) => state.setLoadingHistory)
   const setSilentListRefresh = useStore((state) => state.setSilentListRefresh)
+  const setPendingOlderBefore = useStore((state) => state.setPendingOlderBefore)
 
   const fetchHistory = useCallback(() => {
     if (!hocuspocusProvider) return
@@ -21,10 +22,12 @@ export const useDocumentHistory = () => {
 
   const fetchOlderHistory = useCallback(() => {
     if (!hocuspocusProvider) return
-    const beforeVersion = useStore.getState().historyNextBefore
-    if (beforeVersion == null) return
+    const { historyNextBefore: beforeVersion, pendingOlderBefore } = useStore.getState()
+    // One older page at a time: a second press would trip the list cooldown.
+    if (beforeVersion == null || pendingOlderBefore != null) return
+    setPendingOlderBefore(beforeVersion)
     sendHistoryListRequest(hocuspocusProvider, documentId, { beforeVersion })
-  }, [hocuspocusProvider, documentId])
+  }, [hocuspocusProvider, documentId, setPendingOlderBefore])
 
   return { fetchHistory, fetchOlderHistory }
 }

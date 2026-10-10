@@ -23,6 +23,38 @@ const TRIGGER_NOTE: Partial<Record<VersionTrigger, string>> = {
   'schema-migration': 'This version came from a schema migration, so its writers were not recorded.'
 }
 
+/** Mirrors the roster below: the two intro notes, then None and two person rows. */
+function AuthorsBodySkeleton() {
+  return (
+    <div className="space-y-3 px-3 py-3">
+      {/* The first note wraps to two lines at the sidebar width. */}
+      <div aria-hidden>
+        <div className="flex h-4 items-center">
+          <div className="skeleton h-3 w-full" />
+        </div>
+        <div className="flex h-4 items-center">
+          <div className="skeleton h-3 w-2/5" />
+        </div>
+      </div>
+      <div aria-hidden className="flex h-4 items-center">
+        <div className="skeleton h-3 w-3/4" />
+      </div>
+      <div aria-hidden className="space-y-1">
+        {['w-10', 'w-32', 'w-28'].map((width, index) => (
+          <div key={width} className="flex min-h-9 items-center gap-2 px-2">
+            <div className="skeleton size-4 shrink-0 rounded-full" />
+            {index > 0 && <div className="skeleton size-6 shrink-0 rounded-full" />}
+            <div className="flex h-5 items-center">
+              <div className={`skeleton h-3.5 ${width}`} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="sr-only">Loading this version</p>
+    </div>
+  )
+}
+
 export function HistoryAuthorsBody() {
   const editor = useStore((state) => state.editor)
   const profiles = useStore((state) => state.profiles)
@@ -105,9 +137,7 @@ export function HistoryAuthorsBody() {
     }
   }
 
-  if (authorship.status === 'pending') {
-    return <p className="text-base-content/60 px-3 py-4 text-sm">Loading this version…</p>
-  }
+  if (authorship.status === 'pending') return <AuthorsBodySkeleton />
 
   const trigger = historyList.find((item) => item.version === activeHistory?.version)?.trigger
   const triggerNote = trigger ? TRIGGER_NOTE[trigger] : undefined

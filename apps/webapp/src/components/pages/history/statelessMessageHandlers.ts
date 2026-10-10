@@ -244,8 +244,10 @@ function handleHistoryFailed(payload: HistoryStatelessPayload, deps: HistoryStat
       return
     }
     // A loaded list means an older page failed. That request never set loading or the
-    // watch slot, so skip the shared tail. A refused double click still gets its reply.
+    // watch slot, so skip the shared tail.
     if (store().historyList.length > 0) {
+      // Match the echo: a failed first page must not free a Show older still in flight.
+      if (payload.beforeVersion === store().pendingOlderBefore) store().setPendingOlderBefore(null)
       if (isDeepLinkWalk(store().historyList)) {
         if (payload.reason === 'rate-limited' && !deepLinkRetried) {
           deepLinkRetried = true
@@ -307,6 +309,7 @@ function handleHistoryList(payload: HistoryStatelessPayload, deps: HistoryStatel
     store().setProfiles({ ...store().profiles, ...(raw.profiles ?? {}) })
     store().setHistoryHasMore(Boolean(raw.hasMore))
     store().setHistoryNextBefore(raw.nextBefore ?? null)
+    store().setPendingOlderBefore(null)
     if (walking) {
       deepLinkRetried = false
       openListTarget(merged, deps)
@@ -334,6 +337,7 @@ function handleHistoryList(payload: HistoryStatelessPayload, deps: HistoryStatel
     clientAuthors = []
     store().setHistoryHasMore(false)
     store().setHistoryNextBefore(null)
+    store().setPendingOlderBefore(null)
   } else {
     const page = raw.versions ?? []
     const current = store().historyList
@@ -360,6 +364,8 @@ function handleHistoryList(payload: HistoryStatelessPayload, deps: HistoryStatel
       profiles = raw.profiles ?? {}
       store().setHistoryHasMore(Boolean(raw.hasMore))
       store().setHistoryNextBefore(raw.nextBefore ?? null)
+      // A replaced cursor drops the older-page reply in flight, so free Show older.
+      store().setPendingOlderBefore(null)
     }
   }
 

@@ -137,13 +137,11 @@ export function HyperlinkSuggestions({
               No matches. Try a shorter or different query.
             </div>
           )}
-
-          {isLoading && totalRows === 0 && (
-            <div className={`text-base-content/60 animate-pulse py-3 text-sm ${layout.listPad}`}>
-              Loading…
-            </div>
-          )}
         </div>
+
+        {isLoading && totalRows === 0 && (
+          <SuggestionsSkeleton sectionPad={layout.sectionPad} rowPad={layout.rowPad} />
+        )}
       </div>
     </div>
   )
@@ -153,6 +151,36 @@ function suggestionStatusMessage(isLoading: boolean, totalRows: number): string 
   if (isLoading) return 'Loading suggestions'
   if (totalRows === 0) return 'No matching suggestions'
   return `${totalRows} ${totalRows === 1 ? 'suggestion' : 'suggestions'}`
+}
+
+/**
+ * Sits after the listbox, which may own only options and groups. Headings come from the
+ * editor at once, so only Bookmarks can still be loading here.
+ */
+function SuggestionsSkeleton({
+  sectionPad,
+  rowPad
+}: {
+  sectionPad: string
+  rowPad: string
+}): ReactNode {
+  return (
+    <div aria-hidden className="mb-1">
+      <div className={sectionPad}>
+        <div className="flex h-5 items-center">
+          <div className="skeleton h-3 w-16" />
+        </div>
+      </div>
+      {['w-2/3', 'w-1/2'].map((width) => (
+        <div key={width} className={`flex min-h-11 items-center gap-2 py-2 ${rowPad}`}>
+          <Icons.bookmark size={16} className="text-base-content/70 shrink-0" />
+          <div className="flex h-5 flex-1 items-center">
+            <div className={`skeleton h-3.5 ${width}`} />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 function Section({

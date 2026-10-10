@@ -30,6 +30,8 @@ interface IHistoryStore {
   /** The loaded page is not the whole list. */
   historyHasMore: boolean
   historyNextBefore: number | null
+  /** The cursor of the Show older request in flight. */
+  pendingOlderBefore: number | null
   setHistoryList: (historyList: HistoryItem[]) => void
   setActiveHistory: (activeHistory: HistoryItem | null) => void
   setProfiles: (profiles: HistoryProfileMap) => void
@@ -45,6 +47,7 @@ interface IHistoryStore {
   setSilentListRefresh: (silent: boolean) => void
   setHistoryHasMore: (historyHasMore: boolean) => void
   setHistoryNextBefore: (historyNextBefore: number | null) => void
+  setPendingOlderBefore: (pendingOlderBefore: number | null) => void
 }
 
 const history = immer<IHistoryStore>((set) => ({
@@ -63,6 +66,7 @@ const history = immer<IHistoryStore>((set) => ({
   silentListRefresh: false,
   historyHasMore: false,
   historyNextBefore: null,
+  pendingOlderBefore: null,
   setHistoryList: (historyList: HistoryItem[]) => {
     set((state) => {
       state.historyList = historyList
@@ -151,6 +155,12 @@ const history = immer<IHistoryStore>((set) => ({
   setHistoryNextBefore: (historyNextBefore: number | null) => {
     set((state) => {
       state.historyNextBefore = historyNextBefore
+    })
+  },
+
+  setPendingOlderBefore: (pendingOlderBefore: number | null) => {
+    set((state) => {
+      state.pendingOlderBefore = pendingOlderBefore
     })
   }
 }))

@@ -15,6 +15,7 @@ const ICON_SIZE = 20
 
 const Toolbar = ({ onOpenCompareSheet }: { onOpenCompareSheet: () => void }) => {
   const activeHistory = useStore((state) => state.activeHistory)
+  const loadingHistory = useStore((state) => state.loadingHistory)
   const versionInfo = useGetVersionInfo()
   const { requestRestore, restoring, canRestore, allowRestore } = useVersionRestore()
   const { compareMode, compareBaseItem, canCompare, exitCompare } = useHistoryCompare()
@@ -52,27 +53,32 @@ const Toolbar = ({ onOpenCompareSheet }: { onOpenCompareSheet: () => void }) => 
         </ToolbarButton>
 
         <div className="flex min-w-0 flex-1 items-center justify-center">
-          {restoreStamp && (
+          {restoreStamp ? (
             <div className="text-base-content/60 min-w-0 truncate text-center text-sm whitespace-nowrap">
               <span className="text-base-content font-medium">{restoreStamp.date}</span>
               <span className="ml-2"> {restoreStamp.time}</span>
             </div>
+          ) : (
+            loadingHistory && (
+              <div aria-hidden className="flex h-5 items-center">
+                <div className="skeleton h-3.5 w-28" />
+              </div>
+            )
           )}
         </div>
 
         <div className="flex shrink-0 items-center">
-          {versionInfo && (
-            <ToolbarButton
-              className="shrink-0 touch-manipulation"
-              onClick={() => void copyVersionLink()}
-              tooltip={copyLinkLabel}
-              aria-label={copyLinkLabel}>
-              <span className={`swap ${copied ? 'swap-active' : ''}`} aria-hidden>
-                <Icons.check size={ICON_SIZE} className="swap-on text-success stroke-[1.75]" />
-                <Icons.link size={ICON_SIZE} className="swap-off stroke-[1.75]" />
-              </span>
-            </ToolbarButton>
-          )}
+          <ToolbarButton
+            className="shrink-0 touch-manipulation"
+            onClick={() => void copyVersionLink()}
+            disabled={!versionInfo}
+            tooltip={copyLinkLabel}
+            aria-label={copyLinkLabel}>
+            <span className={`swap ${copied ? 'swap-active' : ''}`} aria-hidden>
+              <Icons.check size={ICON_SIZE} className="swap-on text-success stroke-[1.75]" />
+              <Icons.link size={ICON_SIZE} className="swap-off stroke-[1.75]" />
+            </span>
+          </ToolbarButton>
           <ToolbarButton
             className="shrink-0 touch-manipulation"
             onClick={() => {

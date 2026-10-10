@@ -8,7 +8,6 @@ import TextInput from '@components/ui/TextInput'
 import { Icons } from '@icons'
 import { useAuthStore, useSheetStore, useStore } from '@stores'
 import { isModShortcut } from '@utils/platform'
-import { twMerge } from '@utils/twMerge'
 import debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
@@ -191,17 +190,15 @@ function CommandJumpPanel({ places, userId, onPick, navigate }: PanelProps) {
         {renderGroup('Places', placeItems, 0)}
         {renderGroup('Documents', padItems, placeItems.length)}
       </div>
-      {items.length === 0 && (
-        <p
-          key={emptyStatus}
-          aria-hidden
-          className={twMerge(
-            'text-base-content/60 px-3 py-6 text-center text-sm',
-            // The 300ms hold keeps a fast search from flashing the loading line.
-            isSearching && 'animate-[doc-content-in_120ms_ease-out_300ms_backwards]'
-          )}>
-          {emptyStatus}
-        </p>
+      {/* The bones hold the Documents slot, under any Places rows, while a search shows no documents. */}
+      {isSearching && padItems.length === 0 ? (
+        <DocumentRowsSkeleton />
+      ) : (
+        items.length === 0 && (
+          <p aria-hidden className="text-base-content/60 px-3 py-6 text-center text-sm">
+            {emptyStatus}
+          </p>
+        )
       )}
       <p className="sr-only" aria-live="polite">
         {items.length === 0
@@ -211,6 +208,30 @@ function CommandJumpPanel({ places, userId, onPick, navigate }: PanelProps) {
             : `${items.length} results`}
       </p>
     </>
+  )
+}
+
+/**
+ * Mirrors a Documents group of `ContextMenuRow`s.
+ * It sits after the listbox, which owns only options.
+ */
+function DocumentRowsSkeleton() {
+  return (
+    <div aria-hidden className="py-1">
+      <div className="px-3 pt-1 pb-1">
+        <div className="flex h-5 items-center">
+          <div className="skeleton h-3 w-16" />
+        </div>
+      </div>
+      {['w-2/3', 'w-1/2'].map((width) => (
+        <div key={width} className="mx-1.5 flex items-center gap-2.5 px-2.5 py-2">
+          <Icons.fileText size={16} className="shrink-0 opacity-70" />
+          <div className="flex h-5 flex-1 items-center">
+            <div className={`skeleton h-3.5 ${width}`} />
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
 

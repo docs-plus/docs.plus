@@ -31,6 +31,9 @@ export const useHocuspocusStateless = () => {
   useLayoutEffect(() => {
     if (!hocuspocusProvider) return
     hocuspocusProvider.on('stateless', handleStatelessMessage)
+    // A dropped socket loses the older-page reply, so free Show older for a retry.
+    const clearPendingOlder = () => useStore.getState().setPendingOlderBefore(null)
+    hocuspocusProvider.on('disconnect', clearPendingOlder)
     // StrictMode replays this effect in the same tick, and the server refuses a second
     // list inside its cooldown. Deferring lets the replay's cleanup cancel the first send.
     const listTimer = setTimeout(fetchHistory)
@@ -38,6 +41,7 @@ export const useHocuspocusStateless = () => {
     return () => {
       clearTimeout(listTimer)
       hocuspocusProvider.off('stateless', handleStatelessMessage)
+      hocuspocusProvider.off('disconnect', clearPendingOlder)
     }
   }, [hocuspocusProvider, handleStatelessMessage, fetchHistory])
 }

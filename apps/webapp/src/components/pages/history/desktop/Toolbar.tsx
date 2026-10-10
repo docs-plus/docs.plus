@@ -15,6 +15,7 @@ const ICON_SIZE = 16
 
 const Toolbar = () => {
   const activeHistory = useStore((state) => state.activeHistory)
+  const loadingHistory = useStore((state) => state.loadingHistory)
   const versionInfo = useGetVersionInfo()
   const { requestRestore, restoring, canRestore, allowRestore } = useVersionRestore()
   const { compareMode, compareBaseItem, canCompare, toggleCompare, exitCompare } =
@@ -46,6 +47,7 @@ const Toolbar = () => {
             restoring={restoring}
             canRestore={canRestore}
             allowRestore={allowRestore}
+            loading={loadingHistory}
           />
         </div>
       </header>
@@ -55,17 +57,17 @@ const Toolbar = () => {
           <ToolbarButton onClick={() => window.print()} tooltip="Print (⌘+P)" aria-label="Print">
             <Icons.print size={ICON_SIZE} />
           </ToolbarButton>
-          {versionInfo && (
-            <ToolbarButton
-              onClick={() => void copyVersionLink()}
-              tooltip={copyLinkLabel}
-              aria-label={copyLinkLabel}>
-              <span className={`swap ${copied ? 'swap-active' : ''}`} aria-hidden>
-                <Icons.check size={ICON_SIZE} className="swap-on text-success stroke-[1.75]" />
-                <Icons.link size={ICON_SIZE} className="swap-off stroke-[1.75]" />
-              </span>
-            </ToolbarButton>
-          )}
+          {/* Always mounted, so Changes does not move when the list lands. */}
+          <ToolbarButton
+            onClick={() => void copyVersionLink()}
+            disabled={!versionInfo}
+            tooltip={copyLinkLabel}
+            aria-label={copyLinkLabel}>
+            <span className={`swap ${copied ? 'swap-active' : ''}`} aria-hidden>
+              <Icons.check size={ICON_SIZE} className="swap-on text-success stroke-[1.75]" />
+              <Icons.link size={ICON_SIZE} className="swap-off stroke-[1.75]" />
+            </span>
+          </ToolbarButton>
           <ToolbarButton
             shape={null}
             className="gap-1 px-2"

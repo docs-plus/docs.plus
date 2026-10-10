@@ -1,4 +1,5 @@
 import { useHistoryHash } from '@components/pages/history/historyShareUrl'
+import Button from '@components/ui/Button'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { useStore } from '@stores'
 import { useEffect, useMemo, useRef } from 'react'
@@ -15,13 +16,15 @@ type HistorySidebarBodyProps = HistorySidebarRowHandlers & {
   onShowOlder?: () => void
 }
 
+// Reads the store itself: a prop would change the memoized Virtuoso Footer and remount it.
 function OlderVersionsButton({ onShowOlder }: { onShowOlder?: () => void }) {
+  const loading = useStore((state) => state.pendingOlderBefore != null)
   if (!onShowOlder) return null
   return (
     <div className="px-3 py-2">
-      <button type="button" className="btn btn-ghost btn-sm w-full" onClick={onShowOlder}>
+      <Button variant="ghost" size="sm" className="w-full" loading={loading} onClick={onShowOlder}>
         Show older versions
-      </button>
+      </Button>
     </div>
   )
 }

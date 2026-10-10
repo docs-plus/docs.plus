@@ -47,6 +47,21 @@ const ExternalLinkHeader = ({ data: payload }: LinkPreviewSheetProps) => {
   const description = data?.description
   const showHrefLine = Boolean(data?.title && data.title !== href)
 
+  if (status === 'loading') {
+    return (
+      <div className="flex items-start gap-3">
+        <span className="sr-only">Loading link details</span>
+        <span aria-hidden className="inline-flex size-6 shrink-0 items-center justify-center">
+          <span className="skeleton size-5" />
+        </span>
+        {/* 22px: the title's text-base leading-snug line. */}
+        <div aria-hidden className="flex h-5.5 min-w-0 flex-1 items-center">
+          <div className="skeleton h-4 w-48" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex items-start gap-3">
       <span className="inline-flex size-6 shrink-0 items-center justify-center">

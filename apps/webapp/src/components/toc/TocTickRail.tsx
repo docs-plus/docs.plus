@@ -419,12 +419,19 @@ function mountSectionPreview(host: HTMLElement, headingId: string, fallback: str
   }
 }
 
+// Line boxes match the clone's text-sm leading-snug title and text-xs leading-relaxed body.
 function PreviewSkeleton() {
   return (
-    <div className="flex flex-col gap-1.5 px-2.5 py-2.5" aria-hidden>
-      <div className="skeleton h-3.5 w-3/5" />
-      <div className="skeleton h-2.5 w-full" />
-      <div className="skeleton h-2.5 w-4/5" />
+    <div className="px-2.5 pt-2 pb-1.5" aria-hidden>
+      <div className="mb-1 flex h-[1.203125rem] items-center">
+        <div className="skeleton h-3.5 w-3/5" />
+      </div>
+      <div className="flex h-[1.21875rem] items-center">
+        <div className="skeleton h-3 w-full" />
+      </div>
+      <div className="flex h-[1.21875rem] items-center">
+        <div className="skeleton h-3 w-4/5" />
+      </div>
     </div>
   )
 }
@@ -456,7 +463,8 @@ function TocSectionPreview({
     closeMs: 0
   })
   const [host, setHost] = useState<HTMLDivElement | null>(null)
-  const [empty, setEmpty] = useState(true)
+  // `blank`: the section gave the clone nothing to show, so the card stays hidden.
+  const [fill, setFill] = useState<'pending' | 'filled' | 'blank'>('pending')
 
   useLayoutEffect(() => {
     refs.setReference(referenceEl)
@@ -464,12 +472,12 @@ function TocSectionPreview({
 
   useLayoutEffect(() => {
     if (!isMounted || !open || !headingId || !host) {
-      setEmpty(true)
+      setFill('pending')
       host?.replaceChildren()
       return
     }
     mountSectionPreview(host, headingId, label)
-    setEmpty(host.childNodes.length === 0)
+    setFill(host.childNodes.length ? 'filled' : 'blank')
     return () => {
       host.replaceChildren()
     }
@@ -485,9 +493,11 @@ function TocSectionPreview({
         style={{ ...floatingStyles, ...transitionStyles }}
         className={twMerge(
           popoverPanelClassName,
-          'pointer-events-none w-64 max-w-[min(16rem,calc(100vw-3rem))] overflow-hidden p-0'
+          'pointer-events-none w-64 max-w-[min(16rem,calc(100vw-3rem))] overflow-hidden p-0',
+          // Hide, never unmount: the host must stay mounted for the next heading.
+          fill === 'blank' && 'hidden'
         )}>
-        {empty && <PreviewSkeleton />}
+        {fill === 'pending' && <PreviewSkeleton />}
         <div ref={setHost} className="flex min-h-0 flex-col" />
       </div>
     </FloatingPortal>

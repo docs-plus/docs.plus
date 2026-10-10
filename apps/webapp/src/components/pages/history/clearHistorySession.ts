@@ -16,6 +16,7 @@ export function resetHistorySessionForMount(): void {
   state.setSilentListRefresh(false)
   state.setHistoryHasMore(false)
   state.setHistoryNextBefore(null)
+  state.setPendingOlderBefore(null)
   state.setCompareMode(false)
   state.setCompareBaseItem(null)
   state.setPendingCompareVersion(null)

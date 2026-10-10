@@ -2,7 +2,7 @@ import { mergeAttributes, Node } from '@tiptap/core'
 import { NodeViewProps, NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react'
 import React from 'react'
 
-import { type FileType, PlaceholderBody } from './MediaUploadPlaceholderBody'
+import { UnfinishedUploadBody } from './MediaUploadPlaceholderBody'
 import { createMediaUploadPlaceholderPlugin } from './mediaUploadPlaceholderPlugin'
 
 export {
@@ -12,32 +12,19 @@ export {
 } from './mediaUploadPlaceholderPlugin'
 
 interface MediaAttributes {
-  progress: number
   fileName: string
-  fileType: FileType
   uploadId: string
-  localUrl?: string
-  width?: number
-  height?: number
 }
 
 // Node views only render legacy zombie placeholders left in stored docs by past
-// sessions (in-flight uploads are widget decorations now); Cancel just removes them.
+// sessions (in-flight uploads are widget decorations now). Their upload and blob
+// URL died with that session, so they show a static state that Remove deletes.
 const MediaUploadPlaceholderComponent: React.FC<NodeViewProps> = ({ node, deleteNode }) => {
-  const { progress, fileName, fileType, uploadId, localUrl, width, height } =
-    node.attrs as MediaAttributes
+  const { fileName, uploadId } = node.attrs as MediaAttributes
 
   return (
     <NodeViewWrapper className="media-upload-placeholder" data-upload-id={uploadId}>
-      <PlaceholderBody
-        progress={progress}
-        fileName={fileName}
-        fileType={fileType}
-        localUrl={localUrl}
-        width={width}
-        height={height}
-        onCancel={() => deleteNode?.()}
-      />
+      <UnfinishedUploadBody fileName={fileName} onRemove={() => deleteNode?.()} />
     </NodeViewWrapper>
   )
 }

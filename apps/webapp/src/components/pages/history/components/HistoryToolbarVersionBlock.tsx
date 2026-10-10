@@ -11,6 +11,8 @@ type Props = {
   canRestore?: boolean
   /** Signed-in writer only. Visitors never see Restore. */
   allowRestore?: boolean
+  /** The list is loading, so the note and the date show as bones. */
+  loading?: boolean
 }
 
 export function HistoryToolbarVersionBlock({
@@ -18,9 +20,22 @@ export function HistoryToolbarVersionBlock({
   onRequestRestore,
   restoring = false,
   canRestore = false,
-  allowRestore = false
+  allowRestore = false,
+  loading = false
 }: Props) {
-  if (!versionInfo) return null
+  if (!versionInfo) {
+    // A first load opens the latest version, so the current-version note shows too.
+    return loading ? (
+      <div aria-hidden className="flex items-center justify-end gap-2">
+        <div className="flex h-5 items-center">
+          <div className="skeleton h-3.5 w-44" />
+        </div>
+        <div className="flex h-5 items-center">
+          <div className="skeleton h-3.5 w-32" />
+        </div>
+      </div>
+    ) : null
+  }
 
   const { date, time } = formatVersionDate(versionInfo.createdAt)
   const showRestore = allowRestore && !versionInfo.isLatestVersion
