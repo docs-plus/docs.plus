@@ -2,6 +2,13 @@ import baseConfig from './index.js'
 import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 
+/** Named so an app config that adds its own `no-restricted-syntax` selectors can keep this one. */
+export const consoleSelector = {
+  selector:
+    "CallExpression[callee.object.name='console'][callee.property.name!=/^(info|warn|error|log|debug)$/]",
+  message: 'Prefer console.info, console.warn, or console.error in production code.'
+}
+
 export default [
   ...baseConfig,
 
@@ -14,14 +21,7 @@ export default [
       'react-hooks/exhaustive-deps': 'warn',
       '@next/next/no-document-import-in-page': 'off',
       'no-fallthrough': ['error', { commentPattern: 'falls through' }],
-      'no-restricted-syntax': [
-        'warn',
-        {
-          selector:
-            "CallExpression[callee.object.name='console'][callee.property.name!=/^(info|warn|error|log|debug)$/]",
-          message: 'Prefer console.info, console.warn, or console.error in production code.'
-        }
-      ]
+      'no-restricted-syntax': ['warn', consoleSelector]
     },
     settings: { react: { version: 'detect' } }
   },

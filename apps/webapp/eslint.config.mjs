@@ -1,9 +1,4 @@
-import nextConfig from '../../packages/eslint-config/next.js'
-
-// A flat-config rule entry replaces the shared one, so each local entry carries the shared selectors.
-const [, ...sharedSyntax] = nextConfig.find((entry) =>
-  Array.isArray(entry.rules?.['no-restricted-syntax'])
-).rules['no-restricted-syntax']
+import nextConfig, { consoleSelector } from '../../packages/eslint-config/next.js'
 
 // Loading-state guard: design-system.md §State language. It reads one string literal at a time,
 // so a bone composed from several literals or variables is not checked.
@@ -37,6 +32,8 @@ export default [
   ...nextConfig,
   {
     files: ['src/**/*.{ts,tsx}'],
+    // The shared config turns the console guard off in the logger; this entry would turn it back on.
+    ignores: ['src/utils/logger.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -50,24 +47,12 @@ export default [
           ]
         }
       ],
-      'no-restricted-syntax': ['warn', ...sharedSyntax, ...skeletonSelectors, pulseSelector]
+      // A flat-config rule entry replaces the shared one, so it repeats the console selector.
+      'no-restricted-syntax': ['warn', consoleSelector, ...skeletonSelectors, pulseSelector]
     }
   },
   {
     files: ['src/utils/twMerge.ts'],
     rules: { 'no-restricted-imports': 'off' }
-  },
-  {
-    // The shared config allows any console call in the logger; keep that, but keep the guard.
-    files: ['src/utils/logger.ts'],
-    rules: { 'no-restricted-syntax': ['warn', ...skeletonSelectors, pulseSelector] }
-  },
-  {
-    // Not loaders: the typewriter caret and the live recording dot.
-    files: [
-      'src/components/ui/TypingText.tsx',
-      'src/components/chatroom/components/MessageComposer/components/VoiceRecordingBar.tsx'
-    ],
-    rules: { 'no-restricted-syntax': ['warn', ...sharedSyntax, ...skeletonSelectors] }
   }
 ]

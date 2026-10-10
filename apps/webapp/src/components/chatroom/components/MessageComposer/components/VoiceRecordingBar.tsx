@@ -79,6 +79,7 @@ export function VoiceRecordingBar({
       {isLocked ? (
         <Icons.lock size={14} className="text-primary shrink-0 stroke-[1.75]" aria-hidden />
       ) : (
+        // eslint-disable-next-line no-restricted-syntax -- the live recording dot, not a loader
         <span className="bg-error size-2 shrink-0 animate-pulse rounded-full motion-reduce:animate-none" />
       )}
       <span className="text-xs font-semibold tabular-nums">{elapsedLabel}</span>

@@ -99,22 +99,22 @@ const ReceivePage = () => {
       body: view.message,
       content: view.canRetry ? <StatusAction onClick={retry}>Try again</StatusAction> : null
     }
+  } else if (view.kind === 'working') {
+    card = {
+      title: 'Import a file',
+      content: (
+        <p role="status" className="text-base-content/70 flex items-center gap-2 text-sm">
+          <span className="loading loading-spinner loading-sm shrink-0" aria-hidden />
+          <span className="min-w-0 [overflow-wrap:anywhere]">
+            Creating a document from {view.filename}…
+          </span>
+        </p>
+      )
+    }
   } else {
     card = {
       title: 'Import a file',
-      // The import names its file, so it keeps the inline spinner row. Loading sits at the row
-      // start, so the swap to that row moves no pixel.
-      content:
-        view.kind === 'working' ? (
-          <p role="status" className="text-base-content/70 flex items-center gap-2 text-sm">
-            <span className="loading loading-spinner loading-sm shrink-0" aria-hidden />
-            <span className="min-w-0 [overflow-wrap:anywhere]">
-              Creating a document from {view.filename}…
-            </span>
-          </p>
-        ) : (
-          <Loading size="sm" className="text-base-content/70 justify-start" />
-        )
+      content: <Loading size="sm" className="text-base-content/70 justify-start" />
     }
   }
 

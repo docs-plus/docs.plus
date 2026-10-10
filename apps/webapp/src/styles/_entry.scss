@@ -81,22 +81,10 @@
   }
 }
 
-// The skeleton pill's 1.5s delay is functional (anti-flash on fast loads), not
-// decorative — under reduced motion keep the delayed reveal but drop the translate.
-// Safe to redefine globally: every other doc-region-in consumer is motion-safe:-gated.
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*) {
     animation: none !important;
-  }
-
-  @keyframes doc-region-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
   }
 }

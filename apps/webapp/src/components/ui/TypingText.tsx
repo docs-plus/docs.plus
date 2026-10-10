@@ -149,6 +149,7 @@ const TypingText = ({
           {showCursor && !reducedMotion && (
             <span
               className={twMerge(
+                // eslint-disable-next-line no-restricted-syntax -- a typewriter caret, not a loader
                 'ml-0.5 inline-block w-[2px] bg-current motion-safe:animate-pulse',
                 cursorClassName
               )}

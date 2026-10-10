@@ -153,8 +153,7 @@
   // Flex children default to `min-width: auto`, which beats the nested `max-width: 200px`
   // caps. `min-width: 0` down the chain lets the anchor shrink and ellipsize, so the
   // popover keeps one width whatever the href length.
-  .metadata,
-  .metadata-loading {
+  .metadata {
     min-width: 0;
     a {
       display: block;
@@ -235,12 +234,6 @@
   border-radius: 4px;
   flex-shrink: 0;
   object-fit: cover;
-}
-
-.metadata-loading {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 .message--card__content,
