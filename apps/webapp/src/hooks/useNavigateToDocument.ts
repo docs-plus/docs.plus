@@ -3,10 +3,6 @@ import { sanitizeDocumentSlug } from '@utils/sanitizeDocumentSlug'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 
-function prefetchDocumentShell() {
-  void import('@components/DocumentShellInner')
-}
-
 export function useNavigateToDocument() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
@@ -24,7 +20,6 @@ export function useNavigateToDocument() {
   const navigateToDocument = useCallback(
     async (name?: string) => {
       setIsLoading(true)
-      prefetchDocumentShell()
       const slug = sanitizeDocumentSlug(name)
       try {
         await router.push(`/${slug}`)
@@ -39,5 +34,3 @@ export function useNavigateToDocument() {
 
   return { navigateToDocument, isLoading }
 }
-
-export { prefetchDocumentShell }

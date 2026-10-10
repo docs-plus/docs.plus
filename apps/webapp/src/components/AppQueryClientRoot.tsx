@@ -1,17 +1,14 @@
 import { useProfileSync } from '@hooks/useProfileSync'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { getRoutePolicy } from '@utils/routePolicy'
-import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { ReactNode } from 'react'
 
-// A split chunk keeps the shell out of the landing bundle. It still renders on the
-// server, so the pad skeleton is in the first HTML (Skeleton doctrine).
-const DocumentShellInner = dynamic(() =>
-  import('./DocumentShellInner').then((module) => module.DocumentShellInner)
-)
+// A static import: a next/dynamic shell is not preloaded before hydration under Turbopack,
+// so the client's first render missed the server's pad skeleton. The shell is light now.
+import { DocumentShellInner } from './DocumentShellInner'
 
-// Inside the provider but above the lazy DocumentShellInner, so sync starts with the page.
+// Inside the provider but above DocumentShellInner, so sync starts with the page.
 function ProfileSync() {
   useProfileSync()
   return null

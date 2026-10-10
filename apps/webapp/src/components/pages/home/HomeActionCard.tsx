@@ -1,6 +1,5 @@
 import Button from '@components/ui/Button'
 import TextInput from '@components/ui/TextInput'
-import { prefetchDocumentShell } from '@hooks/useNavigateToDocument'
 import { twMerge } from '@utils/twMerge'
 import { FormEvent, useEffect, useState } from 'react'
 
@@ -54,8 +53,6 @@ export function HomeActionCard({
         shape="block"
         className="mb-6 text-base font-bold sm:mb-8"
         onClick={createDoc}
-        onMouseEnter={prefetchDocumentShell}
-        onFocus={prefetchDocumentShell}
         disabled={isLoading}
         loading={pending === 'create'}
         aria-busy={pending === 'create'}>
@@ -89,7 +86,6 @@ export function HomeActionCard({
           disabled={isLoading}
           placeholder="document-name"
           onChange={(e) => setDocumentName(e.target.value)}
-          onFocus={prefetchDocumentShell}
           containerClassName="w-full"
         />
         <Button

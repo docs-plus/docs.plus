@@ -4,6 +4,7 @@ import type { ChatroomVariant } from '@components/chatroom/types/chatroom.types'
 import {
   type ListScrollLocation,
   VirtuosoMessageList,
+  VirtuosoMessageListLicense,
   type VirtuosoMessageListMethods,
   type VirtuosoMessageListProps
 } from '@virtuoso.dev/message-list'
@@ -120,21 +121,24 @@ export const ChatList = forwardRef<
       },
       [loadOlder, hasMoreOlder, loadNewer, onLastVisibleIndexChange]
     )
+    // The license wraps the one list here, so the pad shell carries no Virtuoso code.
     return (
-      <VirtuosoMessageList<ChatItem, ChatListContext>
-        ref={internalRef}
-        initialData={initialData}
-        context={context}
-        computeItemKey={computeItemKey}
-        ItemContent={ItemContent}
-        StickyHeader={StickyDayHeader}
-        Header={ChatListHeader}
-        Footer={ChatListFooter}
-        EmptyPlaceholder={MessagesEmptyState}
-        onScroll={onScroll}
-        shortSizeAlign="bottom-smooth"
-        style={{ height: '100%', overscrollBehavior: 'contain' }}
-      />
+      <VirtuosoMessageListLicense licenseKey={process.env.NEXT_PUBLIC_VIRTUOSO_LICENSE ?? ''}>
+        <VirtuosoMessageList<ChatItem, ChatListContext>
+          ref={internalRef}
+          initialData={initialData}
+          context={context}
+          computeItemKey={computeItemKey}
+          ItemContent={ItemContent}
+          StickyHeader={StickyDayHeader}
+          Header={ChatListHeader}
+          Footer={ChatListFooter}
+          EmptyPlaceholder={MessagesEmptyState}
+          onScroll={onScroll}
+          shortSizeAlign="bottom-smooth"
+          style={{ height: '100%', overscrollBehavior: 'contain' }}
+        />
+      </VirtuosoMessageListLicense>
     )
   }
 )
