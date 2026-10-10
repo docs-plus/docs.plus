@@ -5,10 +5,10 @@ import { useRouter } from 'next/router'
 import { ReactNode } from 'react'
 
 // A static import: a next/dynamic shell is not preloaded before hydration under Turbopack,
-// so the client's first render missed the server's pad skeleton. The shell is light now.
+// so the client's first render missed the server's pad skeleton. The shell is light.
 import { DocumentShellInner } from './DocumentShellInner'
 
-// Inside the provider but above DocumentShellInner, so sync starts with the page.
+// Inside the provider but outside DocumentShellInner, because it runs on every route.
 function ProfileSync() {
   useProfileSync()
   return null

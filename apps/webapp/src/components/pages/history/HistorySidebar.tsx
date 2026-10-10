@@ -8,7 +8,7 @@ import { type ReactNode, useState } from 'react'
 
 import { HistoryAuthorsBody } from './components/HistoryAuthorsBody'
 import { HistorySidebarBody } from './components/HistorySidebarBody'
-import HistorySidebarSkeleton from './components/HistorySidebarSkeleton'
+import { HistorySidebarSkeleton } from './components/HistorySidebarSkeleton'
 import { useDocumentHistory } from './hooks/useDocumentHistory'
 import { useHistoryCompare } from './hooks/useHistoryCompare'
 import { useHistorySidebarRows } from './hooks/useHistorySidebarRows'
