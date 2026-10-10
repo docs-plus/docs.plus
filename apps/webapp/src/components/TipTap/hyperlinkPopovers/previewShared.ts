@@ -137,7 +137,7 @@ export const createMetadataContent = (data: MetadataResponse | null, href: strin
 }
 
 const createLoadingSkeleton = (): HTMLElement => {
-  const skeleton = createHTMLElement('div', { className: 'metadata-content metadata-loading' })
+  const skeleton = createHTMLElement('div', { className: 'metadata-content' })
   // `.metadata img` paints the loaded icon at 18px, round, with an 8px end margin.
   const favicon = createHTMLElement('div', {
     className: 'skeleton me-2 size-4.5 shrink-0 rounded-full'
