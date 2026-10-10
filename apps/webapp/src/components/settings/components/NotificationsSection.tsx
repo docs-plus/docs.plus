@@ -286,7 +286,9 @@ const NotificationsSection = () => {
           <IOSPWANotice iosSupportsWebPush={iosSupportsWebPush} />
         ) : (
           <div className="divide-base-300 divide-y">
-            {!isChecking ? (
+            {isChecking ? (
+              <ToggleRowSkeleton label="Enable push notifications" description={pushDescription} />
+            ) : (
               <ToggleRow
                 id="push-notifications"
                 label="Enable push notifications"
@@ -295,8 +297,6 @@ const NotificationsSection = () => {
                 onChange={handlePushChange}
                 disabled={isLoading || !isSupported || isPushBlocked}
               />
-            ) : (
-              <ToggleRowSkeleton label="Enable push notifications" description={pushDescription} />
             )}
 
             <ToggleRow

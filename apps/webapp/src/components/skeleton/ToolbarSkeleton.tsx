@@ -4,13 +4,7 @@ const ButtonBone = () => <div className="skeleton rounded-field size-8 shrink-0"
 const SelectBone = () => <div className="skeleton rounded-field h-8 w-[42px] shrink-0" />
 
 // Mirrors EditorToolbar control for control, so the swap moves no pixel.
-const ToolbarSkeleton = ({
-  isSignedIn = false,
-  hasQr = false
-}: {
-  isSignedIn?: boolean
-  hasQr?: boolean
-}) => {
+const ToolbarSkeleton = ({ isSignedIn, hasQr }: { isSignedIn: boolean; hasQr: boolean }) => {
   return (
     <div className="tiptap__toolbar border-base-300 bg-base-100 flex min-w-0 flex-row items-center justify-between gap-0.5 border-b px-3 py-1.5 sm:justify-start">
       <div className="skeleton rounded-field h-8 w-40 shrink-0" />

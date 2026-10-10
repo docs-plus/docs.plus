@@ -40,7 +40,7 @@ export const HistorySidebarSkeleton = ({ tabs = false }: { tabs?: boolean }) => 
                         <div className="skeleton rounded-field size-5 shrink-0" />
                         {/* Line boxes match the real 20px time and 16px meta lines. */}
                         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                          {/* The newest session is the latest on a first load, so its badge is frame. */}
+                          {/* On a first load the newest session is the latest, so it shows the real badge, not a bone. */}
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                             <div className="flex h-5 items-center">
                               <div className="skeleton h-3.5 w-24" />
