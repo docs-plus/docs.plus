@@ -15,6 +15,15 @@ type Props = {
 
 const notificationStates = ['ALL', 'MENTIONS', 'MUTED'] as const
 
+// The square button's box per size, so the first-read bone matches its toolbar neighbours.
+const BONE_SIZE: Record<ButtonSize, string> = {
+  xs: 'size-6',
+  sm: 'size-8',
+  md: 'size-10',
+  lg: 'size-12',
+  xl: 'size-14'
+}
+
 const notificationConfig = {
   ALL: {
     icon: Icons.notifications,
@@ -39,6 +48,15 @@ export const NotificationToggle = ({ className, size = 'sm', iconSize }: Props) 
 
   if (!profile?.id) return null
 
+  if (fetchLoading) {
+    return (
+      <div
+        className={twMerge('skeleton rounded-field shrink-0', BONE_SIZE[size], className)}
+        aria-hidden
+      />
+    )
+  }
+
   const config = notificationConfig[notificationState]
   const resolvedIconSize = iconSize ?? (size === 'xs' ? 14 : 16)
 
@@ -47,7 +65,6 @@ export const NotificationToggle = ({ className, size = 'sm', iconSize }: Props) 
       variant="ghost"
       size={size}
       shape="square"
-      loading={fetchLoading}
       disabled={loading}
       onClick={handleToggle}
       tooltip={config.label}

@@ -1,5 +1,3 @@
-import { useChatroomContext } from '@components/chatroom/ChatroomContext'
-import AvatarStackLoader from '@components/skeleton/AvatarStackLoader'
 import { AvatarStack } from '@components/ui/AvatarStack'
 import { usePresentUsers } from '@hooks/usePresentUsers'
 import { useChatStore } from '@stores'
@@ -9,18 +7,10 @@ type Props = {
   className?: string
 }
 
+/** Presence never waits on the feed, so the stack paints at once and has no loader. */
 export const ParticipantsList = ({ className }: Props) => {
-  const { error, isFeedReady } = useChatroomContext()
   const headingId = useChatStore((state) => state.chatRoom?.headingId ?? '')
   const presentUsers = usePresentUsers(headingId)
-
-  if (!isFeedReady && !error) {
-    return (
-      <div className={twMerge('flex items-center', className)} aria-hidden>
-        <AvatarStackLoader size="sm" repeat={2} />
-      </div>
-    )
-  }
 
   if (!presentUsers.length) return null
 

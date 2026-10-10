@@ -30,10 +30,11 @@ const fetchMessageAuthor = async (userId: string): Promise<MessageRowUserDetails
 /**
  * Realtime rows omit `user_details`, so load the author's public profile.
  * Never use presence here, because any client can forge a presence payload.
+ * `isLoading` is false for a hydrated row and after a failed read, so a loader always ends.
  */
-export const useMessageAuthorDetails = (message: TGroupedMsgRow): MessageRowUserDetails | null => {
+export const useMessageAuthorDetails = (message: TGroupedMsgRow) => {
   const userId = message.user_id
-  const { data: profile } = useQuery({
+  const { data: profile, isLoading } = useQuery({
     queryKey: ['chat-author', userId],
     queryFn: () => fetchMessageAuthor(userId),
     enabled: !message.user_details?.id && !!userId,
@@ -42,10 +43,12 @@ export const useMessageAuthorDetails = (message: TGroupedMsgRow): MessageRowUser
     retry: false
   })
 
-  return useMemo((): MessageRowUserDetails | null => {
+  const author = useMemo((): MessageRowUserDetails | null => {
     const ud = message.user_details
     if (ud?.id) return toMessageAuthorDetails(ud.id, ud)
     if (!userId) return null
     return profile ?? toMessageAuthorDetails(userId, {})
   }, [message.user_details, userId, profile])
+
+  return { author, isLoading }
 }

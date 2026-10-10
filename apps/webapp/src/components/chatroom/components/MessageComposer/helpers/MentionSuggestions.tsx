@@ -21,13 +21,16 @@ function Section({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
+/** Mirrors MentionSuggestionRow: a `sm` avatar and a 14px name line. */
 function LoadingSkeleton() {
   return (
     <>
       {[0, 1].map((i) => (
-        <div key={i} className="flex items-center gap-2 px-2 py-1.5">
+        <div key={i} className="flex min-h-11 items-center gap-2 px-2 py-1.5">
           <div className="skeleton size-8 shrink-0 rounded-full" />
-          <div className="skeleton h-4 flex-1" />
+          <div className="flex h-5 min-w-0 flex-1 items-center">
+            <div className="skeleton h-3.5 w-32" />
+          </div>
         </div>
       ))}
     </>
@@ -87,51 +90,45 @@ export function MentionSuggestions({
         role="listbox"
         aria-label="Mention members"
         className="max-h-[300px] overflow-y-auto p-1">
-        {loading && flatEntries.length === 0 ? (
-          <LoadingSkeleton />
-        ) : (
-          <>
-            {everyoneEntries.length > 0 && (
-              <Section label="Notify">
-                {everyoneEntries.map(({ entry, index }) => (
-                  <MentionSuggestionRow
-                    key={entry.id}
-                    entry={entry}
-                    index={index}
-                    optionId={mentionOptionId(index)}
-                    selected={selectedIndex === index}
-                    online={false}
-                    onSelect={onSelect}
-                    onMouseEnter={onRowHover}
-                  />
-                ))}
-              </Section>
-            )}
-
-            <Section label="Members">
-              {fetchError ? (
-                <div className="text-error px-2 py-3 text-sm">Couldn&apos;t load members</div>
-              ) : loading && memberEntries.length === 0 ? (
-                <LoadingSkeleton />
-              ) : memberEntries.length > 0 ? (
-                memberEntries.map(({ entry, index }) => (
-                  <MentionSuggestionRow
-                    key={entry.id}
-                    entry={entry}
-                    index={index}
-                    optionId={mentionOptionId(index)}
-                    selected={selectedIndex === index}
-                    online={onlineByUserId.get(entry.id) ?? false}
-                    onSelect={onSelect}
-                    onMouseEnter={onRowHover}
-                  />
-                ))
-              ) : (
-                <div className="text-base-content/60 px-2 py-3 text-sm">No members found</div>
-              )}
-            </Section>
-          </>
+        {everyoneEntries.length > 0 && (
+          <Section label="Notify">
+            {everyoneEntries.map(({ entry, index }) => (
+              <MentionSuggestionRow
+                key={entry.id}
+                entry={entry}
+                index={index}
+                optionId={mentionOptionId(index)}
+                selected={selectedIndex === index}
+                online={false}
+                onSelect={onSelect}
+                onMouseEnter={onRowHover}
+              />
+            ))}
+          </Section>
         )}
+
+        <Section label="Members">
+          {fetchError ? (
+            <div className="text-error px-2 py-3 text-sm">Couldn&apos;t load members</div>
+          ) : loading && memberEntries.length === 0 ? (
+            <LoadingSkeleton />
+          ) : memberEntries.length > 0 ? (
+            memberEntries.map(({ entry, index }) => (
+              <MentionSuggestionRow
+                key={entry.id}
+                entry={entry}
+                index={index}
+                optionId={mentionOptionId(index)}
+                selected={selectedIndex === index}
+                online={onlineByUserId.get(entry.id) ?? false}
+                onSelect={onSelect}
+                onMouseEnter={onRowHover}
+              />
+            ))
+          ) : (
+            <div className="text-base-content/60 px-2 py-3 text-sm">No members found</div>
+          )}
+        </Section>
       </div>
     </>
   )

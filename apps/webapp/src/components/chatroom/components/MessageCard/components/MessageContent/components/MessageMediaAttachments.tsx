@@ -24,7 +24,7 @@ export function MessageMediaAttachments({ medias, layout, caption, className }: 
   const openGallery = useChatMediaGalleryStore((state) => state.openGallery)
   const { variant } = useChatroomContext()
   const { message } = useMessageCardContext()
-  const author = useMessageAuthorDetails(message)
+  const { author } = useMessageAuthorDetails(message)
 
   if (medias.length === 0) return null
 

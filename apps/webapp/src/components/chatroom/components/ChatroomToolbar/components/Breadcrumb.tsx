@@ -20,7 +20,8 @@ export const Breadcrumb = ({ className }: Props) => {
   const { variant } = useChatroomContext()
   const setOrUpdateChatRoom = useChatStore((state) => state.setOrUpdateChatRoom)
   const { headingId } = useChatStore((state) => state.chatRoom)
-  const [headingPath, setHeadingPath] = useState<HeadingBreadcrumbItem[]>([])
+  // null while it resolves; empty when the heading cannot resolve, so the skeleton ends.
+  const [headingPath, setHeadingPath] = useState<HeadingBreadcrumbItem[] | null>(null)
 
   const workspaceId = useStore((state) => state.settings.workspaceId)
   const metadata = useStore((state) => state.settings.metadata)
@@ -33,10 +34,8 @@ export const Breadcrumb = ({ className }: Props) => {
     if (headingId === workspaceId) return
 
     const headingAddress = resolveHeadingBreadcrumbs(editor, headingId)
-    if (!headingAddress) return
-
-    setOrUpdateChatRoom('headingPath', headingAddress)
-    setHeadingPath(headingAddress)
+    if (headingAddress) setOrUpdateChatRoom('headingPath', headingAddress)
+    setHeadingPath(headingAddress ?? [])
   }, [headingId, editor, providerSyncing, loading, workspaceId, setOrUpdateChatRoom])
 
   const openChatContainerHandler = useCallback(
@@ -65,9 +64,11 @@ export const Breadcrumb = ({ className }: Props) => {
   if (headingId === workspaceId) {
     return <span className="text-base-content truncate text-sm font-medium">{metadata.title}</span>
   }
-  if (!headingPath.length || !headingId) {
+  if (!headingPath || !headingId) {
     return <ChatroomBreadcrumbSkeleton variant="desktop" />
   }
+  // A plain spacer, so screen readers do not announce an empty Breadcrumb landmark.
+  if (!headingPath.length) return <div className={twMerge('flex min-w-0 flex-1', className)} />
 
   return (
     <nav className={twMerge('flex min-w-0 flex-1', className)} aria-label="Breadcrumb">

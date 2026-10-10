@@ -8,7 +8,6 @@ import { useApi } from '@hooks/useApi'
 import { Icons } from '@icons'
 import { TMsgRow } from '@types'
 import { toStackUser } from '@utils/avatarFace'
-import { twMerge } from '@utils/twMerge'
 import { useEffect, useState } from 'react'
 
 type Props = {
@@ -24,8 +23,10 @@ export function UserReadStatus({ message }: Props) {
   const peerReadSeq = usePeerReadSeq(channelId)
   const isSeen = typeof message.seq === 'number' && message.seq <= peerReadSeq
 
-  const [readUsers, setReadUsers] = useState<ChannelMemberReadUpdate[]>([])
-  const { request: fetchReadUsers, loading: readUsersLoading } = useApi(
+  // null until the first read lands, so the first frame shows the bones, not "0 seen".
+  const [readUsers, setReadUsers] = useState<ChannelMemberReadUpdate[] | null>(null)
+  const [failed, setFailed] = useState(false)
+  const { request: fetchReadUsers } = useApi(
     getChannelMembersByLastReadUpdate,
     [message.channel_id, message.created_at],
     false
@@ -33,53 +34,48 @@ export function UserReadStatus({ message }: Props) {
 
   useEffect(() => {
     if (!isSeen) return
-    const fetchData = async () => {
-      const { data } = await fetchReadUsers(message.channel_id, message.created_at)
-      setReadUsers(data as ChannelMemberReadUpdate[])
+    let cancelled = false
+    fetchReadUsers(message.channel_id, message.created_at)
+      .then(({ data }) => {
+        if (!cancelled) setReadUsers((data as ChannelMemberReadUpdate[]) ?? [])
+      })
+      // useApi logs and rethrows. The footer cannot hold a retry, so a failure hides it.
+      .catch(() => {
+        if (!cancelled) setFailed(true)
+      })
+    return () => {
+      cancelled = true
     }
-
-    fetchData()
   }, [isSeen, fetchReadUsers, message.channel_id, message.created_at])
 
-  if (!isSeen) return null
-
-  const body = readUsersLoading ? (
-    <>
-      <div className="skeleton ml-2 size-4"></div>
-      <div className="skeleton h-4 w-10"></div>
-      <AvatarStackLoader size="sm" repeat={3} className="ml-auto pr-1" />
-    </>
-  ) : (
-    <div className="flex items-center gap-2">
-      <span className="sr-only">Seen by {readUsers.length}</span>
-      <span aria-hidden className="text-base-content/60 shrink-0 text-xs">
-        <span className="flex items-center gap-1 whitespace-nowrap">
-          <Icons.checkDouble size={16} className="text-base-content/40" />
-          {readUsers.length} seen
-        </span>
-      </span>
-      <AvatarStack
-        className="ml-auto"
-        users={readUsers.map((user) => toStackUser(user))}
-        size="sm"
-        maxDisplay={3}
-        clickable={false}
-      />
-    </div>
-  )
+  if (!isSeen || failed) return null
 
   // A footer, not a menuitem, so screen readers do not count or announce it as an action.
   // No aria-label: a global attribute would undo role=none.
   return (
     <>
       <ContextMenuDivider />
-      <li
-        role="none"
-        className={twMerge(
-          'pointer-events-none px-2.5 py-2 select-none',
-          readUsersLoading && 'flex flex-row items-center gap-2'
-        )}>
-        {body}
+      <li role="none" className="pointer-events-none px-2.5 py-2 select-none">
+        <div className="flex items-center gap-2">
+          {readUsers && <span className="sr-only">Seen by {readUsers.length}</span>}
+          <span aria-hidden className="text-base-content/60 shrink-0 text-xs">
+            <span className="flex items-center gap-1 whitespace-nowrap">
+              <Icons.checkDouble size={16} className="text-base-content/40" />
+              {readUsers ? `${readUsers.length} seen` : <span className="skeleton h-3 w-10" />}
+            </span>
+          </span>
+          {readUsers ? (
+            <AvatarStack
+              className="ml-auto"
+              users={readUsers.map((user) => toStackUser(user))}
+              size="sm"
+              maxDisplay={3}
+              clickable={false}
+            />
+          ) : (
+            <AvatarStackLoader size="sm" repeat={3} className="ml-auto" />
+          )}
+        </div>
       </li>
     </>
   )

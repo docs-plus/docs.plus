@@ -4,10 +4,12 @@ import UnreadBadge from '@components/ui/UnreadBadge'
 import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
+import { useState } from 'react'
 
 export type JumpToPresentButtonProps = {
   atBottom: boolean
-  onTap: () => void
+  /** Fetches the tail window; the chip shows the busy spinner until it settles. */
+  onTap: () => Promise<void>
   /** Session-local count of arrivals while scrolled away from the tail. */
   newCount: number
   /** Persisted unread count from channel_members.unread_message_count. */
@@ -26,11 +28,21 @@ export const JumpToPresentButton = ({
   subdued = false
 }: JumpToPresentButtonProps) => {
   const isAuthed = !!useAuthStore((state) => state.profile?.id)
+  const [busy, setBusy] = useState(false)
   if (atBottom) return null
   const count = backlogCount(unreadCount, newCount)
+  const jump = async () => {
+    setBusy(true)
+    try {
+      await onTap()
+    } finally {
+      setBusy(false)
+    }
+  }
   return (
     <Button
-      onClick={onTap}
+      onClick={() => void jump()}
+      loading={busy}
       onPointerDown={(e) => e.preventDefault()}
       variant={subdued ? 'neutral' : 'primary'}
       shape="circle"

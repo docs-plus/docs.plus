@@ -12,6 +12,8 @@ type ReferenceJumpButtonBase = {
   dataKey: string
   ariaLabel: string
   onJump: () => void
+  /** A jump to an unloaded message is fetching; the kind icon becomes the spinner. */
+  busy?: boolean
   header: ReactNode
   children: ReactNode
 }
@@ -21,7 +23,7 @@ export type ReferenceJumpButtonProps =
   | (ReferenceJumpButtonBase & { kind: 'comment'; commentTheme: CommentReferenceTheme })
 
 export function ReferenceJumpButton(props: ReferenceJumpButtonProps) {
-  const { dataKey, ariaLabel, onJump, header, children, kind } = props
+  const { dataKey, ariaLabel, onJump, busy = false, header, children, kind } = props
 
   let Icon = Icons.reply
   let label = 'Reply'
@@ -41,6 +43,7 @@ export function ReferenceJumpButton(props: ReferenceJumpButtonProps) {
       data-key={dataKey}
       data-reference-kind={kind}
       aria-label={ariaLabel}
+      aria-busy={busy || undefined}
       className={twMerge(BUTTON_CLASS, shell)}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => {
@@ -48,7 +51,11 @@ export function ReferenceJumpButton(props: ReferenceJumpButtonProps) {
         onJump()
       }}>
       <div className={twMerge('mb-1.5 flex items-center gap-1.5 text-xs font-semibold', iconClass)}>
-        <Icon size={14} aria-hidden />
+        {busy ? (
+          <span className="loading loading-spinner size-3.5 shrink-0" aria-hidden />
+        ) : (
+          <Icon size={14} aria-hidden />
+        )}
         <span>{label}</span>
         {header}
       </div>

@@ -10,13 +10,18 @@ type Props = {
 }
 
 export const ProfilePic = ({ message }: { message: TGroupedMsgRow }) => {
-  const author = useMessageAuthorDetails(message)
+  const { author, isLoading } = useMessageAuthorDetails(message)
   const isGroupStart = message.isGroupStart
   const userId = author?.id ?? message.user_id
 
+  // A generated face would read as loaded content, so a pending author shows a round bone.
   return (
     <div className={isGroupStart ? 'block' : 'hidden'}>
-      <Avatar face={{ ...author, id: userId }} size="md" />
+      {isLoading ? (
+        <div className="skeleton size-10 rounded-full" aria-hidden />
+      ) : (
+        <Avatar face={{ ...author, id: userId }} size="md" />
+      )}
     </div>
   )
 }

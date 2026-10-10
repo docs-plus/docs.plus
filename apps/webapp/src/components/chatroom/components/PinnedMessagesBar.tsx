@@ -13,7 +13,7 @@ export const PinnedMessagesBar = ({
   onJumpToMessage
 }: {
   channelId: string
-  onJumpToMessage: (messageId: string) => void
+  onJumpToMessage: (messageId: string) => Promise<void>
 }) => {
   const channelPinned = useChatStore((s) => s.pinnedMessages.get(channelId))
   const pinned = useMemo<PinnedRow[]>(
@@ -21,6 +21,7 @@ export const PinnedMessagesBar = ({
     [channelPinned]
   )
   const [index, setIndex] = useState(0)
+  const [busy, setBusy] = useState(false)
   // Clamp the index when the underlying list shrinks (unpin from another
   // tab, etc.); otherwise the user lands on an empty slot.
   useEffect(() => {
@@ -36,6 +37,16 @@ export const PinnedMessagesBar = ({
   const onNext = (e: React.MouseEvent) => {
     e.stopPropagation()
     setIndex((i) => (i + 1) % pinned.length)
+  }
+  // A pin outside the loaded window fetches it first. An in-window jump settles before paint.
+  const onJump = async () => {
+    if (busy) return
+    setBusy(true)
+    try {
+      await onJumpToMessage(current.id)
+    } finally {
+      setBusy(false)
+    }
   }
   return (
     <div
@@ -53,10 +64,12 @@ export const PinnedMessagesBar = ({
       <button
         key={current.id}
         type="button"
-        onClick={() => onJumpToMessage(current.id)}
+        onClick={() => void onJump()}
+        aria-busy={busy || undefined}
         className="focus-visible:ring-primary block min-w-0 flex-1 truncate px-3 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset">
         {current.content ?? ''}
       </button>
+      {busy && <span className="loading loading-spinner loading-xs me-2 shrink-0" aria-hidden />}
       {hasMany && (
         <>
           <span className="text-base-content/60 px-1 text-xs tabular-nums">

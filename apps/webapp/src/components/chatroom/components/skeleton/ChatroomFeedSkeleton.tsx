@@ -1,18 +1,32 @@
 import type { ChatroomVariant } from '@components/chatroom/types/chatroom.types'
 import { twMerge } from '@utils/twMerge'
 
-import { AccentPanelSkeleton } from './ChatroomFeedMediaSkeleton'
-
 type Props = {
   variant?: keyof ChatroomVariant
   className?: string
   count?: number
 }
 
-function DayChipSkeleton() {
+/** The real FeedSeparator row: two hairlines and a 12px label, of which only the label is a bone. */
+function DaySeparatorSkeleton() {
   return (
-    <div className="flex justify-center py-2" aria-hidden>
-      <div className="skeleton h-4 w-14 rounded-full" />
+    <div className="flex w-full items-center gap-3 px-4 py-2" aria-hidden>
+      <span className="bg-base-300/80 h-px flex-1" />
+      <span className="flex h-4 shrink-0 items-center">
+        <span className="skeleton h-3 w-16" />
+      </span>
+      <span className="bg-base-300/80 h-px flex-1" />
+    </div>
+  )
+}
+
+const LINE_WIDTHS = ['w-[76%]', 'w-[54%]', 'w-[40%]']
+
+/** One body line: a 16px bone in the real 24px line box (`.message--card__content p`). */
+function BodyLine({ width }: { width: string }) {
+  return (
+    <div className="flex h-6 items-center">
+      <div className={twMerge('skeleton h-4', width)} />
     </div>
   )
 }
@@ -24,47 +38,34 @@ function TextLinesSkeleton({
   lines?: number
   align?: 'start' | 'end'
 }) {
-  const widths = ['w-[76%]', 'w-[54%]', 'w-[40%]']
   return (
-    <div className={twMerge('flex flex-col gap-1.5', align === 'end' && 'items-end')}>
+    <div className={twMerge('flex w-full flex-col', align === 'end' && 'items-end')}>
       {Array.from({ length: lines }).map((_, index) => (
-        <div
+        <BodyLine
           key={index}
-          className={twMerge(
-            'skeleton h-3',
-            align === 'end' ? 'w-28' : (widths[index] ?? 'w-[45%]')
-          )}
+          width={align === 'end' ? 'w-28' : (LINE_WIDTHS[index] ?? 'w-[45%]')}
         />
       ))}
     </div>
   )
 }
 
-function SkeletonBody({
-  accent,
-  lines = 2,
-  align = 'start',
-  panelClassName
-}: {
-  accent?: 'panel'
-  lines?: number
-  align?: 'start' | 'end'
-  panelClassName?: string
-}) {
-  if (accent === 'panel') return <AccentPanelSkeleton className={panelClassName} />
-  return <TextLinesSkeleton lines={lines} align={align} />
-}
-
-function DesktopGroupStartSkeleton({ lines = 2, accent }: { lines?: number; accent?: 'panel' }) {
+/**
+ * Mirrors DesktopMessageBody: a `w-10` rail beside the content column, inside the `px-3` card.
+ * `pb-1` stands for the empty footer, whose indicators row always keeps its `mt-1`.
+ */
+function DesktopGroupStartSkeleton({ lines = 2 }: { lines?: number }) {
   return (
-    <div className="flex w-full items-start gap-1.5 px-2.5 py-1.5" aria-hidden>
-      <div className="skeleton size-8 shrink-0 rounded-full" />
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="flex items-center gap-1.5">
-          <div className="skeleton h-2.5 w-16" />
-          <div className="skeleton h-2 w-7" />
+    <div className="flex w-full items-start gap-2 px-3 py-1" aria-hidden>
+      <div className="flex w-10 shrink-0 flex-col items-center">
+        <div className="skeleton size-10 rounded-full" />
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col pb-1">
+        <div className="flex h-5 items-center">
+          <div className="skeleton h-3.5 w-24" />
+          <div className="skeleton ml-1 h-3 w-8" />
         </div>
-        <SkeletonBody accent={accent} lines={lines} />
+        <TextLinesSkeleton lines={lines} />
       </div>
     </div>
   )
@@ -72,34 +73,31 @@ function DesktopGroupStartSkeleton({ lines = 2, accent }: { lines?: number; acce
 
 function DesktopCompactSkeleton() {
   return (
-    <div className="flex w-full items-start gap-1.5 px-2.5 py-1" aria-hidden>
-      <div className="w-8 shrink-0" aria-hidden />
-      <div className="skeleton h-3 w-[62%]" />
+    <div className="flex w-full items-start gap-2 px-3 py-0.5" aria-hidden>
+      <div className="w-10 shrink-0" />
+      <div className="min-w-0 flex-1 pb-1">
+        <BodyLine width="w-[62%]" />
+      </div>
     </div>
   )
 }
 
-function MobileIncomingSkeleton({
-  groupStart = true,
-  accent
-}: {
-  groupStart?: boolean
-  accent?: 'panel'
-}) {
+/** The mobile card has no inline padding, so the avatar sits on the list edge. */
+function MobileIncomingSkeleton({ groupStart = true }: { groupStart?: boolean }) {
   return (
-    <div className={twMerge('flex w-full gap-2 px-2', groupStart ? 'mt-1' : 'mt-0.5')} aria-hidden>
+    <div className={twMerge('flex w-full gap-3', groupStart ? 'mt-1' : 'mt-0.5')} aria-hidden>
       {groupStart ? (
-        <div className="skeleton size-8 shrink-0 rounded-full" />
+        <div className="skeleton size-10 shrink-0 rounded-full" />
       ) : (
-        <span className="size-8 shrink-0" aria-hidden />
+        <span className="size-10 shrink-0" />
       )}
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-px">
-        {groupStart && <div className="skeleton h-2.5 w-14" />}
-        <SkeletonBody
-          accent={accent}
-          lines={groupStart ? 2 : 1}
-          panelClassName={accent === 'panel' ? 'max-w-full' : undefined}
-        />
+      <div className="flex min-w-0 flex-1 flex-col">
+        {groupStart && (
+          <div className="flex h-4 items-center">
+            <div className="skeleton h-3 w-14" />
+          </div>
+        )}
+        <TextLinesSkeleton lines={groupStart ? 2 : 1} />
       </div>
     </div>
   )
@@ -107,7 +105,7 @@ function MobileIncomingSkeleton({
 
 function MobileOutgoingSkeleton({ lines = 2 }: { lines?: number }) {
   return (
-    <div className="mt-1 flex w-full justify-end px-2" aria-hidden>
+    <div className="mt-1 flex w-full justify-end" aria-hidden>
       <div className="max-w-[78%] min-w-[55%]">
         <TextLinesSkeleton lines={lines} align="end" />
       </div>
@@ -119,16 +117,14 @@ type RowSpec =
   | { kind: 'day' }
   | { kind: 'desktop-start'; lines?: number }
   | { kind: 'desktop-compact' }
-  | { kind: 'desktop-accent'; accent: 'panel' }
   | { kind: 'mobile-in'; groupStart?: boolean }
-  | { kind: 'mobile-accent'; accent: 'panel' }
   | { kind: 'mobile-out'; lines?: number }
 
 const DESKTOP_ROWS: RowSpec[] = [
   { kind: 'day' },
   { kind: 'desktop-start', lines: 2 },
   { kind: 'desktop-compact' },
-  { kind: 'desktop-accent', accent: 'panel' },
+  { kind: 'desktop-start', lines: 2 },
   { kind: 'desktop-compact' },
   { kind: 'desktop-start', lines: 1 },
   { kind: 'desktop-compact' }
@@ -142,7 +138,6 @@ const MOBILE_ROWS: RowSpec[] = [
   { kind: 'mobile-in', groupStart: true },
   { kind: 'mobile-in', groupStart: false },
   { kind: 'mobile-out', lines: 1 },
-  { kind: 'mobile-accent', accent: 'panel' },
   { kind: 'mobile-in', groupStart: true },
   { kind: 'mobile-in', groupStart: false },
   { kind: 'mobile-out', lines: 2 },
@@ -154,17 +149,13 @@ const MOBILE_ROWS: RowSpec[] = [
 function renderRow(spec: RowSpec, index: number) {
   switch (spec.kind) {
     case 'day':
-      return <DayChipSkeleton key={index} />
+      return <DaySeparatorSkeleton key={index} />
     case 'desktop-start':
       return <DesktopGroupStartSkeleton key={index} lines={spec.lines} />
     case 'desktop-compact':
       return <DesktopCompactSkeleton key={index} />
-    case 'desktop-accent':
-      return <DesktopGroupStartSkeleton key={index} accent={spec.accent} />
     case 'mobile-in':
       return <MobileIncomingSkeleton key={index} groupStart={spec.groupStart} />
-    case 'mobile-accent':
-      return <MobileIncomingSkeleton key={index} groupStart accent={spec.accent} />
     case 'mobile-out':
       return <MobileOutgoingSkeleton key={index} lines={spec.lines} />
     default: {
@@ -182,7 +173,7 @@ export const ChatroomFeedSkeleton = ({ variant = 'desktop', className, count }: 
   return (
     <div
       className={twMerge(
-        'flex min-h-0 flex-1 flex-col px-1 pb-3',
+        'flex min-h-0 flex-1 flex-col pb-3',
         isMobile
           ? 'scrollbar-custom scrollbar-thin justify-start overflow-y-auto pt-2'
           : 'justify-end overflow-hidden pt-1.5',

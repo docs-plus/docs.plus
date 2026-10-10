@@ -65,6 +65,10 @@ export const useHeadingChannel = (): unknown => {
     // DocumentPage closes the chat on a document switch. As a second line, never
     // resolve against the workspace of another document.
     if (documentId && documentId !== workspaceId) return
+    // A retry that may create the row is a resolve again, so the chat loads until it ends.
+    if (canWrite && channelId === null) {
+      useChatStore.getState().setOrUpdateChatRoom('channelId', undefined)
+    }
     let cancelled = false
     resolveHeadingChannel(workspaceId, headingId, uid, canWrite)
       .then((resolved) => {
