@@ -1,5 +1,6 @@
 import { selectPadOwnsKeyboard } from '@components/chatroom/utils/selectPadOwnsKeyboard'
 import { SheetFooter } from '@components/SheetFooter'
+import TableOfContentsLoader from '@components/skeleton/TableOfContentsLoader'
 import { canOpenFind } from '@components/TipTap/find/canOpenFind'
 import { indicatorDotClassName } from '@components/TipTap/toolbar/indicatorDot'
 import { TocHeader, TocMobile } from '@components/toc'
@@ -22,23 +23,26 @@ import type { IconType } from 'react-icons'
 
 type TocModalIconButtonProps = {
   'aria-label': string
+  disabled?: boolean
   onClick: () => void
   startIcon: IconType
 }
 
 function TocModalIconButton({
   'aria-label': ariaLabel,
+  disabled,
   onClick,
   startIcon
 }: TocModalIconButtonProps) {
   return (
     <Button
       aria-label={ariaLabel}
+      disabled={disabled}
       variant="ghost"
       size="sm"
       shape="square"
       iconSize={20}
-      className="text-base-content/70 hover:text-base-content hover:bg-base-300 rounded-field focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none"
+      className="text-base-content/70 hover:text-base-content hover:bg-base-300 rounded-field focus-visible:ring-primary disabled:text-base-content/40 focus-visible:ring-2 focus-visible:outline-none"
       onClick={onClick}
       startIcon={startIcon}
     />
@@ -47,7 +51,8 @@ function TocModalIconButton({
 
 const TocModal = () => {
   const { close: closeModal } = useModal() || {}
-  const user = useAuthStore((state) => state.profile)
+  // The session lands before the profile, so Bookmarks does not pop into the tray late.
+  const isSignedIn = useAuthStore((state) => Boolean(state.profile?.id ?? state.session?.id))
   const openSheet = useSheetStore((state) => state.openSheet)
   const loading = useStore((state) => state.settings.editor.loading)
   const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
@@ -68,9 +73,7 @@ const TocModal = () => {
     [closeModal]
   )
 
-  if (loading || !editor || providerSyncing) {
-    return null
-  }
+  const showLoader = loading || !editor || providerSyncing
 
   return (
     <div className="bg-base-100 z-30 flex h-dvh max-h-dvh w-full max-w-[80%] min-w-[80%] flex-col overflow-hidden">
@@ -105,7 +108,11 @@ const TocModal = () => {
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--pad-well)]">
           <TocHeader variant="mobile" />
           <ScrollArea className="h-0 min-h-0 flex-1" scrollbarSize="thin" hideScrollbar fade="both">
-            <TocMobile className="tiptap__toc w-full pb-6" />
+            {showLoader ? (
+              <TableOfContentsLoader density="mobile" />
+            ) : (
+              <TocMobile className="tiptap__toc w-full pb-6" />
+            )}
           </ScrollArea>
         </div>
 
@@ -114,7 +121,9 @@ const TocModal = () => {
             {findAllowed && (
               <TocModalIconButton
                 aria-label="Find in document"
-                onClick={() => closeTocThen(() => editor.commands.openCaretFind())}
+                // Disabled, not hidden, so the tray does not shift when the editor arrives.
+                disabled={!editor}
+                onClick={() => closeTocThen(() => editor?.commands.openCaretFind())}
                 startIcon={Icons.search}
               />
             )}
@@ -137,7 +146,7 @@ const TocModal = () => {
               onClick={() => closeTocThen(() => openSheet('documentSettings'))}
               startIcon={Icons.settings}
             />
-            {user && (
+            {isSignedIn && (
               <div className="relative">
                 <TocModalIconButton
                   aria-label={withInProgressBookmarks('Bookmarks', inProgressBookmarks)}

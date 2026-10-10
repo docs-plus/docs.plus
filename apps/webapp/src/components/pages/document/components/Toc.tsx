@@ -10,10 +10,13 @@ const TOC = ({ className = '' }: { className?: string }) => {
   const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
   const editor = useStore((state) => state.settings.editor.instance)
 
-  // Entry fade plays once on mount; the flag keeps it from replaying on re-render.
-  const [entryFadeDone, setEntryFadeDone] = useState(false)
+  const showLoader = loading || !editor || providerSyncing
 
-  if (loading || !editor || providerSyncing) {
+  // The entry fade is for a mount with the outline ready, such as a return from history.
+  // After the bones, the outline swaps in with no fade. The flag also stops a replay.
+  const [skipEntryFade, setSkipEntryFade] = useState(showLoader)
+
+  if (showLoader) {
     return (
       <div className="tiptap__toc flex h-full min-h-0 w-full flex-col !pt-0">
         <TableOfContentsLoader />
@@ -25,11 +28,11 @@ const TOC = ({ className = '' }: { className?: string }) => {
     <div
       className={twMerge(
         'tiptap__toc flex h-full min-h-0 w-full flex-col !pt-0',
-        !entryFadeDone && 'motion-safe:animate-[doc-content-in_200ms_ease-out_both]',
+        !skipEntryFade && 'motion-safe:animate-[doc-content-in_200ms_ease-out_both]',
         className
       )}
       onAnimationEnd={(e) => {
-        if (e.animationName === 'doc-content-in') setEntryFadeDone(true)
+        if (e.animationName === 'doc-content-in') setSkipEntryFade(true)
       }}>
       <ScrollArea
         // Column-width scroller: the scrollbar stays inside the TOC wrapper (a widened
