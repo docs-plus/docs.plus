@@ -25,11 +25,6 @@ const ROOM_GAP_PX = 84
 
 const clampSize = (size: number, cap: number) => Math.min(Math.max(Math.round(size), MIN_SIZE), cap)
 
-const clearResizeCursor = () => {
-  document.body.style.userSelect = ''
-  document.body.style.cursor = ''
-}
-
 interface DragSession {
   startX: number
   startY: number
@@ -43,17 +38,21 @@ export function PadQrCode() {
   const shareUrl = usePadShareUrl()
   // Session-only: hiding the card unmounts it, so the next show starts at MIN_SIZE again.
   const [size, setSize] = useState(MIN_SIZE)
+  const [dragging, setDragging] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const cardRef = useRef<HTMLDivElement>(null)
   const drag = useRef<DragSession | null>(null)
 
-  // A Private seal or a pad switch can unmount the card in the middle of a drag.
-  useEffect(
-    () => () => {
-      if (drag.current) clearResizeCursor()
-    },
-    []
-  )
+  // The cleanup runs on drag end and on unmount, as when a Private seal or a pad switch
+  // removes the card in the middle of a drag.
+  useEffect(() => {
+    if (!dragging) return
+    document.body.style.cursor = 'nesw-resize'
+    document.body.style.userSelect = 'none'
+    return () => {
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  }, [dragging])
 
   const readCap = () =>
     Math.max(MIN_SIZE, Math.min(MAX_SIZE, (containerRef.current?.clientHeight ?? 0) - ROOM_GAP_PX))
@@ -70,9 +69,7 @@ export function PadQrCode() {
       cap,
       moved: false
     }
-    if (cardRef.current) cardRef.current.dataset.dragging = 'true'
-    document.body.style.cursor = 'nesw-resize'
-    document.body.style.userSelect = 'none'
+    setDragging(true)
   }
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -93,9 +90,8 @@ export function PadQrCode() {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
-    // Drop the drag flag first, so a click plays the width tween.
-    if (cardRef.current) delete cardRef.current.dataset.dragging
-    clearResizeCursor()
+    // One commit drops the drag flag and sets a click's size, so the click plays the tween.
+    setDragging(false)
     if (session.moved || event.type !== 'pointerup') return
     // A press that moved less than TAP_PX is a click; the start size decides it, not a jitter.
     const cap = readCap()
@@ -123,8 +119,8 @@ export function PadQrCode() {
       ref={containerRef}
       className="[container-type:size] pointer-events-none absolute inset-x-0 top-0 bottom-[var(--chat-panel-height,0px)]">
       <div
-        ref={cardRef}
         data-testid="pad-qr-code"
+        data-dragging={dragging || undefined}
         className="group/padqr pointer-events-auto absolute top-3.5 right-[calc(var(--scrollbar-size-thin)+0.875rem)] z-50 hidden group-has-[.caret-find-bar]/padcol:top-17 [@container_(min-height:13.5rem)]:block">
         {/* The svg carries the image role, so a failed chunk's Try again stays reachable. */}
         <div

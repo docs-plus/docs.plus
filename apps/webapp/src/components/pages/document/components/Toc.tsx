@@ -14,7 +14,7 @@ const TOC = ({ className = '' }: { className?: string }) => {
 
   // The entry fade is for a mount with the outline ready, such as a return from history.
   // After the bones, the outline swaps in with no fade. The flag also stops a replay.
-  const [skipEntryFade, setSkipEntryFade] = useState(showLoader)
+  const [fadeIn, setFadeIn] = useState(!showLoader)
 
   if (showLoader) {
     return (
@@ -28,11 +28,11 @@ const TOC = ({ className = '' }: { className?: string }) => {
     <div
       className={twMerge(
         'tiptap__toc flex h-full min-h-0 w-full flex-col !pt-0',
-        !skipEntryFade && 'motion-safe:animate-[doc-content-in_200ms_ease-out_both]',
+        fadeIn && 'motion-safe:animate-[doc-content-in_200ms_ease-out_both]',
         className
       )}
       onAnimationEnd={(e) => {
-        if (e.animationName === 'doc-content-in') setSkipEntryFade(true)
+        if (e.animationName === 'doc-content-in') setFadeIn(false)
       }}>
       <ScrollArea
         // Column-width scroller: the scrollbar stays inside the TOC wrapper (a widened

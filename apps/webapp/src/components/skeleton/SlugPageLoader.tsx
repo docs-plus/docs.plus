@@ -27,14 +27,13 @@ const usePersistedTocWidth = () => {
   return tocWidth
 }
 
-// CSS animation-delay (fill-mode both) keeps the pill invisible for 1.5s from first
-// SSR paint — JS timers can't run until hydration, which IS the slow window. The
-// delay is functional (anti-flash), so no motion-safe: gate; _entry.scss strips the
-// translate under prefers-reduced-motion instead.
+// A CSS gate keeps the pill hidden for 1.5s from the first SSR paint, because JS timers
+// cannot run before hydration, which is the slow window. `step-end` makes it appear with
+// no fade, like `Loading`, so it needs no motion-safe: gate.
 const StatusPill = () => (
   <div
     role="status"
-    className="surface-inverse-raised fixed bottom-4 left-4 z-50 flex animate-[doc-region-in_200ms_ease-out_1500ms_both] items-center gap-2 rounded-full px-4 py-2 text-sm shadow-xl">
+    className="surface-inverse-raised fixed bottom-4 left-4 z-50 flex animate-[doc-content-in_1500ms_step-end_both] items-center gap-2 rounded-full px-4 py-2 text-sm shadow-xl">
     <span className="loading loading-spinner loading-sm" />
     <span>Opening document…</span>
   </div>
@@ -69,18 +68,12 @@ const DesktopSkeleton = ({ tocWidth, isAuthed }: { tocWidth: number; isAuthed: b
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <div className="skeleton rounded-field h-10 w-[97px]" />
+        <div className="skeleton size-10 rounded-full" />
+        <div className="skeleton size-10 rounded-full" />
         {isAuthed ? (
-          <>
-            <div className="skeleton size-10 rounded-full" />
-            <div className="skeleton size-10 rounded-full" />
-            <div className="skeleton size-12 rounded-full" />
-          </>
+          <div className="skeleton size-12 rounded-full" />
         ) : (
-          <>
-            <div className="skeleton size-10 rounded-full" />
-            <div className="skeleton size-10 rounded-full" />
-            <div className="skeleton rounded-field h-10 w-20" />
-          </>
+          <div className="skeleton rounded-field h-10 w-20" />
         )}
       </div>
     </header>
