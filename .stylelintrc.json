@@ -113,7 +113,7 @@
       "files": ["apps/webapp/**/*.{css,scss}"],
       "rules": {
         "keyframes-name-pattern": [
-          "^(?!.*(?:shimmer|skeleton|pulse)).*$",
+          "^(?!.*(?:[Ss]himmer|[Ss]keleton|[Pp]ulse)).*$",
           {
             "message": "No custom shimmer, skeleton or pulse keyframes in the webapp. Use daisyUI .skeleton or the spinner (design-system.md §State language)."
           }

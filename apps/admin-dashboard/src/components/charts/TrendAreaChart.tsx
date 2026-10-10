@@ -47,8 +47,9 @@ export function TrendAreaChart<T extends object>({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center" style={{ height }}>
-        <span className="loading loading-spinner loading-lg" />
+      <div role="status" className="flex items-center justify-center" style={{ height }}>
+        <span className="loading loading-spinner loading-lg" aria-hidden />
+        <span className="sr-only">Loading</span>
       </div>
     )
   }

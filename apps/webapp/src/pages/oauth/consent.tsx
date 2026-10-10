@@ -151,7 +151,11 @@ const OAuthConsentPage = () => {
         title="Returning you to the app"
         description="You can close this tab if the app has opened."
         actions={<HomepageLink />}>
-        <Loading size="sm" className="text-base-content/70 justify-start" />
+        <Loading
+          size="sm"
+          label="Returning you to the app"
+          className="text-base-content/70 justify-start"
+        />
       </PageCard>
     )
   } else if (view.kind === 'invalid') {

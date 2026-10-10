@@ -25,12 +25,13 @@ function ProgressBar({
   icon: Icon
 }: {
   label: string
-  value: number
+  /** The value is undefined while the data loads, so the value and the bar show bones. */
+  value?: number
   total: number
   color: string
   icon?: IconType
 }) {
-  const pct = total > 0 ? Math.round((value / total) * 100) : 0
+  const pct = value !== undefined && total > 0 ? Math.round((value / total) * 100) : 0
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-sm">
@@ -38,22 +39,46 @@ function ProgressBar({
           {Icon && <Icon className="h-4 w-4" />}
           {label}
         </span>
-        <span className="tabular-nums">
-          {value.toLocaleString()} ({pct}%)
-        </span>
+        {value === undefined ? (
+          <span className="flex h-5 items-center">
+            <span className="skeleton h-3.5 w-16" />
+          </span>
+        ) : (
+          <span className="tabular-nums">
+            {value.toLocaleString()} ({pct}%)
+          </span>
+        )}
       </div>
-      <div className="bg-base-300 h-2 w-full overflow-hidden rounded-full">
-        <div className={`h-full ${color} transition-[width]`} style={{ width: `${pct}%` }} />
-      </div>
+      {value === undefined ? (
+        <div className="skeleton h-2 w-full rounded-full" />
+      ) : (
+        <div className="bg-base-300 h-2 w-full overflow-hidden rounded-full">
+          <div className={`h-full ${color} transition-[width]`} style={{ width: `${pct}%` }} />
+        </div>
+      )}
     </div>
   )
 }
 
-function MiniStat({ label, value, trend }: { label: string; value: number; trend: 'up' | 'down' }) {
+function MiniStat({
+  label,
+  value,
+  trend
+}: {
+  label: string
+  value?: number
+  trend: 'up' | 'down'
+}) {
   return (
     <div className="bg-base-200/50 rounded-field flex items-center gap-3 p-3">
       <div>
-        <p className="text-2xl font-bold">{value.toLocaleString()}</p>
+        {value === undefined ? (
+          <p className="flex h-8 items-center">
+            <span className="skeleton h-6 w-12" />
+          </p>
+        ) : (
+          <p className="text-2xl font-bold">{value.toLocaleString()}</p>
+        )}
         <p className="text-base-content/60 flex items-center gap-1 text-xs">
           {trend === 'up' && <LuTrendingUp className="h-3 w-3 text-[var(--success-ink)]" />}
           {trend === 'down' && <LuTrendingDown className="h-3 w-3 text-[var(--error-ink)]" />}
@@ -65,7 +90,7 @@ function MiniStat({ label, value, trend }: { label: string; value: number; trend
 }
 
 export function PushSubscriptionStats() {
-  const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
+  const { data, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['admin', 'push', 'analytics'],
     queryFn: fetchPushSubscriptionAnalytics,
     staleTime: 60000 // 1 minute
@@ -102,20 +127,8 @@ export function PushSubscriptionStats() {
     )
   }
 
-  if (isLoading || !data) {
-    // Base-case card heights: 239px for the bar cards, 146px for Lifecycle until the lg row stretches it.
-    // The optional rows (Desktop, stale warning, errors) make a loaded card taller.
-    return (
-      <div className="space-y-6">
-        {header}
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="skeleton rounded-box h-[239px]" />
-          <div className="skeleton rounded-box h-[239px]" />
-          <div className="skeleton rounded-box h-[146px] lg:h-[239px]" />
-        </div>
-      </div>
-    )
-  }
+  // While loading, the cards keep their real frame and titles; only the data becomes bones.
+  const total = data?.platforms.total ?? 0
 
   return (
     <div className="space-y-6">
@@ -130,38 +143,45 @@ export function PushSubscriptionStats() {
           <div className="space-y-3">
             <ProgressBar
               label="Web"
-              value={data.platforms.web}
-              total={data.platforms.total}
+              value={data?.platforms.web}
+              total={total}
               color="bg-primary"
               icon={LuChrome}
             />
             <ProgressBar
               label="iOS PWA"
-              value={data.platforms.ios}
-              total={data.platforms.total}
+              value={data?.platforms.ios}
+              total={total}
               color="bg-secondary"
               icon={LuApple}
             />
             <ProgressBar
               label="Android"
-              value={data.platforms.android}
-              total={data.platforms.total}
+              value={data?.platforms.android}
+              total={total}
               color="bg-accent"
               icon={LuSmartphone}
             />
-            {data.platforms.desktop > 0 && (
+            {data && data.platforms.desktop > 0 && (
               <ProgressBar
                 label="Desktop"
                 value={data.platforms.desktop}
-                total={data.platforms.total}
+                total={total}
                 color="bg-info"
                 icon={LuMonitor}
               />
             )}
           </div>
           <div className="text-base-content/60 border-base-300 mt-3 border-t pt-3 text-center text-sm">
-            Total: <span className="font-semibold">{data.platforms.total}</span> active
-            subscriptions
+            {data ? (
+              <>
+                Total: <span className="font-semibold">{total}</span> active subscriptions
+              </>
+            ) : (
+              <span className="flex h-5 items-center justify-center">
+                <span className="skeleton h-3.5 w-48" />
+              </span>
+            )}
           </div>
         </SectionCard>
 
@@ -173,20 +193,20 @@ export function PushSubscriptionStats() {
           <div className="space-y-3">
             <ProgressBar
               label="Fresh (< 7d)"
-              value={data.health.fresh}
-              total={data.platforms.total}
+              value={data?.health.fresh}
+              total={total}
               color="bg-success"
             />
             <ProgressBar
               label="OK (7-30d)"
-              value={data.health.ok}
-              total={data.platforms.total}
+              value={data?.health.ok}
+              total={total}
               color="bg-warning"
             />
             <ProgressBar
               label="Stale (> 30d)"
-              value={data.health.stale}
-              total={data.platforms.total}
+              value={data?.health.stale}
+              total={total}
               color="bg-error"
             />
           </div>
@@ -195,9 +215,13 @@ export function PushSubscriptionStats() {
               <LuClock className="h-4 w-4" />
               Avg age
             </span>
-            <span className="font-semibold tabular-nums">{data.health.avgAgeDays} days</span>
+            {data ? (
+              <span className="font-semibold tabular-nums">{data.health.avgAgeDays} days</span>
+            ) : (
+              <span className="skeleton h-3.5 w-14" />
+            )}
           </div>
-          {data.health.stale > 0 && (
+          {data && data.health.stale > 0 && (
             <div className="bg-error/10 rounded-field mt-2 flex items-center gap-2 p-2 text-xs text-[var(--error-ink)]">
               <LuTriangleAlert className="h-4 w-4 shrink-0" />
               {data.health.stale} subscriptions need refresh
@@ -211,11 +235,11 @@ export function PushSubscriptionStats() {
             Lifecycle (7 days)
           </h3>
           <div className="grid grid-cols-2 gap-2">
-            <MiniStat label="New" value={data.lifecycle.newThisWeek} trend="up" />
-            <MiniStat label="Churned" value={data.lifecycle.churnedThisWeek} trend="down" />
+            <MiniStat label="New" value={data?.lifecycle.newThisWeek} trend="up" />
+            <MiniStat label="Churned" value={data?.lifecycle.churnedThisWeek} trend="down" />
           </div>
 
-          {data.errors.total > 0 && (
+          {data && data.errors.total > 0 && (
             <div className="border-base-300 border-t pt-4">
               <h4 className="text-base-content/70 mb-2 flex items-center gap-2 text-sm font-medium">
                 <LuTriangleAlert className="h-4 w-4" />
