@@ -1,4 +1,4 @@
-import { useMediaDisplayUrl } from '@components/chatroom/hooks/useMediaSignedUrl'
+import { useFeedMediaDisplayUrl } from '@components/chatroom/hooks/useMediaSignedUrl'
 import { parseMessageMedias } from '@components/chatroom/utils/messageMediaPaths'
 import {
   openChatAtMessage,
@@ -10,7 +10,9 @@ import {
   PanelFeedRowAction
 } from '@components/PanelFeedItem'
 import { Avatar } from '@components/ui/Avatar'
+import Button from '@components/ui/Button'
 import { useDismissPanelBeforeNavigate } from '@hooks/useDismissPanel'
+import { Icons } from '@icons'
 import { useChatStore } from '@stores'
 import { type MessageMediaItem, type PanelSurfaceVariant, type TBookmarkWithMessage } from '@types'
 import { GENERIC_ATTACHMENT_LABEL, messagePreviewText } from '@utils/messagePreview'
@@ -22,11 +24,37 @@ type BookmarkItemProps = {
   variant?: PanelSurfaceVariant
 }
 
+/**
+ * A thumb-sized bone holds the slot until the URL signs, which waits for the viewport.
+ * A failed sign keeps the slot as an image tile that retries, so the preview text never moves.
+ */
 function BookmarkImageThumb({ media }: { media: MessageMediaItem }) {
-  const url = useMediaDisplayUrl(media)
-  if (!url) return null
+  const { url, ref, signFailed, retry } = useFeedMediaDisplayUrl(media)
+  if (signFailed) {
+    return (
+      <Button
+        variant="ghost"
+        shape="square"
+        className="bg-base-300/40 text-base-content/70 shrink-0"
+        onClick={retry}
+        tooltip="Retry image"
+        aria-label="Retry image">
+        <Icons.image size={18} />
+      </Button>
+    )
+  }
+  if (!url) {
+    return (
+      <div
+        ref={ref}
+        className="skeleton border-base-300 rounded-field size-10 shrink-0 border"
+        aria-hidden
+      />
+    )
+  }
   return (
     <img
+      ref={ref}
       src={url}
       alt=""
       className="border-base-300 rounded-field size-10 shrink-0 border object-cover"

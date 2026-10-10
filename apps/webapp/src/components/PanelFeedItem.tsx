@@ -177,15 +177,24 @@ function PanelFeedItemSkeleton({ typeIcon }: { typeIcon: boolean }) {
     <div className="rounded-box border-base-300 bg-base-100 flex w-full items-start gap-3 border p-3">
       <div className="skeleton size-8 shrink-0 rounded-full" />
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          {typeIcon && <div className="skeleton size-3.5" />}
-          <div className="skeleton h-4 w-28" />
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="flex h-5 items-center gap-1.5">
+              {typeIcon && <div className="skeleton size-3.5" />}
+              <div className="skeleton h-3.5 w-28" />
+            </div>
+            <div className="bg-base-200 rounded-field px-2 py-1">
+              <div className="flex h-5 items-center">
+                <div className="skeleton h-3.5 w-full" />
+              </div>
+            </div>
+          </div>
+          <div className="skeleton rounded-field size-8 shrink-0" />
         </div>
-        <div className="skeleton rounded-field mt-1 h-8 w-full" />
         <div className="mt-2 flex items-center gap-2">
           <div className="skeleton h-3 w-16" />
           <div className="skeleton rounded-field h-6 w-20" />
-          <div className="skeleton ml-auto h-4 w-10" />
+          <div className="skeleton ml-auto h-3.5 w-8" />
         </div>
       </div>
     </div>

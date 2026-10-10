@@ -4,7 +4,7 @@ import { PanelSurfaceSkeleton } from '@components/PanelSurfaceSkeleton'
 export const FilterSkeleton = () => {
   return (
     <PanelSurfaceSkeleton titleWidthClassName="w-12">
-      <div className="px-3 pt-1 pb-3">
+      <div className="p-3">
         <div className="skeleton rounded-field h-10 w-full" />
       </div>
     </PanelSurfaceSkeleton>

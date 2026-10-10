@@ -9,7 +9,9 @@ export function PanelTabBarSkeleton({ tabCount }: { tabCount: number }) {
         {Array.from({ length: tabCount }, (_, index) => (
           <div
             key={index}
-            className={index === 0 ? 'bg-base-100 rounded-field min-h-9 flex-1' : 'min-h-9 flex-1'}
+            className={
+              index === 0 ? 'bg-base-100 rounded-field min-h-9 flex-1 shadow-sm' : 'min-h-9 flex-1'
+            }
           />
         ))}
       </div>
@@ -22,8 +24,8 @@ type PanelSurfaceSkeletonProps = {
   tabCount?: number
   /** Width of the title bone, sized to the real title. */
   titleWidthClassName?: string
-  /** Mirrors a header action before the close button (Notifications: Mark all read). */
-  headerAction?: boolean
+  /** Drawn before the close bone, like the real `headerActions`. */
+  headerActions?: ReactNode
   typeIcon?: boolean
   count?: number
   /** Replaces the default feed body, so `count` and `typeIcon` then do nothing. */
@@ -34,7 +36,7 @@ type PanelSurfaceSkeletonProps = {
 export function PanelSurfaceSkeleton({
   tabCount,
   titleWidthClassName = 'w-24',
-  headerAction = false,
+  headerActions,
   typeIcon = false,
   count = 3,
   children
@@ -42,15 +44,17 @@ export function PanelSurfaceSkeleton({
   return (
     <div className="bg-base-100 flex w-full flex-col" aria-hidden>
       <div className="border-base-300 flex items-center justify-between border-b px-4 py-3">
-        <div className={`skeleton h-5 ${titleWidthClassName}`} />
+        <div className="flex h-6 items-center">
+          <div className={`skeleton h-4 ${titleWidthClassName}`} />
+        </div>
         <div className="flex items-center gap-1">
-          {headerAction && <div className="skeleton h-4 w-24" />}
+          {headerActions}
           <div className="skeleton rounded-field size-8" />
         </div>
       </div>
       {tabCount != null && <PanelTabBarSkeleton tabCount={tabCount} />}
       {children ?? (
-        <div className="p-3">
+        <div className="max-h-96 min-h-48 overflow-hidden p-3">
           <PanelFeedSkeleton count={count} typeIcon={typeIcon} />
         </div>
       )}
