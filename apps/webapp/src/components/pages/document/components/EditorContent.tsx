@@ -19,7 +19,7 @@ const EditorContent = ({ className }: { className?: string }) => {
   const editorElement = useRef<HTMLDivElement>(null)
   const { enableAndFocus, isKeyboardOpen } = useEnableEditor()
 
-  // The flag also stops a replay on re-render.
+  // Cleared when the fade ends, so a re-render does not replay it.
   const [fadeIn, setFadeIn] = useFadeAfterFirstSync()
 
   useMediaPasteUpload(editor)

@@ -156,7 +156,7 @@ export function PadQrCode() {
           onLostPointerCapture={endDrag}
           onKeyDown={onKeyDown}
           className="rounded-field focus-visible:ring-primary absolute -bottom-3 -left-3 size-6 cursor-nesw-resize touch-none opacity-0 transition-opacity duration-[var(--motion-overlay-in)] group-hover/padqr:opacity-100 group-data-[dragging]/padqr:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:outline-none motion-reduce:transition-none">
-          {/* Two strokes in the bottom-left quiet zone, inside the panel's rounded corner. */}
+          {/* Two strokes in the bottom-left white margin, inside the panel's rounded corner. */}
           <svg
             viewBox="0 0 24 24"
             aria-hidden

@@ -24,7 +24,7 @@ function SettingsPanelLoading(props: DynamicOptionsLoadingProps) {
 }
 
 const SettingsPanel = dynamic(() => import('./SettingsPanel'), {
-  loading: (p) => <SettingsPanelLoading {...p} />
+  loading: SettingsPanelLoading
 })
 
 /** Settings opens on its skeleton while auth still answers. Signed out, it stays shut. */
