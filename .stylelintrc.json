@@ -107,5 +107,18 @@
     "hue-degree-notation": null,
     "at-rule-empty-line-before": null
   },
-  "ignoreFiles": ["**/node_modules/**", "**/dist/**", "**/.next/**", "**/coverage/**"]
+  "ignoreFiles": ["**/node_modules/**", "**/dist/**", "**/.next/**", "**/coverage/**"],
+  "overrides": [
+    {
+      "files": ["apps/webapp/**/*.{css,scss}"],
+      "rules": {
+        "keyframes-name-pattern": [
+          "^(?!.*(?:shimmer|skeleton|pulse)).*$",
+          {
+            "message": "No custom shimmer, skeleton or pulse keyframes in the webapp. Use daisyUI .skeleton or the spinner (design-system.md §State language)."
+          }
+        ]
+      }
+    }
+  ]
 }
