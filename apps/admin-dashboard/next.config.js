@@ -43,14 +43,33 @@ const nextConfig = {
     const localDevHosts = isDev
       ? ' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*'
       : ''
+    // A self-hosted install serves the API, Supabase and GlitchTip from its own hosts,
+    // which the fixed docs.plus and supabase.co entries would block.
+    const originOf = (url) => {
+      try {
+        return new URL(url).origin
+      } catch {
+        return ''
+      }
+    }
+    const supabaseOrigin = originOf(process.env.NEXT_PUBLIC_SUPABASE_URL)
+    const configuredHosts = [
+      originOf(process.env.NEXT_PUBLIC_API_URL),
+      supabaseOrigin,
+      supabaseOrigin.replace(/^http/, 'ws'),
+      originOf(process.env.NEXT_PUBLIC_GLITCHTIP_DSN)
+    ]
+      .filter(Boolean)
+      .map((host) => ` ${host}`)
+      .join('')
 
     const cspDirectives = [
       "default-src 'self'",
       `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
       "style-src 'self' 'unsafe-inline'",
-      `img-src 'self' data: blob: https://*.supabase.co https://*.googleusercontent.com${isDev ? ' http://localhost:* http://127.0.0.1:*' : ''}`,
+      `img-src 'self' data: blob: https://*.supabase.co https://*.googleusercontent.com${supabaseOrigin ? ` ${supabaseOrigin}` : ''}${isDev ? ' http://localhost:* http://127.0.0.1:*' : ''}`,
       "font-src 'self' data:",
-      `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com https://*.docs.plus${localDevHosts}`,
+      `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com https://*.docs.plus${configuredHosts}${localDevHosts}`,
       `frame-src 'self' https://accounts.google.com${isDev ? ' http://localhost:*' : ''}`,
       "frame-ancestors 'none'",
       "form-action 'self'",
