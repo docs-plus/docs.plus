@@ -23,7 +23,7 @@ You can also [use docs.plus from Claude or ChatGPT](docs/mcp/README.md). The AI 
 **Tech Stack:**
 
 - **Runtime**: 🚀 Bun 1.4.0+
-- **Frontend**: ⚛️ Next.js (`apps/webapp` on `15.5.21`, `apps/admin-dashboard` on `^16.2.12`), React 19, Tiptap 3, Tailwind CSS 4
+- **Frontend**: ⚛️ Next.js 15 (`apps/webapp`) and Next.js 16 (`apps/admin-dashboard`), React 19, Tiptap 3, Tailwind CSS 4
 - **Backend**: 🔧 Hono, Hocuspocus (Yjs), BullMQ, Prisma ORM
 - **Database**: 🐘 PostgreSQL 17 for the Prisma database in local and dev, 🐘 PostgreSQL 15 for local Supabase, 🔴 Redis
 - **Infrastructure**: 🐳 Docker Compose, Supabase
@@ -56,7 +56,7 @@ If the first run stops, see [Development Setup](CONTRIBUTING.md#-development-set
 
 **URLs:** webapp <http://localhost:3000> · API <http://localhost:4000> · WS `ws://localhost:4001` · Supabase Studio <http://127.0.0.1:54323> · local email inbox <http://127.0.0.1:54324>
 
-**Sign-in:** any email/password works locally (auto-confirmed, no real email sent). Google sign-in needs `GOOGLE_CLIENT_ID`/`GOOGLE_SECRET` in `.env.local`.
+**Sign-in:** enter any email address. No real mail leaves your machine. Open the sign-in link in the local inbox at <http://127.0.0.1:54324>. Google sign-in is optional locally. To set it up, see the Local stack part of [Turn on Google sign-in](docs/self-hosting/configuration.md#turn-on-google-sign-in).
 
 **Stop:** `Ctrl+C` stops the app processes · `make infra-down` stops Postgres/Redis · `bun --filter @docs.plus/supabase_back stop` stops Supabase
 
@@ -79,7 +79,21 @@ Full documentation lives in [`docs/`](docs/README.md).
 <details>
 <summary><strong>🐳 Alternative: full Docker (`make up-dev`)</strong></summary>
 
-All services in containers instead of native processes:
+All services in containers instead of native processes.
+
+Google sign-in is optional. Local Supabase reads the Google keys from `.env.local` when it starts, and this path does not create that file. To keep the keys in that file, do these three steps first. Otherwise, skip to the start commands.
+
+1. Run `make dev-local` once. It creates `.env.development` and `.env.local`.
+2. Wait until it has started the apps, then press `Ctrl+C`. Both stacks use the same ports, such as 3000, 4000 and 5432. So stop its containers and Supabase, from the repository root:
+
+   ```bash
+   make infra-down
+   bun --filter @docs.plus/supabase_back stop
+   ```
+
+3. Add `GOOGLE_CLIENT_ID` and `GOOGLE_SECRET` to `.env.local`. Get both values from the Local stack part of [Turn on Google sign-in](docs/self-hosting/configuration.md#turn-on-google-sign-in).
+
+Then start the stack, from the repository root. Skip the `cp` line when `.env.development` already exists, or it overwrites your edits.
 
 ```bash
 cp .env.example .env.development
@@ -88,6 +102,17 @@ bun --filter @docs.plus/supabase_back start
 ```
 
 `make up-dev` starts no Supabase. The containers read `SUPABASE_URL: http://host.docker.internal:54321` from the host, so the third command supplies it. That command also opens Supabase Studio at <http://127.0.0.1:54323>.
+
+If you skipped the three steps, you can still turn on Google sign-in. Export the two keys in your shell, then restart Supabase. Run this from the repository root:
+
+```bash
+bun --filter @docs.plus/supabase_back stop
+export GOOGLE_CLIENT_ID=<YOUR_GOOGLE_CLIENT_ID>
+export GOOGLE_SECRET=<YOUR_GOOGLE_SECRET>
+bun --filter @docs.plus/supabase_back start
+```
+
+Get both values from the Local stack part of [Turn on Google sign-in](docs/self-hosting/configuration.md#turn-on-google-sign-in).
 
 **URLs:** webapp <http://localhost:3000> · API <http://localhost:4000> · WS `ws://localhost:4001` · Studio <http://127.0.0.1:54323>
 
@@ -198,6 +223,8 @@ make logs              # All logs (auto-detects env)
 make ps                # Container status
 make clean             # Cleanup + delete volumes (DATA LOSS)
 ```
+
+Run `make dev-local` first on a new clone. It writes `.env.local` with localhost values and `DATABASE_URL`. `make infra-up` copies `.env.development` as it is, so an `.env.local` that it creates does not work for native apps. If that happened, delete `.env.local` and run `make dev-local` again.
 
 `make help` lists the day-to-day surface, not every target. It omits `run-prod-backend`, `observability-up`, `observability-down`, `observability-logs` and `observability-pull`. The four `observability-*` targets run on the production droplet. `run-prod-backend` runs the production backend images locally against `.env.local`. Run `bun run` with no arguments for all root scripts.
 

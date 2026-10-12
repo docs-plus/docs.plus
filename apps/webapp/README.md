@@ -65,12 +65,7 @@ src/
 
 ## Environment Variables
 
-See `.env.example` in the monorepo root. Key variables:
-
-- `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anonymous key
-- `NEXT_PUBLIC_HOCUSPOCUS_URL` — WebSocket server URL
-- `NEXT_PUBLIC_GOOGLE_CLIENT_ID` — Google OAuth client ID
+Most webapp values start with `NEXT_PUBLIC_`, and the build bakes them into the bundle. [Webapp and admin build values](../../docs/self-hosting/configuration.md#webapp-and-admin-build-values) defines each one. Local values start from [`.env.example`](../../.env.example) in the monorepo root.
 
 ## Testing
 

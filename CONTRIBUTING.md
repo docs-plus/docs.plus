@@ -52,6 +52,13 @@ Install Docker, Bun and Node.js first. [README Prerequisites](README.md#-prerequ
 
    `bun run doctor` exits 1 only for a real failure. The failing checks are a Bun version below the floor, a missing `docker` or `docker compose`, a stopped Docker daemon, a missing `.env.development`, and a missing `node_modules`.
 
+### Sign in to the admin dashboard locally
+
+The admin dashboard at <http://localhost:3100> signs in with Google only. Local sign-in needs two steps.
+
+1. Set up the Google keys. Follow the Local stack part of [Turn on Google sign-in](docs/self-hosting/configuration.md#turn-on-google-sign-in).
+2. Sign in to the webapp once with Google, so your user exists. Then add an `admin_users` row for that user. The SQL is in [Make yourself an admin](docs/self-hosting/install.md#10-make-yourself-an-admin). Run it in the SQL editor of local Supabase Studio at <http://127.0.0.1:54323>.
+
 ## 🎯 Areas for Contribution
 
 Pick from any of these:
@@ -271,7 +278,7 @@ CYPRESS_PARALLEL=6 bun run test:e2e
 CYPRESS_PARALLEL=8 bun run test:e2e
 ```
 
-> **Before you run E2E:** Start the local stack. `make dev-local` serves the webapp on port 3000. Read the `WEBAPP` line in the `make dev-local` output to confirm the real port, because Next moves to the next free port when 3000 is busy. `scripts/run-tests.sh` defaults `BASE_URL` to `http://localhost:3001`, so pass the port yourself: `BASE_URL=http://localhost:3000 bun run test:e2e`. One spec, `apps/webapp/cypress/e2e/document/draft-first-edit-anchor.cy.ts`, hardcodes `http://localhost:3001` and ignores `BASE_URL`, so it fails against a port-3000 stack until a maintainer fixes it.
+> **Before you run E2E:** Start the local stack. `make dev-local` serves the webapp on port 3000. Read the `WEBAPP` line in the `make dev-local` output to confirm the real port, because Next moves to the next free port when 3000 is busy. `scripts/run-tests.sh` defaults `BASE_URL` to `http://localhost:3001`, so pass the port yourself: `BASE_URL=http://localhost:3000 bun run test:e2e`.
 
 `BASE_URL` reaches `bun run test` and `bun run test:e2e` only. `cypress:open` is a bare `bunx cypress open`, and `apps/webapp/cypress.config.ts` sets no `baseUrl`. Specs that call `visitEditor` still reach `http://localhost:3001`, through the fallback in `apps/webapp/cypress/support/commands.ts`. A relative `cy.visit` has no base URL to resolve against, so pass `--config baseUrl=http://localhost:3000`, the same flag `scripts/run-tests.sh` uses.
 
@@ -309,15 +316,26 @@ When a test is warranted:
 
 ## 🐘 Database Changes
 
-After a SQL change, regenerate the Supabase types:
+A schema change has three steps. Local Supabase must run for steps 2 and 3.
 
-```bash
-bun run --filter @docs.plus/supabase_back types
-```
+1. Edit the canonical SQL in `packages/supabase/scripts/*.sql`. Add a paired file under `packages/supabase/migrations/` for the remote push. Local Supabase does not run migrations; it seeds from `scripts/` only.
+2. Apply the change to local Supabase. `reset` rebuilds `packages/supabase/seed.sql` from `scripts/` and re-applies it. Run it from the repository root:
 
-`apps/webapp/src/types/supabase.ts` is generated output. Never hand-edit it. Include the regenerated file in the same change.
+   ```bash
+   bun run --filter @docs.plus/supabase_back reset
+   ```
 
-Run the other scripts in the same package with `bun --filter @docs.plus/supabase_back <script>`: `start`, `stop`, `status`, `reset` and `seed`. Both `bun --filter` and `bun run --filter` work, so the README form and this form match.
+   `reset` wipes all local Supabase data. To keep that data, apply the one file instead, as [`packages/supabase/CLAUDE.md`](packages/supabase/CLAUDE.md) describes.
+
+3. Regenerate the Supabase types. `types` reads the running local database, so run it after step 2. Run it from the repository root:
+
+   ```bash
+   bun run --filter @docs.plus/supabase_back types
+   ```
+
+`packages/supabase/seed.sql` and `apps/webapp/src/types/supabase.ts` are generated output. Never hand-edit either file. Include both regenerated files in the same change.
+
+Other scripts in the package include `start`, `stop`, `status` and `seed`. Run each as `bun --filter @docs.plus/supabase_back <SCRIPT>`. Both `bun --filter` and `bun run --filter` work, so the README form and this form match.
 
 The SQL, migration and RLS rules live in [`packages/supabase/CLAUDE.md`](packages/supabase/CLAUDE.md). Read it before you write SQL.
 

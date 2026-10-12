@@ -7,6 +7,8 @@ Persistent memory for AI agents working on **docs.plus**. Preserve these rules u
 A task is usually governed by sections filed far from it, so reading in heading order misses rules. Find the task here and read every section listed. Sections not in this file carry their home in brackets — see §Filed by directory for the full map.
 
 - **Any task** → §Memory And Rule Boundaries · §Package Manager · §Git And Commits · §Simplified English Mandate · §Workflow And Review Expectations
+- **First run of the local stack** → [`README.md`](README.md) Quick Start · [`CONTRIBUTING.md`](CONTRIBUTING.md) Development Setup
+- **Run docs.plus on your own server** → [`docs/self-hosting/README.md`](docs/self-hosting/README.md)
 - **Write or change a test** → §Test Policy · §Test Orchestration And Authoring · §Workspace — playground harness · §Standalone Extension Development — round-trip specs [extensions] · §Hypermultimedia Extension — assert rendered DOM, not node attrs [extensions] · §Indent Extension [extensions] · §Webapp-Owned Hyperlink Popovers — `data-testid` only [extensions] · §Chat Media Attachments [chatroom]
 - **Add or bump a dependency** → §Package Manager · §Dependencies · §Shared Library Config · §ESLint Config · §Docker · §Test Orchestration And Authoring · §Learned Workspace Facts
 - **Build or change a publishable extension** → [`extensions/CLAUDE.md`](extensions/CLAUDE.md) (whole file) · §Shared Library Config · §Extension Package Contract [release-extensions skill] · §Docker
