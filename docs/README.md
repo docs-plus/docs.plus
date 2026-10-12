@@ -13,11 +13,11 @@ docs.plus is a real-time collaborative editor. A document is a tree of headings,
 
 ## Run it on your own server
 
-| Page                                           | Answers                                                        |
-| ---------------------------------------------- | -------------------------------------------------------------- |
-| [Requirements](self-hosting/README.md)         | What you must provide before you start, and which path to take |
-| [Install](self-hosting/install.md)             | Clone to a working site, then check that it worked             |
-| [Configuration](self-hosting/configuration.md) | Which file you edit, and which process reads it                |
+| Page                                           | Answers                                                                                              |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| [Requirements](self-hosting/README.md)         | What you must provide before you start, which path to take, and how to back up and restore your data |
+| [Install](self-hosting/install.md)             | Clone to a working site, check that it worked, and upgrade to a new release                          |
+| [Configuration](self-hosting/configuration.md) | Which file you edit, and which process reads it                                                      |
 
 ## Call the API
 
@@ -36,14 +36,15 @@ The full route-by-route contract is [`apps/hocuspocus.server/API.md`](../apps/ho
 
 ## Elsewhere in this repository
 
-| Page                                                              | Answers                                                           |
-| ----------------------------------------------------------------- | ----------------------------------------------------------------- |
-| [CONTRIBUTING.md](../CONTRIBUTING.md)                             | How to set up a local stack and open a pull request               |
-| [extensions/README.md](../extensions/README.md)                   | The five Tiptap extensions docs.plus publishes to npm             |
-| [SECURITY.md](../SECURITY.md)                                     | How to report a vulnerability. Do not open a public issue for one |
-| [CONTEXT.md](../CONTEXT.md)                                       | The domain glossary: what each term in this project means         |
-| [apps/hocuspocus.server/ENV.md](../apps/hocuspocus.server/ENV.md) | Every backend environment variable, its type, and its default     |
-| [RUNBOOK-backend.md](RUNBOOK-backend.md)                          | What to do when a backend alert pages you                         |
+| Page                                                              | Answers                                                                                                                           |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| [CONTRIBUTING.md](../CONTRIBUTING.md)                             | How to set up a local stack and open a pull request                                                                               |
+| [AGENTS.md](../AGENTS.md)                                         | Rules for coding agents and contributors: Bun only, commit policy, generated files, test policy. Each area adds its own CLAUDE.md |
+| [extensions/README.md](../extensions/README.md)                   | The five Tiptap extensions docs.plus publishes to npm                                                                             |
+| [SECURITY.md](../SECURITY.md)                                     | How to report a vulnerability. Do not open a public issue for one                                                                 |
+| [CONTEXT.md](../CONTEXT.md)                                       | The domain glossary: what each term in this project means                                                                         |
+| [apps/hocuspocus.server/ENV.md](../apps/hocuspocus.server/ENV.md) | Every backend environment variable, its type, and its default                                                                     |
+| [RUNBOOK-backend.md](RUNBOOK-backend.md)                          | What to do when a backend alert pages you                                                                                         |
 
 ## Roadmap
 

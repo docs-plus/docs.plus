@@ -168,6 +168,11 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 
 ### Fixed
 
+- The admin dashboard works on your own hosts. Its Content Security Policy
+  allowed only docs.plus and supabase.co hosts, so a self-hosted dashboard
+  could not reach its API. It now also allows the hosts in
+  `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL` and
+  `NEXT_PUBLIC_GLITCHTIP_DSN`, read at build time.
 - Mark your first message in an empty chat as sent. It was saved at once, but
   it kept the clock icon until you reloaded the page.
 
@@ -408,6 +413,16 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 - Remove the unused Elastic APM keys from `.env.example`. No code read them,
   and the `NEXT_PUBLIC_` prefix would put the secret token in the browser bundle
   ([#446](https://github.com/docs-plus/docs.plus/issues/446)).
+
+### Documentation
+
+- Bring the self-hosting, local setup, API and MCP pages in line with the
+  code. Each claim was checked against the code, and a fresh-reader walk
+  covered local setup and a private server. `docs/self-hosting/install.md`
+  now installs from `main`, adds an admin account, and upgrades with a backup
+  first. `docs/self-hosting/README.md` gains backup and restore.
+  `docs/self-hosting/configuration.md` gains Google sign-in, push
+  notifications, build values, observability and Supabase sign-in mail.
 
 ## [2.0.1] — 2026-08-31
 

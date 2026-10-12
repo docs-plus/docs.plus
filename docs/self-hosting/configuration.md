@@ -2,7 +2,7 @@
 
 Which file you edit, which process reads it, and what happens when a value is wrong. For the numbered install path, see [Install](install.md).
 
-This page does not list every variable with its type and default. [`apps/hocuspocus.server/ENV.md`](../../apps/hocuspocus.server/ENV.md) owns that table, and it mirrors the validation schema, so it cannot drift.
+This page does not list every backend variable with its type and default. [`apps/hocuspocus.server/ENV.md`](../../apps/hocuspocus.server/ENV.md) owns that table. It mirrors the validation schema. It also lists the names that the code reads directly, in [Read outside the schema](../../apps/hocuspocus.server/ENV.md#read-outside-the-schema).
 
 ## Which file, for which job
 
@@ -17,7 +17,7 @@ Next step: for a server, copy `.env.example` to `.env.production` and edit that 
 
 ## Two kinds of value, and the difference matters
 
-**Runtime values** are read when a container starts. Change one, recreate the container, done.
+**Runtime values** are read when a container starts. Change one, then recreate the container. The exception is a key that `docker-compose.prod.yml` fixes under `environment:`, such as `REDIS_HOST`. The env file cannot change it. [ENV.md](../../apps/hocuspocus.server/ENV.md#keys-that-production-compose-sets) lists these keys.
 
 **Build values** are baked into a compiled bundle. Every name starting with `NEXT_PUBLIC_` is one of these. Changing it in `.env.production` does nothing at all until you run `make build` again.
 
@@ -27,52 +27,102 @@ That difference is the most common configuration mistake here. A `NEXT_PUBLIC_` 
 
 Compose gives your shell environment precedence over `--env-file`, and a running container keeps the value it started with.
 
+Run this at the repository root.
+
 ```bash
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d --force-recreate
 ```
 
-Next step: run that after any runtime change, then confirm with `make status-prod`. For a `NEXT_PUBLIC_` change, run `make build` first.
+Next step: run that after any runtime change, then run the checks in [Install step 9](install.md#9-verify). For a `NEXT_PUBLIC_` change, run `make build` first.
 
 ## The groups
 
 `.env.example` is organised into sections. These are the ones that matter for a deployment.
 
-| Group                    | Holds                                | Notes                                                        |
-| ------------------------ | ------------------------------------ | ------------------------------------------------------------ |
-| Application and security | Environment name, ports, secrets     |                                                              |
-| Database                 | `DATABASE_URL`                       | Your own PostgreSQL. Nothing in the compose file provides it |
-| Redis                    | Host, port, database index, timeouts | Shared by sync, queues, and the rate limiter                 |
-| Supabase, server-side    | Project URL, service-role key        | Never expose the service-role key to a browser               |
-| Supabase, client-side    | The `NEXT_PUBLIC_` pair              | Build values. See above                                      |
-| Storage                  | Endpoint, region, bucket, key pair   | Set `PERSIST_TO_LOCAL_STORAGE=false`                         |
-| Email                    | SMTP or Resend credentials           | The worker sends; the API never does                         |
-| Push notifications       | VAPID key pair                       | Generate with `bunx web-push generate-vapid-keys`            |
-| CORS                     | Allowed origins                      |                                                              |
-| Rate limiting            | `RATE_LIMIT_MAX` and the window      | Default is 100 requests per 15 minutes per address           |
-| Logging                  | Level and format                     |                                                              |
-| Observability            | Metrics and error reporting          | Optional                                                     |
+| Group                    | Holds                                                                                              | Notes                                                                                                                                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Application and security | Environment name, ports, secrets                                                                   |                                                                                                                                                                                                                    |
+| Database                 | `DATABASE_URL`                                                                                     | Your own PostgreSQL. Nothing in the compose file provides it                                                                                                                                                       |
+| Redis                    | Host, port, database index, timeouts                                                               | Shared by sync, queues, and the rate limiter                                                                                                                                                                       |
+| Supabase, server-side    | Project URL, [`SUPABASE_ANON_KEY`](../../apps/hocuspocus.server/ENV.md#required), service-role key | The backend checks each user token with the anon key. `.env.example` ships local demo keys. Replace the anon key and the service-role key with your project's keys. Never expose the service-role key to a browser |
+| Supabase, client-side    | The `NEXT_PUBLIC_` pair                                                                            | Build values. See [Webapp and admin build values](#webapp-and-admin-build-values)                                                                                                                                  |
+| Storage                  | Endpoint, region, bucket, key pair                                                                 | Set `PERSIST_TO_LOCAL_STORAGE=false`                                                                                                                                                                               |
+| Email                    | SMTP or Resend credentials                                                                         | The worker and the REST API both send. Both read `.env.production`                                                                                                                                                 |
+| Push notifications       | VAPID key pair                                                                                     | See [Turn on push notifications](#turn-on-push-notifications)                                                                                                                                                      |
+| CORS                     | Allowed origins                                                                                    |                                                                                                                                                                                                                    |
+| Rate limiting            | `RATE_LIMIT_MAX`                                                                                   | Requests per address per 15 minutes. The window is fixed in code. The code default is 100. `.env.example` sets 1000                                                                                                |
+| Logging                  | Level and format                                                                                   |                                                                                                                                                                                                                    |
+| Observability            | Metrics and error reporting                                                                        | Optional. See [Observability (optional)](#observability-optional)                                                                                                                                                  |
 
-## Three template values to fix before you deploy
+## Webapp and admin build values
 
-The template is written for local development, so three of its defaults are wrong for a server.
+`make build` passes these from `.env.production` into the webapp and admin dashboard images. The two containers have no `env_file`. So a change needs another `make build`, and then a [recreate](#recreate-or-the-change-does-not-land). Each "What it does" cell starts with the app that reads the value.
 
-**`PERSIST_TO_LOCAL_STORAGE=true`** must become `false`. The REST API runs two replicas with no shared volume, so an upload lands in one container, is invisible to the other, and disappears on redeploy.
+| Name                                                              | What it does                                                                                                                                                                | When empty                                                                                                                                                                  |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`       | Both apps. Your Supabase project URL and anon key.                                                                                                                          | Required. Both apps stop with a missing-variable error.                                                                                                                     |
+| `NEXT_PUBLIC_PROVIDER_URL`                                        | Webapp. The collaboration socket: `wss://<API_HOST>/websocket`. Traefik routes only that path to the socket.                                                                | Required. The webapp stops with a missing-variable error. Without `/websocket`, Traefik answers 404 and the editor never syncs.                                             |
+| `NEXT_PUBLIC_RESTAPI_URL`                                         | Webapp. The REST API base: `https://<API_HOST>/api`. Keep `/api`. An old template had `/api/v1`, which no route serves.                                                     | Required. `make build` stops with an error that names `NEXT_PUBLIC_RESTAPI_URL`.                                                                                            |
+| `NEXT_PUBLIC_API_URL`                                             | Admin. The REST API origin: `https://<API_HOST>`, with no `/api`. The admin dashboard adds `/api/admin/...` and `/health` itself, so do not copy `NEXT_PUBLIC_RESTAPI_URL`. | Falls back to `https://prodback.docs.plus`, the docs.plus backend.                                                                                                          |
+| `NEXT_PUBLIC_APP_URL`                                             | Both apps. Your editor address, `https://<APP_HOST>`. The webapp uses it in canonical and share metadata. The admin dashboard uses it in document links.                    | Falls back to `https://docs.plus`.                                                                                                                                          |
+| `NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT`                         | Webapp. The base address that a sign-in email link returns to.                                                                                                              | Optional. The link returns to the address where the person asked for it.                                                                                                    |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID`                                    | Webapp. Google One Tap only. The Google sign-in button does not read it. See [Turn on Google sign-in](#turn-on-google-sign-in).                                             | Optional. One Tap does not show. The Google button still works.                                                                                                             |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY`                                    | Webapp. The public key that the browser subscribes with. Set the same value as `VAPID_PUBLIC_KEY`, or every push send fails with 403.                                       | Optional. The browser cannot turn on push.                                                                                                                                  |
+| `NEXT_PUBLIC_GA_ID`                                               | Webapp. Your Google Analytics ID.                                                                                                                                           | Optional. No analytics script loads.                                                                                                                                        |
+| `NEXT_PUBLIC_VIRTUOSO_LICENSE`                                    | Webapp. The license key for the chat message list, `@virtuoso.dev/message-list`.                                                                                            | Chat shows no messages. The list shows a red missing-key notice in their place. With no key, the list works only on `localhost`, `127.0.0.1`, `0.0.0.0` or a `.local` host. |
+| `NEXT_PUBLIC_GLITCHTIP_DSN`                                       | Both apps. Sends errors to GlitchTip. See [Observability (optional)](#observability-optional).                                                                              | Optional. No error reports leave the browser or the app server.                                                                                                             |
+| `NEXT_PUBLIC_GIT_HASH`                                            | Both apps. The release tag on error reports. Compose fills it from `GIT_HASH` or `DEPLOY_TAG` when it is unset.                                                             | Optional. Error reports carry no release tag.                                                                                                                               |
+| `SENTRY_URL`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | Webapp. Upload source maps to GlitchTip at build time. The upload runs only when `SENTRY_AUTH_TOKEN` is set.                                                                | Optional. No upload. With a token, set your own org and project, because the defaults are `docsplus` and `prod_docsplus`.                                                   |
 
-**`NEXT_PUBLIC_RESTAPI_URL` must end in `/api`.** There is no `/api/v1` route. An older template carried one, and the neighbouring `SERVER_RESTAPI_URL` was already correct, which is how the mistake survived unnoticed. Check your own `.env` if you copied an early template.
+`NEXT_PUBLIC_GIPHY_API_KEY` is not a Docker build arg, so a Docker build cannot set it. The GIF picker that reads it is not mounted today.
 
-**`ACME_EMAIL` is missing entirely.** Traefik falls back to the maintainer's address for Let's Encrypt registration. Add it.
+`NEXT_PUBLIC_SUPABASE_WS_URL` and `NEXT_PUBLIC_TURNSTILE_SITE_KEY` are build args too, but no code reads them. See [Values that do nothing](#values-that-do-nothing).
+
+## Template values to fix before you deploy
+
+The template is written for local development. Fix these defaults before you deploy to a server.
+
+**`PERSIST_TO_LOCAL_STORAGE=true`** must become `false`. The REST API runs two replicas with no shared volume. An upload lands in one container, is invisible to the other, and disappears when you recreate the container.
+
+**`NEW_DOCUMENT_NOTIFICATION_EMAILS`** holds two sample addresses at a real domain. Set your own addresses, or leave it empty. Empty sends no new-document mail. See [ENV.md](../../apps/hocuspocus.server/ENV.md#email).
 
 ## Choose where Traefik reads its config
 
 `TRAEFIK_CONFIG_DIR` is optional. It names the folder that holds `traefik.yml` and `dynamic/`, and its default is `./scripts/traefik`.
 
+To change a Traefik file, copy `scripts/traefik/` to a folder of your own. Then set `TRAEFIK_CONFIG_DIR` to that folder in `.env.production`.
+
+**The Let's Encrypt email.** Traefik reads it only from `traefik.yml`. In your copy, add `email: <YOUR_EMAIL>` under `certificatesResolvers.letsencrypt.acme`:
+
+```yaml
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: <YOUR_EMAIL>
+      storage: /letsencrypt/acme.json
+      httpChallenge:
+        entryPoint: web
+```
+
+Replace `<YOUR_EMAIL>` with an address you read.
+
+`ACME_EMAIL` in `.env.production` has no effect. The compose file passes it as a command-line flag, and Traefik ignores command-line flags when it loads `traefik.yml`.
+
 ## Values that do nothing
 
-These appear in the template and are read nowhere. Do not spend time on them.
+These appear in the template or the compose file, and no code reads them. Do not spend time on them.
 
 - `STORAGE_TYPE` — the code branches on `PERSIST_TO_LOCAL_STORAGE` instead.
 - `JWT_SECRET` — no consumer, and the production compose file never passes it.
 - The four `*_REPLICAS` variables — no compose file reads them. Replica counts are set in `docker-compose.prod.yml` directly.
+- `NEXT_PUBLIC_SUPABASE_WS_URL` and `NEXT_PUBLIC_SSE_URL` — the webapp build accepts them, and no code reads them.
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY` — no code reads it. Sign-in sends no CAPTCHA token, so turning on CAPTCHA in Supabase breaks email sign-in.
+- `NEXT_PUBLIC_ADMIN_URL` — no code reads it.
+- `TIPTAP_PRO_TOKEN` — no code reads it.
+- `HEALTH_CONTROLLER_LOG_LEVEL` and `HEALTH_SERVICE_LOG_LEVEL` — no code reads them.
+- `S3_CONNECT_TIMEOUT` and `S3_REQUEST_TIMEOUT` — no code reads them. The S3 timeout is fixed in code at 10 seconds, so the template's `30000` changes nothing.
+- `ENVIRONMENT` — no code reads it.
+- The `EXPOSE_*_PORT` keys (`EXPOSE_APP_PORT`, `EXPOSE_HOCUSPOCUS_PORT`, `EXPOSE_WORKER_HEALTH_PORT`) — no compose file reads them.
 
 Next step: leave them as they are. Removing them is a repository change, not a deployment step.
 
@@ -88,7 +138,7 @@ Next step: read [`apps/hocuspocus.server/Readme.md`](../../apps/hocuspocus.serve
 
 Most misconfiguration here fails quietly rather than loudly. [Install](install.md) lists the silent ones together. Two are worth repeating.
 
-**Redis unavailable turns rate limiting off**, and every request passes. That is deliberate — the alternative was refusing every request while Redis recovered — but it means a Redis problem widens your exposure instead of narrowing it.
+**Redis unavailable turns rate limiting off**, and every request passes. That is deliberate, because the other choice refused every request while Redis recovered. But a Redis problem then widens your exposure instead of narrowing it.
 
 **An upload cap under 1 MB is ignored** and floored to 10 MB, with a warning at startup. Next step: read the startup log after a cap change.
 
@@ -96,7 +146,7 @@ Most misconfiguration here fails quietly rather than loudly. [Install](install.m
 
 Email is optional. Leave every email variable blank, and email is `off`. The server runs, and it sends no mail.
 
-To send mail, pick one provider. Set its block in the host `.env`, then redeploy.
+To send mail, pick one provider. Set its block in `.env.production`, then [recreate the containers](#recreate-or-the-change-does-not-land).
 
 ```
 # Resend
@@ -114,11 +164,11 @@ SMTP_USER=...   # leave both blank for a relay with no sign-in
 SMTP_PASS=...
 ```
 
-Both providers also need `EMAIL_UNSUBSCRIBE_SECRET` and `PUBLIC_RESTAPI_URL`. Without `EMAIL_UNSUBSCRIBE_SECRET`, every unsubscribe link is rejected. Without `PUBLIC_RESTAPI_URL`, the one-click unsubscribe header is left out.
+Both providers also need `EMAIL_UNSUBSCRIBE_SECRET` and `PUBLIC_RESTAPI_URL`. [ENV.md](../../apps/hocuspocus.server/ENV.md#email) says what breaks without each.
 
 A provider key without `EMAIL_PROVIDER` holds all mail. The worker then logs `email config invalid` with the reason. [`ENV.md`](../../apps/hocuspocus.server/ENV.md#email) lists every rule.
 
-To check the setup, open **Email setup** in the admin dashboard. It shows the status, each problem, and `set` or `missing` for each secret. It never shows a secret value. It also lists the `.env` lines to add, and **Send test email** sends one mail to your own address. The page only reads. To change a value, edit the host env file, then redeploy.
+To check the setup, open **Email setup** in the admin dashboard. It shows the status, each problem, and `set` or `missing` for each secret. It never shows a secret value. Under **Lines to add**, it lists the lines that `.env.production` still needs. **Send test email** sends one mail to your own address. The page only reads. Where it says the host env file, it means `.env.production`. To change a value, edit `.env.production`, then [recreate the containers](#recreate-or-the-change-does-not-land).
 
 Then add DNS records for the domain in `EMAIL_FROM`:
 
@@ -137,7 +187,7 @@ This step is optional. Without it, Resend still sends mail, but the server never
 1. In the Resend dashboard, open **Webhooks** and add an endpoint. The URL is `PUBLIC_RESTAPI_URL` followed by `/api/email/webhooks/resend`, for example `https://api.acme.com/api/email/webhooks/resend`.
 2. Pick four events: `email.bounced`, `email.complained`, `email.suppressed` and `email.failed`.
 3. Copy the endpoint's signing secret. It starts with `whsec_`.
-4. Set `RESEND_WEBHOOK_SECRET` to that value in the host `.env`, then redeploy.
+4. Set `RESEND_WEBHOOK_SECRET` to that value in `.env.production`. Then [recreate the containers](#recreate-or-the-change-does-not-land).
 
 A permanent bounce, a complaint or a suppression turns email off for that person. The person sees a notice in the app and can turn email back on in Settings. An `email.failed` event writes nothing, and it logs an `operator` error instead.
 
@@ -145,13 +195,13 @@ Without the secret, the URL answers 404. A secret that is not base64, or decodes
 
 ### Sign-in mail (Supabase Auth)
 
-Supabase Auth sends sign-in links itself, from its own SMTP settings. The `.env` email keys above do not reach it. Without custom SMTP, the Supabase built-in sender sends about 2 mails an hour, and only to members of your Supabase team. So email sign-in fails for everyone outside your Supabase team until you set this up.
+Supabase Auth sends sign-in links itself, from its own SMTP settings. The email keys in `.env.production` do not reach it. Without custom SMTP, the Supabase built-in sender sends about 2 mails an hour, and only to members of your Supabase team. So email sign-in fails for everyone outside your Supabase team until you set this up.
 
-1. In the Supabase dashboard, open **Authentication > Emails > SMTP Settings** and turn on **Enable custom SMTP**. With Resend, the Supabase integration in **Resend > Settings > Integrations** fills the form for you. By hand, the values are host `smtp.resend.com`, port `465`, username `resend`, and a Resend API key with **Sending access** as the password.
+1. In the Supabase dashboard, open **Authentication > Emails > SMTP Settings** and turn on **Enable custom SMTP**. With Resend, the Supabase integration in **Resend > Settings > Integrations** fills the form for you. By hand, the values are host `smtp.resend.com`, port `465`, username `resend`, and a Resend API key with **Sending access** as the password. The form also takes a sender email address and a sender name. Use a sender email address on a domain that your provider has verified.
 2. Set **Minimum interval per user** to `60` seconds. A lower value lets anyone send a stream of sign-in mail to a stranger's address.
 3. Open **Authentication > Rate Limits** and set **Rate limit for sending emails** to the hourly volume you expect, for example `100`. Turning on custom SMTP resets it to 30 per hour.
 4. Open **Authentication > Sign In / Providers > Email** and set **Email OTP expiration** to `3600` seconds.
-5. Open **Authentication > Emails > Templates**. Paste each branded template from [`apps/hocuspocus.server/templates/`](../../apps/hocuspocus.server/templates/): `magic-link.html` into **Magic Link**, `confirm-signup.html` into **Confirm signup**, and `change-email-address.html` into **Change Email Address**. The default templates are a bare link, and spam filters distrust that on a new domain.
+5. Open **Authentication > Emails > Templates**. Paste each branded template from [`apps/hocuspocus.server/templates/`](../../apps/hocuspocus.server/templates/): `magic-link.html` into **Magic Link**, `confirm-signup.html` into **Confirm signup**, and `change-email-address.html` into **Change Email Address**. The default templates are a bare link, and spam filters distrust that on a new domain. Before you paste, replace each `docs.plus` in a template with your own name. It appears in the title, the header, the body, the footer link and the copyright line.
 6. Keep click tracking off on the sending domain. Tracking rewrites the link, and the rewritten sign-in link fails.
 
 The templates say that the link expires in 1 hour. If you change **Email OTP expiration**, change that sentence too.
@@ -174,7 +224,7 @@ The chat tools also need [`SUPABASE_SERVICE_ROLE_KEY`](../../apps/hocuspocus.ser
 **Hosted Supabase.** In the Supabase dashboard, open **Authentication > OAuth Server**.
 
 1. Turn on **Enable the Supabase OAuth Server**.
-2. Check **Site URL**. It comes from **Authentication > URL Configuration**, and it must be your webapp address.
+2. Check **Site URL**. [Install step 2](install.md#2-prepare-supabase) sets it.
 3. Set **Authorization Path** to `/oauth/consent`.
 4. Turn on **Allow Dynamic OAuth Apps**.
 5. Choose **Save changes**.
@@ -208,17 +258,19 @@ Replace `<SUPABASE_URL>` with your Supabase project URL, from the Supabase proje
 
 The answer must list `registration_endpoint`. If it is missing, the OAuth server or dynamic registration is off. Copy the `issuer` value exactly, and set [`MCP_AUTH_ISSUER`](../../apps/hocuspocus.server/ENV.md) to it. On a server, recreate the containers, as [above](#recreate-or-the-change-does-not-land). Locally, stop and restart `make dev-local`.
 
+**Match the two addresses.** The connector's address is `PUBLIC_RESTAPI_URL` plus `/api/mcp`. The Settings page copies `NEXT_PUBLIC_RESTAPI_URL` plus `/mcp`. The two must match exactly, so `NEXT_PUBLIC_RESTAPI_URL` must equal `PUBLIC_RESTAPI_URL` plus `/api`. When `PUBLIC_RESTAPI_URL` is unset, the server uses the request origin. Behind the proxy, that origin can start with `http`. [ENV.md](../../apps/hocuspocus.server/ENV.md#public-origin) defines the value.
+
 **Check the endpoint.** Run this from any directory.
 
 ```bash
 curl -si -X POST <PUBLIC_RESTAPI_URL>/api/mcp
 ```
 
-Replace `<PUBLIC_RESTAPI_URL>` with the public origin of your REST API, such as `https://prodback.docs.plus`.
+Replace `<PUBLIC_RESTAPI_URL>` with the public origin of your REST API, such as `https://<API_HOST>`.
 
 The answer is `401`, with a `WWW-Authenticate` header that names a `resource_metadata` URL. Open that URL. Its `authorization_servers` entry must equal the `issuer` you copied, character for character. No proxy change is needed, because the connector sits under `/api`.
 
-**Refuse connected-app tokens in Supabase.** Supabase applies the same RLS to an OAuth token as to a session token, as its [Token Security and RLS](https://supabase.com/docs/guides/auth/oauth-server/token-security) guide says. `packages/supabase/scripts/31-connected-app-token-gate.sql` makes Supabase refuse a token that carries `client_id`. It covers the Data API, Storage and Realtime. The MCP tools use the service-role key, so the script does not change them.
+**Refuse connected-app tokens in Supabase.** Supabase applies the same RLS to an OAuth token as to a session token. Its [Token Security and RLS](https://supabase.com/docs/guides/auth/oauth-server/token-security) guide says so. `packages/supabase/scripts/31-connected-app-token-gate.sql` makes Supabase refuse a token that carries `client_id`. It covers the Data API, Storage and Realtime. The MCP tools use the service-role key, so the script does not change them.
 
 A new install runs this script with the other numbered files, as [Install](install.md#2-prepare-supabase) says. An existing install runs it once in the SQL editor. The paired migration `20260928120000_refuse_connected_app_tokens` has the same body, for a `supabase db push`. Both are safe to run again.
 
@@ -239,6 +291,69 @@ notify pgrst, 'reload config';
 ```
 
 The Storage and Realtime policies stay. Each is named `Connected apps use only the MCP server`. They sit on `storage.objects`, on `realtime.messages`, and on each public table in `supabase_realtime`. Drop each one with `drop policy if exists`.
+
+## Turn on Google sign-in
+
+People sign in with Google or an email link. The admin dashboard signs in with Google only, so it needs this section.
+
+**Hosted Supabase.**
+
+First, configure the OAuth consent screen in Google Cloud. For the External user type, publish the app too. While its status is Testing, Google lets only the listed test users sign in. See [Google's consent screen guide](https://developers.google.com/workspace/guides/configure-oauth-consent).
+
+1. In Google Cloud, open **APIs & Services > Credentials**. Create an **OAuth client ID** of type **Web application**.
+2. Under **Authorized redirect URIs**, add `<SUPABASE_URL>/auth/v1/callback`.
+3. Under **Authorized JavaScript origins**, add `https://<APP_HOST>` and `https://<ADMIN_HOST>`.
+4. In the Supabase dashboard, open **Authentication > Sign In / Providers > Google**. Turn it on, and paste the client ID and the client secret.
+5. Set `NEXT_PUBLIC_GOOGLE_CLIENT_ID` in `.env.production` to the same client ID. This value turns on Google One Tap in the webapp. The Google button works without it.
+6. Rebuild, because `NEXT_PUBLIC_GOOGLE_CLIENT_ID` is a build value. Run this at the repository root.
+
+   ```bash
+   make build
+   ```
+
+7. Recreate the containers, as in [Recreate, or the change does not land](#recreate-or-the-change-does-not-land).
+
+Replace `<SUPABASE_URL>` with your Supabase project URL, from the Supabase project settings. Supabase returns each sign-in only to an address on its allow-list. [Install step 2](install.md#2-prepare-supabase) sets that list.
+
+`GOOGLE_CLIENT_ID` and `GOOGLE_SECRET` in the env file feed only `packages/supabase/config.toml`, for the local stack. On a server they do nothing. The secret goes in the Supabase dashboard.
+
+**Local stack.**
+
+1. In Google Cloud, create a Web application client as in step 1 above, or reuse one.
+2. Add the redirect URI `http://localhost:54321/auth/v1/callback`.
+3. For One Tap, add `http://localhost` and `http://localhost:3000` as JavaScript origins.
+4. In `.env.local`, set `GOOGLE_CLIENT_ID` to the client ID and `GOOGLE_SECRET` to the client secret. For One Tap, also set `NEXT_PUBLIC_GOOGLE_CLIENT_ID` to the client ID.
+5. Supabase reads the two keys only when it starts. Restart it. Run this at the repository root.
+
+   ```bash
+   bun --filter @docs.plus/supabase_back stop
+   bun --filter @docs.plus/supabase_back start
+   ```
+
+Then stop and restart `make dev-local`, so the webapp reads `NEXT_PUBLIC_GOOGLE_CLIENT_ID`.
+
+## Turn on push notifications
+
+Push needs a VAPID key pair. The `web-push` package is installed in `apps/hocuspocus.server`, so run this in `apps/hocuspocus.server`.
+
+```bash
+bunx web-push generate-vapid-keys
+```
+
+It prints a public key and a private key.
+
+1. In `.env.production`, set `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` to the two keys.
+2. Set `NEXT_PUBLIC_VAPID_PUBLIC_KEY` to the same public key.
+3. Set `VAPID_SUBJECT` to a `mailto:` address that you read. The template value is a placeholder.
+4. Rebuild, because `NEXT_PUBLIC_VAPID_PUBLIC_KEY` is a build value. Run this at the repository root.
+
+   ```bash
+   make build
+   ```
+
+5. Recreate the containers, as in [Recreate, or the change does not land](#recreate-or-the-change-does-not-land).
+
+[ENV.md](../../apps/hocuspocus.server/ENV.md#push-notifications-vapid) defines the three server keys. [Webapp and admin build values](#webapp-and-admin-build-values) defines the build key.
 
 ## Turn off password sign-in
 
@@ -266,6 +381,50 @@ The hook stays off locally, because the backend e2e scripts and document-swarm s
 bun --filter @docs.plus/supabase_back stop
 bun --filter @docs.plus/supabase_back start
 ```
+
+## Observability (optional)
+
+Error reporting is off until you set two values from your GlitchTip project:
+
+- `GLITCHTIP_DSN` — the three backend processes, read at runtime. [ENV.md](../../apps/hocuspocus.server/ENV.md#read-outside-the-schema) defines it.
+- `NEXT_PUBLIC_GLITCHTIP_DSN` — the webapp and the admin dashboard. It is a build value. See [Webapp and admin build values](#webapp-and-admin-build-values).
+
+Metrics, logs, and alerts come from a separate stack, `docker-compose.observability.yml`. It reads its own env file. `scripts/observability/.env.example` is the template for that file. Keep your copy outside the repository.
+
+| Variable                      | Purpose                                                                                       |
+| ----------------------------- | --------------------------------------------------------------------------------------------- |
+| `GRAFANA_ADMIN_PASSWORD`      | The password of the Grafana `admin` user                                                      |
+| `TELEGRAM_BOT_TOKEN`          | The Telegram bot that sends Grafana alerts                                                    |
+| `TELEGRAM_CHAT_ID`            | The Telegram chat that receives the alerts                                                    |
+| `TELEGRAM_WARNINGS_CHAT_ID`   | Optional. A second chat for warning alerts. Empty uses `TELEGRAM_CHAT_ID`                     |
+| `DEADMAN_WEBHOOK_URL`         | A healthchecks.io ping URL. It pages you when the alert pipeline stops                        |
+| `GLITCHTIP_SECRET_KEY`        | The secret key of the GlitchTip server in this stack                                          |
+| `GLITCHTIP_POSTGRES_PASSWORD` | The password of the GlitchTip database in this stack                                          |
+| `GLITCHTIP_EMAIL_URL`         | Optional. The SMTP URL that GlitchTip sends issue mail with. Empty writes mail to the log     |
+| `POSTGRES_EXPORTER_DSN`       | Optional. A read-only `pg_monitor` login for the database exporter. Empty uses `DATABASE_URL` |
+| `DATABASE_URL`                | Your docs.plus database. The exporter uses it when `POSTGRES_EXPORTER_DSN` is empty           |
+
+The compose file also names the docs.plus hosts. Search it for `docs.plus`, and replace each hit with your own host or address.
+
+The Grafana alert contact points come from a template. Render it before you start the stack. Run this at the repository root.
+
+```bash
+set -a; . <PATH_TO_ENV_FILE>; set +a
+export TELEGRAM_WARNINGS_CHAT_ID="${TELEGRAM_WARNINGS_CHAT_ID:-$TELEGRAM_CHAT_ID}"
+envsubst '${TELEGRAM_BOT_TOKEN} ${TELEGRAM_CHAT_ID} ${TELEGRAM_WARNINGS_CHAT_ID} ${DEADMAN_WEBHOOK_URL}' \
+  < scripts/observability/grafana/provisioning/alerting/contactpoints.yml.tmpl \
+  > scripts/observability/grafana/provisioning/alerting/contactpoints.yml
+```
+
+Then start the stack. It joins `docsplus-network`, which [Install step 5](install.md#5-create-the-docker-network) creates. Run this at the repository root.
+
+```bash
+make observability-up OBS_ENV=<PATH_TO_ENV_FILE>
+```
+
+Replace `<PATH_TO_ENV_FILE>` with the path to your copy of the env file. Always pass `OBS_ENV`, because the `Makefile` default path belongs to the docs.plus operator's server.
+
+The alerts that [RUNBOOK-backend.md](../RUNBOOK-backend.md) names exist only after this stack runs.
 
 ## Where to go next
 
