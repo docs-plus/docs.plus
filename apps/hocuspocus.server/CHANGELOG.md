@@ -454,6 +454,9 @@ SMTP_PASS=...
   `templates/magic-link.html` and `templates/change-email-address.html` said
   the link expires in 15 minutes. Production expires it after 3600 seconds, so
   both now say 1 hour.
+  The footers drop the fixed `2026`, because Supabase templates have no date
+  variable. The Magic Link and Confirm signup footers name the reader's
+  address with `{{ .Email }}`.
 
 - **The unsubscribe link asks before it changes anything ([#445](https://github.com/docs-plus/docs.plus/issues/445)).**
   `GET /api/email/unsubscribe` now checks the token and shows an Unsubscribe
