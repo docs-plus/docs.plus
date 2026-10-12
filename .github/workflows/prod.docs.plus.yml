@@ -773,8 +773,8 @@ jobs:
           echo "🌐 Public URL probe (informational):"
           PUBLIC_CODE=$(curl -sf -o /dev/null -w "%{http_code}" --max-time 10 https://docs.plus/ 2>/dev/null || echo "000")
           echo "  https://docs.plus/ → ${PUBLIC_CODE}"
-          API_CODE=$(curl -sf -o /dev/null -w "%{http_code}" --max-time 10 https://prodback.docs.plus/api/health 2>/dev/null || echo "000")
-          echo "  https://prodback.docs.plus/api/health → ${API_CODE}"
+          API_CODE=$(curl -sf -o /dev/null -w "%{http_code}" --max-time 10 https://prodback.docs.plus/health 2>/dev/null || echo "000")
+          echo "  https://prodback.docs.plus/health → ${API_CODE}"
 
           echo ""
           echo "✅ Deployment verified"

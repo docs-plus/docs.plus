@@ -396,7 +396,7 @@ status-prod:
 	@echo ""
 	@echo "Health Checks:"
 	@curl -sf https://docs.plus/api/health 2>/dev/null && echo "  ✅ docs.plus" || echo "  ❌ docs.plus"
-	@curl -sf https://prodback.docs.plus/api/health 2>/dev/null && echo "  ✅ prodback.docs.plus/api" || echo "  ❌ prodback.docs.plus/api"
+	@curl -sf https://prodback.docs.plus/health 2>/dev/null && echo "  ✅ prodback.docs.plus/health" || echo "  ❌ prodback.docs.plus/health"
 
 logs-traefik:
 	@docker logs traefik -f --tail 100
