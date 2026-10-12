@@ -200,6 +200,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- **/privacy names Resend as the sender of sign-in mail.** Supabase now sends
+  sign-in links through Resend, so the page no longer names a separate email
+  provider. Resend sends sign-in, notification and digest mail.
+  `LEGAL_UPDATED` is now 12 October 2026 ([#425](https://github.com/docs-plus/docs.plus/issues/425)).
 - **/privacy names Resend as the email provider.** Resend sends notification
   and digest mail. A separate email provider sends sign-in links for
   Supabase. A new "Where mail data goes" section says that Resend sends from
