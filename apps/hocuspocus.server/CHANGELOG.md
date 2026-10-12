@@ -125,6 +125,11 @@ SMTP_PASS=...
 
 ### Added
 
+- **A branded Confirm signup template ([#425](https://github.com/docs-plus/docs.plus/issues/425)).**
+  `templates/confirm-signup.html` matches the Magic Link template. Supabase
+  sends it to a new account. Before, that mail used the default Supabase
+  template, a bare link that Yahoo filed as spam.
+
 - **Admin Email setup page ([#423](https://github.com/docs-plus/docs.plus/issues/423)).**
   `GET /api/admin/email/setup` shows the email status, each problem, and `set`
   or `missing` for each secret. It never returns a secret value. It also runs
@@ -445,6 +450,11 @@ SMTP_PASS=...
 
 ### Fixed
 
+- **The sign-in templates state the real expiry ([#425](https://github.com/docs-plus/docs.plus/issues/425)).**
+  `templates/magic-link.html` and `templates/change-email-address.html` said
+  the link expires in 15 minutes. Production expires it after 3600 seconds, so
+  both now say 1 hour.
+
 - **The unsubscribe link asks before it changes anything ([#445](https://github.com/docs-plus/docs.plus/issues/445)).**
   `GET /api/email/unsubscribe` now checks the token and shows an Unsubscribe
   button. It writes nothing, so a mail link scanner can no longer unsubscribe
@@ -737,6 +747,12 @@ SMTP_PASS=...
   version.
 
 ### Documentation
+
+- Add **Sign-in mail (Supabase Auth)** to
+  [docs/self-hosting/configuration.md](../../docs/self-hosting/configuration.md).
+  It lists the dashboard SMTP settings, the minimum interval, the rate limit,
+  the OTP expiry and the branded templates. Without custom SMTP, Supabase sends
+  about 2 sign-in mails an hour ([#425](https://github.com/docs-plus/docs.plus/issues/425)).
 
 - Record the changes route in [API.md](./API.md), with its window semantics, both
   response shapes, the status table and the section-matching rules. The limits are
