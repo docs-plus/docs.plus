@@ -145,12 +145,12 @@ Without the secret, the URL answers 404. A secret that is not base64, or decodes
 
 ### Sign-in mail (Supabase Auth)
 
-Supabase Auth sends sign-in links itself, from its own SMTP settings. The `.env` email keys above do not reach it. Without custom SMTP, the Supabase built-in sender sends about 2 mails an hour, and only to members of your Supabase team. So email sign-in barely works until you set this up.
+Supabase Auth sends sign-in links itself, from its own SMTP settings. The `.env` email keys above do not reach it. Without custom SMTP, the Supabase built-in sender sends about 2 mails an hour, and only to members of your Supabase team. So email sign-in fails for everyone outside your Supabase team until you set this up.
 
 1. In the Supabase dashboard, open **Authentication > Emails > SMTP Settings** and turn on **Enable custom SMTP**. With Resend, the Supabase integration in **Resend > Settings > Integrations** fills the form for you. By hand, the values are host `smtp.resend.com`, port `465`, username `resend`, and a Resend API key with **Sending access** as the password.
 2. Set **Minimum interval per user** to `60` seconds. A lower value lets anyone send a stream of sign-in mail to a stranger's address.
-3. Open **Authentication > Rate Limits** and set **Rate limit for sending emails**. Turning on custom SMTP resets it to 30 per hour.
-4. Open **Authentication > Sign In / Providers > Email** and set **Email OTP expiration** to `3600` seconds or less.
+3. Open **Authentication > Rate Limits** and set **Rate limit for sending emails** to the hourly volume you expect, for example `100`. Turning on custom SMTP resets it to 30 per hour.
+4. Open **Authentication > Sign In / Providers > Email** and set **Email OTP expiration** to `3600` seconds.
 5. Open **Authentication > Emails > Templates**. Paste each branded template from [`apps/hocuspocus.server/templates/`](../../apps/hocuspocus.server/templates/): `magic-link.html` into **Magic Link**, `confirm-signup.html` into **Confirm signup**, and `change-email-address.html` into **Change Email Address**. The default templates are a bare link, and spam filters distrust that on a new domain.
 6. Keep click tracking off on the sending domain. Tracking rewrites the link, and the rewritten sign-in link fails.
 
