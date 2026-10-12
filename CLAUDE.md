@@ -55,6 +55,7 @@ Each was decided, and in most cases built and reverted. If you want to change on
 - **History restore is signed-in only.** Visitors may read history. They never see Restore. Do not replace the hidden control with a sign-in toast on the same button. Server refusal is `unauthorized` / `read-only`. See webapp §Document Version History and `CONTEXT.md` §Document access.
 - **Chat send animation.** An iMessage-style send flight was built and reverted at maintainer request on 2026-09-21, and #263 closed with motion rejected. Own sends show only the static pending clock. Do not rebuild any send motion unless the maintainer asks. See [apps/webapp/src/components/chatroom/CLAUDE.md](apps/webapp/src/components/chatroom/CLAUDE.md).
 - **Phone mic is hold-only.** A tap shows a hint and never sends; release sends the note, alone, once its upload is ready. Maintainer ruling, 2026-09-22. Do not add tap-to-record on a phone. Rules and reasons in [apps/webapp/src/components/chatroom/CLAUDE.md](apps/webapp/src/components/chatroom/CLAUDE.md).
+- **Email secrets come from `.env` only.** No UI write, and no secrets in Postgres. The admin Email setup page shows each secret only as set or missing. Do not propose a credential form. Decision D5 on #418. See [apps/hocuspocus.server/CLAUDE.md](apps/hocuspocus.server/CLAUDE.md) §Email Delivery.
 
 ## Cursor rules — `.cursor/rules/`
 
