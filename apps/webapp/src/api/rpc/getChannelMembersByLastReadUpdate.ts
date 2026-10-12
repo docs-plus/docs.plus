@@ -14,7 +14,7 @@ export type ChannelMemberReadUpdate = {
 export const getChannelMembersByLastReadUpdate = async (
   channelId: string,
   timestamp: string
-): Promise<PostgrestResponse<ChannelMemberReadUpdate[]>> => {
+): Promise<PostgrestResponse<ChannelMemberReadUpdate>> => {
   return supabaseClient.rpc('get_channel_members_by_last_read_update', {
     _channel_id: channelId,
     _timestamp: timestamp

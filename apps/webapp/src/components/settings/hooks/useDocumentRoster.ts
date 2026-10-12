@@ -26,7 +26,7 @@ export function useDocumentRoster(slug: string) {
     queryFn: async () => {
       const res = await supabaseClient.rpc('get_document_members', { p_slug: slug })
       if (res.error) throw res.error
-      return (res.data ?? []) as unknown as DocumentRosterMember[]
+      return (res.data ?? []) as DocumentRosterMember[]
     }
   })
 }

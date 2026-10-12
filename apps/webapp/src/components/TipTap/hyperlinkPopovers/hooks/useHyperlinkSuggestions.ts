@@ -1,7 +1,6 @@
 import { getUserBookmarks } from '@api'
 import { useAuthStore, useStore } from '@stores'
 import { useQuery } from '@tanstack/react-query'
-import { type TBookmarkWithMessage } from '@types'
 import { logger } from '@utils/logger'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -82,11 +81,7 @@ export function useHyperlinkSuggestions({
   })
 
   const bookmarks = useMemo<BookmarkSuggestion[]>(() => {
-    // Supabase RPC returns a flat row array at runtime even though the
-    // generated `PostgrestResponse<T[]>` types it as nested.
-    const activeRows = (active.data ?? []) as unknown as TBookmarkWithMessage[]
-    const archivedRows = (archived.data ?? []) as unknown as TBookmarkWithMessage[]
-    const rows: TBookmarkWithMessage[] = [...activeRows, ...archivedRows]
+    const rows = [...(active.data ?? []), ...(archived.data ?? [])]
     const mapped = rows.map((row): BookmarkSuggestion => ({
       kind: 'bookmark',
       id: String(row.bookmark_id),

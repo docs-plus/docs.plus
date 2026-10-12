@@ -1,4 +1,4 @@
-import { ChannelMemberReadUpdate, getChannelMembersByLastReadUpdate } from '@api'
+import { getChannelMembersByLastReadUpdate } from '@api'
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { usePeerReadSeq } from '@components/chatroom/hooks'
 import AvatarStackLoader from '@components/skeleton/AvatarStackLoader'
@@ -31,8 +31,7 @@ export function UserReadStatus({ message }: Props) {
         message.created_at
       )
       if (error) throw error
-      // The API wrapper types the rows as `PostgrestResponse<T[]>`, one array too deep.
-      return (data ?? []) as unknown as ChannelMemberReadUpdate[]
+      return data ?? []
     },
     enabled: isSeen,
     gcTime: 0,

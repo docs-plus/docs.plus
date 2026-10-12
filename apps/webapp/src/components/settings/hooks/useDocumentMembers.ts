@@ -38,7 +38,7 @@ export function useDocumentMembers(slugs: string[], enabled: boolean) {
       for (const row of res.data ?? []) {
         map.set(row.slug, {
           member_count: Number(row.member_count),
-          previews: (row.previews as unknown as DocumentMemberPreview[]) ?? []
+          previews: row.previews ?? []
         })
       }
       return map
