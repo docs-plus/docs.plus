@@ -200,17 +200,13 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
-- **/privacy names Resend as the sender of sign-in mail.** Supabase now sends
-  sign-in links through Resend, so the page no longer names a separate email
-  provider. Resend sends sign-in, notification and digest mail.
-  `LEGAL_UPDATED` is now 12 October 2026 ([#425](https://github.com/docs-plus/docs.plus/issues/425)).
-- **/privacy names Resend as the email provider.** Resend sends notification
-  and digest mail. A separate email provider sends sign-in links for
-  Supabase. A new "Where mail data goes" section says that Resend sends from
-  Ireland and stores mail data in the United States. It says that the mail
-  carries short extracts of document and chat text, and it names the transfer
+- **/privacy names Resend as the email provider.** Resend sends sign-in,
+  notification and digest mail. Supabase sends sign-in links through Resend.
+  A new "Where mail data goes" section says that Resend sends from Ireland
+  and stores mail data in the United States. It says that the mail carries
+  short extracts of document and chat text, and it names the transfer
   safeguards. Resend keeps sent mail and the mail logs for 30 days.
-  `LEGAL_UPDATED` is now 9 October 2026 (#424).
+  `LEGAL_UPDATED` is now 12 October 2026 (#424, [#425](https://github.com/docs-plus/docs.plus/issues/425)).
 - **Find floats at the top right of the page, like Google Docs.** On a
   desktop, ⌘F (Ctrl+F) opens a small Find bar over the editor column. The
   toolbar no longer has a Find button, and the page never moves when Find
@@ -244,7 +240,7 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   browser's own menu (#391).
 
 - **An empty line's hint now shows only its heading chain.** It no longer ends
-  with ` > Write here`. Every pad hint and the Title hint use one grey, a little
+  with `> Write here`. Every pad hint and the Title hint use one grey, a little
   darker than before. That grey passes 4.5:1 contrast in every theme. The chat
   composer hint does not change.
 
