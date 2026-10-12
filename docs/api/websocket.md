@@ -29,6 +29,8 @@ const provider = new HocuspocusProvider({
 
 Two values and one function to replace. `<DOCUMENT_ID>` is the 19-character id from a document read or a create call — see [Quickstart](quickstart.md). `<SLUG>` is that document's slug. `getAccessToken()` stands for your own code that returns a current Supabase access token for the signed-in person.
 
+Locally the URL is `ws://localhost:4001`. On a deployed server, use the webapp's `NEXT_PUBLIC_PROVIDER_URL` value. See [Webapp and admin build values](../self-hosting/configuration.md#webapp-and-admin-build-values).
+
 **Pass `token` as a function.** The server closes a signed-in socket with code `4408` when its access token expires. The provider then reconnects and calls `token` again. A fixed string resends the expired token. In production, the server refuses a token that is already past its expiry.
 
 Install the provider with Bun:
@@ -87,12 +89,12 @@ Each connection has a rate limit on list and watch requests. A request over it f
 
 ## Ports, and what not to connect to
 
-| Port   | Process              | For you?                   |
-| ------ | -------------------- | -------------------------- |
-| `4000` | REST API             | Yes                        |
-| `4001` | Collaboration socket | Yes                        |
-| `4002` | Worker health        | No                         |
-| `4003` | Internal listener    | No — never routed publicly |
+| Port   | Process              | For you?                                                                                        |
+| ------ | -------------------- | ----------------------------------------------------------------------------------------------- |
+| `4000` | REST API             | Yes — not published on a deployed server; connect through the proxy on `443` under `/api`       |
+| `4001` | Collaboration socket | Yes — not published on a deployed server; connect through the proxy on `443` under `/websocket` |
+| `4002` | Worker health        | No                                                                                              |
+| `4003` | Internal listener    | No — never routed publicly                                                                      |
 
 Port `4003` carries service-role write endpoints and metrics. Only network isolation protects it. Next step: never expose it through a reverse proxy.
 

@@ -8,7 +8,7 @@ This page uses the service-role key, because writing content requires it. Run th
 
 You need two values.
 
-- `<BASE_URL>` — where the REST API answers. Locally that is `http://localhost:4000`.
+- `<BASE_URL>` — where the REST API answers. Locally that is `http://localhost:4000`. On a server, use your [`PUBLIC_RESTAPI_URL`](../../apps/hocuspocus.server/ENV.md#public-origin).
 - `<SUPABASE_SERVICE_ROLE_KEY>` — the service-role key from your Supabase project settings.
 
 ## 1. Create a document
@@ -129,7 +129,7 @@ Headings and tables carry a `toc-id`. The server assigns one wherever it is miss
 
 Every `PATCH` stores a full version of the document. So 500 small writes leave roughly 500 stored versions.
 
-The rate limit is also low, at 100 requests per 15 minutes per address by default.
+The rate limit is per address, and your server sets its own value. Read `X-RateLimit-Limit` on a response that passes through a limiter, which means one that came through your proxy. See [Rate limiting](README.md#rate-limiting).
 
 Next step: prefer one `replace`, or a few large `append` calls, over many small ones. If you are importing a long document, build the whole Tiptap document first and send it once.
 

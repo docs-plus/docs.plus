@@ -14,11 +14,28 @@ http://localhost:4000
 
 On a self-hosted deployment it sits behind your reverse proxy. Only two path prefixes are routed to the public edge, `/api` and `/health`. Everything else answers inside your network only.
 
+On a deployed server, the base URL is your [`PUBLIC_RESTAPI_URL`](../../apps/hocuspocus.server/ENV.md#public-origin), the origin with no `/api`. Every path on these pages already starts with `/api` or `/health`.
+
 ## Machine-readable spec
 
-The same surface is published as OpenAPI 3.1 at `GET /openapi.json`, with a browsable page at `GET /docs`. Request schemas are generated from the live validation schemas, so they cannot drift from what the server accepts.
+The REST surface, except `/api/mcp` and `/api/connected-apps/redirects`, is published as OpenAPI 3.1 at `GET /openapi.json`. A browsable page is at `GET /docs`. Request schemas are generated from the live validation schemas, so they cannot drift from what the server accepts. For the two routes the spec leaves out, see [MCP connector reference](../mcp/reference.md).
 
-Neither path is routed publicly by default. Both answer in a local or internal environment. Publishing them is a proxy routing change, not a code change.
+Locally, with the stack running, fetch the spec from any directory:
+
+```bash
+curl http://localhost:4000/openapi.json
+```
+
+Or open `http://localhost:4000/docs` in a browser.
+
+On a server, run this at the repository root. It writes the spec to `openapi.json`:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.production exec -T rest-api \
+  bun -e "fetch('http://localhost:4000/openapi.json').then(r => r.text()).then(console.log)" > openapi.json
+```
+
+Your public API host does not serve the spec. The shipped Traefik rules route only `/api` and `/health` there. Publishing `/openapi.json` or `/docs` is a proxy routing change, not a code change.
 
 Use the spec for request and response shapes. Use these pages for behaviour: what a status code guarantees, whether a call is safe to retry, and what one write costs.
 
@@ -47,6 +64,8 @@ An error returns a message and a code under `error`.
   }
 }
 ```
+
+When a request fails schema validation, the `400` (`VALIDATION_ERROR`) also carries `error.fields`. It holds one `{ path, message }` object per rejected input, and `path` is a dotted string. Use it to show which field to fix. A few checks inside a handler return `VALIDATION_ERROR` without `error.fields`, so treat it as optional.
 
 `error.details` appears only when the server runs with `NODE_ENV=development`. Do not depend on it.
 
@@ -77,14 +96,14 @@ A `422` on a content write usually means a contract rule, not a malformed body. 
 
 Two limiters cover every request except `/health` and `/health/*`.
 
-- The global limit is `RATE_LIMIT_MAX` requests per 15 minutes, and the default is `100`.
+- The global limit is [`RATE_LIMIT_MAX`](../../apps/hocuspocus.server/ENV.md#security) requests per 15 minutes, and the code default is `100`. Your server may set another value, so read `X-RateLimit-Limit` rather than assume 100.
 - Public media reads have their own budget, ten times the global one. It covers every `GET` under `/api/plugins/hypermultimedia/`.
 - Every other route spends from the global budget, and that includes the upload `POST` on the same media path.
 - The media multiplier is fixed in the source. No environment variable changes it.
 - Both limiters key on the client address alone. The user agent is not part of it.
 - There is no separate allowance for a service-role caller.
 
-Every response carries `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset`. A `429` also carries `Retry-After`, in seconds.
+Every response that passes through a limiter carries `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset`. A `429` also carries `Retry-After`, in seconds.
 
 Two behaviours to plan for. A request that arrives with neither `x-forwarded-for` nor `x-real-ip` skips both limiters, which is why a direct local call is never limited. And when Redis is unavailable both limiters pass every request rather than refusing them.
 

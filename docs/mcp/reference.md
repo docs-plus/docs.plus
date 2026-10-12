@@ -77,7 +77,7 @@ A result carries text and `structuredContent`, with snake_case keys. Document an
 
 A `#` heading in written Markdown is refused, because it is the document title. The one exception is the first append to an empty document, which must start with its title.
 
-`create_document` refuses an anonymous account. The `title` becomes the `#` heading, and `markdown`, if given, follows it. The Markdown is checked before anything is written, so refused text leaves no document. One transaction writes the document and version 1, so a failed write leaves none either. The slug comes from the title. A taken slug gets a suffix, and a slug that is a webapp page, such as `privacy`, gets `-document`. The new document is public, like any new docs.plus document. The `url` is the webapp address plus the slug.
+The `title` becomes the `#` heading, and `markdown`, if given, follows it. The Markdown is checked before anything is written, so refused text leaves no document. One transaction writes the document and version 1, so a failed write leaves none either. The slug comes from the title. A taken slug gets a suffix, and a slug that is a webapp page, such as `privacy`, gets `-document`. The new document is public, like any new docs.plus document. The `url` is the webapp address plus the slug.
 
 **Editing inside a section.** An AI app changes only the blocks or text it names. It never changes a heading, and it never removes media. It reads one section with `read_document` and `section_id`, then edits there.
 

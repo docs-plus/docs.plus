@@ -10,7 +10,7 @@ docs.plus authenticates against your own Supabase project. There is no separate 
 
 | Credential        | Where it comes from                                   | Header                                              |
 | ----------------- | ----------------------------------------------------- | --------------------------------------------------- |
-| User access token | Supabase Auth, after a person signs in                | `token: <jwt>`                                      |
+| User access token | Supabase Auth, after a person signs in                | `Authorization: Bearer <jwt>` or `token: <jwt>`     |
 | Service-role key  | Your Supabase project settings                        | `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` |
 | Admin token       | A user token whose subject has a row in `admin_users` | `Authorization: Bearer <jwt>`                       |
 
@@ -18,7 +18,7 @@ Replace `<jwt>` with the access token Supabase returns for a signed-in user. Rep
 
 A connected app, such as Claude or ChatGPT, holds a fourth kind of token, for `/api/mcp` only. See [What each credential can call](#what-each-credential-can-call).
 
-Note that a user token rides in a `token` header, not in `Authorization`. That is unusual, and it is what most first integrations get wrong.
+A user token can go in `Authorization: Bearer <jwt>` or in a `token` header. Both work on every route that takes a user token, except `/api/admin/`, which reads `Authorization` alone. The webapp sends `token`. `/api/mcp` also reads `Authorization` alone, but it takes a connected app's token, not a user token.
 
 ## Keep the service-role key on a server
 
@@ -34,7 +34,7 @@ The unsubscribe link carries its own `token`, and that token is its only credent
 
 **A user token, optional.** Listing documents without an owner filter, reading one document by slug, and updating document metadata. Sending a token here changes what you see rather than whether the call works.
 
-**A user token, required.** Listing your own documents, creating a document, the whole document lifecycle — delete, restore, duplicate, favorite or unfavorite, Last opened (`POST /api/documents/:documentId/opened`), permanently delete, empty the trash. Uploading media also requires a user token.
+**A user token, required.** Listing your own documents, creating a document, the whole document lifecycle — delete, restore, duplicate, favorite or unfavorite, Last opened (`POST /api/documents/:documentId/opened`), permanently delete, empty the trash. Uploading media also requires a user token. So does `GET /api/connected-apps/redirects`, which the Connected apps settings tab reads. It refuses a connected app's own token.
 
 **Service-role only.** Reading and writing document content, and every document version route. The service-role email send, preview and bounce routes. The `content` and `ownerId` fields when creating a document.
 
