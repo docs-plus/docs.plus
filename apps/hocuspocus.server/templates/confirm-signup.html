@@ -167,8 +167,8 @@
                     text-align: center;
                     line-height: 1.5;
                   ">
-                  You're receiving this email because someone signed up for docs.plus with this
-                  address.
+                  You're receiving this email because {{ .Email }} was used to sign up for
+                  docs.plus.
                 </p>
                 <p style="margin: 0; color: #9ca3af; font-size: 12px; text-align: center">
                   <a href="{{ .SiteURL }}" style="color: #1a73e8; text-decoration: none">
@@ -181,7 +181,7 @@
 
           <!-- Copyright -->
           <p style="margin: 24px 0 0; color: #9ca3af; font-size: 11px; text-align: center">
-            &copy; 2026 docs.plus. All rights reserved.
+            &copy; docs.plus. All rights reserved.
           </p>
         </td>
       </tr>
