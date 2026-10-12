@@ -53,17 +53,17 @@ export default function PrivacyPage() {
       <LegalSection title="Who we share with">
         <ul className="list-disc space-y-2 pl-5">
           <li>Supabase runs sign-in and stores accounts.</li>
-          <li>Supabase sends your sign-in link through a separate email provider.</li>
+          <li>Supabase sends your sign-in link through Resend.</li>
           <li>Google runs sign-in and, when configured, Analytics.</li>
-          <li>Resend sends notification and digest mail.</li>
+          <li>Resend sends sign-in, notification and digest mail.</li>
         </ul>
         <p>We do not sell personal data.</p>
       </LegalSection>
 
       <LegalSection title="Where mail data goes">
         <p>
-          Resend sends notification and digest mail from Ireland. It stores your email address, each
-          mail, and the mail logs in the United States.
+          Resend sends sign-in, notification and digest mail from Ireland. It stores your email
+          address, each mail, and the mail logs in the United States.
         </p>
         <p>
           Notification and digest mail include short extracts of document and chat text. Resend
