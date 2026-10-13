@@ -2,30 +2,38 @@
 
 All notable changes to `@docs.plus/extension-inline-code` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); the project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.1.0] — 2026-10-13
+
+### Highlights
+
+- The package now loads on Safari and iOS Safari before 16.4, which have no RegExp lookbehind.
+- The README is a short start page. An **Open in StackBlitz** button runs its Quickstart in the browser.
+- The full reference moved to `docs/api.md`, `docs/guide.md` and `docs/migration.md` on GitHub.
+
+### Changed
+
+- Require `@tiptap/core` and `@tiptap/pm` `^3.31.3`. Version 2.0.0 required `^3.22.3`.
 
 ### Fixed
 
-- The input and paste rules load on Safari before 16.4. There, the character before the opening backtick is removed, as in upstream.
+- The package loads on Safari and iOS Safari before 16.4. In 2.0.0, `inputRegex` and `pasteRegex` were lookbehind regex literals. Those engines cannot parse them, so the script that held the package failed to load. The package now builds both regexes at runtime.
+- On those engines, `inputRegex` and `pasteRegex` fall back to the upstream `@tiptap/extension-code` pattern. There, a non-space character before the opening backtick is deleted. Engines with lookbehind keep that character plain, as before.
 
 ### Documentation
 
-- The README is a short start page: why to use it, install, a Quickstart
-  that shows a result, the caveats that fail with no error, and common
-  tasks. The full reference moved to `docs/` on GitHub (`api.md`, `guide.md`, `migration.md`).
-- The install line leads with `npm install`. `pnpm`, `yarn` and `bun`
-  follow on the next line.
-- An **Open in StackBlitz** button runs the Quickstart in the browser.
-  The app lives in `examples/vanilla`, and preflight fails when it drifts
-  from the README.
-- A "For AI coding agents" row points agents at this README as plain
-  Markdown on jsDelivr.
+- The README is a short start page. It covers why to use the package, install, a Quickstart that shows a result, the caveats that fail with no error, and common tasks.
+- The full reference moved to `docs/` on GitHub: `api.md`, `guide.md` and `migration.md`.
+- The install line leads with `npm install`. `pnpm`, `yarn` and `bun` follow on the next line.
+- The README names the hosts that can load the package, and says to load the editor in a web view on React Native.
+- An **Open in StackBlitz** button runs the Quickstart in the browser. The app lives in `examples/vanilla`. The extension preflight fails when the app drifts from the README.
+- A "For AI coding agents" row points agents at this README as plain Markdown on jsDelivr.
 - The Quickstart mounts the editor, loads a sample line, and adds a CSS rule that stays readable in dark mode.
-- `docs/api.md` Caveats now list the `RangeError` on stored `code` marks.
+- The Caveats in the README and in `docs/api.md` list the `RangeError` that stored JSON with a `code` mark throws.
+- The Discord badge uses a working invite link.
 
 ### Internal
 
-- The npm keyword `inline code` is now `inline-code`.
+- The npm keywords `tiptap extension` and `inline code` are now `tiptap-extension` and `inline-code`.
 
 ## [2.0.0] — 2026-08-11
 

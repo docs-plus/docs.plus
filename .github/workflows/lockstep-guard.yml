@@ -1,0 +1,58 @@
+name: Extension Lockstep Guard
+
+# Contract: RELEASE_POLICY.md "CI Guard". Every publishable extension must
+# share one version. The package list comes from scripts/publishable-extensions.ts,
+# the same list release:family reads. The label `lockstep-bypass` skips the job;
+# `labeled` and `unlabeled` re-run it when that label changes.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    paths:
+      - 'extensions/extension-*/package.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lockstep-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  lockstep:
+    name: 🔒 Extension Lockstep
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'lockstep-bypass') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # No `bun install`: the check imports one dependency-free module.
+      - name: 🥟 Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: '1.4.1'
+
+      - name: 🔒 Check extension versions
+        run: |
+          bun --eval '
+            import { readFileSync } from "fs"
+            import { PUBLISHABLE_EXTENSION_DIRS } from "./scripts/publishable-extensions.ts"
+
+            const packages = PUBLISHABLE_EXTENSION_DIRS.map((dir) => ({
+              dir,
+              version: JSON.parse(readFileSync(`extensions/${dir}/package.json`, "utf8")).version
+            }))
+            const [first] = packages
+            const other = packages.find((p) => p.version !== first.version)
+
+            if (other) {
+              console.error(`::error::Lockstep violated: ${other.dir} is at ${other.version} but ${first.dir} is at ${first.version}.`)
+              console.error("All publishable extensions must share a version.")
+              console.error("See RELEASE_POLICY.md \"Versioning Doctrine\".")
+              for (const p of packages) console.error(`  ${p.dir}: ${p.version}`)
+              process.exit(1)
+            }
+            console.log(`Lockstep holds: all ${packages.length} publishable extensions at ${first.version}.`)
+          '

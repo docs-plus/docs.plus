@@ -30,7 +30,7 @@ description: Publish or cut a release of the five @docs.plus/extension-* package
 ### Release And Publish
 
 - `RELEASE_POLICY.md` is authoritative for versioning doctrine, cutover phase, lockstep activation, `release:family`, CHANGELOG style, soak/promotion, CI guards, and readiness checklists. Bullets below are the operational subset agents need at the keyboard.
-- Phase 1 cutover: each extension can ship its first `2.0.0` independently. Lockstep activates only through an explicit switch-flip commit in `AGENTS.md` / `RELEASE_POLICY.md`, not automatically when versions align.
+- Phase 2 lockstep has been active since 2026-10-13: all five publishable extensions ship together at one version through `release:family`. Phase 1 cutover is complete; all five shipped `2.0.0` independently on 2026-08-11. `.github/workflows/lockstep-guard.yml` fails a PR whose extension versions differ, unless the PR has the `lockstep-bypass` label.
 - Lockstep release entry:
 
 ```bash
@@ -54,7 +54,7 @@ awk '/^## /{ if (found) exit; if (/^## \[<ver>\]/) found=1 } found' extensions/<
 ```
 
 - Announcement happens after npm publish:
-  - GitHub Releases are the announcement gate.
+  - The product GitHub Release is the announcement gate. It names each extension version.
   - Discord `#github`: `secrets.DISCORD_GITHUB_WEBHOOK` via `.github/workflows/discord-activity.yml` (pushes) and `.github/workflows/discord-github.yml` (issues and pull requests).
   - Discord `#releases`: `secrets.DISCORD_RELEASES_WEBHOOK` via `.github/workflows/discord-release.yml`. The convention is one secret per channel, `DISCORD_<CHANNEL>_WEBHOOK`.
   - Release embeds: install hint is `npm install <pkg>@<version>`, the same command the READMEs lead with. The workflow's pre-release branch (orange embeds, `@next` hints) is dormant, because releases are stable-only. Leave it in place, and do not exercise it. Do not hard-code per-package paths in the workflow.
@@ -65,10 +65,9 @@ awk '/^## /{ if (found) exit; if (/^## \[<ver>\]/) found=1 } found' extensions/<
 - `1.x` = 2023 product line.
 - `2.x` = docs.plus alpha v2.
 - Extensions are leaf packages; lockstep is policy, not graph-forced.
-- Rotating per-package cutover state lives in [`.cursor/docs/extension-version-cutover.md`](../../docs/extension-version-cutover.md) and is deleted with the lockstep switch-flip PR.
 - Family-release script invariants in `scripts/release-family.ts`:
   - Use `spawnSync` helper calls, no shell strings, so the OTP stays off the shell command line and out of shell history. The spawned `bun publish` still carries it in its own argv, so `ps` can read it for the life of that child.
-  - GitHub release creation is idempotent across resumes: iterate `[...published, ...skipped]` and guard each with `gh release view <tag>`.
+  - It creates no per-package GitHub Release. It pushes the tags, and the product Release announces the family (`RELEASE_POLICY.md` §Product, ruled 2026-08-26).
   - Push an explicit tag list only. Never run `git push --tags`.
 - CLI flags: `--dry-run`, `--allow-noop`, `--generate-noop-changelogs`, `--help`. Publishes always target the default `latest` tag; the former `--tag <next|latest>` flag was removed with the stable-only decision.
 - Preflight aggregates errors before any OTP prompt:

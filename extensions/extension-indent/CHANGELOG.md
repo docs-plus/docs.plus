@@ -2,17 +2,24 @@
 
 All notable changes to `@docs.plus/extension-indent` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); the project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.1.0] — 2026-10-13
+
+Aligned to docs.plus 2.1.0 family release. No behavioral changes since 2.0.0.
+
+### Changed
+
+- The `@tiptap/core` and `@tiptap/pm` peer floor rises from `^3.22.3` to `^3.31.3`.
 
 ### Documentation
 
-- The README is a short start page: why to use it, install, a Quickstart
-  that shows a result, the caveats that fail with no error, and common
-  tasks. The full reference moved to `docs/` on GitHub (`api.md`, `guide.md`, `migration.md`).
+- The README is a short start page. It covers why to use it, install,
+  a Quickstart that shows a result, the caveats that fail with no error,
+  and common tasks.
+- The full reference moved to `docs/` on GitHub (`api.md`, `guide.md`, `migration.md`).
 - The install line leads with `npm install`. `pnpm`, `yarn` and `bun`
   follow on the next line.
 - An **Open in StackBlitz** button runs the Quickstart in the browser.
-  The app lives in `examples/vanilla`, and preflight fails when it drifts
+  The app lives in `examples/vanilla`, and preflight fails when it differs
   from the README.
 - A "For AI coding agents" row points agents at this README as plain
   Markdown on jsDelivr.

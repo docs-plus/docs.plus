@@ -1,6 +1,6 @@
 # `@docs.plus/extension-*` family
 
-Five publishable Tiptap extensions for [docs.plus](https://docs.plus). The five packages share major version `2` under the `@docs.plus` npm scope. [Release policy](#release-policy) links the tracker that holds the npm status of each one.
+Five publishable Tiptap extensions for [docs.plus](https://docs.plus). The five packages share one version under the `@docs.plus` npm scope, and they release together. [Release policy](#release-policy) explains how.
 
 ## Choose an extension
 
@@ -103,7 +103,7 @@ Four packages carry a Keyboard shortcuts table, and every Context cell in them n
 
 [RELEASE_POLICY.md](../RELEASE_POLICY.md) — versioning doctrine, lockstep, release readiness, CHANGELOG style.
 
-Per-package npm status and the publish runbook: [.cursor/docs/extension-version-cutover.md](../.cursor/docs/extension-version-cutover.md).
+Release policy and the publish flow: [RELEASE_POLICY.md](../RELEASE_POLICY.md) and the [release-extensions skill](../.cursor/skills/release-extensions/SKILL.md).
 
 ## Contributing
 

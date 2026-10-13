@@ -271,7 +271,7 @@ Deeper layout lives in `apps/webapp/README.md`, `apps/hocuspocus.server/Readme.m
 
 ## 🔌 Tiptap Extensions
 
-Five open-source [Tiptap](https://tiptap.dev) extensions power the docs.plus editor. The table below describes the source in this repository. All five are published on npm at `2.0.0`. A published version can still lag this source, so check the status tracker before you pin one.
+Five open-source [Tiptap](https://tiptap.dev) extensions power the docs.plus editor. The table below describes the source in this repository. All five are published on npm and share one version, released together. A published version can still lag this source, so check each package's `CHANGELOG.md` before you pin one.
 
 ```sh
 npm install @docs.plus/extension-hyperlink
@@ -287,7 +287,7 @@ Or use `pnpm add`, `yarn add`, or `bun add` with the same package name.
 | [`extension-inline-code`](extensions/extension-inline-code/)         | Inline code mark (`Mod-e`, backtick rules)                                                    |
 | [`extension-placeholder`](extensions/extension-placeholder/)         | Hint text in the empty textblock at the cursor; cost tracks cursor depth, not document length |
 
-Install notes, recommended pairings, and contributing: [extensions/README.md](extensions/README.md). Per-package npm status: [extension-version-cutover.md](.cursor/docs/extension-version-cutover.md). Release policy: [RELEASE_POLICY.md](RELEASE_POLICY.md).
+Install notes, recommended pairings, and contributing: [extensions/README.md](extensions/README.md). Release policy: [RELEASE_POLICY.md](RELEASE_POLICY.md).
 
 ## 🤝 Contributing
 

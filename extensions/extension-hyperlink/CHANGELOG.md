@@ -10,17 +10,22 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ## [Unreleased]
 
-The next release is a minor bump (issue #374).
+## [2.1.0] — 2026-10-13
 
 ### Highlights
 
 - **Typing at a link edge stays plain.** Text typed immediately before or after a link no longer joins it, as in Google Docs.
+- **Content can no longer style a link.** The mark ignores a `class` attribute in pasted or loaded HTML. Only `HTMLAttributes.class` from the extension options renders ([#399](https://github.com/docs-plus/docs.plus/issues/399)).
+- **The reference moved to `docs/`.** The README is a short start page with an **Open in StackBlitz** example. The full reference is seven pages under `docs/`.
 
 ### Changed
 
-- The `hyperlink` mark is no longer inclusive. The mark spec sets `inclusive: false`, and `autolink` no longer sets it.
+- The `hyperlink` mark is no longer inclusive. The mark spec sets `inclusive: false`, and `autolink` no longer sets it. No option restores the old behavior.
   A character typed at the right end of a link now stays plain.
   To make a link longer, select the new text and apply the link again.
+- The `exitable` option stays. Because the mark is not inclusive, it now only drops a stored link mark, such as one `setHyperlink` leaves on a collapsed caret.
+- The `@tiptap/core` and `@tiptap/pm` peer ranges are now `^3.31.3`. They were `^3.22.3`.
+- The `@floating-ui/dom` dependency is now `^1.8.0`. It was `^1.7.6`.
 
 ### Fixed
 
@@ -34,9 +39,9 @@ The next release is a minor bump (issue #374).
 
 ### Documentation
 
-- The README is a short start page: why to use it, install, a Quickstart
-  that shows a result, the caveats that fail with no error, and common
-  tasks. The full reference moved to `docs/` on GitHub (`api.md`, `popovers.md`, `styling.md`, `url-handling.md`, `security.md`, `advanced.md`, `migration.md`).
+- The README is a short start page. It covers why to use it, install,
+  a Quickstart that shows a result, the caveats that fail with no error,
+  and common tasks. The full reference moved to `docs/` on GitHub (`api.md`, `popovers.md`, `styling.md`, `url-handling.md`, `security.md`, `advanced.md`, `migration.md`).
 - The install line leads with `npm install`. `pnpm`, `yarn` and `bun`
   follow on the next line.
 - An **Open in StackBlitz** button runs the Quickstart in the browser.
@@ -50,8 +55,9 @@ The next release is a minor bump (issue #374).
 ### Internal
 
 - `bun run docs:gif` re-records the README GIFs.
-- Source comments point at the `docs/` pages instead of README sections.
+- Source comments point at the `docs/` pages instead of README sections. Comments that only restated the code are gone.
 - `styles.css` has one reduced-motion guard for `.floating-popover`. The second copy is gone. The rendered styles do not change.
+- The npm keyword `tiptap extension` is now `tiptap-extension`, and `link-preview` is a new keyword.
 
 ## [2.0.0] — 2026-08-11
 

@@ -177,8 +177,8 @@ function checkLockstep(packages: PackageInfo[]): PreflightResult {
     errors: [
       `Lockstep violated: not all publishable packages share a version.`,
       ...packages.map((p) => `      ${p.fullName}: ${p.version}`),
-      `    Phase 1 cutover may still be in progress.`,
-      `    See RELEASE_POLICY.md "Versioning Doctrine" and "Phase 1 — Cutover".`
+      `    All publishable extensions must share a version.`,
+      `    See RELEASE_POLICY.md "Versioning Doctrine".`
     ]
   }
 }
@@ -504,53 +504,6 @@ function pushTags(tags: string[], dryRun: boolean) {
   for (const tag of tags) ok(`Pushed: ${tag}`)
 }
 
-function extractChangelogSlice(changelogPath: string, version: string): string {
-  const content = readFileSync(changelogPath, 'utf8')
-  const escapedVersion = version.replace(/\./g, '\\.')
-  const startRe = new RegExp(`^## \\[${escapedVersion}\\][^\\n]*\\n`, 'm')
-  const startMatch = startRe.exec(content)
-  if (!startMatch) return ''
-  const start = startMatch.index
-  const headerLen = startMatch[0].length
-  const after = content.slice(start + headerLen)
-  const nextHeaderMatch = /^## \[/m.exec(after)
-  return nextHeaderMatch ? after.slice(0, nextHeaderMatch.index).trim() : after.trim()
-}
-
-function ghReleaseExists(tagName: string): boolean {
-  return run('gh', ['release', 'view', tagName], { allowFail: true }).status === 0
-}
-
-function createGithubReleases(packages: PackageInfo[], targetVersion: string, dryRun: boolean) {
-  section('Creating GitHub releases')
-  for (const pkg of packages) {
-    const tagName = `${pkg.fullName}@${targetVersion}`
-    const changelogPath = join(pkg.packagePath, 'CHANGELOG.md')
-    const notes = extractChangelogSlice(changelogPath, targetVersion)
-    if (!notes) {
-      warn(`Skipping GH release for ${pkg.fullName}: empty changelog slice`)
-      continue
-    }
-    if (dryRun) {
-      info(`[dry-run] would check: gh release view '${tagName}', then create if missing`)
-      continue
-    }
-    if (ghReleaseExists(tagName)) {
-      ok(`Already exists: ${tagName}`)
-      continue
-    }
-    const notesFile = join('/tmp', `release-notes-${pkg.shortName}-${targetVersion}.md`)
-    writeFileSync(notesFile, notes)
-    const ghArgs = ['release', 'create', tagName, '--title', tagName, '--notes-file', notesFile]
-    const r = run('gh', ghArgs, { allowFail: true })
-    if (r.status !== 0) {
-      warn(`Failed to create GH release for ${tagName}: ${r.stderr || r.stdout}`)
-    } else {
-      ok(`Created: ${tagName}`)
-    }
-  }
-}
-
 async function main() {
   const args = parseArgs()
   process.stdout.write(`bun run release:family${args.dryRun ? ' --dry-run' : ''}\n`)
@@ -611,8 +564,8 @@ async function main() {
 
   const releasedPackages = [...published, ...skipped]
   const tagsToPush = releasedPackages.map((pkg) => `${pkg.fullName}@${targetVersion}`)
+  // No per-package GitHub Releases since 2026-08-26: the product Release announces the family.
   pushTags(tagsToPush, args.dryRun)
-  createGithubReleases(releasedPackages, targetVersion, args.dryRun)
 
   section('Summary')
   process.stdout.write(`  Target version: ${targetVersion}\n`)

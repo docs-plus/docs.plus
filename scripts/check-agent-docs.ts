@@ -132,7 +132,7 @@ const LINK_SOURCES = [
 
 /**
  * GitHub's heading slug: lowercase, drop punctuation, one hyphen per space. The slug keeps repeated
- * hyphens, so `## Phase 1 — Cutover (current)` anchors as `#phase-1--cutover-current`.
+ * hyphens, so `## Phase 1 — Cutover (complete)` anchors as `#phase-1--cutover-complete`.
  */
 const slug = (heading: string) =>
   heading

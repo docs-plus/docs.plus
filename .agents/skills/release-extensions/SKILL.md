@@ -16,7 +16,9 @@ description: Publish or cut a release of the five @docs.plus/extension-* package
 - `sideEffects` must include CSS, e.g. `['**/*.css']`; do not use bare `false`.
 - Every scoped package needs `publishConfig.access: "public"` or `bun publish` defaults to private and can 402.
 - Package metadata should include `homepage`, `bugs`, and discovery-oriented `keywords`.
-- **Public-facing docs follow the family install policy and stay cohesive.** Every `extensions/extension-*/README.md` and `CHANGELOG.md` uses Bun commands (`bun add` / `bun remove`), never `npm`/`yarn`/`pnpm` — even though external consumers could use npm. Install blocks show the plain `bun add <pkg>` line only. Add no `@next` soak lines, and never lead an Install block with `npm install <pkg>`. This mirrors `extensions/README.md`. Keep the five READMEs at structural parity: shared Install/Contributing/Family boilerplate, and a framework-neutral `new Editor` Quickstart from `@tiptap/core`, not React `useEditor`. Use no per-package marketing taglines, and no `chrome` in any prose (use "UI"/"shell"/"toolbar", same as the §Code Quality vocabulary rule).
+- **Public-facing docs follow the family install policy and stay cohesive.** Install lines for extension users follow the open-source norm (maintainer ruling, 2026-09-22). The Install block holds `npm install <pkg>` alone, so a copy runs one command. The next line names `pnpm add`, `yarn add`, and `bun add` with the full package name. Other install or remove commands in the docs use npm (`npm install`, `npm uninstall`). Add no `@next` soak lines. Contributor docs (`CONTRIBUTING.md`, repo scripts) stay Bun, because the monorepo needs it. This mirrors `extensions/README.md`. Keep the five READMEs at structural parity: shared Install/Contributing/Family boilerplate, and a framework-neutral `new Editor` Quickstart from `@tiptap/core`, not React `useEditor`. Use no per-package marketing taglines, and no `chrome` in any prose (use "UI"/"shell"/"toolbar", same as the §Code Quality vocabulary rule).
+- **A package README is a short npm start page. The detail lives in `docs/*.md`.** The H2 spine is Why use it, Install, Quickstart, Caveats, Common tasks, Documentation, Part of docs.plus, Contributing, License. `Nodes` and `Gallery` are optional, and they sit before Documentation. The Quickstart must give a visible result from copy and paste alone. Caveats keeps only the silent failures. New reference text goes into the package `api.md` or a topic file in `docs/`, not into the README. `files` never ships `docs/`, so README links to it are absolute `blob/main` URLs. Links inside `docs/` stay relative. Do not re-add `/docs/` to a package `.gitignore`, or every README link returns 404.
+- **The Quickstart has a live twin, and AI agents read the README.** `examples/vanilla/main.ts` holds the README Quickstart code word for word, and the "Open in StackBlitz" button runs it. `scripts/extension-preflight.sh` fails when the two drift; `bun scripts/check-quickstart-example.ts --write <extension-dir>` regenerates the example from the README. The README Caveats are the one home for silent failures, and `docs/api.md` Caveats must contain every README caveat. No `llms.txt` or adopter Agent Skill ships: on 2026-09-22 an eval scored the README alone 48 of 48, the same as README plus those files. At each release, compare the `context7.json` rules with the README Caveats.
 - Extension publish audits expect all five packages at parity. Parity covers: package-local `CONTRIBUTING.md`, `bunx` release lifecycle hooks, README gallery assets via `docs:screenshots`, CI extension tests, and harness docs centralized in `extensions/README.md`. The gallery holds a hero plus `<details>`/`<picture>` scenes. Use no JS carousels. GitHub/npm READMEs are static HTML only. The cutover and e2e READMEs link to `extensions/README.md`, and do not duplicate its ports or scripts. Preview collapsible README galleries on GitHub or `bunx grip <readme>` — VS Code's default Markdown preview often won't render `<details>`/`<picture>`.
 - Adding any root re-export through `src/index.ts` or `src/utils/index.ts` is a minor release, not a patch.
 - Resolve `[Unreleased]` to a real version before `bun run build`, `bun pm pack`, and `bun publish`.
@@ -28,7 +30,7 @@ description: Publish or cut a release of the five @docs.plus/extension-* package
 ### Release And Publish
 
 - `RELEASE_POLICY.md` is authoritative for versioning doctrine, cutover phase, lockstep activation, `release:family`, CHANGELOG style, soak/promotion, CI guards, and readiness checklists. Bullets below are the operational subset agents need at the keyboard.
-- Phase 1 cutover: each extension can ship its first `2.0.0` independently. Lockstep activates only through an explicit switch-flip commit in `AGENTS.md` / `RELEASE_POLICY.md`, not automatically when versions align.
+- Phase 2 lockstep has been active since 2026-10-13: all five publishable extensions ship together at one version through `release:family`. Phase 1 cutover is complete; all five shipped `2.0.0` independently on 2026-08-11. `.github/workflows/lockstep-guard.yml` fails a PR whose extension versions differ, unless the PR has the `lockstep-bypass` label.
 - Lockstep release entry:
 
 ```bash
@@ -52,10 +54,10 @@ awk '/^## /{ if (found) exit; if (/^## \[<ver>\]/) found=1 } found' extensions/<
 ```
 
 - Announcement happens after npm publish:
-  - GitHub Releases are the announcement gate.
+  - The product GitHub Release is the announcement gate. It names each extension version.
   - Discord `#github`: `secrets.DISCORD_GITHUB_WEBHOOK` via `.github/workflows/discord-activity.yml` (pushes) and `.github/workflows/discord-github.yml` (issues and pull requests).
   - Discord `#releases`: `secrets.DISCORD_RELEASES_WEBHOOK` via `.github/workflows/discord-release.yml`. The convention is one secret per channel, `DISCORD_<CHANNEL>_WEBHOOK`.
-  - Release embeds: install hint is `bun add <pkg>@<version>`. The workflow's pre-release branch (orange embeds, `@next` hints) is dormant, because releases are stable-only. Leave it in place, and do not exercise it. Do not hard-code per-package paths in the workflow.
+  - Release embeds: install hint is `npm install <pkg>@<version>`, the same command the READMEs lead with. The workflow's pre-release branch (orange embeds, `@next` hints) is dormant, because releases are stable-only. Leave it in place, and do not exercise it. Do not hard-code per-package paths in the workflow.
 
 ### Extension Version Doctrine
 
@@ -63,10 +65,9 @@ awk '/^## /{ if (found) exit; if (/^## \[<ver>\]/) found=1 } found' extensions/<
 - `1.x` = 2023 product line.
 - `2.x` = docs.plus alpha v2.
 - Extensions are leaf packages; lockstep is policy, not graph-forced.
-- Rotating per-package cutover state lives in [`.cursor/docs/extension-version-cutover.md`](../../docs/extension-version-cutover.md) and is deleted with the lockstep switch-flip PR.
 - Family-release script invariants in `scripts/release-family.ts`:
   - Use `spawnSync` helper calls, no shell strings, so the OTP stays off the shell command line and out of shell history. The spawned `bun publish` still carries it in its own argv, so `ps` can read it for the life of that child.
-  - GitHub release creation is idempotent across resumes: iterate `[...published, ...skipped]` and guard each with `gh release view <tag>`.
+  - It creates no per-package GitHub Release. It pushes the tags, and the product Release announces the family (`RELEASE_POLICY.md` §Product, ruled 2026-08-26).
   - Push an explicit tag list only. Never run `git push --tags`.
 - CLI flags: `--dry-run`, `--allow-noop`, `--generate-noop-changelogs`, `--help`. Publishes always target the default `latest` tag; the former `--tag <next|latest>` flag was removed with the stable-only decision.
 - Preflight aggregates errors before any OTP prompt:

@@ -8,7 +8,11 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
-The next release is a minor bump (issues #376, #379 and #391).
+## [2.1.0] — 2026-10-13
+
+An earlier draft of this entry carried the date 2026-09-17. That draft was
+never published to npm and never tagged. This entry replaces it and lists
+every change since 2.0.0.
 
 ### Highlights
 
@@ -18,15 +22,23 @@ The next release is a minor bump (issues #376, #379 and #391).
   and the Delete row has a divider before it and danger ink.
 - No single key press deletes media. The first press next to media selects
   it, and the next press deletes it (#376).
+- Hosts can import `isSafeMediaSrc` to check a media URL before they insert
+  it.
+- Unlisted Vimeo links keep their access hash through insertion and HTML
+  round-trips.
+- X fallback markup keeps the configured post options when oEmbed fails.
 
 ### Added
 
+- `isSafeMediaSrc` is exported from the package entry. The docs.plus
+  Markdown import uses it to refuse an unsafe URL before it creates a media
+  node.
 - `--hm-toolbar-danger` sets the Delete row ink in the overflow menu. The
   default is `light-dark(#dc2626, #f87171)`. See #391.
 - `.media-toolbar__menu-divider` is a new class. It draws each separator in
   the overflow menu.
-- The `…` button carries `aria-expanded`. It is `true` while the menu is
-  open and `false` otherwise.
+- The `…` button carries `aria-haspopup="menu"` and `aria-expanded`.
+  `aria-expanded` is `true` while the menu is open and `false` otherwise.
 - `openMediaPopover` takes an `onHide` callback. It runs when the popover
   hides, or when another popover replaces it.
 - A selected media node shows a 1px frame in `--hm-resize-border` (#376).
@@ -36,6 +48,9 @@ The next release is a minor bump (issues #376, #379 and #391).
 
 ### Changed
 
+- The `@tiptap/core` and `@tiptap/pm` peer range is now `^3.31.3`. It was
+  `^3.22.3`.
+- The `@floating-ui/dom` dependency is now `^1.8.0`. It was `^1.7.6`.
 - Overflow menu rows match the docs.plus menu row: `8px 10px` padding, 14px
   text at weight 500, and 16px icons. The panel has `6px` padding and a
   `176px` minimum width. Submenu rows use the same values. A row with
@@ -48,13 +63,15 @@ The next release is a minor bump (issues #376, #379 and #391).
   row's place. The built-in order puts Delete last.
 - `dividerAfter` now draws a divider in the overflow menu too, not only in
   the inline bar.
-- The overflow menu is `role="menu"`. Action rows are `menuitem`, or
+- The overflow menu is `role="menu"`, with the name "More actions". The
+  2.0.0 entry called this shell role-neutral. Action rows are `menuitem`, or
   `menuitemcheckbox` when the action declares `isActive`. Each submenu is a
   labelled group, and its pressed rows become `menuitemradio`, such as the X
   Size and Theme options. Rows carry `tabindex="-1"`.
-- **Breaking for host selectors:** rows inside the `…` menu no longer carry
-  `aria-pressed`. They carry `aria-checked` instead. A host selector or test
-  on `[aria-pressed]` in that menu must move to `[aria-checked]`.
+- Rows inside the `…` menu now carry `aria-checked`, not `aria-pressed`. The
+  2.0.0 entry said that toggle rows expose `aria-pressed`. To migrate, move a
+  host selector or test on `[aria-pressed]` in that menu to
+  `[aria-checked]`. The `--active` row classes did not change.
 - Inline bar buttons and the inline submenu popovers, such as Align and
   Margin, keep `aria-pressed`.
 - Arrow keys, `Home` and `End` move between rows, and a letter key jumps to
@@ -90,12 +107,24 @@ The next release is a minor bump (issues #376, #379 and #391).
 - Backspace or Delete on a focused row in a toolbar popover no longer deletes
   the media. This covers the `…` menu, the Align and Margin submenus, and
   Replace URL.
+- X fallback markup keeps the theme, width, language, privacy, alignment and
+  hidden-content options after an oEmbed failure.
+- Unlisted Vimeo URLs keep the hash in their path through insertion and HTML
+  round-trips. A hash in the query string still wins. This addresses
+  [the standalone contribution](https://github.com/HMarzban/extension-hypermultimedia/pull/4).
+- Iframe embeds no longer set `allowfullscreen` when `allow` already includes
+  `fullscreen`. Chrome treats `allow` as the winner and warned on Vimeo, Loom
+  and Spotify. YouTube still emits `allowfullscreen`, because its `allow`
+  list does not include fullscreen.
 
 ### Documentation
 
-- The README is a short start page: why to use it, install, a Quickstart
-  that shows a result, the caveats that fail with no error, and common
-  tasks. The full reference moved to `docs/` on GitHub (`api.md`, `embeds.md`, `media-toolbar.md`, `paste-and-import.md`, `resize-and-loading.md`, `styling.md`, `security.md`, `migration.md`).
+- The README is a short start page. It covers why to use the package,
+  install, a Quickstart that shows a result, the caveats that fail with no
+  error, and common tasks.
+- The full reference moved to `docs/` on GitHub: `api.md`, `embeds.md`,
+  `media-toolbar.md`, `paste-and-import.md`, `resize-and-loading.md`,
+  `styling.md`, `security.md` and `migration.md`.
 - The install line leads with `npm install`. `pnpm`, `yarn` and `bun`
   follow on the next line.
 - An **Open in StackBlitz** button runs the Quickstart in the browser.
@@ -103,10 +132,12 @@ The next release is a minor bump (issues #376, #379 and #391).
   from the README.
 - A "For AI coding agents" row points agents at this README as plain
   Markdown on jsDelivr.
-- The README opens with a GIF: a pasted YouTube URL becomes a player, then a corner drag resizes it.
+- The README opens with a GIF: a pasted YouTube URL becomes a player, then
+  a corner drag resizes it.
 - The Quickstart image is a photo served from docs.plus.
 - The image README and `docs/resize-and-loading.md` describe the corner rule
-  for every resizable node. `docs/api.md` drops the `Shift` row.
+  for every resizable node. The keyboard shortcut table, now in
+  `docs/api.md`, has no `Shift` row.
 - `docs/media-toolbar.md` describes the overflow menu keys and roles, and
   the `delete` id contract for the divider and danger ink.
   `docs/styling.md` lists `--hm-toolbar-danger` and
@@ -115,35 +146,7 @@ The next release is a minor bump (issues #376, #379 and #391).
 ### Internal
 
 - `bun run docs:gif` re-records the README GIFs.
-
-## [2.1.0] — 2026-09-17
-
-### Highlights
-
-- Unlisted Vimeo links keep their access hashes through insertion and HTML round-trips.
-- Hosts can import `isSafeMediaSrc` to validate media URLs before insertion.
-- X fallback markup keeps the configured post options when oEmbed fails.
-
-### Added
-
-- Export `isSafeMediaSrc` from the package entry. Markdown import uses it to
-  refuse an unsafe URL before it mints a media node.
-
-### Changed
-
-- Require `@tiptap/core` and `@tiptap/pm` `^3.31.3`, and update the `@floating-ui/dom` runtime dependency to `^1.8.0`.
-
-### Fixed
-
-- Keep X theme, width, language, privacy, alignment, and hidden-content options in fallback markup after an oEmbed failure.
-
-- Preserve the path hash in unlisted Vimeo URLs through insertion and HTML round-trips.
-  Query-string hashes keep precedence. Addresses [the standalone contribution](https://github.com/HMarzban/extension-hypermultimedia/pull/4).
-
-- Iframe embeds no longer set `allowfullscreen` when `allow` already includes
-  `fullscreen`. Chrome treats `allow` as the winner and warned on Vimeo, Loom,
-  and Spotify. YouTube still emits `allowfullscreen` because its `allow` list
-  does not include fullscreen.
+- The npm keyword `tiptap extension` is now `tiptap-extension`.
 
 ## [2.0.0] — 2026-08-11
 
