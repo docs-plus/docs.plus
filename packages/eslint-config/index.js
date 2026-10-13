@@ -21,6 +21,9 @@ export default [
       // Maintainer notes, including saved scratch harnesses. Gitignored too.
       'Notes/**',
       '**/.claude/worktrees/**',
+      // Workflow scripts are function bodies, not modules: the runtime wraps them,
+      // so their top-level `return` is a parse error to ESLint.
+      '.claude/workflows/**',
       '**/dist/**',
       '**/build/**',
       '**/.next/**',
