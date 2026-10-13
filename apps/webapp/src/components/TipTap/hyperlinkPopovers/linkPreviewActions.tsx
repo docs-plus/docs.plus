@@ -1,6 +1,7 @@
 import { Icons } from '@components/icons/registry'
 import * as toast from '@components/toast'
 import { copyToClipboard } from '@docs.plus/extension-hyperlink'
+import { isDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import type { SheetDataMap } from '@stores'
 import { useSheetStore } from '@stores'
 import { getMarkRange } from '@tiptap/core'
@@ -52,7 +53,7 @@ export function buildLinkPreviewActions({
     }
   }
 
-  return [
+  const actions: LinkPreviewAction[] = [
     openAction,
     {
       key: 'copy',
@@ -64,7 +65,13 @@ export function buildLinkPreviewActions({
           else toast.Error('Failed to copy to clipboard')
         })
       }
-    },
+    }
+  ]
+  // Not `view.editable`: phone read mode turns it off for every reader. The durable lock marks a read-only document.
+  if (isDocumentEditingLocked()) return actions
+
+  return [
+    ...actions,
     {
       key: 'edit',
       label: 'Edit link',
