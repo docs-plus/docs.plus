@@ -9,7 +9,7 @@ describe('hyperlink marks on inline images', () => {
     cy.getEditor().then((editor) => {
       editor.chain().setNodeSelection(1).setHyperlink({ href: 'https://example.com' }).run()
     })
-    cy.get('#editor a img').should('have.attr', 'src', IMAGE_URL)
+    cy.get('#editor a img:not(.ProseMirror-separator)').should('have.attr', 'src', IMAGE_URL)
 
     cy.getEditor().then((editor) => {
       editor
@@ -21,13 +21,13 @@ describe('hyperlink marks on inline images', () => {
       editor.commands.setContent(editor.getHTML())
     })
     cy.get('#editor a').should('have.attr', 'href', 'https://changed.example')
-    cy.get('#editor a img').should('have.attr', 'src', IMAGE_URL)
+    cy.get('#editor a img:not(.ProseMirror-separator)').should('have.attr', 'src', IMAGE_URL)
 
     cy.getEditor().then((editor) => {
       editor.chain().setNodeSelection(1).unsetHyperlink().run()
     })
     cy.get('#editor a').should('not.exist')
-    cy.get('#editor img').should('have.attr', 'src', IMAGE_URL)
+    cy.get('#editor img:not(.ProseMirror-separator)').should('have.attr', 'src', IMAGE_URL)
   })
 })
 
