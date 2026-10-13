@@ -16,6 +16,7 @@ Every line below is a filter, not an anchor. Click one and the page folds to tha
 - [📤 Import and export](/demo/import%20and%20export)
 - [🔐 Who can open this document](/demo/owner-only)
 - [🚀 Make your own](/demo/make%20your%20own)
+- [🆕 What's new in docs.plus 2.1.0](/demo/release)
 
 # 👋 Start here
 
@@ -43,6 +44,10 @@ A reply under a heading needs no quoted context. The passage is directly above i
 Messages posted under a heading **belong to that heading**. They show up nowhere else in the document. There is no general channel they fall into.
 
 Open the chatroom on this heading, read it, and scroll back through it — try it here.
+
+On desktop, move the pointer anywhere over a section, and its heading's chat button shows beside the heading. Click it to open that chatroom — try it here.
+
+On desktop, drag the top edge of the docked chatroom down to close it. Let go below 160px and it closes. Let go between 160px and 320px and it returns to 320px — try it here.
 
 A dated line separates the days. New messages, edits and reactions **arrive without a reload**.
 
@@ -73,7 +78,9 @@ A comment starts in the document body. It posts into the chatroom of the heading
 
 ## Who is in the chatroom
 
-On desktop, **a stack of faces sits on the table of contents row** of every heading whose chatroom someone has open. Hover a face for the name, and for a mark when that person is typing — try it here.
+On desktop, **a stack of faces sits on the table of contents row** of every heading whose chatroom someone has open. Hover a face for the name — try it here.
+
+Signed in, a face also shows what that person is doing. A bouncing face means typing, a smile means choosing an emoji, and a mic means recording a voice note — needs an account.
 
 A heading row shows up to four faces, then a count of the rest.
 
@@ -90,7 +97,7 @@ The lock **stops at the document body**. Every chat control on this page still w
 
 The text is fixed. The talk is not.
 
-The table of contents is the exception. Its drag grip and its Delete Section entry still respond on this page. Both write into the document — needs a document you can edit. The server refuses what they send, so **do not press them here**.
+The table of contents is the exception. Its drag grip and its Delete section entry still respond on this page. Both write into the document — needs a document you can edit. The server refuses what they send, so **do not press them here**. Delete section asks you to confirm first, so press Cancel if you open it.
 
 Open the chatroom on this heading and say what you would use a per-heading chatroom for — needs an account.
 
@@ -115,7 +122,11 @@ _One tap answers, and the chatroom stays short._
 
 A chatroom takes what the page takes: images, video, audio, PDF, text, CSV, Markdown, JSON, Word, Excel, PowerPoint and ZIP.
 
-The caps are **10 MB per file, 10 files per message, and 3 uploads at a time**. A voice note runs to 5 minutes and draws 24 bars from the microphone as it records — needs an account.
+The caps are **10 MB per file, 10 files per message, and 3 uploads at a time**. A voice note runs to 5 minutes and draws 24 live bars from the microphone as it records — needs an account.
+
+On a phone, hold the mic to record. Slide up to lock, slide left to cancel, and let go to send. A tap shows a hint and never sends — needs an account.
+
+An audio clip in a chatroom plays with seek, at 1×, 1.5× or 2× speed. Starting one clip pauses the others. A voice note sent from 2.1.0 on shows a 40-bar waveform and its length before you press play. Post a voice note to hear one — needs an account.
 
 Two to ten pictures in one message lay out as a single tiled block. Click a tile for the full-screen gallery, and download from there — try it here.
 
@@ -137,12 +148,12 @@ _The message keeps a tag. The list keeps the message._
 
 Type `@`, then pick a name, to tell that person about the message. `@everyone` tells the whole chatroom — needs an account.
 
-The alert reads the plain message text, so **the whole name has to match**. `@harvey` does not reach `harvey_marzban`, and `@everyone_team` does not fire `@everyone`.
+A name you pick from the list reaches that person, even after they rename. A name you only type **must match the whole username**. `@harvey` does not reach `harvey_marzban`, and `@everyone_team` does not fire `@everyone`.
 
 A mention in a message is coloured and tappable. Tap it for that person's profile card — try it here. On your own empty card, Add bio and links opens Settings on Profile.
 
 ![A mention that matches, and one that does not](/demo-assets/d15-mention.png)
-_The whole name, or no alert._
+_A typed name matches in full, or sends no alert._
 
 ### Alerts, and how loud they are
 
@@ -162,9 +173,11 @@ _Mute one section and keep the next one loud._
 
 Copy to doc **writes the message into the document**, under the heading that owns the chatroom. The line it leaves is dated and links back to the message. The message's files come with it — needs a document you can edit.
 
-Reply in Thread does the other half. It **turns a message into a new heading** in the document, then opens that heading's chatroom — needs a document you can edit.
+Reply in thread does the other half. It **turns a message into a new heading** in the document, then opens that heading's chatroom — needs a document you can edit.
 
 Both controls stay visible on this page, and the server refuses both writes.
+
+Copy link on a message works here. It puts a link to that message on your clipboard, and its icon turns into a check — try it here.
 
 ![A message in the chatroom, and the dated line it leaves in the page](/demo-assets/d10-copytodoc.png)
 _Say it in the chatroom, keep it in the page._
@@ -182,13 +195,17 @@ _One row per heading. Fold from a row, and the page creases where the text went.
 
 A row carries the level of the heading and the text you typed. A heading with no text **gets no row**. An empty heading stays invisible to the table of contents until you name it.
 
-The table of contents has its own column. Drag the divider between that column and the page to resize it — try it here. The width runs from 240px to 46% of the column and page together, and your browser remembers where you left it. That gesture needs a mouse.
+The table of contents has its own column. Drag the divider between that column and the page to resize it — try it here. The width runs from 240px to 46% of the column and page together. Your browser remembers a width above 240px. That gesture needs a mouse.
+
+Drag the divider below 120px, and the column turns into the **tick rail**: a 32px strip with one tick per heading. The docked chatroom then spans the full width — try it here. Hover or focus a tick to preview its section, and click it to jump there. The button at the top of the rail, or a reload, brings the full table back.
 
 ## The row's menu
 
-**Right-click a row for five entries** — try it here. Chat Room opens the chatroom on that heading. Fold Section folds it, and folds back. Focus Section writes the heading text into the address as the only filter term. Copy link puts a link to that heading on your clipboard, and the copied link scrolls there on a cold page load.
+**Right-click a row for five entries** — try it here. Chat room opens the chatroom on that heading. Fold section folds it, and on a folded row it reads Unfold section. Focus section writes the heading text into the address as the only filter term. Copy link puts a link to that heading on your clipboard, and the copied link scrolls there on a cold page load.
 
-Delete Section removes the whole section, body text and media with it — needs a document you can edit.
+On a focused row, `Shift+F10` or the Menu key opens the same menu — try it here.
+
+Delete section removes the whole section, body text and media with it. It asks you to confirm first — needs a document you can edit.
 
 The menu is desktop only. The document title row at the top has none.
 
@@ -250,6 +267,18 @@ Active terms sit beside the title as chips. Each chip carries an × that drops t
 
 Copy what is in the address bar, and you have handed someone **the view itself, not a description of it**.
 
+## Find, without folding
+
+On desktop, press `⌘+F` or `Ctrl+F`. The **Find bar** opens at the top right of the page — try it here.
+
+It counts the matches, such as 3 of 12. Previous, Next, `⌘+G`, `⇧+⌘+G` and `F3` step through them. `Escape` closes the bar.
+
+The filter folds away what does not match. Find keeps the whole page and steps through it. A match inside a folded section opens that section, then folds it again when you move on.
+
+On a phone, Find is a docked row, and the table of contents drawer offers it too.
+
+Press `⌘+⇧+K` or `Ctrl+Shift+K` for the jump list — try it here. On this page it offers History, Filter, Find in document, New document and Demo. Type to narrow the list. Your Settings, alerts and documents join it once you sign in — needs an account.
+
 Filtered to this section? [Show the whole document](/demo).
 
 # 🧱 Why a section behaves this way
@@ -296,7 +325,7 @@ Click a link on this page and a card opens under it, naming what sits on the oth
 
 ## Out to the web
 
-[https://github.com/docs-plus/docs.plus](https://github.com/docs-plus/docs.plus) is an ordinary external link. Its card fills with **the page title and picture, held for 5 minutes**. Edit and Remove sit on that card too — needs a document you can edit.
+[https://github.com/docs-plus/docs.plus](https://github.com/docs-plus/docs.plus) is an ordinary external link. Its card fills with **the page title and picture, held for 5 minutes**. Copy link sits on the card, and its icon turns into a check when the copy works — try it here. On desktop, Edit and Remove sit there too, but only on a document you can edit.
 
 The card's title is itself a link, so one click on the title goes there — try it here. When the fetch fails, that title falls back to the raw address, and the link still works.
 
@@ -326,13 +355,13 @@ A picture sits **in the run of the text**, not in a gallery beside it. While a r
 
 Hover a picture and its toolbar appears — needs a document you can edit. The toolbar checks edit rights first, so this page shows the pictures and no toolbar.
 
-Eight handles ring the picture with that toolbar up. The four side handles change one axis. The four corner handles change both, and holding `Shift` on a corner keeps the shape — needs a document you can edit. Nothing goes below 160px wide or 80px high.
+Eight handles ring the picture with that toolbar up. The four side handles change one axis. The four corner handles change both and always keep the shape — needs a document you can edit. Nothing goes below 160px wide or 80px high.
 
 ## Video and audio
 
 An uploaded file plays where it sits. Press play on the video and then on the audio below it — try it here.
 
-Neither is built by pasting an address, the way the embeds are. Both arrive through the insert panel, at up to 10,485,760 bytes — needs a document you can edit.
+Neither is built by pasting an address, the way the embeds are. Both arrive through the insert panel — needs a document you can edit. A file uploaded there can be up to 10,485,760 bytes, and the upload needs an account.
 
 [/demo-assets/demo-video.mp4](/demo-assets/demo-video.mp4)
 
@@ -366,6 +395,8 @@ Filtered to this section? [Show the whole document](/demo).
 
 Formatting shows a reader which decisions matter.
 
+Type `/` on an empty line for a list of blocks to insert, from headings to pictures — needs a document you can edit. Try it in [/new](/new).
+
 ## Marks that mean something
 
 Reach for a mark when it changes meaning, not when a sentence feels flat. **Bold names the one thing a skimming reader must not miss.** _Italic marks a term or a title._ ~~Strikethrough keeps the record when a decision moves.~~ ==Highlight is a note to self: a section still wearing one is still owed work.==
@@ -373,7 +404,7 @@ Reach for a mark when it changes meaning, not when a sentence feels flat. **Bold
 ![Four marks, each on its own line](/demo-assets/d4-marks.png)
 _Bold, italic, strikethrough, highlight: four marks, four jobs._
 
-Each mark has a toolbar button and a key, from `⌘+B` for bold to `⌘+⇧+H` for highlight — needs a document you can edit. Highlight also survives Markdown, as `==text==`.
+Each mark has a toolbar button and a key, from `⌘+B` for bold to `⌘+⇧+H` for highlight — needs a document you can edit. Highlight also survives Markdown, as `==text==`. Clear formatting, or `⌘+\`, takes the marks off and keeps headings and links — needs a document you can edit.
 
 There is a fifth mark, underline, and it is the one to reach for least. On a page full of links, an underlined word claims to be one.
 
@@ -415,7 +446,7 @@ A **quote** sets words apart from your own.
 
 > A section is not a container you put text into. It is a range the editor computes.
 
-Type four dashes and the editor draws a rule across the page — needs a document you can edit.
+Type three dashes and the editor draws a rule across the page — needs a document you can edit.
 
 ---
 
@@ -427,11 +458,13 @@ Every save is **a whole snapshot of the document**, with a rising version number
 
 Open the history from the clock button in the document header. A public document does not need an account to read it.
 
-Versions arrive grouped into _sessions_, then into days titled Today, Yesterday, or a date. A session breaks after a gap of two minutes. A row carries the faces of the people in that version. It also carries a badge naming where the version came from: API, Checkpoint, Restored, Pre-restore, or Migration. An ordinary live save gets no badge.
+Versions arrive grouped into _sessions_, then into days titled Today, Yesterday, or a date. A session breaks after a gap of two minutes. A row carries the faces of the people in that version. It also carries a badge naming where the version came from: API, Checkpoint, Restored, Pre-restore, Migration, or Connected app. Connected app marks a version that an AI app wrote. An ordinary live save gets no badge.
+
+The list shows the newest 50 versions. When a document has more, Show older versions loads the next 50.
 
 Click a version and it renders in a read-only editor, so **reading an old draft changes nothing**. Heading chat is hidden while you read one. Inside the view you can compare two versions, copy a link to one, and print the one you are reading.
 
-Compare marks what was added inline, and keeps what was removed as struck-through text. The authors panel colours each block by whose text sits there now.
+Compare marks what was added inline, and keeps what was removed as struck-through text. A change to formatting only, such as bold or a heading level, gets an edge on its block. The authors panel colours each block by whose text sits there now.
 
 **Restore puts an old version back for everybody.** It is offered only to a signed-in writer, and only on a version that is not the latest. A visitor never sees the control. A restore writes a safety copy of the current text first, and that copy carries the Pre-restore badge.
 
@@ -441,17 +474,21 @@ The history can name who wrote a run of text. It can **never name who deleted on
 
 A signed-in rename of the Pad title posts a notice in the document chat. History paints the latest of those notices above the editor. That notice is not a version. A signed-out rename posts nothing.
 
+Signed in, you follow a document when you open it. Turn on email in Settings, and edits by other people arrive as a change digest email. It marks added and removed words under each changed heading — needs an account.
+
+Turn Follow off in Document settings to stop that mail. In the alert list, View on a document change opens History with compare already open — needs an account.
+
 Filtered to this section? [Show the whole document](/demo).
 
 ![Saved versions grouped by day, with faces, badges, and no Restore on the newest](/demo-assets/d16-history.png)
 
 # 📤 Import and export
 
-The gear button opens Import & export. Four export rows sit there: Word `.docx`, Markdown `.md`, OpenDocument `.odt`, and Print / Save as PDF — try it here. Every visitor is signed in anonymously on arrival, so **an export asks for nothing**.
+The gear button opens Document settings. Its Import & export section holds four export rows: Word `.docx`, Markdown `.md`, OpenDocument `.odt`, and Print / Save as PDF. **Print / Save as PDF works with no account** — try it here. Word, Markdown and OpenDocument ask you to sign in first — needs an account. Signed in, an export opens your browser's save picker where it has one, or the share sheet on iOS.
 
 An export is built from the last saved version, so a very recent edit may be missing from it.
 
-Import takes `.docx` and `.md` only, up to 10,485,760 bytes, and Markdown stops at 65,536 characters. It replaces the whole document, so this read-only page hides it — needs a document you can edit. A Markdown replace keeps pictures at their natural size, and a lone video, audio, or embed URL becomes a player.
+Import takes `.docx` and `.md` only, up to 10,485,760 bytes, and Markdown stops at 65,536 characters. It replaces the whole document — needs an account and a document you can edit. On this read-only page, Replace with a file says the document cannot be replaced — try it here. A Markdown replace keeps pictures at their natural size, and a lone video, audio, or embed URL becomes a player.
 
 Filtered to this section? [Show the whole document](/demo).
 
@@ -463,11 +500,17 @@ A document with no owner is open. Anyone may change its Pad title, signed in or 
 
 The two flags are never on together. Turning Private on clears Read-only in the same request.
 
-The header shows a chip for each flag. Open the settings panel to see the owner, and the two flags as badges — try it here. Only the owner sees them as switches.
+The header shows a chip for each flag. Open Document settings from the gear button to see the owner, and the two flags as badges — try it here. Only the owner sees them as switches.
 
-Share sits in the header, signed in or not — try it here. The link it offers is the address you are on. So it carries the heading you jumped to, the filter you are in, or the version you are reading.
+Share sits in the header, signed in or not — try it here. The Share card shares **the whole document**, never the heading or filter you are on. To share a filtered view, copy the address bar.
 
-A share link **carries no permission**. There is no token, no expiry, and no grant to one person. Who can open a document is decided by the two flags, and by who you are signed in as. On a private document the dialog hides the link, and says to turn Private off in Settings.
+The Share card also shows a QR code. Scan it with a phone to open this page, or click it for a full-screen Present view — try it here. A button next to Close switches Present to a dark background.
+
+The access line here reads Anyone with the link can view. Only the owner sees Change beside it.
+
+On desktop, the Document QR code button after Filter shows the code in a QR card at the top right. Drag the QR card's corner to size the code from 128px to 1024px — try it here. A reload hides the QR card.
+
+A share link **carries no permission**. There is no token, no expiry, and no grant to one person. Who can open a document is decided by the two flags, and by who you are signed in as. On a private document the Share card hides the link and the QR code, and says to turn Private off in Settings.
 
 Filtered to this section? [Show the whole document](/demo).
 
@@ -475,8 +518,103 @@ Filtered to this section? [Show the whole document](/demo).
 
 [/new](/new) gives you a blank document with a random name, and you can write in it — try it here. **Nothing to install**, and no sign-up to start.
 
-Everything above then runs the other way round. You can type, move a section, insert media, and replace the whole document with a file. Posting in a chatroom asks you to sign in first — needs an account.
+Everything above then runs the other way round. You can type, move a section, and insert media from its address. Uploading a file, replacing the whole document with a file, and posting in a chatroom ask you to sign in first — needs an account.
+
+Signed in, you can connect an AI app, such as Claude or ChatGPT. A connected app can read this page and its chat. It edits only documents you own, so it cannot change this one — needs an account.
+
+Your Documents list in Settings shows the documents you own and the ones you joined. Favorite a document you own to keep it at the top, and sort by Last opened — needs an account.
 
 The code is open: [https://github.com/docs-plus/docs.plus](https://github.com/docs-plus/docs.plus).
+
+Filtered to this section? [Show the whole document](/demo).
+
+# 🆕 What's new in docs.plus 2.1.0
+
+![docs.plus 2.1.0: a pad with the Find bar, an AI app card, a QR code and a voice note, above the release numbers](/demo-assets/release-2.1.0-banner.png)
+
+This is the 2.1.0 release, from 13 October 2026. Most parts end with a filter link to the place on this page that shows it.
+
+## Your AI app can work in your documents
+
+You can now connect Claude, ChatGPT or another AI app to docs.plus. It signs in as you, on a consent page — needs an account.
+
+It reads the documents and chat you can open. It edits only documents you own, so it can read this page but never change it.
+
+A version that an app wrote carries a Connected app badge in History. On this page: [/demo/connected app](/demo/connected%20app).
+
+## An email when other people edit
+
+You can now get a change digest email when other people edit a document you follow. It marks added and removed words under each changed heading — needs an account.
+
+You follow a document when you open it while signed in. You get no mail for edits you saw live. On this page: [/demo/digest](/demo/digest).
+
+## Find, jump and insert from the keyboard
+
+On desktop, you can now press `⌘+F` or `Ctrl+F` for a Find bar that counts the matches — try it here.
+
+You can now press `⌘+⇧+K` or `Ctrl+Shift+K` to jump to History, Filter, Find or a new document — try it here.
+
+You can now type `/` on an empty line to insert a block — needs a document you can edit. Try it in [/new](/new).
+
+On this page: [/demo/find bar](/demo/find%20bar).
+
+## Share a document with a QR code
+
+You can now share a document with a QR code. Open Share and scan the code, or click it for a full-screen Present view — try it here.
+
+Present can switch to a dark background for a dark room. On desktop, the Document QR code button keeps the code in a QR card on the page — try it here.
+
+The Share card now shares the whole document, never the heading or filter you are on. On this page: [/demo/qr code](/demo/qr%20code).
+
+## Give the chatroom the full width
+
+On desktop, you can now drag the divider below 120px, and the table of contents turns into a 32px tick rail. The docked chatroom then spans the full width — try it here.
+
+On desktop, you can now drag the top edge of the docked chatroom down to close it — try it here.
+
+On desktop, the heading chat button now shows while you hover anywhere in its section — try it here. On this page: [/demo/docked chatroom](/demo/docked%20chatroom).
+
+## Voice notes you hold to record
+
+You can now record a voice note on a phone by holding the mic. Slide up to lock, slide left to cancel, and let go to send — needs an account.
+
+Chat audio now plays with seek, at 1×, 1.5× or 2× speed. A new voice note shows its waveform and length before you press play. Post one to hear it — needs an account.
+
+On this page: [/demo/voice note](/demo/voice%20note).
+
+## A calmer, clearer page
+
+Cards, dialogs, menus and phone sheets now share one look. Every confirmation uses one dialog, with Cancel first.
+
+Headings in a block now follow one size scale, from 24pt down to 14pt. Loading screens now match the page they turn into, so nothing jumps when content arrives.
+
+On desktop, menus now open from the keyboard. On a focused table of contents row, `Shift+F10` or the Menu key opens its menu — try it here.
+
+On this page: [/demo/rank](/demo/rank).
+
+## Your documents on every device
+
+You can now see the documents you own and the ones you joined in one list. Favorite the ones you own to keep them at the top, and sort by Last opened — needs an account.
+
+A setting you save now shows in every open tab, and on every device where you are signed in — needs an account.
+
+Home now has an Install app button. Share a Word or Markdown file into the installed app, and it becomes a new document you own — needs an account.
+
+On this page: [/demo/documents list](/demo/documents%20list).
+
+## Safer by default
+
+A private document's chatroom now opens only for its owner. Files in Trash are no longer served, and server errors no longer show database text.
+
+Chat messages and channels now accept changes only from the people allowed to make them. This release closes 33 security issues.
+
+## In numbers
+
+- 559 commits in 43 days
+- 136 issues closed, with 71 bugs and 33 security fixes
+- 1,216 tests pass
+- 5 extensions at 2.1.0
+
+Read every change in the [GitHub Release](https://github.com/docs-plus/docs.plus/releases/tag/v2.1.0) and the [CHANGELOG](https://github.com/docs-plus/docs.plus/blob/main/CHANGELOG.md).
 
 Filtered to this section? [Show the whole document](/demo).
