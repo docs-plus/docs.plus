@@ -30,7 +30,7 @@ The saved workflow `.claude/workflows/release-product.js` drives the agents. Run
    }
    ```
 
-3. **Main loop.** The workflow cannot use the Artifact tool or the browser, so the main loop builds the banner and runs the browser checks (§Banner, §Demo page).
+3. **Main loop.** The workflow cannot use the Artifact tool or the browser, so the main loop builds the banner and runs the browser checks (sections 5, Demo page, and 6, Banner).
 4. **Hand over.** Leave every change uncommitted. The maintainer reviews by hand, then runs §Ship.
 
 ## Rulings to ask every release

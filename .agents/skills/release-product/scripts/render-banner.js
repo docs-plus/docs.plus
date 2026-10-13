@@ -5,14 +5,18 @@
 const fs = require('fs')
 
 const [src, logoPath, out] = process.argv.slice(2)
-if (!src || !logoPath || !out) throw new Error('usage: render-banner.js <artboard.dc.html> <logo.svg> <out.html>')
+if (!src || !logoPath || !out)
+  throw new Error('usage: render-banner.js <artboard.dc.html> <logo.svg> <out.html>')
 
 const html = fs.readFileSync(src, 'utf8')
 const script = html.match(/<script type="text\/x-dc" data-dc-script[^>]*>([\s\S]*?)<\/script>/)[1]
-const vals = new Function(`class DCLogic {}; ${script}; return new Component().renderVals.call({ props: {} })`)()
+const vals = new Function(
+  `class DCLogic {}; ${script}; return new Component().renderVals.call({ props: {} })`
+)()
 const tpl = html.match(/<x-dc>([\s\S]*?)<\/x-dc>/)[1].replace(/<helmet>[\s\S]*?<\/helmet>/, '')
 
-const look = (scope, path) => path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), scope)
+const look = (scope, path) =>
+  path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), scope)
 const holes = (s, scope) =>
   s.replace(/\{\{([\w.]+)\}\}/g, (_, p) => {
     const v = look(scope, p)
@@ -29,7 +33,7 @@ function render(s, scope) {
   re.lastIndex = bodyStart
   let depth = 1
   let end = bodyStart
-  for (let t; (t = re.exec(s)); ) {
+  for (let t; (t = re.exec(s));) {
     depth += t[0].startsWith('</') ? -1 : 1
     if (!depth) {
       end = t.index
@@ -42,7 +46,9 @@ function render(s, scope) {
   const ref = (a) => look(scope, a.replace(/^\{\{|\}\}$/g, ''))
   let mid = ''
   if (tag === 'sc-for') {
-    mid = (ref(attr('list')) || []).map((item) => render(body, { ...scope, [attr('as')]: item })).join('')
+    mid = (ref(attr('list')) || [])
+      .map((item) => render(body, { ...scope, [attr('as')]: item }))
+      .join('')
   } else if (ref(attr('value'))) {
     mid = render(body, scope)
   }
@@ -51,7 +57,10 @@ function render(s, scope) {
 
 const logo = fs
   .readFileSync(logoPath, 'utf8')
-  .replace(/<svg width="\d+" height="\d+"/, '<svg width="52" height="52" role="img" aria-label="docs.plus logo" style="display: block"')
+  .replace(
+    /<svg width="\d+" height="\d+"/,
+    '<svg width="52" height="52" role="img" aria-label="docs.plus logo" style="display: block"'
+  )
 const body = render(tpl, vals)
   .trim()
   .replace(/<img src="\/_blob\/[0-9a-f]+"[^>]*>/, logo.trim())
