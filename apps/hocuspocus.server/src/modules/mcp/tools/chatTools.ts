@@ -87,30 +87,17 @@ export const registerChatTools = (
         (await chat.listRooms(doc.documentId)).map((room) => [room.sectionId, room])
       )
       // Outline order; a room with no live heading is left out.
-      const rooms = flattenOutline(buildOutline(content)).flatMap((heading) => {
+      const lines = flattenOutline(buildOutline(content)).flatMap((heading) => {
         const room = heading.id ? found.get(heading.id) : undefined
         return room
           ? [
-              {
-                section_id: room.sectionId,
-                title: heading.title,
-                level: heading.level,
-                message_count: room.messageCount,
-                last_activity_at: room.lastActivityAt
-              }
+              `- ${heading.title || '(untitled)'} [section_id: ${room.sectionId}, level ${heading.level}, ${room.messageCount} message(s)${room.lastActivityAt ? `, last active ${room.lastActivityAt}` : ''}]`
             ]
           : []
       })
       const text =
-        rooms.length > 0
-          ? rooms
-              .map(
-                (room) =>
-                  `- ${room.title || '(untitled)'} [section_id: ${room.section_id}, level ${room.level}, ${room.message_count} message(s)${room.last_activity_at ? `, last active ${room.last_activity_at}` : ''}]`
-              )
-              .join('\n')
-          : 'No heading in this document has a chat room yet.'
-      return reply(frameChatText(doc.slug, text), { slug: doc.slug, rooms })
+        lines.length > 0 ? lines.join('\n') : 'No heading in this document has a chat room yet.'
+      return reply(frameChatText(doc.slug, text))
     })
   )
 
@@ -165,14 +152,7 @@ export const registerChatTools = (
         ].filter(Boolean)
         // The notes are docs.plus's own guidance, so they sit outside the data frame.
         const text = `section_id: ${sectionId}\n\n${frameChatText(doc.slug, body)}${notes.length > 0 ? `\n\n${notes.join('\n')}` : ''}`
-        return reply(text, {
-          slug: doc.slug,
-          section_id: sectionId,
-          // Message text stays in the framed text block, never unframed here.
-          returned_count: shown.length,
-          truncated,
-          before_seq: nextBeforeSeq
-        })
+        return reply(text)
       }
     )
   )

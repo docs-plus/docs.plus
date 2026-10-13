@@ -10,6 +10,22 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ## [Unreleased]
 
+### Fixed
+
+- **Claude Code now reads document and chat text through the MCP connector ([#456](https://github.com/docs-plus/docs.plus/issues/456)).**
+  When a result has both a text block and `structuredContent`, Claude Code
+  shows the model only `structuredContent`. `read_document` and
+  `read_chat_thread` kept their text in the text block, so the model saw
+  metadata and no text. The five read tools now return text only.
+
+### Security
+
+- **MCP titles now stay inside the data frame ([#457](https://github.com/docs-plus/docs.plus/issues/457)).**
+  This closes the known gap that 2.1.0 shipped with. `find_documents` frames
+  its title list. `get_outline` and `list_chat_rooms` no longer repeat heading
+  titles unframed in `structuredContent`. Each `get_outline` line now shows
+  the heading level, which only `structuredContent` gave before.
+
 ## [2.1.0] — 2026-10-13
 
 The webapp and hocuspocus share `2.1.0`. Admin stays `1.0.0`. This package is private and is not published to npm.

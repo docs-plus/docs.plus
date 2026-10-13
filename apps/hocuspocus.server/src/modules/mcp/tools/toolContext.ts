@@ -5,6 +5,8 @@ import { decideDocumentAccess, type DocumentAccess } from '../../../lib/document
 import { findDocumentBySlug } from '../infra/documentStore'
 import type { Caller, ServerFactoryDeps, ToolContext, ToolOutcome } from '../types'
 
+// A result that carries text people wrote passes no structuredContent: some hosts then show
+// the model only structuredContent, so the text and its data frame would never reach it.
 export const reply = (
   text: string,
   structuredContent?: Record<string, unknown>

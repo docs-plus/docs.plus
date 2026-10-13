@@ -58,7 +58,7 @@ The metadata sits under `/api/mcp`, not at the site root, because only `/api` an
 
 The server has 10 tools. Every tool except `find_documents` and `create_document` takes a document `slug`. Each tool runs as the signed-in person and checks access first. Reads follow the normal access rule. Writes and chat posts work only in documents the person owns.
 
-A result carries text and `structuredContent`, with snake_case keys. Document and chat text is framed as data that people wrote, not instructions. The hints follow OpenAI's definitions. Read tools set `readOnlyHint: true`, `destructiveHint: false` and `openWorldHint: false`. Write tools set `openWorldHint: true`, because documents are public by default and a write publishes.
+A result carries text. `find_documents`, `get_outline`, `read_document`, `list_chat_rooms` and `read_chat_thread` return text only, because some hosts show the model only `structuredContent` when both are present. Other results also carry `structuredContent`, with snake_case keys. Document and chat text is framed as data that people wrote, not instructions. The hints follow OpenAI's definitions. Read tools set `readOnlyHint: true`, `destructiveHint: false` and `openWorldHint: false`. Write tools set `openWorldHint: true`, because documents are public by default and a write publishes.
 
 | Tool                 | Hints                       | What it does                                                                    | Inputs                                                                  |
 | -------------------- | --------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
