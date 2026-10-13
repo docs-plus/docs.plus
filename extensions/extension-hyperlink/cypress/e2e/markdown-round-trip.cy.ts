@@ -116,9 +116,7 @@ describe('Markdown import/export — hyperlink mark', () => {
 
   describe('markdown input rule (typing)', () => {
     it('canonicalizes [email](user@example.com) typed inline', () => {
-      cy.getEditor().then((editor) => {
-        editor.commands.focus()
-      })
+      cy.focusEditor()
       cy.realType('[Write us](user@example.com) ')
       cy.get('#editor a[href="mailto:user@example.com"]').should('exist')
     })

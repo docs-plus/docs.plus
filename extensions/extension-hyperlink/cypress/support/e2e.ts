@@ -4,7 +4,7 @@
 // made Cypress 15's JIT loader silently skip the extensionless imports.
 
 import type * as HyperlinkModule from '@docs.plus/extension-hyperlink'
-import type { Editor } from '@tiptap/core'
+import type { Editor, FocusPosition } from '@tiptap/core'
 import type { Node as PMNode } from '@tiptap/pm/model'
 
 import 'cypress-real-events'
@@ -40,6 +40,7 @@ declare global {
     interface Chainable {
       visitPlayground(options?: VisitPlaygroundOptions): Chainable<void>
       getEditor(): Chainable<Editor>
+      focusEditor(position?: FocusPosition): Chainable<void>
       selectText(text: string): Chainable<void>
       setEditorContent(html: string): Chainable<void>
       editorFirstLinkHref(): Chainable<string>
@@ -73,6 +74,15 @@ Cypress.Commands.add('visitPlayground', (options: VisitPlaygroundOptions = {}) =
 
 Cypress.Commands.add('getEditor', () => {
   return cy.window().its('_editor')
+})
+
+// Tiptap focuses in the next animation frame, so a real key sent before that goes to the
+// page. Every realType or realPress must start from here, not from editor.commands.focus().
+Cypress.Commands.add('focusEditor', (position?: FocusPosition) => {
+  cy.getEditor().then((editor) => {
+    editor.commands.focus(position)
+  })
+  cy.get('#editor [contenteditable="true"]').should('have.focus')
 })
 
 Cypress.Commands.add('selectText', (text: string) => {

@@ -38,9 +38,7 @@ describe('undo / redo — autolink and popover actions', () => {
 
     // The undone mark must not linger in storedMarks: the next typed
     // character lands as plain text, not as a resurrected link.
-    cy.getEditor().then((editor) => {
-      editor.commands.focus('end')
-    })
+    cy.focusEditor('end')
     cy.realType('x')
     cy.get('#editor a').should('not.exist')
     cy.get('#editor p').invoke('text').should('contain', 'google.comx')

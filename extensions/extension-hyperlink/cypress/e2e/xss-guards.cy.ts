@@ -66,9 +66,7 @@ describe('XSS guards — dangerous URL schemes blocked at every entry point', ()
     DANGEROUS.forEach((href) => {
       it(`rejects [text](${href}) typed inline`, () => {
         cy.setEditorContent('<p></p>')
-        cy.getEditor().then((editor) => {
-          editor.commands.focus()
-        })
+        cy.focusEditor()
         cy.realType(`[click me](${href}) `)
         cy.get('#editor a').should('not.exist')
       })
@@ -78,9 +76,7 @@ describe('XSS guards — dangerous URL schemes blocked at every entry point', ()
     // rejections above exercise the href gate rather than a silent no-op.
     it('linkifies [text](https://example.com) typed inline', () => {
       cy.setEditorContent('<p></p>')
-      cy.getEditor().then((editor) => {
-        editor.commands.focus()
-      })
+      cy.focusEditor()
       cy.realType('[click me](https://example.com) ')
       cy.get('#editor a').should('have.attr', 'href', 'https://example.com')
     })

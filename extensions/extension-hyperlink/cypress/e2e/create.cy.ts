@@ -190,9 +190,7 @@ describe('createHyperlinkPopover — collapsed caret', () => {
   beforeEach(() => {
     cy.visitPlayground()
     cy.setEditorContent('<p>Nothing is selected here.</p>')
-    cy.getEditor().then((editor) => {
-      editor.commands.focus('end')
-    })
+    cy.focusEditor('end')
   })
 
   it('inserts the typed URL as the link text when nothing is selected', () => {

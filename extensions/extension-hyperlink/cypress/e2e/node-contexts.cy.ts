@@ -53,8 +53,14 @@ describe('node contexts — codeBlock, heading, listItem, Enter split', () => {
 
   it('the link mark does not continue past Enter (keepOnSplit: false)', () => {
     cy.setEditorContent('<p><a href="https://example.com">link</a></p>')
+    cy.focusEditor('end')
+    // The mark is not inclusive, so the caret at the link end carries nothing to split.
+    // Seed it as a stored mark; only keepOnSplit then decides whether Enter keeps it.
     cy.getEditor().then((editor) => {
-      editor.commands.focus('end')
+      const { state, schema } = editor
+      editor.view.dispatch(
+        state.tr.addStoredMark(schema.marks.hyperlink.create({ href: 'https://example.com' }))
+      )
     })
     // Keymap handlers fire from a synthetic keydown (ProseMirror handles
     // the event itself); the split happens before the typed char lands.

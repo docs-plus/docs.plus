@@ -9,18 +9,19 @@ const LINK = `<a href="${HREF}">${HREF}</a>`
 
 // Positions come from the doc, because paragraph, heading and list depths differ.
 const typeAtLinkEdge = (edge: 'start' | 'end', text: string): void => {
-  cy.getEditor().then((editor) => {
-    let pos: number | undefined
-    editor.state.doc.descendants((node, nodePos) => {
-      if (pos !== undefined) return false
-      if (node.isText && node.marks.some((mark) => mark.type.name === 'hyperlink')) {
-        pos = edge === 'start' ? nodePos : nodePos + node.nodeSize
-      }
+  cy.getEditor()
+    .then((editor) => {
+      let pos: number | undefined
+      editor.state.doc.descendants((node, nodePos) => {
+        if (pos !== undefined) return false
+        if (node.isText && node.marks.some((mark) => mark.type.name === 'hyperlink')) {
+          pos = edge === 'start' ? nodePos : nodePos + node.nodeSize
+        }
+      })
+      if (pos === undefined) throw new Error('typeAtLinkEdge: no hyperlink text node')
+      return pos
     })
-    expect(pos, 'hyperlink text node').to.be.a('number')
-    editor.commands.focus(pos)
-  })
-  cy.get('#editor [contenteditable="true"]').should('have.focus')
+    .then((pos) => cy.focusEditor(pos))
   cy.realType(text)
 }
 
