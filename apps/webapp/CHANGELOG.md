@@ -16,6 +16,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-10-13
+
+This entry holds the pad UI notes for this package. The highlights of the
+release and the self-hosting steps are in the
+[root CHANGELOG](../../CHANGELOG.md).
+
 ### Added
 
 - **A QR code for the pad from the desktop toolbar.** A new toolbar toggle,
@@ -25,13 +31,13 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   while Find is open. Hover the card to show a resize handle on its
   bottom-left corner. Drag it to size the code from 128px to 1024px, or less
   when docked chat or Find needs the room. The white margin stays thin at
-  every size. A click on the handle switches
-  between 128px and the largest size that fits. The arrow keys, Home and End
-  work too, and hiding the card sets it back to 128px (#465). A Private pad
-  shows no QR, and the toggle is off there. The card always shows while the
-  toggle is on; on a narrow window it may cover the page's right margin.
-  Nothing is saved: a reload or another pad hides it. The other choices are
-  agent defaults that wait for the maintainer's review (#377).
+  every size. A click on the handle switches between 128px and the largest
+  size that fits. The arrow keys, Home and End work too. Hiding the card sets
+  it back to 128px. A Private pad shows no QR, and the toggle is off there.
+  The card always shows while the toggle is on. On a narrow window, it may
+  cover the page's right margin. Nothing is saved: a reload or another pad
+  hides it ([#377](https://github.com/docs-plus/docs.plus/issues/377),
+  [#465](https://github.com/docs-plus/docs.plus/issues/465)).
 
 - **Settings sync across your tabs and devices.** A setting you save shows in
   every open tab and on every device where you are signed in. A field you are
@@ -69,9 +75,9 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   it fails, every row shows **Unverified app**, and **Disconnect** stays.
   The card hides while the list loads or is empty.
 - **The Connected apps tab opens with the docs.plus MCP server.** One short
-  card shows the MCP mark, a live status (Online, Unreachable, or You're
-  offline), a **Setup guide** link, and one row of chips for what a
-  connected AI app may do (read, create, edit and chat). The status only
+  card shows the MCP mark and a live status: Online, Unreachable, or You're
+  offline. It also has a **Setup guide** link. One row of chips shows what a
+  connected AI app may do: read, create, edit and chat. The status only
   proves this browser reached the MCP service. The service worker never
   answers that check from its cache. **Apps with access** follows, then
   **Add an AI app**.
@@ -89,8 +95,9 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   card has no tabs: it shows the MCP server URL and says to add apps on a
   computer.
 - A title such as "Privacy" or "Terms" no longer opens a document on the
-  homepage; `privacy`, `terms`, `oauth` and `c` are reserved slugs now, like
-  `editor` and `new`.
+  homepage. `privacy`, `terms`, `oauth`, `c` and `receive` are now reserved
+  slugs, like `editor` and `new`. The `/oauth` and `/receive` routes are new,
+  so a document that used either slug no longer opens.
 - A primary `CopyButton` turns green when the copy succeeds. Before, it put
   green text on a blue button.
 - **A transparent 96 px site icon.** Claude draws a connector's icon from
@@ -99,7 +106,7 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   and the page links it. `icon-192x192.png` is the same logo, kept as the
   file to upload in connector dialogs. Google refreshes its copy only after
   it crawls docs.plus again.
-- **Settings › Security shows how you sign in and which apps have access.**
+- **Settings → Security shows how you sign in and which apps have access.**
   **How you sign in** lists Google, Email link or both, from the account's
   identities, and says "docs.plus does not use passwords. Sign in with Google
   or an email link." **Apps with access** says how many AI apps can use the
@@ -114,8 +121,13 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   count fetch returns `null`, not `0`, so an error never clears the badge.
   Sign-out clears it.
 - **iOS launch splash screens** for the installed app, linked by device size.
-- **Home shows recent documents and an Install app button.** A signed-in
-  owner sees up to 8 documents by Last opened, with See all into Settings.
+- **Home shows your documents and an Install app button.** A signed-in person
+  sees the first 8 rows of the list in Settings → Documents. The list holds
+  documents you own and documents you joined. Home and Settings share the Show and sort
+  picks. Rows have avatars, the ⋮ menu, date groups, and Delete with Undo.
+  With more than 8 rows, **See all** opens Settings → Documents. On a phone,
+  Rename opens a dialog. **Install app** shows when the browser can install
+  docs.plus.
 - **The status chip warns "No offline copy"** when the browser stops saving
   the local copy of the pad.
 
@@ -191,12 +203,57 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   link judged unavailable. `loadingHistory` stays true during the walk, and
   `resetHistorySessionForMount` cancels it.
 
-- **Settings › Documents lists the documents you joined.** One list shows
+- **Settings → Documents lists the documents you joined.** One list shows
   the documents you own and the ones you opened while signed in. A **Show**
   menu beside the sort picks All documents, Owned by me or Joined, and the
   browser tab keeps your pick. A document you do not own shows its owner's
   name. Its ⋮ menu offers only Open in new tab and Copy link. Joined has its
-  own empty state. Home and Command jump still list only your own documents.
+  own empty state. Command jump still lists only your own documents.
+
+- **Find text in the open pad.** On a computer, ⌘F (Ctrl+F) opens a small
+  Find bar at the top right of the editor column. The page does not move when
+  Find opens. Enter or ⌘G steps to the next match. Shift+Enter or Shift+⌘G
+  steps back. Escape closes the bar. On a phone, Find is in the outline
+  drawer ([#393](https://github.com/docs-plus/docs.plus/issues/393)).
+
+- **A slash menu inserts a block.** Type `/` on an empty line, then type to
+  filter the list. It offers Heading 1 to 6, Subtitle, Normal, Bullet list,
+  Ordered list, Task list, Blockquote, Code block, Picture and Link to a
+  section. It opens only when the `/` text fills the whole line, so a `/` in a
+  path stays text. It never opens in the title, in a code block or in a locked
+  pad. On a phone, the list opens as a bottom sheet
+  ([#251](https://github.com/docs-plus/docs.plus/issues/251)).
+
+- **Command jump opens a place or one of your documents.** Press ⌘⇧K
+  (Ctrl+Shift+K) on Home or in a pad, and press it again to close. Type to
+  filter, then press Enter. The places depend on the page. They include
+  History, the Settings tabs, Filter, Find in document, Notifications, New
+  document and Demo. A signed-in person also sees the documents they own, by
+  Last opened. Command jump never lists a document you only joined
+  ([#254](https://github.com/docs-plus/docs.plus/issues/254)).
+
+- **Share a file to docs.plus from the system share sheet.** The installed
+  app takes Word (.docx), Markdown (.md, .markdown) and plain text (.txt)
+  files. The file opens as a new document that you own. A signed-out person
+  signs in first, and then the file opens. The `/receive` page shows the
+  import, and it can offer Try again when the import fails. Chat Share now
+  uses the system share sheet where the device has one.
+
+- **Export asks where to save the file.** In a browser with a save picker,
+  such as Chrome on a computer, Export opens it with a suggested file name.
+  Cancel in the picker stops the export. On iOS, Export opens the share sheet.
+  Other browsers download the file as before.
+
+- **The pad has a skip link, and sheets hold the keyboard focus.** A **Skip to
+  main content** button is the first Tab stop on a pad. It moves focus to the
+  editor area. Most bottom sheets, and the outline and history drawers, are
+  now named dialogs. Escape closes them, and focus returns to the control
+  that opened them.
+
+- **Settings has a Report a problem row on a pad.** The row sits in the Open
+  source group, after Report an issue. It shows only on a pad. It opens an
+  email to the published contact address with the pad link. The email carries
+  no document text, title or profile data.
 
 ### Changed
 
@@ -206,26 +263,21 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   and stores mail data in the United States. It says that the mail carries
   short extracts of document and chat text, and it names the transfer
   safeguards. Resend keeps sent mail and the mail logs for 30 days.
-  `LEGAL_UPDATED` is now 12 October 2026 (#424, [#425](https://github.com/docs-plus/docs.plus/issues/425)).
-- **Find floats at the top right of the page, like Google Docs.** On a
-  desktop, ⌘F (Ctrl+F) opens a small Find bar over the editor column. The
-  toolbar no longer has a Find button, and the page never moves when Find
-  opens. ⌘G and Shift+⌘G step through matches, and Escape closes the bar. On a
-  phone, Find stays in the outline drawer (#393).
+  `LEGAL_UPDATED` is now 12 October 2026 ([#424](https://github.com/docs-plus/docs.plus/issues/424), [#425](https://github.com/docs-plus/docs.plus/issues/425)).
 - **Every click menu now works like the right-click menus.** The Documents ⋮
-  menu in Settings and on Home groups its rows as Open in new tab, Copy link |
-  Rename, Duplicate, Favorite | Private, Read-only | Delete. Private and
-  Read-only are check rows inside the menu. The image viewer's ⋯ menu, the
-  toolbar list menus and the media toolbar ⋯ use the same rows, with arrow
-  keys, Escape and a visible keyboard focus ring. On a phone, these menus open
-  the standard bottom sheet. Toolbar overflow buttons show ⋯, and row menus
-  show ⋮ (#391).
+  menu in Settings and on Home has four groups. They are Open in new tab and
+  Copy link; Rename, Duplicate and Favorite; Private and Read-only; and Delete.
+  Private and Read-only are check rows inside the menu. The image viewer's ⋯
+  menu, the toolbar list menus and the media toolbar ⋯ use the same menu rows.
+  They take arrow keys and Escape, and show a visible keyboard focus ring. On
+  a phone, these menus open the standard bottom sheet. Toolbar overflow
+  buttons show ⋯, and row menus show ⋮ ([#391](https://github.com/docs-plus/docs.plus/issues/391)).
 
 - **The heading chat button shows while the pointer is over its section.** On
   a desktop, the button shows anywhere over the heading and the blocks under
   it. A block under a nested heading shows only that heading's button. The
   button leaves when the pointer leaves the section or the document sheet
-  (#372).
+  ([#372](https://github.com/docs-plus/docs.plus/issues/372)).
 - **One order for the chat message menus.** The hover ⋯ menu now lists Copy
   link, Download, Copy to doc, Edit and Delete in the same order as the
   right-click menu. Screen readers no longer read the "seen" footer as a
@@ -237,20 +289,14 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   menus "Section options" and "Message options". In the outline menu, Delete
   section loses its info icon, and Chat room uses the default row colour. A
   right-click on the outline header or on empty chat space now shows the
-  browser's own menu (#391).
+  browser's own menu ([#391](https://github.com/docs-plus/docs.plus/issues/391)).
 
 - **An empty line's hint now shows only its heading chain.** It no longer ends
   with `> Write here`. Every pad hint and the Title hint use one grey, a little
   darker than before. That grey passes 4.5:1 contrast in every theme. The chat
   composer hint does not change.
 
-- **Home lists the same documents as Settings → Documents.** The Home card
-  shows pads you own and pads you joined, in one list. It has the Show and
-  sort pickers, avatars, the ⋮ menu, Date groups, and Delete with Undo. Home
-  and Settings keep the same picks. The card shows the first 8 rows and See
-  all. On a phone, Rename opens a dialog.
-
-- **Settings › Documents shows Trash only when the trash holds a document.**
+- **Settings → Documents shows Trash only when the trash holds a document.**
   When the last document leaves the trash, the list comes back.
 
 - **One Time zone field.** Each zone reads like "(UTC+03:30) Tehran", and you
@@ -269,10 +315,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   better names, roles and focus rings. Emails have readable text contrast, and
   the admin dashboard theme now matches the app.
 
-- The share card is wider and puts the QR code on the left. On hover, a light
-  blur and a fullscreen button cover the code. At rest nothing covers it, so
-  it always scans. The card no longer shows the document name. The footer line
-  says what anyone with the link can do, and the owner sees Change.
+- The share card is wider, with the new QR code on the left. Hover the code
+  to show a fullscreen button over a light blur. The card no longer shows the
+  document name. The footer line says what anyone with the link can do, and
+  the owner sees Change.
 
 - **History marks a connected app's version.** A version an MCP tool wrote
   shows a "Connected app" badge, and its writers note says the writers were
@@ -349,10 +395,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 - Editors send far fewer cursor updates. An unchanged cursor is no longer sent
   again after each remote edit, and a received cursor update is no longer
-  sent back. Both come from upstream bugs (`@tiptap/y-tiptap` #55 and
+  sent back. Both come from upstream bugs (`@tiptap/y-tiptap` [#55](https://github.com/ueberdosis/y-tiptap/issues/55) and
   `@hocuspocus/provider` 3.x).
 
-- On a phone, the Settings › Documents ⋮ menu opens the app's standard
+- On a phone, the Settings → Documents ⋮ menu opens the app's standard
   bottom sheet. Settings stays open behind it.
 - Chat toolbar buttons show the app's tooltip. The close button reads
   "Close chat".
@@ -361,17 +407,21 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- **A phone no longer offers link edits on a read-only document.** The link
+  preview sheet hides Edit link and Remove link there, as the desktop popover
+  already did. Open and Copy link stay.
+
 - **The pad loading skeleton matches the loaded pad.** The document bones stay
   inside the sheet. The outline skeleton draws thin title lines on the
   real row positions, with nest rails, instead of filled slabs. The signed-out
   header shows History and Theme bones. On a phone, the page floor keeps its
-  colour through the load (#463).
+  colour through the load ([#463](https://github.com/docs-plus/docs.plus/issues/463)).
 
 - **Chat, panels and popovers share one skeleton look.** Text bones are plain
   lines, not pills. The tab track bones show in every theme. The Filter,
   Document settings and Insert media loaders open with the real panel header,
   so the header does not move when the panel loads. The link preview loader
-  uses the house skeleton (#464).
+  uses the house skeleton ([#464](https://github.com/docs-plus/docs.plus/issues/464)).
 
 - **History, link pickers and the outline preview load in place.** The
   History sidebar and its Authors tab show bones in the real row positions.
@@ -381,7 +431,7 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   section has nothing to show. The link preview, the mobile Link sheet, the
   link suggestions and Command jump show bone rows like their loaded rows.
   An upload left unfinished by an earlier session now says so, with Remove,
-  instead of a spinner that never ends (#463, #464).
+  instead of a spinner that never ends ([#463](https://github.com/docs-plus/docs.plus/issues/463), [#464](https://github.com/docs-plus/docs.plus/issues/464)).
 
 - **Chat media and emoji keep their place while they load.** A feed image
   keeps its bone until the image has loaded, and mosaic bones have square
@@ -391,7 +441,7 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   emoji-mart picker and its data no longer load with the app shell, because
   the picker loads them in its own chunk. Comment embed previews load on the
   real line sizes and gaps, and a failed stacked preview shows the image tile
-  (#463, #464).
+  ([#463](https://github.com/docs-plus/docs.plus/issues/463), [#464](https://github.com/docs-plus/docs.plus/issues/464)).
 - **The chat loaders match the loaded chat.** Feed bones sit where the
   avatars, names and lines land, with no tinted panel. The day separator
   keeps its two hairlines. The composer skeleton draws the placeholder line,
@@ -400,7 +450,7 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   Participants show at once. The notification toggle shows a bone while it
   reads its state. A live message from another person now shows its author's
   name. A jump to a reply, a pin or the latest messages shows a spinner while
-  it loads (#464).
+  it loads ([#464](https://github.com/docs-plus/docs.plus/issues/464)).
 - **Settings loaders match the loaded settings.** The Settings skeleton shows
   the tab that will open, so the toolbar opens on Documents bones. With a
   named tab, a phone shows that tab's pane. Each section skeleton draws the
@@ -410,7 +460,7 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   the profile dialog keep their real line heights. The push and Follow
   switches show a bone while their state loads. Try again shows that it is
   busy while it reloads. The Documents list dims while it reloads, also with
-  reduced motion on (#463, #464).
+  reduced motion on ([#463](https://github.com/docs-plus/docs.plus/issues/463), [#464](https://github.com/docs-plus/docs.plus/issues/464)).
 - **Panel loaders match the loaded panels.** The Bookmarks and Notifications
   loaders keep the real body height, so the popover does not jump when the
   feed loads. Feed card bones keep the real preview frame and a slot for the
@@ -418,30 +468,30 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   you have unread notifications. A bookmark image shows a bone of the thumb
   size while its link loads, and offers a retry if the link fails. The Filter
   and Insert media loaders use the real body padding, and Insert media no
-  longer draws a drop zone (#463, #464).
+  longer draws a drop zone ([#463](https://github.com/docs-plus/docs.plus/issues/463), [#464](https://github.com/docs-plus/docs.plus/issues/464)).
 - **The phone outline drawer shows its frame while the pad loads.** Before
   the first sync, an opened drawer showed only the dimmed page. It now shows
   the header, the document title, the footer and outline bones at the phone
   row size. Find stays disabled until the editor is ready. Bookmarks no
   longer pops into the footer late for a signed-in user. On a computer, the
-  outline no longer fades in after its bones (#463).
+  outline no longer fades in after its bones ([#463](https://github.com/docs-plus/docs.plus/issues/463)).
 
 - **The pad skeleton is in the first page load again.** The page shows the
   loading skeleton before any script runs. The skeleton header and toolbar
   now match the loaded ones control for control. The loaded header, the Edit
   button and the document no longer fade in when the skeleton leaves. A
   signed-in reader no longer sees Sign in while the profile loads; the avatar
-  slot holds a round bone (#463, #464).
+  slot holds a round bone ([#463](https://github.com/docs-plus/docs.plus/issues/463), [#464](https://github.com/docs-plus/docs.plus/issues/464)).
 
 - **The Add link form takes your typing at once.** After you select text and
   press the toolbar link button, the URL field has focus, so the first letter
-  you type lands there (#366).
+  you type lands there ([#366](https://github.com/docs-plus/docs.plus/issues/366)).
 
 - Outline rows of one heading level now start their titles at the same place.
   A heading with no subheadings keeps an empty space where the fold arrow
   sits, so it no longer shifts left. This holds in the desktop outline and in
   the phone outline. The fold arrow now tells screen readers whether the
-  section is open (#373).
+  section is open ([#373](https://github.com/docs-plus/docs.plus/issues/373)).
 - **Clear formatting keeps headings, Block style and links.** It removes text
   styles only: bold, italic, underline, strike, inline code, highlight,
   superscript and subscript. With no selection it changes no text, and the
@@ -449,7 +499,7 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   into normal text, so its section, outline row and chat went away. The button
   is off when there is nothing to clear. `⌘\` (`Ctrl+\` on Windows and Linux)
   runs it too. The chat composer has the same control at the end of its
-  format bar (#392).
+  format bar ([#392](https://github.com/docs-plus/docs.plus/issues/392)).
 - The bell now counts account-wide alerts, such as a failed email delivery, in
   every document. The count updates live when one arrives.
 - On a phone, Undo and Redo are disabled when there is nothing to undo or redo.
@@ -466,15 +516,15 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   one block. Headings, subtitle, lists, tables, code and quotes keep the 0.75em
   gap.
 
-- Headings of the same level in one section always share one size. A section
-  move, a new heading, a paste, undo or a remote edit used to drop the size, so
-  the heading fell back to a fixed default.
+- Headings of the same level in one section always share one size. Before, a
+  section move, a new heading, a paste, undo or a remote edit could drop the
+  size. The heading then fell back to a fixed default.
 - Heading sizes run from 24pt to 14pt, and the document title takes no rank.
   Six levels in one section sit 2pt apart. The smallest heading is 14pt, so a
   short label heading no longer looks like 12pt body text.
 
 - A heading inside a quote or a table now uses the same 24pt to 14pt range.
-  Before, a small one there could look smaller than body text (#369).
+  Before, a small one there could look smaller than body text ([#369](https://github.com/docs-plus/docs.plus/issues/369)).
 - Backspace or Delete on an empty line between two lists of the same type
   joins them into one list. A nested Delete no longer moves the empty line into
   a list item. Lists of different types lose the line but stay apart.
@@ -579,7 +629,7 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   used to take two.
 - On a wide screen, small dropdowns, such as the documents sort, are 32px
   tall. The small size was never built, so they showed at full size.
-- Grid previews in Settings › Documents keep their 4:3 shape. A long first
+- Grid previews in Settings → Documents keep their 4:3 shape. A long first
   page no longer stretches the band.
 - In a segmented control, such as the list and grid toggle, the selected
   segment shows its whole border.

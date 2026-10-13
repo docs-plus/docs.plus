@@ -10,6 +10,32 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-10-13
+
+The webapp and hocuspocus share `2.1.0`. Admin stays `1.0.0`. This package is private and is not published to npm.
+
+This minor release is a SemVer exception. Its Breaking items touch only self-hoster config and API routes, while the `2.x` pad product line is unchanged ([RELEASE_POLICY.md Status](../../RELEASE_POLICY.md#status)).
+
+### Highlights
+
+- **MCP connector at `/api/mcp` ([#388](https://github.com/docs-plus/docs.plus/issues/388), [#389](https://github.com/docs-plus/docs.plus/issues/389)).**
+  A person connects Claude or ChatGPT and signs in through the Supabase OAuth
+  server. Ten tools find, read, create and edit documents, and read and post
+  chat.
+- **Email names its provider ([#419](https://github.com/docs-plus/docs.plus/issues/419)).**
+  `EMAIL_PROVIDER` picks `resend` or `smtp`. The admin Email setup page shows
+  the status, each problem and a test send. A Resend webhook records bounces
+  and complaints.
+- **Content-change notifications.** A save notifies the document's
+  followers. The change digest mail shows what changed under each heading.
+  `GET /api/documents/:documentId/changes` serves the same comparison.
+- **A Private document's chat opens only for its owner ([#396](https://github.com/docs-plus/docs.plus/issues/396)).**
+  `public.document_access` copies the Private flag and the owner into
+  Supabase. Chat reads and writes check it.
+- **Last left.** The server records when each signed-in reader last read a
+  document. A change notice skips a person who still has the document open
+  in a visible tab.
+
 ### Breaking
 
 - **Email needs an explicit provider ([#419](https://github.com/docs-plus/docs.plus/issues/419)).** To send mail, set
@@ -30,34 +56,130 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Migration
 
-**Supabase migrations.** Run one `db push` before this server ships. It
-applies `20261009115900_scope_heading_channels`, the four migrations
-`20261009120000` to `20261009120300`, and `20261009120400_admin_revoke_admin`.
-Hold two migrations out of that push.
-`20261009120500_hide_user_presence_columns` waits at least 24 hours after the
-apps ship; see User status columns.
-`20261009130100_narrow_channel_insert_grant` waits until the new webapp is
-live ([#402](https://github.com/docs-plus/docs.plus/issues/402)). `db push`
-sends every pending file, so move these two files out of `migrations/` first.
-Restore them after the push. Push the two together, once both conditions hold.
+Follow these steps in order to upgrade from `2.0.1`. Each step names the
+installs it is for. A **scripts install** was built from
+`packages/supabase/scripts/`, as
+[install step 2](../../docs/self-hosting/install.md#2-prepare-supabase) says.
+It has no migration history. A **migration-history install** applies Supabase
+migrations with `supabase db push`, as docs.plus production does. The details
+for each step follow the list.
+
+1. **Back up** (every install). See
+   [Back up your data](../../docs/self-hosting/README.md#back-up-your-data).
+   Migrations only go forward.
+2. **Read today's email provider** (every install). On the old server, read
+   `provider` from `GET /api/email/health`. The new route no longer returns
+   it, and step 3 needs it. See Email health.
+3. **Edit the host env file** (every install). Set `EMAIL_PROVIDER`,
+   `EMAIL_FROM` and `EMAIL_UNSUBSCRIBE_SECRET`, as Email provider shows. The
+   new optional keys are `MCP_AUTH_ISSUER`, `RESEND_WEBHOOK_SECRET` and
+   `POSTGRES_EXPORTER_DSN`. If `TRAEFIK_CONFIG_DIR` is not set yet, set it, as
+   [install step 4](../../docs/self-hosting/install.md#4-point-your-domains-at-the-server)
+   says. To see every key change, diff `.env.example` between the two tags.
+4. **Apply the Supabase migrations, except the two held ones** (every
+   install). Apply the 26 step 4 files in the table below, in timestamp
+   order. Do this before the new server starts.
+   - Scripts install: apply each file by hand in the Supabase SQL editor, as
+     [install](../../docs/self-hosting/install.md#upgrade-to-a-new-release)
+     upgrade items 6 and 7 say. Do not run `supabase db push`.
+   - Migration-history install: `db push` sends every pending file. So move
+     the two held files out of `migrations/` first. Run one `db push`, then
+     put the two files back.
+   - Before `20260928120000_refuse_connected_app_tokens`, check that the
+     `authenticator` role has no other `pgrst.db_pre_request`, as
+     [configuration](../../docs/self-hosting/configuration.md#turn-on-the-mcp-connector)
+     says.
+5. **Deploy** (every install). Build the images and run the database
+   migration, as install upgrade items 8 and 9 say. That applies three new
+   Prisma migrations: Favorites, the grid preview and Last opened. Then restart
+   the apps, as item 10 says. In a rolling deploy, start `hocuspocus-worker`,
+   then `hocuspocus-server`, then `rest-api`, and the webapp last.
+6. **Run the `document_access` backfill** (every install). Run it right after
+   the deploy. Until it runs, the chat of each existing Private document stays
+   open. Run it as a dry run first, then with `--apply`. At the repository
+   root:
+
+   ```bash
+   docker compose -f docker-compose.prod.yml --env-file .env.production exec -w /app/apps/hocuspocus.server hocuspocus-worker bun scripts/backfill-document-access.ts
+   docker compose -f docker-compose.prod.yml --env-file .env.production exec -w /app/apps/hocuspocus.server hocuspocus-worker bun scripts/backfill-document-access.ts --apply
+   ```
+
+   The dry run lists each Private document and its owner. `--apply` writes
+   the rows, and a second run is safe.
+
+7. **Check the admin revoke grant** (every install). See Admin revoke.
+8. **Set existing media objects private** (installs that store media in S3).
+   See Media objects.
+9. **Move push gateway probes** (installs that polled `GET /health/push`). See
+   Push gateway status.
+10. **Turn on the password sign-in hook** (every install). The migration
+    `20260928130000_reject_password_sign_in_hook` adds the function. Turn the
+    hook on in the Supabase dashboard, as
+    [Turn off password sign-in](../../docs/self-hosting/configuration.md#turn-off-password-sign-in)
+    says. Keep **Confirm email** on. With it off, a new person's first
+    email-link sign-in fails.
+11. **Apply the two held migrations** (every install). Wait until the new
+    webapp is live and at least 24 hours have passed since the apps shipped.
+    Then apply `20261009120500_hide_user_presence_columns` and
+    `20261009130100_narrow_channel_insert_grant` together. A scripts install
+    applies them by hand. A migration-history install runs one `db push`. Then
+    run the checks in User status columns.
+
+**The 28 new Supabase migrations**, in timestamp order:
+
+| Migration                                                       | Step      |
+| --------------------------------------------------------------- | --------- |
+| `20260904100000_add_content_change_enum_value`                  | 4         |
+| `20260904100100_add_document_content_change_carrier`            | 4         |
+| `20260904160000_force_digest_for_content_change`                | 4         |
+| `20260904180000_add_action_url_to_notifications_summary`        | 4         |
+| `20260907153621_add_workspace_member_last_connection_closed_at` | 4         |
+| `20260907175946_email_footer_preferences_hash_link`             | 4         |
+| `20260908093000_notify_document_title_change`                   | 4         |
+| `20260908132041_move_unsubscribe_signing_to_node`               | 4         |
+| `20260921120000_chat_mention_token_rule`                        | 4         |
+| `20260922120000_system_alert_settings_hash_link`                | 4         |
+| `20260928120000_refuse_connected_app_tokens`                    | 4         |
+| `20260928130000_reject_password_sign_in_hook`                   | 4         |
+| `20260930120000_private_notification_preferences`               | 4         |
+| `20260930120100_drop_push_subscriptions_from_realtime`          | 4         |
+| `20261001120000_bell_account_wide_system_alerts`                | 4         |
+| `20261006120000_push_online_at_and_preference_checks`           | 4         |
+| `20261006130000_close_client_write_and_grant_gaps`              | 4         |
+| `20261008120000_lock_message_write_columns`                     | 4         |
+| `20261008130000_private_document_chat_gate`                     | 4         |
+| `20261008140000_port_prod_grant_rls_fix`                        | 4         |
+| `20261009115900_scope_heading_channels`                         | 4         |
+| `20261009120000_clear_deleted_message_text`                     | 4         |
+| `20261009120100_chat_media_read_live_reference`                 | 4         |
+| `20261009120200_avatar_buckets_drop_svg`                        | 4         |
+| `20261009120300_resolve_mentions_by_user_id`                    | 4         |
+| `20261009120400_admin_revoke_admin`                             | 4         |
+| `20261009120500_hide_user_presence_columns`                     | 11 (held) |
+| `20261009130100_narrow_channel_insert_grant`                    | 11 (held) |
+
+`20261009120500` waits at least 24 hours after the apps ship; see User status
+columns. `20261009130100` waits until the new webapp is live
+([#402](https://github.com/docs-plus/docs.plus/issues/402)), because an old
+tab sends `id` and the narrowed grant refuses that insert.
 
 **Email health ([#423](https://github.com/docs-plus/docs.plus/issues/423)).** Before:
 `{ smtp_configured, provider, queue_connected, pending_jobs, failed_jobs, sent_last_hour }`.
 After: `{ status, queue_connected }`. Read the provider and the pending count
 on `GET /api/admin/email/setup` with an admin token. Read today's `provider`
 from `GET /api/email/health` before you deploy, because the Email provider
-step below needs it.
+step needs it.
 
 **Admin revoke ([#412](https://github.com/docs-plus/docs.plus/issues/412)).** Without
 `20261009120400_admin_revoke_admin`, every admin revoke answers `500`. After
-the push, check that only `service_role` can run
+step 4, check that only `service_role` can run
 `public.admin_revoke_admin(uuid)`.
 
 **User status columns ([#434](https://github.com/docs-plus/docs.plus/issues/434)).** Ship the
 webapp, this server and the admin dashboard first. Wait at least 24 hours,
-then push the Supabase migration `20261009120500_hide_user_presence_columns`
-in the later push that Supabase migrations names. An older webapp tab still
-selects `status`, so an early migration breaks its sign-in and its heartbeat. After the push, check that
+then apply the Supabase migration `20261009120500_hide_user_presence_columns`
+in step 11. An older webapp tab still selects `status`, so an early migration
+breaks its sign-in and its heartbeat. After step 11, check that
 `has_column_privilege` is false for `anon` and `authenticated` on
 `users.status` and `users.online_at`. Also check that `pg_publication_tables`
 has no `users` row.
@@ -101,8 +223,14 @@ EMAIL_FROM=notify@example.com
 SMTP_HOST=smtp.example.com
 SMTP_USER=...
 SMTP_PASS=...
+EMAIL_UNSUBSCRIBE_SECRET=<at least 32 characters>
 ```
 
+- `EMAIL_UNSUBSCRIBE_SECRET` signs the unsubscribe links. Generate it with
+  `openssl rand -base64 48`, and never reuse it across environments. A value
+  shorter than 32 characters stops the server at boot. When it is empty, mail
+  still sends, but its unsubscribe link carries no token, and the route
+  refuses that link.
 - Set `EMAIL_PROVIDER` to the `provider` value that `GET /api/email/health`
   reports today. Set `EMAIL_FROM` to today's sender: the old `EMAIL_FROM`, or
   `noreply@docs.plus` when it was unset. Any other address changes the From
@@ -169,20 +297,20 @@ SMTP_PASS=...
 
 - **A connected app edits in place, never a heading, never media.**
   `replace_section` is gone. A section read numbers each block. `edit_blocks`
-  inserts, replaces or removes whole blocks at one numbered position, and
+  inserts, replaces or removes whole blocks at one numbered position. It
   refuses to remove a block that holds a picture, video, embed, upload or file
   link. A new heading goes only at the end of the section. It must be deeper
   than the section heading and no shallower than the next heading, so it never
-  takes over the subsections after it.
-  `replace_text` changes one exact piece of text inside one paragraph,
-  never the name of an attached file,
-  list item or table cell, and keeps its formatting. Neither touches the
-  heading, and both refuse a stale `rev`. `replace_text` returns the new `rev`;
-  `edit_blocks` does not, because it renumbers blocks, so the agent reads again. The internal
-  hop modes are now `replace`, `append`, `blocks` and `text`; the old
-  `section` mode is gone, so an older replica refuses a new edit during a
-  rolling deploy instead of replacing a whole section. ChatGPT keeps the tool
-  list it saw when it connected: press **Refresh** on the docs.plus app.
+  takes over the subsections after it. `replace_text` changes one exact piece
+  of text inside one paragraph, list item or table cell, and keeps its
+  formatting. It never changes the name of an attached file. Neither tool
+  touches the heading, and both refuse a stale `rev`. `replace_text` returns
+  the new `rev`. `edit_blocks` does not, because it renumbers blocks, so the
+  agent reads again. The internal hop modes are now `replace`, `append`,
+  `blocks` and `text`. The old `section` mode is gone. So during a rolling
+  deploy, an older replica refuses a new edit instead of replacing a whole
+  section. ChatGPT keeps the tool list it saw when it connected: press
+  **Refresh** on the docs.plus app.
 
 - **`create_document` and server instructions.** A connected app makes a
   document, and the caller owns it. An anonymous caller is refused. A taken
@@ -239,23 +367,23 @@ SMTP_PASS=...
   is still empty on the import JSON; Settings replace writes natural width
   and height in the browser.
 - **Content-change notifications reach a private document's owner alone.** A
-  save fans out on every commit, and the worker decides the audience because
-  Supabase cannot: `isPrivate`, `ownerId` and `deletedAt` live in Prisma, and
-  workspace membership admits any signed-in visitor. A trashed document reaches
+  save fans out on every commit, and the worker decides the audience.
+  Supabase cannot decide it, because `isPrivate`, `ownerId` and `deletedAt`
+  live in Prisma. Workspace membership also admits any signed-in visitor. A trashed document reaches
   nobody. A private document with no owner reaches nobody. The rule is checked
   again at send time, because a document can turn private after the carrier row
   is written. A `content_change` always takes the digest branch, never the
   immediate one, which has no privacy re-check. A digest left with nothing to
   say marks its `email_queue` rows `'skipped'` rather than mailing an empty
-  page. The daily email cap now counts immediate rows only: one digest marks one
-  row per notification, so counting every row read a 60-notification digest as
-  60 emails. That loosens the cap for existing daily and weekly readers, on
+  page. The daily email cap now counts immediate rows only. One digest marks
+  one row per notification, so counting every row read a 60-notification
+  digest as 60 emails. That loosens the cap for existing daily and weekly readers, on
   purpose.
 - **Content-change followers, in the database.** A new `notification_category`
   value, `content_change`, carries "this document changed" on
   `public.notifications`. The subscription is workspace membership itself, so
-  there is no new table: `workspace_members.content_email_muted_at` holds the
-  whole state and `NULL` means following, while `left_at` is also `NULL`.
+  there is no new table. `workspace_members.content_email_muted_at` holds the
+  whole state. `NULL` means following, while `left_at` is also `NULL`.
   `notify_document_content_change` is the service-role fan-out. It writes one
   carrier per eligible follower and skips editors, muted members, and anyone
   already holding an unread carrier from the last 24 hours. It writes nothing
@@ -288,8 +416,8 @@ SMTP_PASS=...
   table. Soft-deleted documents are `404`. Soft-delete of the document keeps the join, so
   restore stays favorited. Purge cascade-drops the row.
 - **Owner live lists pin Favorites first.** `GET /api/documents?ownerId=token.sub`
-  returns `isFavorite` and orders that user's Favorites first, then `sort`. Trash and the
-  public fleet omit both.
+  returns `isFavorite` and orders that user's Favorites first, then `sort`. Another user's
+  Favorite never pins a row. Trash and the public fleet omit both.
 - **DocumentGridPreview.** `DocumentMetadata.preview` JSON. SQL NULL means never
   extracted. `{ heading: null, lines: [] }` means empty or a failed extract.
   Heading is stored even when it equals Title. The paper omits heading at paint
@@ -347,7 +475,7 @@ SMTP_PASS=...
   fewer than 2 replicas up for 5 minutes. A lost replica's `up` series
   vanishes, so the target-down rule cannot see it.
 
-- **`GET /api/documents` takes `scope=all|owned|joined`.** Settings ›
+- **`GET /api/documents` takes `scope=all|owned|joined`.** Settings →
   Documents uses it to list owned and joined documents together. A joined
   document is one the caller opened while signed in and does not own. An
   ownerless document counts. The server reads the caller's memberships from
@@ -364,6 +492,19 @@ SMTP_PASS=...
   `path`, `status` and `requestId`. The request logger has no user
   ([#404](https://github.com/docs-plus/docs.plus/issues/404)).
 
+- **Last left and document occupancy.** The collaboration server keeps one
+  Redis sorted set per document, `doc-occupancy:<documentId>`. It holds each
+  visible socket of a signed-in person. The pad sends a stateless
+  `{ msg: 'reading', visible }` message after each sync, and again when its
+  tab is shown or hidden. A visit counts after 10 s in view. When a socket
+  that counted closes, the server stamps Last left through the service-role
+  RPC `mark_document_connection_closed`, from migration
+  `20260907153621_add_workspace_member_last_connection_closed_at`. That
+  column, `workspace_members.last_connection_closed_at`, only moves forward.
+  The content-change fan-out skips each person in the set. A failed or empty
+  read skips nobody, so the fan-out notifies rather than mutes. Both features
+  need `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+
 ### Changed
 
 - **Admin routes are ready for an `sb_` secret key.** `supabaseRest` sent
@@ -371,6 +512,24 @@ SMTP_PASS=...
   is not a JWT, and Supabase says to send it on `apikey`, not as a Bearer
   token. An `sb_` key now goes on `apikey` only. A legacy JWT key still
   sends both headers.
+- **The REST edge probe moved to `/health/live` ([#210](https://github.com/docs-plus/docs.plus/issues/210)).**
+  Traefik now probes `/health/live`, which calls no dependency. A Redis fault
+  no longer takes both REST replicas out of the pool. `/health` keeps the
+  dependency check and its `503`. Its three checks run at the same time, each
+  with a 2 s deadline.
+- **The revert cooldown and the retention sweep are fleet-wide.** The revert
+  cooldown, one revert per document every 2 s, now lives in Redis. Without
+  Redis, each process keeps its own cooldown. The retention sweep runs under a
+  Redis lease, so one worker replica runs each pass. Public media reads also
+  get their own rate limit, 10 times `RATE_LIMIT_MAX`. So a document's
+  pictures no longer spend the global rate limit.
+- **The server signs unsubscribe links.** `src/lib/unsubscribeToken.ts` signs
+  and checks each footer token with `EMAIL_UNSUBSCRIBE_SECRET`. Before,
+  Postgres signed them with `app.unsubscribe_secret`, which a hosted Supabase
+  project cannot set. So every footer link had no token, and the route
+  refused it. Migration `20260908132041_move_unsubscribe_signing_to_node`
+  drops the SQL signer and keeps `apply_unsubscribe`, the write. Set the
+  secret as Migration step 3 says.
 - **Email retries only what time can fix ([#421](https://github.com/docs-plus/docs.plus/issues/421)).**
   A failed send is now `transient`, `permanent` or `operator`. A transient
   failure makes up to 6 attempts with a 30 s exponential backoff, about 15
@@ -395,18 +554,17 @@ SMTP_PASS=...
 
 - **`GET /changes` sections show only real edits, and name media and level
   changes ([#448](https://github.com/docs-plus/docs.plus/issues/448)).** A
-  `runs` list never holds only `same` and `gap` runs. An edit of whitespace,
-  U+00A0, a zero-width space, non-joiner or joiner, a word joiner, a bidi mark
-  (LRM, RLM or ALM) or U+FE0F alone gives no `runs`. The excerpts are cleared
-  with it. An excerpt with no visible
-  text is left out. An added or removed image, video or embed reads `image`,
+  `runs` list never holds only `same` and `gap` runs. An edit that changes
+  only whitespace or invisible marks gives no `runs`. Those marks are U+00A0,
+  a zero-width space, non-joiner or joiner, a word joiner, a bidi mark (LRM,
+  RLM or ALM) and U+FE0F. The excerpts are cleared with the `runs`. An excerpt with no visible text is left out. An added or removed image, video or embed reads `image`,
   `video` or `embed` in `runs` and in a whole section's excerpt. A new
   optional `previousLevel` holds the baseline level of a `modified` heading
   whose level changed. Word counts do not change. A section measure that
   throws now logs at warn.
-- **Admin notification stats read `users.notification_preferences`.** Push the
-  Supabase migration `20260930120000_private_notification_preferences` before
-  you deploy this server.
+- **Admin notification stats read `users.notification_preferences`.** Apply
+  the Supabase migration `20260930120000_private_notification_preferences`
+  before you deploy this server (Migration step 4).
 - The unsubscribe page follows the device's dark mode.
 
 - **A connected app's token works only at `/api/mcp`.** A token that carries
@@ -427,9 +585,6 @@ SMTP_PASS=...
   import, so the script's own `process.env` assignment would land too late. Run
   the script through `bun run test:e2e:duplicate-media`, never `bun` directly, or
   its purge deletes by prefix from the bucket named by `DO_STORAGE_ENDPOINT`.
-- **Owner Trash list includes `preview` and `lastOpenedAt` and fills SQL-NULL
-  rows.** The older Owner live list Added bullet said Trash omits both.
-  Fill matches the Owner live list. Owner Trash list still omits Favorite.
 - **`history.list` returns one page.** A page holds up to 50 rows, newest
   first, with `hasMore`. When `hasMore` is true, the reply carries
   `nextBefore`. Send it back as `beforeVersion` to get the next older page,
@@ -492,13 +647,7 @@ SMTP_PASS=...
   the Supabase mail catcher at `http://localhost:54324`. ENV.md, section Email,
   lists the lines to set in `.env.local`.
 
-- **The Owner live list pins only your own Favorites.** `GET /documents`
-  with your own `ownerId` ordered by the count of every user's Favorite
-  rows. A pad starred only by someone else pinned with no star, and Command
-  jump, Home and Settings 'Owned by me' showed it out of order. The list now
-  pins with the same rule as the Merged list.
-
-- **A content write to a cold document waits for its own commit (#229).**
+- **A content write to a cold document waits for its own commit ([#229](https://github.com/docs-plus/docs.plus/issues/229)).**
   Each document has a per-document lock, and a `200` carries the saved
   `version`. A save that cannot be confirmed in 20 s answers `503` with
   `SAVE_NOT_CONFIRMED`. When earlier writes still hold the lock, the answer
@@ -561,8 +710,8 @@ SMTP_PASS=...
   ([#407](https://github.com/docs-plus/docs.plus/issues/407)).
 - **`online_at` follows the status heartbeat.** `update_user_online_at` now
   stamps it on every status write. It changed only with the status, so an
-  active person looked offline after 2 minutes. Push the Supabase migration
-  `20261006120000_push_online_at_and_preference_checks`
+  active person looked offline after 2 minutes. Apply the Supabase migration
+  `20261006120000_push_online_at_and_preference_checks` (Migration step 4)
   ([#417](https://github.com/docs-plus/docs.plus/issues/417)).
 - **`update_notification_preferences` refuses a value the push and email
   triggers cannot cast.** It answers `22023` `invalid_preference_value` and
@@ -572,6 +721,18 @@ SMTP_PASS=...
 
 ### Security
 
+- **Known gap: MCP titles outside the data frame ([#457](https://github.com/docs-plus/docs.plus/issues/457)).**
+  The connector frames document and chat text as data. `find_documents` does
+  not frame titles. With `scope: 'public'`, it can show other owners'
+  document titles outside the data frame. `get_outline` and `list_chat_rooms`
+  also repeat heading titles unframed, in `structuredContent`. This release
+  ships with the gap. The fix is planned with
+  [#456](https://github.com/docs-plus/docs.plus/issues/456) for the next
+  release.
+- **Logs redact nested tokens.** Pino matched top-level keys only. So a
+  nested `Authorization` header, and an `access_token` or `refresh_token`
+  nested in an OAuth body or an error, were logged in clear. The redact paths
+  now cover them.
 - **Push gateway status needs an admin token ([#433](https://github.com/docs-plus/docs.plus/issues/433)).**
   `GET /health/push` showed queue counts and the VAPID subject with no auth. Admins read the same status on
   `GET /api/admin/push/gateway`. That route always answers `200` with the
@@ -582,8 +743,8 @@ SMTP_PASS=...
   `section_id`, then read and post by that room's channel id. A channel row
   that another document holds is never read or posted to. The change digest
   places a heading chat by `heading_id`. Migration
-  `20261009115900_scope_heading_channels.sql` adds that column. Push it
-  before this deploy, as Migration says.
+  `20261009115900_scope_heading_channels.sql` adds that column. Apply it
+  before this deploy (Migration step 4).
 - **Media of a document in Trash stops serving ([#408](https://github.com/docs-plus/docs.plus/issues/408)).**
   `GET /api/plugins/hypermultimedia/:documentId/:mediaId` answers `404`
   `NOT_FOUND` while the document is in Trash. After Restore, it serves again.
@@ -596,9 +757,10 @@ SMTP_PASS=...
   Copies already in a browser cache stay until their one-year `immutable`
   entry expires. See Migration for existing objects.
 
-- **Supabase refuses a connected app's token on the Data API, Storage and Realtime.** Run
-  `packages/supabase/scripts/31-connected-app-token-gate.sql` once, or push
-  the paired migration `20260928120000_refuse_connected_app_tokens`. The Data
+- **Supabase refuses a connected app's token on the Data API, Storage and Realtime.** Apply
+  the migration `20260928120000_refuse_connected_app_tokens` (Migration step
+  4). A new install gets it from
+  `packages/supabase/scripts/31-connected-app-token-gate.sql`. The Data
   API answers `403` with the code `connected_app`. Storage and Realtime refuse
   the token too. The MCP tools use the service-role key, so they still work.
   Check the existing `pgrst.db_pre_request` first, as
@@ -675,16 +837,16 @@ SMTP_PASS=...
   the Prisma write, so a failed write leaves the chat closed. If the Prisma
   write fails after the row write, the chat stays closed on a public document.
   A retry that carries `isPrivate` repairs either case. The backfill does not.
-  Deploy order: confirm that `20261006130000_close_client_write_and_grant_gaps` is applied,
-  because the bookmark panel gate lives there. Then apply this migration,
-  deploy this server, and run `scripts/backfill-document-access.ts` (a dry run
-  first, then `--apply`). Until the backfill runs, Private documents' chat
-  stays open ([#396](https://github.com/docs-plus/docs.plus/issues/396)).
+  Apply `20261006130000_close_client_write_and_grant_gaps` first, because the
+  bookmark panel gate lives there. Then apply this migration, deploy this
+  server, and run `scripts/backfill-document-access.ts`, as Migration steps 4
+  to 6 say. Until the backfill runs, Private documents' chat stays open
+  ([#396](https://github.com/docs-plus/docs.plus/issues/396)).
 - **A picked chat mention notifies the user it was picked for.** A username
   change no longer sends it to the next holder of that name. A typed `@name`
   still notifies the current holder of that name. The Supabase migration
-  `20261009120300_resolve_mentions_by_user_id` carries the fix. It goes in the
-  push before this deploy, as Migration says ([#415](https://github.com/docs-plus/docs.plus/issues/415)).
+  `20261009120300_resolve_mentions_by_user_id` carries the fix. Apply it
+  before this deploy (Migration step 4) ([#415](https://github.com/docs-plus/docs.plus/issues/415)).
 - **A local media purge refuses an id that is not one path segment.** On a
   server with `PERSIST_TO_LOCAL_STORAGE=true`, a crafted document id could
   reach another document's media folder, or a folder outside the storage root.
@@ -708,8 +870,10 @@ SMTP_PASS=...
   `/opt/projects/prod.docs.plus/.deploy/traefik` before `up -d traefik redis`. Set
   `TRAEFIK_CONFIG_DIR=/opt/projects/prod.docs.plus/.deploy/traefik` in the host
   `.env` before that deploy. Traefik then recreates once, so deploy in a quiet
-  window. Staging and self-hosting keep the default
-  ([#437](https://github.com/docs-plus/docs.plus/issues/437)).
+  window. Staging keeps the default. A self-hoster copies `scripts/traefik/`
+  outside the clone and sets `TRAEFIK_CONFIG_DIR` to that copy, as
+  [install step 4](../../docs/self-hosting/install.md#4-point-your-domains-at-the-server)
+  says ([#437](https://github.com/docs-plus/docs.plus/issues/437)).
 - **Monitoring containers get less access
   ([#443](https://github.com/docs-plus/docs.plus/issues/443)).** Alloy no
   longer mounts the Docker socket. It reads the Docker API through
@@ -779,7 +943,7 @@ SMTP_PASS=...
   Supabase script that refuses a connected app's token.
   [docs/api/authentication.md](../../docs/api/authentication.md) says that the
   docs.plus server accepts a connected app's token only at `/api/mcp`. The
-  user guide starts with Settings > Connected apps, where a person connects
+  user guide starts with Settings → Connected apps, where a person connects
   and disconnects each app.
 
 ### Internal

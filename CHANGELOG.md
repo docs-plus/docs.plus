@@ -10,6 +10,69 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-10-13
+
+**A feature release for writers, and an email change for self-hosters.** The webapp and
+hocuspocus share `2.1.0`. Admin stays `1.0.0`. Semantic Versioning would make this `3.0.0`.
+It stays `2.1.0`, because the breaks touch only self-hoster config and API routes, and the
+`2.x` pad product line is unchanged ([RELEASE_POLICY.md Status](RELEASE_POLICY.md#status)).
+
+The five `@docs.plus/extension-*` packages publish `2.1.0` together. It is their first
+lockstep family release; each package's `CHANGELOG.md` lists its changes.
+
+### Highlights
+
+- **AI apps.** Connect Claude, ChatGPT or another AI app through the docs.plus MCP
+  connector. It reads what you can open, and it edits only the documents you own.
+- **Change digest.** Turn on email and follow a document, and get an email when other people
+  edit it. The email marks added and removed words under each changed heading.
+- **Write, find and share faster.** Type `/` to insert a block, and press ⌘+⇧+K to jump.
+  Press ⌘+F for a floating Find bar with a match count. Share with the Share card's QR
+  code and Present view, and pin favorites in the Documents list.
+- **A calmer, clearer UI.** Cards, dialogs, menus and phone sheets share one look.
+  Headings follow one size scale, and loading screens match the page they turn into.
+- **Security round.** Private chat, chat write rules, files in Trash, server error text and
+  deploy secrets are all tighter.
+- **Extensions 2.1.0.** All five `@docs.plus/extension-*` packages ship `2.1.0` together, as
+  one tested family. Changed lists what each package brings.
+
+### Breaking
+
+- Set `EMAIL_PROVIDER` (`resend` or `smtp`) and `EMAIL_FROM` to send mail
+  ([#419](https://github.com/docs-plus/docs.plus/issues/419)). A provider key without
+  `EMAIL_PROVIDER` now holds all mail. With no provider key, email is off.
+- SendGrid is removed. Use the SendGrid SMTP relay with `EMAIL_PROVIDER=smtp`.
+- Both deploy workflows stop when `EMAIL_PROVIDER`, `EMAIL_FROM`,
+  `EMAIL_UNSUBSCRIBE_SECRET` or `PUBLIC_RESTAPI_URL` is empty in the host env file.
+- `GET /api/email/health` returns only `status` and `queue_connected`
+  ([#423](https://github.com/docs-plus/docs.plus/issues/423)). Admins read the rest on
+  `GET /api/admin/email/setup`.
+- Owner and author profiles no longer carry `status`
+  ([#434](https://github.com/docs-plus/docs.plus/issues/434)). See Security.
+- `GET /health/push` is removed and answers 404
+  ([#433](https://github.com/docs-plus/docs.plus/issues/433)). See Security.
+
+### Migration
+
+**If you self-host.** Read the [hocuspocus Migration](apps/hocuspocus.server/CHANGELOG.md#migration)
+before you deploy, and follow its order. Set `EMAIL_PROVIDER` and `EMAIL_FROM`, or mail does
+not send. Set `EMAIL_UNSUBSCRIBE_SECRET` to at least 32 characters, or unsubscribe links do
+not work. Apply two Supabase migrations later than the others:
+`20261009120500_hide_user_presence_columns` and `20261009130100_narrow_channel_insert_grant`.
+The Migration says when. Until `apps/hocuspocus.server/scripts/backfill-document-access.ts`
+runs with `--apply`, the chat of an existing Private document stays open. Run it without
+`--apply` first to see the rows. If you store media on S3, set the existing objects private
+after the server deploys. Turn on the Custom Access Token hook in the Supabase dashboard.
+It is off until you turn it on, and it refuses a token for a password sign-in. It is
+step 10 of the Migration. Keep **Confirm email** on, or a new person's first email-link
+sign-in fails. Then compare `.env.example` with your env file.
+
+**If you use the npm extensions.** Raise `@tiptap/core` and `@tiptap/pm` to `^3.31.3` or
+later. In hyperlink, a `class` on a single link no longer renders; use the
+`HTMLAttributes.class` option instead. In hypermultimedia, move a selector or test on
+`[aria-pressed]` in the `…` menu to `[aria-checked]`. Each package's `CHANGELOG.md` has the
+details.
+
 ### Added
 
 - Share a document with a QR code. The share card shows the code beside the
@@ -18,7 +81,77 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   document title and the link in large text. A button next to Close switches
   the view to a dark background for a dark room, and dims the code's white
   plate to light grey. The app theme does not change.
-  A private document shows no code.
+  A private document shows no code. The card shares a clean document link,
+  with no heading, chat or Filter state from the address bar. Its access line
+  says "Anyone with the link can edit" unless the document is Read-only, and
+  the owner sees Change next to it. On a desktop, a toolbar toggle after
+  Filter also shows the code in a small card at the top right of the pad.
+  Drag the card's corner to size the code from 128 px to 1024 px. A reload or
+  another document hides the card
+  ([#377](https://github.com/docs-plus/docs.plus/issues/377)).
+
+- Connect an AI app to docs.plus through the MCP connector. Claude, ChatGPT,
+  Claude Code, Codex and other MCP apps sign in as you on a consent page. The
+  page trusts an app by its return address, never by its name.
+  The app can read the documents and chat you can open. It can create a
+  document, which is yours and public. It edits and posts only in documents
+  you own. It never changes a section's heading, and it never removes media.
+  Settings → Connected apps shows the server status, setup steps for each app,
+  and the apps with access. Disconnect removes an app. Settings → Security
+  says how many apps have access, and the privacy page says what an app
+  receives. History shows a "Connected app" badge on a version that an app
+  wrote. The admin dashboard counts tool calls on its MCP Usage page. A
+  self-hoster sets `MCP_AUTH_ISSUER`; see [docs/mcp](docs/mcp).
+
+- Find text in the open document. On a desktop, ⌘+F (Ctrl+F) opens a small
+  floating Find bar at the top right of the pad. It shows a count such as
+  "3 of 12", up to 9,999 matches, with Previous and Next buttons. ⌘+G, ⌘+⇧+G
+  and F3 step through the matches, and Escape closes the bar. Find opens a
+  folded section to show a match, and folds it again when you move on. A
+  short selection fills in the query. On a phone, Find is a docked row, and
+  the outline drawer offers it too
+  ([#393](https://github.com/docs-plus/docs.plus/issues/393)).
+
+- Type `/` on an empty line to insert a block. The list offers Heading 1 to 6,
+  Subtitle, Normal, Bullet list, Ordered list, Task list, Blockquote, Code block, Picture and Link
+  to a section. Type after the `/` to filter it. It does not open in the
+  title, in a code block, or in a document you cannot edit. On a phone, it
+  opens as a sheet.
+
+- Press ⌘+⇧+K (Ctrl+Shift+K) to jump to a place or a document. The rows depend on the
+  page. Home and every document offer New document and Demo. An open document adds History,
+  Filter and Find in document. When you are signed in, the list adds
+  Notifications on a document, the Settings tabs and the documents you own, newest opened first. Type to
+  filter the list.
+
+- See your unread notification count on the installed app's icon, where the
+  browser supports it. Share a Word or Markdown file to docs.plus from another
+  app, and it becomes a new document you own. Home now has an Install app
+  button. An export opens the browser's save picker where one exists, and the
+  share sheet on iOS. The installed app on iOS opens on a launch screen. The
+  status chip warns "No offline copy" when the browser stops saving the local
+  copy of the document.
+
+- Sync your settings across your tabs and devices. A setting you save shows in
+  every open tab and on every device where you are signed in. A field you are
+  still editing keeps your change. The theme stays per browser.
+
+- See the documents you joined in Settings → Documents. One list shows the
+  documents you own and the ones you opened while signed in. A menu picks
+  All documents, Owned by me or Joined. A document you do not own names its
+  owner, and its ⋮ menu offers only Open in new tab and Copy link. Home shows
+  the same list, with the first 8 rows and See all
+  ([#390](https://github.com/docs-plus/docs.plus/issues/390)).
+
+- Report a document from Settings. While a document is open, Settings shows
+  Report a problem after Report an issue. It opens a mail to the contact
+  address that the legal pages publish. The mail holds only the document link
+  and the kind of report. Home does not show the row.
+
+- Skip to the document from the keyboard. Skip to main content now leads into
+  the pad. Most phone sheets and the outline and History drawers keep keyboard
+  focus inside while they are open. Escape closes them, and focus goes back to
+  the control that opened them.
 
 - Play chat audio in a themed player, with seek and 1×, 1.5×, or 2× speed. A
   voice note sent from now on shows its waveform and length before you press
@@ -34,7 +167,8 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 - Show a Pad title rename in History and in workspace chat. After a signed-in
   rename, chat shows who changed it and the old and new titles. History paints
   the latest live notice above the editor and uses the snapshot username. Chat
-  paints the live username. A rename from Settings → Documents updates the
+  paints the live username, or the snapshot username until the live one
+  arrives. A rename from Settings → Documents updates the
   open pad header and the room when that document is open. A rename does not
   mint a History version. There is no email and no bell for this notice.
 
@@ -43,21 +177,23 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   list and the grid. The chosen sort still orders inside each group. A gold star mark
   shows the state on the row and the tile while the menu is closed. There is no toolbar
   star. Soft-delete keeps the mark, so a restored document stays favorited. Trash does
-  not list Favorites.
+  not list Favorites. A Favorite change finishes even when the menu closes before the
+  server answers.
 - Keep playable media and picture size on Markdown replace. Settings → Import &
   export turns a lone video, audio, or embed URL into a player, and writes each
   picture's natural width and height. A labeled link and a filter link stay links.
   Paste of a bare file address is unchanged.
-- Paint a first-page paper on Settings → Documents grid tiles. The paper paints
-  stored DocumentGridPreview JSON in React. It is not a screenshot. Empty paper
+- See the first page of each document on its grid tile in Settings →
+  Documents, so you know a document before you open it. An empty document
   shows “Empty document”. List and Trash rows keep the document icon.
 - Sort Settings → Documents by Last opened. Opening an owned pad stamps Last
   opened. Last modified does not move. A document never opened shows
-  “Never opened”.
+  “Never opened”. A copy from Duplicate has never been opened, so it sorts at
+  the end.
 - Group the rest of the list and the grid with date headers: Today, Yesterday,
-  Previous 7 days, Previous 30 days, and Earlier. Favorites stay unbucketed at
-  the top, then a hairline. Title sorts stay a flat list. Last opened sort also
-  uses Never opened when `lastOpenedAt` is null.
+  Previous 7 days, Previous 30 days, and Earlier. Favorites stay at the top,
+  above a thin line, with no date header. Title sorts stay a flat list. In the
+  Last opened sort, a document you never opened sits under Never opened.
 - Drag the desktop table of contents narrow to fold it into the tick rail, a
   32px map of the headings. Docked chat then spans the full width of the pad.
   Hover or focus a tick to preview its section, and click it to jump there.
@@ -65,7 +201,8 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   the rail opens the full table again at its last width. A refresh also opens
   the full table.
 - Get a change digest email when other people edit a document you follow. You
-  follow a document when you open it while signed in. Turn Follow off in
+  follow a document when you open it while signed in. The mail comes only
+  when Enable email notifications is on in Settings → Notifications. Turn Follow off in
   Document settings to stop that mail. The owner of a Private or Read-only
   document does not see Follow, because nobody else can edit that document.
   The mail is a document sheet on a gray well. The mark and the title open
@@ -73,12 +210,25 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   on that document. Under each changed heading, chats sit first, then the
   passage. A chat with no text reads "media". Added words are green, and
   removed words are red and struck through. A chat that is not under a
-  heading stays as its own row. Headings with no change stay out. The bottom
-  bar names when the document changed, and offers Manage preferences and
-  Unsubscribe. A plain-text mail marks removed words `[-like this-]` and added
-  words `{+like this+}`. Each document gets its own mail by default. In
+  heading stays as its own row. Headings with no change stay out. An added
+  heading is washed green, and a removed one is red and struck through. A
+  heading can carry a small grey label: Moved, Edited, or Heading level
+  changed. A heading with no name reads "Untitled heading". When the mail
+  cannot show the edits, it says that the document changed. The bottom bar
+  names when the document changed, and offers Manage preferences and
+  Unsubscribe. It reads "Changed since you left", with how long ago. Last left is the
+  last time you were reading that document. Without a usable Last left, it
+  reads "Changed in the last day" or "Changed in the last week", or names a
+  start date.
+  A plain-text mail marks removed words `[-like this-]` and added
+  words `{+like this+}`. Like the HTML mail, it shows up to 5 messages per
+  channel and 80 characters of each. You get no mail for edits you saw live:
+  the server skips a reader whose tab still shows the document. Last left
+  moves only while that tab is in view. Each document gets its own mail by default. In
   Admin Notifications, an admin can send one combined mail instead and set the
-  HTML size limit from 10 to 102 KB. The default is 90 KB.
+  HTML size limit from 10 to 102 KB. The default is 90 KB. In the
+  notification list, View on a document change opens History with compare
+  already painted. Compare runs from Last left to the newest version.
 - Name how many people contributed in the digest email, under the changed-since
   line. The count covers the same window as the sections beneath it. It is a
   floor, not a head count, and it is left out when nobody is named.
@@ -93,9 +243,41 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   server. A permanent bounce, a complaint or a suppression turns that person's
   email off
   ([#422](https://github.com/docs-plus/docs.plus/issues/422)).
+- Fill in your profile from your own card. Your empty card still says "No bio
+  or links yet.", and now offers Add bio and links, which opens Settings on
+  Profile. Another person's empty card stays a plain line
+  ([#307](https://github.com/docs-plus/docs.plus/issues/307)).
+- Show an error card with Try again when a part of the page fails to load. It
+  used to stay a skeleton forever. The first press tries again in place, and a
+  second press reloads the page. The Settings sections and both QR codes use
+  it.
+- Send new accounts a branded Confirm signup mail. It used to be a bare link
+  that a mail provider filed as spam. The sign-in and change-email mails now
+  state the real link expiry, 1 hour, not 15 minutes. An operator pastes these
+  templates into the Supabase dashboard by hand
+  ([#425](https://github.com/docs-plus/docs.plus/issues/425)).
+- Ask what changed in a document, per heading, between two times with
+  `GET /api/documents/:documentId/changes`. It is service-role only. It reads
+  only, and it loads no live document.
 
 ### Changed
 
+- **Extensions 2.1.0.** The five npm packages share one version for the first time. Each
+  README is now a short start page with an **Open in StackBlitz** example, and the full
+  reference moved to `docs/` pages.
+  - [`extension-hyperlink`](extensions/extension-hyperlink/CHANGELOG.md): text typed at a
+    link edge stays plain ([#374](https://github.com/docs-plus/docs.plus/issues/374)).
+    Pasted or loaded HTML can no longer style a link
+    ([#399](https://github.com/docs-plus/docs.plus/issues/399)).
+  - [`extension-hypermultimedia`](extensions/extension-hypermultimedia/CHANGELOG.md): a
+    corner drag keeps the aspect ratio. One key press never deletes media
+    ([#376](https://github.com/docs-plus/docs.plus/issues/376)). The `…` menu works from the
+    keyboard, and hosts can import `isSafeMediaSrc`.
+  - [`extension-inline-code`](extensions/extension-inline-code/CHANGELOG.md): the package
+    loads on Safari and iOS Safari before 16.4.
+  - [`extension-indent`](extensions/extension-indent/CHANGELOG.md) and
+    [`extension-placeholder`](extensions/extension-placeholder/CHANGELOG.md): no behavior
+    change. They move to `2.1.0` with the family.
 - Send a voice note when you let go of the mic on a phone. It sends by itself
   only when the composer holds nothing else; otherwise it waits for your Send.
   A hold under one second sends nothing and shows how to record. While you
@@ -103,28 +285,38 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   Android phones buzz when the note starts, locks, or is ready to cancel. After
   a lock, Stop opens a preview with Send and Discard.
 
-- Check a sign-in email on rest-api. Next keeps only the webapp health probe.
+- Give the app one calmer, consistent look. Sign-in, app consent, access gates
+  and error pages share one card, with a clear title and one main action. Every
+  confirmation uses one dialog, with Cancel first and the action last. Dialogs,
+  menus and phone sheets look and behave the same. Labels, hints and links have
+  stronger contrast in every theme. Emails are easier to read, and the admin
+  dashboard theme matches the app.
 
-- Move Report a problem out of the pad title. It now sits in Settings, after
-  Report an Issue, while a document is open. Home Settings does not show that
-  row. A signed-out reader does not see it.
-
-- Fix the email footer links. View All Notifications opens the document and its
-  notifications panel. Manage preferences opens Settings on Notifications. Both
-  used to open a blank document named after the link, because the app has no
-  page at those addresses. Unsubscribe still works. The same fix reaches the
-  Manage Preferences button on the unsubscribe page.
-
-- Say "Changed in the last day" instead of "Changed since you left" when the
-  digest window has been shortened to the retention limit. The old line named a
-  date that could be months after you really left.
-
-- Show what happened to each changed heading in the digest email. An added
-  heading is washed green, and a removed one is red and struck through. A
-  heading can carry a small grey label: Moved, Edited, or Heading level
-  changed. A heading with no name reads "Untitled heading". When the email
-  cannot show the edits, it says that the document changed. An edit of spaces
-  alone no longer shows a grey passage with no green or red words.
+- **Reading and writing feel cleaner.**
+  - Headings of one level in a section share one size, from 24pt down to 14pt. The smallest heading no
+    longer looks like body text ([#367](https://github.com/docs-plus/docs.plus/issues/367), [#369](https://github.com/docs-plus/docs.plus/issues/369)).
+  - Two plain paragraphs sit closer, so short lines under a heading read as one block
+    ([#370](https://github.com/docs-plus/docs.plus/issues/370)).
+  - An empty line's hint shows only its heading chain, in one grey with 4.5:1 contrast
+    ([#371](https://github.com/docs-plus/docs.plus/issues/371)).
+  - The heading chat button shows while the pointer is over its section
+    ([#372](https://github.com/docs-plus/docs.plus/issues/372)).
+  - Outline rows of one heading level line up. The phone outline spans the full drawer,
+    and screen readers name an empty heading by its level
+    ([#373](https://github.com/docs-plus/docs.plus/issues/373)).
+  - Clear formatting removes text styles only. It keeps headings, Block style and links
+    ([#392](https://github.com/docs-plus/docs.plus/issues/392)).
+  - Backspace or Delete on an empty line between two lists of the same type joins them
+    ([#378](https://github.com/docs-plus/docs.plus/issues/378)).
+  - The link form opens with the URL field focused, so the first letter lands there
+    ([#366](https://github.com/docs-plus/docs.plus/issues/366)).
+- **Every click menu works like the right-click menus** ([#391](https://github.com/docs-plus/docs.plus/issues/391)). The Documents ⋮
+  menu has four clear groups, and Private and Read-only are check rows inside it.
+  Shift+F10 or the Menu key on a focused row opens the outline and chat menus. Menu rows
+  show a keyboard focus outline.
+- **Loading screens match the page they turn into** ([#463](https://github.com/docs-plus/docs.plus/issues/463),
+  [#464](https://github.com/docs-plus/docs.plus/issues/464)). The pad skeleton keeps its bones inside the sheet. Chat, panels and
+  popovers share one skeleton look.
 
 - Close the docked chat by dragging its top edge down, the way the table of
   contents folds into the tick rail. Let go below 160 px to close it. Let go
@@ -166,6 +358,38 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   where mail data goes. Resend keeps sent mail and its logs for 30 days
   ([#424](https://github.com/docs-plus/docs.plus/issues/424)).
 
+- Send fewer cursor updates while people edit. Editors no longer resend an
+  unchanged cursor, or send back a cursor they just received. At 40 clients,
+  WebSocket CPU fell from 33% to 3% per replica.
+
+- Ask a signed-out visitor to sign in before they paste or upload media,
+  import or export. They used to get a failed request and an error toast.
+
+- Queue a title or description that you save while offline. It sends when you
+  are back online, and it updates the header even after the dialog closes.
+
+- Simplify Settings. One Time zone field picks your zone, shown like
+  "(UTC+03:30) Tehran", with a way back to this device's zone. The digest
+  frequency setting names the zone that daily and weekly digests use. Trash and
+  Apps with access show only when they hold something.
+
+- Share a chat link through the phone or system share sheet. The chat Share
+  button opens it where the device has one. Elsewhere it still copies the link.
+
+- Buzz briefly on Android when a long-press opens a chat message menu.
+
+- Hold the server steadier under load. The revert cooldown and the retention
+  sweep now run across all replicas, and public media reads get their own rate
+  limit ([#243](https://github.com/docs-plus/docs.plus/issues/243)). Supabase
+  and storage calls time out instead of hanging. An awareness frame over
+  64 KiB is refused. The hocuspocus CHANGELOG has the details.
+
+- Give clearer REST answers. A content `PATCH` waits for its save, or answers
+  `503` with `SAVE_NOT_CONFIRMED`; it never sends a false `200`
+  ([#229](https://github.com/docs-plus/docs.plus/issues/229)). A validation
+  `400` names each bad field. `POST /api/email/validate` is a public route on
+  the API server ([#246](https://github.com/docs-plus/docs.plus/issues/246)).
+
 ### Fixed
 
 - The admin dashboard works on your own hosts. Its Content Security Policy
@@ -173,6 +397,11 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   could not reach its API. It now also allows the hosts in
   `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL` and
   `NEXT_PUBLIC_GLITCHTIP_DSN`, read at build time.
+- Fix the email footer links. View All Notifications opens the document and its
+  notifications panel. Manage preferences opens Settings on Notifications. Both
+  used to open a blank document named after the link, because the app has no
+  page at those addresses. Unsubscribe still works. The same fix reaches the
+  Manage Preferences button on the unsubscribe page.
 - Mark your first message in an empty chat as sent. It was saved at once, but
   it kept the clock icon until you reloaded the page.
 
@@ -243,18 +472,9 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   reload. A signed-out person leaves the document open, so anyone can rename
   it. Typing in a document that already exists never makes you its owner.
 
-- Show who renamed the Pad title when workspace chat is already open. A live
-  notice arrives without the users join, so the chip used to say "someone".
-  It now uses the snapshot username on that notice until the live join is
-  present.
-
-- Keep a notification preference you change just before closing Settings. Turning a
-  toggle off and closing the panel within half a second discarded the change without
-  saying so, and the toggle came back on next time you looked.
-
-- Stop a duplicated document flashing into the list and then disappearing. A copy has
-  never been opened, so under the Last opened sort it belongs at the end of the list,
-  not the top.
+- Keep a notification preference you change just before closing Settings. If you
+  turned a toggle off and closed the panel within half a second, the change was lost
+  without a message. The toggle came back on the next time you looked.
 
 - Stop one document going missing from Settings → Documents after a delete. Pressing
   Load more asked the server for the wrong position, so a document was skipped until
@@ -264,22 +484,14 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   used to stay on screen as an empty shell that could not close itself. The other
   three places that open Settings already closed it.
 
-- Open History with compare already painted when View is pressed on a
-  document-content notification. The compare window starts at Last left, the
-  moment you last closed that document, and runs to the newest version. It used
-  to start when the alert was sent, which is after the first save you missed, so
-  that save was left out. The click also used to skip navigation when that
-  document was already open, so the button did nothing on the Read tab.
 - Show formatting edits in version compare. Bolding a word, changing a link's address, or
-  moving a heading from one level to another painted no highlight at all, so the reader saw
-  an unchanged document while the edit was really there. The diff now compares marks and
+  moving a heading to another level painted no highlight at all. The reader saw an
+  unchanged document, though the edit was really there. The diff now compares marks and
   attributes as well as words. A formatting-only edit gets an edge on the block rather than
   a background tint, because the words did not change.
 - Stop version compare drawing an empty strikethrough. A formatting edit reports a change
-  that holds no text, and the removed-text marker was rendered anyway, telling the reader a
+  that holds no text, but the removed-text marker was drawn anyway. It told the reader a
   word had gone when none had.
-- Show 5 messages per channel, and 80 characters of each, in the plain-text
-  digest email, as the HTML version does. It used to show 3 and 50.
 - Keep a new, unsaved document at its address when you rename its Pad title on
   a phone, or save its description or tags. The server used to file it under
   the new title, so a reload at the same address lost it.
@@ -307,6 +519,26 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 - Notify the person that a picked chat mention names, even after a rename. A
   typed @name still notifies whoever holds that name now
   ([#415](https://github.com/docs-plus/docs.plus/issues/415)).
+- Keep the faces on outline headings after someone leaves. They used to go
+  blank. The header count no longer counts people who left.
+- Open the chat message hover menu on the first pointer move. When a card slid
+  under a still pointer, the menu stayed closed until the pointer left and came
+  back.
+- Close the old document's chat when you switch documents. Opening chat from a
+  phone sheet now needs one Back press, not two.
+- Open the exact chat message from a chat push or a notification row, even
+  when the message is in another document.
+- Mail the published contact address from Contact support. It used to open a
+  public document named "support". An Enter that confirms an IME candidate no
+  longer saves a rename.
+- Refuse privacy, terms and c as a document name. These names open app pages,
+  so a document with one of them had no working link.
+- Refuse a Private or Read-only change while offline. It used to wait in a
+  queue, so a closed tab lost it with no error. Duplicate and access changes in
+  the Documents ⋮ menu now finish even when the menu closes before the server
+  answers.
+- Count account alerts in the bell as they arrive, such as a failed email
+  delivery. Alerts with no chat channel were left out of the count.
 
 ### Security
 
@@ -332,8 +564,10 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   only the keys they read
   ([#403](https://github.com/docs-plus/docs.plus/issues/403)).
 - Tighten the chat and workspace write rules. A reply stays in its own
-  channel, and Bookmarks list only messages you can still read
-  ([#401](https://github.com/docs-plus/docs.plus/issues/401),
+  channel, and Bookmarks list only messages you can still read. The
+  service-role function revokes now live in a migration
+  ([#397](https://github.com/docs-plus/docs.plus/issues/397),
+  [#401](https://github.com/docs-plus/docs.plus/issues/401),
   [#409](https://github.com/docs-plus/docs.plus/issues/409),
   [#410](https://github.com/docs-plus/docs.plus/issues/410)).
 - Stop a chat client from writing message fields that the server owns. A
@@ -405,6 +639,18 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   `TRAEFIK_CONFIG_DIR`, Traefik reads a copy that the deploy writes, so a
   runner checkout no longer changes live routing
   ([#437](https://github.com/docs-plus/docs.plus/issues/437)).
+- Keep signed-in replies out of the service worker cache. Chat, notification
+  and profile rows no longer stay in the browser after sign-out.
+- Keep a connected app's token inside the MCP server. The token cannot reach
+  database tables, Storage or Realtime directly. An AI app asks only for
+  openid, email and profile. Logs redact tokens at any depth.
+- Log who made each admin write
+  ([#404](https://github.com/docs-plus/docs.plus/issues/404)).
+- Keep a purged document id gone. A later write no longer creates its row again
+  ([#407](https://github.com/docs-plus/docs.plus/issues/407)).
+- Publish the local and dev Postgres, Redis and app ports on loopback only.
+  Production compose is unchanged
+  ([#414](https://github.com/docs-plus/docs.plus/issues/414)).
 
 ### Removed
 
@@ -419,7 +665,7 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 - Bring the self-hosting, local setup, API and MCP pages in line with the
   code. Each claim was checked against the code, and a fresh-reader walk
   covered local setup and a private server. `docs/self-hosting/install.md`
-  now installs from `main`, adds an admin account, and upgrades with a backup
+  now installs from the newest release tag, adds an admin account, and upgrades with a backup
   first. `docs/self-hosting/README.md` gains backup and restore.
   `docs/self-hosting/configuration.md` gains Google sign-in, push
   notifications, build values, observability and Supabase sign-in mail.

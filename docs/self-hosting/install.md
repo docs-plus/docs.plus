@@ -13,22 +13,26 @@ git clone https://github.com/docs-plus/docs.plus.git
 cd docs.plus
 ```
 
-The clone starts on `main`, and these pages describe `main`. The newest release tag, `v2.0.1`, is older than these pages. It lacks steps they rely on, such as Google sign-in and `TRAEFIK_CONFIG_DIR`. So install from `main` for now, and record the commit. At the root of the clone:
+The clone starts on `main`, which can hold changes that no release has yet. Install from the newest release tag instead. At the time of writing, that tag is `v2.1.0`.
 
-```bash
-git rev-parse HEAD
-```
-
-Keep a note of that commit. The upgrade calls it `<OLD_TAG>`. Also keep your own list of the Supabase migrations you applied.
-
-When a release later than `v2.0.1` exists, you can run it instead. List the tags, newest first, and check out the newest tag without a hyphen:
+At the root of the clone, list the tags, newest first, and check out the newest tag:
 
 ```bash
 git tag --list 'v*' --sort=-v:refname
 git checkout <TAG>
 ```
 
-A tag with a hyphen, such as `v2.0.0-alpha.103`, is a pre-release. Confirm the tag in [CHANGELOG.md](../../CHANGELOG.md) or on [GitHub Releases](https://github.com/docs-plus/docs.plus/releases). Each release ships its own copy of this page at `docs/self-hosting/install.md`, so follow that copy. The upgrade then uses that tag as `<OLD_TAG>`.
+`<TAG>` is the first tag in that list without a hyphen. A tag with a hyphen, such as `v2.0.0-alpha.103`, is a pre-release. Confirm the tag in [CHANGELOG.md](../../CHANGELOG.md) or on [GitHub Releases](https://github.com/docs-plus/docs.plus/releases).
+
+Each release ships its own copy of this page at `docs/self-hosting/install.md`. After the checkout, follow the copy in your clone. Keep a note of the tag. The upgrade calls it `<OLD_TAG>`.
+
+To run `main` on purpose, stay on it and record the commit. At the root of the clone:
+
+```bash
+git rev-parse HEAD
+```
+
+Keep a note of that commit. The upgrade uses it as `<OLD_TAG>`. Also keep your own list of the Supabase migrations you applied. Upgrade item 3 checks against that list.
 
 Every later step runs at the root of this clone, unless the step names another place.
 
@@ -270,7 +274,7 @@ Editing `.env.production` is not enough, because a running container keeps its o
 
 Back up your data first. See [Back up your data](README.md#back-up-your-data). Migrations only go forward. There is no down migration, so the backup is your only way back.
 
-Release tags look like `v2.0.1`. `<OLD_TAG>` is the tag you run now, from step 1 or from your last upgrade. `<NEW_TAG>` is the tag you upgrade to. If you run `main`, use the commit you run now in place of `<OLD_TAG>`, and `origin/main` in place of `<NEW_TAG>`.
+Release tags look like `v2.1.0`. `<OLD_TAG>` is the tag you run now, from step 1 or from your last upgrade. `<NEW_TAG>` is the tag you upgrade to. If you run `main`, use the commit you run now in place of `<OLD_TAG>`, and `origin/main` in place of `<NEW_TAG>`.
 
 1. At the repository root, fetch the tags and list them, newest first:
 
@@ -279,12 +283,23 @@ Release tags look like `v2.0.1`. `<OLD_TAG>` is the tag you run now, from step 1
    git tag --list 'v*' --sort=-v:refname
    ```
 
-2. Read the release notes for `<NEW_TAG>`. They are on [GitHub Releases](https://github.com/docs-plus/docs.plus/releases), and in `CHANGELOG.md` at the repository root. Also read this page as `<NEW_TAG>` ships it, because its upgrade steps can differ from these. At the repository root:
+2. Read the release notes for `<NEW_TAG>`. They are on [GitHub Releases](https://github.com/docs-plus/docs.plus/releases), and in `CHANGELOG.md` at the repository root. Then read the Breaking and Migration sections of [apps/hocuspocus.server/CHANGELOG.md](../../apps/hocuspocus.server/CHANGELOG.md#migration). They list the changes to server config and API routes. Also read this page as `<NEW_TAG>` ships it, because its upgrade steps can differ from these. At the repository root:
 
    ```bash
    git show <NEW_TAG>:CHANGELOG.md
+   git show <NEW_TAG>:apps/hocuspocus.server/CHANGELOG.md
    git show <NEW_TAG>:docs/self-hosting/install.md
    ```
+
+   Where that Migration says `db push`, apply by hand as items 6 and 7 say. Hold every migration that it holds.
+
+   Then compare `.env.example` between the two tags. At the repository root:
+
+   ```bash
+   git diff <OLD_TAG> <NEW_TAG> -- .env.example
+   ```
+
+   Set each new or changed key in `.env.production` before item 8. A removed line can be a key that only moved. Delete a key from `.env.production` only when the new `.env.example` no longer names it. [Configuration](configuration.md) explains each group.
 
 3. At the repository root, list the Supabase migrations that `<NEW_TAG>` adds:
 
