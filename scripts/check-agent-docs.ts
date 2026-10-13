@@ -32,6 +32,7 @@ const HEADING_SOURCES = [
   '.cursor/skills/commit-review/SKILL.md',
   '.cursor/skills/design-system/SKILL.md',
   '.cursor/skills/release-extensions/SKILL.md',
+  '.cursor/skills/release-product/SKILL.md',
   '.cursor/skills/tech-writer/SKILL.md',
   '.cursor/skills/tiptap/SKILL.md'
 ]

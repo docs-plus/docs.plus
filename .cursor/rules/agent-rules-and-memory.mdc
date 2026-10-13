@@ -46,6 +46,7 @@ file. The map:
 | Admin dashboard                                                | `apps/admin-dashboard/CLAUDE.md`                |
 | Supabase, SQL, RLS, storage                                    | `packages/supabase/CLAUDE.md`                   |
 | Extensions                                                     | `extensions/CLAUDE.md`                          |
+| Cutting a product release                                      | `.cursor/skills/release-product/SKILL.md`       |
 | Publishing a release                                           | `.cursor/skills/release-extensions/SKILL.md`    |
 | Writing a README, CHANGELOG, report, runbook or PR description | `.cursor/skills/tech-writer/SKILL.md`           |
 
