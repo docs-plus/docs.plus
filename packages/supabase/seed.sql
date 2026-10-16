@@ -4951,21 +4951,23 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    -- Stamp even when status is unchanged, so is_user_online sees the heartbeat.
+    -- Only an ONLINE write is activity. A sweep or tab-hide OFFLINE write keeps the last heartbeat.
     -- now() is timestamptz, which matches online_at whatever the session TimeZone.
-    NEW.online_at := now();
+    IF NEW.status = 'ONLINE' THEN
+        NEW.online_at := now();
+    END IF;
     RETURN NEW;
 END;
 $$;
 
-COMMENT ON FUNCTION public.update_user_online_at() IS 'Stamps online_at on every status write, so the heartbeat keeps it fresh for is_user_online.';
+COMMENT ON FUNCTION public.update_user_online_at() IS 'Stamps online_at on every ONLINE write, so online_at is the last heartbeat that is_user_online and last-seen read.';
 
 CREATE TRIGGER trigger_update_user_online_at
 BEFORE UPDATE OF status ON public.users
 FOR EACH ROW
 EXECUTE FUNCTION public.update_user_online_at();
 
-COMMENT ON TRIGGER trigger_update_user_online_at ON public.users IS 'Stamps online_at on every status write, so the heartbeat keeps it fresh.';
+COMMENT ON TRIGGER trigger_update_user_online_at ON public.users IS 'Stamps online_at on every ONLINE write; OFFLINE writes keep the last heartbeat.';
 
 ----------------------------------------------------
 ----------------------------------------------------

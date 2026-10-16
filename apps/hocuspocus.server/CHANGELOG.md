@@ -17,6 +17,12 @@ This file is the operator and API changelog. The pad product lives in the [root 
   shows the model only `structuredContent`. `read_document` and
   `read_chat_thread` kept their text in the text block, so the model saw
   metadata and no text. The five read tools now return text only.
+- **A person who left is no longer stuck `ONLINE`.** A one-time data fix sets
+  `ONLINE` rows with a NULL `online_at` to `OFFLINE`. The `update-user-status`
+  sweep never matched them, so those people got no bell, push or email.
+  `update_user_online_at` now stamps `online_at` only on an `ONLINE` write, so
+  a sweep or tab hide keeps the last heartbeat. This narrows the 2.1.0 #417
+  entry. Apply the Supabase migration `20261014120000_presence_stamp_online_only` (#489).
 
 ### Security
 
