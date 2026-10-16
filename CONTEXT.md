@@ -95,7 +95,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **rest-api** — the Hono HTTP process on port 4000. The browser base is `NEXT_PUBLIC_RESTAPI_URL`, which already ends in `/api`.
 - **Health** — Next `GET /api/health` only (`apps/webapp/src/pages/api/health.ts`). Do not retarget Traefik, Docker HEALTHCHECK, compose, or CI.
 - **Validate** — `POST /api/email/validate` on rest-api. Public. Body `{ email }`. Success is `{ isValid }` on 200. House regex, then MX. Not the house envelope.
-- **Status** — writing `users.status`. Heartbeat and visibility stay `updateUser` plus RLS. Tab close is a keepalive `PATCH` to Supabase REST. The client never reads it back, and migration `20261009120500` removes the client SELECT grant once it is applied (#434). Not a Hono route.
+- **Status** — writing `users.status`. Heartbeat and visibility stay `updateUser` plus RLS. Tab close is a keepalive `PATCH` to Supabase REST. The client never reads it back, and migration `20261009120500` removed the client SELECT grant (#434). Not a Hono route.
 - **Confirm** — unused Next `GET /api/auth/callback/confirm`. Deleted. No Hono stand-in and no Pages `auth/callback` page.
   _Avoid_: validate-email, updateUserStatus
 - **Email setup** — the admin dashboard page (`apps/admin-dashboard/src/pages/email.tsx`) and its two routes, `GET /api/admin/email/setup` and `POST /api/admin/email/setup/test-send`. It shows each secret as `set` or `missing`, never its value. No route writes `.env` (#423).
