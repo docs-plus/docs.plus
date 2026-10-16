@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@docs.plus/extension-indent": "^2.0.0",
-    "@tiptap/core": "^3.31.3",
-    "@tiptap/pm": "^3.31.3",
-    "@tiptap/starter-kit": "^3.31.3"
+    "@tiptap/core": "^3.32.0",
+    "@tiptap/pm": "^3.32.0",
+    "@tiptap/starter-kit": "^3.32.0"
   },
   "devDependencies": {
     "vite": "^8.3.0"
