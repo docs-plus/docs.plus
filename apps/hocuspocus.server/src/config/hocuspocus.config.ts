@@ -124,16 +124,15 @@ const configureExtensions = (): { extensions: Extension[]; redisWired: boolean }
   }
 
   if (config.app.env === 'production' && config.redis.enabled) {
-    // Note: @hocuspocus/extension-redis creates its own Redis connection.
-    // Mirror the centralized db/tls selection or the sync layer silently
-    // connects to a different logical DB than the queues. No password here:
-    // buildRedisConfig sets none, so one set only here would authenticate the
-    // sync layer while every queue connection failed NOAUTH.
+    // @hocuspocus/extension-redis opens its own connection. Mirror db, password
+    // and tls from buildRedisConfig (lib/redis.ts), or the sync layer and the
+    // queues reach a different DB or authenticate differently.
     const redisOptions: any = {
       host: config.redis.host || 'localhost',
       port: config.redis.port,
       options: {
         db: config.redis.db,
+        password: config.redis.password,
         tls: config.redis.tls ? {} : undefined
       }
     }

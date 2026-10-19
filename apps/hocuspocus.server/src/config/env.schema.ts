@@ -62,6 +62,11 @@ export const envSchema = z.object({
   REDIS_HOST: z.string().optional().default('localhost'),
   REDIS_PORT: numericString('6379'),
   REDIS_DB: numericString('0'),
+  // Optional, so a Redis with no password still works. Every client sends it.
+  REDIS_PASSWORD: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined),
   REDIS_TLS: booleanString,
   REDIS_CONNECT_TIMEOUT: numericString('30000'),
   REDIS_COMMAND_TIMEOUT: numericString('60000'),

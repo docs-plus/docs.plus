@@ -42,6 +42,7 @@ const buildRedisConfig = (host: string, port: number, label = 'main') => {
     host,
     port,
     db: config.redis.db, // logical DB (0 default; lets tests isolate)
+    password: config.redis.password,
 
     lazyConnect: false,
     connectTimeout: config.redis.connectTimeout,

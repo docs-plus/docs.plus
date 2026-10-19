@@ -50,6 +50,7 @@ export const config = {
     host: env.REDIS_HOST,
     port: env.REDIS_PORT,
     db: env.REDIS_DB,
+    password: env.REDIS_PASSWORD,
     tls: env.REDIS_TLS,
     connectTimeout: env.REDIS_CONNECT_TIMEOUT,
     commandTimeout: env.REDIS_COMMAND_TIMEOUT,
