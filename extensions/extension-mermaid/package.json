@@ -39,6 +39,7 @@
     "dev": "bunx tsup --watch",
     "playground": "bun --hot docs-playground --entry ./test/playground/main.ts --port 5178",
     "docs:screenshots": "bun run build && bunx start-server-and-test playground http://127.0.0.1:5178 'bunx cypress run --config specPattern=cypress/docs/**/*.cy.ts'",
+    "docs:gif": "bun run build && bunx start-server-and-test playground http://127.0.0.1:5178 'bun cypress/docs/demo-gif.ts'",
     "pretest": "bun run build",
     "test": "bun run test:unit && bunx start-server-and-test playground http://127.0.0.1:5178 cypress:run",
     "test:unit": "bun test src",

@@ -8,8 +8,8 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-mermaid/assets/preview-dark.png">
-    <img alt="A Mermaid code block with its source on top and the drawn flowchart under it" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-mermaid/assets/preview-light.png">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-mermaid/assets/demo-dark.gif">
+    <img alt="A Mermaid radar chart in the editor. Changing one score reshapes a curve, a new curve line adds a third shape, and Hide source leaves only the chart" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-mermaid/assets/demo-light.gif">
   </picture>
 </p>
 
@@ -21,9 +21,12 @@ Diagrams are drawn by [Pele](https://pele.run), the Mermaid renderer by Steph An
 
 ## Why use it
 
-- **Drawn by Pele.** Pele is a small renderer that loads on demand. mermaid.js is not a dependency. Its speed claims and our own timing, with their limits, are in [About Pele](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/pele.md).
-- **No new node.** A diagram is a standard `codeBlock` with `language: 'mermaid'`. Removing the extension leaves plain code blocks. Yjs merges the source per character.
-- **A plain fence in storage.** The document holds a `mermaid` fence, as on GitHub, GitLab and Obsidian. The SVG is never stored.
+- **The diagram follows the text.** The SVG redraws 300 ms after you stop typing, for local and remote edits. A mistake names its line and column, and the last good diagram stays in view.
+- **Charts, not only flowcharts.** Pele detects 33 diagram types, such as sequence, Gantt, pie, radar, sankey, XY chart and mind map. See the [Gallery](#gallery).
+- **Drawn by Pele, loaded on demand.** One chunk loads per diagram type. mermaid.js is not a dependency. Pele's speed claims and our own timing, with their limits, are in [About Pele](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/pele.md).
+- **Readers see the diagram, writers see both.** Hide source folds the text away. Read-only editors start folded. Syntax and Copy sit in the same head.
+- **No new node, and a plain fence in storage.** A diagram is a standard `codeBlock` with `language: 'mermaid'`. The document holds a `mermaid` fence, as on GitHub, GitLab and Obsidian, and never the SVG. Removing the extension leaves plain code blocks. Yjs merges the source per character.
+- **Light and dark from your page.** The default colours follow `color-scheme`. Pele's `--pele-*` variables, or the `theme` option, set your own.
 - **Safe defaults, with one gap.** Pele escapes diagram text. Links and remote images are off, and size limits cap the work. The SVG is not sanitized unless you pass `sanitize`, so pass it for sources you do not trust.
 
 ## Install
@@ -121,6 +124,70 @@ Mermaid.configure({
 ```
 
 `durationMs` covers Pele plus the sanitizer. It is null for every state except `ready` and `error`. See [onStateChange](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/api.md#onstatechange).
+
+## Gallery
+
+Each block is a plain `mermaid` fence, drawn with the default colours. Each screenshot has a light and a dark version, and follows your system preference.
+
+<details>
+<summary><strong>Flowchart</strong> — source on top, diagram under it</summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-mermaid/assets/preview-dark.png">
+    <img alt="A Mermaid code block with its source on top and the drawn flowchart under it" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-mermaid/assets/preview-light.png">
+  </picture>
+</p>
+
+</details>
+
+<details>
+<summary><strong>XY chart</strong> — bars and a line on shared axes</summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-mermaid/assets/xychart-dark.png">
+    <img alt="An XY chart of weekly signups with a bar and a line for each day, source hidden" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-mermaid/assets/xychart-light.png">
+  </picture>
+</p>
+
+</details>
+
+<details>
+<summary><strong>Sankey</strong> — flows between stages</summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-mermaid/assets/sankey-dark.png">
+    <img alt="A sankey diagram from visitors to sign-ups, writing and sharing, source hidden" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-mermaid/assets/sankey-light.png">
+  </picture>
+</p>
+
+</details>
+
+<details>
+<summary><strong>Mind map</strong> — an outline as branches</summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-mermaid/assets/mindmap-dark.png">
+    <img alt="A mind map with docs.plus at the root and Write, Talk and Share branches, source hidden" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-mermaid/assets/mindmap-light.png">
+  </picture>
+</p>
+
+</details>
+
+<details>
+<summary><strong>Sequence</strong> — messages between participants</summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-mermaid/assets/sequence-dark.png">
+    <img alt="A sequence diagram where You, Editor and Pele pass a source and an SVG, source hidden" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-mermaid/assets/sequence-light.png">
+  </picture>
+</p>
+
+</details>
 
 ## Documentation
 
