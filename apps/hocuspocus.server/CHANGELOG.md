@@ -12,6 +12,8 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Added
 
+- **An admin can soft-delete one account on the owner's request ([#471](https://github.com/docs-plus/docs.plus/issues/471)).**
+  Use `DELETE /api/admin/users/:id`. It clears the profile, removes the avatar and bans the user. It turns off push and email and drops pending queued email. The email address is kept. It refuses an admin or an unknown id. A `500` may leave the profile cleared. Retry the call.
 - **AI apps can write Mermaid diagrams through the MCP connector.**
   The server instructions and the `markdown` field descriptions tell an agent that a `mermaid` fence becomes a diagram. The field descriptions also name the types it can start with. Before `create_document`, `append_to_document`, `edit_blocks` or `replace_text` writes, the server parses each diagram with Pele. It refuses an empty diagram, an unsupported type, a parse error, or one over 15 000 characters or 500 edges, and nothing is written. A parse refusal carries Pele's message, so the agent can fix it. The backend now depends on `pele` 1.6.0.
 
@@ -28,14 +30,47 @@ This file is the operator and API changelog. The pad product lives in the [root 
   `update_user_online_at` now stamps `online_at` only on an `ONLINE` write, so
   a sweep or tab hide keeps the last heartbeat. This narrows the 2.1.0 #417
   entry. Apply the Supabase migration `20261014120000_presence_stamp_online_only` (#489).
+- **The chat bell now uses the online lease, as push does.** A member counts as
+  online only when `status` is `ONLINE` and `online_at` is under 2 minutes old.
+  Before, a member left `ONLINE` with a stale or NULL `online_at` got no bell,
+  push or email. Apply the Supabase migration `20261014120100_bell_reads_online_lease` (#490).
+- **A queued email is skipped when the member already read the message in the
+  channel.** The email check looked only at the bell read mark, so reading in
+  the channel did not stop it. Apply the Supabase migration
+  `20261014120300_skip_email_when_channel_read` (#497).
+- **A restore on a cold document waits for its own commit ([#229](https://github.com/docs-plus/docs.plus/issues/229)).**
+  It answers `503 DOCUMENT_BUSY` when earlier writes are still saving at the 20 s deadline, and nothing is restored.
+- **An erased account no longer gets bell rows.** Push and email already stopped. Apply the Supabase migration `20261019120000_skip_notification_for_deleted_receiver`.
 
 ### Security
 
+- **Every Redis client can now send a password ([#438](https://github.com/docs-plus/docs.plus/issues/438)).**
+  Set the optional `REDIS_PASSWORD` so each client sends a password. Redis
+  itself still has no `requirepass`. An empty value keeps today's behaviour.
+  The `redis-exporter` service in `docker-compose.observability.yml` needs the
+  password too. It now passes `REDIS_PASSWORD`, read from
+  `.env.observability`, not `.env.production`. Set the value there before you
+  turn on `requirepass`.
 - **MCP titles now stay inside the data frame ([#457](https://github.com/docs-plus/docs.plus/issues/457)).**
   This closes the known gap that 2.1.0 shipped with. `find_documents` frames
   its title list. `get_outline` and `list_chat_rooms` no longer repeat heading
   titles unframed in `structuredContent`. Each `get_outline` line now shows
   the heading level, which only `structuredContent` gave before.
+- **Supabase grants are closed in one pass.** The `internal` helper functions,
+  the self-gated RPCs, the trigger functions and the anon table rights lose
+  their open default grants. New document-view partitions close themselves.
+  Apply these Supabase migrations in order: `20261014121000`, `20261014121100`,
+  `20261014121200` and `20261014121300` (#469, #318, #470, #315). Run
+  `packages/supabase/scripts/check-grants.sql` read-only before and after the
+  push (#317). The run before the push is a baseline. After the push, any row
+  blocks the next push until it is fixed or ruled. The `default_acl_*` rows stay
+  until #316 is ruled and lands.
+
+### Removed
+
+- **`create_direct_message_channel` and the `pg_net` extension.** Nothing in the
+  repo called either one. Apply the Supabase migrations `20261014121400` and
+  `20261014121500` (#319, #321).
 
 ## [2.1.0] — 2026-10-13
 

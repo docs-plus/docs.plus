@@ -70,7 +70,7 @@ The documents controller emits this envelope on error and `{ "success": true, "d
 
 > **Known inconsistency — not yet wired globally.** Several handlers return ad-hoc shapes instead of the canonical envelope. Wiring `getErrorResponse` everywhere is a separate task. Until then expect these variants:
 >
-> - `{ "error": "..." }` — email handlers, admin middleware, media-upload guards.
+> - `{ "error": "..." }` — email handlers, admin middleware, the upload no-file 400 and media file reads.
 > - `{ "success": false, "code": "...", "message": "..." }` (note `code`/`message` at top level, not nested) — `/api/metadata`; its `code` is `INVALID_URL` or `BLOCKED_URL`.
 > - Email `send-*` and `bounce` success bodies are `{ "success": true, ... }` with their own fields, not the `data` wrapper.
 
@@ -258,7 +258,7 @@ All three surfaces are service-role only (`Authorization: Bearer <SUPABASE_SERVI
 
 ### Identifying a document
 
-Content routes address documents by **`documentId`** — the 19-character id that is also the collaboration room name and the snapshot key. Never by slug. The slug read never 404s: it synthesizes a draft and mints a fresh `documentId` on every call. So an automation trusting it would address a room no client will ever join.
+Content routes address documents by **`documentId`** — the 19-character id that is also the collaboration room name and the snapshot key. Never by slug. The slug read never 404s: it synthesizes a draft whose `documentId` has no saved document yet. So a content call to that id answers `404`.
 
 Resolve a slug once with `GET /api/documents/:docName` and keep the `documentId` from the response. A synthesized draft carries no `id` or `createdAt` — that absence is how you detect a mistyped slug.
 
@@ -352,7 +352,7 @@ Live and cold documents take the same path. If collaborators have the document o
 
 **Concurrency** is CRDT last-writer-wins; there is no checksum or `If-Match` guard. Across replicas, `replace` guarantees removal of _persisted_ content — concurrent unsynced edits on another replica may survive as a union or be superseded by CRDT order. Both are safe; neither corrupts.
 
-**Verifying a write.** A `200` means the payload reached the live document and its save was handed off for persistence. Your own write flushes at once, not on the store debounce. So the 10 s / 60 s figures in the **Staleness** note above describe browser edits, never your verification wait. Confirm a write by comparing the content `GET /api/documents/:documentId/content?format=json` returns.
+**Verifying a write.** A `200` means the payload reached the live document and its save was handed off for persistence. A `200` with `version` means the write is saved. On an open document the `200` has no `version`, and a `GET` can trail the write. See [Durability contract](#durability-contract). Confirm a write by comparing the content `GET /api/documents/:documentId/content?format=json` returns.
 
 **One document, one write at a time.** The collaboration process runs writes to one document in order. On a cold document each write waits for its saved row, up to 20 s from arrival. So a burst of parallel writes to one document can get `503 DOCUMENT_BUSY` for the writes that could not start in time. Nothing was applied for those. Send writes to one document in sequence.
 
@@ -658,6 +658,8 @@ So a restore **appends** two versions and never rewinds the counter. Undoing one
 
 **When persistence is wedged**, the backup is already committed and the replacement may already be visible to live collaborators without ever reaching the database. That is the persist-failed `500`, and it carries the same rule as [`PATCH /content`](#patch-apidocumentsdocumentidcontent). Verify with `GET` before retrying, and treat a repeat for the same document as persistence being wedged for it until the collaboration process restarts.
 
+**A restore waits its turn, like [`PATCH /content`](#patch-apidocumentsdocumentidcontent).** Writes to one document run in order. On a cold document a restore waits up to 20 s from arrival for its saved row. `503 DOCUMENT_BUSY` means earlier writes to the document were still saving at that deadline. Nothing was restored, so a retry after a few seconds is safe. If the restore's own save is slow, it still answers `200`: the backup and the replacement exist, and the next write waits for them.
+
 The editor's in-app revert runs the same operation over the collaboration server's stateless channel instead of this route. That path requires an authenticated, writable connection, which is why it can attribute the resulting rows to a person and this one cannot.
 
 ### Status codes
@@ -674,6 +676,7 @@ The editor's in-app revert runs the same operation over the collaboration server
 | `429`  | `RATE_LIMIT_EXCEEDED`   | Global rate limiter. The house envelope; the retry seconds ride the `Retry-After` header — see [Rate limiting](#rate-limiting)                                                                                                                                         |
 | `500`  | `INTERNAL_SERVER_ERROR` | Snapshot decode failure on read; the document could not be opened; the pre-restore backup failed; the save failed; or the REST and collaboration processes holding different service-role keys, which the message names explicitly                                     |
 | `503`  | `SERVICE_UNAVAILABLE`   | The collaboration process is unreachable or did not answer within 30 s. Only the checkpoint and the restore hop, so no read route can return this                                                                                                                      |
+| `503`  | `DOCUMENT_BUSY`         | Restore only. Earlier writes to the same document were still saving at the 20 s deadline. Nothing was restored                                                                                                                                                         |
 
 `DRAFT_DOCUMENT` is specific to these routes. It shares the `422` status with invalid content, so a caller that only reads the status still behaves correctly. It also carries its own code, so one can be told from the other.
 
@@ -1223,6 +1226,9 @@ Two audit routes are easy to misread. `/audit/media-storage` and `/audit/media-s
 | GET    | `/users/document-counts`  | Document count per user  |
 | GET    | `/users/admins`           | All admin user IDs       |
 | POST   | `/users/:id/toggle-admin` | Grant or revoke admin    |
+| DELETE | `/users/:id`              | Soft-delete one account  |
+
+`DELETE /users/:id` clears the profile, removes the avatar and bans the user. It turns off push and email, removes the push subscriptions and drops pending queued email. The email address is kept. It answers 409 `{ error }` for an unknown id or an admin, and 400 `VALIDATION_ERROR` for an id that is not a UUID. A 500 may leave the profile cleared. Retry: every step is safe to repeat.
 
 **Documents**
 
@@ -1321,7 +1327,7 @@ The module lives in `src/modules/email-setup/`. Both routes use the house envelo
 | POST   | `/audit/ghost-accounts/resend-confirmation` | Resend magic link         |
 | POST   | `/audit/ghost-accounts/cleanup-anonymous`   | Clean stale anon sessions |
 
-Both ghost-account delete routes check each id again before they delete. They refuse a user who signed in after the list loaded, an admin, and an unknown id. `DELETE /audit/ghost-accounts/:id` then answers `409` with `{ error }`. A non-uuid id answers `400` `VALIDATION_ERROR`. The bulk route counts a refused id under `failed` and adds a line to `errors`. A failed impact read or admin read also stops the delete. So does an Auth read error other than `404`. The single route answers `500`, and the bulk route counts the id as failed. A soft delete bans the user and clears the public profile: name, photo, bio and links. It also removes the `user_avatars` objects and sets the username to `deleted_` plus 12 hex characters of the id.
+Both ghost-account delete routes check each id again before they delete. They refuse a user who signed in after the list loaded, an admin, and an unknown id. `DELETE /audit/ghost-accounts/:id` then answers `409` with `{ error }`. A non-uuid id answers `400` `VALIDATION_ERROR`. The bulk route counts a refused id under `failed` and adds a line to `errors`. A failed impact read or admin read also stops the delete. So does an Auth read error other than `404`. The single route answers `500`, and the bulk route counts the id as failed. A soft delete bans the user and clears the public profile: name, photo, bio and links. It also removes the `user_avatars` objects and sets the username to `deleted_` plus 12 hex characters of the id. It turns off push and email the same way `DELETE /users/:id` does. A failed avatar, ban, push or queued-email step answers `500` on the single route. The bulk route counts that id as failed.
 
 ## Push notifications
 
