@@ -13,6 +13,7 @@ import type { TiptapDocJson, WsApplyOutcome } from '../../document-content/types
 import { exportMarkdown } from '../../document-conversion/domain/markdownExport'
 import { parseMarkdown } from '../../document-conversion/domain/markdownImport'
 import { MAX_MARKDOWN_CHARS } from '../../document-conversion/types'
+import { checkDiagrams, checkReplacedDiagram, DIAGRAM_KEYWORDS } from '../domain/checkDiagrams'
 import { checkFragment } from '../domain/checkFragment'
 import { buildOutline } from '../domain/outline'
 import { hasMedia, redactMedia } from '../domain/redactMedia'
@@ -65,11 +66,16 @@ const titleHeading = (title: string): Record<string, unknown> => ({
   content: [{ type: 'text', text: title }]
 })
 
+// Hosts read input schemas more reliably than server instructions, so the hint lives here too.
+const DIAGRAM_HINT = `A \`\`\`mermaid fenced code block becomes a diagram in the pad. Start it with one of: ${DIAGRAM_KEYWORDS.join(', ')}. Every type but mindmap and kanban accepts accTitle: and accDescr: lines for screen readers.`
+
 const markdownField = z
   .string()
   .min(1)
   .max(MAX_MARKDOWN_CHARS)
-  .describe('Markdown to write. Use ## or deeper headings; # is the document title.')
+  .describe(
+    `Markdown to write. Use ## or deeper headings; # is the document title. ${DIAGRAM_HINT}`
+  )
 
 // The internal hop 400s any other shape, which would read as "unreachable".
 const revField = z.string().trim().regex(REV_PATTERN).describe('From get_outline or read_document')
@@ -95,10 +101,13 @@ const renderOutline = (nodes: OutlineNode[], depth = 0): string[] =>
     ...renderOutline(node.children, depth + 1)
   ])
 
-const parseFragment = (markdown: string, intoEmpty = false): TiptapDocJson => {
+const parseFragment = async (markdown: string, intoEmpty = false): Promise<TiptapDocJson> => {
   const parsed = parseMarkdown(markdown)
   const problem = checkFragment(parsed.content, intoEmpty)
-  return problem ? refuse(FRAGMENT_TEXT[problem]) : parsed
+  if (problem) return refuse(FRAGMENT_TEXT[problem])
+  // The pad would show an error box in its place, and the agent would never see it.
+  const diagram = await checkDiagrams(parsed.content)
+  return diagram ? refuse(`markdown: ${diagram} Fix it and retry.`) : parsed
 }
 
 // A block edit renumbers the blocks after it. A fresh rev would let an agent
@@ -208,7 +217,7 @@ export const registerDocumentTools = (
       if (caller.isAnonymous)
         return toolError('Sign in with a docs.plus account to create a document.')
       const name = replaceLineBreaks(title, ' ')
-      const fragment = markdown ? parseFragment(markdown) : null
+      const fragment = markdown ? await parseFragment(markdown) : null
       const outcome = await createOwnedDocument(deps.prisma, {
         title: name,
         content: { type: 'doc', content: [titleHeading(name), ...(fragment?.content ?? [])] },
@@ -296,7 +305,7 @@ export const registerDocumentTools = (
       const doc = await openDocument(slug, 'own')
       // "Empty" as the applier counts it: no top-level node at all.
       const content = await loadContent(doc)
-      const fragment = parseFragment(markdown, (content.content ?? []).length === 0)
+      const fragment = await parseFragment(markdown, (content.content ?? []).length === 0)
       const outcome = await deps.content.apply({
         documentId: doc.documentId,
         mode: 'append',
@@ -335,7 +344,7 @@ export const registerDocumentTools = (
           .max(MAX_MARKDOWN_CHARS)
           .default('')
           .describe(
-            'Markdown to insert at the caret; empty only removes. A heading in it must be deeper than the section heading, no shallower than the next heading, and can go only at the end of the section.'
+            `Markdown to insert at the caret; empty only removes. A heading in it must be deeper than the section heading, no shallower than the next heading, and can go only at the end of the section. ${DIAGRAM_HINT}`
           )
       }),
       annotations: {
@@ -357,7 +366,7 @@ export const registerDocumentTools = (
       }) => {
         const doc = await openDocument(slug, 'own')
         const fragment: TiptapDocJson = markdown.trim()
-          ? parseFragment(markdown)
+          ? await parseFragment(markdown)
           : { type: 'doc', content: [] }
         // Checked before the write too: a refusal inside the applier has already
         // loaded a cold collab room, and its unload stores an unnamed version row.
@@ -416,7 +425,7 @@ export const registerDocumentTools = (
     {
       title: 'Replace text',
       description:
-        'Change words inside a paragraph, list item or table cell in one section of a document you own, and leave everything else as it is. old_text must appear exactly once in the section body, inside one stretch of text: not across two paragraphs, a picture or a line break. Include a few words around the spot to make it unique. To insert, repeat the nearby words in old_text and add yours in new_text. To delete, leave new_text empty. new_text is plain text and keeps the formatting of the text it replaces. For new paragraphs, lists or formatting, use edit_blocks. The reply gives the new rev of the section for the next replace_text.',
+        'Change words inside a paragraph, list item, table cell or diagram in one section of a document you own, and leave everything else as it is. old_text must appear exactly once in the section body, inside one stretch of text: not across two paragraphs, a picture or a line break. Include a few words around the spot to make it unique. To insert, repeat the nearby words in old_text and add yours in new_text. To delete, leave new_text empty. new_text is plain text and keeps the formatting of the text it replaces. For new paragraphs, lists or formatting, use edit_blocks. The reply gives the new rev of the section for the next replace_text.',
       inputSchema: z.object({
         slug: slugField,
         section_id: sectionIdField.describe('From get_outline'),
@@ -451,7 +460,8 @@ export const registerDocumentTools = (
         if (!section) return toolError(noHeadingText(sectionId))
         if (section.rev !== rev) return toolError(CONFLICT_TEXT)
 
-        const runs = jsonTextRuns(nodes.slice(section.start, section.end))
+        const body = nodes.slice(section.start, section.end)
+        const runs = jsonTextRuns(body)
         let match = findUniqueText(runs, oldText)
         // read_document is Markdown, so copied text can carry escapes such as \_ or \[.
         if (!match.ok && match.count === 0 && unescapeMarkdown(oldText) !== oldText) {
@@ -469,6 +479,8 @@ export const registerDocumentTools = (
         if (oldText === newText) {
           return toolError('new_text: it is the same as old_text, so nothing would change.')
         }
+        const diagram = await checkReplacedDiagram(body, oldText, newText)
+        if (diagram) return toolError(`new_text: ${diagram} Fix it and retry.`)
 
         const outcome = await deps.content.apply({
           documentId: doc.documentId,

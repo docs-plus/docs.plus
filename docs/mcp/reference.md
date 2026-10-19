@@ -91,9 +91,18 @@ The `title` becomes the `#` heading, and `markdown`, if given, follows it. The M
 - Both tools check the section `rev`. `replace_text` returns the new `rev`, so a second text edit needs no new read. `edit_blocks` returns no `rev`: its edit renumbers the blocks after it, and an agent that reused its old numbers could remove the wrong block. So it must read the section again.
 - `read_document` escapes Markdown characters, such as `snake\_case`. `replace_text` first looks for `old_text` as given, and if that finds nothing, it tries again with those escapes removed.
 
+**Diagrams.** A fenced code block whose language is exactly `mermaid` becomes a [diagram](../diagrams.md) in the pad. `read_document` returns it as the same fence. Before a write, the server parses each diagram with [Pele](https://pele.run), the renderer the pad uses. It checks the Markdown of `create_document`, `append_to_document` and `edit_blocks`, at any depth. For `replace_text`, it checks the diagram source after the change. A diagram is refused, and nothing is written, when:
+
+- it is empty;
+- Pele does not draw its type;
+- Pele cannot parse it, and the error text then carries Pele's message;
+- it is larger than 15 000 characters or 500 edges, the pad's own limits.
+
+The check parses only. It does not lay the diagram out. The `markdown` field descriptions name the diagram types an agent can start with.
+
 `post_chat_message` only adds a message, so it is not destructive. It reaches other people: room members who follow every message and are away get a notification. Every `@` is removed, so it never sends a mention or `@everyone` notification.
 
-**Server instructions.** The `initialize` result carries `instructions`. They say that these tools act as the signed-in person, and that a browser session is not signed in as them. To start a document, they name `create_document`. To change one, they name `replace_text` and `edit_blocks`. A host may ignore them. The server info also carries `title`, `websiteUrl` and `description`.
+**Server instructions.** The `initialize` result carries `instructions`. They say that these tools act as the signed-in person, and that a browser session is not signed in as them. To start a document, they name `create_document`. To change one, they name `replace_text` and `edit_blocks`. They suggest a `mermaid` diagram where a picture is clearer than text. A host may ignore them. The server info also carries `title`, `websiteUrl` and `description`.
 
 ## Limits
 
