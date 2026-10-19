@@ -323,7 +323,7 @@ make scale-webapp        # webapp=3
 make scale-hocuspocus    # rest-api=3, hocuspocus-server=5, hocuspocus-worker=3
 ```
 
-`scale-hocuspocus` raises all three backend processes at once, so check your Postgres `max_connections` first. Both targets run `up -d --scale` without `--no-recreate`, so a changed config or `DEPLOY_TAG` recreates the serving replicas. Read [Scaling past the defaults](docs/self-hosting/configuration.md#scaling-past-the-defaults) first.
+`scale-hocuspocus` raises all three backend processes at once, so check your Postgres `max_connections` first. The [backend docs](apps/hocuspocus.server/Readme.md#scaling-character) advise scaling them independently. Both targets run `up -d --scale` without `--no-recreate`, so a changed config or `DEPLOY_TAG` recreates the serving replicas. Read [Scaling past the defaults](docs/self-hosting/configuration.md#scaling-past-the-defaults) first.
 
 For any other count, edit `deploy.replicas` in `docker-compose.prod.yml`.
 
