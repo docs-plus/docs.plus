@@ -40,7 +40,7 @@ None of these ship in the compose file.
 | **A Google OAuth client**          | The admin dashboard signs in with Google only         | Editor users can still sign in with an email link. The sign-in dialog always shows a Google button, and it fails while the provider is off. See [Turn on Google sign-in](configuration.md#turn-on-google-sign-in).                                      |
 | **A domain, with DNS you control** | TLS, and routing to the right service                 | Traefik uses the HTTP challenge, so ports 80 and 443 must be reachable from the internet.                                                                                                                                                               |
 
-Chat also needs a Virtuoso Message List license, a paid third-party key. Without it, chat shows no messages on any host except `localhost` and similar local hosts. See `NEXT_PUBLIC_VIRTUOSO_LICENSE` in [Webapp and admin build values](configuration.md#webapp-and-admin-build-values).
+Chat also needs a Virtuoso Message List license, a paid third-party key. [Webapp and admin build values](configuration.md#webapp-and-admin-build-values) says where `NEXT_PUBLIC_VIRTUOSO_LICENSE` goes and what breaks without it.
 
 ## Host prerequisites
 
@@ -49,8 +49,6 @@ Chat also needs a Virtuoso Message List license, a paid third-party key. Without
 - Node.js 24.11.0 or newer
 - GNU Make
 - Git
-
-Bun only. This repository never uses npm, yarn, pnpm, or npx.
 
 ## Size the machine
 
@@ -62,7 +60,7 @@ Next step: start with 8 GB of memory and watch it. Redis is not a cache here —
 
 Read these before you start. Each one has caught somebody.
 
-**Local disk storage does not work in production.** The template ships `STORAGE_TYPE=local` and `PERSIST_TO_LOCAL_STORAGE=true`. The REST API runs two replicas with no shared volume. So an upload lands in one container, is invisible to the other, and disappears on the next deploy. Next step: set `PERSIST_TO_LOCAL_STORAGE=false` and configure object storage before you let anybody upload.
+**Local disk storage does not work in production.** The template stores uploads on local disk. The REST API runs two replicas with no shared volume, so an upload lands in one container and disappears on the next deploy. Next step: configure object storage before you let anybody upload. [Template values to fix before you deploy](configuration.md#template-values-to-fix-before-you-deploy) names the value to change.
 
 **The Traefik hostnames are hard-coded.** Five label lines in `docker-compose.prod.yml` name `docs.plus`, `prodback.docs.plus`, and `admin.docs.plus`. No environment variable covers them. The shipped Traefik folder also routes two docs.plus test hosts. Next step: edit those five lines to your own domains, or nothing routes. Then remove the test hosts. [Install, step 4](install.md#4-point-your-domains-at-the-server) has both steps.
 

@@ -262,7 +262,7 @@ Each of these fails quietly. No error, and no log line that names the cause.
 
 - A `NEXT_PUBLIC_` value changed after `make build`. It has no effect until you rebuild.
 - `PUBLIC_RESTAPI_URL` unset. Word imports then report every image as dropped, and exports omit pictures.
-- `PERSIST_TO_LOCAL_STORAGE=true` in production. Uploads land on one replica and vanish on redeploy.
+- `PERSIST_TO_LOCAL_STORAGE=true` in production. Uploads land on one replica and vanish on redeploy. See [Template values to fix before you deploy](configuration.md#template-values-to-fix-before-you-deploy).
 - Redis unavailable. Rate limiting turns itself off and every request passes.
 - A stopped worker. Documents look saved in the editor and never reach the database.
 
