@@ -10,6 +10,23 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 
 ## [Unreleased]
 
+### Highlights
+
+- **Mermaid diagrams.** Write a ` ```mermaid ` block and see the diagram
+  under it, in the pad and in History. Pele draws it. The same engine ships as
+  the new `@docs.plus/extension-mermaid` package ([#521](https://github.com/docs-plus/docs.plus/issues/521)).
+- **Safer by default.** Supabase grants are closed on helper functions,
+  self-gated RPCs, anon tables and new partitions, and Restore now takes the
+  same per-document lock as content writes.
+
+### Self-hosting
+
+- Apply the new Supabase migrations in order, then run
+  `packages/supabase/scripts/check-grants.sql` (see the
+  [hocuspocus CHANGELOG](apps/hocuspocus.server/CHANGELOG.md)).
+- `REDIS_PASSWORD` is new and optional. Set it everywhere before Redis requires
+  one ([#438](https://github.com/docs-plus/docs.plus/issues/438)).
+
 ## [2.1.0] — 2026-10-13
 
 **A feature release for writers, and an email change for self-hosters.** The webapp and

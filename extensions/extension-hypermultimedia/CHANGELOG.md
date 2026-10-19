@@ -8,6 +8,11 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
+### Documentation
+
+- The README links to the new Discord invite ([#480](https://github.com/docs-plus/docs.plus/issues/480)).
+- The API and security docs name `isSafeMediaSrc`, the scheme gate ([#485](https://github.com/docs-plus/docs.plus/issues/485)).
+
 ## [2.1.0] — 2026-10-13
 
 An earlier draft of this entry carried the date 2026-09-17. That draft was

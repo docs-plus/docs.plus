@@ -10,6 +10,11 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ## [Unreleased]
 
+### Documentation
+
+- The README links to the new Discord invite ([#480](https://github.com/docs-plus/docs.plus/issues/480)).
+- The migration guide lists `file:` and `blob:` with the rejected URL schemes ([#485](https://github.com/docs-plus/docs.plus/issues/485)).
+
 ## [2.1.0] — 2026-10-13
 
 ### Highlights

@@ -16,6 +16,37 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ## [Unreleased]
 
+### Added
+
+- **Mermaid diagrams in the pad, History and `/editor`.** Type a
+  ` ```mermaid ` fence, or pick Diagram from the slash menu or the Code
+  select, which inserts a starter example. The live diagram draws under the
+  source. Writers start with the source open; read-only views, History and
+  visitors start with it folded, and each viewer's choice is remembered. The
+  head shows Syntax, Copy and Hide source on hover. The SVG is sanitized, print
+  shows the drawn diagram, and the PWA does not precache the renderer
+  ([#528](https://github.com/docs-plus/docs.plus/issues/528), [#529](https://github.com/docs-plus/docs.plus/issues/529)).
+
+### Fixed
+
+- **Online status stays correct across tab switches and reloads.** The status
+  writer keys on the signed-in user, waits before it writes OFFLINE, and logs a
+  failed write ([#492](https://github.com/docs-plus/docs.plus/issues/492)).
+- **The @ picker shows the same online people as the avatars**
+  ([#493](https://github.com/docs-plus/docs.plus/issues/493)).
+- **Hyperlink suggestions no longer ask for bookmarks before sign-in**
+  ([#318](https://github.com/docs-plus/docs.plus/issues/318)).
+- **A failed access change cannot write an old pad's data back.** After a pad
+  switch, the rollback now does nothing.
+- **The Discord links point at a working invite** ([#480](https://github.com/docs-plus/docs.plus/issues/480)).
+
+### Internal
+
+- One Presence awareness room is the only writer of presence faces.
+- One Pad session opens a pad; the duplicate `workspaceId` store field is gone.
+- One module answers every read-side owner question (`isDocumentOwner`).
+- One Settings opener owns open state, the tab and hash intake for all hosts.
+
 ## [2.1.0] — 2026-10-13
 
 This entry holds the pad UI notes for this package. The highlights of the

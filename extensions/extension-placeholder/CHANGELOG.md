@@ -2,6 +2,12 @@
 
 All notable changes to `@docs.plus/extension-placeholder` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Documentation
+
+- The README links to the new Discord invite ([#480](https://github.com/docs-plus/docs.plus/issues/480)).
+
 ## [2.1.0] — 2026-10-13
 
 Aligned to docs.plus 2.1.0 family release. No behavioral changes since 2.0.0.

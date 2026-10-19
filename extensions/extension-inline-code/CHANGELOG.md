@@ -2,6 +2,13 @@
 
 All notable changes to `@docs.plus/extension-inline-code` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Documentation
+
+- The README and the guide describe the Safari before 16.4 fallback correctly ([#485](https://github.com/docs-plus/docs.plus/issues/485)).
+- The README links to the new Discord invite ([#480](https://github.com/docs-plus/docs.plus/issues/480)).
+
 ## [2.1.0] — 2026-10-13
 
 ### Highlights
