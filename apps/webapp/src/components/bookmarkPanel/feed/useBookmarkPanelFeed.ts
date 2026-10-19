@@ -1,7 +1,7 @@
 import { getUserBookmarks } from '@api'
 import { loadBookmarkStats } from '@hooks/usePadBookmarkStats'
 import { usePanelFeedSentinel } from '@hooks/usePanelFeedSentinel'
-import { useAuthStore, useChatStore, useStore } from '@stores'
+import { selectDocumentId, useAuthStore, useChatStore, useStore } from '@stores'
 import { type TBookmarkTab, type TBookmarkWithMessage } from '@types'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -20,7 +20,7 @@ type UseBookmarkPanelFeedResult = {
 }
 
 export function useBookmarkPanelFeed(): UseBookmarkPanelFeedResult {
-  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const workspaceId = useStore(selectDocumentId)
   const userId = useAuthStore((state) => state.profile?.id)
   const bookmarks = useChatStore((state) => state.bookmarks)
   const bookmarkActiveTab = useChatStore((state) => state.bookmarkActiveTab)

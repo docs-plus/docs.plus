@@ -1,5 +1,5 @@
 import { getChannelIdForHeading, upsertChannel } from '@api'
-import { useAuthStore, useChatStore, useStore } from '@stores'
+import { selectDocumentId, useAuthStore, useChatStore, useStore } from '@stores'
 import { useLayoutEffect, useState } from 'react'
 import slugify from 'slugify'
 
@@ -50,7 +50,7 @@ const adoptChannel = (headingId: string, channelId: string | null) => {
  */
 export const useHeadingChannel = (): unknown => {
   const headingId = useChatStore((state) => state.chatRoom.headingId)
-  const workspaceId = useStore((state) => state.settings.metadata?.documentId)
+  const workspaceId = useStore(selectDocumentId)
   const uid = useAuthStore((state) => state.profile?.id) ?? ''
   const joinedWorkspace = useStore((state) => state.settings.workspaceJoin === 'joined')
   const canWrite = Boolean(uid && joinedWorkspace)

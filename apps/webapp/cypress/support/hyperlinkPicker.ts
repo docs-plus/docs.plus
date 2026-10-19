@@ -23,6 +23,7 @@ export const PICKER_SELECTORS = {
 }
 
 const TEST_WORKSPACE_ID = '00000000-0000-0000-0000-000000000001'
+const TEST_USER_ID = '00000000-0000-0000-0000-000000000002'
 
 /** A row shaped like `TBookmarkWithMessage` — only the fields read by `useHyperlinkSuggestions`. */
 const bookmarkRow = (input: {
@@ -82,8 +83,9 @@ export const TEST_BOOKMARKS = {
 
 /**
  * Stubs the Supabase RPC for both the archived and non-archived fetches (the
- * hook fires them in parallel) and seeds `workspaceId` so `queriesEnabled` flips
- * on. Call AFTER `cy.visitEditor` — it needs `window._store` published.
+ * hook fires them in parallel) and seeds `workspaceId` and a test profile so
+ * `queriesEnabled` flips on. Call AFTER `cy.visitEditor` — it needs
+ * `window._store` and `window._authStore` published.
  */
 export const setupBookmarkSuggestions = (
   rows: Array<typeof TEST_BOOKMARKS.active | typeof TEST_BOOKMARKS.archived> = [
@@ -102,6 +104,8 @@ export const setupBookmarkSuggestions = (
   cy.window().then((w) => {
     const win = w as unknown as EditorWindow
     if (!win._store) throw new Error('window._store missing — visitEditor must run first')
-    win._store.getState().setWorkspaceSetting('workspaceId', TEST_WORKSPACE_ID)
+    win._store.getState().setWorkspaceSetting('metadata', { documentId: TEST_WORKSPACE_ID })
+    if (!win._authStore) throw new Error('window._authStore missing — visitEditor must run first')
+    win._authStore.getState().setProfile({ id: TEST_USER_ID, username: 'tester' })
   })
 }

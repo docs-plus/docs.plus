@@ -1,6 +1,6 @@
 import { Icons } from '@icons'
 import { CHAT_OPEN } from '@services/eventsHub'
-import { useChatStore, useStore } from '@stores'
+import { selectDocumentId, useChatStore, useStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
 import PubSub from 'pubsub-js'
 import React, { useCallback } from 'react'
@@ -19,7 +19,7 @@ export const Breadcrumb = ({ className }: Props) => {
   const headingId = useChatStore((state) => state.chatRoom.headingId)
   const headingPath = useHeadingBreadcrumbPath()
 
-  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const workspaceId = useStore(selectDocumentId)
   const metadata = useStore((state) => state.settings.metadata)
 
   const openChatContainerHandler = useCallback(

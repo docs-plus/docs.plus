@@ -4,7 +4,7 @@ import {
   CHAT_MEDIA_MAX_ATTACHMENTS
 } from '@components/chatroom/utils/messageMediaPaths'
 import { openComposerSignIn } from '@components/chatroom/utils/openComposerSignIn'
-import { useAuthStore, useStore } from '@stores'
+import { selectDocumentId, useAuthStore, useStore } from '@stores'
 import { type ChangeEvent, useCallback, useRef } from 'react'
 
 import { useComposerAttachmentActions } from '../context/ComposerAttachmentActionsContext'
@@ -12,7 +12,7 @@ import { useComposerAttachmentList } from './useComposerAttachmentList'
 
 export function useComposerAttachInput() {
   const { channelId } = useChatroomContext()
-  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const workspaceId = useStore(selectDocumentId)
   const user = useAuthStore((state) => state.profile)
   const { addFiles } = useComposerAttachmentActions()
   const attachments = useComposerAttachmentList(workspaceId, channelId)

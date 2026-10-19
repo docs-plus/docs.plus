@@ -6,7 +6,7 @@ import { render, screen } from '@testing-library/react'
 import { HyperlinkEditor } from './HyperlinkEditor'
 
 jest.mock('@stores', () => ({
-  useStore: (selector: any) => selector({ settings: { workspaceId: undefined } })
+  useStore: (selector: any) => selector({ settings: { metadata: { documentId: undefined } } })
 }))
 
 // Bypass the data layer for the smoke test; suggestions render is

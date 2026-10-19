@@ -2,9 +2,13 @@ import Chatroom from '@components/chatroom/Chatroom'
 import { GlobalDialog } from '@components/ui/GlobalDialog'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import type { User } from '@supabase/supabase-js'
+import type { DocumentMetadata } from '@utils/fetchDocument'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
+
+// One id, as on a pad: the chat room, the composer drafts and the workspace reads share it.
+const E2E_DOCUMENT_ID = 'e2e-doc'
 
 function bootstrapE2EChannel(channelId: string, fetchMsgsFromId?: string | null) {
   const e2eProfile = {
@@ -17,9 +21,7 @@ function bootstrapE2EChannel(channelId: string, fetchMsgsFromId?: string | null)
 
   // Cypress seeds the browser session; do not replace it with an invalid JWT.
 
-  useChatStore
-    .getState()
-    .setChatRoom(channelId, 'e2e-doc', e2eProfile, fetchMsgsFromId ?? undefined)
+  useChatStore.getState().setChatRoom(channelId, E2E_DOCUMENT_ID, fetchMsgsFromId ?? undefined)
   useChatStore.getState().bootstrapChannel(
     channelId,
     {
@@ -33,8 +35,9 @@ function bootstrapE2EChannel(channelId: string, fetchMsgsFromId?: string | null)
     } as any,
     e2eProfile!.id
   )
-  useStore.getState().setWorkspaceSetting('workspaceId', 'e2e-workspace')
-  useStore.getState().setWorkspaceSetting('metadata', { documentId: 'e2e-doc' })
+  useStore
+    .getState()
+    .setWorkspaceSetting('metadata', { documentId: E2E_DOCUMENT_ID } as DocumentMetadata)
 }
 
 export default function E2EChatroomPage() {

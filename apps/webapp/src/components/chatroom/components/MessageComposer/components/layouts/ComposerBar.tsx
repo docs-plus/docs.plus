@@ -2,7 +2,7 @@ import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import type { ChatroomVariant } from '@components/chatroom/types/chatroom.types'
 import { CHAT_MEDIA_MAX_ATTACHMENTS } from '@components/chatroom/utils/messageMediaPaths'
 import { openComposerSignIn } from '@components/chatroom/utils/openComposerSignIn'
-import { useAuthStore, useStore } from '@stores'
+import { selectDocumentId, useAuthStore, useStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
 import { useEffect, useRef } from 'react'
 
@@ -32,7 +32,7 @@ export function ComposerBar({ variant, className }: Props) {
   const { channelId } = useChatroomContext()
   const { canSend } = useMessageComposer()
   const user = useAuthStore((state) => state.profile)
-  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const workspaceId = useStore(selectDocumentId)
   const attachments = useComposerAttachmentList(workspaceId, channelId)
   const { dropHandlers, dropSurfaceClassName } = useComposerFileDrop()
   const sendVoiceNote = useSendVoiceWhenReady(attachments)

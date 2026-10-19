@@ -1,5 +1,5 @@
 import { getUserBookmarks } from '@api'
-import { useAuthStore, useStore } from '@stores'
+import { selectDocumentId, useAuthStore, useStore } from '@stores'
 import { useQuery } from '@tanstack/react-query'
 import { logger } from '@utils/logger'
 import { useEffect, useMemo, useState } from 'react'
@@ -21,7 +21,7 @@ export function useHyperlinkSuggestions({
   query,
   disabled = false
 }: UseHyperlinkSuggestionsArgs): UseHyperlinkSuggestionsResult {
-  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const workspaceId = useStore(selectDocumentId)
   // Bookmarks are per person, so the reader's id belongs in the cache key. Without
   // it a background sign-in keeps serving the anonymous (empty) result.
   const userId = useAuthStore((state) => state.profile?.id)
@@ -46,7 +46,7 @@ export function useHyperlinkSuggestions({
     }
   }, [editor, disabled])
 
-  const queriesEnabled = Boolean(workspaceId) && !disabled
+  const queriesEnabled = Boolean(workspaceId) && Boolean(userId) && !disabled
 
   const active = useQuery({
     queryKey: ['hl-bookmarks', workspaceId, userId, 'active'],

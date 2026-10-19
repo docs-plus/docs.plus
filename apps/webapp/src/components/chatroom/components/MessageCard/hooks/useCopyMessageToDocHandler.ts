@@ -4,12 +4,12 @@ import {
 } from '@components/chatroom/utils/copyChatMediaToDocument'
 import { computeSection } from '@components/TipTap/extensions/shared'
 import * as toast from '@components/toast'
-import { useChatStore, useStore } from '@stores'
+import { selectDocumentId, useChatStore, useStore } from '@stores'
 import { TIPTAP_NODES, TMsgRow, TRANSACTION_META } from '@types'
 import { useCallback } from 'react'
 
 const createParagraphNodeJson = (message: TMsgRow) => {
-  const workspaceId = useStore.getState().settings.workspaceId
+  const workspaceId = selectDocumentId(useStore.getState())
   const documentSlug = location.pathname.split('/').pop()
   const channelId = message.channel_id || workspaceId
   const messageId = message.id

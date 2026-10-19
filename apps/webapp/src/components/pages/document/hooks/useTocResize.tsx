@@ -1,4 +1,4 @@
-import { useStore } from '@stores'
+import { selectDocumentId, useStore } from '@stores'
 import { MOTION_OVERLAY_IN_MS, prefersReducedMotion } from '@utils/motion'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
@@ -114,7 +114,7 @@ const clearResizeCursor = () => {
 
 export const useTocResize = () => {
   const tocRef = useRef<HTMLDivElement>(null)
-  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const workspaceId = useStore(selectDocumentId)
   const [tocWidth, setTocWidth] = useState<number>(TOC_DEFAULT_WIDTH)
   const [paint, setPaint] = useState<number>(TOC_DEFAULT_WIDTH)
   const [mode, setMode] = useState<TocMode>('wide')

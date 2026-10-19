@@ -1,4 +1,4 @@
-import { useChatStore, useStore } from '@stores'
+import { selectDocumentId, useChatStore, useStore } from '@stores'
 import { useEffect, useState } from 'react'
 
 import { type HeadingBreadcrumbItem, resolveHeadingBreadcrumbs } from '../utils/buildHeadingPath'
@@ -13,7 +13,7 @@ export const useHeadingBreadcrumbPath = (): HeadingBreadcrumbItem[] | null => {
   const headingId = useChatStore((state) => state.chatRoom.headingId)
   const [headingPath, setHeadingPath] = useState<HeadingBreadcrumbItem[] | null>(null)
 
-  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const workspaceId = useStore(selectDocumentId)
   const editor = useStore((state) => state.settings.editor.instance)
   const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
   const loading = useStore((state) => state.settings.editor.loading)

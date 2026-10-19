@@ -1,5 +1,5 @@
 import { openChatFromLink } from '@services/openChatFromLink'
-import { useAuthStore, useStore } from '@stores'
+import { selectDocumentId, useAuthStore, useStore } from '@stores'
 import { useRouter } from 'next/router'
 import { useEffect, useRef } from 'react'
 
@@ -30,7 +30,7 @@ const resolveChatDeepLink = (url: URL): ChatDeepLink | null => {
 const useCheckUrlAndOpenHeadingChat = () => {
   const { slugs } = useRouter().query
   const user = useAuthStore((state) => state.profile)
-  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const workspaceId = useStore(selectDocumentId)
   const editorLoading = useStore((state) => state.settings.editor.loading)
   const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
   const handledRef = useRef<string | null>(null)

@@ -1,5 +1,5 @@
 import { getBookmarkStats } from '@api'
-import { useAuthStore, useChatStore, useStore } from '@stores'
+import { selectDocumentId, useAuthStore, useChatStore, useStore } from '@stores'
 import { type TBookmarkTab } from '@types'
 import { useEffect } from 'react'
 
@@ -10,7 +10,7 @@ export async function loadBookmarkStats(workspaceId: string | undefined) {
   const { data, error } = await getBookmarkStats({ workspaceId })
   if (error) throw error
   // The pad moved on while the read ran; its own load writes the counts.
-  if (!data || useStore.getState().settings.workspaceId !== workspaceId) return
+  if (!data || selectDocumentId(useStore.getState()) !== workspaceId) return
 
   const summary = Array.isArray(data) ? data[0] : data
   const { setBookmarkTab } = useChatStore.getState()
@@ -21,7 +21,7 @@ export async function loadBookmarkStats(workspaceId: string | undefined) {
 
 /** Reloads the open pad's counts after a bookmark change. A failure only logs. */
 export function refreshBookmarkStats() {
-  const { workspaceId } = useStore.getState().settings
+  const workspaceId = selectDocumentId(useStore.getState())
   // No workspace sends null, and the read then counts every workspace.
   if (!workspaceId) return
   loadBookmarkStats(workspaceId).catch((error) => {
@@ -31,7 +31,7 @@ export function refreshBookmarkStats() {
 
 /** Loads the counts once per pad and workspace, so the dot shows before the panel opens. */
 export function usePadBookmarkStats() {
-  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const workspaceId = useStore(selectDocumentId)
   const userId = useAuthStore((state) => state.profile?.id)
 
   useEffect(() => {

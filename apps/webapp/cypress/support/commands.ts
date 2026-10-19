@@ -22,12 +22,16 @@ interface EditorWindow {
   /** Markdown helpers – available when @tiptap/markdown is loaded */
   _getMarkdown?: () => string
   _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
-  /** Zustand store handle – set in editor.tsx so specs can seed slices the playground doesn't populate naturally (e.g. `workspaceId`). */
+  /** Zustand store handle – set in editor.tsx so specs can seed slices the playground doesn't populate naturally (e.g. `metadata.documentId`). */
   _store?: {
     getState: () => {
       setWorkspaceSetting: (key: string, value: unknown) => void
       [key: string]: unknown
     }
+  }
+  /** Auth store handle – set in EditorPlayground.tsx so specs can seed a test profile. */
+  _authStore?: {
+    getState: () => { setProfile: (profile: { id: string; username: string } | null) => void }
   }
 }
 

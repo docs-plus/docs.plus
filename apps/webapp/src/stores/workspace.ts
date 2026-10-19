@@ -1,5 +1,6 @@
 import { Editor } from '@tiptap/react'
 import type { ProviderStatus } from '@types'
+import type { DocumentMetadata } from '@utils/fetchDocument'
 import { immer } from 'zustand/middleware/immer'
 
 type EditorSettings = {
@@ -19,9 +20,8 @@ type EditorSettings = {
 }
 
 export type Workspace = {
-  workspaceId?: string
-  metadata?: any
-  broadcaster?: any
+  /** Outside an open pad this is `NO_DOCUMENT`; check `documentId` before trusting it. */
+  metadata: DocumentMetadata
   providerStatus: ProviderStatus
   // Set by onContentError: distinguishes a permanent schema/version freeze from
   // a transient network 'error' so the status chip can prompt a reload.
@@ -41,19 +41,23 @@ export type Workspace = {
 
 export interface IWorkspaceStore {
   settings: Workspace
-  setWorkspaceSetting: (key: keyof Workspace, value: any) => void
+  setWorkspaceSetting: <K extends keyof Workspace>(key: K, value: Workspace[K]) => void
   setWorkspaceSettings: (partial: Partial<Workspace>) => void
   setWorkspaceEditorSettings: (settings: EditorSettings) => void
   setWorkspaceEditorSetting: (key: keyof EditorSettings, value: any) => void
 }
 
+// The first paint and Home hold no document, only an undefined documentId. The type
+// says an open pad, so its readers stay typed; the owner rules check documentId first.
+export const NO_DOCUMENT = { documentId: undefined } as unknown as DocumentMetadata
+
+/** The open document's id, which is also its workspace id. */
+export const selectDocumentId = (state: { settings: Workspace }): string | undefined =>
+  state.settings.metadata.documentId
+
 const workspaceStore = immer<IWorkspaceStore>((set) => ({
   settings: {
-    workspaceId: undefined,
-    metadata: {
-      documentId: undefined
-    },
-    broadcaster: undefined,
+    metadata: NO_DOCUMENT,
     providerStatus: 'saved',
     editor: {
       instance: undefined,

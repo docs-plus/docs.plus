@@ -1,6 +1,6 @@
 import { dismissComposerEmojiAndMentionOverlays } from '@components/chatroom/components/MessageComposer/helpers/dismissComposerOverlays'
-import { useAuthStore, useChatStore, useStore } from '@stores'
-import type { CommentAnchorV1, Profile } from '@types'
+import { selectDocumentId, useAuthStore, useChatStore, useStore } from '@stores'
+import type { CommentAnchorV1 } from '@types'
 import { scrollToHeading } from '@utils/scrollToHeading'
 
 /** Release pad edit mode; the blur is what dismisses the iOS soft keyboard. */
@@ -62,19 +62,17 @@ function anchorDraftForChatroom(): void {
 type OpenHeadingChatroomPaneParams = {
   headingId: string
   workspaceId: string | undefined
-  user: Profile | null
   fetchMsgsFromId?: string
 }
 
 function openHeadingChatroomPane({
   headingId,
   workspaceId,
-  user,
   fetchMsgsFromId
 }: OpenHeadingChatroomPaneParams): void {
   if (!workspaceId) return
   const chat = useChatStore.getState()
-  chat.setChatRoom(headingId, workspaceId, user, fetchMsgsFromId)
+  chat.setChatRoom(headingId, workspaceId, fetchMsgsFromId)
   // Only seed the mode on a fresh open; switching headings must not yank a
   // reader who is deliberately holding `half`.
   if (chat.chatRoom.paneMode === 'closed') chat.setPaneMode('expanded')
@@ -97,7 +95,7 @@ export function openHeadingChatroom({
   fetchMsgsFromId,
   focusEditor = false
 }: OpenHeadingChatroomParams): void {
-  const { workspaceId } = useStore.getState().settings
+  const workspaceId = selectDocumentId(useStore.getState())
   const chatStore = useChatStore.getState()
   const { headingId: openedHeadingId, paneMode: openedMode } = chatStore.chatRoom
   const user = useAuthStore.getState().profile
@@ -115,7 +113,7 @@ export function openHeadingChatroom({
       : undefined
   )
 
-  const paneOpen = { headingId, workspaceId, user }
+  const paneOpen = { headingId, workspaceId }
 
   if (intent === 'comment') {
     if (!anchor) return

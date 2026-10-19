@@ -3,7 +3,7 @@ import { useMediaDisplayUrl } from '@components/chatroom/hooks/useMediaSignedUrl
 import type { ComposerAttachment } from '@components/chatroom/stores/composerAttachmentsStore'
 import { inferMessageMediaKind } from '@components/chatroom/utils/messageMediaPaths'
 import { Icons } from '@icons'
-import { useStore } from '@stores'
+import { selectDocumentId, useStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
 import { type CSSProperties, useEffect, useState } from 'react'
 
@@ -269,7 +269,7 @@ export const AttachmentStrip = ({
   compact?: boolean
 }) => {
   const { channelId } = useChatroomContext()
-  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const workspaceId = useStore(selectDocumentId)
   const attachments = useComposerAttachmentList(workspaceId, channelId)
 
   if (attachments.length === 0) return null

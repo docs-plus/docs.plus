@@ -1,5 +1,5 @@
 import { useModal } from '@components/ui/ModalDrawer'
-import { useChatStore, useStore } from '@stores'
+import { selectDocumentId, useChatStore, useStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
 
 import { tocActions } from './hooks'
@@ -13,7 +13,7 @@ interface TocHeaderProps {
 
 export function TocHeader({ variant }: TocHeaderProps) {
   const docMetadata = useStore((state) => state.settings.metadata)
-  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const workspaceId = useStore(selectDocumentId)
   const modal = useModal()
   const closeModal = variant === 'mobile' ? modal?.close : undefined
 

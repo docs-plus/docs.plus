@@ -1,6 +1,6 @@
 import { getHeadingIdForChannel } from '@api'
 import { CHAT_OPEN } from '@services/eventsHub'
-import { useChatStore, useStore } from '@stores'
+import { selectDocumentId, useChatStore, useStore } from '@stores'
 import { headingAncestry } from '@utils/headingSlugTrail'
 import PubSub from 'pubsub-js'
 
@@ -35,7 +35,8 @@ export async function openChatFromLink(
   linkId: string,
   options: ChatLinkOptions = {}
 ): Promise<void> {
-  const { workspaceId, editor } = useStore.getState().settings
+  const { editor } = useStore.getState().settings
+  const workspaceId = selectDocumentId(useStore.getState())
   if (!linkId || !workspaceId) return
   const channelHeadingId = await findChannelHeadingId(workspaceId, linkId)
   const instance = editor.instance
@@ -46,7 +47,7 @@ export async function openChatFromLink(
     isLiveHeading,
     documentId: workspaceId
   })
-  if (!headingId || useStore.getState().settings.workspaceId !== workspaceId) return
+  if (!headingId || selectDocumentId(useStore.getState()) !== workspaceId) return
 
   const { chatRoom, destroyChatRoom } = useChatStore.getState()
   if (options.reopen && chatRoom.headingId === headingId) destroyChatRoom()

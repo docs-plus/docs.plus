@@ -7,7 +7,7 @@ import EditorToolbar from '@components/TipTap/toolbar/desktop/EditorToolbar'
 import { TocDesktop } from '@components/toc/TocDesktop'
 import { moveHeadingSection } from '@components/toc/utils/moveHeading'
 import { GlobalDialog } from '@components/ui/GlobalDialog'
-import { useStore } from '@stores'
+import { useAuthStore, useStore } from '@stores'
 import { Editor, EditorContent as TiptapEditor, useEditor } from '@tiptap/react'
 import { useEffect, useMemo } from 'react'
 import { IndexeddbPersistence } from 'y-indexeddb'
@@ -30,8 +30,10 @@ declare global {
     ) => boolean
     _getMarkdown?: () => string
     _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
-    /** Cypress escape hatch: lets specs seed Zustand state (e.g. `workspaceId` to enable bookmark RPC). Playground-only — production routes never touch this. */
+    /** Cypress escape hatch: lets specs seed Zustand state (e.g. `metadata.documentId` to enable bookmark RPC). Playground-only — production routes never touch this. */
     _store?: typeof useStore
+    /** Cypress escape hatch: lets specs seed a test profile, since bookmark queries need a user id. */
+    _authStore?: typeof useAuthStore
   }
 }
 
@@ -93,8 +95,9 @@ const EditorPlayground = ({ localPersistence, docName }: EditorPlaygroundProps) 
     window._parseMarkdown = (md: string) => editor.markdown?.parse(md)
 
     // Expose the Zustand store so specs can seed slices the playground
-    // doesn't populate naturally (workspaceId, etc.).
+    // doesn't populate naturally (metadata.documentId, etc.).
     window._store = useStore
+    window._authStore = useAuthStore
 
     setWorkspaceEditorSetting('instance', editor)
     setWorkspaceEditorSetting('loading', false)
@@ -107,6 +110,7 @@ const EditorPlayground = ({ localPersistence, docName }: EditorPlaygroundProps) 
       delete window._getMarkdown
       delete window._parseMarkdown
       delete window._store
+      delete window._authStore
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor])

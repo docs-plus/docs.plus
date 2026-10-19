@@ -22,7 +22,7 @@ describe('chatroom send and retry', () => {
             const db = request.result
             const transaction = db.transaction('composer', 'readwrite')
             transaction.objectStore('composer').put({
-              workspaceId: 'e2e-workspace',
+              workspaceId: 'e2e-doc',
               roomId: 'test-channel',
               state: { text: draftText },
               updatedAt: Date.now()
@@ -61,7 +61,7 @@ describe('chatroom send and retry', () => {
             const get = db
               .transaction('composer', 'readonly')
               .objectStore('composer')
-              .get(['e2e-workspace', 'test-channel'])
+              .get(['e2e-doc', 'test-channel'])
             get.onsuccess = () => {
               db.close()
               resolve(get.result)

@@ -6,7 +6,7 @@ import {
 import { useApi } from '@hooks/useApi'
 import { usePanelFeedSentinel } from '@hooks/usePanelFeedSentinel'
 import { NOTIFICATION_STATE_CHANGED } from '@services/eventsHub'
-import { useAuthStore, useStore } from '@stores'
+import { selectDocumentId, useAuthStore, useStore } from '@stores'
 import { type TNotification, type TNotificationSummary, type TTab } from '@types'
 import PubSub from 'pubsub-js'
 import { useCallback, useEffect, useState } from 'react'
@@ -53,7 +53,7 @@ async function fetchNotificationPage(
 }
 
 export function useNotificationPanelFeed(): UseNotificationPanelFeedResult {
-  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const workspaceId = useStore(selectDocumentId)
   const userId = useAuthStore((state) => state.profile?.id)
   const notifications = useStore((state) => state.notifications)
   const notificationActiveTab = useStore((state) => state.notificationActiveTab)

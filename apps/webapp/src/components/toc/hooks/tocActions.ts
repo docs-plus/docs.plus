@@ -65,10 +65,10 @@ export const tocActions = {
   },
 
   navigateToDocTitle(options: { openChat?: boolean }): void {
-    const { workspaceId, metadata } = useStore.getState().settings
+    const { metadata } = useStore.getState().settings
     navigateToDocTitleAction({
-      workspaceId,
-      title: metadata?.title ?? '',
+      workspaceId: metadata.documentId,
+      title: metadata.title ?? '',
       openChat: options.openChat
     })
   },

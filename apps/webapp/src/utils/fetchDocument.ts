@@ -1,10 +1,17 @@
-interface DocumentData {
+import type { FaceSource } from '@utils/avatarFace'
+import type { DocumentOwnerFields } from '@utils/isDocumentOwner'
+
+/** The fields the client reads from the slug read. An ownerless document has a null
+ *  owner profile. A draft has no row yet, so it sends keywords as `''`. */
+type DocumentData = DocumentOwnerFields & {
   documentId: string
+  slug: string
   title: string
   description?: string
-  slug: string
+  keywords?: string[] | string
   isPrivate: boolean
-  [key: string]: any
+  readOnly?: boolean
+  ownerProfile?: (FaceSource & { default_avatar_url?: string | null }) | null
 }
 
 interface DocumentResponse {
@@ -18,7 +25,9 @@ interface Session {
   access_token?: string
 }
 
-interface DocumentWithClientId extends DocumentData {
+/** The open document's metadata: the slug read plus its client id. */
+export type DocumentMetadata = Omit<DocumentData, 'keywords'> & {
+  keywords: string[]
   docClientId: string
 }
 
@@ -48,7 +57,7 @@ export class DocumentFetchError extends Error {
 export async function fetchDocument(
   slug: string | undefined,
   session?: Session | null
-): Promise<DocumentWithClientId | null> {
+): Promise<DocumentMetadata | null> {
   if (!slug?.trim()) return null
 
   const isServer = typeof window === 'undefined'
@@ -116,6 +125,7 @@ export async function fetchDocument(
 
     return {
       ...data,
+      keywords: Array.isArray(data.keywords) ? data.keywords : [],
       docClientId
     }
   } catch (error) {

@@ -23,7 +23,15 @@ export function patchWorkspaceMetadataAccess(
 ): (() => void) | null {
   const { settings, setWorkspaceSetting } = useStore.getState()
   const metadata = settings.metadata
-  if (!metadata?.documentId || metadata.documentId !== documentId) return null
+  if (!metadata.documentId || metadata.documentId !== documentId) return null
   setWorkspaceSetting('metadata', { ...metadata, ...patch })
-  return () => useStore.getState().setWorkspaceSetting('metadata', metadata)
+  const saved: DocumentAccessPatch = {}
+  if (patch.isPrivate !== undefined) saved.isPrivate = metadata.isPrivate
+  if (patch.readOnly !== undefined) saved.readOnly = metadata.readOnly
+  return () => {
+    const current = useStore.getState().settings.metadata
+    // The chat id reads metadata, so a late failure after a pad switch must not write the old pad back.
+    if (current.documentId !== documentId) return
+    useStore.getState().setWorkspaceSetting('metadata', { ...current, ...saved })
+  }
 }
