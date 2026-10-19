@@ -28,6 +28,7 @@
     "@docs.plus/extension-hypermultimedia": "workspace:*",
     "@docs.plus/extension-indent": "workspace:*",
     "@docs.plus/extension-inline-code": "workspace:*",
+    "@docs.plus/extension-mermaid": "workspace:*",
     "@docs.plus/extension-placeholder": "workspace:*",
     "@docs.plus/floating-popover": "workspace:*",
     "@emoji-mart/data": "^1.2.1",
