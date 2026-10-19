@@ -32,12 +32,12 @@ export function applyCreate(
   const hasRange = rangeFrom < rangeTo
 
   if (!hasRange) {
-    if (!text) return false
     if (!editor.can().setHyperlink(markAttrs)) return false
+    // A typed URL with nothing selected becomes its own link text, as in the extension popover.
     return chainWithOptionalFocus(editor, focus)
       .insertContent({
         type: 'text',
-        text,
+        text: text || href,
         marks: [{ type: extensionName, attrs: markAttrs }]
       })
       .setMeta('preventAutolink', true)

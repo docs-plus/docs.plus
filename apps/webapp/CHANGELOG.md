@@ -38,6 +38,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   ([#318](https://github.com/docs-plus/docs.plus/issues/318)).
 - **A failed access change cannot write an old pad's data back.** After a pad
   switch, the rollback now does nothing.
+- **Add link (Mod-K) with nothing selected inserts the typed URL as the link.**
+  Before, Apply showed "Please enter a valid URL" and inserted nothing.
 - **The Discord links point at a working invite** ([#480](https://github.com/docs-plus/docs.plus/issues/480)).
 
 ### Internal
