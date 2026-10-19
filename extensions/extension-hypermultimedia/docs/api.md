@@ -213,7 +213,7 @@ Definitions ship in `dist/index.d.ts`. The package entry exports the following, 
 
 **URL detection**
 
-`isMediaUrl`, `detectMediaType`, `MediaNodeType`, plus the per-provider validators `isImageUrl`, `isVideoUrl`, `isAudioUrl`, `isValidYoutubeUrl`, `isValidVimeoUrl`, `isValidSoundCloudUrl`, `isValidSpotifyUrl`, `isValidLoomUrl` and `isValidXUrl`. `detectMediaType` also resolves a raw video or audio URL. `isMediaUrl` skips those on purpose, so a pasted `.mp4` or `.mp3` link stays a link.
+`isMediaUrl`, `detectMediaType`, `MediaNodeType`, `isSafeMediaSrc` (the scheme gate), plus the per-provider validators `isImageUrl`, `isVideoUrl`, `isAudioUrl`, `isValidYoutubeUrl`, `isValidVimeoUrl`, `isValidSoundCloudUrl`, `isValidSpotifyUrl`, `isValidLoomUrl` and `isValidXUrl`. `detectMediaType` also resolves a raw video or audio URL. `isMediaUrl` skips those on purpose, so a pasted `.mp4` or `.mp3` link stays a link.
 
 **Provider helpers**
 

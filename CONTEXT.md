@@ -26,6 +26,15 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **Filter** — the heading filter (`matchSections`). It folds sections that do not match. It is not a text search.
 - **Slash menu** — `/` on an empty textblock that is not Title opens a list of block inserts. Each row runs an existing editor command.
 - **Command jump** — Mod+Shift+K opens a dialog of places and owned pads. It moves the reader; it inserts nothing. Not the Slash menu.
+- **Diagram** — a code block whose language is exactly `mermaid`. The pad draws it with Pele below its source (`@docs.plus/extension-mermaid`). The document stores only the source text.
+  _Avoid_: mermaid block, chart
+- **Fold module** — the per-editor owner of each Diagram's folded state, head and Copy state (`createFolds`, `extensions/extension-mermaid/src/nodeView/fold.ts`). It writes `data-source` as output, and no script reads it back. Known limit: `blockAt` finds a block through `view.nodeDOM(pos)`. A host that wraps the node view DOM silently breaks caret-enter open and the arrow-key step.
+- **Render loop** — the module that turns a Diagram's source edits, first visibility and Try again into published snapshots (`createRenderLoop`, `extensions/extension-mermaid/src/nodeView/renderLoop.ts`). It owns the redraw and error timing, the stale-run guard and the crash marker. The timing lives in its JSDoc.
+
+## Settings
+
+- **Settings opener** — the one module that owns a host's Settings open state, the requested tab and overlay hash intake (`useSettingsOpener`, `apps/webapp/src/components/settings/hooks/useSettingsOpener.ts`). HomePage, PadTitle, MobilePadTitle and EditorToolbar each take one.
+- **Hash intake** — the opener's `hashIntake` option. It picks which overlay hash a host consumes: `'none'` (EditorToolbar), `'settings'` (HomePage), or `{ notifications }` (both pad titles).
 
 ## Documents list
 
@@ -50,11 +59,22 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **PrivateAccess** — server decision: `allow` | `sign-in-required` | `denied` (`resolvePrivateAccess`).
 - **PrivateGateVariant** — UI CTA after a blocked open: `sign-in-required` | `access-denied` | `check-unavailable` (`toPrivateGateVariant`). The third is a degraded backend (503 `AUTH_UNAVAILABLE`) that decided nothing, so its CTA retries instead of offering sign-in.
 - **Access mutation** — the owner changing Private/Read-only (`isDocumentOwner`, `useDocumentAccessMutation`). An ownerless document has nobody to be private for, so its locks do not move.
-- **Open document** — a document with no `ownerId`. Anyone may retitle it, signed in or not. A signed-in person whose first focus, edit or chat open creates the row becomes its owner (maintainer ruling, 2026-10-06). A signed-out one leaves the row open. An existing row is never claimed. A signed-in `PUT` or `POST` create also sets the owner. Private/Read-only locks stay off until ownership handoff ships.
+- **isDocumentOwner** — the owner rule: `ownerId` equals the caller's id. The server copy is `apps/hocuspocus.server/src/lib/ownerAccess.ts`. The client copy is `apps/webapp/src/utils/isDocumentOwner.ts`. It adds one wait: it answers no until the metadata carries a `documentId`. Every owner answer on pad metadata reads it: retitle, Share, Settings rows, Editing lock, Live seal and Last opened.
+- **Open document** — a document with no `ownerId`. Anyone may retitle it, signed in or not. The client retitle answer is `canEditDocumentMetadata`: the owner, or anyone on an open document. It is also no until `documentId` lands. A signed-in person whose first focus, edit or chat open creates the row becomes its owner (maintainer ruling, 2026-10-06). A signed-out one leaves the row open. An existing row is never claimed. A signed-in `PUT` or `POST` create also sets the owner. Private/Read-only locks stay off until ownership handoff ships.
 - **Live seal** — REST publish → Redis `doc:{id}:access` → WS broadcast/close → client `applyAccessStateless`. The first-edit `owner` event has no REST publish and no `doc:{id}:access` key. The anchor broadcasts it to the room, and the same client handler applies it.
 - **Editing lock** — client cannot edit: content-fork error, `authorizedScope === 'readonly'`, or metadata Read-only for a non-owner (`selectDocumentEditingLocked`).
-- **Restore** — a signed-in writer putting a stored version back into the live document through `history.revert`. History is readable without a session. Restore is not. The control is hidden when there is no profile and when the editing lock is on. The server refuses the same cases (`unauthorized`, `read-only`).
+- **Restore** — a signed-in writer putting a stored version back into the live document through `history.revert`. It writes through the Live document write. History is readable without a session. Restore is not. The control is hidden when there is no profile and when the editing lock is on. The server refuses the same cases (`unauthorized`, `read-only`).
   _Avoid_: client `setContent` as the write; showing Restore to a visitor
+
+## Pad session
+
+- **Pad session** — the one module that opens a pad in the webapp store (`usePadSession`, `apps/webapp/src/hooks/usePadSession.ts`). It owns the store seed, the channel load, the workspace join and the reset on a document switch. Every async answer checks the session key (`userId:documentId`) before it writes, so a late answer for an old pad never lands. It is not an Open document, which is a document with no owner.
+
+## Live document writes
+
+- **Live document write** — the one module that writes to a live Y.Doc through a direct connection (`createLiveWrite`, `apps/hocuspocus.server/src/modules/document-content/infra/liveWrite.ts`). It owns the per-document lock (#229), the commit waits, the WS-shaped context and the version stamp. Content apply and Restore call `write`. The lock is per process.
+- **Write plan** — what a caller hands to `write` (`LiveWritePlan`): `prepare`, `check`, `mutate`, the stamp and the actor. The step order lives in its JSDoc.
+- **Stamp-only flush** — `flush`: an empty transact that fires one named store. It takes no lock and waits for no commit. The checkpoint uses it.
 
 ## Document changes
 
@@ -108,6 +128,21 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **Failure kind** — the class of a failed send: `transient` (time fixes it), `permanent` (nothing fixes it) or `operator` (a person must act). Only `transient` retries, 6 attempts over about 15 minutes. The other two go to the email dead-letter queue at once. The entry carries `failureKind` and `failureCode` (#421).
   _Avoid_: error kind
 
+## Admin account erasure
+
+- **Account erasure** — removing one or more accounts through `eraseAccounts` (`apps/hocuspocus.server/src/api/services/adminGhostAccounts.service.ts`). The single ghost delete, the bulk ghost delete and the owner-request delete all call it. Each id passes the one `ghostDeleteRefusal` gate.
+- **Erasure policy** — `ghost`: the gate, the impact read, then a soft or hard delete. `owner_request`: the gate without the ghost check, and always a soft delete.
+- **Erasure outcome** — the result for one id (`ErasureOutcome`): `refused`, `failed`, `incomplete`, `soft_deleted` or `hard_deleted`. The first three form an Unfinished erasure (`UnfinishedErasure`).
+  `incomplete` means the profile was cleared and stamped, but a side step failed: avatar, ban, push subscription or queued email removal.
+  _Avoid_: ErasureFailure, partial erasure
+
+## Supabase checks
+
+- **Function parity** — a function in both `scripts/` and `migrations/` has the same seed-order script definition as its newest migration definition (`packages/supabase/check-functions-parity.ts`). Attributes count inline or through a later `ALTER FUNCTION`. The key is `schema.name`, so overloads share one key.
+- **Migration-only function** — a function the migrations define and `scripts/` never define. The parity check prints it as info, not as a failure.
+- **Grant allowlist** — a hand-written list of the tables, columns or functions a role may use, copied in several SQL files. `packages/supabase/check-grant-allowlists.ts` fails when any pair of copies disagrees. It writes no SQL.
+  Both checks run in `bun run check` (`packages/supabase`) and in the `check:ci` gates.
+
 ## MCP connector
 
 - **MCP connector** — the docs.plus endpoint at `/api/mcp` that a connected app calls. In Claude and ChatGPT, the entry a person adds that points at this endpoint is also called a connector.
@@ -121,9 +156,12 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 
 ## Presence awareness
 
-- **usersPresence** — Map of online Profiles keyed by user id (`useStore.usersPresence`); TOC heading stacks filter by `channelId`.
-- **presenceSync** — broadcast of `{id,channelId}` rows only (`workspacePresenceSync.ts`). Never creates face-less stub Profiles; attaches `channelId` to existing rows or buffers until a full track/broadcast profile arrives. Buffers die with the subscription (`clearPresenceSyncBuffers` via `clearAllPresenceShareTimers` on resubscribe).
-- **selectPresenceOthers** — filter self out of presence stacks (`PresentUsers`, `usePresentUsers`); pass `map.values()` or a channel list.
+- **usersPresence** — Map of faces (presence Profiles) keyed by user id (`useStore.usersPresence`). A leave marks the face `OFFLINE`. It stays in the map until that user joins again or the next resubscribe. TOC heading stacks filter by `channelId`.
+- **Presence awareness room** — the one module that writes usersPresence (`createPresenceRoom` in `workspacePresenceSync.ts`; wired as `presenceRoom` in `apps/webapp/src/services/presenceRoom.ts`). It takes inbound Realtime events and outbound intents: enter, typing, Activity and retrack. `createPresenceRoom` imports no store.
+- **Realtime room seam** — `RealtimeRoomPort`: `listen`, `send` and `track` on one Realtime channel. Two adapters implement it: `supabaseRoom` in production and an in-memory room in the tests.
+- **presenceSync** — broadcast of `{id,channelId}` rows only (`workspacePresenceSync.ts`). Never creates face-less stub Profiles; attaches `channelId` to existing rows or holds it until a full track/broadcast profile arrives. Held rows die with the connection: `connect` replaces the faces, held rows and share timer together.
+- **isFacePresent** — the one client rule for "is this face present" (`workspacePresenceSync.ts`). A typing face is present. Only a leave makes a face not present.
+- **selectPresenceOthers** — drops self and every face that fails `isFacePresent` (`PresentUsers`, `usePresentUsers`); pass `map.values()` or a channel list.
 - Avatar stacks never render stub-only id/`channelId` rows.
 - **Activity** — what a chat member does now, other than typing: `choosingEmoji` or `recordingVoice` (`PresenceActivity`). It lives in client-only `Profile.activity`. An **activity chip** shows it on the avatar, one activity per face. _Avoid_: status (the Postgres enum `user_status`), typing.
 

@@ -47,6 +47,8 @@ The token also carries a `slug`, and the server uses it for context only. Author
 
 Next step: resolve the id once through `GET /api/documents/<SLUG>` and store it. Do not derive a room name yourself.
 
+An unknown slug returns `200` with a draft, not `404`. A draft has no `id` or `createdAt`. Treat that as a mistyped slug.
+
 ## Anonymous connections
 
 A public document accepts a connection with no token at all. That is deliberate — it is how a visitor reads and edits a public document without signing in.
@@ -81,6 +83,8 @@ Every list and watch reply, success or failure, repeats the `since`, `version` a
 
 A failure carries `error: 'history_failed'` and may carry `reason`. An unknown `type` is refused the same way.
 
+On `history.revert`, `reason` is one of `unauthorized`, `read-only`, `not-found`, `invalid-content`, `persist-failed`, `draft-document` or `rate-limited`. Restore allows one call per document every 2 seconds. A call inside that window fails with `reason: 'rate-limited'`.
+
 `versions` is one page of 50, newest first. To read the next page, pass `nextBefore` back as `beforeVersion`. An older page also carries that `beforeVersion` inside `response`.
 
 On a first page sent with `since`, `anchor` is the newest version at or before that instant, else the oldest version. It is not added to `versions`, but it can repeat a row that `versions` holds.
@@ -96,7 +100,7 @@ Each connection has a rate limit on list and watch requests. A request over it f
 | `4002` | Worker health        | No                                                                                              |
 | `4003` | Internal listener    | No — never routed publicly                                                                      |
 
-Port `4003` carries service-role write endpoints and metrics. Only network isolation protects it. Next step: never expose it through a reverse proxy.
+Port `4003` carries service-role write endpoints and metrics. Its internal routes need the service-role key, but `/metrics` has no check. Next step: never expose it through a reverse proxy.
 
 ## Where to go next
 

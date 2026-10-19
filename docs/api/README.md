@@ -73,20 +73,22 @@ Three route groups still answer with older shapes, and the contract document lis
 
 ## Error codes
 
-| Status | Code                              | Meaning                                                  |
-| ------ | --------------------------------- | -------------------------------------------------------- |
-| `400`  | `VALIDATION_ERROR`, `BAD_REQUEST` | The request body or a parameter failed validation        |
-| `401`  | `UNAUTHORIZED`                    | No credential, or one the server could not verify        |
-| `403`  | `FORBIDDEN`                       | A valid credential that is not allowed to do this        |
-| `404`  | `NOT_FOUND`                       | No such document, or it was deleted                      |
-| `409`  | `CONFLICT`                        | The slug is taken, or the document already exists        |
-| `413`  | `PAYLOAD_TOO_LARGE`               | Over a size cap                                          |
-| `415`  | `UNSUPPORTED_MEDIA_TYPE`          | A file type the converter refuses                        |
-| `422`  | `UNPROCESSABLE_ENTITY`            | Valid syntax, but the content breaks a contract rule     |
-| `429`  | `RATE_LIMIT_EXCEEDED`             | Over the rate limit                                      |
-| `500`  | `INTERNAL_SERVER_ERROR`           | An unhandled failure                                     |
-| `503`  | `SERVICE_UNAVAILABLE`             | A dependency is down                                     |
-| `503`  | `AUTH_UNAVAILABLE`                | The server could not reach Supabase to verify your token |
+| Status | Code                              | Meaning                                                                                                            |
+| ------ | --------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `400`  | `VALIDATION_ERROR`, `BAD_REQUEST` | The request body or a parameter failed validation                                                                  |
+| `401`  | `UNAUTHORIZED`                    | No credential, or one the server could not verify                                                                  |
+| `403`  | `FORBIDDEN`                       | A valid credential that is not allowed to do this                                                                  |
+| `404`  | `NOT_FOUND`                       | No such document, or it was deleted                                                                                |
+| `409`  | `CONFLICT`                        | The slug is taken, or the document already exists                                                                  |
+| `413`  | `PAYLOAD_TOO_LARGE`               | Over a size cap                                                                                                    |
+| `415`  | `UNSUPPORTED_MEDIA_TYPE`          | A file type the converter refuses                                                                                  |
+| `422`  | `UNPROCESSABLE_ENTITY`            | Valid syntax, but the content breaks a contract rule                                                               |
+| `429`  | `RATE_LIMIT_EXCEEDED`             | Over the rate limit                                                                                                |
+| `500`  | `INTERNAL_SERVER_ERROR`           | An unhandled failure                                                                                               |
+| `503`  | `SERVICE_UNAVAILABLE`             | A dependency is down                                                                                               |
+| `503`  | `DOCUMENT_BUSY`                   | Another write to this document was still saving. Nothing was applied, so a retry after a few seconds is safe       |
+| `503`  | `SAVE_NOT_CONFIRMED`              | The write was applied but not yet confirmed as saved. Wait about a minute, then verify with `GET` before you retry |
+| `503`  | `AUTH_UNAVAILABLE`                | The server could not reach Supabase to verify your token                                                           |
 
 `AUTH_UNAVAILABLE` is worth handling separately. It means your credential may be fine and the check itself failed, so a retry can succeed. Next step: retry it with a backoff, and do not sign the user out.
 

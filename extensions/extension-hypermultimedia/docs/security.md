@@ -6,7 +6,7 @@ Part of the [`@docs.plus/extension-hypermultimedia` README](../README.md).
 
 One scheme gate guards every stored media `src`. It rejects `javascript:`, `data:`, `vbscript:`, `file:` and `blob:`. It strips ASCII control characters first, so `java\tscript:` cannot pass the check as a scheme. Inline images are the one exception: markdown import and the Replace URL form admit `data:image/*`. SVG is excluded, because it carries script.
 
-The gate runs on `parseHTML` for `video`, `audio`, `vimeo` and `youtube`, on markdown import, and in the Replace URL form. It does **not** run in the insert commands, so `setImage`, `setVideo` and `setAudio` store any non-empty string. The kit never re-validates collaborative attributes either. Treat any value you read back off a node as untrusted, and validate host-supplied URLs before you insert them.
+The gate runs on `parseHTML` for `video`, `audio`, `vimeo` and `youtube`, on markdown import, and in the Replace URL form. It does **not** run in the insert commands, so `setImage`, `setVideo` and `setAudio` store any non-empty string. The kit never re-validates collaborative attributes either. Treat any value you read back off a node as untrusted, and validate host-supplied URLs before you insert them. Call `isSafeMediaSrc(src)` to run the same gate. Pass `{ allowInlineImage: true }` to also admit `data:image/*` other than SVG.
 
 ## Read side: View original
 

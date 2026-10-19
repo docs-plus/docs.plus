@@ -26,9 +26,10 @@ Describe what actually happened.
 
 ## Environment
 
+- Where: docs.plus website / self-hosted (version or commit) / npm extension (package@version and @tiptap/core version)
 - OS:
 - Browser:
-- Bun version:
+- Bun version (self-host or local dev only):
 - Branch/commit:
 
 ## Logs and screenshots

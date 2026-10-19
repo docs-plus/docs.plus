@@ -71,17 +71,17 @@ Most webapp values start with `NEXT_PUBLIC_`, and the build bakes them into the 
 
 ```bash
 # Unit tests (Jest)
-bun run test
+bun run --filter @docs.plus/webapp test
 
 # E2E tests — parallel (from monorepo root)
-bun run test:e2e                    # 4 workers (default)
-CYPRESS_PARALLEL=2 bun run test:e2e # custom worker count
+BASE_URL=http://localhost:3000 bun run test:e2e                    # 4 workers (default)
+BASE_URL=http://localhost:3000 CYPRESS_PARALLEL=2 bun run test:e2e # custom worker count
 
 # E2E — interactive (single instance)
 bun run cypress:open
 
-# Run everything (unit + E2E, report saved to Notes/)
-bun run test
+# Run everything from the monorepo root (unit + E2E, report saved to Notes/)
+BASE_URL=http://localhost:3000 bun run test
 ```
 
 E2E tests use [cypress-split](https://github.com/bahmutov/cypress-split) to distribute spec files across parallel Cypress instances. Results are aggregated into a dashboard with per-worker stats, timing, and parallelism factor. See [CONTRIBUTING.md](../../CONTRIBUTING.md#-testing) for details.

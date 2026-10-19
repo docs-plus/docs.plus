@@ -2,11 +2,11 @@
 
 ## Supported Versions
 
-| Version                   | Supported          |
-| ------------------------- | ------------------ |
-| 2.x (webapp + hocuspocus) | :white_check_mark: |
-| latest (npm extensions)   | :white_check_mark: |
-| < 1.0                     | :x:                |
+| Version                    | Supported          |
+| -------------------------- | ------------------ |
+| 2.x (webapp + hocuspocus)  | :white_check_mark: |
+| latest (npm extensions)    | :white_check_mark: |
+| < 2.0 (incl. Etherpad 1.x) | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -16,9 +16,10 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 
 **DO NOT** create a public GitHub issue for security vulnerabilities.
 
-Instead, please report security vulnerabilities by emailing:
+Instead, please report security vulnerabilities through one of these channels:
 
-📧 **<security@docs.plus>**
+1. Use [GitHub private vulnerability reporting](https://github.com/docs-plus/docs.plus/security/advisories/new).
+2. Email 📧 **<security@docs.plus>**
 
 ### What to Include
 
@@ -34,7 +35,7 @@ Please include the following in your report:
 
 1. **Acknowledgment**: We will acknowledge receipt of your report within **48 hours**.
 2. **Assessment**: We will investigate and assess the vulnerability within **7 days**.
-3. **Resolution**: We aim to release a fix within **30 days** for critical issues.
+3. **Resolution**: We aim to release a fix within the target time for its severity. See [Severity Classification](#severity-classification).
 4. **Disclosure**: We will coordinate with you on public disclosure timing.
 
 ### Scope
@@ -104,12 +105,12 @@ If you're contributing to docs.plus, please follow these guidelines:
 
 ## Severity Classification
 
-| Severity | Response Time | Examples                            |
-| -------- | ------------- | ----------------------------------- |
-| Critical | 24 hours      | RCE, Auth bypass, Data breach       |
-| High     | 7 days        | Privilege escalation, SQL injection |
-| Medium   | 30 days       | XSS, CSRF, Information disclosure   |
-| Low      | 90 days       | Minor issues, Hardening suggestions |
+| Severity | Target fix time | Examples                            |
+| -------- | --------------- | ----------------------------------- |
+| Critical | 72 hours        | RCE, Auth bypass, Data breach       |
+| High     | 7 days          | Privilege escalation, SQL injection |
+| Medium   | 30 days         | XSS, CSRF, Information disclosure   |
+| Low      | 90 days         | Minor issues, Hardening suggestions |
 
 ## Security Features
 

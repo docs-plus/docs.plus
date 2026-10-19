@@ -15,7 +15,7 @@ This file is intentionally not named `README.md` so the repository root `README.
   - On success, posts a `deploy <sha>` annotation to Grafana; on failure, rolls back and notifies Telegram (credentials from the host's `.env.observability`). The failure message is three-way: aborted before touching prod (env guard/build — production unchanged), rolled back to the previous tag, or rollback failed (manual intervention)
 - `workflows/stage.docs.plus.yml`
   - Staging CI/CD pipeline (**not yet migrated** to the four-domain grammar; uses loose `contains()` on `front`/`back`)
-  - Triggers: push to `dev`, PR to `dev`, and `workflow_dispatch`
+  - Triggers: push to `dev`, PR to `dev`, and `workflow_dispatch`. No `dev` branch exists now, so only a manual `workflow_dispatch` runs this workflow
   - Stages: quality gates → build verification → staging deploy
 - `workflows/discord-activity.yml`
   - Push activity notifications to the `#github` Discord channel via `DISCORD_GITHUB_WEBHOOK`
@@ -38,6 +38,14 @@ This file is intentionally not named `README.md` so the repository root `README.
 - `workflows/runner-watchdog.yml`
   - Every 30 min (GitHub-hosted): checks the repo's self-hosted runner status and notifies Telegram when a runner is offline **or when zero runners are registered**. GitHub auto-deregisters runners dead >14 days, so an empty list is the terminal failure state, not health
   - No-op until the `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` repo secrets are set
+- `workflows/chatroom-e2e.yml`
+  - Chatroom browser tests on a PR or push to `main` when webapp, extension or package code changes, plus `workflow_dispatch`
+- `workflows/lockstep-guard.yml`
+  - Fails a PR that changes an extension `package.json` when the publishable extension versions differ. The `lockstep-bypass` label skips it
+- `workflows/discord-release.yml`
+  - Posts a published release or prerelease to Discord
+
+`backend-ci.yml` and `quality-lint.yml` are reusable workflows (`workflow_call`). The prod workflow calls both. The stage workflow calls only `quality-lint.yml`.
 
 ## Deployment trigger grammar (production)
 
@@ -88,4 +96,3 @@ Legend: **Back-val** = backend-ci + typecheck + security · **App deploy** = sma
 - Composite action: `actions/setup-bun/action.yml`
 - Trigger tokenizer: `.github/scripts/parse-build-trigger.sh`
 - Telegram notifier: `scripts/ci/notify-telegram.sh` (shared by prod deploy, observability, and runner-watchdog failure steps; never fails the caller)
-- Workflow docs roadmap: `Notes/CI_CD_Improvement_Roadmap.md`

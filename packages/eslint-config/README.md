@@ -70,13 +70,15 @@ export default libraryConfig
 
 ## Current Usage
 
-| Package           | Shim                | Config       |
-| ----------------- | ------------------- | ------------ |
-| root              | `eslint.config.mjs` | `index.js`   |
-| webapp            | `eslint.config.mjs` | `next.js`    |
-| admin-dashboard   | `eslint.config.mjs` | `next.js`    |
-| hocuspocus.server | `eslint.config.js`  | `index.js`   |
-| extension-\*      | `eslint.config.js`  | `library.js` |
+| Package                                        | Shim                | Config       |
+| ---------------------------------------------- | ------------------- | ------------ |
+| root                                           | `eslint.config.mjs` | `index.js`   |
+| webapp                                         | `eslint.config.mjs` | `next.js`    |
+| admin-dashboard                                | `eslint.config.mjs` | `next.js`    |
+| hocuspocus.server                              | `eslint.config.js`  | `index.js`   |
+| extension-\*                                   | `eslint.config.js`  | `library.js` |
+| document-swarm                                 | `eslint.config.js`  | `index.js`   |
+| floating-popover, floating-tooltip, playground | `eslint.config.js`  | `library.js` |
 
 ## Custom Overrides
 

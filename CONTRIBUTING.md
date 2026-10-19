@@ -52,6 +52,8 @@ Install Docker, Bun and Node.js first. [README Prerequisites](README.md#-prerequ
 
    `bun run doctor` exits 1 only for a real failure. The failing checks are a Bun version below the floor, a missing `docker` or `docker compose`, a stopped Docker daemon, a missing `.env.development`, and a missing `node_modules`.
 
+3. **Fix a port conflict** when `make dev-local` stops at "Infrastructure failed (Postgres/Redis)" while Docker is running. Read the Docker error printed above that line. If port 5432 or 6379 is already allocated or in use, stop the host Postgres or Redis. Or set `DB_PORT` in `.env.local` and change the port in `DATABASE_URL` to match. For Redis, set `REDIS_PORT` instead.
+
 ### Sign in to the admin dashboard locally
 
 The admin dashboard at <http://localhost:3100> signs in with Google only. Local sign-in needs two steps.
@@ -67,10 +69,10 @@ Pick from any of these:
 - ✨ **Features**: Implement new features (check Issues for ideas)
 - 📚 **Documentation**: Improve docs, add examples, fix typos
 - 🧪 **Tests**: Pin a reported regression with a Cypress E2E test
-- 🎨 **UI/UX**: Improve design, accessibility, user experience
+- 🎨 **UI/UX**: Improve design, accessibility, user experience. UI work follows the locked design system in [.cursor/docs/design-system.md](.cursor/docs/design-system.md). Do not add or change a token, color, radius or shadow; open an issue first.
 - ⚡ **Performance**: Optimize code, reduce bundle size
 - 🔒 **Security**: Report or fix security issues
-- 🔌 **Extensions**: Work on one of the five `@docs.plus/extension-*` packages
+- 🔌 **Extensions**: Work on one of the `@docs.plus/extension-*` packages
 
 Extension work has its own per-package scoping. That scoping lives in [extensions/README.md](extensions/README.md#contributing). [Testing](#-testing) below states what the extension gates cost to run.
 
@@ -242,7 +244,7 @@ bun run test:unit         # extension gates + webapp Jest
 bun run test:e2e          # E2E only (4 workers) — needs BASE_URL, see E2E Tests below
 ```
 
-`bun run test:unit` is not a unit-only run. It runs the five `@docs.plus/extension-*` extension gates. Each gate builds its package, then runs a clean-room Cypress suite in a browser. `bun run test:unit` then runs the webapp Jest suite. Budget about 45 minutes. `bun run test` inherits the same cost.
+`bun run test:unit` is not a unit-only run. It runs the gate of every `@docs.plus/extension-*` package. Each gate builds its package, then runs a clean-room Cypress suite in a browser. `bun run test:unit` then runs the webapp Jest suite. Budget about 45 minutes. `bun run test` inherits the same cost.
 
 `bun run test` and `bun run test:e2e` both need a running local stack, and both need a `BASE_URL` override. See [E2E Tests](#e2e-tests) below before you run either one. An unreachable `BASE_URL` makes the script print `Continue anyway? [y/N]`, and it aborts on any answer other than `y` or `Y`.
 
@@ -256,7 +258,7 @@ Run the webapp Jest suite on its own:
 bun run --filter @docs.plus/webapp test
 ```
 
-That skips the five extension gates.
+That skips the extension gates.
 
 ### E2E Tests
 
@@ -417,9 +419,12 @@ A merged contribution ships under the repository license, MIT. Read [LICENSE](LI
 - Keep each pull request focused and reasonably sized
 - Be open to suggestions and improvements
 
+CI on a fork pull request starts only after a maintainer approves the run. The chatroom browser tests need a commercial license secret, so they skip fork pull requests and run on `main` after merge.
+
 ## 💡 Getting Help
 
-- 💬 **Discord**: [Join our server](https://discord.gg/2EmAjmgZ8) for real-time help
+- 💬 **Discord**: [Join our server](https://discord.gg/25JPG38J59) for real-time help
+- 💬 **Questions and ideas**: [GitHub Discussions](https://github.com/docs-plus/docs.plus/discussions)
 - 🐛 **Issues**: [GitHub Issues](https://github.com/docs-plus/docs.plus/issues) for bug reports
 - 🔒 **Security**: See [SECURITY.md](SECURITY.md) for reporting vulnerabilities
 - 📧 **Email**: [contact@newspeak.house](mailto:contact@newspeak.house)

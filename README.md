@@ -4,10 +4,10 @@ docs.plus is a free, open-source tool for real-time collaborative documents. Eve
 
 You can also [use docs.plus from Claude or ChatGPT](docs/mcp/README.md). The AI app reads the documents you can open and edits the ones you own.
 
-[![Tiptap extensions](https://img.shields.io/badge/Tiptap%20extensions-5%20on%20npm-1a73e8.svg)](https://www.npmjs.com/search?q=keywords:docs.plus)
+[![Tiptap extensions](https://img.shields.io/badge/Tiptap%20extensions-on%20npm-1a73e8.svg)](https://www.npmjs.com/search?q=keywords:docs.plus)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://github.com/docs-plus/docs.plus/pulls)
-[![Discord](https://img.shields.io/badge/Discord-Join-5865F2.svg?logo=discord&logoColor=white)](https://discord.gg/2EmAjmgZ8)
+[![Discord](https://img.shields.io/badge/Discord-Join-5865F2.svg?logo=discord&logoColor=white)](https://discord.gg/25JPG38J59)
 [![Supabase](https://img.shields.io/badge/Supabase-Powered-3ECF8E.svg?logo=supabase&logoColor=white)](https://supabase.com)
 [![Bun](https://img.shields.io/badge/Bun-Runtime-000000.svg?logo=bun&logoColor=white)](https://bun.sh)
 
@@ -96,12 +96,13 @@ Google sign-in is optional. Local Supabase reads the Google keys from `.env.loca
 Then start the stack, from the repository root. Skip the `cp` line when `.env.development` already exists, or it overwrites your edits.
 
 ```bash
+bun install
 cp .env.example .env.development
 make up-dev
 bun --filter @docs.plus/supabase_back start
 ```
 
-`make up-dev` starts no Supabase. The containers read `SUPABASE_URL: http://host.docker.internal:54321` from the host, so the third command supplies it. That command also opens Supabase Studio at <http://127.0.0.1:54323>.
+`make up-dev` starts no Supabase. The containers read `SUPABASE_URL: http://host.docker.internal:54321` from the host, so the last command supplies it. That command also opens Supabase Studio at <http://127.0.0.1:54323>.
 
 If you skipped the three steps, you can still turn on Google sign-in. Export the two keys in your shell, then restart Supabase. Run this from the repository root:
 
@@ -121,7 +122,9 @@ Get both values from the Local stack part of [Turn on Google sign-in](docs/self-
 <details>
 <summary><strong>☁️ Alternative: Supabase Cloud instead of local Supabase</strong></summary>
 
-Use a hosted Supabase project instead of the local stack:
+Use a hosted Supabase project instead of the local stack.
+
+With `make up-dev`, no local Supabase starts. `make dev-local` still starts and checks local Supabase, but the apps use the cloud values in `.env.local`.
 
 **Step 1: Create a Supabase project** 🚀
 
@@ -148,7 +151,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 **Step 3: Apply schema and extensions** 📊
 
 - Activate **pg_cron** and **pgmq (Queues)** in the Dashboard's Integrations page
-- Run the SQL from `packages/supabase/scripts/` in numbered order via the SQL Editor. Run `00-bootstrap.sql` first: it creates the extensions and the `internal` schema the later scripts depend on.
+- Run the SQL from `packages/supabase/scripts/` in numbered order via the SQL Editor. Run `00-bootstrap.sql` first: it creates the extensions and the `internal` schema the later scripts depend on. Skip `idea.sql`, `cleanup-orphan-chat-media.sql` and `30-seed-car-conversation.sql`. They are not schema. See [Install step 2](docs/self-hosting/install.md#2-prepare-supabase).
 
 **Step 4: Configure push notifications (optional)** 🔔
 
@@ -156,7 +159,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 VAPID_PUBLIC_KEY=your-vapid-public-key
 VAPID_PRIVATE_KEY=your-vapid-private-key
 VAPID_SUBJECT=mailto:support@yourdomain.com
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=your-vapid-public-key
 ```
+
+Set `NEXT_PUBLIC_VAPID_PUBLIC_KEY` to the same value as `VAPID_PUBLIC_KEY`. It is a build value, so restart or rebuild the webapp after you set it.
 
 Generate VAPID keys: `bunx web-push generate-vapid-keys`. Architecture notes: `packages/supabase/scripts/07-4-push-notifications-pgmq.sql`.
 
@@ -250,7 +256,7 @@ docs.plus/
 │   │   └── prisma/              # Prisma schema & migrations
 │   └── admin-dashboard/         # 🖥️ Admin interface (Next.js)
 ├── extensions/
-│   └── extension-*/             # 🔌 Five publishable @docs.plus Tiptap packages
+│   └── extension-*/             # 🔌 Publishable @docs.plus Tiptap packages
 ├── packages/
 │   ├── document-swarm/          # 🐝 Multi-user demo and load CLI (Playwright)
 │   ├── email-templates/         # ✉️ Email templates and rendering
@@ -271,7 +277,7 @@ Deeper layout lives in `apps/webapp/README.md`, `apps/hocuspocus.server/Readme.m
 
 ## 🔌 Tiptap Extensions
 
-Five open-source [Tiptap](https://tiptap.dev) extensions power the docs.plus editor. The table below describes the source in this repository. All five are published on npm and share one version, released together. A published version can still lag this source, so check each package's `CHANGELOG.md` before you pin one.
+Open-source [Tiptap](https://tiptap.dev) extensions power the docs.plus editor. The table below describes the source in this repository. All of them share one version and release together. A published version can still lag this source, so check each package's `CHANGELOG.md` before you pin one.
 
 ```sh
 npm install @docs.plus/extension-hyperlink
@@ -285,7 +291,10 @@ Or use `pnpm add`, `yarn add`, or `bun add` with the same package name.
 | [`extension-hypermultimedia`](extensions/extension-hypermultimedia/) | Nine media nodes: image, audio, video, YouTube, Vimeo, SoundCloud, Spotify, X, Loom           |
 | [`extension-indent`](extensions/extension-indent/)                   | Tab / Shift-Tab literal indent with a context allowlist                                       |
 | [`extension-inline-code`](extensions/extension-inline-code/)         | Inline code mark (`Mod-e`, backtick rules)                                                    |
+| [`extension-mermaid`](extensions/extension-mermaid/)                 | Mermaid diagram preview for `codeBlock`, drawn by Pele                                        |
 | [`extension-placeholder`](extensions/extension-placeholder/)         | Hint text in the empty textblock at the cursor; cost tracks cursor depth, not document length |
+
+`extension-mermaid` is not on npm yet; it publishes with the next family release.
 
 Install notes, recommended pairings, and contributing: [extensions/README.md](extensions/README.md). Release policy: [RELEASE_POLICY.md](RELEASE_POLICY.md).
 
@@ -313,6 +322,8 @@ You must supply your own PostgreSQL, Supabase project, object storage, email sen
 make scale-webapp        # webapp=3
 make scale-hocuspocus    # rest-api=3, hocuspocus-server=5, hocuspocus-worker=3
 ```
+
+`scale-hocuspocus` raises all three backend processes at once, so check your Postgres `max_connections` first. Both targets run `up -d --scale` without `--no-recreate`, so a changed config or `DEPLOY_TAG` recreates the serving replicas. Read [Scaling past the defaults](docs/self-hosting/configuration.md#scaling-past-the-defaults) first.
 
 For any other count, edit `deploy.replicas` in `docker-compose.prod.yml`.
 
@@ -361,10 +372,13 @@ MIT License - See [LICENSE](LICENSE)
 
 ## 💬 Support
 
-- 💬 **Discord**: [Join our server](https://discord.gg/2EmAjmgZ8)
+- 💬 **Discord**: [Join our server](https://discord.gg/25JPG38J59)
+- 💬 **Questions and ideas**: [GitHub Discussions](https://github.com/docs-plus/docs.plus/discussions)
 - 🐦 **Twitter**: [@docsdotplus](https://twitter.com/docsdotplus)
 - 🐙 **GitHub**: [docs.plus](https://github.com/docs-plus/docs.plus)
 - 📧 **Email**: [contact@newspeak.house](mailto:contact@newspeak.house)
+- 🔒 **Security**: see [SECURITY.md](SECURITY.md). Do not report in a public issue or on Discord.
+- 🤝 **Conduct**: [Code of Conduct](CODE_OF_CONDUCT.md)
 - Privacy: <https://docs.plus/privacy>
 - Terms: <https://docs.plus/terms>
 

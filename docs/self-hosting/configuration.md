@@ -43,7 +43,7 @@ Next step: run that after any runtime change, then run the checks in [Install st
 | ------------------------ | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Application and security | Environment name, ports, secrets                                                                   |                                                                                                                                                                                                                    |
 | Database                 | `DATABASE_URL`                                                                                     | Your own PostgreSQL. Nothing in the compose file provides it                                                                                                                                                       |
-| Redis                    | Host, port, database index, timeouts                                                               | Shared by sync, queues, and the rate limiter                                                                                                                                                                       |
+| Redis                    | Host, port, password, database index, timeouts                                                     | Shared by sync, queues, and the rate limiter                                                                                                                                                                       |
 | Supabase, server-side    | Project URL, [`SUPABASE_ANON_KEY`](../../apps/hocuspocus.server/ENV.md#required), service-role key | The backend checks each user token with the anon key. `.env.example` ships local demo keys. Replace the anon key and the service-role key with your project's keys. Never expose the service-role key to a browser |
 | Supabase, client-side    | The `NEXT_PUBLIC_` pair                                                                            | Build values. See [Webapp and admin build values](#webapp-and-admin-build-values)                                                                                                                                  |
 | Storage                  | Endpoint, region, bucket, key pair                                                                 | Set `PERSIST_TO_LOCAL_STORAGE=false`                                                                                                                                                                               |
@@ -403,6 +403,13 @@ Metrics, logs, and alerts come from a separate stack, `docker-compose.observabil
 | `GLITCHTIP_EMAIL_URL`         | Optional. The SMTP URL that GlitchTip sends issue mail with. Empty writes mail to the log     |
 | `POSTGRES_EXPORTER_DSN`       | Optional. A read-only `pg_monitor` login for the database exporter. Empty uses `DATABASE_URL` |
 | `DATABASE_URL`                | Your docs.plus database. The exporter uses it when `POSTGRES_EXPORTER_DSN` is empty           |
+
+To make the `pg_monitor` login, run this on your database as an admin user:
+
+```sql
+CREATE ROLE <EXPORTER_USER> LOGIN PASSWORD '<EXPORTER_PASSWORD>';
+GRANT pg_monitor TO <EXPORTER_USER>;
+```
 
 The compose file also names the docs.plus hosts. Search it for `docs.plus`, and replace each hit with your own host or address.
 

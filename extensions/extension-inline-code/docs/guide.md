@@ -42,7 +42,7 @@ export const pasteRegex = /(?<=^|[^`])`([^`]+)`(?!`)/g
 
 `inputRegex` is end-anchored and non-global, because a global flag moves the input-rule plugin's `lastIndex`. `pasteRegex` keeps the global flag, so one paste converts every span it finds.
 
-The prefix lookbehind sits in both regexes, so the character before the opening backtick stays out of the match. Typing `` x`x` `` marks the content alone and keeps the leading `x` plain. The backtick rules build these patterns at runtime with `new RegExp`, so an engine with no lookbehind can still load the bundle. On Safari before 16.4 they fall back to an in-match prefix, and the character before the opening backtick is removed.
+The prefix lookbehind sits in both regexes, so the character before the opening backtick stays out of the match. Typing `` x`x` `` marks the content alone and keeps the leading `x` plain. The backtick rules build these patterns at runtime with `new RegExp`, so an engine with no lookbehind can still load the bundle. On Safari before 16.4 they fall back to an in-match prefix, and a non-space character before the opening backtick is removed.
 
 ### Where the rules do not fire
 
@@ -72,6 +72,8 @@ const TildeCode = InlineCode.extend({
   }
 })
 ```
+
+Safari before 16.4 cannot parse a lookbehind literal, and the whole bundle then fails to load. To support those engines, copy the `supportsLookbehind` check and fallback pattern from [`src/inline-code.ts`](../src/inline-code.ts).
 
 Replacing `addInputRules` drops the inline-leaf guard the package wraps around its own rule. A match spanning a hard break then converts again. Copy the inline-leaf guard from [`src/inline-code.ts`](../src/inline-code.ts) to keep it.
 

@@ -50,7 +50,7 @@ Slot factories return `HTMLElement | null` instead of `void`, and `PreviewHyperl
 
 **Behavior differences.** Audit any fixture or seeded content that relied on the old behavior.
 
-- The package rejects `javascript:`, `data:`, and `vbscript:` URLs at load, paste, input rule, click, and popover open, and drops stored ones.
+- The package rejects `javascript:`, `data:`, `vbscript:`, `file:`, and `blob:` URLs at load, paste, input rule, click, and popover open, and drops stored ones.
 - `validateURL` requires a plausible host for a web scheme, so `https://googlecom` no longer autolinks.
 - `localhost:3000` and `mydomain.com:8080` now read as host:port, and canonicalize to `https://localhost:3000` and `https://mydomain.com:8080`.
 - `SpecialUrlIcon` is gone, along with `SpecialUrlInfo.icon`. Map `SpecialUrlInfo.type` to your own renderer — see [Scheme classification](./url-handling.md#scheme-classification).

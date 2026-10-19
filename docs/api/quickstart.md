@@ -101,7 +101,7 @@ Pass `format=text` instead to get plain text, one line per block.
 
 Notice the `toc-id` the server added. That is covered below.
 
-**This read returns the stored copy, not the live one.** It can trail an actively edited document by up to 60 seconds. Your own write is different — it flushes immediately, so you do not wait for that window when you verify your own change.
+**This read returns the stored copy, not the live one.** It can trail an actively edited document by up to 60 seconds. Your own write can trail too. On a document nobody has open, a `200` carries `version` once the write is saved. On an open document the `200` has no `version`.
 
 A document that exists with no content yet returns `version: 0` and an empty document. That is not an error.
 
@@ -137,7 +137,7 @@ Next step: prefer one `replace`, or a few large `append` calls, over many small 
 
 `replace` is safe to retry. Sending it twice leaves the same document.
 
-`append` is not. A timeout may mean the write landed anyway, so a blind retry can append twice. Next step: `GET` the document and check before retrying an `append`.
+`append` is not. A timeout may mean the write landed anyway, so a blind retry can append twice. Next step: wait about a minute, then `GET` the document and check before retrying an `append`. `503 SAVE_NOT_CONFIRMED` means the write was applied. `503 DOCUMENT_BUSY` applied nothing; retry after a few seconds. Send writes to one document in sequence.
 
 A repeated `500` on the same document means server-side persistence is stuck for it. Next step: stop retrying and tell an operator, because each attempt keeps changing what people see without saving it.
 

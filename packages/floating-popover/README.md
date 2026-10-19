@@ -1,6 +1,6 @@
 # @docs.plus/floating-popover
 
-Framework-agnostic single-popover lifecycle engine for Tiptap / ProseMirror extensions, built on [`@floating-ui/dom`](https://floating-ui.com/). Hoisted from `@docs.plus/extension-hyperlink` so multiple extensions share one floating surface at a time (a link popover and a media toolbar are mutually exclusive).
+Framework-agnostic single-popover lifecycle engine for Tiptap / ProseMirror extensions, built on [`@floating-ui/dom`](https://floating-ui.com/). Hoisted from `@docs.plus/extension-hyperlink` so multiple extensions share one popover engine. The controller is per consuming bundle, so only one popover per bundle is open at a time. A host loading both extensions has two controllers.
 
 ## Status
 

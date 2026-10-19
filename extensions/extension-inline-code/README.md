@@ -4,7 +4,7 @@
 [![Version](https://img.shields.io/npm/v/@docs.plus/extension-inline-code.svg?label=version)](https://www.npmjs.com/package/@docs.plus/extension-inline-code)
 [![Downloads](https://img.shields.io/npm/dm/@docs.plus/extension-inline-code.svg)](https://npmcharts.com/compare/@docs.plus/extension-inline-code)
 [![License](https://img.shields.io/npm/l/@docs.plus/extension-inline-code.svg)](https://www.npmjs.com/package/@docs.plus/extension-inline-code)
-[![Discord](https://img.shields.io/badge/discord-community-5865F2?logo=discord&logoColor=white)](https://discord.gg/2EmAjmgZ8)
+[![Discord](https://img.shields.io/badge/discord-community-5865F2?logo=discord&logoColor=white)](https://discord.gg/25JPG38J59)
 
 <p align="center">
   <picture>
@@ -42,7 +42,7 @@ React Native has no DOM. Load the editor in a web view.
 
 Installs with no runtime dependencies.
 
-On Safari and iOS Safari before 16.4, which have no RegExp lookbehind, the rules fall back to the upstream pattern. There, the character before the opening backtick is removed.
+On Safari and iOS Safari before 16.4, which have no RegExp lookbehind, the rules fall back to the upstream pattern. There, a non-space character before the opening backtick is removed.
 
 Upgrading from `@tiptap/extension-code`? See [Migrating from `@tiptap/extension-code`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/migration.md).
 

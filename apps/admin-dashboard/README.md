@@ -63,7 +63,7 @@ Uses the same env files as the main webapp. Key variables:
 Admin dashboard runs on port **3100** by default:
 
 - Local: http://localhost:3100
-- Requires admin role in Supabase
+- Google sign-in only. Your user needs an `admin_users` row. See [Sign in to the admin dashboard locally](../../CONTRIBUTING.md#sign-in-to-the-admin-dashboard-locally).
 
 ---
 

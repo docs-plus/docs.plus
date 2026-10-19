@@ -203,10 +203,10 @@ Commands below use the `dc` alias from [Before you start](#before-you-start).
 
    Exit code 137 is an OOM kill.
 
-2. Restart the named service to shed loaded rooms.
+2. Restart only the container the alert names, to shed its loaded rooms. `dc restart hocuspocus-server` restarts both replicas at once.
 
    ```bash
-   dc restart hocuspocus-server
+   docker restart docsplus-hocuspocus-server-<n>
    ```
 
    Rooms reload from Postgres as clients reconnect, so this is a reset, not a fix.

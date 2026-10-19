@@ -22,25 +22,25 @@ A user token can go in `Authorization: Bearer <jwt>` or in a `token` header. Bot
 
 ## Keep the service-role key on a server
 
-The service-role key passes every document, public and private. It is not scoped, and it cannot be narrowed. Treat it the way you treat a database password.
+On the routes it can call, the service-role key passes every document, public and private. The slug read is the one exception: see [Private documents are owner-only](#private-documents-are-owner-only). The key is not scoped, and it cannot be narrowed. Treat it the way you treat a database password.
 
 Never ship it to a browser, a mobile application, or any client you do not control. Next step: put every service-role call behind your own backend, and let your backend hold the key.
 
 ## What each credential can call
 
-**No credential needed.** The health paths, `GET /api/metadata`, reading one media file, the email unsubscribe pages, and `POST /api/email/validate`.
+**No credential needed.** The health paths, `GET /api/metadata`, reading one media file, the email unsubscribe pages, `GET /api/email/health`, `GET /api/email/status`, and `POST /api/email/validate`.
 
 The unsubscribe link carries its own `token`, and that token is its only credential. A `GET` of the link checks the token and shows a confirm page. It changes nothing, so a mail link scanner cannot unsubscribe a reader. The page's button posts `confirm=yes` and gets an HTML result. Any other `POST` body is the RFC 8058 one-click post from a mail client, and it gets JSON.
 
 **A user token, optional.** Listing documents without an owner filter, reading one document by slug, and updating document metadata. Sending a token here changes what you see rather than whether the call works.
 
-**A user token, required.** Listing your own documents, creating a document, the whole document lifecycle — delete, restore, duplicate, favorite or unfavorite, Last opened (`POST /api/documents/:documentId/opened`), permanently delete, empty the trash. Uploading media also requires a user token. So does `GET /api/connected-apps/redirects`, which the Connected apps settings tab reads. It refuses a connected app's own token.
+**A user token, required.** Listing your own documents, the whole document lifecycle — delete, restore, duplicate, favorite or unfavorite, Last opened (`POST /api/documents/:documentId/opened`), permanently delete, empty the trash. Uploading media also requires a user token. So does `GET /api/connected-apps/redirects`, which the Connected apps settings tab reads. It refuses a connected app's own token.
 
-**Service-role only.** Reading and writing document content, and every document version route. The service-role email send, preview and bounce routes. The `content` and `ownerId` fields when creating a document.
+**Service-role only.** Reading and writing document content, every document version route, and `GET /api/documents/:documentId/changes`. The service-role email send, preview and bounce routes. The `content` and `ownerId` fields when creating a document.
 
 **A Resend webhook signature.** `POST /api/email/webhooks/resend` takes no key and no token. Resend signs each request with the endpoint's `whsec_` secret, and the server checks the `svix-signature` header. The route exists only when the server sets a valid `RESEND_WEBHOOK_SECRET`.
 
-**Either a user token or the service-role key.** Export and import. The key passes every document; a user token is checked against that document's privacy and lock.
+**Either a user token or the service-role key.** Creating a document, export and import. On these routes the key passes every document. A user token is checked against that document's privacy and lock.
 
 **An admin token.** Everything under `/api/admin/`.
 

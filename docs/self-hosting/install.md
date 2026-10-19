@@ -252,7 +252,7 @@ Everything else is internal to the Docker network.
 | `4002` | Worker health        |
 | `4003` | Internal listener    |
 
-**Never route port 4003 through your proxy.** It carries service-role write endpoints, and only network isolation protects it.
+**Never route port 4003 through your proxy.** It carries service-role write endpoints. Its internal routes need the service-role key, but `/metrics` has no check.
 
 **The Traefik dashboard on 8080 has no authentication.** It is bound to localhost, and that bind is the only thing protecting it. Next step: reach it over an SSH tunnel, and never change that bind to a public address.
 
