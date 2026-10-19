@@ -62,18 +62,17 @@ const sortScripts = (a: string, b: string): number => {
   return a.localeCompare(b)
 }
 
+/** The scripts/ files seed.sql concatenates, in seed order. */
+export async function seedScriptFiles(): Promise<string[]> {
+  return (await readdir(scriptsDir))
+    .filter((file) => isNumberedScript(file) && !excludePatterns.some((re) => re.test(file)))
+    .sort(sortScripts)
+}
+
 async function generateSeed() {
   try {
     console.log('📦 Reading scripts directory...')
-    const files = await readdir(scriptsDir)
-
-    const scriptFiles = files
-      .filter((file) => {
-        const shouldInclude = isNumberedScript(file)
-        const shouldExclude = excludePatterns.some((pattern) => pattern.test(file))
-        return shouldInclude && !shouldExclude
-      })
-      .sort(sortScripts)
+    const scriptFiles = await seedScriptFiles()
 
     console.log(`✅ Found ${scriptFiles.length} script files to include:`)
     scriptFiles.forEach((file) => console.log(`   - ${file}`))
@@ -111,4 +110,4 @@ async function generateSeed() {
   }
 }
 
-generateSeed()
+if (import.meta.main) generateSeed()
