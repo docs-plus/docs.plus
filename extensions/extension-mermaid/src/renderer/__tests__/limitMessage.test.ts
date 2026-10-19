@@ -3,7 +3,7 @@
 // or a raw count that is one short. Real Pele errors feed the classifier, so a
 // wording change upstream fails here.
 import { describe, expect, it } from 'bun:test'
-import { PeleError, render } from 'pele'
+import { PeleError, renderAsync } from 'pele/lazy'
 
 import { DEFAULT_LIMITS } from '../../constants'
 import { limitMessage } from '../limitMessage'
@@ -11,9 +11,9 @@ import { limitMessage } from '../limitMessage'
 const edges = (n: number): string =>
   'flowchart LR\n' + Array.from({ length: n }, (_, i) => `a${i}-->a${i + 1}`).join('\n')
 
-function peleLimit(source: string, outputLimit = 1000000): string {
+async function peleLimit(source: string, outputLimit = 1000000): Promise<string> {
   try {
-    render(source, {
+    await renderAsync(source, {
       limit: DEFAULT_LIMITS.characters,
       maxEdges: DEFAULT_LIMITS.edges,
       outputLimit
@@ -26,24 +26,24 @@ function peleLimit(source: string, outputLimit = 1000000): string {
 }
 
 describe('limitMessage', () => {
-  it('names the real character count and the limit', () => {
+  it('names the real character count and the limit', async () => {
     const source = 'flowchart LR\n  A-->B\n%%' + 'x'.repeat(15234 - 23)
     expect(source.length).toBe(15234)
-    expect(limitMessage(source, peleLimit(source), DEFAULT_LIMITS)).toBe(
+    expect(limitMessage(source, await peleLimit(source), DEFAULT_LIMITS)).toBe(
       'It has 15,234 characters, and the limit is 15,000. Split it into smaller diagrams.'
     )
   })
 
-  it('says more than the edge limit, because Pele stops counting there', () => {
+  it('says more than the edge limit, because Pele stops counting there', async () => {
     const source = edges(501)
-    expect(limitMessage(source, peleLimit(source), DEFAULT_LIMITS)).toBe(
+    expect(limitMessage(source, await peleLimit(source), DEFAULT_LIMITS)).toBe(
       'It has more than 500 arrows, and the limit is 500. Split it into smaller diagrams.'
     )
   })
 
-  it('explains an output that is too big without a number the writer never typed', () => {
+  it('explains an output that is too big without a number the writer never typed', async () => {
     const source = edges(50)
-    expect(limitMessage(source, peleLimit(source, 2000), DEFAULT_LIMITS)).toBe(
+    expect(limitMessage(source, await peleLimit(source, 2000), DEFAULT_LIMITS)).toBe(
       'The drawn diagram would be too big for the page. Split it into smaller diagrams.'
     )
   })
