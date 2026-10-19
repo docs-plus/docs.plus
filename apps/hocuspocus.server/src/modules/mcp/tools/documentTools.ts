@@ -105,7 +105,6 @@ const parseFragment = async (markdown: string, intoEmpty = false): Promise<Tipta
   const parsed = parseMarkdown(markdown)
   const problem = checkFragment(parsed.content, intoEmpty)
   if (problem) return refuse(FRAGMENT_TEXT[problem])
-  // The pad would show an error box in its place, and the agent would never see it.
   const diagram = await checkDiagrams(parsed.content)
   return diagram ? refuse(`markdown: ${diagram} Fix it and retry.`) : parsed
 }

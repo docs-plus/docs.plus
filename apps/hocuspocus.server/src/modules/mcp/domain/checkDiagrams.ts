@@ -37,26 +37,13 @@ const diagramSources = (nodes: readonly JSONContent[]): string[] =>
   nodes.flatMap((node) => (isDiagram(node) ? [sourceOf(node)] : diagramSources(node.content ?? [])))
 
 // Pele counts lines from the diagram header and skips comments, so its line number misleads.
-// The echoed source line and the caret stay; they point at the right spot.
+// The caret stays.
 const tidy = (message: string): string =>
   message
     .replace(/ on line \d+/g, '')
     .replace(/\n\s*\n/g, '\n')
     .trim()
     .slice(0, 400)
-
-const problemText = (pele: typeof Pele, err: unknown): string => {
-  // Not the agent's mistake: `run` logs it and answers with its generic failure.
-  if (!(err instanceof pele.PeleError)) throw err
-  switch (err.code) {
-    case 'unsupported-diagram':
-      return `docs.plus does not draw this type. Types it draws: ${DIAGRAM_KEYWORDS.join(', ')}.`
-    case 'limit':
-      return `It is over ${LIMITS.limit} characters or ${LIMITS.maxEdges} edges, the most the pad draws.`
-    default:
-      return `Pele could not parse it: ${tidy(err.message)}`
-  }
-}
 
 // Why the pad could not draw `source`, or null when it can. Parse only, no layout.
 const problemOf = async (source: string): Promise<string | null> => {
@@ -66,7 +53,15 @@ const problemOf = async (source: string): Promise<string | null> => {
     pele.parse(source, LIMITS)
     return null
   } catch (err) {
-    return problemText(pele, err)
+    // Not the agent's mistake: `run` logs it and answers with its generic failure.
+    if (!(err instanceof pele.PeleError)) throw err
+    if (err.code === 'unsupported-diagram') {
+      return `Pele found no diagram type. Start it with one of: ${DIAGRAM_KEYWORDS.join(', ')}.`
+    }
+    if (err.code === 'limit') {
+      return `It is over ${LIMITS.limit} characters or ${LIMITS.maxEdges} edges, the most the pad draws.`
+    }
+    return `Pele could not parse it: ${tidy(err.message)}`
   }
 }
 
@@ -94,7 +89,7 @@ export const checkReplacedDiagram = async (
 ): Promise<string | null> => {
   const source = diagramSources(nodes).find((text) => text.includes(oldText))
   if (source === undefined) return null
-  const at = source.indexOf(oldText)
-  const problem = await problemOf(source.slice(0, at) + newText + source.slice(at + oldText.length))
+  // A function, so a `$&` in newText stays literal.
+  const problem = await problemOf(source.replace(oldText, () => newText))
   return problem && `after this change, the diagram cannot be drawn. ${problem}`
 }
