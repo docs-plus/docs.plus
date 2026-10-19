@@ -80,8 +80,8 @@ comment on column public.users.profile_data is E'Public profile data, readable b
 }';
 comment on column public.users.notification_preferences is 'Private notification settings. No anon or authenticated SELECT grant: the owner reads it through get_notification_preferences() and writes it through update_notification_preferences().';
 
--- Partial index for efficient online user queries
--- Only indexes users with status='ONLINE', keeping the index small and fast
+-- The cron sweep reads this index. online_at stays out of the key,
+-- so a heartbeat is a HOT update.
 create index if not exists idx_users_online_status
-    on public.users (id, online_at)
+    on public.users (id)
     where status = 'ONLINE';

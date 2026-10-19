@@ -5,10 +5,6 @@
 -- and establishes a system user for automation purposes.
 -- -----------------------------------------------------------------------------
 
--- Indexes on public.users Table
--- Optimizes queries filtering or sorting by username.
-create index idx_users_username on public.users (username);
-
 -- Indexes on public.messages Table
 -- idx_messages_channel_id is covered by the composite (channel_id, created_at desc) below.
 create index idx_messages_user_id on public.messages (user_id);

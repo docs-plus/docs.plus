@@ -17,6 +17,14 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - **AI apps can write Mermaid diagrams through the MCP connector.**
   The server instructions and the `markdown` field descriptions tell an agent that a `mermaid` fence becomes a diagram. The field descriptions also name the types it can start with. Before `create_document`, `append_to_document`, `edit_blocks` or `replace_text` writes, the server parses each diagram with Pele. It refuses an empty diagram, an unsupported type, a parse error, or one over 15 000 characters or 500 edges, and nothing is written. A parse refusal carries Pele's message, so the agent can fix it. The backend now depends on `pele` 1.6.0.
 
+### Changed
+
+- **Presence heartbeats no longer touch every `users` index.**
+  `idx_users_online_status` now keys only `id`, so a heartbeat is a HOT
+  update. The duplicate `idx_users_username` is dropped; `users_username_key`
+  serves the same lookups. Apply the Supabase migration
+  `20261019140000_users_heartbeat_hot_index` (#491).
+
 ### Fixed
 
 - **Claude Code now reads document and chat text through the MCP connector ([#456](https://github.com/docs-plus/docs.plus/issues/456)).**
