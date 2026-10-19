@@ -4464,10 +4464,9 @@ CREATE INDEX IF NOT EXISTS idx_channel_msg_counts_workspace_id
 SELECT FROM pgmq.create('message_counter');
 
 -- 4. Trigger function to enqueue an increment event on message insert.
--- Resolves workspace_id at enqueue time so a later hard-delete of the
--- channel doesn't poison the worker (channels.workspace_id is NULL after
--- the row is gone). Lookup is a PK probe on channels and adds < 1ms to
--- the message INSERT path.
+-- The payload workspace_id is informational. The worker reads the live
+-- channel row, because a channel deleted after enqueue must drop the event.
+-- Lookup is a PK probe on channels and adds < 1ms to the INSERT path.
 CREATE OR REPLACE FUNCTION public.on_message_insert_queue()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -4582,25 +4581,21 @@ BEGIN
     LOOP
       row_count := row_count + 1;
 
-      -- Read the event payload. workspace_id is captured at enqueue time
-      -- by the triggers above; we still fall back to a channel lookup to
-      -- handle legacy events (pre-`workspace_id`-in-payload) gracefully.
+      -- The live channel row decides, never the payload workspace_id. A
+      -- payload outlives a channel delete, and its counter INSERT then fails
+      -- the channel_id FK. One raise rolls back the whole run, so that event
+      -- would block every later run.
       DECLARE
         v_channel_id   TEXT := rec.message->>'channel_id';
         v_op           TEXT := rec.message->>'op';
-        v_workspace_id TEXT := rec.message->>'workspace_id';
+        v_workspace_id TEXT;
       BEGIN
-        IF v_workspace_id IS NULL THEN
-          SELECT workspace_id INTO v_workspace_id
-          FROM public.channels WHERE id = v_channel_id;
-        END IF;
+        SELECT workspace_id INTO v_workspace_id
+        FROM public.channels WHERE id = v_channel_id;
 
-        -- Channel was hard-deleted before the event was processed. The
-        -- counter row is removed by FK CASCADE, so the event is a no-op;
-        -- drop it from the queue and move on. Without this branch, a
-        -- single orphan event poisons every subsequent cron run via the
-        -- channel_message_counts.workspace_id NOT NULL constraint.
-        IF v_workspace_id IS NULL THEN
+        -- Channel is gone. FK CASCADE already removed its counter row, so
+        -- the event is a no-op; drop it from the queue and move on.
+        IF NOT FOUND THEN
           PERFORM pgmq.delete('message_counter', rec.msg_id);
           CONTINUE;
         END IF;

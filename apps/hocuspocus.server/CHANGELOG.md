@@ -27,6 +27,12 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Fixed
 
+- **Chat message counts no longer freeze after a channel is deleted.** The
+  message counter worker trusted the workspace id stored in each queued event.
+  An event for a deleted channel then failed the `channel_id` foreign key, and
+  that one error rolled back every cron run, so no count updated again. The
+  worker now reads the live channel row and drops events whose channel is gone.
+  Apply the Supabase migration `20261019130000_message_counter_skip_deleted_channel`.
 - **Claude Code now reads document and chat text through the MCP connector ([#456](https://github.com/docs-plus/docs.plus/issues/456)).**
   When a result has both a text block and `structuredContent`, Claude Code
   shows the model only `structuredContent`. `read_document` and
