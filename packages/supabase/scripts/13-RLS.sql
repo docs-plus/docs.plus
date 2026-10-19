@@ -16,7 +16,13 @@
 
 -- Anon needs USAGE on internal because its policies below call
 -- can_open_document. PostgREST does not expose the internal schema.
+-- Anon keeps EXECUTE on can_open_document only. Every other internal helper is
+-- revoked from public, anon and authenticated in its owning script (#469).
 GRANT USAGE ON SCHEMA internal                                 TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION internal.can_open_document(varchar, uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION internal.is_workspace_member(varchar)     FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION internal.is_channel_member(varchar)       FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION internal.can_read_channel(varchar)        FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION internal.can_open_document(varchar, uuid) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION internal.is_workspace_member(varchar) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION internal.is_channel_member(varchar)   TO authenticated, service_role;
@@ -265,18 +271,12 @@ CREATE POLICY notifications_self_update ON public.notifications
   WITH CHECK (receiver_user_id = (select auth.uid()));
 
 
--- 2j. document_views (parent + future month-partitions) — analytics only.
---     enqueue_document_view (definer) and analytics RPCs (service_role)
---     bypass RLS. No SELECT/INSERT/UPDATE/DELETE policy → default deny
---     for authenticated/anon. The `create_document_views_partitions`
---     function (21-document-views.sql) is patched to enable RLS on each
---     newly-created partition so the linter stays clean every month.
+-- 2j. document_views (parent + month-partitions) — analytics only.
+--     enqueue_document_view (definer) and analytics RPCs (service_role) bypass RLS.
+--     No policy → default deny. 09-document-views.sql enables RLS and revokes the
+--     browser roles on each partition it creates (the seed DO block and the cron function).
 
 ALTER TABLE public.document_views ENABLE ROW LEVEL SECURITY;
--- Existing partitions get RLS enabled by the migration. The line below
--- exists so a fresh `db reset` (which loads scripts from scratch) lands
--- in the same state without depending on migration replay. Currently a
--- no-op because the partition tables are managed by the cron function.
 
 
 -- =====================================================================
@@ -290,7 +290,7 @@ ALTER TABLE public.document_views ENABLE ROW LEVEL SECURITY;
 --
 -- For unread display: anon has no channel_members row, so the FE shows
 -- channel_message_counts.message_count as the "messages so far" total
--- (see useMapDocumentAndWorkspace.ts::fetchChannels).
+-- (see usePadSession.ts, fetchChannels).
 --
 -- A Private document is closed to anon: every policy below passes a null user
 -- to internal.can_open_document (#396).

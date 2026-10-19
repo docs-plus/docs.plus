@@ -96,6 +96,9 @@ begin
                 'create unique index %I on public.%I (session_id, document_slug, view_date)',
                 partition_name || '_dedup_idx', partition_name
             );
+            -- A partition checks its own RLS and grants, not the parent's.
+            execute format('alter table public.%I enable row level security', partition_name);
+            execute format('revoke all on public.%I from public, anon, authenticated', partition_name);
         end if;
     end loop;
 end;
@@ -138,12 +141,14 @@ begin
                 'create unique index %I on public.%I (session_id, document_slug, view_date)',
                 partition_name || '_dedup_idx', partition_name
             );
-            -- Enable RLS on each new partition (S3.1). The parent
-            -- document_views has RLS on but no policy → default deny;
-            -- partitions need RLS enabled individually for the linter
-            -- check `rls_disabled_in_public` to stay clean every month.
+            -- A partition checks its own RLS and grants, not the parent's. Prod's
+            -- default ACL grants anon ALL on a new table, so revoke it here.
             execute format(
                 'alter table public.%I enable row level security',
+                partition_name
+            );
+            execute format(
+                'revoke all on public.%I from public, anon, authenticated',
                 partition_name
             );
         end if;
@@ -152,7 +157,7 @@ end;
 $$;
 
 comment on function public.create_document_views_partitions() is
-'Creates future partitions for document_views table with RLS enabled. Run monthly via pg_cron.';
+'Creates future partitions for document_views table with RLS enabled and no browser-role grants. Run monthly via pg_cron.';
 
 
 -- -----------------------------------------------------------------------------
@@ -704,7 +709,12 @@ as $$
     select jsonb_build_object(
         'total_views', coalesce(sum(total_views), 0),
         'unique_visitors', coalesce(sum(unique_users), 0),
-        'views_today', coalesce(sum(views_today), 0),
+        -- Derived at read time: the stored per-doc views_today snapshot goes stale
+        -- across the UTC day boundary for documents not touched today.
+        'views_today', coalesce(
+            (select sum(views) from public.document_views_daily where view_date = current_date),
+            0
+        ),
         'views_7d', coalesce(sum(views_7d), 0),
         'views_30d', coalesce(sum(views_30d), 0),
         'avg_duration_ms', coalesce(

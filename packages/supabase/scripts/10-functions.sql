@@ -418,111 +418,8 @@ END;
 $$ LANGUAGE plpgsql STABLE;
 -------------------------------
 -------------------------------
--- SECURITY DEFINER: the function needs to read u.email (column-revoked
--- from authenticated in 13-RLS.sql) and to insert a channel_members row
--- for `user_id != auth.uid()` (blocked by channel_members_join_insert).
--- Both are intended bypasses for the DM-create flow; auth.uid()-based
--- checks inside the function body enforce the actual authorisation.
-CREATE OR REPLACE FUNCTION create_direct_message_channel(
-    workspace_uid VARCHAR(36),
-    user_id UUID
-) RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-    user_name TEXT;
-    display_name TEXT;
-    full_name TEXT;
-    email TEXT;
-    new_channel JSONB;
-    existing_channel JSONB;
-    current_user_id UUID;
-    new_channel_id UUID := uuid_generate_v4();
-BEGIN
-    -- Ensure user_id (the other user) is not NULL
-    IF user_id IS NULL THEN
-        RAISE EXCEPTION 'Parameter user_id cannot be NULL.';
-    END IF;
-
-    -- Get current user ID from auth.uid(), or from app.current_user_id if auth.uid() is NULL
-    current_user_id := auth.uid();
-
-    IF current_user_id IS NULL THEN
-        -- Attempt to get current_user_id from session variable for testing purposes
-        BEGIN
-            SELECT current_setting('app.current_user_id', TRUE) INTO current_user_id;
-        EXCEPTION WHEN OTHERS THEN
-            RAISE EXCEPTION 'Current user ID is NULL or not set.';
-        END;
-    END IF;
-
-    -- Check if current_user_id is still NULL
-    IF current_user_id IS NULL THEN
-        RAISE EXCEPTION 'Current user ID is NULL.';
-    END IF;
-
-    -- Check if the workspace exists and is not deleted
-    IF NOT EXISTS (SELECT 1 FROM public.workspaces WHERE id = workspace_uid AND deleted_at IS NULL) THEN
-        RAISE EXCEPTION 'Workspace % does not exist or has been deleted.', workspace_uid;
-    END IF;
-
-    -- Check if the other user exists and is not deleted
-    SELECT u.username, u.full_name, u.display_name, u.email
-    INTO user_name, full_name, display_name, email
-    FROM public.users u
-    WHERE u.id = user_id;
-
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'User % does not exist or has been deleted.', user_id;
-    END IF;
-
-    -- Check if the current user exists and is not deleted
-    IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = current_user_id) THEN
-        RAISE EXCEPTION 'Current user % does not exist or has been deleted.', current_user_id;
-    END IF;
-
-    -- Prevent creating a channel with oneself
-    IF current_user_id = user_id THEN
-        RAISE EXCEPTION 'Cannot create a direct message channel with oneself.';
-    END IF;
-
-    -- Create display name based on the priority: display_name, full_name, username, email
-    user_name := COALESCE(display_name, full_name, user_name, email);
-
-    -- Check if the direct message channel already exists between the two users
-    SELECT to_jsonb(ch.*) INTO existing_channel
-    FROM public.channels ch
-    JOIN public.channel_members cm1 ON cm1.channel_id = ch.id AND cm1.member_id = current_user_id
-    JOIN public.channel_members cm2 ON cm2.channel_id = ch.id AND cm2.member_id = user_id
-    WHERE ch.type = 'DIRECT'
-      AND ch.workspace_id = workspace_uid
-      AND ch.deleted_at IS NULL
-      AND cm1.left_at IS NULL
-      AND cm2.left_at IS NULL;
-
-    -- If the channel already exists, return it
-    IF existing_channel IS NOT NULL THEN
-        RETURN existing_channel;
-    END IF;
-
-    -- Otherwise, create a new channel
-    INSERT INTO public.channels (id, workspace_id, type, name, slug, created_by)
-    VALUES (new_channel_id, workspace_uid, 'DIRECT', user_name, uuid_generate_v4(), current_user_id)
-    RETURNING to_jsonb(public.channels.*) INTO new_channel;
-
-    -- Add current user to the channel
-    -- INSERT INTO public.channel_members (channel_id, member_id, joined_at)
-    -- VALUES (new_channel_id, current_user_id, now());
-
-    -- Add the other user to the channel
-    INSERT INTO public.channel_members (channel_id, member_id, joined_at)
-    VALUES (new_channel_id, user_id, now());
-
-    RETURN new_channel;
-END;
-$$;
+-- Dropped (#319): no caller, and its access check let any user add any user to a DM.
+drop function if exists public.create_direct_message_channel(varchar, uuid);
 
 
 ---------------------
@@ -935,6 +832,9 @@ COMMENT ON FUNCTION join_workspace(VARCHAR(36)) IS
 Returns TRUE if successful or if user is already a member.
 Raises 42501 for a Private document the caller does not own.';
 
+REVOKE ALL ON FUNCTION public.join_workspace(VARCHAR(36)) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.join_workspace(VARCHAR(36)) TO authenticated, service_role;
+
 -----------------------------------
 -- Function to get channel members by last read update timestamp
 CREATE OR REPLACE FUNCTION public.get_channel_members_by_last_read_update(
@@ -1011,7 +911,6 @@ Only returns active members (not left) and non-deleted users.';
 -- ============================================================
 ALTER FUNCTION public.user_details_json(u users) SET search_path = public;
 ALTER FUNCTION public.get_channel_aggregate_data(input_channel_id character varying, message_limit integer, anchor_message_id uuid) SET search_path = public;
-ALTER FUNCTION public.create_direct_message_channel(workspace_uid character varying, user_id uuid) SET search_path = public;
 ALTER FUNCTION public.notifications_summary(_workspace_id character varying) SET search_path = public;
 ALTER FUNCTION public.get_unread_notifications_paginated(_workspace_id character varying, _type text, _page integer, _page_size integer) SET search_path = public;
 ALTER FUNCTION public.fetch_mentioned_users(_workspace_id character varying, _username text) SET search_path = public;
@@ -1019,10 +918,6 @@ ALTER FUNCTION public.get_unread_notif_count(_workspace_id character varying) SE
 ALTER FUNCTION public.get_channel_notif_state(_channel_id character varying) SET search_path = public;
 ALTER FUNCTION public.join_workspace(_workspace_id character varying) SET search_path = public;
 ALTER FUNCTION public.get_channel_members_by_last_read_update(_channel_id character varying, _timestamp timestamp with time zone) SET search_path = public;
-
--- No browser path calls it; #319 drops it.
-revoke all on function public.create_direct_message_channel(character varying, uuid) from public, anon, authenticated;
-grant execute on function public.create_direct_message_channel(character varying, uuid) to service_role;
 
 -- Invoker RPCs the browser calls, guests included. Name the grants, so access
 -- does not rest on default privileges (#316).

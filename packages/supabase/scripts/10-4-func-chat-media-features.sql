@@ -137,7 +137,7 @@ $$;
 comment on function internal.media_workspace_quota_bytes() is
   'Per-workspace chat media quota (10 GiB). Stats RPCs and enforce_media_workspace_quota read this.';
 
-revoke all on function internal.media_workspace_quota_bytes() from public;
+revoke all on function internal.media_workspace_quota_bytes() from public, anon, authenticated;
 
 create or replace function internal.media_workspace_usage_rows()
 returns table(
@@ -163,7 +163,7 @@ $$;
 comment on function internal.media_workspace_usage_rows() is
   'Aggregates media bucket usage by workspace (channel_id = split_part(path, ''/'', 2)).';
 
-revoke all on function internal.media_workspace_usage_rows() from public;
+revoke all on function internal.media_workspace_usage_rows() from public, anon, authenticated;
 
 drop function if exists public.get_workspace_media_storage_stats(uuid);
 drop function if exists public.get_all_workspace_media_storage_stats();
@@ -326,7 +326,7 @@ $$;
 comment on function internal.enforce_media_workspace_quota() is
 'Rejects media uploads that would push a workspace past the 10 GiB storage quota.';
 
-revoke all on function internal.enforce_media_workspace_quota() from public;
+revoke all on function internal.enforce_media_workspace_quota() from public, anon, authenticated;
 
 drop trigger if exists enforce_media_workspace_quota on storage.objects;
 create trigger enforce_media_workspace_quota

@@ -158,13 +158,9 @@ COMMENT ON TRIGGER trigger_update_user_online_at ON public.users IS 'Stamps onli
 
 /**
  * Function: is_user_online
- * Description: Checks if a user is actively online based on status and recent activity.
- * Parameters: p_user_id - The UUID of the user to check
- * Returns: TRUE if user has status='ONLINE' AND online_at within last 2 minutes
- *
- * Usage: Used by push notification trigger to skip push for active users.
- * The 2-minute threshold is more aggressive than the cron cleanup (also 2 min)
- * to ensure we catch users who are actively engaged.
+ * The one Postgres rule for "online": status ONLINE and online_at within 2 minutes.
+ * Callers: create_regular_message_notifications (bell) and enqueue_push_notification (push).
+ * 07-4-push-notifications-pgmq.sql keeps a copy that this later body replaces. Edit both.
  */
 CREATE OR REPLACE FUNCTION internal.is_user_online(p_user_id uuid)
 RETURNS boolean
@@ -182,7 +178,8 @@ $$;
 COMMENT ON FUNCTION internal.is_user_online(uuid) IS
 'Checks if user is actively online. Returns true if status is ONLINE and online_at is within last 2 minutes.';
 
--- Grant execute to service_role for push notification trigger
+-- Only definer code and the service role call it (#469).
+REVOKE ALL ON FUNCTION internal.is_user_online(uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION internal.is_user_online(uuid) TO service_role;
 
 -- ============================================================

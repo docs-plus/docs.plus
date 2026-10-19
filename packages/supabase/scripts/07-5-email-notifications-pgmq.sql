@@ -196,6 +196,17 @@ $$;
 comment on function internal.clear_email_bounce_info(uuid) is
 'Removes email_bounce_info from user notification preferences after re-enable or email update.';
 
+-- Only definer code and the service role call these helpers (#469).
+revoke all on function internal.is_email_enabled(uuid) from public, anon, authenticated;
+revoke all on function internal.get_email_preferences(uuid) from public, anon, authenticated;
+revoke all on function internal.mask_email(text) from public, anon, authenticated;
+revoke all on function internal.is_email_suppressed(text) from public, anon, authenticated;
+revoke all on function internal.check_email_rate_limit(uuid, int) from public, anon, authenticated;
+revoke all on function internal.clear_email_bounce_info(uuid) from public, anon, authenticated;
+grant execute on function internal.is_email_suppressed(text) to service_role;
+grant execute on function internal.check_email_rate_limit(uuid, int) to service_role;
+grant execute on function internal.clear_email_bounce_info(uuid) to service_role;
+
 
 -- Record a bounce event and auto-suppress on hard bounce
 create or replace function public.record_email_bounce(
@@ -431,6 +442,7 @@ begin
             n.type as notification_type,
             n.message_preview,
             n.channel_id,
+            n.message_id,
             n.sender_user_id,
             n.readed_at,
             u.email as recipient_email,
@@ -451,8 +463,17 @@ begin
         limit 100
         for update of eq skip locked
     loop
-        -- Skip if already read
-        if pending_email.readed_at is not null then
+        -- Skip if already read: in the bell, or in the channel (the read cursor passed the message)
+        -- A reaction row points at the receiver's own message, so the cursor test would always hit.
+        if pending_email.readed_at is not null
+           or (pending_email.notification_type <> 'reaction' and exists (
+               select 1
+                 from public.channel_members cm
+                 join public.messages m on m.id = pending_email.message_id
+                where cm.channel_id = pending_email.channel_id
+                  and cm.member_id = pending_email.user_id
+                  and cm.last_read_seq >= m.seq
+           )) then
             update public.email_queue
             set status = 'skipped',
                 error_message = 'Notification already read'
@@ -565,7 +586,17 @@ begin
       and eq.status = 'pending'
       and eq.email_type = 'digest'
       and eq.scheduled_for <= now()
-      and n.readed_at is not null;
+      and (
+          n.readed_at is not null
+          or (n.type <> 'reaction' and exists (
+              select 1
+                from public.channel_members cm
+                join public.messages m on m.id = n.message_id
+               where cm.channel_id = n.channel_id
+                 and cm.member_id = eq.user_id
+                 and cm.last_read_seq >= m.seq
+          ))
+      );
 
     -- Process each user with pending digest entries
     for v_user in

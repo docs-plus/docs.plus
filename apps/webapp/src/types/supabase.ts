@@ -1,10 +1,4 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
   graphql_public: {
@@ -16,12 +10,7 @@ export type Database = {
     }
     Functions: {
       graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
+        Args: { extensions?: Json; operationName?: string; query?: string; variables?: Json }
         Returns: Json
       }
     }
@@ -40,6 +29,7 @@ export type Database = {
           created_by: string | null
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           created_by?: string | null
@@ -52,27 +42,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "admin_users_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: 'admin_users_created_by_fkey'
+            columns: ['created_by']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "admin_users_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'admin_users_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
         ]
       }
       channel_members: {
         Row: {
           channel_id: string
-          channel_member_role:
-            | Database["public"]["Enums"]["channel_member_role"]
-            | null
+          channel_member_role: Database['public']['Enums']['channel_member_role'] | null
           created_at: string
           id: string
           joined_at: string
@@ -82,17 +70,14 @@ export type Database = {
           left_at: string | null
           member_id: string
           mute_in_app_notifications: boolean | null
-          notif_state:
-            | Database["public"]["Enums"]["channel_notification_state"]
-            | null
+          notif_state: Database['public']['Enums']['channel_notification_state'] | null
           unread_message_count: number | null
           updated_at: string | null
         }
+        ComputedFields: never
         Insert: {
           channel_id: string
-          channel_member_role?:
-            | Database["public"]["Enums"]["channel_member_role"]
-            | null
+          channel_member_role?: Database['public']['Enums']['channel_member_role'] | null
           created_at?: string
           id?: string
           joined_at?: string
@@ -102,17 +87,13 @@ export type Database = {
           left_at?: string | null
           member_id: string
           mute_in_app_notifications?: boolean | null
-          notif_state?:
-            | Database["public"]["Enums"]["channel_notification_state"]
-            | null
+          notif_state?: Database['public']['Enums']['channel_notification_state'] | null
           unread_message_count?: number | null
           updated_at?: string | null
         }
         Update: {
           channel_id?: string
-          channel_member_role?:
-            | Database["public"]["Enums"]["channel_member_role"]
-            | null
+          channel_member_role?: Database['public']['Enums']['channel_member_role'] | null
           created_at?: string
           id?: string
           joined_at?: string
@@ -122,34 +103,32 @@ export type Database = {
           left_at?: string | null
           member_id?: string
           mute_in_app_notifications?: boolean | null
-          notif_state?:
-            | Database["public"]["Enums"]["channel_notification_state"]
-            | null
+          notif_state?: Database['public']['Enums']['channel_notification_state'] | null
           unread_message_count?: number | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "channel_members_channel_id_fkey"
-            columns: ["channel_id"]
+            foreignKeyName: 'channel_members_channel_id_fkey'
+            columns: ['channel_id']
             isOneToOne: false
-            referencedRelation: "channels"
-            referencedColumns: ["id"]
+            referencedRelation: 'channels'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "channel_members_last_read_message_id_fkey"
-            columns: ["last_read_message_id"]
+            foreignKeyName: 'channel_members_last_read_message_id_fkey'
+            columns: ['last_read_message_id']
             isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
+            referencedRelation: 'messages'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "channel_members_member_id_fkey"
-            columns: ["member_id"]
+            foreignKeyName: 'channel_members_member_id_fkey'
+            columns: ['member_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
         ]
       }
       channel_message_counts: {
@@ -158,6 +137,7 @@ export type Database = {
           message_count: number
           workspace_id: string
         }
+        ComputedFields: never
         Insert: {
           channel_id: string
           message_count?: number
@@ -170,19 +150,19 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "channel_message_counts_channel_id_fkey"
-            columns: ["channel_id"]
+            foreignKeyName: 'channel_message_counts_channel_id_fkey'
+            columns: ['channel_id']
             isOneToOne: true
-            referencedRelation: "channels"
-            referencedColumns: ["id"]
+            referencedRelation: 'channels'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "channel_message_counts_workspace_id_fkey"
-            columns: ["workspace_id"]
+            foreignKeyName: 'channel_message_counts_workspace_id_fkey'
+            columns: ['workspace_id']
             isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'workspaces'
+            referencedColumns: ['id']
+          }
         ]
       }
       channels: {
@@ -203,10 +183,11 @@ export type Database = {
           mute_in_app_notifications: boolean | null
           name: string
           slug: string
-          type: Database["public"]["Enums"]["channel_type"] | null
+          type: Database['public']['Enums']['channel_type'] | null
           updated_at: string
           workspace_id: string
         }
+        ComputedFields: never
         Insert: {
           allow_emoji_reactions?: boolean | null
           created_at?: string
@@ -224,7 +205,7 @@ export type Database = {
           mute_in_app_notifications?: boolean | null
           name: string
           slug: string
-          type?: Database["public"]["Enums"]["channel_type"] | null
+          type?: Database['public']['Enums']['channel_type'] | null
           updated_at?: string
           workspace_id: string
         }
@@ -245,25 +226,25 @@ export type Database = {
           mute_in_app_notifications?: boolean | null
           name?: string
           slug?: string
-          type?: Database["public"]["Enums"]["channel_type"] | null
+          type?: Database['public']['Enums']['channel_type'] | null
           updated_at?: string
           workspace_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "channels_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: 'channels_created_by_fkey'
+            columns: ['created_by']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "channels_workspace_id_fkey"
-            columns: ["workspace_id"]
+            foreignKeyName: 'channels_workspace_id_fkey'
+            columns: ['workspace_id']
             isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'workspaces'
+            referencedColumns: ['id']
+          }
         ]
       }
       document_access: {
@@ -273,6 +254,7 @@ export type Database = {
           owner_id: string | null
           updated_at: string
         }
+        ComputedFields: never
         Insert: {
           document_id: string
           is_private: boolean
@@ -312,6 +294,7 @@ export type Database = {
           views_tablet: number
           views_today: number
         }
+        ComputedFields: never
         Insert: {
           anonymous_views?: number
           authenticated_views?: number
@@ -376,6 +359,7 @@ export type Database = {
           view_date: string
           viewed_at: string
         }
+        ComputedFields: never
         Insert: {
           device_type?: string | null
           document_slug: string
@@ -418,6 +402,7 @@ export type Database = {
           view_date: string
           viewed_at: string
         }
+        ComputedFields: never
         Insert: {
           device_type?: string | null
           document_slug: string
@@ -460,6 +445,7 @@ export type Database = {
           view_date: string
           viewed_at: string
         }
+        ComputedFields: never
         Insert: {
           device_type?: string | null
           document_slug: string
@@ -502,6 +488,7 @@ export type Database = {
           view_date: string
           viewed_at: string
         }
+        ComputedFields: never
         Insert: {
           device_type?: string | null
           document_slug: string
@@ -544,6 +531,7 @@ export type Database = {
           view_date: string
           viewed_at: string
         }
+        ComputedFields: never
         Insert: {
           device_type?: string | null
           document_slug: string
@@ -582,6 +570,7 @@ export type Database = {
           view_date: string
           views: number
         }
+        ComputedFields: never
         Insert: {
           avg_duration_ms?: number
           bounce_count?: number
@@ -611,6 +600,7 @@ export type Database = {
           provider: string | null
           reason: string | null
         }
+        ComputedFields: never
         Insert: {
           bounce_type: string
           created_at?: string
@@ -642,6 +632,7 @@ export type Database = {
           status: string
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           attempts?: number
           created_at?: string
@@ -668,19 +659,19 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "email_queue_notification_id_fkey"
-            columns: ["notification_id"]
+            foreignKeyName: 'email_queue_notification_id_fkey'
+            columns: ['notification_id']
             isOneToOne: false
-            referencedRelation: "notifications"
-            referencedColumns: ["id"]
+            referencedRelation: 'notifications'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "email_queue_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'email_queue_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
         ]
       }
       message_bookmarks: {
@@ -694,6 +685,7 @@ export type Database = {
           updated_at: string
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           archived_at?: string | null
           created_at?: string
@@ -716,19 +708,19 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "message_bookmarks_message_id_fkey"
-            columns: ["message_id"]
+            foreignKeyName: 'message_bookmarks_message_id_fkey'
+            columns: ['message_id']
             isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
+            referencedRelation: 'messages'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "message_bookmarks_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'message_bookmarks_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
         ]
       }
       messages: {
@@ -748,10 +740,11 @@ export type Database = {
           replied_message_preview: string | null
           reply_to_message_id: string | null
           seq: number
-          type: Database["public"]["Enums"]["message_type"] | null
+          type: Database['public']['Enums']['message_type'] | null
           updated_at: string
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           channel_id: string
           client_id?: string | null
@@ -768,7 +761,7 @@ export type Database = {
           replied_message_preview?: string | null
           reply_to_message_id?: string | null
           seq?: number
-          type?: Database["public"]["Enums"]["message_type"] | null
+          type?: Database['public']['Enums']['message_type'] | null
           updated_at?: string
           user_id: string
         }
@@ -788,32 +781,32 @@ export type Database = {
           replied_message_preview?: string | null
           reply_to_message_id?: string | null
           seq?: number
-          type?: Database["public"]["Enums"]["message_type"] | null
+          type?: Database['public']['Enums']['message_type'] | null
           updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "messages_channel_id_fkey"
-            columns: ["channel_id"]
+            foreignKeyName: 'messages_channel_id_fkey'
+            columns: ['channel_id']
             isOneToOne: false
-            referencedRelation: "channels"
-            referencedColumns: ["id"]
+            referencedRelation: 'channels'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "messages_reply_to_message_id_fkey"
-            columns: ["reply_to_message_id"]
+            foreignKeyName: 'messages_reply_to_message_id_fkey'
+            columns: ['reply_to_message_id']
             isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
+            referencedRelation: 'messages'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "messages_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'messages_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
         ]
       }
       notifications: {
@@ -827,8 +820,9 @@ export type Database = {
           readed_at: string | null
           receiver_user_id: string
           sender_user_id: string | null
-          type: Database["public"]["Enums"]["notification_category"]
+          type: Database['public']['Enums']['notification_category']
         }
+        ComputedFields: never
         Insert: {
           action_url?: string | null
           channel_id?: string | null
@@ -839,7 +833,7 @@ export type Database = {
           readed_at?: string | null
           receiver_user_id: string
           sender_user_id?: string | null
-          type: Database["public"]["Enums"]["notification_category"]
+          type: Database['public']['Enums']['notification_category']
         }
         Update: {
           action_url?: string | null
@@ -851,37 +845,37 @@ export type Database = {
           readed_at?: string | null
           receiver_user_id?: string
           sender_user_id?: string | null
-          type?: Database["public"]["Enums"]["notification_category"]
+          type?: Database['public']['Enums']['notification_category']
         }
         Relationships: [
           {
-            foreignKeyName: "notifications_channel_id_fkey"
-            columns: ["channel_id"]
+            foreignKeyName: 'notifications_channel_id_fkey'
+            columns: ['channel_id']
             isOneToOne: false
-            referencedRelation: "channels"
-            referencedColumns: ["id"]
+            referencedRelation: 'channels'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "notifications_message_id_fkey"
-            columns: ["message_id"]
+            foreignKeyName: 'notifications_message_id_fkey'
+            columns: ['message_id']
             isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
+            referencedRelation: 'messages'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "notifications_receiver_user_id_fkey"
-            columns: ["receiver_user_id"]
+            foreignKeyName: 'notifications_receiver_user_id_fkey'
+            columns: ['receiver_user_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "notifications_sender_user_id_fkey"
-            columns: ["sender_user_id"]
+            foreignKeyName: 'notifications_sender_user_id_fkey'
+            columns: ['sender_user_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
         ]
       }
       pinned_messages: {
@@ -893,6 +887,7 @@ export type Database = {
           pinned_at: string
           pinned_by: string | null
         }
+        ComputedFields: never
         Insert: {
           channel_id: string
           content: string
@@ -911,26 +906,26 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "pinned_messages_channel_id_fkey"
-            columns: ["channel_id"]
+            foreignKeyName: 'pinned_messages_channel_id_fkey'
+            columns: ['channel_id']
             isOneToOne: false
-            referencedRelation: "channels"
-            referencedColumns: ["id"]
+            referencedRelation: 'channels'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "pinned_messages_message_id_fkey"
-            columns: ["message_id"]
+            foreignKeyName: 'pinned_messages_message_id_fkey'
+            columns: ['message_id']
             isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
+            referencedRelation: 'messages'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "pinned_messages_pinned_by_fkey"
-            columns: ["pinned_by"]
+            foreignKeyName: 'pinned_messages_pinned_by_fkey'
+            columns: ['pinned_by']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
         ]
       }
       push_subscriptions: {
@@ -944,10 +939,11 @@ export type Database = {
           last_error: string | null
           last_used_at: string | null
           platform: string | null
-          push_credentials: Json
+          push_credentials: NonNullable<Json>
           updated_at: string
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           device_id: string
@@ -958,7 +954,7 @@ export type Database = {
           last_error?: string | null
           last_used_at?: string | null
           platform?: string | null
-          push_credentials: Json
+          push_credentials: NonNullable<Json>
           updated_at?: string
           user_id: string
         }
@@ -972,18 +968,18 @@ export type Database = {
           last_error?: string | null
           last_used_at?: string | null
           platform?: string | null
-          push_credentials?: Json
+          push_credentials?: NonNullable<Json>
           updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "push_subscriptions_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'push_subscriptions_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
         ]
       }
       users: {
@@ -996,26 +992,28 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
-          notification_preferences: Json
+          notification_preferences: NonNullable<Json>
           online_at: string | null
-          profile_data: Json
-          status: Database["public"]["Enums"]["user_status"]
+          profile_data: NonNullable<Json>
+          status: Database['public']['Enums']['user_status']
           updated_at: string
           username: string
+          user_details_json: Json | null
         }
+        ComputedFields: 'user_details_json'
         Insert: {
           avatar_updated_at?: string | null
           avatar_url?: string | null
           created_at?: string
           deleted_at?: string | null
-          display_name?: string | null
+          display_name?: never
           email: string
           full_name?: string | null
           id: string
-          notification_preferences?: Json
+          notification_preferences?: NonNullable<Json>
           online_at?: string | null
-          profile_data?: Json
-          status?: Database["public"]["Enums"]["user_status"]
+          profile_data?: NonNullable<Json>
+          status?: Database['public']['Enums']['user_status']
           updated_at?: string
           username: string
         }
@@ -1024,14 +1022,14 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           deleted_at?: string | null
-          display_name?: string | null
+          display_name?: never
           email?: string
           full_name?: string | null
           id?: string
-          notification_preferences?: Json
+          notification_preferences?: NonNullable<Json>
           online_at?: string | null
-          profile_data?: Json
-          status?: Database["public"]["Enums"]["user_status"]
+          profile_data?: NonNullable<Json>
+          status?: Database['public']['Enums']['user_status']
           updated_at?: string
           username?: string
         }
@@ -1048,6 +1046,7 @@ export type Database = {
           updated_at: string | null
           workspace_id: string
         }
+        ComputedFields: never
         Insert: {
           content_email_muted_at?: string | null
           created_at?: string
@@ -1070,19 +1069,19 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "workspace_members_member_id_fkey"
-            columns: ["member_id"]
+            foreignKeyName: 'workspace_members_member_id_fkey'
+            columns: ['member_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "workspace_members_workspace_id_fkey"
-            columns: ["workspace_id"]
+            foreignKeyName: 'workspace_members_workspace_id_fkey'
+            columns: ['workspace_id']
             isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'workspaces'
+            referencedColumns: ['id']
+          }
         ]
       }
       workspaces: {
@@ -1097,6 +1096,7 @@ export type Database = {
           slug: string
           updated_at: string | null
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           created_by?: string | null
@@ -1121,12 +1121,12 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "workspaces_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: 'workspaces_created_by_fkey'
+            columns: ['created_by']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
         ]
       }
     }
@@ -1136,10 +1136,7 @@ export type Database = {
     Functions: {
       ack_email_message: { Args: { p_msg_id: number }; Returns: boolean }
       ack_push_message: { Args: { p_msg_id: number }; Returns: boolean }
-      add_reaction: {
-        Args: { p_emoji: string; p_message_id: string }
-        Returns: Json
-      }
+      add_reaction: { Args: { p_emoji: string; p_message_id: string }; Returns: Json }
       admin_get_document_member_counts: {
         Args: { p_slugs: string[] }
         Returns: {
@@ -1178,7 +1175,7 @@ export type Database = {
         }[]
       }
       admin_get_user_notification_subs: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           platforms: string[]
           user_id: string
@@ -1189,18 +1186,12 @@ export type Database = {
         Args: { p_channel_id: string; p_up_to_seq: number }
         Returns: undefined
       }
-      aggregate_document_view_stats: { Args: never; Returns: Json }
-      apply_unsubscribe: {
-        Args: { p_action: string; p_user_id: string }
-        Returns: Json
-      }
-      archive_bookmark: {
-        Args: { p_archive?: boolean; p_bookmark_id: number }
-        Returns: boolean
-      }
-      cleanup_email_queue: { Args: never; Returns: undefined }
-      cleanup_old_document_views: { Args: never; Returns: Json }
-      compile_digest_emails: { Args: never; Returns: Json }
+      aggregate_document_view_stats: { Args: Record<PropertyKey, never>; Returns: Json }
+      apply_unsubscribe: { Args: { p_action: string; p_user_id: string }; Returns: Json }
+      archive_bookmark: { Args: { p_archive?: boolean; p_bookmark_id: number }; Returns: boolean }
+      cleanup_email_queue: { Args: Record<PropertyKey, never>; Returns: undefined }
+      cleanup_old_document_views: { Args: Record<PropertyKey, never>; Returns: Json }
+      compile_digest_emails: { Args: Record<PropertyKey, never>; Returns: Json }
       consume_email_queue: {
         Args: { p_batch_size?: number; p_visibility_timeout?: number }
         Returns: {
@@ -1217,17 +1208,9 @@ export type Database = {
           payload: Json
         }[]
       }
-      create_direct_message_channel: {
-        Args: { user_id: string; workspace_uid: string }
-        Returns: Json
-      }
-      create_document_views_partitions: { Args: never; Returns: undefined }
+      create_document_views_partitions: { Args: Record<PropertyKey, never>; Returns: undefined }
       disable_failed_subscriptions: {
-        Args: {
-          p_error_pattern?: string
-          p_min_failures?: number
-          p_subscription_ids?: string[]
-        }
+        Args: { p_error_pattern?: string; p_min_failures?: number; p_subscription_ids?: string[] }
         Returns: {
           disabled_count: number
           subscription_ids: string[]
@@ -1286,7 +1269,7 @@ export type Database = {
         }[]
       }
       get_all_workspace_media_storage_stats: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           name: string
           object_count: number
@@ -1303,11 +1286,7 @@ export type Database = {
       }
       get_bookmark_stats: { Args: { p_workspace_id?: string }; Returns: Json }
       get_channel_aggregate_data: {
-        Args: {
-          anchor_message_id?: string
-          input_channel_id: string
-          message_limit?: number
-        }
+        Args: { anchor_message_id?: string; input_channel_id: string; message_limit?: number }
         Returns: {
           anchor_message_timestamp: string
           channel_info: Json
@@ -1341,11 +1320,11 @@ export type Database = {
       }
       get_channel_notif_state: {
         Args: { _channel_id: string }
-        Returns: Database["public"]["Enums"]["channel_notification_state"]
+        Returns: Database['public']['Enums']['channel_notification_state']
       }
       get_communication_stats: { Args: { p_days?: number }; Returns: Json }
       get_cron_job_health: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           jobname: string
           last_run_status: string
@@ -1359,10 +1338,7 @@ export type Database = {
           activity_date: string
         }[]
       }
-      get_document_follow_state: {
-        Args: { p_document_id: string }
-        Returns: boolean
-      }
+      get_document_follow_state: { Args: { p_document_id: string }; Returns: boolean }
       get_document_member_previews: {
         Args: { p_slugs: string[] }
         Returns: {
@@ -1385,11 +1361,8 @@ export type Database = {
           username: string
         }[]
       }
-      get_document_view_stats: {
-        Args: { p_document_slug: string }
-        Returns: Json
-      }
-      get_document_views_summary: { Args: never; Returns: Json }
+      get_document_view_stats: { Args: { p_document_slug: string }; Returns: Json }
+      get_document_views_summary: { Args: Record<PropertyKey, never>; Returns: Json }
       get_document_views_trend: {
         Args: { p_days?: number; p_document_slug?: string }
         Returns: {
@@ -1412,7 +1385,7 @@ export type Database = {
         }[]
       }
       get_email_failure_summary: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           affected_users: number
           error_category: string
@@ -1421,7 +1394,7 @@ export type Database = {
           source: string
         }[]
       }
-      get_email_notification_stats: { Args: never; Returns: Json }
+      get_email_notification_stats: { Args: Record<PropertyKey, never>; Returns: Json }
       get_failed_push_subscriptions: {
         Args: { p_limit?: number; p_min_failures?: number }
         Returns: {
@@ -1439,7 +1412,7 @@ export type Database = {
         }[]
       }
       get_ghost_summary_public: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           active_count: number
           never_active_count: number
@@ -1468,11 +1441,11 @@ export type Database = {
           percentage: number
         }[]
       }
-      get_notification_health: { Args: never; Returns: Json }
-      get_notification_preferences: { Args: never; Returns: Json }
-      get_notification_reach: { Args: never; Returns: Json }
+      get_notification_health: { Args: Record<PropertyKey, never>; Returns: Json }
+      get_notification_preferences: { Args: Record<PropertyKey, never>; Returns: Json }
+      get_notification_reach: { Args: Record<PropertyKey, never>; Returns: Json }
       get_pgmq_queue_metrics: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           oldest_msg_age_sec: number
           queue_length: number
@@ -1481,7 +1454,7 @@ export type Database = {
         }[]
       }
       get_push_failure_summary: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           affected_users: number
           error_category: string
@@ -1491,8 +1464,8 @@ export type Database = {
           sample_errors: string[]
         }[]
       }
-      get_push_queue_stats: { Args: never; Returns: Json }
-      get_retention_metrics: { Args: never; Returns: Json }
+      get_push_queue_stats: { Args: Record<PropertyKey, never>; Returns: Json }
+      get_retention_metrics: { Args: Record<PropertyKey, never>; Returns: Json }
       get_signups_per_day: {
         Args: { p_days?: number }
         Returns: {
@@ -1519,17 +1492,9 @@ export type Database = {
           views: number
         }[]
       }
-      get_unread_notif_count: {
-        Args: { _workspace_id?: string }
-        Returns: number
-      }
+      get_unread_notif_count: { Args: { _workspace_id?: string }; Returns: number }
       get_unread_notifications_paginated: {
-        Args: {
-          _page?: number
-          _page_size?: number
-          _type?: string
-          _workspace_id?: string
-        }
+        Args: { _page?: number; _page_size?: number; _type?: string; _workspace_id?: string }
         Returns: Json[]
       }
       get_user_bookmarks: {
@@ -1554,7 +1519,7 @@ export type Database = {
           message_created_at: string
           message_html: string
           message_id: string
-          message_type: Database["public"]["Enums"]["message_type"]
+          message_type: Database['public']['Enums']['message_type']
           message_user_id: string
           user_details: Json
           workspace_id: string
@@ -1573,12 +1538,9 @@ export type Database = {
           push_subscriptions: number
         }[]
       }
-      get_user_lifecycle_segments: { Args: never; Returns: Json }
-      get_workspace_media_storage_stats: {
-        Args: { p_workspace_id: string }
-        Returns: Json
-      }
-      get_workspace_media_storage_summary: { Args: never; Returns: Json }
+      get_user_lifecycle_segments: { Args: Record<PropertyKey, never>; Returns: Json }
+      get_workspace_media_storage_stats: { Args: { p_workspace_id: string }; Returns: Json }
+      get_workspace_media_storage_summary: { Args: Record<PropertyKey, never>; Returns: Json }
       get_workspace_notifications: {
         Args: {
           p_is_read?: boolean
@@ -1604,11 +1566,11 @@ export type Database = {
         Args: {
           p_content: string
           p_medias: Json
-          p_type?: Database["public"]["Enums"]["message_type"]
+          p_type?: Database['public']['Enums']['message_type']
         }
         Returns: string
       }
-      message_counter_batch_worker: { Args: never; Returns: undefined }
+      message_counter_batch_worker: { Args: Record<PropertyKey, never>; Returns: undefined }
       notifications_summary: { Args: { _workspace_id?: string }; Returns: Json }
       notify_document_content_change: {
         Args: {
@@ -1629,22 +1591,17 @@ export type Database = {
         }
         Returns: number
       }
-      process_document_views_queue: { Args: never; Returns: Json }
-      process_email_queue: { Args: never; Returns: Json }
+      process_document_views_queue: { Args: Record<PropertyKey, never>; Returns: Json }
+      process_email_queue: { Args: Record<PropertyKey, never>; Returns: Json }
       purge_document_footprint: {
         Args: { p_document_id: string; p_slug: string }
         Returns: undefined
       }
       record_email_bounce: {
-        Args: {
-          p_bounce_type: string
-          p_email: string
-          p_provider?: string
-          p_reason?: string
-        }
+        Args: { p_bounce_type: string; p_email: string; p_provider?: string; p_reason?: string }
         Returns: string
       }
-      refuse_connected_app_request: { Args: never; Returns: undefined }
+      refuse_connected_app_request: { Args: Record<PropertyKey, never>; Returns: undefined }
       register_push_subscription: {
         Args: {
           p_device_id: string
@@ -1654,109 +1611,86 @@ export type Database = {
         }
         Returns: string
       }
-      remove_reaction: {
-        Args: { p_emoji: string; p_message_id: string }
-        Returns: Json
-      }
-      set_document_follow: {
-        Args: { p_document_id: string; p_follow: boolean }
-        Returns: boolean
-      }
+      remove_reaction: { Args: { p_emoji: string; p_message_id: string }; Returns: Json }
+      set_document_follow: { Args: { p_document_id: string; p_follow: boolean }; Returns: boolean }
       toggle_message_bookmark: { Args: { p_message_id: string }; Returns: Json }
-      truncate_content: {
-        Args: { input_content: string; max_length?: number }
-        Returns: string
-      }
-      unregister_push_subscription: {
-        Args: { p_device_id: string }
-        Returns: boolean
-      }
+      truncate_content: { Args: { input_content: string; max_length?: number }; Returns: string }
+      unregister_push_subscription: { Args: { p_device_id: string }; Returns: boolean }
       update_email_status: {
         Args: { p_error_message?: string; p_queue_id: string; p_status: string }
         Returns: boolean
       }
-      update_notification_preferences: {
-        Args: { p_patch: Json }
-        Returns: Json
-      }
+      update_notification_preferences: { Args: { p_patch: Json }; Returns: Json }
       update_profile: {
-        Args: {
-          p_full_name?: string
-          p_profile_patch?: Json
-          p_username?: string
-        }
+        Args: { p_full_name?: string; p_profile_patch?: Json; p_username?: string }
         Returns: Json
       }
-      update_view_duration: {
-        Args: { p_duration_ms: number; p_view_id: string }
-        Returns: boolean
-      }
+      update_view_duration: { Args: { p_duration_ms: number; p_view_id: string }; Returns: boolean }
       user_details_json: {
-        Args: { u: Database["public"]["Tables"]["users"]["Row"] }
+        Args: {
+          u: Omit<
+            Database['public']['Tables']['users']['Row'],
+            Database['public']['Tables']['users']['ComputedFields']
+          >
+        }
         Returns: Json
       }
     }
     Enums: {
       app_permission:
-        | "channels.create"
-        | "channels.delete"
-        | "channels.edit"
-        | "messages.create"
-        | "messages.delete"
-        | "messages.edit"
-        | "users.view"
-        | "users.edit"
-        | "users.delete"
-        | "roles.create"
-        | "roles.edit"
-        | "roles.delete"
-      app_role: "admin" | "moderator" | "member" | "guest"
-      channel_member_role: "MEMBER" | "ADMIN" | "MODERATOR" | "GUEST"
-      channel_notification_state: "MENTIONS" | "ALL" | "MUTED"
-      channel_type: "PUBLIC" | "BROADCAST" | "ARCHIVE" | "DIRECT" | "GROUP"
+        | 'channels.create'
+        | 'channels.delete'
+        | 'channels.edit'
+        | 'messages.create'
+        | 'messages.delete'
+        | 'messages.edit'
+        | 'users.view'
+        | 'users.edit'
+        | 'users.delete'
+        | 'roles.create'
+        | 'roles.edit'
+        | 'roles.delete'
+      app_role: 'admin' | 'moderator' | 'member' | 'guest'
+      channel_member_role: 'MEMBER' | 'ADMIN' | 'MODERATOR' | 'GUEST'
+      channel_notification_state: 'MENTIONS' | 'ALL' | 'MUTED'
+      channel_type: 'PUBLIC' | 'BROADCAST' | 'ARCHIVE' | 'DIRECT' | 'GROUP'
       message_type:
-        | "text"
-        | "image"
-        | "video"
-        | "audio"
-        | "link"
-        | "giphy"
-        | "file"
-        | "notification"
-        | "comment"
+        | 'text'
+        | 'image'
+        | 'video'
+        | 'audio'
+        | 'link'
+        | 'giphy'
+        | 'file'
+        | 'notification'
+        | 'comment'
       notification_category:
-        | "mention"
-        | "message"
-        | "reply"
-        | "reaction"
-        | "channel_event"
-        | "direct_message"
-        | "invitation"
-        | "system_alert"
-        | "content_change"
+        | 'mention'
+        | 'message'
+        | 'reply'
+        | 'reaction'
+        | 'channel_event'
+        | 'direct_message'
+        | 'invitation'
+        | 'system_alert'
+        | 'content_change'
       notification_type:
-        | "message"
-        | "channel_invite"
-        | "mention"
-        | "reply"
-        | "channel_update"
-        | "member_join"
-        | "member_leave"
-        | "user_activity"
-        | "task_assignment"
-        | "event_reminder"
-        | "system_update"
-        | "security_alert"
-        | "like_reaction"
-        | "feedback_request"
-        | "performance_insight"
-      user_status:
-        | "ONLINE"
-        | "OFFLINE"
-        | "AWAY"
-        | "BUSY"
-        | "INVISIBLE"
-        | "TYPING"
+        | 'message'
+        | 'channel_invite'
+        | 'mention'
+        | 'reply'
+        | 'channel_update'
+        | 'member_join'
+        | 'member_leave'
+        | 'user_activity'
+        | 'task_assignment'
+        | 'event_reminder'
+        | 'system_update'
+        | 'security_alert'
+        | 'like_reaction'
+        | 'feedback_request'
+        | 'performance_insight'
+      user_status: 'ONLINE' | 'OFFLINE' | 'AWAY' | 'BUSY' | 'INVISIBLE' | 'TYPING'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1764,33 +1698,29 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never) = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    : never) = never
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -1799,23 +1729,20 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never) = never
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -1824,23 +1751,20 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never) = never
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -1849,103 +1773,96 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema['Enums'] | { schema: keyof DatabaseWithoutInternals },
   EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never) = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    : never) = never
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema['CompositeTypes'] | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never) = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    : never) = never
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   graphql_public: {
-    Enums: {},
+    Enums: {}
   },
   public: {
     Enums: {
       app_permission: [
-        "channels.create",
-        "channels.delete",
-        "channels.edit",
-        "messages.create",
-        "messages.delete",
-        "messages.edit",
-        "users.view",
-        "users.edit",
-        "users.delete",
-        "roles.create",
-        "roles.edit",
-        "roles.delete",
+        'channels.create',
+        'channels.delete',
+        'channels.edit',
+        'messages.create',
+        'messages.delete',
+        'messages.edit',
+        'users.view',
+        'users.edit',
+        'users.delete',
+        'roles.create',
+        'roles.edit',
+        'roles.delete'
       ],
-      app_role: ["admin", "moderator", "member", "guest"],
-      channel_member_role: ["MEMBER", "ADMIN", "MODERATOR", "GUEST"],
-      channel_notification_state: ["MENTIONS", "ALL", "MUTED"],
-      channel_type: ["PUBLIC", "BROADCAST", "ARCHIVE", "DIRECT", "GROUP"],
+      app_role: ['admin', 'moderator', 'member', 'guest'],
+      channel_member_role: ['MEMBER', 'ADMIN', 'MODERATOR', 'GUEST'],
+      channel_notification_state: ['MENTIONS', 'ALL', 'MUTED'],
+      channel_type: ['PUBLIC', 'BROADCAST', 'ARCHIVE', 'DIRECT', 'GROUP'],
       message_type: [
-        "text",
-        "image",
-        "video",
-        "audio",
-        "link",
-        "giphy",
-        "file",
-        "notification",
-        "comment",
+        'text',
+        'image',
+        'video',
+        'audio',
+        'link',
+        'giphy',
+        'file',
+        'notification',
+        'comment'
       ],
       notification_category: [
-        "mention",
-        "message",
-        "reply",
-        "reaction",
-        "channel_event",
-        "direct_message",
-        "invitation",
-        "system_alert",
-        "content_change",
+        'mention',
+        'message',
+        'reply',
+        'reaction',
+        'channel_event',
+        'direct_message',
+        'invitation',
+        'system_alert',
+        'content_change'
       ],
       notification_type: [
-        "message",
-        "channel_invite",
-        "mention",
-        "reply",
-        "channel_update",
-        "member_join",
-        "member_leave",
-        "user_activity",
-        "task_assignment",
-        "event_reminder",
-        "system_update",
-        "security_alert",
-        "like_reaction",
-        "feedback_request",
-        "performance_insight",
+        'message',
+        'channel_invite',
+        'mention',
+        'reply',
+        'channel_update',
+        'member_join',
+        'member_leave',
+        'user_activity',
+        'task_assignment',
+        'event_reminder',
+        'system_update',
+        'security_alert',
+        'like_reaction',
+        'feedback_request',
+        'performance_insight'
       ],
-      user_status: ["ONLINE", "OFFLINE", "AWAY", "BUSY", "INVISIBLE", "TYPING"],
-    },
-  },
+      user_status: ['ONLINE', 'OFFLINE', 'AWAY', 'BUSY', 'INVISIBLE', 'TYPING']
+    }
+  }
 } as const
-

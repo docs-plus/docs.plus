@@ -1269,7 +1269,7 @@ as $$
     from user_prefs;
 $$;
 
--- Check if user is currently online (suppress push if online)
+-- Same rule as internal.is_user_online in 10-1-func-users.sql. Seed runs 10-1 later, so its body wins. Edit both.
 create or replace function internal.is_user_online(p_user_id uuid)
 returns boolean
 language sql
@@ -1284,6 +1284,12 @@ as $$
         and online_at > now() - interval '2 minutes'
     );
 $$;
+
+-- Only definer code and the service role call these helpers (#469).
+revoke all on function internal.is_push_enabled(uuid) from public, anon, authenticated;
+revoke all on function internal.get_push_preferences(uuid) from public, anon, authenticated;
+revoke all on function internal.is_quiet_hours(uuid) from public, anon, authenticated;
+revoke all on function internal.is_user_online(uuid) from public, anon, authenticated;
 
 
 -- =============================================================================
@@ -1524,6 +1530,11 @@ $$;
 comment on function public.unregister_push_subscription(text) is
 'Deactivates a push subscription for the current user.';
 
+revoke all on function public.register_push_subscription(text, text, text, jsonb) from public, anon;
+revoke all on function public.unregister_push_subscription(text) from public, anon;
+grant execute on function public.register_push_subscription(text, text, text, jsonb) to authenticated, service_role;
+grant execute on function public.unregister_push_subscription(text) to authenticated, service_role;
+
 
 -- =============================================================================
 -- 7. Admin/Monitoring Functions
@@ -1608,8 +1619,9 @@ $$;
 comment on function public.admin_get_user_notification_subs() is
 'Returns aggregated push subscription platforms per user. Admin-only, bypasses RLS.';
 
-revoke execute on function public.admin_get_user_notification_subs() from anon;
-grant execute on function public.admin_get_user_notification_subs() to authenticated;
+-- No caller exists. The body gates on is_admin(auth.uid()), which is null under service_role.
+revoke execute on function public.admin_get_user_notification_subs() from public, anon, authenticated;
+grant execute on function public.admin_get_user_notification_subs() to service_role;
 
 
 -- 7c. Admin: recent push activity across all users (bypasses RLS)
@@ -1658,7 +1670,7 @@ $$;
 comment on function public.admin_get_recent_push_activity(int) is
 'Returns recent push subscription activity across all users. Admin-only, bypasses RLS.';
 
-revoke execute on function public.admin_get_recent_push_activity(int) from anon;
+revoke execute on function public.admin_get_recent_push_activity(int) from public, anon;
 grant execute on function public.admin_get_recent_push_activity(int) to authenticated;
 
 
@@ -1708,7 +1720,7 @@ $$;
 comment on function public.admin_get_failed_push_subs(int) is
 'Returns failed push subscriptions across all users. Admin-only, bypasses RLS.';
 
-revoke execute on function public.admin_get_failed_push_subs(int) from anon;
+revoke execute on function public.admin_get_failed_push_subs(int) from public, anon;
 grant execute on function public.admin_get_failed_push_subs(int) to authenticated;
 
 
@@ -1776,6 +1788,9 @@ $$;
 
 comment on function internal.cleanup_push_subscriptions() is
 'Cleans up stale push subscriptions. Run via pg_cron every 5 minutes.';
+
+revoke all on function internal.cleanup_push_subscriptions() from public, anon, authenticated;
+grant execute on function internal.cleanup_push_subscriptions() to service_role;
 
 
 -- =============================================================================
@@ -2038,6 +2053,17 @@ $$;
 comment on function internal.clear_email_bounce_info(uuid) is
 'Removes email_bounce_info from user notification preferences after re-enable or email update.';
 
+-- Only definer code and the service role call these helpers (#469).
+revoke all on function internal.is_email_enabled(uuid) from public, anon, authenticated;
+revoke all on function internal.get_email_preferences(uuid) from public, anon, authenticated;
+revoke all on function internal.mask_email(text) from public, anon, authenticated;
+revoke all on function internal.is_email_suppressed(text) from public, anon, authenticated;
+revoke all on function internal.check_email_rate_limit(uuid, int) from public, anon, authenticated;
+revoke all on function internal.clear_email_bounce_info(uuid) from public, anon, authenticated;
+grant execute on function internal.is_email_suppressed(text) to service_role;
+grant execute on function internal.check_email_rate_limit(uuid, int) to service_role;
+grant execute on function internal.clear_email_bounce_info(uuid) to service_role;
+
 
 -- Record a bounce event and auto-suppress on hard bounce
 create or replace function public.record_email_bounce(
@@ -2273,6 +2299,7 @@ begin
             n.type as notification_type,
             n.message_preview,
             n.channel_id,
+            n.message_id,
             n.sender_user_id,
             n.readed_at,
             u.email as recipient_email,
@@ -2293,8 +2320,17 @@ begin
         limit 100
         for update of eq skip locked
     loop
-        -- Skip if already read
-        if pending_email.readed_at is not null then
+        -- Skip if already read: in the bell, or in the channel (the read cursor passed the message)
+        -- A reaction row points at the receiver's own message, so the cursor test would always hit.
+        if pending_email.readed_at is not null
+           or (pending_email.notification_type <> 'reaction' and exists (
+               select 1
+                 from public.channel_members cm
+                 join public.messages m on m.id = pending_email.message_id
+                where cm.channel_id = pending_email.channel_id
+                  and cm.member_id = pending_email.user_id
+                  and cm.last_read_seq >= m.seq
+           )) then
             update public.email_queue
             set status = 'skipped',
                 error_message = 'Notification already read'
@@ -2407,7 +2443,17 @@ begin
       and eq.status = 'pending'
       and eq.email_type = 'digest'
       and eq.scheduled_for <= now()
-      and n.readed_at is not null;
+      and (
+          n.readed_at is not null
+          or (n.type <> 'reaction' and exists (
+              select 1
+                from public.channel_members cm
+                join public.messages m on m.id = n.message_id
+               where cm.channel_id = n.channel_id
+                 and cm.member_id = eq.user_id
+                 and cm.last_read_seq >= m.seq
+          ))
+      );
 
     -- Process each user with pending digest entries
     for v_user in
@@ -3250,6 +3296,21 @@ ALTER FUNCTION public.mark_bookmark_as_read(p_bookmark_id bigint, p_mark_as_read
 ALTER FUNCTION public.get_bookmark_count(p_workspace_id character varying, p_archived boolean) SET search_path = public;
 ALTER FUNCTION public.get_bookmark_stats(p_workspace_id character varying) SET search_path = public;
 
+-- Each body refuses a guest, so close the grant too (#318).
+REVOKE ALL ON FUNCTION public.toggle_message_bookmark(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.get_user_bookmarks(character varying, boolean, integer, integer, boolean) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.archive_bookmark(bigint, boolean) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.mark_bookmark_as_read(bigint, boolean) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.get_bookmark_stats(character varying) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.toggle_message_bookmark(uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.get_user_bookmarks(character varying, boolean, integer, integer, boolean) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.archive_bookmark(bigint, boolean) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.mark_bookmark_as_read(bigint, boolean) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.get_bookmark_stats(character varying) TO authenticated, service_role;
+-- No caller exists. The body raises for a guest, so it is service_role only.
+REVOKE ALL ON FUNCTION public.get_bookmark_count(character varying, boolean) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_bookmark_count(character varying, boolean) TO service_role;
+
 
 -- ============================================================================
 -- File: 08-channel_members.sql
@@ -3395,6 +3456,9 @@ begin
                 'create unique index %I on public.%I (session_id, document_slug, view_date)',
                 partition_name || '_dedup_idx', partition_name
             );
+            -- A partition checks its own RLS and grants, not the parent's.
+            execute format('alter table public.%I enable row level security', partition_name);
+            execute format('revoke all on public.%I from public, anon, authenticated', partition_name);
         end if;
     end loop;
 end;
@@ -3437,12 +3501,14 @@ begin
                 'create unique index %I on public.%I (session_id, document_slug, view_date)',
                 partition_name || '_dedup_idx', partition_name
             );
-            -- Enable RLS on each new partition (S3.1). The parent
-            -- document_views has RLS on but no policy → default deny;
-            -- partitions need RLS enabled individually for the linter
-            -- check `rls_disabled_in_public` to stay clean every month.
+            -- A partition checks its own RLS and grants, not the parent's. Prod's
+            -- default ACL grants anon ALL on a new table, so revoke it here.
             execute format(
                 'alter table public.%I enable row level security',
+                partition_name
+            );
+            execute format(
+                'revoke all on public.%I from public, anon, authenticated',
                 partition_name
             );
         end if;
@@ -3451,7 +3517,7 @@ end;
 $$;
 
 comment on function public.create_document_views_partitions() is
-'Creates future partitions for document_views table with RLS enabled. Run monthly via pg_cron.';
+'Creates future partitions for document_views table with RLS enabled and no browser-role grants. Run monthly via pg_cron.';
 
 
 -- -----------------------------------------------------------------------------
@@ -4003,7 +4069,12 @@ as $$
     select jsonb_build_object(
         'total_views', coalesce(sum(total_views), 0),
         'unique_visitors', coalesce(sum(unique_users), 0),
-        'views_today', coalesce(sum(views_today), 0),
+        -- Derived at read time: the stored per-doc views_today snapshot goes stale
+        -- across the UTC day boundary for documents not touched today.
+        'views_today', coalesce(
+            (select sum(views) from public.document_views_daily where view_date = current_date),
+            0
+        ),
         'views_7d', coalesce(sum(views_7d), 0),
         'views_30d', coalesce(sum(views_30d), 0),
         'avg_duration_ms', coalesce(
@@ -4974,13 +5045,9 @@ COMMENT ON TRIGGER trigger_update_user_online_at ON public.users IS 'Stamps onli
 
 /**
  * Function: is_user_online
- * Description: Checks if a user is actively online based on status and recent activity.
- * Parameters: p_user_id - The UUID of the user to check
- * Returns: TRUE if user has status='ONLINE' AND online_at within last 2 minutes
- *
- * Usage: Used by push notification trigger to skip push for active users.
- * The 2-minute threshold is more aggressive than the cron cleanup (also 2 min)
- * to ensure we catch users who are actively engaged.
+ * The one Postgres rule for "online": status ONLINE and online_at within 2 minutes.
+ * Callers: create_regular_message_notifications (bell) and enqueue_push_notification (push).
+ * 07-4-push-notifications-pgmq.sql keeps a copy that this later body replaces. Edit both.
  */
 CREATE OR REPLACE FUNCTION internal.is_user_online(p_user_id uuid)
 RETURNS boolean
@@ -4998,7 +5065,8 @@ $$;
 COMMENT ON FUNCTION internal.is_user_online(uuid) IS
 'Checks if user is actively online. Returns true if status is ONLINE and online_at is within last 2 minutes.';
 
--- Grant execute to service_role for push notification trigger
+-- Only definer code and the service role call it (#469).
+REVOKE ALL ON FUNCTION internal.is_user_online(uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION internal.is_user_online(uuid) TO service_role;
 
 -- ============================================================
@@ -5918,6 +5986,10 @@ $$;
 comment on function internal.normalize_chat_media_path(text) is
 'Strips signed/public storage URL prefixes to a bucket object path.';
 
+-- validate_message_medias is SECURITY INVOKER and calls it, so authenticated keeps EXECUTE (#469).
+revoke all on function internal.normalize_chat_media_path(text) from public, anon, authenticated;
+grant execute on function internal.normalize_chat_media_path(text) to authenticated, service_role;
+
 create or replace function internal.delete_chat_media_paths(p_medias jsonb)
 returns void
 language plpgsql
@@ -5955,7 +6027,7 @@ $$;
 comment on function internal.delete_chat_media_paths(jsonb) is
 'Deletes chat media storage objects referenced by a messages.medias array.';
 
-revoke all on function internal.delete_chat_media_paths(jsonb) from public;
+revoke all on function internal.delete_chat_media_paths(jsonb) from public, anon, authenticated;
 grant execute on function internal.delete_chat_media_paths(jsonb) to service_role;
 
 create or replace function internal.cleanup_orphan_chat_media(p_older_than interval default interval '24 hours')
@@ -5999,7 +6071,7 @@ $$;
 comment on function internal.cleanup_orphan_chat_media(interval) is
 'Removes chat media bucket objects older than p_older_than with no live message reference.';
 
-revoke all on function internal.cleanup_orphan_chat_media(interval) from public;
+revoke all on function internal.cleanup_orphan_chat_media(interval) from public, anon, authenticated;
 grant execute on function internal.cleanup_orphan_chat_media(interval) to service_role;
 
 create or replace function validate_message_medias()
@@ -6227,7 +6299,7 @@ $$;
 comment on function internal.media_workspace_quota_bytes() is
   'Per-workspace chat media quota (10 GiB). Stats RPCs and enforce_media_workspace_quota read this.';
 
-revoke all on function internal.media_workspace_quota_bytes() from public;
+revoke all on function internal.media_workspace_quota_bytes() from public, anon, authenticated;
 
 create or replace function internal.media_workspace_usage_rows()
 returns table(
@@ -6253,7 +6325,7 @@ $$;
 comment on function internal.media_workspace_usage_rows() is
   'Aggregates media bucket usage by workspace (channel_id = split_part(path, ''/'', 2)).';
 
-revoke all on function internal.media_workspace_usage_rows() from public;
+revoke all on function internal.media_workspace_usage_rows() from public, anon, authenticated;
 
 drop function if exists public.get_workspace_media_storage_stats(uuid);
 drop function if exists public.get_all_workspace_media_storage_stats();
@@ -6416,7 +6488,7 @@ $$;
 comment on function internal.enforce_media_workspace_quota() is
 'Rejects media uploads that would push a workspace past the 10 GiB storage quota.';
 
-revoke all on function internal.enforce_media_workspace_quota() from public;
+revoke all on function internal.enforce_media_workspace_quota() from public, anon, authenticated;
 
 drop trigger if exists enforce_media_workspace_quota on storage.objects;
 create trigger enforce_media_workspace_quota
@@ -6977,7 +7049,7 @@ $$;
 comment on function public.get_document_member_previews(text[]) is
 'Member-gated avatar-cluster previews (member_count + up to 4 earliest members) per document slug. Caller must be an active workspace member; non-member slugs return no row.';
 
-revoke execute on function public.get_document_member_previews(text[]) from anon;
+revoke execute on function public.get_document_member_previews(text[]) from public, anon;
 grant execute on function public.get_document_member_previews(text[]) to authenticated;
 
 -- Full roster for one document when the cluster popover opens. Caller sorts
@@ -7024,7 +7096,7 @@ $$;
 comment on function public.get_document_members(text) is
 'Member-gated full member roster for one document slug (caller first, then join order). Caller must be an active workspace member; non-member returns no rows.';
 
-revoke execute on function public.get_document_members(text) from anon;
+revoke execute on function public.get_document_members(text) from public, anon;
 grant execute on function public.get_document_members(text) to authenticated;
 
 -- The content-change subscription is workspace membership itself. There is no
@@ -7090,9 +7162,9 @@ comment on function public.get_document_follow_state(varchar) is
 -- Stated here like every other browser-facing function in this file. §5 of
 -- 29-lint-hardening sweeps it away on a local seed and §6 restores it, but the
 -- migration path never runs that sweep, so remote needs the grant written down.
-revoke execute on function public.set_document_follow(varchar, boolean) from anon;
+revoke execute on function public.set_document_follow(varchar, boolean) from public, anon;
 grant execute on function public.set_document_follow(varchar, boolean) to authenticated;
-revoke execute on function public.get_document_follow_state(varchar) from anon;
+revoke execute on function public.get_document_follow_state(varchar) from public, anon;
 grant execute on function public.get_document_follow_state(varchar) to authenticated;
 
 -- Stamps the instant one live document session ended, for the worker only.
@@ -7149,10 +7221,10 @@ grant  execute on function public.mark_document_connection_closed(varchar, uuid,
 -- Fan-out triggers for message-driven notifications (mentions, @everyone,
 -- replies, reactions, regular sends) and unread-count maintenance.
 
--- One receiver gate for every notification row (#396). It drops a row whose receiver
--- cannot open the document, so the bell, push and email (all AFTER INSERT) never fire.
--- A chat channel and a content_change row both resolve through channels.workspace_id.
--- A row with no channel is account-wide and always passes.
+-- One receiver gate for every notification row (#396). It drops a row for an erased
+-- (soft-deleted) receiver, or one who cannot open the channel's document. So the bell,
+-- push and email (all AFTER INSERT) never fire. A row with no channel skips the document
+-- check only. Both lookups hit a primary key.
 create or replace function internal.skip_unopenable_notification()
 returns trigger
 language plpgsql
@@ -7160,6 +7232,14 @@ security definer
 set search_path = public
 as $$
 begin
+    if exists (
+        select 1
+          from public.users u
+         where u.id = new.receiver_user_id
+           and u.deleted_at is not null
+    ) then
+        return null;
+    end if;
     if exists (
         select 1
           from public.channels c
@@ -7178,7 +7258,6 @@ drop trigger if exists skip_unopenable_notification on public.notifications;
 create trigger skip_unopenable_notification
     before insert on public.notifications
     for each row
-    when (new.channel_id is not null)
     execute function internal.skip_unopenable_notification();
 
 -- A picked mention node names its user by data-id, so a rename keeps it (#415). A typed token
@@ -7504,7 +7583,8 @@ BEGIN
     -- 4) Truncate message content for preview
     truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
-    -- 5) Create notifications only for members whose notif_state = 'ALL' and who are not online or the sender
+    -- 5) Notify ALL-state members who are not the sender and not online.
+    --    Online is the lease in internal.is_user_online, the rule push uses too.
     INSERT INTO public.notifications (
         receiver_user_id,
         sender_user_id,
@@ -7525,10 +7605,9 @@ BEGIN
         truncated_content,
         timezone('utc', now())
     FROM public.channel_members cm
-    JOIN public.users u ON u.id = cm.member_id
     WHERE cm.channel_id = NEW.channel_id
       AND cm.member_id  != NEW.user_id
-      AND (u.status IS NULL OR u.status != 'ONLINE')
+      AND NOT internal.is_user_online(cm.member_id)
       AND cm.mute_in_app_notifications = FALSE
       AND cm.notif_state = 'ALL';
 
@@ -8405,111 +8484,8 @@ END;
 $$ LANGUAGE plpgsql STABLE;
 -------------------------------
 -------------------------------
--- SECURITY DEFINER: the function needs to read u.email (column-revoked
--- from authenticated in 13-RLS.sql) and to insert a channel_members row
--- for `user_id != auth.uid()` (blocked by channel_members_join_insert).
--- Both are intended bypasses for the DM-create flow; auth.uid()-based
--- checks inside the function body enforce the actual authorisation.
-CREATE OR REPLACE FUNCTION create_direct_message_channel(
-    workspace_uid VARCHAR(36),
-    user_id UUID
-) RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-    user_name TEXT;
-    display_name TEXT;
-    full_name TEXT;
-    email TEXT;
-    new_channel JSONB;
-    existing_channel JSONB;
-    current_user_id UUID;
-    new_channel_id UUID := uuid_generate_v4();
-BEGIN
-    -- Ensure user_id (the other user) is not NULL
-    IF user_id IS NULL THEN
-        RAISE EXCEPTION 'Parameter user_id cannot be NULL.';
-    END IF;
-
-    -- Get current user ID from auth.uid(), or from app.current_user_id if auth.uid() is NULL
-    current_user_id := auth.uid();
-
-    IF current_user_id IS NULL THEN
-        -- Attempt to get current_user_id from session variable for testing purposes
-        BEGIN
-            SELECT current_setting('app.current_user_id', TRUE) INTO current_user_id;
-        EXCEPTION WHEN OTHERS THEN
-            RAISE EXCEPTION 'Current user ID is NULL or not set.';
-        END;
-    END IF;
-
-    -- Check if current_user_id is still NULL
-    IF current_user_id IS NULL THEN
-        RAISE EXCEPTION 'Current user ID is NULL.';
-    END IF;
-
-    -- Check if the workspace exists and is not deleted
-    IF NOT EXISTS (SELECT 1 FROM public.workspaces WHERE id = workspace_uid AND deleted_at IS NULL) THEN
-        RAISE EXCEPTION 'Workspace % does not exist or has been deleted.', workspace_uid;
-    END IF;
-
-    -- Check if the other user exists and is not deleted
-    SELECT u.username, u.full_name, u.display_name, u.email
-    INTO user_name, full_name, display_name, email
-    FROM public.users u
-    WHERE u.id = user_id;
-
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'User % does not exist or has been deleted.', user_id;
-    END IF;
-
-    -- Check if the current user exists and is not deleted
-    IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = current_user_id) THEN
-        RAISE EXCEPTION 'Current user % does not exist or has been deleted.', current_user_id;
-    END IF;
-
-    -- Prevent creating a channel with oneself
-    IF current_user_id = user_id THEN
-        RAISE EXCEPTION 'Cannot create a direct message channel with oneself.';
-    END IF;
-
-    -- Create display name based on the priority: display_name, full_name, username, email
-    user_name := COALESCE(display_name, full_name, user_name, email);
-
-    -- Check if the direct message channel already exists between the two users
-    SELECT to_jsonb(ch.*) INTO existing_channel
-    FROM public.channels ch
-    JOIN public.channel_members cm1 ON cm1.channel_id = ch.id AND cm1.member_id = current_user_id
-    JOIN public.channel_members cm2 ON cm2.channel_id = ch.id AND cm2.member_id = user_id
-    WHERE ch.type = 'DIRECT'
-      AND ch.workspace_id = workspace_uid
-      AND ch.deleted_at IS NULL
-      AND cm1.left_at IS NULL
-      AND cm2.left_at IS NULL;
-
-    -- If the channel already exists, return it
-    IF existing_channel IS NOT NULL THEN
-        RETURN existing_channel;
-    END IF;
-
-    -- Otherwise, create a new channel
-    INSERT INTO public.channels (id, workspace_id, type, name, slug, created_by)
-    VALUES (new_channel_id, workspace_uid, 'DIRECT', user_name, uuid_generate_v4(), current_user_id)
-    RETURNING to_jsonb(public.channels.*) INTO new_channel;
-
-    -- Add current user to the channel
-    -- INSERT INTO public.channel_members (channel_id, member_id, joined_at)
-    -- VALUES (new_channel_id, current_user_id, now());
-
-    -- Add the other user to the channel
-    INSERT INTO public.channel_members (channel_id, member_id, joined_at)
-    VALUES (new_channel_id, user_id, now());
-
-    RETURN new_channel;
-END;
-$$;
+-- Dropped (#319): no caller, and its access check let any user add any user to a DM.
+drop function if exists public.create_direct_message_channel(varchar, uuid);
 
 
 ---------------------
@@ -8922,6 +8898,9 @@ COMMENT ON FUNCTION join_workspace(VARCHAR(36)) IS
 Returns TRUE if successful or if user is already a member.
 Raises 42501 for a Private document the caller does not own.';
 
+REVOKE ALL ON FUNCTION public.join_workspace(VARCHAR(36)) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.join_workspace(VARCHAR(36)) TO authenticated, service_role;
+
 -----------------------------------
 -- Function to get channel members by last read update timestamp
 CREATE OR REPLACE FUNCTION public.get_channel_members_by_last_read_update(
@@ -8998,7 +8977,6 @@ Only returns active members (not left) and non-deleted users.';
 -- ============================================================
 ALTER FUNCTION public.user_details_json(u users) SET search_path = public;
 ALTER FUNCTION public.get_channel_aggregate_data(input_channel_id character varying, message_limit integer, anchor_message_id uuid) SET search_path = public;
-ALTER FUNCTION public.create_direct_message_channel(workspace_uid character varying, user_id uuid) SET search_path = public;
 ALTER FUNCTION public.notifications_summary(_workspace_id character varying) SET search_path = public;
 ALTER FUNCTION public.get_unread_notifications_paginated(_workspace_id character varying, _type text, _page integer, _page_size integer) SET search_path = public;
 ALTER FUNCTION public.fetch_mentioned_users(_workspace_id character varying, _username text) SET search_path = public;
@@ -9006,10 +8984,6 @@ ALTER FUNCTION public.get_unread_notif_count(_workspace_id character varying) SE
 ALTER FUNCTION public.get_channel_notif_state(_channel_id character varying) SET search_path = public;
 ALTER FUNCTION public.join_workspace(_workspace_id character varying) SET search_path = public;
 ALTER FUNCTION public.get_channel_members_by_last_read_update(_channel_id character varying, _timestamp timestamp with time zone) SET search_path = public;
-
--- No browser path calls it; #319 drops it.
-revoke all on function public.create_direct_message_channel(character varying, uuid) from public, anon, authenticated;
-grant execute on function public.create_direct_message_channel(character varying, uuid) to service_role;
 
 -- Invoker RPCs the browser calls, guests included. Name the grants, so access
 -- does not rest on default privileges (#316).
@@ -9758,7 +9732,13 @@ create policy "User can delete own chat media" on storage.objects
 
 -- Anon needs USAGE on internal because its policies below call
 -- can_open_document. PostgREST does not expose the internal schema.
+-- Anon keeps EXECUTE on can_open_document only. Every other internal helper is
+-- revoked from public, anon and authenticated in its owning script (#469).
 GRANT USAGE ON SCHEMA internal                                 TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION internal.can_open_document(varchar, uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION internal.is_workspace_member(varchar)     FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION internal.is_channel_member(varchar)       FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION internal.can_read_channel(varchar)        FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION internal.can_open_document(varchar, uuid) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION internal.is_workspace_member(varchar) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION internal.is_channel_member(varchar)   TO authenticated, service_role;
@@ -10007,18 +9987,12 @@ CREATE POLICY notifications_self_update ON public.notifications
   WITH CHECK (receiver_user_id = (select auth.uid()));
 
 
--- 2j. document_views (parent + future month-partitions) — analytics only.
---     enqueue_document_view (definer) and analytics RPCs (service_role)
---     bypass RLS. No SELECT/INSERT/UPDATE/DELETE policy → default deny
---     for authenticated/anon. The `create_document_views_partitions`
---     function (21-document-views.sql) is patched to enable RLS on each
---     newly-created partition so the linter stays clean every month.
+-- 2j. document_views (parent + month-partitions) — analytics only.
+--     enqueue_document_view (definer) and analytics RPCs (service_role) bypass RLS.
+--     No policy → default deny. 09-document-views.sql enables RLS and revokes the
+--     browser roles on each partition it creates (the seed DO block and the cron function).
 
 ALTER TABLE public.document_views ENABLE ROW LEVEL SECURITY;
--- Existing partitions get RLS enabled by the migration. The line below
--- exists so a fresh `db reset` (which loads scripts from scratch) lands
--- in the same state without depending on migration replay. Currently a
--- no-op because the partition tables are managed by the cron function.
 
 
 -- =====================================================================
@@ -10032,7 +10006,7 @@ ALTER TABLE public.document_views ENABLE ROW LEVEL SECURITY;
 --
 -- For unread display: anon has no channel_members row, so the FE shows
 -- channel_message_counts.message_count as the "messages so far" total
--- (see useMapDocumentAndWorkspace.ts::fetchChannels).
+-- (see usePadSession.ts, fetchChannels).
 --
 -- A Private document is closed to anon: every policy below passes a null user
 -- to internal.can_open_document (#396).
@@ -11456,7 +11430,7 @@ DECLARE
         -- Mentions
         'fetch_mentioned_users',
         -- Workspace / presence
-        'join_workspace', 'update_user_online_at',
+        'join_workspace',
         -- Owned-documents member roster (Settings > Documents). Both are
         -- SECURITY DEFINER and member-gate internally, so §5 above sweeps
         -- away the grant their own script makes and only this list restores it.
@@ -11590,15 +11564,8 @@ COMMIT;
 --       'User Avatar is publicly accessible'
 --     );
 --
--- (c) anon table rights outside the read allowlist (expect 0 rows)
---   SELECT c.relname FROM pg_class c
---   JOIN pg_namespace n ON n.oid = c.relnamespace
---   WHERE n.nspname = 'public' AND c.relkind IN ('r','p','v','m')
---     AND (has_table_privilege('anon', c.oid, 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
---          OR (has_table_privilege('anon', c.oid, 'SELECT')
---              AND c.relname NOT IN ('channels','messages','channel_message_counts',
---                  'pinned_messages','workspaces','channel_members','message_bookmarks')));
---   SELECT has_column_privilege('anon','public.users','email','SELECT');  -- expect false
+-- (c) anon table and column rights: run scripts/check-grants.sql (expect no anon_* rows).
+--   Its read allowlist must equal §3; check-grant-allowlists.ts enforces that.
 --
 -- (d) anon EXECUTE on SECURITY DEFINER fns (expect 0)
 --   SELECT p.proname FROM pg_proc p

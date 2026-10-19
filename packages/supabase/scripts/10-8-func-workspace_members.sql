@@ -204,7 +204,7 @@ $$;
 comment on function public.get_document_member_previews(text[]) is
 'Member-gated avatar-cluster previews (member_count + up to 4 earliest members) per document slug. Caller must be an active workspace member; non-member slugs return no row.';
 
-revoke execute on function public.get_document_member_previews(text[]) from anon;
+revoke execute on function public.get_document_member_previews(text[]) from public, anon;
 grant execute on function public.get_document_member_previews(text[]) to authenticated;
 
 -- Full roster for one document when the cluster popover opens. Caller sorts
@@ -251,7 +251,7 @@ $$;
 comment on function public.get_document_members(text) is
 'Member-gated full member roster for one document slug (caller first, then join order). Caller must be an active workspace member; non-member returns no rows.';
 
-revoke execute on function public.get_document_members(text) from anon;
+revoke execute on function public.get_document_members(text) from public, anon;
 grant execute on function public.get_document_members(text) to authenticated;
 
 -- The content-change subscription is workspace membership itself. There is no
@@ -317,9 +317,9 @@ comment on function public.get_document_follow_state(varchar) is
 -- Stated here like every other browser-facing function in this file. §5 of
 -- 29-lint-hardening sweeps it away on a local seed and §6 restores it, but the
 -- migration path never runs that sweep, so remote needs the grant written down.
-revoke execute on function public.set_document_follow(varchar, boolean) from anon;
+revoke execute on function public.set_document_follow(varchar, boolean) from public, anon;
 grant execute on function public.set_document_follow(varchar, boolean) to authenticated;
-revoke execute on function public.get_document_follow_state(varchar) from anon;
+revoke execute on function public.get_document_follow_state(varchar) from public, anon;
 grant execute on function public.get_document_follow_state(varchar) to authenticated;
 
 -- Stamps the instant one live document session ended, for the worker only.

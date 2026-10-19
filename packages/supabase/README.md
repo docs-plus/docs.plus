@@ -21,7 +21,7 @@ bun --filter @docs.plus/supabase_back types    # regenerate apps/webapp/src/type
 - `scripts/*.sql` — canonical schema, functions, RLS, and seed data for local development. Edit these.
 - `seed.sql` — generated from `scripts/` by `generate-seed.ts`; the `reset` script regenerates it. Never edit by hand.
 - `migrations/*.sql` — remote (cloud) history only. `config.toml` disables migrations locally by design; local state always comes from `scripts/` via the seed.
-- `config.toml` — local stack config. `[db.seed].sql_paths` applies `scripts/00-bootstrap.sql` (pg_cron, pgmq, pg_net, schema `internal`) before `seed.sql`.
+- `config.toml` — local stack config. `[db.seed].sql_paths` applies `scripts/00-bootstrap.sql` (pg_cron, pgmq, schema `internal`) before `seed.sql`.
 
 Schema changes edit `scripts/*.sql` first, then ship a paired migration for the remote push. After any SQL change, regenerate the webapp types (`types` above).
 

@@ -1,10 +1,10 @@
 -- Fan-out triggers for message-driven notifications (mentions, @everyone,
 -- replies, reactions, regular sends) and unread-count maintenance.
 
--- One receiver gate for every notification row (#396). It drops a row whose receiver
--- cannot open the document, so the bell, push and email (all AFTER INSERT) never fire.
--- A chat channel and a content_change row both resolve through channels.workspace_id.
--- A row with no channel is account-wide and always passes.
+-- One receiver gate for every notification row (#396). It drops a row for an erased
+-- (soft-deleted) receiver, or one who cannot open the channel's document. So the bell,
+-- push and email (all AFTER INSERT) never fire. A row with no channel skips the document
+-- check only. Both lookups hit a primary key.
 create or replace function internal.skip_unopenable_notification()
 returns trigger
 language plpgsql
@@ -12,6 +12,14 @@ security definer
 set search_path = public
 as $$
 begin
+    if exists (
+        select 1
+          from public.users u
+         where u.id = new.receiver_user_id
+           and u.deleted_at is not null
+    ) then
+        return null;
+    end if;
     if exists (
         select 1
           from public.channels c
@@ -30,7 +38,6 @@ drop trigger if exists skip_unopenable_notification on public.notifications;
 create trigger skip_unopenable_notification
     before insert on public.notifications
     for each row
-    when (new.channel_id is not null)
     execute function internal.skip_unopenable_notification();
 
 -- A picked mention node names its user by data-id, so a rename keeps it (#415). A typed token
@@ -356,7 +363,8 @@ BEGIN
     -- 4) Truncate message content for preview
     truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
-    -- 5) Create notifications only for members whose notif_state = 'ALL' and who are not online or the sender
+    -- 5) Notify ALL-state members who are not the sender and not online.
+    --    Online is the lease in internal.is_user_online, the rule push uses too.
     INSERT INTO public.notifications (
         receiver_user_id,
         sender_user_id,
@@ -377,10 +385,9 @@ BEGIN
         truncated_content,
         timezone('utc', now())
     FROM public.channel_members cm
-    JOIN public.users u ON u.id = cm.member_id
     WHERE cm.channel_id = NEW.channel_id
       AND cm.member_id  != NEW.user_id
-      AND (u.status IS NULL OR u.status != 'ONLINE')
+      AND NOT internal.is_user_online(cm.member_id)
       AND cm.mute_in_app_notifications = FALSE
       AND cm.notif_state = 'ALL';
 

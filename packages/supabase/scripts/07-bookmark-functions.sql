@@ -342,3 +342,18 @@ ALTER FUNCTION public.archive_bookmark(p_bookmark_id bigint, p_archive boolean) 
 ALTER FUNCTION public.mark_bookmark_as_read(p_bookmark_id bigint, p_mark_as_read boolean) SET search_path = public;
 ALTER FUNCTION public.get_bookmark_count(p_workspace_id character varying, p_archived boolean) SET search_path = public;
 ALTER FUNCTION public.get_bookmark_stats(p_workspace_id character varying) SET search_path = public;
+
+-- Each body refuses a guest, so close the grant too (#318).
+REVOKE ALL ON FUNCTION public.toggle_message_bookmark(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.get_user_bookmarks(character varying, boolean, integer, integer, boolean) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.archive_bookmark(bigint, boolean) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.mark_bookmark_as_read(bigint, boolean) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.get_bookmark_stats(character varying) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.toggle_message_bookmark(uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.get_user_bookmarks(character varying, boolean, integer, integer, boolean) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.archive_bookmark(bigint, boolean) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.mark_bookmark_as_read(bigint, boolean) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.get_bookmark_stats(character varying) TO authenticated, service_role;
+-- No caller exists. The body raises for a guest, so it is service_role only.
+REVOKE ALL ON FUNCTION public.get_bookmark_count(character varying, boolean) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_bookmark_count(character varying, boolean) TO service_role;

@@ -158,7 +158,7 @@ as $$
     from user_prefs;
 $$;
 
--- Check if user is currently online (suppress push if online)
+-- Same rule as internal.is_user_online in 10-1-func-users.sql. Seed runs 10-1 later, so its body wins. Edit both.
 create or replace function internal.is_user_online(p_user_id uuid)
 returns boolean
 language sql
@@ -173,6 +173,12 @@ as $$
         and online_at > now() - interval '2 minutes'
     );
 $$;
+
+-- Only definer code and the service role call these helpers (#469).
+revoke all on function internal.is_push_enabled(uuid) from public, anon, authenticated;
+revoke all on function internal.get_push_preferences(uuid) from public, anon, authenticated;
+revoke all on function internal.is_quiet_hours(uuid) from public, anon, authenticated;
+revoke all on function internal.is_user_online(uuid) from public, anon, authenticated;
 
 
 -- =============================================================================
@@ -413,6 +419,11 @@ $$;
 comment on function public.unregister_push_subscription(text) is
 'Deactivates a push subscription for the current user.';
 
+revoke all on function public.register_push_subscription(text, text, text, jsonb) from public, anon;
+revoke all on function public.unregister_push_subscription(text) from public, anon;
+grant execute on function public.register_push_subscription(text, text, text, jsonb) to authenticated, service_role;
+grant execute on function public.unregister_push_subscription(text) to authenticated, service_role;
+
 
 -- =============================================================================
 -- 7. Admin/Monitoring Functions
@@ -497,8 +508,9 @@ $$;
 comment on function public.admin_get_user_notification_subs() is
 'Returns aggregated push subscription platforms per user. Admin-only, bypasses RLS.';
 
-revoke execute on function public.admin_get_user_notification_subs() from anon;
-grant execute on function public.admin_get_user_notification_subs() to authenticated;
+-- No caller exists. The body gates on is_admin(auth.uid()), which is null under service_role.
+revoke execute on function public.admin_get_user_notification_subs() from public, anon, authenticated;
+grant execute on function public.admin_get_user_notification_subs() to service_role;
 
 
 -- 7c. Admin: recent push activity across all users (bypasses RLS)
@@ -547,7 +559,7 @@ $$;
 comment on function public.admin_get_recent_push_activity(int) is
 'Returns recent push subscription activity across all users. Admin-only, bypasses RLS.';
 
-revoke execute on function public.admin_get_recent_push_activity(int) from anon;
+revoke execute on function public.admin_get_recent_push_activity(int) from public, anon;
 grant execute on function public.admin_get_recent_push_activity(int) to authenticated;
 
 
@@ -597,7 +609,7 @@ $$;
 comment on function public.admin_get_failed_push_subs(int) is
 'Returns failed push subscriptions across all users. Admin-only, bypasses RLS.';
 
-revoke execute on function public.admin_get_failed_push_subs(int) from anon;
+revoke execute on function public.admin_get_failed_push_subs(int) from public, anon;
 grant execute on function public.admin_get_failed_push_subs(int) to authenticated;
 
 
@@ -665,6 +677,9 @@ $$;
 
 comment on function internal.cleanup_push_subscriptions() is
 'Cleans up stale push subscriptions. Run via pg_cron every 5 minutes.';
+
+revoke all on function internal.cleanup_push_subscriptions() from public, anon, authenticated;
+grant execute on function internal.cleanup_push_subscriptions() to service_role;
 
 
 -- =============================================================================

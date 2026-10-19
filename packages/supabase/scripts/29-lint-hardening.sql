@@ -208,7 +208,7 @@ DECLARE
         -- Mentions
         'fetch_mentioned_users',
         -- Workspace / presence
-        'join_workspace', 'update_user_online_at',
+        'join_workspace',
         -- Owned-documents member roster (Settings > Documents). Both are
         -- SECURITY DEFINER and member-gate internally, so §5 above sweeps
         -- away the grant their own script makes and only this list restores it.
@@ -342,15 +342,8 @@ COMMIT;
 --       'User Avatar is publicly accessible'
 --     );
 --
--- (c) anon table rights outside the read allowlist (expect 0 rows)
---   SELECT c.relname FROM pg_class c
---   JOIN pg_namespace n ON n.oid = c.relnamespace
---   WHERE n.nspname = 'public' AND c.relkind IN ('r','p','v','m')
---     AND (has_table_privilege('anon', c.oid, 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
---          OR (has_table_privilege('anon', c.oid, 'SELECT')
---              AND c.relname NOT IN ('channels','messages','channel_message_counts',
---                  'pinned_messages','workspaces','channel_members','message_bookmarks')));
---   SELECT has_column_privilege('anon','public.users','email','SELECT');  -- expect false
+-- (c) anon table and column rights: run scripts/check-grants.sql (expect no anon_* rows).
+--   Its read allowlist must equal §3; check-grant-allowlists.ts enforces that.
 --
 -- (d) anon EXECUTE on SECURITY DEFINER fns (expect 0)
 --   SELECT p.proname FROM pg_proc p

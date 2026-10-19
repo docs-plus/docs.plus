@@ -378,6 +378,10 @@ $$;
 comment on function internal.normalize_chat_media_path(text) is
 'Strips signed/public storage URL prefixes to a bucket object path.';
 
+-- validate_message_medias is SECURITY INVOKER and calls it, so authenticated keeps EXECUTE (#469).
+revoke all on function internal.normalize_chat_media_path(text) from public, anon, authenticated;
+grant execute on function internal.normalize_chat_media_path(text) to authenticated, service_role;
+
 create or replace function internal.delete_chat_media_paths(p_medias jsonb)
 returns void
 language plpgsql
@@ -415,7 +419,7 @@ $$;
 comment on function internal.delete_chat_media_paths(jsonb) is
 'Deletes chat media storage objects referenced by a messages.medias array.';
 
-revoke all on function internal.delete_chat_media_paths(jsonb) from public;
+revoke all on function internal.delete_chat_media_paths(jsonb) from public, anon, authenticated;
 grant execute on function internal.delete_chat_media_paths(jsonb) to service_role;
 
 create or replace function internal.cleanup_orphan_chat_media(p_older_than interval default interval '24 hours')
@@ -459,7 +463,7 @@ $$;
 comment on function internal.cleanup_orphan_chat_media(interval) is
 'Removes chat media bucket objects older than p_older_than with no live message reference.';
 
-revoke all on function internal.cleanup_orphan_chat_media(interval) from public;
+revoke all on function internal.cleanup_orphan_chat_media(interval) from public, anon, authenticated;
 grant execute on function internal.cleanup_orphan_chat_media(interval) to service_role;
 
 create or replace function validate_message_medias()
