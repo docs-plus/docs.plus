@@ -25,6 +25,7 @@ services:
       - ../../extensions/extension-hypermultimedia:/app/extensions/extension-hypermultimedia
       - ../../extensions/extension-indent:/app/extensions/extension-indent
       - ../../extensions/extension-inline-code:/app/extensions/extension-inline-code
+      - ../../extensions/extension-mermaid:/app/extensions/extension-mermaid
       # Exclude node_modules and build outputs
       - /app/node_modules
       - /app/apps/webapp/.next

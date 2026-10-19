@@ -112,6 +112,10 @@ services:
       DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
       DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
       DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
+      # Push stays optional: empty means off.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     volumes:
       - ./apps/hocuspocus.server/src:/app/apps/hocuspocus.server/src
       - ./apps/hocuspocus.server/package.json:/app/apps/hocuspocus.server/package.json
@@ -173,6 +177,8 @@ services:
       HOCUSPOCUS_THROTTLE: false
       HOCUSPOCUS_THROTTLE_ATTEMPTS: ${HOCUSPOCUS_THROTTLE_ATTEMPTS:-100}
       HOCUSPOCUS_THROTTLE_BANTIME: ${HOCUSPOCUS_THROTTLE_BANTIME:-1}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     volumes:
       - ./apps/hocuspocus.server/src:/app/apps/hocuspocus.server/src
       - ./apps/hocuspocus.server/package.json:/app/apps/hocuspocus.server/package.json
@@ -235,6 +241,16 @@ services:
       DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
       DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
       DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
+      # env.schema.ts requires the first two at start. The purge job uses the third.
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      # Push stays optional: empty keys mean off.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:support@docs.plus}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     volumes:
       - ./apps/hocuspocus.server/src:/app/apps/hocuspocus.server/src
       - ./apps/hocuspocus.server/package.json:/app/apps/hocuspocus.server/package.json
@@ -301,11 +317,17 @@ services:
       NEXT_PUBLIC_RESTAPI_URL: ${NEXT_PUBLIC_RESTAPI_URL}
       NEXT_PUBLIC_SSE_URL: ${NEXT_PUBLIC_SSE_URL}
       NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID:-}
+      # Read by `next dev` at compile time, so no build arg. Empty means push off.
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
       # Server-side URLs (internal Docker network)
       SERVER_RESTAPI_URL: ${SERVER_RESTAPI_URL:-http://rest-api:4000/api}
     volumes:
-      # Mount entire packages directory for hot reload (monorepo structure)
-      # This includes extensions with their dist folders, webapp with .next, etc.
+      # Webapp source for hot reload. The image has only its package.json.
+      - ./apps/webapp:/app/apps/webapp
+      # Keep the image's node_modules, not the host's macOS links.
+      - /app/apps/webapp/node_modules
+      # Keep the container's .next off the host, so host builds never clash with it.
+      - /app/apps/webapp/.next
       - ./packages:/app/packages
       # Exclude root node_modules (use container's installed dependencies)
       - /app/node_modules
