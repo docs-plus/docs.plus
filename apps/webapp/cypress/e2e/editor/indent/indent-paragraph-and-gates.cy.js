@@ -98,7 +98,7 @@ describe('Indent — paragraph literal tab & gates', { testIsolation: false }, (
   })
 
   describe('Gates — paragraph vs heading', () => {
-    it('does not allow literal indent in a heading (default allowlist is paragraph in doc/blockquote)', () => {
+    it('allows literal indent in a top-level heading (the pad allowlist adds heading in doc)', () => {
       cy.createDocument({
         documentName: TEST_TITLE.HelloDocy,
         sections: [section('Sec', [heading(2, 'H2Title', [paragraph('body')])])]
@@ -106,8 +106,9 @@ describe('Indent — paragraph literal tab & gates', { testIsolation: false }, (
       cy.putPosCaretInHeading(2, 'H2Title', 'start')
       cy.window().then((win) => {
         const ed = getEditor(win)
-        expect(ed.can().indent()).to.eq(false)
-        expect(ed.commands.indent()).to.eq(false)
+        expect(ed.can().indent()).to.eq(true)
+        expect(ed.commands.indent()).to.eq(true)
+        expect(getText(win)).to.contain(`${TAB}H2Title`)
       })
     })
 

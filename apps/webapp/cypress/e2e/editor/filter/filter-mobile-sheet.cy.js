@@ -1,19 +1,26 @@
 /* eslint-disable no-undef */
-import { heading, paragraph, section } from '../../../fixtures/docMaker'
+import { freshSlug, IPHONE_UA, sectionsDoc, visitSeededPad } from './filter-shared'
 
 describe('Document filter (mobile sheet)', () => {
+  let slug
+
   beforeEach(() => {
+    slug = freshSlug('filter-mobile')
     cy.viewport('iphone-x')
-    cy.visitEditor({ docName: 'filter-mobile', persist: true })
-    cy.createDocument({
-      sections: [
-        section('Filter Doc', [
-          heading(2, 'Apple', [paragraph('apple pie body')]),
-          heading(2, 'Banana', [paragraph('banana split body')])
-        ])
-      ]
-    })
-    cy.wait(500)
+    visitSeededPad(
+      slug,
+      sectionsDoc('Filter Doc', [
+        ['Apple', 'apple pie body'],
+        ['Banana', 'banana split body']
+      ]),
+      { userAgent: IPHONE_UA }
+    )
+    // A desktop render has none of the mobile controls, so fail here, not later.
+    cy.get('html').should('have.class', 'm_mobile')
+  })
+
+  afterEach(() => {
+    cy.task('deleteDocBySlug', slug)
   })
 
   it('opens the unified filter sheet, shows a live match count, and applies in place', () => {
@@ -21,7 +28,9 @@ describe('Document filter (mobile sheet)', () => {
       w.__noReload = true
     })
 
-    cy.get('[aria-label="Open filters"]').click({ force: true })
+    // The filter button lives in the TOC drawer footer.
+    cy.get('[aria-label^="Open menu"]').click()
+    cy.get('[aria-label="Open filters"]').click()
     cy.get('[data-testid="filter-sheet-apply"]').should('be.visible')
 
     // Counter is driven by real headings, not the old dead `.title` selector.
@@ -29,7 +38,7 @@ describe('Document filter (mobile sheet)', () => {
     cy.get('[data-testid="filter-match-count"]').should('contain', 'section')
 
     cy.get('[data-testid="filter-sheet-apply"]').click({ force: true })
-    cy.location('pathname').should('include', 'apple')
+    cy.location('pathname').should('match', /\/apple$/)
     cy.get('.heading-fold-hidden', { timeout: 8000 }).should('exist')
     cy.get('[data-testid="filter-sheet-apply"]').should('not.exist')
     cy.get('[aria-label="Remove filter: apple"]').should('exist')

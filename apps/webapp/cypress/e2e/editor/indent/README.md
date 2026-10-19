@@ -1,6 +1,6 @@
 # Indent extension E2E
 
-Coverage for `@docs.plus/extension-indent` in the real editor (`TipTap.tsx`: `indentChars: '\t'`; default `allowedIndentContexts` are body + blockquote paragraphs). Non-default context rules are covered by Jest in `extensions/extension-indent`.
+Coverage for `@docs.plus/extension-indent` in the real editor (`TipTap.tsx`: `indentChars: '\t'`; `allowedIndentContexts` are body and blockquote paragraphs plus top-level headings). The package default (paragraphs only) is covered by Jest in `extensions/extension-indent`.
 
 **Files:** `indent-shared.js` (helpers); `indent-paragraph-and-gates.cy.js`; `indent-lists.cy.js`; `indent-multiline.cy.js`; `indent-table.cy.js`; `indent-code-list.cy.js`.
 

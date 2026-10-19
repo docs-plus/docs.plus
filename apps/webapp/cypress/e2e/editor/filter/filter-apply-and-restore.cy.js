@@ -1,19 +1,23 @@
 /* eslint-disable no-undef */
-import { heading, paragraph, section } from '../../../fixtures/docMaker'
+import { freshSlug, padParagraph, sectionsDoc, visitSeededPad } from './filter-shared'
 
 describe('Document filter (desktop)', () => {
+  let slug
+
   beforeEach(() => {
-    cy.visitEditor({ docName: 'filter-desktop', persist: true })
-    cy.createDocument({
-      sections: [
-        section('Filter Doc', [
-          heading(2, 'Apple', [paragraph('apple pie body')]),
-          heading(2, 'Banana', [paragraph('banana split body')])
-        ])
-      ]
-    })
-    cy.wait(500)
+    slug = freshSlug('filter-desktop')
+    visitSeededPad(
+      slug,
+      sectionsDoc('Filter Doc', [
+        ['Apple', 'apple pie body'],
+        ['Banana', 'banana split body']
+      ])
+    )
     cy.waitForToc()
+  })
+
+  afterEach(() => {
+    cy.task('deleteDocBySlug', slug)
   })
 
   it('does not crash when the query contains regex metacharacters', () => {
@@ -37,14 +41,14 @@ describe('Document filter (desktop)', () => {
 
     cy.location('pathname').should('include', 'apple') // path-segment URL model
     cy.get('.heading-fold-hidden', { timeout: 8000 }).should('exist')
-    cy.contains('.docy_editor .tiptap.ProseMirror', 'banana split body').should('not.be.visible')
+    padParagraph('banana split body').should('not.be.visible')
     cy.window().its('__noReload').should('eq', true) // SPA push, never a full reload
     cy.get('[data-testid="filter-active-indicator"]').should('exist') // toolbar shows active state
 
-    // Reset restores the folded section in place (the chip-row clear-all).
-    cy.get('[aria-label="Filter document"]').first().click({ force: true })
+    // Reset restores the folded section in place (the chip-row clear-all). The desktop
+    // panel stays open after Enter, so a second trigger click would close it.
     cy.contains('button', 'Reset').click({ force: true })
-    cy.contains('.docy_editor .tiptap.ProseMirror', 'banana split body').should('be.visible')
+    padParagraph('banana split body').should('be.visible')
     cy.get('[data-testid="filter-active-indicator"]').should('not.exist') // indicator cleared
     cy.window().its('__noReload').should('eq', true)
   })

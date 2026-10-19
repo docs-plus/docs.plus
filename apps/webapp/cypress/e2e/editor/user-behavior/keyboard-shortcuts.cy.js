@@ -18,8 +18,8 @@ describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
     cy.clearEditor()
   })
 
-  describe('Heading Level Shortcuts (Alt+Meta+1-9)', () => {
-    it('should change heading levels with Alt+Meta+1 through Alt+Meta+9', () => {
+  describe('Heading Level Shortcuts (Alt+Meta+1-6)', () => {
+    it('should change heading levels with Alt+Meta+2 through Alt+Meta+6', () => {
       const doc = {
         documentName: TEST_TITLE.HelloDocy,
         sections: [
@@ -29,8 +29,8 @@ describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
 
       cy.createDocument(doc)
 
-      // Test each level 1-9
-      const levels = [3, 5, 7, 9, 8, 6, 4, 2]
+      // The pad has six heading levels (TipTap.tsx). Level 1 starts a new section, so skip it.
+      const levels = [3, 5, 6, 4, 2]
 
       cy.putPosCaretInHeading(2, 'Test Heading', 'start')
 
