@@ -1,6 +1,6 @@
 # `@docs.plus/extension-*` family
 
-Five publishable Tiptap extensions for [docs.plus](https://docs.plus). The five packages share one version under the `@docs.plus` npm scope, and they release together. [Release policy](#release-policy) explains how.
+Six publishable Tiptap extensions for [docs.plus](https://docs.plus). The six packages share one version under the `@docs.plus` npm scope, and they release together. `extension-mermaid` is not on npm yet; it publishes with the next family release. [Release policy](#release-policy) explains how.
 
 ## Choose an extension
 
@@ -12,6 +12,7 @@ Pick the package for the job, install it, and run its Quickstart.
 | [`extension-hypermultimedia`](./extension-hypermultimedia/) | Embeds images, audio, video, YouTube, Vimeo, SoundCloud, Spotify, X, and Loom, each with a caption and a media toolbar.       |
 | [`extension-indent`](./extension-indent/)                   | Makes Tab indent text and Shift-Tab remove the indent, while lists and tables keep their own Tab behavior.                    |
 | [`extension-inline-code`](./extension-inline-code/)         | Formats text as inline code when you type it between backticks or press `Mod-e`, and adds no extra character to the document. |
+| [`extension-mermaid`](./extension-mermaid/)                 | Draws each `mermaid` code block as a diagram under its source, and the document stores only the source.                       |
 | [`extension-placeholder`](./extension-placeholder/)         | Shows hint text in the empty textblock at the cursor, and its cost does not grow with document length.                        |
 
 Each package README is a short start page, and the detail lives in the `docs/` folder of that package.
@@ -24,6 +25,7 @@ The table below adds the CSS export and the clean-room port of each package.
 | [`extension-hypermultimedia`](./extension-hypermultimedia/) | Nine media nodes: image, audio, video, YouTube, Vimeo, SoundCloud, Spotify, X, Loom           | `./styles.css` | 5174            |
 | [`extension-indent`](./extension-indent/)                   | Tab / Shift-Tab literal indent with a context allowlist                                       | none           | 5175            |
 | [`extension-inline-code`](./extension-inline-code/)         | Inline code mark (`Mod-e`, backtick rules)                                                    | none           | 5176            |
+| [`extension-mermaid`](./extension-mermaid/)                 | Mermaid diagram preview for `codeBlock`, drawn by Pele                                        | `./styles.css` | 5178            |
 | [`extension-placeholder`](./extension-placeholder/)         | Hint text in the empty textblock at the cursor; cost tracks cursor depth, not document length | none           | 5177            |
 
 Each package README has an **Open in StackBlitz** button. It runs that package's Quickstart in the browser, with nothing to install.
@@ -40,15 +42,15 @@ Use the matching package name from the table above (`@docs.plus/extension-hyperm
 
 Requires **`@tiptap/core` ^3.31.3** and **`@tiptap/pm` ^3.31.3** (Tiptap 3.x).
 
-`extension-hyperlink` installs `@floating-ui/dom` and `linkifyjs`. `extension-hypermultimedia` installs `@floating-ui/dom`. The other three install with no runtime dependencies. None of the five declares a Node or Bun engine floor.
+`extension-hyperlink` installs `@floating-ui/dom` and `linkifyjs`. `extension-hypermultimedia` installs `@floating-ui/dom`. `extension-mermaid` installs `pele`, which declares Node 20 or later. The other three install with no runtime dependencies. None of the six packages declares its own Node or Bun engine floor.
 
-`extension-inline-code` is the one package with an extra floor. Its backtick rules use RegExp lookbehind, so it needs an engine with RegExp lookbehind — Chrome 62+, Firefox 78+, Safari and iOS Safari 16.4+.
+`extension-inline-code` behaves differently on old engines. On Safari and iOS Safari before 16.4, which have no RegExp lookbehind, its backtick rules fall back to the upstream pattern. There, a non-space character before the opening backtick is removed.
 
-Two packages ship a stylesheet, imported as `@docs.plus/extension-hyperlink/styles.css` and `@docs.plus/extension-hypermultimedia/styles.css`. The other three ship no CSS. The `extension-inline-code` and `extension-placeholder` Quickstarts show the rule to add. `extension-indent` needs a rule only in the two cases that its [Styling](./extension-indent/docs/guide.md#styling) section lists. `extension-placeholder` renders nothing at all until you add its Quickstart rule.
+Three packages ship a stylesheet, imported as `@docs.plus/extension-hyperlink/styles.css`, `@docs.plus/extension-hypermultimedia/styles.css` and `@docs.plus/extension-mermaid/styles.css`. The other three ship no CSS. The `extension-inline-code` and `extension-placeholder` Quickstarts show the rule to add. `extension-indent` needs a rule only in the two cases that its [Styling](./extension-indent/docs/guide.md#styling) section lists. `extension-placeholder` renders nothing at all until you add its Quickstart rule.
 
 ## Where it runs
 
-None of the five imports React, Vue, or Next.js.
+None of the six imports React, Vue, or Next.js.
 
 Use them from a plain page, Vite, React, Vue, Svelte, Next.js, Nuxt, or SvelteKit. Create the editor in the browser. Each Quickstart shows that call.
 
@@ -78,7 +80,7 @@ The docs are also indexed on [Context7](https://context7.com/docs-plus/docs.plus
 
 ## Vocabulary
 
-The five packages use these words and no synonym. Two axes, never one word for both jobs:
+The packages that open a popover use these words and no synonym. Two axes, never one word for both jobs:
 
 - **Popover** — the positioning container: anchored, floating, light-dismiss. Owned by the shared `floating-popover` engine; shells are role-less by default (ARIA has no popover role — the surface carries its content's role).
 - **Toolbar / form / menu** — the content inside a surface, named by what it is and carrying the matching ARIA role. In hypermultimedia, the media toolbar is a persistent in-node action bar (`role="toolbar"`). In hyperlink, the preview is a toolbar _in_ a popover, and create/edit are forms (`role="dialog"`) _in_ popovers.
@@ -86,7 +88,7 @@ The five packages use these words and no synonym. Two axes, never one word for b
 
 ### Surface names
 
-Four packages carry a Keyboard shortcuts table, and every Context cell in them names one of these surfaces. `extension-placeholder` binds no key, so it carries no such table.
+Four packages carry a Keyboard shortcuts table, and every Context cell in them names one of these surfaces. `extension-mermaid` and `extension-placeholder` bind no key, so they carry no such table.
 
 | Surface            | Package                                         | What it names                                         |
 | ------------------ | ----------------------------------------------- | ----------------------------------------------------- |
@@ -111,9 +113,10 @@ Each package has its own CONTRIBUTING.md — see
 [hyperlink](./extension-hyperlink/CONTRIBUTING.md),
 [hypermultimedia](./extension-hypermultimedia/CONTRIBUTING.md) (full README **Gallery**, 20 PNGs),
 [indent](./extension-indent/CONTRIBUTING.md),
-[inline-code](./extension-inline-code/CONTRIBUTING.md), and
+[inline-code](./extension-inline-code/CONTRIBUTING.md),
+[mermaid](./extension-mermaid/CONTRIBUTING.md), and
 [placeholder](./extension-placeholder/CONTRIBUTING.md). Hero or gallery PNGs: `bun run docs:screenshots`
-in the package (`cypress/docs/` → `assets/`). Hero GIFs for hyperlink and hypermultimedia: `bun run docs:gif`, which needs `ffmpeg`. Each `examples/vanilla` app must match its README Quickstart; `bun scripts/check-quickstart-example.ts --write <extension-dir>` regenerates it.
+in the package (`cypress/docs/` → `assets/`). Hero GIFs for hyperlink and hypermultimedia: `bun run docs:gif`, which needs `ffmpeg`. Each `examples/vanilla` app must match its README Quickstart. From the repo root, `bun scripts/check-quickstart-example.ts --write extension-indent` regenerates it. Pass the directory name, not a path.
 
 Monorepo development needs Node `>=24.11.0` and Bun `>=1.4.0`, the floors the root `package.json` sets.
 
@@ -139,4 +142,4 @@ EXT_ONLY=extension-indent bash scripts/extension-preflight.sh
 
 ## Announcements
 
-Per-package Discord embeds: [RELEASE_POLICY.md](../RELEASE_POLICY.md#decision-per-package-releases-over-umbrella).
+The product GitHub Release announces the family and names each extension version, so Discord posts once. See [RELEASE_POLICY.md](../RELEASE_POLICY.md#release-readiness).

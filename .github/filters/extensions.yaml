@@ -38,3 +38,6 @@ extension-inline-code:
 extension-placeholder:
   - *shared
   - 'extensions/extension-placeholder/**'
+extension-mermaid:
+  - *shared
+  - 'extensions/extension-mermaid/**'

@@ -4,22 +4,23 @@ This document defines how the `@docs.plus/extension-*` package family is version
 
 ## Status
 
-| Field         | Value                                                                                                                                    |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Doctrine      | **Strict lockstep, Tiptap-style** — all 5 publishable extensions share one major                                                         |
-| Major tracks  | The **docs.plus product line** (`1.x` = Etherpad, `2.x` = Next.js pad)                                                                   |
-| Current phase | **Phase 2 — Lockstep active since 2026-10-13.** All five ship together at one version — see [Phase 2](#phase-2--lockstep-active-current) |
-| Phase 1       | **Complete.** All 5 published `2.0.0` as npm `latest` on 2026-08-11 — see [Phase 1](#phase-1--cutover-complete)                          |
-| Switch-flip   | **Trigger D**, flipped 2026-10-13 — see [Trigger D](#trigger-d--when-strict-lockstep-activates)                                          |
-| CI guard      | **Active** — [`.github/workflows/lockstep-guard.yml`](.github/workflows/lockstep-guard.yml); see [CI Guard](#ci-guard)                   |
-| Publish gate  | **Release when ready** — see [Release Readiness](#release-readiness); stable only, no pre-release dist-tags                              |
+| Field         | Value                                                                                                                                        |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Doctrine      | **Strict lockstep, Tiptap-style** — every publishable extension shares one major                                                             |
+| Major tracks  | The **docs.plus product line** (`1.x` = Etherpad, `2.x` = Next.js pad)                                                                       |
+| Current phase | **Phase 2 — Lockstep active since 2026-10-13.** All packages ship together at one version — see [Phase 2](#phase-2--lockstep-active-current) |
+| Phase 1       | **Complete.** All 5 published `2.0.0` as npm `latest` on 2026-08-11 — see [Phase 1](#phase-1--cutover-complete)                              |
+| Switch-flip   | **Trigger D**, flipped 2026-10-13 — see [Trigger D](#trigger-d--when-strict-lockstep-activates)                                              |
+| CI guard      | **Active** — [`.github/workflows/lockstep-guard.yml`](.github/workflows/lockstep-guard.yml); see [CI Guard](#ci-guard)                       |
+| Publish gate  | **Release when ready** — see [Release Readiness](#release-readiness); stable only, no pre-release dist-tags                                  |
 
-The five publishable packages:
+The publishable packages:
 
 - `@docs.plus/extension-hyperlink`
 - `@docs.plus/extension-hypermultimedia`
 - `@docs.plus/extension-indent`
 - `@docs.plus/extension-inline-code`
+- `@docs.plus/extension-mermaid`
 - `@docs.plus/extension-placeholder`
 
 `@docs.plus/webapp` and `@docs.plus/hocuspocus` consume these via `workspace:*` and have their own independent version lines. They are **not** part of the lockstep family.
@@ -62,7 +63,7 @@ they pin the source that built each published npm version, and `release:family` 
 them. This supersedes [Decision: per-package releases over umbrella](#decision-per-package-releases-over-umbrella)
 for the Releases page only; per-package tags and npm publishing are unchanged.
 
-**npm.** The product tag does not publish to npm. The five `@docs.plus/extension-*` packages move only through a family release — see [Phase 2](#phase-2--lockstep-active-current).
+**npm.** The product tag does not publish to npm. The `@docs.plus/extension-*` packages move only through a family release — see [Phase 2](#phase-2--lockstep-active-current).
 
 **Deploy.** Do not add a `(build):` commit for the version string. The version string is not shown in the UI. The next ordinary deploy applies it.
 
@@ -70,11 +71,11 @@ for the Releases page only; per-package tags and npm publishing are unchanged.
 
 ## Versioning Doctrine
 
-**Strict lockstep.** All five publishable extensions ship at the same `MAJOR.MINOR.PATCH`. The rule binds from 2026-10-13, when Phase 2 began. When any one of them needs a release at version `X`, all five publish at `X`. Packages with no behavioral changes ship a no-op release (see [No-op releases](#no-op-releases)).
+**Strict lockstep.** All publishable extensions ship at the same `MAJOR.MINOR.PATCH`. The rule binds from 2026-10-13, when Phase 2 began. When any one of them needs a release at version `X`, all of them publish at `X`. Packages with no behavioral changes ship a no-op release (see [No-op releases](#no-op-releases)).
 
 **Major tracks the product.** The major number aligns with the docs.plus product line, not with each extension's individual API churn. This is the React / Vue / Angular / Tiptap pattern: one platform, one major.
 
-**Why lockstep over independent versions.** The extensions are pieces of one platform that happens to be open source. Webapp consumes all of them; the platform's identity is a single version, not a five-tuple. Lockstep eliminates the matrix-compatibility question ("does `extension-hyperlink@2.3.0` work with `extension-indent@1.4.0`?") for every consumer, including webapp itself.
+**Why lockstep over independent versions.** The extensions are pieces of one platform that happens to be open source. Webapp consumes all of them; the platform's identity is a single version, not a tuple of versions. Lockstep eliminates the matrix-compatibility question ("does `extension-hyperlink@2.3.0` work with `extension-indent@1.4.0`?") for every consumer, including webapp itself.
 
 **What lockstep is not.** It is **not** a guarantee that every release contains a real change in every package. It **is** a guarantee that any two extensions at the same version were tested and shipped together.
 
@@ -132,7 +133,7 @@ The deliberate-commit gate is intentional. Family alignment alone is not enough 
 
 ### The release script — `bun run release:family`
 
-The script orchestrates the five-package OTP rhythm and batches the post-publish work. It is implemented as the Bun script [`scripts/release-family.ts`](scripts/release-family.ts) and wired as the root script `release:family`; the sections below describe what it does today.
+The script orchestrates the per-package OTP rhythm and batches the post-publish work. It is implemented as the Bun script [`scripts/release-family.ts`](scripts/release-family.ts) and wired as the root script `release:family`; the sections below describe what it does today.
 
 It reads the package list from [`scripts/publishable-extensions.ts`](scripts/publishable-extensions.ts) — the same SSOT the test gates use — and takes the target version from the packages themselves. Flags: `--dry-run` (run every check, print the plan, never publish or tag), `--allow-noop`, `--generate-noop-changelogs`, `--help`. There is no dist-tag flag; every publish goes to `latest` (see [Release Readiness](#release-readiness)).
 
@@ -173,9 +174,9 @@ The script creates no per-package GitHub Release. The product Release announces 
 
 ### Coordinated semver during Phase 2
 
-- **Patch (`2.1.3`):** any package needs a bug fix → all five ship `2.1.3`.
-- **Minor (`2.2.0`):** any package adds a re-exported symbol or any other backward-compatible feature → all five ship `2.2.0`.
-- **Major (`3.0.0`):** any package introduces a breaking change, **or** the docs.plus product line itself bumps to a new major → all five ship `3.0.0`.
+- **Patch (`2.1.3`):** any package needs a bug fix → every package ships `2.1.3`.
+- **Minor (`2.2.0`):** any package adds a re-exported symbol or any other backward-compatible feature → every package ships `2.2.0`.
+- **Major (`3.0.0`):** any package introduces a breaking change, **or** the docs.plus product line itself bumps to a new major → every package ships `3.0.0`.
 
 The product-line major bump is the strongest case: `webapp@3.0.0` ships → all extensions go to `3.0.0` regardless of whether their own APIs changed.
 
@@ -265,7 +266,7 @@ See RELEASE_POLICY.md "Versioning Doctrine".
 
 ## Per-package Readiness Checklist
 
-Before any extension ships its `2.0.0` (and joins the lockstep family), it needs the publishable-package scaffolding. The checklist applies to all five, including the three that already have older versions on npm. An existing npm listing is not evidence that the current scaffolding is in place:
+Before any extension first publishes, it needs the publishable-package scaffolding. The checklist applies to every package, including the three that already have older versions on npm. An existing npm listing is not evidence that the current scaffolding is in place:
 
 - [ ] `LICENSE` in `.gitignore` (root `LICENSE` is the single source of truth; `prepack` regenerates it before each pack)
 - [ ] `"@docs.plus/release-tooling": "workspace:*"` in `devDependencies`
@@ -275,8 +276,8 @@ Before any extension ships its `2.0.0` (and joins the lockstep family), it needs
 - [ ] `exports.require.types` points to `./dist/index.d.cts` (not `.d.ts`)
 - [ ] `sideEffects: ['**/*.css']` (not bare `false`) if the package ships any CSS
 - [ ] `homepage`, `bugs`, and discovery-oriented `keywords` populated in `package.json`
-- [ ] `[2.0.0]` `CHANGELOG.md` entry following the [style guide](#changelog-style-guide)
-- [ ] Release-gate tests passing — hyperlink: `bun test src` + Cypress; indent: Jest + Cypress; hypermultimedia / inline-code / placeholder: clean-room Cypress against `dist/`
+- [ ] A CHANGELOG.md entry for the first version it publishes, following the [style guide](#changelog-style-guide)
+- [ ] Release-gate tests passing — hyperlink: `bun test src` + Cypress; indent: Jest + Cypress; hypermultimedia / inline-code / mermaid / placeholder: clean-room Cypress against `dist/`
 - [ ] `bun pm pack` dry-run produces a clean tarball
 
 The `extension-hyperlink` package is the reference shape — when wiring a new extension, copy from there. **Never copy the `prepack` / `preflight` script bodies into per-package `scripts/` directories**; the canonical implementation lives in `@docs.plus/release-tooling` and is consumed via the bin commands above. Same DRY principle as `@docs.plus/eslint-config`, `tsconfig.base.json`, and `tsup.base.ts`.
@@ -287,17 +288,17 @@ These are the explicit decisions made during the policy design session. Each is 
 
 ### Decision: Skip the umbrella git tag
 
-The five per-package tags collectively pin the source state (lockstep means they all point to the same commit). An additional `docs.plus-family@<version>` umbrella tag would be redundant. It would add one more tag-management thing to think about, and no existing infrastructure would consume it. Skipped.
+The per-package tags collectively pin the source state (lockstep means they all point to the same commit). An additional `docs.plus-family@<version>` umbrella tag would be redundant. It would add one more tag-management thing to think about, and no existing infrastructure would consume it. Skipped.
 
 ### Decision: Per-package releases over umbrella
 
-The Discord workflow fires per `release.{published,prereleased}` event with package-specific embeds (color-coded by stability, install hint per package). Five releases means five Discord embeds in ~30 seconds. Inventing an umbrella-release format would mean rewriting the Discord workflow and losing per-package install hints. For a few-times-per-year event, one minute of Discord noise is fine. Per-package releases retained.
+The Discord workflow fired per `release.{published,prereleased}` event with package-specific embeds (color-coded by stability, install hint per package). A family release posted one Discord embed per package in ~30 seconds. Inventing an umbrella-release format would have meant rewriting the Discord workflow and losing per-package install hints. For a few-times-per-year event, one minute of Discord noise was fine. Per-package releases were retained.
 
 **Superseded on 2026-08-26.** The per-package Releases were deleted, and the product Release is the only one. On 2026-10-13 the maintainer applied that to `scripts/release-family.ts`: it pushes the tags and creates no GitHub Release.
 
 ### Decision: Auto-generate no-op CHANGELOG entries
 
-No-op CHANGELOG entries are pure boilerplate (one fixed sentence). Auto-generating them removes 4× the typing burden per family release and removes the "I forgot to write the no-op entry" failure mode. The script generates them; the maintainer commits them before publish; preflight check #2 verifies they exist. Adopted.
+No-op CHANGELOG entries are pure boilerplate (one fixed sentence). Auto-generating them removes the typing burden per family release and removes the "I forgot to write the no-op entry" failure mode. The script generates them; the maintainer commits them before publish; preflight check #2 verifies they exist. Adopted.
 
 ### Decision: Stable releases only — no pre-release dist-tags (2026-07-07)
 

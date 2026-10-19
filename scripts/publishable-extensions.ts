@@ -5,7 +5,8 @@ export const PUBLISHABLE_EXTENSIONS = [
   { dir: 'extension-hyperlink', hasUnit: true },
   { dir: 'extension-hypermultimedia', hasUnit: false },
   { dir: 'extension-inline-code', hasUnit: false },
-  { dir: 'extension-placeholder', hasUnit: false }
+  { dir: 'extension-placeholder', hasUnit: false },
+  { dir: 'extension-mermaid', hasUnit: false }
 ] as const
 
 export type PublishableExtensionDir = (typeof PUBLISHABLE_EXTENSIONS)[number]['dir']

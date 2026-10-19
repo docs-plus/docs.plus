@@ -42,6 +42,9 @@ updates:
       - dependency-name: '@turbodocx/html-to-docx'
       - dependency-name: 'mammoth'
       - dependency-name: 'linkedom'
+      # pele: bump by hand; rerun the render measure, the security probe rows,
+      # and check that Pele made no breaking change.
+      - dependency-name: 'pele'
       # The metascraper family is pinned to 5.50.6 because 5.51.1 crashes REST
       # startup on Bun. AGENTS.md holds the exit condition.
       - dependency-name: 'metascraper'

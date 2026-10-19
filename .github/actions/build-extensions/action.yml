@@ -4,7 +4,7 @@ description: 'Restore extension dist cache; build on cache miss'
 
 inputs:
   extensions:
-    description: 'Space-separated extension dir names to build; empty = all five'
+    description: 'Space-separated extension dir names to build; empty = all'
     required: false
     default: ''
 
@@ -16,7 +16,7 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    # The cache stores all five dists but the build step only builds `EXT_ONLY`,
+    # The cache stores every dist but the build step only builds `EXT_ONLY`,
     # so a scoped run must not save under the same key as a full one — a later
     # exact hit would skip the build and serve stale dist for the rest.
     # Normalised because callers pass multi-name lists (backend-ci passes three).

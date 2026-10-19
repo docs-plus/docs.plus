@@ -126,7 +126,7 @@ jobs:
           EXTENSION_DIST_READY: '1'
         run: bash scripts/run-tests.sh --extensions
 
-      - name: ✈️ Publish preflight (all five)
+      - name: ✈️ Publish preflight (all)
         run: bash scripts/extension-preflight.sh
 
   webapp-unit-tests:

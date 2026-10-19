@@ -39,7 +39,7 @@ Never decide these alone. Each one changed the v2.1.0 work.
 
 - **Version.** The product version lives in `apps/webapp` and `apps/hocuspocus.server`. `apps/admin-dashboard` keeps its own version. Breaking self-host changes still shipped as a minor in 2.1.0, with one SemVer-exception sentence.
 - **Known gaps.** Ship with an open security or data issue, or block? If it ships, it goes in the hocuspocus CHANGELOG Security section and on the issue. It never goes in the release note.
-- **Extensions.** Publish the five `@docs.plus/extension-*` packages? Check `git diff <base>..HEAD --name-only -- 'extensions/*/src/**'`. From Phase 2 on they move together (lockstep).
+- **Extensions.** Publish the `@docs.plus/extension-*` packages? Check `git diff <base>..HEAD --name-only -- 'extensions/*/src/**'`. From Phase 2 on they move together (lockstep).
 - **Behaviour changes in extensions.** Ship them in this release with migration notes, or hold them?
 - **Commit policy.** Default: agents commit nothing. The maintainer reviews every change by hand.
 
@@ -114,7 +114,7 @@ The maintainer runs these steps, in this order.
 1. Commit in groups: fixes first, then `chore(extensions)`, `chore(release): docs.plus X.Y.Z`, `docs(demo)`, and any skill or tooling commit.
 2. `git push origin main`. The pre-push hook runs the full `check:ci`, about 10 minutes.
 3. **Deploy.** A plain push does not deploy. New `public/` assets need an empty `(build): front` commit and a push. Wait until `curl -sI https://docs.plus/demo-assets/release-X.Y.Z-banner.png` shows `content-type: image/png`. Before the deploy, that URL answers `200 text/html`.
-4. **Extensions**, if they publish. The npm account uses a Chrome passkey, so no 6-digit code exists. Publish each package with `(cd extensions/<pkg> && bun publish)` and approve in the browser. Tick "skip two-factor for 5 minutes" so the rest go through. Wait until `npm view <pkg> dist-tags.latest --prefer-online` shows the new version for all five. Then run `bun run release:family`: it skips the publishes, then creates and pushes the five tags.
+4. **Extensions**, if they publish. The npm account uses a Chrome passkey, so no 6-digit code exists. Publish each package with `(cd extensions/<pkg> && bun publish)` and approve in the browser. Tick "skip two-factor for 5 minutes" so the rest go through. Wait until `npm view <pkg> dist-tags.latest --prefer-online` shows the new version for every package. Then run `bun run release:family`: it skips the publishes, then creates and pushes one tag per package.
 5. `git tag vX.Y.Z && git push origin vX.Y.Z`, after the deploy commit.
 6. `gh release create vX.Y.Z --title "docs.plus X.Y.Z" --latest --notes-file Notes/release-X.Y.Z/RELEASE-NOTES.md`, after the banner is live.
 7. Paste `docs/DEMO.md` on /demo, then check the banner in light and dark.

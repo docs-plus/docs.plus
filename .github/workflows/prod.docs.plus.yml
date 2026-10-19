@@ -13,7 +13,7 @@
 #     (`app_deploy`, `has_observability`, `has_uptime_kuma`). Ordered:
 #     app → observability → uptime-kuma (fail-fast).
 #   - pull_request to main: quality gates + build verification only.
-#   - schedule (Sunday 00:00 UTC): security audit + all five extension suites.
+#   - schedule (Sunday 00:00 UTC): security audit + every extension suite.
 #   - workflow_dispatch: manual run with `force_deploy` / `skip_quality_gates`.
 #
 # Architectural notes (decided 2026-05, see commit history):
@@ -150,19 +150,20 @@ jobs:
 
       - id: assemble
         env:
-          # Fallback (NEW.md §7.4): no reliable diff base -> treat all five as changed.
+          # Fallback (NEW.md §7.4): no reliable diff base -> treat every extension as changed.
           # Covers manual dispatch AND a first push / history rewrite (before == all-zeros SHA).
           # `schedule` is deliberate, not a fallback: the weekly cron is the only
-          # automatic run that is not path-filtered, so it exercises all five.
+          # automatic run that is not path-filtered, so it exercises every extension.
           FORCE_ALL: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event.before == '0000000000000000000000000000000000000000' }}
           R_INDENT: ${{ steps.filter.outputs.extension-indent }}
           R_HYPERLINK: ${{ steps.filter.outputs.extension-hyperlink }}
           R_HMM: ${{ steps.filter.outputs.extension-hypermultimedia }}
           R_INLINE: ${{ steps.filter.outputs.extension-inline-code }}
           R_PLACEHOLDER: ${{ steps.filter.outputs.extension-placeholder }}
+          R_MERMAID: ${{ steps.filter.outputs.extension-mermaid }}
         run: |
           set -euo pipefail
-          all='["extension-indent","extension-hyperlink","extension-hypermultimedia","extension-inline-code","extension-placeholder"]'
+          all='["extension-indent","extension-hyperlink","extension-hypermultimedia","extension-inline-code","extension-placeholder","extension-mermaid"]'
           if [ "${FORCE_ALL}" = "true" ]; then echo "list=${all}" >> "$GITHUB_OUTPUT"; exit 0; fi
           sel=()
           [ "${R_INDENT}" = "true" ] && sel+=('"extension-indent"')
@@ -170,6 +171,7 @@ jobs:
           [ "${R_HMM}" = "true" ] && sel+=('"extension-hypermultimedia"')
           [ "${R_INLINE}" = "true" ] && sel+=('"extension-inline-code"')
           [ "${R_PLACEHOLDER}" = "true" ] && sel+=('"extension-placeholder"')
+          [ "${R_MERMAID}" = "true" ] && sel+=('"extension-mermaid"')
           if [ "${#sel[@]}" -eq 0 ]; then echo "list=[]" >> "$GITHUB_OUTPUT"; else
             IFS=,; echo "list=[${sel[*]}]" >> "$GITHUB_OUTPUT"; fi
 

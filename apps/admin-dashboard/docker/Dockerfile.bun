@@ -35,6 +35,7 @@ COPY extensions/extension-hypermultimedia/package.json ./extensions/extension-hy
 COPY extensions/extension-indent/package.json ./extensions/extension-indent/
 COPY extensions/extension-inline-code/package.json ./extensions/extension-inline-code/
 COPY extensions/extension-placeholder/package.json ./extensions/extension-placeholder/
+COPY extensions/extension-mermaid/package.json ./extensions/extension-mermaid/
 COPY packages/supabase/package.json ./packages/supabase/
 
 RUN bun install --frozen-lockfile --ignore-scripts

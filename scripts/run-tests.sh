@@ -22,7 +22,7 @@ REPORT="$REPORT_DIR/test-results-${TIMESTAMP}.txt"
 BASE_URL="${BASE_URL:-http://localhost:3001}"
 CYPRESS_PARALLEL="${CYPRESS_PARALLEL:-4}"
 
-# Clean-room suites own unique ports (5173-5177), so they can run side by side.
+# Clean-room suites own unique ports (5173-5178), so they can run side by side.
 # Measured 2026-08-27 on Bun 1.4.0 with dist built: 209s serial, 89s parallel.
 # Each suite writes its own log and they merge in gate order, so $REPORT stays
 # parseable. Set EXTENSION_PARALLEL=0 to read output live while debugging one.

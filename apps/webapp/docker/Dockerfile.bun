@@ -55,6 +55,7 @@ COPY extensions/extension-hypermultimedia/package.json ./extensions/extension-hy
 COPY extensions/extension-indent/package.json ./extensions/extension-indent/
 COPY extensions/extension-inline-code/package.json ./extensions/extension-inline-code/
 COPY extensions/extension-placeholder/package.json ./extensions/extension-placeholder/
+COPY extensions/extension-mermaid/package.json ./extensions/extension-mermaid/
 COPY apps/webapp/package.json ./apps/webapp/
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/hocuspocus.server/package.json ./apps/hocuspocus.server/
@@ -70,6 +71,7 @@ COPY extensions/extension-hypermultimedia ./extensions/extension-hypermultimedia
 COPY extensions/extension-indent ./extensions/extension-indent
 COPY extensions/extension-inline-code ./extensions/extension-inline-code
 COPY extensions/extension-placeholder ./extensions/extension-placeholder
+COPY extensions/extension-mermaid ./extensions/extension-mermaid
 
 # No install here on purpose. Nothing copies node_modules out of this stage —
 # build-extensions and builder each copy only manifests and source, then install
@@ -99,6 +101,7 @@ COPY extensions/extension-hypermultimedia ./extensions/extension-hypermultimedia
 COPY extensions/extension-indent ./extensions/extension-indent
 COPY extensions/extension-inline-code ./extensions/extension-inline-code
 COPY extensions/extension-placeholder ./extensions/extension-placeholder
+COPY extensions/extension-mermaid ./extensions/extension-mermaid
 
 ENV CYPRESS_INSTALL_BINARY=0
 RUN bun install --frozen-lockfile
@@ -112,6 +115,7 @@ RUN cd extensions/extension-hypermultimedia && bun run build
 RUN cd extensions/extension-indent && bun run build
 RUN cd extensions/extension-inline-code && bun run build
 RUN cd extensions/extension-placeholder && bun run build
+RUN cd extensions/extension-mermaid && bun run build
 
 # ============================================================================
 # Stage 4: Build Webapp - Build Next.js application
@@ -259,6 +263,7 @@ COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-hyp
 COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-indent/dist ./extensions/extension-indent/dist
 COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-inline-code/dist ./extensions/extension-inline-code/dist
 COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-placeholder/dist ./extensions/extension-placeholder/dist
+COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-mermaid/dist ./extensions/extension-mermaid/dist
 
 # Copy package.json files for workspace resolution (from build-extensions for consistency)
 COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-hyperlink/package.json ./extensions/extension-hyperlink/
@@ -266,6 +271,7 @@ COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-hyp
 COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-indent/package.json ./extensions/extension-indent/
 COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-inline-code/package.json ./extensions/extension-inline-code/
 COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-placeholder/package.json ./extensions/extension-placeholder/
+COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-mermaid/package.json ./extensions/extension-mermaid/
 
 USER nextjs
 

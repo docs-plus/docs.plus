@@ -193,7 +193,7 @@ List open issues labelled Security or data loss as openGaps.
 Return the rulings as decisions with exactly these ids, each with 2-4 options and a recommended label:
 - version: the version number;
 - knownGaps: ship or block each open gap;
-- publishExtensions: publish the five extensions (true or false);
+- publishExtensions: publish the extensions (true or false);
 - extensionBehaviour: ship extension behaviour changes now, with migration notes, or hold them;
 - commitPolicy: agents commit nothing (default) or may commit.
 Add more decisions only for rulings this release needs beyond these, with their own ids.`,
@@ -229,7 +229,7 @@ const WORKSTREAMS = [
   {
     key: 'versions',
     section: '2. Versions and lockfile',
-    task: `Bump ${facts.productPackages.join(', ')} to ${version}${publishExtensions ? `, and all five extensions/extension-*/package.json to ${version}` : ''}. Run bun install, then bun install --frozen-lockfile, and report both results.`
+    task: `Bump ${facts.productPackages.join(', ')} to ${version}${publishExtensions ? `, and every extensions/extension-*/package.json to ${version}` : ''}. Run bun install, then bun install --frozen-lockfile, and report both results.`
   },
   {
     key: 'changelog-product',
