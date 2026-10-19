@@ -179,9 +179,19 @@ describe('mermaid — render states', () => {
     cy.setEditorContent(block(big))
     expectState('error')
     cy.get('.mermaid-diagram__message').should('have.text', 'This diagram is too large to draw.')
-    cy.get('.mermaid-diagram__detail')
-      .invoke('text')
-      .should('match', /longer than the limit of \d+ characters/)
+    cy.get('.mermaid-diagram__advice').should(
+      'have.text',
+      `It has ${big.length.toLocaleString('en-US')} characters, and the limit is 15,000. Split it into smaller diagrams.`
+    )
+    // Advice reads as body text, not as mono parser output.
+    cy.get('.mermaid-diagram__detail').should('be.empty').and('not.be.visible')
+    cy.get('.mermaid-diagram__message').then(($message) => {
+      cy.get('.mermaid-diagram__advice').should(
+        'have.css',
+        'font-family',
+        getComputedStyle($message[0]).fontFamily
+      )
+    })
   })
 })
 

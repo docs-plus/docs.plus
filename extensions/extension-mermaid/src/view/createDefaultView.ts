@@ -22,6 +22,7 @@ export function createDefaultView(context: MermaidViewContext): MermaidView {
   const errorLine = element('p', 'mermaid-diagram__error')
   const message = element('span', 'mermaid-diagram__message')
   const detail = element('code', 'mermaid-diagram__detail')
+  const advice = element('span', 'mermaid-diagram__advice')
   const retry = element('button', 'mermaid-diagram__retry')
 
   const errorId = `mermaid-diagram-error-${++nextId}`
@@ -33,7 +34,7 @@ export function createDefaultView(context: MermaidViewContext): MermaidView {
   retry.addEventListener('click', () => context.retry())
   spinner.setAttribute('aria-hidden', 'true')
 
-  errorLine.append(message, detail, retry)
+  errorLine.append(message, advice, detail, retry)
   diagram.append(spinner)
   dom.append(diagram, errorLine)
 
@@ -51,8 +52,11 @@ export function createDefaultView(context: MermaidViewContext): MermaidView {
       else diagram.removeAttribute('aria-busy')
       retry.hidden = state !== 'load-error'
       message.textContent = showError ? messageFor(snapshot) : ''
+      // A limit message is advice in plain words, not parser output, so it is not set as code.
+      const isAdvice = error?.code === 'limit'
+      advice.textContent = showError && isAdvice ? error.message : ''
       detail.textContent =
-        showError && error
+        showError && error && !isAdvice
           ? error.message
               .split('\n')
               .filter((line) => line.trim() !== '')

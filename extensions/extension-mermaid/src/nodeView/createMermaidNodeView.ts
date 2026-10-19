@@ -79,6 +79,14 @@ class MermaidNodeView implements NodeView {
   }
 
   ignoreMutation(mutation: ViewMutationRecord): boolean {
+    // A host may set `--pele-*` on the frame at runtime, as the guide shows. That must not rebuild the block.
+    if (
+      mutation.type === 'attributes' &&
+      mutation.target === this.dom &&
+      mutation.attributeName === 'style'
+    ) {
+      return true
+    }
     return this.view.dom.contains(mutation.target) || this.head.ignoreMutation(mutation)
   }
 

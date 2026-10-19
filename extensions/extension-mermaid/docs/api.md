@@ -98,7 +98,9 @@ The built-in view shows these strings:
 | `error` with a line number         | `Line {line}, column {column}: this line has a mistake.`        |
 | any other `error`                  | `This diagram has a mistake.`                                   |
 
-Under the message, the view shows Pele's own text, with blank lines removed.
+Under the message, the view shows Pele's own text, with blank lines removed, in `.mermaid-diagram__detail`.
+
+A `limit` error is different. Its `MermaidError.message` is the extension's own sentence, not Pele's. It names the limit, the count where it is known, and a next step, for example `It has more than 500 arrows, and the limit is 500. Split it into smaller diagrams.` The view shows it as body text in `.mermaid-diagram__advice`, and `.mermaid-diagram__detail` stays empty. Pele stops counting edges at the limit, so the edge sentence says "more than". An output that is too big names no number, because the writer never typed it.
 
 `MermaidError.line` and `column` are 1-based, or 0 when there is none. The extension maps Pele's line back to the editor line on a best-effort basis. It was probed on flowchart, sequence, class, er and state diagrams. It skips agentflow, and eventmodeling keeps its comment lines. Do not rely on an exact line.
 
@@ -131,7 +133,7 @@ These are not options.
 
 ## Class names and tokens
 
-Classes: `.mermaid-diagram`, `.mermaid-diagram__head`, `.mermaid-diagram__label`, `.mermaid-diagram__icon`, `.mermaid-diagram__text`, `.mermaid-diagram__actions`, `.mermaid-diagram__help`, `.mermaid-diagram__copy`, `.mermaid-diagram__summary`, `.mermaid-diagram__source`, `.mermaid-diagram__fold`, `.mermaid-diagram__preview`, `.mermaid-diagram__diagram`, `.mermaid-diagram__spinner`, `.mermaid-diagram__error`, `.mermaid-diagram__message`, `.mermaid-diagram__detail` and `.mermaid-diagram__retry`.
+Classes: `.mermaid-diagram`, `.mermaid-diagram__head`, `.mermaid-diagram__label`, `.mermaid-diagram__icon`, `.mermaid-diagram__text`, `.mermaid-diagram__actions`, `.mermaid-diagram__help`, `.mermaid-diagram__copy`, `.mermaid-diagram__summary`, `.mermaid-diagram__source`, `.mermaid-diagram__fold`, `.mermaid-diagram__preview`, `.mermaid-diagram__diagram`, `.mermaid-diagram__spinner`, `.mermaid-diagram__error`, `.mermaid-diagram__message`, `.mermaid-diagram__advice`, `.mermaid-diagram__detail` and `.mermaid-diagram__retry`.
 
 `.mermaid-diagram__preview` is the root of the built-in view only. A custom `view` brings its own root.
 

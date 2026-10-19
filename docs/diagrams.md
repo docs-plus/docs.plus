@@ -33,13 +33,15 @@ The text sits on top, and the diagram sits below it. There is no edit mode to sw
 
 To turn a diagram back into plain code, open the **Code** menu and choose **Code block**.
 
-Very large diagrams are not drawn. They show "This diagram is too large to draw." Split them into smaller ones.
+Very large diagrams are not drawn. They show "This diagram is too large to draw." and name the limit they hit, for example "It has more than 500 arrows, and the limit is 500." Split them into smaller ones.
 
 ## Syntax
 
 Diagrams use the Mermaid language. Read the [Mermaid syntax reference](https://mermaid.js.org/intro/syntax-reference.html) for the language and its rules.
 
 Pele draws a subset of Mermaid. See [pele.run](https://pele.run) for the diagram types it draws. A type it does not know shows "This diagram type is not supported." The text stays in the document.
+
+In a state diagram, write `state Check <<choice>>` before the first line that uses `Check`. The same holds for `<<fork>>` and `<<join>>`. Declared later, the state draws as a plain box. Mermaid itself works the same way.
 
 ## AI apps
 

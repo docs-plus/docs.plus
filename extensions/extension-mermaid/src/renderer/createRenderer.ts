@@ -2,7 +2,8 @@ import type * as Pele from 'pele/lazy'
 import type { DiagramType, Mounted, MountOptions } from 'pele/lazy'
 
 import { DEFAULT_LIMITS } from '../constants'
-import type { MermaidError } from '../types'
+import type { MermaidError, MermaidLimits } from '../types'
+import { limitMessage } from './limitMessage'
 import type { DiagramRenderer, RendererOptions, RenderOutcome } from './types'
 
 type PeleModule = typeof Pele
@@ -74,10 +75,14 @@ function toError(
   mod: PeleModule,
   err: unknown,
   source: string,
-  type: DiagramType | null
+  type: DiagramType | null,
+  limits: Required<MermaidLimits>
 ): MermaidError {
   if (!(err instanceof mod.PeleError)) {
     return { code: 'render', message: String(err), line: 0, column: 0 }
+  }
+  if (err.code === 'limit') {
+    return { code: 'limit', message: limitMessage(source, err.message, limits), line: 0, column: 0 }
   }
   const line = err.line > 0 && type !== 'agentflow' ? sourceLine(source, err.line, type) : err.line
   return {
@@ -99,11 +104,15 @@ function coarsePointer(): boolean {
 export function createRenderer(target: HTMLElement, options: RendererOptions): DiagramRenderer {
   let pele: PeleModule | null = null
   let mounted: Mounted | undefined
+  const limits: Required<MermaidLimits> = {
+    characters: options.limits.characters ?? DEFAULT_LIMITS.characters,
+    edges: options.limits.edges ?? DEFAULT_LIMITS.edges
+  }
 
   // Built once and never passed to `update`, so the zoom instance survives.
   const mountOptions: MountOptions = {
-    limit: options.limits.characters ?? DEFAULT_LIMITS.characters,
-    maxEdges: options.limits.edges ?? DEFAULT_LIMITS.edges,
+    limit: limits.characters,
+    maxEdges: limits.edges,
     outputLimit: 1000000,
     links: false,
     images: options.images,
@@ -154,7 +163,7 @@ export function createRenderer(target: HTMLElement, options: RendererOptions): D
         return { state: 'ready', error: null, diagramType: type, durationMs }
       return {
         state: 'error',
-        error: toError(mod, failure, source, type),
+        error: toError(mod, failure, source, type, limits),
         diagramType: type,
         durationMs
       }

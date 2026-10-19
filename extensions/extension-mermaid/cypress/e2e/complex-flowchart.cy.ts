@@ -288,10 +288,11 @@ describe('mermaid — complex flowchart', () => {
     cy.setEditorContent(block(overLimit))
     expectState('error')
     cy.get('.mermaid-diagram__message').should('have.text', 'This diagram is too large to draw.')
-    // Pele reports the count before the refused edge, so the detail says 500, not 501.
-    cy.get('.mermaid-diagram__detail')
-      .invoke('text')
-      .should('match', /Edge limit exceeded\..*the limit is 500\./)
+    // Pele stops counting at the limit, so the advice says "more than", never a wrong count.
+    cy.get('.mermaid-diagram__advice').should(
+      'have.text',
+      'It has more than 500 arrows, and the limit is 500. Split it into smaller diagrams.'
+    )
   })
 
   it('redraws an edited big flowchart in place, without a remount', () => {

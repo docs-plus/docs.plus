@@ -6,7 +6,9 @@ Part of the [`@docs.plus/extension-mermaid` README](../README.md).
 
 Pele reads CSS variables named `--pele-*`. You can set them in CSS, or pass the `theme` option. The option sets each variable on the frame element with `style.setProperty`, so a strict CSP does not block it.
 
-Set the variables on `.mermaid-diagram` itself, never on an ancestor. The shipped `styles.css` defines its defaults on `.mermaid-diagram`, and those defaults shadow any inherited value.
+Set the variables on `.mermaid-diagram` itself, never on an ancestor. The shipped `styles.css` defines its defaults on `.mermaid-diagram`, and those defaults shadow any inherited value. Setting them inline on the frame at runtime is safe: the drawn diagram recolours in place and is not drawn again.
+
+In print, `styles.css` hides the head and the zoom controls. A ready diagram prints as the picture. Any other state prints the source, even when it is folded.
 
 ```css
 .mermaid-diagram {

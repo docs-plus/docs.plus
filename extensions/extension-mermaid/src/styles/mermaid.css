@@ -242,6 +242,16 @@
   display: none;
 }
 
+:where(.mermaid-diagram__advice) {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--pele-muted);
+}
+
+:where(.mermaid-diagram__advice:empty) {
+  display: none;
+}
+
 :where(.mermaid-diagram__retry) {
   margin-top: 0.5rem;
   margin-inline-start: 0.5rem;
@@ -313,6 +323,43 @@
     justify-content: center;
     min-width: 44px;
     min-height: 44px;
+  }
+}
+
+/* Print: a ready diagram prints as the picture, anything else prints the source. */
+@media print {
+  :where(.mermaid-diagram) {
+    break-inside: avoid;
+  }
+
+  :where(.mermaid-diagram__head) {
+    display: none;
+  }
+
+  /* Pele styles its zoom controls inline. */
+  .mermaid-diagram .pele-zoom {
+    display: none !important;
+  }
+
+  /* The host's inline overflow and contain would clip the picture on paper. */
+  .mermaid-diagram__diagram {
+    overflow: visible !important;
+    contain: none !important;
+  }
+
+  :where(.mermaid-diagram:has(> [data-state='ready']) > .mermaid-diagram__source),
+  :where(.mermaid-diagram > [data-state]:not([data-state='ready'])) {
+    display: none;
+  }
+
+  /* A folded source with no drawn diagram would otherwise print nothing. */
+  :where(.mermaid-diagram[data-source='folded'] .mermaid-diagram__source) {
+    grid-template-rows: 1fr;
+  }
+
+  :where(.mermaid-diagram[data-source='folded'] .mermaid-diagram__source > pre) {
+    padding-block: 0.75rem;
+    visibility: visible;
   }
 }
 

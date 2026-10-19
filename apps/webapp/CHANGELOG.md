@@ -24,7 +24,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   source. Writers start with the source open; read-only views, History and
   visitors start with it folded, and each viewer's choice is remembered. The
   head shows Syntax, Copy and Hide source on hover. The SVG is sanitized, print
-  shows the drawn diagram, and the PWA does not precache the renderer
+  shows the drawn diagram, and a diagram that is too large names the limit it
+  hit. The PWA does not precache the renderer
   ([#528](https://github.com/docs-plus/docs.plus/issues/528), [#529](https://github.com/docs-plus/docs.plus/issues/529)).
 
 ### Fixed
