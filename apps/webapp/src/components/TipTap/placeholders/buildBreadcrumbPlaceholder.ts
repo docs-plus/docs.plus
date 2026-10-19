@@ -151,6 +151,10 @@ export function buildBreadcrumbPlaceholder(
     return 'Enter document name'
   }
 
+  if (nodeName === 'codeBlock' && node.attrs.language === 'mermaid') {
+    return 'Write a Mermaid diagram'
+  }
+
   if (!shouldRenderBreadcrumb(scope, nodeName, parentName)) {
     return legacyPlaceholder(nodeName, parentName)
   }

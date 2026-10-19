@@ -59,3 +59,13 @@ export function getSanitizedMessageBodyHtml(
   const { sanitizedHtml, sanitizedText } = sanitizeMessageContent(htmlInput, text)
   return sanitizedHtml || sanitizedText || ''
 }
+
+/** Pele's root SVG carries `role`; the svg profile allows it for HTML only. */
+export const sanitizeDiagramSvg = (svg: string): Node =>
+  DOMPurify.sanitize(svg, {
+    USE_PROFILES: { svg: true },
+    ADD_ATTR: ['role'],
+    FORBID_TAGS: ['style', 'a', 'image', 'use'],
+    FORBID_ATTR: ['href', 'xlink:href'],
+    RETURN_DOM_FRAGMENT: true
+  })

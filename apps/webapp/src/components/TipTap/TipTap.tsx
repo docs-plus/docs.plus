@@ -3,6 +3,7 @@ import { Hyperlink } from '@docs.plus/extension-hyperlink'
 import { HyperMultimediaKit, isMediaUrl } from '@docs.plus/extension-hypermultimedia'
 import { Indent } from '@docs.plus/extension-indent'
 import { InlineCode } from '@docs.plus/extension-inline-code'
+import { Mermaid, type MermaidStateEvent } from '@docs.plus/extension-mermaid'
 import { Placeholder } from '@docs.plus/extension-placeholder'
 import type { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
@@ -23,6 +24,8 @@ import { UseEditorOptions } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { TIPTAP_NODES, type Transaction } from '@types'
 import { type CaretUser, getCursorUser } from '@utils/getCursorUser'
+import { captureMessageOnce } from '@utils/observability'
+import { sanitizeDiagramSvg } from '@utils/sanitizeContent'
 import { scrollElementInMobilePadEditor } from '@utils/scrollMobilePadEditor'
 import bash from 'highlight.js/lib/languages/bash'
 import css from 'highlight.js/lib/languages/css'
@@ -71,6 +74,34 @@ lowlight.register('python', python as unknown as LowlightLanguage)
 lowlight.register('yaml', yaml)
 lowlight.register('json', json)
 lowlight.register('bash', bash as unknown as LowlightLanguage)
+// Without a stub, highlightAuto runs on every diagram source.
+lowlight.register('mermaid', () => ({ name: 'Mermaid', contains: [] }))
+
+// Slow renders, a failed renderer load and a renderer crash only. Bad diagram text is the writer's own.
+const reportDiagramState = (event: MermaidStateEvent): void => {
+  if (event.error?.code === 'render') {
+    captureMessageOnce('mermaid:render-error', 'mermaid:render-error', {
+      level: 'error',
+      tags: { surface: 'mermaid' },
+      extra: { diagramType: event.diagramType, message: event.error.message.slice(0, 200) }
+    })
+  }
+  if (event.durationMs !== null && event.durationMs > 50) {
+    captureMessageOnce('mermaid:slow-render', 'mermaid:slow-render', {
+      level: 'warning',
+      tags: { surface: 'mermaid' },
+      extra: { durationMs: event.durationMs, diagramType: event.diagramType }
+    })
+  }
+  if (event.state === 'load-error') {
+    // The message tells a deploy-boundary chunk from an offline one. No reload (ruling 2026-10-19).
+    captureMessageOnce('mermaid:load-error', 'mermaid:load-error', {
+      level: 'warning',
+      tags: { surface: 'mermaid' },
+      extra: { message: event.error?.message.slice(0, 200), online: navigator.onLine }
+    })
+  }
+}
 
 const scrollDown = () => {
   const url = new URL(window.location.href)
@@ -189,6 +220,9 @@ const Editor = ({
     CodeBlockLowlight.configure({
       lowlight
     }),
+    // Fold is read once, when the node view is built. A phone pad flips to read mode
+    // 500 ms after mount (useEditableDocControl), so its diagrams can start folded.
+    Mermaid.configure({ sanitize: sanitizeDiagramSvg, onStateChange: reportDiagramState }),
     // InlineCode (priority 101) wins backtick input + Mod-e over StarterKit's
     // `code` mark; `code` stays enabled so existing collab docs keep their marks.
     InlineCode,

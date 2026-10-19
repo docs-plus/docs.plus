@@ -111,6 +111,7 @@ import {
   LuVideo,
   LuWifi,
   LuWifiOff,
+  LuWorkflow,
   LuX,
   LuZoomIn,
   LuZoomOut
@@ -231,6 +232,7 @@ export const Icons = {
 
   code: LuCode,
   codeBlock: LuSquareCode,
+  diagram: LuWorkflow,
   blockquote: LuTextQuote,
 
   emoji: LuSmile,

@@ -93,6 +93,14 @@ const SLASH_ITEMS: SlashItem[] = [
     run: (editor) => editor.chain().focus().toggleCodeBlock().run()
   },
   {
+    id: 'diagram',
+    label: 'Diagram',
+    icon: Icons.diagram,
+    aliases: ['mermaid', 'flowchart', 'chart', 'sequence', 'gantt', 'mindmap'],
+    can: (editor) => editor.can().insertMermaid(),
+    run: (editor) => editor.chain().focus().insertMermaid().run()
+  },
+  {
     id: 'picture',
     label: 'Picture',
     icon: Icons.image,

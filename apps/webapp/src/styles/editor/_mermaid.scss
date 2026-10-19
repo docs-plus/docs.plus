@@ -1,0 +1,168 @@
+// Diagram frame skin for @docs.plus/extension-mermaid. The package CSS loads later, from editor-extensions.scss.
+// Its defaults sit under :where(), so load order does not matter. The rules under
+// .ProseMirror also have to beat the global pre, code and p rules in _prose-mirror-body.scss.
+// Design-system.md §Diagram frame holds the recipe.
+
+$head-height: 2.25rem; // 28px buttons + 4px padding on each side
+$head-height-touch: 3.25rem; // 44px buttons + 4px padding on each side
+
+.mermaid-diagram {
+  --mermaid-diagram-border: var(--color-base-300);
+  --mermaid-diagram-radius: var(--radius-field);
+  --pele-bg: var(--color-base-100);
+  --pele-fg: var(--color-base-content);
+  --pele-muted: var(--code-ink-comment);
+  --pele-line: var(--color-base-content);
+  --pele-border: var(--muted-foreground);
+  --pele-surface: var(--color-base-200);
+  --pele-surface-alt: var(--color-base-300);
+  --pele-accent: var(--color-primary);
+  --pele-critical: var(--color-error);
+  --pele-font: var(--font-sans);
+  --pele-font-mono: var(--font-mono);
+}
+
+.mermaid-diagram__preview {
+  padding: var(--prose-pre-padding-block) var(--prose-pre-padding-inline);
+}
+
+// Zoom cluster. --pele-radius is set here only.
+.mermaid-diagram .pele-zoom {
+  --pele-border: var(--color-base-300);
+  --pele-radius: var(--radius-field);
+}
+
+.mermaid-diagram
+  :is(
+    .pele-zoom-in,
+    .pele-zoom-out,
+    .pele-zoom-reset,
+    svg.pele,
+    .mermaid-diagram__retry
+  ):focus-visible {
+  outline: var(--focus-ring-soft);
+  outline-offset: 1px;
+}
+
+// The diagram host clips paint and the svg sits flush in it, so its ring has to sit inside.
+.mermaid-diagram svg.pele:focus-visible {
+  outline-offset: -2px;
+}
+
+.ProseMirror .mermaid-diagram {
+  .mermaid-diagram__head {
+    min-height: $head-height;
+    background: var(--color-base-200);
+  }
+
+  .mermaid-diagram__source > pre {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  // The pad pre padding would otherwise keep a band open while the source is folded.
+  &[data-source='folded'] .mermaid-diagram__source > pre {
+    padding-block: 0;
+  }
+
+  // A read-only view never opens a folded source, so the current Find hit or a History mark would hide.
+  &[data-source='folded']:has(.caret-find-current, .history-diff-added, .history-diff-removed) {
+    .mermaid-diagram__source {
+      grid-template-rows: 1fr;
+
+      > pre {
+        padding-block: var(--prose-pre-padding-block);
+        visibility: visible;
+      }
+    }
+
+    // The "lines hidden" summary would sit above a source that now shows.
+    .mermaid-diagram__summary {
+      display: none;
+    }
+  }
+
+  .mermaid-diagram__fold,
+  .mermaid-diagram__help,
+  .mermaid-diagram__copy,
+  .mermaid-diagram__retry {
+    background: var(--color-base-100);
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-field);
+
+    &:hover {
+      background: var(--color-base-200);
+      color: var(--color-base-content);
+    }
+
+    &:focus-visible {
+      outline: var(--focus-ring-soft);
+      outline-offset: 1px;
+    }
+  }
+
+  // The package label inherits --pele-font, which the skin maps to sans. The frame spec says mono.
+  .mermaid-diagram__label {
+    font-family: var(--font-mono);
+  }
+
+  // After the hover rule above, so the check keeps its colour under the pointer.
+  .mermaid-diagram__copy[data-copied],
+  .mermaid-diagram__copy[data-copied] .mermaid-diagram__icon > svg:last-child {
+    color: var(--color-success);
+  }
+
+  .mermaid-diagram__error {
+    margin: 0.5rem 0 0;
+  }
+
+  .mermaid-diagram__detail {
+    color: var(--pele-muted);
+    background: none;
+  }
+
+  // The global is-empty rule floats the hint and gives it no height. Here it sits
+  // in the source well, below the head row, at the size of the pre code.
+  &.is-empty {
+    position: relative;
+
+    &::before {
+      content: attr(data-placeholder);
+      position: absolute;
+      top: calc(1px + #{$head-height} + var(--prose-pre-padding-block));
+      left: calc(1px + var(--prose-pre-padding-inline));
+      float: none;
+      width: auto;
+      height: auto;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+
+    // No head row when fold, Syntax and Copy are all off.
+    &:not(:has(> .mermaid-diagram__head))::before {
+      top: calc(1px + var(--prose-pre-padding-block));
+    }
+  }
+}
+
+@media not (pointer: coarse) {
+  .ProseMirror
+    .mermaid-diagram
+    :is(.mermaid-diagram__fold, .mermaid-diagram__help, .mermaid-diagram__copy) {
+    min-height: 28px;
+  }
+}
+
+@media (pointer: coarse) {
+  .ProseMirror .mermaid-diagram {
+    .mermaid-diagram__head {
+      min-height: $head-height-touch;
+    }
+
+    &.is-empty:has(> .mermaid-diagram__head)::before {
+      top: calc(1px + #{$head-height-touch} + var(--prose-pre-padding-block));
+    }
+  }
+}

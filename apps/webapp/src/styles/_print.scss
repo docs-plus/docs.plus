@@ -40,6 +40,8 @@
   .edit-fab,
   .group\/chat,
   .media-toolbar,
+  .pele-zoom,
+  .mermaid-diagram__head,
   .floating-popover,
   [data-floating-ui-portal],
   [role='separator'] {
@@ -96,6 +98,33 @@
 
   :is(table, pre, img, blockquote, figure) {
     break-inside: avoid;
+  }
+
+  // A ready diagram prints as the picture; anything else prints the source. The inline
+  // contain and overflow on the host would clip the picture on paper.
+  .mermaid-diagram {
+    break-inside: avoid;
+  }
+
+  .mermaid-diagram__diagram {
+    contain: none !important;
+    overflow: visible !important;
+  }
+
+  // A folded diagram that has not drawn yet (its observer may never fire in print) would print nothing.
+  .mermaid-diagram[data-source='folded']:not(:has(> [data-state='ready']))
+    .mermaid-diagram__source {
+    grid-template-rows: 1fr !important;
+
+    > pre {
+      padding-block: var(--prose-pre-padding-block) !important;
+      visibility: visible !important;
+    }
+  }
+
+  .mermaid-diagram:has(> [data-state='ready']) > .mermaid-diagram__source,
+  .mermaid-diagram > [data-state]:not([data-state='ready']) {
+    display: none !important;
   }
 
   // break-inside would push an over-tall image to a fresh page and still clip it;

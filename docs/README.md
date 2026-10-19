@@ -11,6 +11,12 @@ docs.plus is a real-time collaborative editor. A document is a tree of headings,
 | [Use docs.plus from Claude or ChatGPT](mcp/README.md) | How to connect, what the AI app can do, and what to do when it fails |
 | [MCP connector reference](mcp/reference.md)           | Endpoint, sign-in, tools, limits, and errors, for developers         |
 
+## Write in a document
+
+| Page                    | What it covers                                          |
+| ----------------------- | ------------------------------------------------------- |
+| [Diagrams](diagrams.md) | How to insert, edit and read a Mermaid diagram in a pad |
+
 ## Run it on your own server
 
 | Page                                           | Answers                                                                                              |
@@ -40,7 +46,7 @@ The full route-by-route contract is [`apps/hocuspocus.server/API.md`](../apps/ho
 | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | [CONTRIBUTING.md](../CONTRIBUTING.md)                             | How to set up a local stack and open a pull request                                                                               |
 | [AGENTS.md](../AGENTS.md)                                         | Rules for coding agents and contributors: Bun only, commit policy, generated files, test policy. Each area adds its own CLAUDE.md |
-| [extensions/README.md](../extensions/README.md)                   | The five Tiptap extensions docs.plus publishes to npm                                                                             |
+| [extensions/README.md](../extensions/README.md)                   | The `@docs.plus/extension-*` Tiptap extensions                                                                                    |
 | [SECURITY.md](../SECURITY.md)                                     | How to report a vulnerability. Do not open a public issue for one                                                                 |
 | [CONTEXT.md](../CONTEXT.md)                                       | The domain glossary: what each term in this project means                                                                         |
 | [apps/hocuspocus.server/ENV.md](../apps/hocuspocus.server/ENV.md) | Every backend environment variable, its type, and its default                                                                     |
@@ -61,7 +67,7 @@ Why one piece of the architecture is the way it is. Each record states the decis
 
 Every page here follows the same rules, so a reader and a coding agent both get the same facts.
 
-- Each page opens with one line stating what it covers and what it does not.
+- Each guide page opens with one line stating what it covers and what it does not. Decision records and DEMO.md follow their own form.
 - Every command sits in a fenced block, and states the directory it runs in.
 - A value you must replace looks like `<THIS>`. A line under the block says where to get it.
 - Every environment variable is defined on exactly one page.

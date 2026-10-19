@@ -17,6 +17,23 @@ const isCoverageInstrumentation =
   process.env.COVERAGE === 'true' || process.env.CYPRESS_COVERAGE === 'true'
 const path = require('path')
 const { createSecureHeaders } = require('next-secure-headers')
+// workbox 6 stops at the first function in `exclude`, so next-pwa's own one never runs.
+// Its two production rules are copied here from next-pwa 5.6.0 (index.js, buildExcludes).
+if (require('next-pwa/package.json').version !== '5.6.0') {
+  throw new Error('next-pwa changed: re-check nextPwaProdExcludes against its buildExcludes')
+}
+const nextPwaProdExcludes = ({ asset }) =>
+  asset.name.startsWith('server/') ||
+  /^(build-manifest|react-loadable-manifest)\.json$/.test(asset.name)
+// pele is a lazy chunk. Precaching it would cost every first visit the diagram engine.
+const excludesPeleChunks = ({ asset, compilation }) =>
+  [...compilation.chunks].some(
+    (chunk) =>
+      chunk.files.has(asset.name) &&
+      compilation.chunkGraph
+        .getChunkModules(chunk)
+        .some((m) => /[\\/]node_modules[\\/]pele[\\/]/.test(m.nameForCondition?.() ?? ''))
+  )
 const withPWA = require('next-pwa')({
   dest: 'public',
   // Fixture suites need a stable page; worker activation otherwise reloads mid-test.
@@ -40,7 +57,12 @@ const withPWA = require('next-pwa')({
     '!badges/**/*'
   ],
   // Exclude files that don't exist in Next.js 15+
-  buildExcludes: [/dynamic-css-manifest\.json$/, /middleware-manifest\.json$/],
+  buildExcludes: [
+    /dynamic-css-manifest\.json$/,
+    /middleware-manifest\.json$/,
+    // One function only: workbox ignores any after the first.
+    (args) => nextPwaProdExcludes(args) || excludesPeleChunks(args)
+  ],
   // Import custom service worker for push notifications
   importScripts: ['/service-worker.js']
 })
@@ -269,6 +291,7 @@ module.exports = withPWA({
         ...envUrls,
         ...devUrls
       ],
+      // Pele's SVG carries `style` attributes, so diagrams need 'unsafe-inline' here.
       style: [
         "'self'",
         "'unsafe-inline'",

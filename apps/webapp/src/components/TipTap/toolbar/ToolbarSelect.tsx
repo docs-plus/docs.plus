@@ -8,6 +8,8 @@ import ToolbarButton from './ToolbarButton'
 
 export interface ToolbarSelectItem {
   value: string
+  /** Narrows `isActive` when two rows share one node name. */
+  attrs?: Record<string, unknown>
   label: string
   icon: IconType
   action: () => void
@@ -29,10 +31,10 @@ const ToolbarSelectItems = ({ items, editor }: { items: ToolbarSelectItem[]; edi
   const { setIsOpen } = useContextMenuContext()
 
   return items.map((item) => {
-    const active = editor.isActive(item.value)
+    const active = editor.isActive(item.value, item.attrs)
     return (
       <MenuItem
-        key={item.value}
+        key={item.testId}
         role="menuitemradio"
         aria-checked={active}
         data-testid={item.testId}
@@ -57,7 +59,7 @@ const ToolbarSelect = ({
   fallbackIcon: FallbackIcon,
   testId
 }: ToolbarSelectProps) => {
-  const activeItem = items.find((item) => editor.isActive(item.value))
+  const activeItem = items.find((item) => editor.isActive(item.value, item.attrs))
   const TriggerIcon = activeItem?.icon ?? FallbackIcon
 
   return (
