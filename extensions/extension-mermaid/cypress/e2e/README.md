@@ -1,0 +1,17 @@
+# extension-mermaid E2E
+
+Clean-room Cypress suite against `test/playground/main.ts` via `@docs.plus/playground` (`docs-playground` on port 5178). Loads built `dist/` like an npm consumer. `?view=custom` mounts a host view, `?readonly` makes the editor read-only, and `?bare` turns off fold, copy and the Syntax link.
+
+The suite has no load-error case. The playground bundles Pele into its main script, so no network request can fail there. It was checked once by hand in the docs.plus app, offline. No spec guards it.
+
+| Spec                        | What it proves                                                                                                                                                                                                                                                                                |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `render-states.cy.ts`       | A diagram draws under the source; a broken one shows its error at once on load but waits 1000 ms after the last edit; a type change redraws; a custom view mounts; the limit error shows                                                                                                      |
+| `insert-command.cy.ts`      | `insertMermaid` leaves the caret at the end of the new source, mid-paragraph and at a paragraph start, and refuses inside a code block                                                                                                                                                        |
+| `markdown-round-trip.cy.ts` | A `mermaid` fence in backticks or tildes stays a diagram; `Mermaid` stays plain code; empty and invalid sources survive byte for byte                                                                                                                                                         |
+| `html-round-trip.cy.ts`     | `getHTML()` holds no SVG and `setContent()` restores the same document                                                                                                                                                                                                                        |
+| `fold.cy.ts`                | Fold is remembered per viewer; a caret in a folded source opens that block only, without storing, and an arrow key onto a folded block opens it, tested with a real key press; read-only starts folded; the head can be turned off; Copy confirms and resets; the faded label takes no clicks |
+
+Fold specs end the document with a paragraph. A caret inside a folded source opens it when the block is built, so a bare block cannot stay folded after `setContent`. The caret rule wins over a remembered fold, because hidden source must never hold the caret.
+
+Run: `bun run test` from this package (`pretest` build → playground → Cypress).

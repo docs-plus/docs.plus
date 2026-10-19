@@ -1,0 +1,96 @@
+{
+  "name": "@docs.plus/extension-mermaid",
+  "version": "2.1.0",
+  "description": "Tiptap extension that draws Mermaid code blocks as live SVG diagrams with Pele, loaded on demand",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./styles.css": "./dist/styles.css",
+    "./package.json": "./package.json"
+  },
+  "author": "Hossein Marzban",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "homepage": "https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-mermaid#readme",
+  "bugs": {
+    "url": "https://github.com/docs-plus/docs.plus/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/docs-plus/docs.plus",
+    "directory": "extensions/extension-mermaid"
+  },
+  "scripts": {
+    "build": "NODE_ENV=production bunx tsup",
+    "dev": "bunx tsup --watch",
+    "playground": "bun --hot docs-playground --entry ./test/playground/main.ts --port 5178",
+    "docs:screenshots": "bun run build && bunx start-server-and-test playground http://127.0.0.1:5178 'bunx cypress run --config specPattern=cypress/docs/**/*.cy.ts'",
+    "pretest": "bun run build",
+    "test": "bun run test:unit && bunx start-server-and-test playground http://127.0.0.1:5178 cypress:run",
+    "test:unit": "bun test src",
+    "test:unit:watch": "bun test --watch src",
+    "test:e2e": "bunx start-server-and-test playground http://127.0.0.1:5178 cypress:run",
+    "test:e2e:watch": "bunx start-server-and-test playground http://127.0.0.1:5178 cypress:open",
+    "cypress:run": "bunx cypress run",
+    "cypress:open": "bunx cypress open",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
+    "prepack": "bunx release-prepack",
+    "prepublishOnly": "bunx release-preflight"
+  },
+  "files": [
+    "dist",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "tiptap",
+    "tiptap-extension",
+    "prosemirror",
+    "rich-text-editor",
+    "docs.plus",
+    "mermaid",
+    "diagram",
+    "flowchart",
+    "svg",
+    "pele"
+  ],
+  "peerDependencies": {
+    "@tiptap/core": "catalog:",
+    "@tiptap/pm": "catalog:"
+  },
+  "dependencies": {
+    "pele": "1.6.0"
+  },
+  "devDependencies": {
+    "@docs.plus/playground": "workspace:*",
+    "@docs.plus/release-tooling": "workspace:*",
+    "@tiptap/core": "catalog:",
+    "@tiptap/markdown": "catalog:",
+    "@tiptap/pm": "catalog:",
+    "@tiptap/starter-kit": "catalog:",
+    "bun-types": "catalog:",
+    "cypress": "catalog:",
+    "cypress-real-events": "catalog:",
+    "eslint": "catalog:",
+    "start-server-and-test": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
+  }
+}

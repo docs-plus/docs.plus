@@ -1,0 +1,324 @@
+/*
+ * Defaults sit under :where(), so any host rule wins. Set --pele-* on .mermaid-diagram
+ * itself, not on an ancestor, because these defaults shadow inherited values.
+ * light-dark() follows the nearest ancestor color-scheme.
+ */
+:where(.mermaid-diagram) {
+  --mermaid-diagram-border: light-dark(#e5e7eb, #374151);
+  --mermaid-diagram-radius: 8px;
+  --pele-bg: light-dark(#ffffff, #1f2937);
+  --pele-fg: light-dark(#111827, #f3f4f6);
+  --pele-muted: light-dark(#6b7280, #9ca3af);
+  --pele-line: light-dark(#6b7280, #9ca3af);
+  --pele-border: light-dark(#e5e7eb, #374151);
+  --pele-surface: light-dark(#f3f4f6, #374151);
+  --pele-surface-alt: light-dark(#e5e7eb, #2b3544);
+  --pele-accent: light-dark(#2563eb, #60a5fa);
+  --pele-critical: light-dark(#dc2626, #f87171);
+  --pele-font:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --pele-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  margin-block: 0.75em;
+  overflow: hidden;
+  color: var(--pele-fg);
+  font-family: var(--pele-font);
+  background: var(--pele-bg);
+  border: 1px solid var(--mermaid-diagram-border);
+  border-radius: var(--mermaid-diagram-radius);
+}
+
+/* Head: the corner cell holds the label and the actions in the same place. */
+:where(.mermaid-diagram__head) {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.25rem 0.5rem 0.25rem 1rem;
+  color: var(--pele-muted);
+  font-size: 12px;
+  line-height: 1;
+  background: light-dark(#f3f4f6, #111827);
+  user-select: none;
+}
+
+:where(.mermaid-diagram__summary) {
+  display: none;
+  grid-area: 1 / 1;
+}
+
+:where(.mermaid-diagram[data-source='folded'] .mermaid-diagram__summary) {
+  display: inline;
+  cursor: pointer;
+}
+
+:where(.mermaid-diagram__label, .mermaid-diagram__actions) {
+  grid-area: 1 / 2;
+  justify-self: end;
+}
+
+:where(.mermaid-diagram__label) {
+  padding-inline: 0.5rem;
+  font-family: var(--pele-font-mono);
+  /* The faded label sits above the actions, so it must not take their clicks. */
+  pointer-events: none;
+  transition:
+    opacity 80ms ease-in,
+    transform 80ms ease-in;
+}
+
+:where(.mermaid-diagram__actions) {
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transform: translateX(6px);
+  pointer-events: none;
+  transition:
+    opacity 80ms ease-in,
+    transform 80ms ease-in;
+}
+
+:where(
+  .mermaid-diagram:hover .mermaid-diagram__label,
+  .mermaid-diagram__head:focus-within .mermaid-diagram__label
+) {
+  opacity: 0;
+  transform: translateX(-6px);
+}
+
+:where(
+  .mermaid-diagram:hover .mermaid-diagram__actions,
+  .mermaid-diagram__head:focus-within .mermaid-diagram__actions
+) {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition:
+    opacity 120ms ease-out,
+    transform 120ms ease-out;
+}
+
+:where(.mermaid-diagram__help, .mermaid-diagram__copy, .mermaid-diagram__fold) {
+  display: inline-flex;
+  gap: 0.375rem;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  color: inherit;
+  font: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease-out,
+    color 120ms ease-out,
+    transform 80ms ease-out;
+  appearance: none;
+}
+
+:where(.mermaid-diagram__help:hover, .mermaid-diagram__copy:hover, .mermaid-diagram__fold:hover) {
+  color: var(--pele-fg);
+  background: var(--pele-surface);
+}
+
+:where(
+  .mermaid-diagram__help:active,
+  .mermaid-diagram__copy:active,
+  .mermaid-diagram__fold:active
+) {
+  transform: scale(0.96);
+}
+
+:where(.mermaid-diagram__icon) {
+  display: inline-grid;
+  transition: transform 200ms ease;
+}
+
+:where(.mermaid-diagram__icon > svg) {
+  grid-area: 1 / 1;
+  transition: opacity 120ms ease-out;
+}
+
+:where(.mermaid-diagram__copy .mermaid-diagram__icon > svg:last-child),
+:where(.mermaid-diagram__copy[data-copied] .mermaid-diagram__icon > svg:first-child) {
+  opacity: 0;
+}
+
+:where(.mermaid-diagram__copy[data-copied] .mermaid-diagram__icon > svg:last-child) {
+  color: var(--pele-accent);
+  opacity: 1;
+}
+
+:where(.mermaid-diagram[data-source='folded'] .mermaid-diagram__fold .mermaid-diagram__icon) {
+  transform: rotate(-90deg);
+}
+
+/* Source: a one-row grid, so the fold tweens the row from 1fr to 0fr. */
+:where(.mermaid-diagram__source) {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 200ms ease;
+}
+
+:where(.mermaid-diagram__source > pre) {
+  min-height: 0;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  font-family: var(--pele-font-mono);
+  font-size: 0.875em;
+  line-height: 1.5;
+  background: light-dark(#f3f4f6, #111827);
+  transition:
+    padding-block 200ms ease,
+    visibility 0s;
+}
+
+:where(.mermaid-diagram[data-source='folded'] .mermaid-diagram__source) {
+  grid-template-rows: 0fr;
+}
+
+/* The delay runs on fold only, so a folded source takes no Tab stop but opening is instant. */
+:where(.mermaid-diagram[data-source='folded'] .mermaid-diagram__source > pre) {
+  padding-block: 0;
+  visibility: hidden;
+  transition:
+    padding-block 200ms ease,
+    visibility 0s linear 200ms;
+}
+
+/* Default view */
+:where(.mermaid-diagram__preview) {
+  padding: 0.75rem 1rem;
+  background: var(--pele-bg);
+  border-top: 1px solid var(--mermaid-diagram-border);
+}
+
+:where(.mermaid-diagram__preview[data-state='empty']) {
+  display: none;
+}
+
+:where(.mermaid-diagram__preview[data-state='loading'] .mermaid-diagram__diagram) {
+  display: grid;
+  place-items: center;
+  min-height: 6rem;
+}
+
+:where(.mermaid-diagram svg.pele) {
+  display: block;
+  max-width: 100%;
+  margin-inline: auto;
+  transition: opacity 200ms ease;
+}
+
+:where(.mermaid-diagram__spinner) {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentcolor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: mermaid-diagram-spin 700ms linear infinite;
+}
+
+:where(.mermaid-diagram__error) {
+  margin: 0.5rem 0 0;
+  color: var(--pele-critical);
+  font-size: 0.8125rem;
+  animation: mermaid-diagram-rise 200ms ease-out;
+}
+
+:where(.mermaid-diagram__detail) {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--pele-muted);
+  font-family: var(--pele-font-mono);
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+}
+
+:where(.mermaid-diagram__detail:empty) {
+  display: none;
+}
+
+:where(.mermaid-diagram__retry) {
+  margin-top: 0.5rem;
+  margin-inline-start: 0.5rem;
+  padding: 0.25rem 0.625rem;
+  color: var(--pele-fg);
+  font: inherit;
+  background: transparent;
+  border: 1px solid var(--mermaid-diagram-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 80ms ease-out;
+}
+
+:where(.mermaid-diagram__retry:active) {
+  transform: scale(0.96);
+}
+
+/* Pele overrides. Pele sets an inline opacity on a failed redraw, so these need !important. */
+.mermaid-diagram .pele-error {
+  display: none;
+}
+
+.mermaid-diagram svg.pele {
+  opacity: 1 !important;
+}
+
+/* The host clips paint and the svg sits flush in it, so the focus ring has to sit inside. */
+:where(.mermaid-diagram svg.pele:focus-visible) {
+  outline-offset: -2px;
+}
+
+.mermaid-diagram
+  > :is([data-state='error'], [data-state='load-error'], [data-state='skipped'])
+  svg.pele {
+  opacity: 0.4 !important;
+}
+
+@keyframes mermaid-diagram-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes mermaid-diagram-rise {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+
+/* Touch: actions always show, icon only, 44px targets. */
+@media (pointer: coarse) {
+  :where(.mermaid-diagram__label, .mermaid-diagram__text) {
+    display: none;
+  }
+
+  :where(.mermaid-diagram__actions) {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  :where(
+    .mermaid-diagram__help,
+    .mermaid-diagram__copy,
+    .mermaid-diagram__fold,
+    .mermaid-diagram__retry
+  ) {
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.mermaid-diagram, .mermaid-diagram *) {
+    transition: none !important;
+    animation: none !important;
+  }
+}
