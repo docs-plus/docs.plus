@@ -1,21 +1,25 @@
 import { CommandJump } from '@components/commandJump/CommandJump'
 import { ownerDocumentsPrefix } from '@components/settings/documentsQueryKey'
-import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
+import { useSettingsOpener } from '@components/settings/hooks/useSettingsOpener'
 import { SettingsTakeover } from '@components/settings/SettingsTakeover'
-import type { TabType } from '@components/settings/types'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { GlobalDialog } from '@components/ui/GlobalDialog'
 import { TextLink } from '@components/ui/TextLink'
-import { clearOverlayHash, useHashOverlay } from '@hooks/useHashOverlay'
 import { useNavigateToDocument } from '@hooks/useNavigateToDocument'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
-import { selectIsSignedIn, selectSettingsMayOpen, useAuthStore, useStore } from '@stores'
+import {
+  NO_DOCUMENT,
+  selectIsSignedIn,
+  selectSettingsMayOpen,
+  useAuthStore,
+  useStore
+} from '@stores'
 import { useQueryClient } from '@tanstack/react-query'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { twMerge } from '@utils/twMerge'
 import dynamic from 'next/dynamic'
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { LuUser } from 'react-icons/lu'
 
 import { BrandLockup } from './BrandLockup'
@@ -57,9 +61,8 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
   const user = useAuthStore((state) => state.profile)
   const isSignedIn = useAuthStore(selectIsSignedIn)
   const [displayHostname, setDisplayHostname] = useState(hostname)
-  const { isOpen: isProfileOpen, setIsOpen: setIsProfileOpen } = useSettingsModal()
-  const [settingsTab, setSettingsTab] = useState<TabType | undefined>(undefined)
-  const { overlay, settingsTab: hashSettingsTab } = useHashOverlay()
+  const settings = useSettingsOpener({ hashIntake: 'settings' })
+  const isProfileOpen = settings.takeover.open
   // Home is static, so auth settles after paint. The avatar slot holds a bone until then.
   const settingsMayOpen = useAuthStore(selectSettingsMayOpen)
   const { navigateToDocument, isLoading } = useNavigateToDocument()
@@ -67,24 +70,6 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
   const keyboardCompact = useStore((state) => state.isKeyboardOpen)
   const queryClient = useQueryClient()
   const wasProfileOpenRef = useRef(false)
-
-  // No argument means the header button, which must not reopen the tab a hash asked for.
-  const openSettings = useCallback(
-    (tab?: TabType) => {
-      setSettingsTab(tab)
-      setIsProfileOpen(true)
-    },
-    [setIsProfileOpen]
-  )
-
-  // The hash is a one-shot instruction. A layout effect clears it before the panel pushes
-  // its mobile history entry. While auth loads, Settings opens on its skeleton and the hash
-  // waits for the profile. A signed-out visitor keeps the hash, so signing in still lands.
-  useLayoutEffect(() => {
-    if (overlay !== 'settings' || !settingsMayOpen) return
-    if (user) clearOverlayHash()
-    openSettings(hashSettingsTab ?? undefined)
-  }, [overlay, hashSettingsTab, user, settingsMayOpen, openSettings])
 
   // A rename re-sorts and a Trash restore returns rows only on a refetch, and closing
   // Settings fires no focus event. Watch the state: mobile back skips `onOpenChange`.
@@ -96,7 +81,7 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
   }, [isProfileOpen, user, queryClient])
 
   useEffect(() => {
-    useStore.getState().setWorkspaceSetting('metadata', { documentId: undefined })
+    useStore.getState().setWorkspaceSetting('metadata', NO_DOCUMENT)
   }, [])
 
   useEffect(() => {
@@ -129,7 +114,7 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
                   shape="circle"
                   size="lg"
                   className="border-0 p-0 transition-transform hover:scale-105"
-                  onClick={() => openSettings()}
+                  onClick={() => settings.open()}
                   aria-label="Open profile settings"
                   aria-haspopup="dialog"
                   tooltip="Profile"
@@ -174,7 +159,7 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
             />
             <HomeCollapseRegion collapsed={keyboardCompact}>
               {user && isAuthServiceAvailable && (
-                <HomeDocuments userId={user.id} onSeeAll={() => openSettings('documents')} />
+                <HomeDocuments userId={user.id} onSeeAll={() => settings.open('documents')} />
               )}
               <HomeInstallButton />
             </HomeCollapseRegion>
@@ -202,11 +187,7 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
         </HomeCollapseRegion>
       </div>
 
-      <SettingsTakeover
-        open={isProfileOpen}
-        onOpenChange={setIsProfileOpen}
-        defaultTab={settingsTab}
-      />
+      <SettingsTakeover {...settings.takeover} />
 
       {/* Settings confirms (rename/trash/private) dispatch here; without this mount they render nothing on `/`. */}
       <GlobalDialog />

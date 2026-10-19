@@ -1,7 +1,6 @@
 import { useFadeAfterFirstSync } from '@components/pages/document/hooks/useFadeAfterFirstSync'
-import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
+import { useSettingsOpener } from '@components/settings/hooks/useSettingsOpener'
 import { SettingsTakeover } from '@components/settings/SettingsTakeover'
-import type { TabType } from '@components/settings/types'
 import { indicatorDotClassName } from '@components/TipTap/toolbar/indicatorDot'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import ToolbarDivider from '@components/TipTap/toolbar/ToolbarDivider'
@@ -10,16 +9,14 @@ import Button from '@components/ui/Button'
 import { RenameDialog } from '@components/ui/dialogs/RenameDialog'
 import { ModalDrawerOpener } from '@components/ui/ModalDrawer'
 import UnreadBadge from '@components/ui/UnreadBadge'
-import { canEditDocumentMetadata } from '@hooks/canEditDocumentMetadata'
-import { clearOverlayHash, useHashOverlay } from '@hooks/useHashOverlay'
 import { useNotificationCount } from '@hooks/useNotificationCount'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import { Icons } from '@icons'
 import { releasePadEditMode } from '@services/openHeadingChatroom'
 import {
+  selectDocumentId,
   selectInProgressBookmarkCount,
   selectIsSignedIn,
-  selectSettingsMayOpen,
   useAuthStore,
   useChatStore,
   useSheetStore,
@@ -29,10 +26,11 @@ import {
 import { onlineManager } from '@tanstack/react-query'
 import type { Editor } from '@tiptap/core'
 import { yUndoPluginKey } from '@tiptap/y-tiptap'
+import { canEditDocumentMetadata } from '@utils/isDocumentOwner'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { plainTitle } from '@utils/titleWrite'
 import { twMerge } from '@utils/twMerge'
-import React, { useCallback, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
+import React, { useCallback, useRef, useState, useSyncExternalStore } from 'react'
 
 import FilterBar from './FilterBar'
 import PrivateIndicator from './PrivateIndicator'
@@ -116,9 +114,10 @@ const UserProfileButton = ({ user, isSignedIn, onProfileClick }: UserProfileButt
   )
 }
 
+const openNotificationsSheet = () => useSheetStore.getState().openSheet('notifications')
+
 const NotificationButton = () => {
-  const openNotifications = () => useSheetStore.getState().openSheet('notifications')
-  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const workspaceId = useStore(selectDocumentId)
   const unreadCount = useNotificationCount({ workspaceId })
 
   return (
@@ -127,7 +126,7 @@ const NotificationButton = () => {
       size="sm"
       shape="square"
       className="relative"
-      onClick={openNotifications}
+      onClick={openNotificationsSheet}
       aria-label="Notifications"
       tooltip="Notifications"
       tooltipPlacement="bottom">
@@ -234,7 +233,9 @@ const MobilePadTitle = () => {
   const openDialog = useStore((state) => state.openDialog)
   const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
   const profileId = useAuthStore((state) => state.profile?.id ?? state.session?.id)
-  const canEditMetadata = useStore((state) => canEditDocumentMetadata(state.settings, profileId))
+  const canEditMetadata = useStore((state) =>
+    canEditDocumentMetadata(state.settings.metadata, profileId)
+  )
   const isSignedIn = useAuthStore(selectIsSignedIn)
   const [fadeIn] = useFadeAfterFirstSync()
   // The read↔edit crossfade plays from the first mode swap on, never on mount. At the
@@ -242,34 +243,16 @@ const MobilePadTitle = () => {
   const [initialEditable] = useState(isEditable)
   const [crossfade, setCrossfade] = useState(false)
   if (!crossfade && isEditable !== initialEditable) setCrossfade(true)
-  const { isOpen: isProfileModalOpen, setIsOpen: setProfileModalOpen } = useSettingsModal()
-  const [settingsTab, setSettingsTab] = useState<TabType | undefined>(undefined)
-  const { overlay, settingsTab: hashSettingsTab } = useHashOverlay()
-  const settingsMayOpen = useAuthStore(selectSettingsMayOpen)
-
   // Settings is navigation, not a typing continuation — drop the keyboard before the takeover.
-  // No argument means the avatar button, which must not reopen the tab a hash asked for.
-  const openSettings = useCallback(
-    (tab?: TabType) => {
-      if (isKeyboardOpen) {
-        setTimeout(() => editor?.view.dom.blur(), 50)
-      }
-      setSettingsTab(tab)
-      setProfileModalOpen(true)
-    },
-    [isKeyboardOpen, editor, setProfileModalOpen]
-  )
-
-  // The hash is a one-shot instruction. A layout effect, so the replaceState lands before
-  // useSettingsModal pushes its takeover entry and not on top of it. While auth loads,
-  // Settings opens on its skeleton and the hash waits for the profile.
-  useLayoutEffect(() => {
-    if (!overlay) return
-    if (user) clearOverlayHash()
-    if (overlay === 'notifications') {
-      if (user) useSheetStore.getState().openSheet('notifications')
-    } else if (settingsMayOpen) openSettings(hashSettingsTab ?? undefined)
-  }, [overlay, hashSettingsTab, user, settingsMayOpen, openSettings])
+  const dropKeyboard = useCallback(() => {
+    if (isKeyboardOpen) {
+      setTimeout(() => editor?.view.dom.blur(), 50)
+    }
+  }, [isKeyboardOpen, editor])
+  const settings = useSettingsOpener({
+    hashIntake: { notifications: openNotificationsSheet },
+    beforeOpen: dropKeyboard
+  })
 
   // Set by "Done" so focus lands on the title (not <body>) once the read cluster remounts.
   const focusTitleAfterExitRef = useRef(false)
@@ -332,7 +315,7 @@ const MobilePadTitle = () => {
               <UserProfileButton
                 user={user}
                 isSignedIn={isSignedIn}
-                onProfileClick={user ? () => openSettings() : () => openInlineSignInDialog()}
+                onProfileClick={user ? () => settings.open() : () => openInlineSignInDialog()}
               />
             </div>
           </div>
@@ -343,11 +326,7 @@ const MobilePadTitle = () => {
         </div>
       </header>
 
-      <SettingsTakeover
-        open={isProfileModalOpen}
-        onOpenChange={setProfileModalOpen}
-        defaultTab={settingsTab}
-      />
+      <SettingsTakeover {...settings.takeover} />
     </>
   )
 }

@@ -1,6 +1,6 @@
 import { BookmarkPanelSkeleton } from '@components/bookmarkPanel/components/BookmarkPanelSkeleton'
 import { ChunkLoadFallback } from '@components/ChunkLoadFallback'
-import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
+import { useSettingsOpener } from '@components/settings/hooks/useSettingsOpener'
 import { SettingsTakeover } from '@components/settings/SettingsTakeover'
 import ToolbarSkeleton from '@components/skeleton/ToolbarSkeleton'
 import {
@@ -73,7 +73,7 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
   // The bones and the loaded bar share one rule, so the swap moves no control.
   const isSignedIn = useAuthStore(selectIsSignedIn)
   const inProgressBookmarks = useChatStore(selectInProgressBookmarkCount)
-  const { isOpen: isDocumentsOpen, setIsOpen: setDocumentsOpen } = useSettingsModal()
+  const settings = useSettingsOpener()
 
   useReRenderOnEditorTransaction(editor ?? null)
 
@@ -244,9 +244,14 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
           items={[
             {
               value: 'codeBlock',
+              attrs: { language: /^(?!mermaid$)/ },
               label: 'Code block',
               icon: Icons.codeBlock,
-              action: () => editor.chain().focus().toggleCodeBlock().run(),
+              // toggleCodeBlock on a diagram would make a paragraph.
+              action: () =>
+                editor.isActive('codeBlock', { language: 'mermaid' })
+                  ? editor.chain().focus().updateAttributes('codeBlock', { language: null }).run()
+                  : editor.chain().focus().toggleCodeBlock().run(),
               testId: 'toolbar-code-block'
             },
             {
@@ -255,6 +260,15 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
               icon: Icons.code,
               action: () => editor.chain().focus().toggleInlineCode().run(),
               testId: 'toolbar-inline-code'
+            },
+            {
+              value: 'codeBlock',
+              attrs: { language: 'mermaid' },
+              label: 'Diagram',
+              icon: Icons.diagram,
+              // insertMermaid refuses inside a code block, so this row does nothing there (#521).
+              action: () => editor.chain().focus().insertMermaid().run(),
+              testId: 'toolbar-diagram'
             }
           ]}
         />
@@ -274,7 +288,7 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
 
         <div className="!ml-auto flex items-center gap-0.5">
           <ToolbarButton
-            onClick={() => window.open('https://discord.gg/2EmAjmgZ8', '_blank')}
+            onClick={() => window.open('https://discord.gg/25JPG38J59', '_blank')}
             tooltip="Join Discord community">
             <Icons.discord size={ICON_SIZE} className="text-[#5865F2]" />
           </ToolbarButton>
@@ -289,7 +303,7 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
           </ToolbarButton>
 
           {isAuthServiceAvailable && isSignedIn && (
-            <ToolbarButton onClick={() => setDocumentsOpen(true)} tooltip="Documents">
+            <ToolbarButton onClick={() => settings.open('documents')} tooltip="Documents">
               <Icons.documents size={ICON_SIZE} />
             </ToolbarButton>
           )}
@@ -369,11 +383,7 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
         </div>
       </div>
 
-      <SettingsTakeover
-        open={isDocumentsOpen}
-        onOpenChange={setDocumentsOpen}
-        defaultTab="documents"
-      />
+      <SettingsTakeover {...settings.takeover} />
     </>
   )
 }

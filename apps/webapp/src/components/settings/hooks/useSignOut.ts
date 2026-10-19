@@ -6,7 +6,7 @@ import { supabaseClient } from '@utils/supabase'
 import { useState } from 'react'
 
 import { flushPendingPreferenceWrites } from '../utils/pendingPreferenceWrites'
-import { consumeSettingsTakeoverEntry } from './useSettingsModal'
+import { consumeSettingsTakeoverEntry } from './useSettingsOpener'
 
 export const useSignOut = () => {
   const [isLoading, setIsLoading] = useState(false)

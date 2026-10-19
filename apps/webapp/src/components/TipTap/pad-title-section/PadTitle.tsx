@@ -1,8 +1,7 @@
 import { ChunkLoadFallback } from '@components/ChunkLoadFallback'
 import { useFadeAfterFirstSync } from '@components/pages/document/hooks/useFadeAfterFirstSync'
-import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
+import { useSettingsOpener } from '@components/settings/hooks/useSettingsOpener'
 import { SettingsTakeover } from '@components/settings/SettingsTakeover'
-import type { TabType } from '@components/settings/types'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { Modal, ModalContent } from '@components/ui/Dialog'
@@ -13,17 +12,16 @@ import {
   PopoverTrigger
 } from '@components/ui/Popover'
 import UnreadBadge from '@components/ui/UnreadBadge'
-import { clearOverlayHash, useHashOverlay } from '@hooks/useHashOverlay'
 import { useNotificationCount } from '@hooks/useNotificationCount'
 import { DocsPlusIcon } from '@icons'
 import { Icons } from '@icons'
-import { selectIsSignedIn, selectSettingsMayOpen, useAuthStore, useStore } from '@stores'
+import { selectDocumentId, selectIsSignedIn, useAuthStore, useStore } from '@stores'
 import { useThemeStore } from '@stores'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { twMerge } from '@utils/twMerge'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import React, { useCallback, useLayoutEffect, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 
 import { NotificationPanelSkeleton } from '../../notificationPanel/components/NotificationPanelSkeleton'
 import DocTitle from '../DocTitle'
@@ -49,35 +47,13 @@ const PadTitle = () => {
   const themePreference = useThemeStore((state) => state.preference)
   const setThemePreference = useThemeStore((state) => state.setPreference)
   const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
-  const { isOpen: isProfileModalOpen, setIsOpen: setProfileModalOpen } = useSettingsModal()
   const [isShareModalOpen, setShareModalOpen] = useState(false)
   const [isNotificationsOpen, setNotificationsOpen] = useState(false)
-  const [settingsTab, setSettingsTab] = useState<TabType | undefined>(undefined)
-  const { overlay, settingsTab: hashSettingsTab } = useHashOverlay()
-  const settingsMayOpen = useAuthStore(selectSettingsMayOpen)
-  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const openNotifications = useCallback(() => setNotificationsOpen(true), [])
+  const settings = useSettingsOpener({ hashIntake: { notifications: openNotifications } })
+  const workspaceId = useStore(selectDocumentId)
 
   const unreadCount = useNotificationCount({ workspaceId })
-
-  // No argument means the avatar button, which must not reopen the tab a hash asked for.
-  const openSettings = useCallback(
-    (tab?: TabType) => {
-      setSettingsTab(tab)
-      setProfileModalOpen(true)
-    },
-    [setProfileModalOpen]
-  )
-
-  // The hash is a one-shot instruction. A layout effect clears it before Settings pushes
-  // its mobile history entry. While auth loads, Settings opens on its skeleton and the hash
-  // waits for the profile. A signed-out reader keeps the hash, so signing in still lands.
-  useLayoutEffect(() => {
-    if (!overlay) return
-    if (user) clearOverlayHash()
-    if (overlay === 'notifications') {
-      if (user) setNotificationsOpen(true)
-    } else if (settingsMayOpen) openSettings(hashSettingsTab ?? undefined)
-  }, [overlay, hashSettingsTab, user, settingsMayOpen, openSettings])
 
   return (
     <>
@@ -173,7 +149,7 @@ const PadTitle = () => {
                   shape="circle"
                   size="lg"
                   className="border-0 p-0"
-                  onClick={() => openSettings()}
+                  onClick={() => settings.open()}
                   aria-label="Profile"
                   tooltip="Profile"
                   tooltipPlacement="bottom">
@@ -222,11 +198,7 @@ const PadTitle = () => {
         </ModalContent>
       </Modal>
 
-      <SettingsTakeover
-        open={isProfileModalOpen}
-        onOpenChange={setProfileModalOpen}
-        defaultTab={settingsTab}
-      />
+      <SettingsTakeover {...settings.takeover} />
     </>
   )
 }
