@@ -2,8 +2,8 @@ import { removeFileFromStorage, uploadFileToStorage } from '@api'
 import { prepareAvatarFile } from '@components/settings/utils/prepareAvatarFile'
 import * as toast from '@components/toast'
 import Config from '@config'
-import { shareHeadingPresenceWithRoom } from '@services/workspacePresenceSync'
-import { useAuthStore, useStore } from '@stores'
+import { presenceRoom } from '@services/presenceRoom'
+import { useAuthStore } from '@stores'
 import type { Profile } from '@types'
 import { supabaseClient } from '@utils/supabase'
 import { useCallback, useState } from 'react'
@@ -36,16 +36,6 @@ const updateAvatarInDB = async (
   if (authError) throw authError
 
   return avatar_updated_at
-}
-
-/** Re-track + rebroadcast so peers see the new face without waiting for resubscribe. */
-function refreshPresenceAvatar(profile: Profile) {
-  const broadcaster = useStore.getState().settings.broadcaster
-  if (!broadcaster || !profile.id) return
-  void broadcaster.track(profile).catch((err: unknown) => {
-    console.error('Failed to retrack avatar presence:', err)
-  })
-  shareHeadingPresenceWithRoom(broadcaster, profile)
 }
 
 export const useAvatarUpload = () => {
@@ -89,7 +79,7 @@ export const useAvatarUpload = () => {
           avatar_updated_at: newAvatarUpdatedAt
         }
         useAuthStore.getState().setProfile(updatedProfile)
-        refreshPresenceAvatar(updatedProfile)
+        presenceRoom.retrack(updatedProfile)
       } catch (error) {
         console.error('Avatar upload error:', error)
         const message =
@@ -122,7 +112,7 @@ export const useAvatarUpload = () => {
         avatar_updated_at: null
       }
       useAuthStore.getState().setProfile(updatedProfile)
-      refreshPresenceAvatar(updatedProfile)
+      presenceRoom.retrack(updatedProfile)
     } catch (error) {
       console.error('Avatar remove error:', error)
       toast.Error('Couldn’t remove the profile picture.')

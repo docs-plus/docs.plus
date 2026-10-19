@@ -3,7 +3,8 @@ import {
   writeFormattingToolbarExpanded
 } from '@components/chatroom/components/MessageComposer/helpers/composerToolbarSession'
 import { composerSendGate } from '@components/chatroom/utils/composerSendGate'
-import { useAuthStore, useChatStore, useStore } from '@stores'
+import { presenceRoom } from '@services/presenceRoom'
+import { selectDocumentId, useAuthStore, useChatStore, useStore } from '@stores'
 import { EditorContent } from '@tiptap/react'
 import { twMerge } from '@utils/twMerge'
 import { nudgeVirtualKeyboardOpenFromVisualViewport } from '@utils/virtualKeyboardMetrics'
@@ -22,7 +23,6 @@ import {
 } from './context/ComposerAttachmentActionsContext'
 import { MessageComposerContext } from './context/MessageComposerContext'
 import { isComposerInsertEmojiPickerOpen } from './helpers/dismissComposerOverlays'
-import { startComposerActivity, stopComposerActivity } from './helpers/handleTypingIndicator'
 import { useComposerAttachmentLifecycle } from './hooks/useComposerAttachmentLifecycle'
 import { useComposerAttachments } from './hooks/useComposerAttachments'
 import { useComposerDraft } from './hooks/useComposerDraft'
@@ -41,7 +41,7 @@ const MessageComposer = ({
   const { channelId, send: contextSend, variant } = useChatroomContext()
   const isMobile = variant === 'mobile'
   const user = useAuthStore((state) => state.profile)
-  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const workspaceId = useStore(selectDocumentId)
   const editorRef = useRef<HTMLDivElement | null>(null)
   const [showFormattingToolbar, setShowFormattingToolbar] = useState(false)
   const setOrUpdateChatRoom = useChatStore((state) => state.setOrUpdateChatRoom)
@@ -196,8 +196,7 @@ const MessageComposer = ({
   // Reaction pickers never send: the selectors above read the composer emoji UI only.
   useEffect(() => {
     if (!choosingEmoji) return
-    startComposerActivity('choosingEmoji')
-    return () => stopComposerActivity('choosingEmoji')
+    return presenceRoom.activity('choosingEmoji')
   }, [choosingEmoji])
 
   const toggleToolbar = useCallback(() => {

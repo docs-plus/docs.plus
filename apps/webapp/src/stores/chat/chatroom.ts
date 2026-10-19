@@ -1,11 +1,7 @@
-import { sendPresenceBroadcast } from '@services/workspacePresenceSync'
 import type { Editor } from '@tiptap/core'
-import type { ChatPaneMode, Profile } from '@types'
+import type { ChatPaneMode } from '@types'
 import type { HeadingAncestor } from '@utils/headingSlugTrail'
 import { immer } from 'zustand/middleware/immer'
-
-import { useAuthStore } from '../authStore'
-import { useStore } from '../useStore'
 
 type TChatRoom = {
   headingPath: Pick<HeadingAncestor, 'id' | 'text'>[]
@@ -27,12 +23,7 @@ type TChatRoom = {
 
 interface IChatroomStore {
   chatRoom: TChatRoom
-  setChatRoom: (
-    headingId: string,
-    documentId: string,
-    user: Profile | null,
-    fetchMsgsFromId?: string
-  ) => void
+  setChatRoom: (headingId: string, documentId: string, fetchMsgsFromId?: string) => void
   destroyChatRoom: () => void
   setPaneMode: (mode: ChatPaneMode) => void
   setOrUpdateChatPanelHeight: (height: number) => void
@@ -51,7 +42,7 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
     editorInstance: undefined
   },
 
-  setChatRoom: (headingId, documentId, user, fetchMsgsFromId) => {
+  setChatRoom: (headingId, documentId, fetchMsgsFromId) => {
     set((state) => {
       if (state.chatRoom.headingId !== headingId) state.chatRoom.channelId = undefined
       state.chatRoom.headingId = headingId
@@ -59,11 +50,6 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
       state.chatRoom.headingPath = []
       state.chatRoom.fetchMsgsFromId = fetchMsgsFromId
     })
-
-    if (user) {
-      const broadcaster = useStore.getState().settings?.broadcaster
-      sendPresenceBroadcast(broadcaster, user, headingId)
-    }
   },
 
   // A plain object, not a recipe: immer's Draft type rejects a TipTap Editor.
@@ -88,18 +74,10 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
       if (state.chatRoom.headingId !== headingId) state.chatRoom.channelId = undefined
       state.chatRoom.headingId = headingId
     })
-
-    const user = useAuthStore.getState().profile
-    if (user) {
-      const broadcaster = useStore.getState().settings?.broadcaster
-      sendPresenceBroadcast(broadcaster, user, headingId)
-    }
   },
 
   destroyChatRoom: () => {
     const { panelHeight } = get().chatRoom
-    const broadcaster = useStore.getState().settings?.broadcaster
-
     set((s) => {
       s.chatRoom = {
         headingId: undefined,
@@ -112,9 +90,6 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
         editorInstance: undefined
       }
     })
-
-    const user = useAuthStore.getState().profile
-    if (user) sendPresenceBroadcast(broadcaster, user, null)
   }
 }))
 

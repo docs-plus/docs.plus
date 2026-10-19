@@ -1,5 +1,6 @@
 import { searchWorkspaceUsers } from '@api'
-import { useAuthStore, useStore } from '@stores'
+import { isFacePresent } from '@services/workspacePresenceSync'
+import { selectDocumentId, useAuthStore, useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 
@@ -35,7 +36,7 @@ const MentionList = forwardRef<MentionListRef, MentionListProps>(function Mentio
   const listRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const workspaceId = useStore((s) => s.settings.workspaceId)
+  const workspaceId = useStore(selectDocumentId)
   const usersPresence = useStore((s) => s.usersPresence)
   const currentUserId = useAuthStore((s) => s.profile?.id)
 
@@ -51,7 +52,7 @@ const MentionList = forwardRef<MentionListRef, MentionListProps>(function Mentio
   const onlineByUserId = useMemo(() => {
     const map = new Map<string, boolean>()
     for (const [id, presence] of usersPresence) {
-      map.set(id, presence.status === 'ONLINE')
+      map.set(id, isFacePresent(presence))
     }
     return map
   }, [usersPresence])

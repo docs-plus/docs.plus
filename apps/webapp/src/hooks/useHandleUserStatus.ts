@@ -2,149 +2,84 @@ import { updateUser } from '@api'
 import { useAuthStore } from '@stores'
 import { supabaseClient } from '@utils/supabase'
 import debounce from 'lodash/debounce'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useEffect } from 'react'
 
-const ONLINE = 'ONLINE'
-const OFFLINE = 'OFFLINE'
-const HEARTBEAT_INTERVAL = 60000 // 60 seconds - keeps online_at fresh for push suppression
+const HEARTBEAT_INTERVAL = 60_000 // under the 2-minute lease in internal.is_user_online
+const HIDE_DELAY = 3_000
+// 2 s past HIDE_DELAY: a hidden tab's timers can fire about 1 s late, and the shown tab must write last.
+const SHOW_DELAY = 5_000
 
 export const useHandleUserStatus = (enabled = true) => {
-  const user = useAuthStore ? useAuthStore((state) => state?.profile) : null
-  const heartbeatRef = useRef<NodeJS.Timeout | null>(null)
-  const accessTokenRef = useRef<string | null>(null)
+  const userId = useAuthStore((state) => state.profile?.id)
 
-  const updateUserStatus = useCallback(
-    async (newStatus: 'ONLINE' | 'OFFLINE') => {
-      if (!user) return
-      const lastStatus = sessionStorage.getItem('userLastStatus')
-
-      if (newStatus !== lastStatus || user.status !== newStatus) {
-        try {
-          sessionStorage.setItem('userLastStatus', newStatus)
-          console.info(`Updated user status: ${newStatus}`)
-          await updateUser(user.id, { status: newStatus })
-        } catch (error) {
-          console.error('Failed to update user status', error)
-        }
-      }
-    },
-    [user]
-  )
-
-  const sendHeartbeat = useCallback(async () => {
-    if (!user || document.visibilityState !== 'visible') return
-    try {
-      await updateUser(user.id, { status: ONLINE })
-    } catch {
-      // Silent fail - heartbeat is best effort
-    }
-  }, [user])
-
-  const debouncedUpdateUserStatus = useMemo(
-    () => debounce(updateUserStatus, 3000),
-    [updateUserStatus]
-  )
-
-  const handleOnline = useCallback(
-    () => debouncedUpdateUserStatus(ONLINE),
-    [debouncedUpdateUserStatus]
-  )
-
-  const handleOffline = useCallback(
-    () => debouncedUpdateUserStatus(OFFLINE),
-    [debouncedUpdateUserStatus]
-  )
-
-  const startHeartbeat = useCallback(() => {
-    if (heartbeatRef.current) clearInterval(heartbeatRef.current)
-    heartbeatRef.current = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL)
-  }, [sendHeartbeat])
-
-  const stopHeartbeat = useCallback(() => {
-    if (heartbeatRef.current) {
-      clearInterval(heartbeatRef.current)
-      heartbeatRef.current = null
-    }
-  }, [])
-
-  const handleVisibilityChange = useCallback(() => {
-    if (document.visibilityState === 'visible') {
-      handleOnline()
-      startHeartbeat()
-    } else {
-      handleOffline()
-      stopHeartbeat()
-    }
-  }, [handleOnline, handleOffline, startHeartbeat, stopHeartbeat])
-
-  // Hold the JWT so unload can start keepalive in the same turn.
   useEffect(() => {
-    if (!enabled || !user) {
-      accessTokenRef.current = null
-      return
-    }
-
+    if (!enabled || !userId) return
+    let heartbeat: ReturnType<typeof setInterval> | null = null
+    // Hold the JWT so unload can start keepalive in the same turn.
+    let accessToken: string | null = null
     const {
       data: { subscription }
     } = supabaseClient.auth.onAuthStateChange((_event, session) => {
-      accessTokenRef.current = session?.access_token ?? null
+      accessToken = session?.access_token ?? null
     })
 
+    const writeStatus = async (status: 'ONLINE' | 'OFFLINE') => {
+      if (!navigator.onLine) return // the global fetch rejects offline; skip to keep the log quiet
+      const { error } = await updateUser(userId, { status })
+      if (error) console.warn(`Status write ${status} failed`, error.message)
+    }
+    const showWrite = debounce(() => void writeStatus('ONLINE'), SHOW_DELAY)
+    const hideWrite = debounce(() => void writeStatus('OFFLINE'), HIDE_DELAY)
+    const stopHeartbeat = () => {
+      if (heartbeat) clearInterval(heartbeat)
+      heartbeat = null
+    }
+    const show = () => {
+      hideWrite.cancel()
+      showWrite()
+      stopHeartbeat()
+      heartbeat = setInterval(() => void writeStatus('ONLINE'), HEARTBEAT_INTERVAL)
+    }
+    const hide = () => {
+      showWrite.cancel()
+      stopHeartbeat()
+      hideWrite()
+    }
+    const onVisibility = () => (document.visibilityState === 'visible' ? show() : hide())
+    const onOnline = () => {
+      if (document.visibilityState === 'visible') showWrite()
+    }
+    const handleUnload = () => {
+      showWrite.cancel()
+      hideWrite.cancel()
+
+      if (!accessToken) return
+
+      void fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL!}/rest/v1/users?id=eq.${userId}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({ status: 'OFFLINE' }),
+        keepalive: true
+      })
+    }
+
+    if (document.visibilityState === 'visible') show()
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('online', onOnline)
+    window.addEventListener('beforeunload', handleUnload)
     return () => {
       subscription.unsubscribe()
-      accessTokenRef.current = null
-    }
-  }, [enabled, user])
-
-  const handleUnload = useCallback(() => {
-    if (!user) return
-
-    const accessToken = accessTokenRef.current
-    if (!accessToken) return
-
-    void fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL!}/rest/v1/users?id=eq.${user.id}`, {
-      method: 'PATCH',
-      headers: {
-        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal'
-      },
-      body: JSON.stringify({ status: OFFLINE }),
-      keepalive: true
-    })
-  }, [user])
-
-  useEffect(() => {
-    if (!enabled) return
-
-    handleOnline()
-
-    if (document.visibilityState === 'visible') {
-      startHeartbeat()
-    }
-
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
-    window.addEventListener('beforeunload', handleUnload)
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
-    return () => {
       stopHeartbeat()
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
+      showWrite.cancel()
+      hideWrite.cancel()
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('online', onOnline)
       window.removeEventListener('beforeunload', handleUnload)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      debouncedUpdateUserStatus.cancel()
     }
-  }, [
-    enabled,
-    handleOnline,
-    handleOffline,
-    handleUnload,
-    handleVisibilityChange,
-    startHeartbeat,
-    stopHeartbeat,
-    debouncedUpdateUserStatus
-  ])
+  }, [enabled, userId])
 }

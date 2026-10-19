@@ -1,4 +1,4 @@
-import { selectPresenceOthers } from '@services/workspacePresenceSync'
+import { isFacePresent, selectPresenceOthers } from '@services/workspacePresenceSync'
 import { useAuthStore, useStore } from '@stores'
 import type { Profile as TProfile } from '@types'
 import { useShallow } from 'zustand/react/shallow'
@@ -15,7 +15,7 @@ const getByChannel = (usersPresence: Map<string, TProfile>) => {
   for (const user of usersPresence.values()) {
     const channelId = user.channelId
     if (!channelId) continue
-    if (user.status === 'OFFLINE') continue
+    if (!isFacePresent(user)) continue
     const arr = by.get(channelId)
     if (arr) arr.push(user)
     else by.set(channelId, [user])

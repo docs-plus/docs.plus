@@ -1,9 +1,9 @@
 import { formatAudioClock, voiceNoteFileName } from '@components/chatroom/utils/chatAudio'
 import * as toast from '@components/toast'
+import { presenceRoom } from '@services/presenceRoom'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { dismissComposerOverlaysBeforeVoice } from '../helpers/dismissComposerOverlays'
-import { startComposerActivity, stopComposerActivity } from '../helpers/handleTypingIndicator'
 import { CANCEL_THRESHOLD_PX, stepVoiceNote, VOICE_NOTE_IDLE } from '../helpers/stepVoiceNote'
 import type { VoiceNoteEvent, VoiceNoteState } from '../types'
 
@@ -65,8 +65,7 @@ export function useVoiceRecorder({
   // Held or locked. Preview, cancel, and the 5-minute cap all leave this phase.
   useEffect(() => {
     if (phase !== 'recording') return
-    startComposerActivity('recordingVoice')
-    return () => stopComposerActivity('recordingVoice')
+    return presenceRoom.activity('recordingVoice')
   }, [phase])
 
   useEffect(() => {

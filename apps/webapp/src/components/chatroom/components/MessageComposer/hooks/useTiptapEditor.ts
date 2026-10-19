@@ -54,10 +54,9 @@ lowlight.register('json', json)
 // @ts-expect-error highlight.js language modules ship loose types
 lowlight.register('bash', bash)
 
+import { presenceRoom } from '@services/presenceRoom'
 import { useChatStore } from '@stores'
 import { isOnlyEmoji } from '@utils/emojis'
-
-import { handleTypingIndicator, TypingIndicatorType } from '../helpers/handleTypingIndicator'
 
 const UPDATE_DEBOUNCE_MS = 150
 
@@ -190,7 +189,7 @@ export const useTiptapEditor = ({
       ],
       onUpdate: ({ editor }) => {
         if (editor?.getText().length) {
-          handleTypingIndicator(TypingIndicatorType.StartTyping)
+          presenceRoom.typing('start')
         }
 
         if (updateTimerRef.current) clearTimeout(updateTimerRef.current)
@@ -225,7 +224,7 @@ export const useTiptapEditor = ({
         }, UPDATE_DEBOUNCE_MS)
       },
       onBlur: ({ editor }) => {
-        if (editor.getText().length) handleTypingIndicator(TypingIndicatorType.StopTyping)
+        if (editor.getText().length) presenceRoom.typing('stop')
       },
       editable: true,
       immediatelyRender: false,
@@ -251,7 +250,7 @@ export const useTiptapEditor = ({
           }
 
           if (view.state.doc.textContent.length) {
-            handleTypingIndicator(TypingIndicatorType.SentMsg)
+            presenceRoom.typing('sent')
           }
           event.preventDefault()
           onSubmit()

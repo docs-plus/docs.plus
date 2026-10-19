@@ -1,12 +1,6 @@
 import { dbChannelMessageCountsListener, dbChannelsListener } from '@components/chatroom/sync'
-import {
-  attachWorkspacePresenceListeners,
-  clearAllPresenceShareTimers,
-  clearPresenceShareTimers,
-  requestPresenceSync,
-  shareHeadingPresenceWithRoom
-} from '@services/workspacePresenceSync'
-import { useAuthStore, useChatStore, useStore } from '@stores'
+import { presenceRoom, supabaseRoom } from '@services/presenceRoom'
+import { selectDocumentId, useAuthStore, useChatStore, useStore } from '@stores'
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { supabaseClient } from '@utils/supabase'
 import { useEffect, useRef, useState } from 'react'
@@ -19,10 +13,7 @@ type ChannelMemberRow = {
 
 export const useCatchUserPresences = (enabled = true) => {
   const profile = useAuthStore((state) => state.profile)
-  const workspaceId = useStore((state) => state.settings.workspaceId)
-  const setOrUpdateUserPresence = useStore((state) => state.setOrUpdateUserPresence)
-  const clearUsersPresence = useStore((state) => state.clearUsersPresence)
-  const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
+  const workspaceId = useStore(selectDocumentId)
 
   const updateChannelRow = useChatStore((state) => state.updateChannelRow)
   const addChannelMember = useChatStore((state) => state.addChannelMember)
@@ -48,12 +39,6 @@ export const useCatchUserPresences = (enabled = true) => {
     // Skip subscriptions if offline (prevents retry spam)
     if (!navigator.onLine) return
 
-    // Resubscribing (channel switch, sign-in, online reconnect). Drop the previous
-    // channel's presence, so stale ONLINE entries from the old subscription don't
-    // survive into the new socket's state.
-    clearUsersPresence()
-    clearAllPresenceShareTimers()
-
     const channelMembersHandler = (payload: RealtimePostgresChangesPayload<ChannelMemberRow>) => {
       if (payload.table !== 'channel_members') return
       const row = payload.new as ChannelMemberRow
@@ -68,13 +53,12 @@ export const useCatchUserPresences = (enabled = true) => {
       }
     }
 
-    const presenceDeps = { setOrUpdateUserPresence }
-
     if (!profile) {
       const anonChannel = supabaseClient.channel(`workspace:${workspaceId}`, {
         config: { broadcast: { self: false } }
       })
-      attachWorkspacePresenceListeners(anonChannel, presenceDeps)
+      // connect drops the previous channel's faces, so stale ONLINE entries never survive.
+      const room = presenceRoom.connect(supabaseRoom(anonChannel), null)
       anonymousSubscription.current = anonChannel
         .on(
           'postgres_changes',
@@ -87,12 +71,10 @@ export const useCatchUserPresences = (enabled = true) => {
           dbChannelMessageCountsListener
         )
         .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            requestPresenceSync(anonChannel)
-          }
+          if (status === 'SUBSCRIBED') void room.joined()
         })
       return () => {
-        clearPresenceShareTimers(anonChannel)
+        room.close()
         anonymousSubscription.current?.unsubscribe()
       }
     }
@@ -124,11 +106,7 @@ export const useCatchUserPresences = (enabled = true) => {
         dbChannelsListener
       )
 
-    attachWorkspacePresenceListeners(messageSubscription, {
-      ...presenceDeps,
-      onPresenceJoin: (channel) => shareHeadingPresenceWithRoom(channel, profile),
-      onRequestPresenceSync: (channel) => shareHeadingPresenceWithRoom(channel, profile)
-    })
+    const room = presenceRoom.connect(supabaseRoom(messageSubscription), profile)
 
     messageSubscription.subscribe(async (status) => {
       if (status !== 'SUBSCRIBED') return
@@ -140,39 +118,20 @@ export const useCatchUserPresences = (enabled = true) => {
 
       anonymousSubscription.current?.unsubscribe()
 
-      await messageSubscription.track(profile).catch((err) => {
-        console.error('Failed to track profile:', err)
-      })
-      setWorkspaceSetting('broadcaster', messageSubscription)
-      shareHeadingPresenceWithRoom(messageSubscription, profile)
-      requestPresenceSync(messageSubscription)
+      await room.joined()
     })
 
-    const handleOffline = () => {
-      clearPresenceShareTimers(messageSubscription)
-      setWorkspaceSetting('broadcaster', undefined)
+    const teardown = () => {
+      room.close()
       anonymousSubscription.current?.unsubscribe()
-      messageSubscription?.unsubscribe()
+      messageSubscription.unsubscribe()
     }
 
-    window.addEventListener('offline', handleOffline)
+    window.addEventListener('offline', teardown)
 
     return () => {
-      clearPresenceShareTimers(messageSubscription)
-      setWorkspaceSetting('broadcaster', undefined)
-      anonymousSubscription.current?.unsubscribe()
-      messageSubscription?.unsubscribe()
-      window.removeEventListener('offline', handleOffline)
+      teardown()
+      window.removeEventListener('offline', teardown)
     }
-  }, [
-    enabled,
-    profile,
-    workspaceId,
-    reconnectTick,
-    setOrUpdateUserPresence,
-    clearUsersPresence,
-    setWorkspaceSetting,
-    updateChannelRow,
-    addChannelMember
-  ])
+  }, [enabled, profile, workspaceId, reconnectTick, updateChannelRow, addChannelMember])
 }

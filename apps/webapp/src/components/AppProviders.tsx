@@ -3,7 +3,6 @@
  */
 
 import { flushPendingWrites, performMaintenanceCleanup } from '@db/messageComposerDB'
-import { useBroadcastListener } from '@hooks/useBroadcastListener'
 import { useCatchUserPresences } from '@hooks/useCatchUserPresences'
 import { useHandleUserStatus } from '@hooks/useHandleUserStatus'
 import { useInitialSteps } from '@hooks/useInitialSteps'
@@ -41,7 +40,6 @@ export default function AppProviders({
   useNotificationClickBridge()
   useOnAuthStateChange()
   useCatchUserPresences(documentShell)
-  useBroadcastListener(documentShell)
   useHandleUserStatus(documentShell)
   useInitialSteps(isMobileInitial, documentShell)
 

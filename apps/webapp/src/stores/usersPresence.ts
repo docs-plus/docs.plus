@@ -1,56 +1,13 @@
-import { type PresenceActivity, Profile as TProfile } from '@types'
+import { Profile as TProfile } from '@types'
 import { immer } from 'zustand/middleware/immer'
 
-type UserStatus = 'ONLINE' | 'OFFLINE' | 'AWAY' | 'BUSY' | 'INVISIBLE' | 'TYPING'
-
 interface IUsersPresenceStore {
+  /** Faces by user id. Only the Presence awareness room writes it (`services/presenceRoom.ts`). */
   usersPresence: Map<string, TProfile>
-  setOrUpdateUserPresence: (userId: string, userData: TProfile) => void
-  updateUserStatus: (userId: string, status: UserStatus) => void
-  setUserActivity: (userId: string, activity?: PresenceActivity) => void
-  /** Reset the map — used when swapping realtime subscriptions (e.g. anon→authed). */
-  clearUsersPresence: () => void
 }
 
-const usersPresence = immer<IUsersPresenceStore>((set) => ({
-  usersPresence: new Map(),
-
-  // New Map reference per write so consumers' useEffect/useMemo deps fire — in-place mutation
-  // keeps the same reference and selectors don't notice the change.
-  setOrUpdateUserPresence: (userId, userData) => {
-    set((state) => {
-      const next = new Map(state.usersPresence)
-      next.set(userId, userData)
-      state.usersPresence = next
-    })
-  },
-
-  updateUserStatus: (userId, status) => {
-    set((state) => {
-      const user = state.usersPresence.get(userId)
-      if (!user) return
-      const next = new Map(state.usersPresence)
-      next.set(userId, { ...user, status })
-      state.usersPresence = next
-    })
-  },
-
-  // Keepalives resend the same value every 3 s; skip those writes.
-  setUserActivity: (userId, activity) => {
-    set((state) => {
-      const user = state.usersPresence.get(userId)
-      if (!user || user.activity === activity) return
-      const next = new Map(state.usersPresence)
-      next.set(userId, { ...user, activity })
-      state.usersPresence = next
-    })
-  },
-
-  clearUsersPresence: () => {
-    set((state) => {
-      state.usersPresence = new Map()
-    })
-  }
+const usersPresence = immer<IUsersPresenceStore>(() => ({
+  usersPresence: new Map()
 }))
 
 export default usersPresence
