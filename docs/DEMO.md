@@ -12,6 +12,7 @@ Every line below is a filter, not an anchor. Click one and the page folds to tha
 - [🔗 Links](/demo/mailto)
 - [🎬 Media](/demo/soundcloud)
 - [✍️ Writing](/demo/writing)
+- [📊 Diagrams](/demo/pele)
 - [📜 What the history holds](/demo/versions)
 - [📤 Import and export](/demo/import%20and%20export)
 - [🔐 Who can open this document](/demo/owner-only)
@@ -412,7 +413,7 @@ There is a fifth mark, underline, and it is the one to reach for least. On a pag
 
 Inline code sets **a flag, a path, or a value** apart from the prose: `--frozen-lockfile`, `mode=and`, `heading-scale.ts`. Type a backtick pair, or press `Mod-e` — needs a document you can edit.
 
-For anything longer than a phrase, use a fenced block and name the language. The pad colours **exactly nine**: `html`, `css`, `js`, `ts`, `markdown`, `python`, `yaml`, `json`, and `bash`.
+For anything longer than a phrase, use a fenced block and name the language. The pad colours **exactly nine**: `html`, `css`, `js`, `ts`, `markdown`, `python`, `yaml`, `json`, and `bash`. Name a block `mermaid` and the pad draws it instead — see [📊 Diagrams](/demo/pele).
 
 ```bash
 bun run --filter @docs.plus/webapp dev
@@ -451,6 +452,111 @@ Type three dashes and the editor draws a rule across the page — needs a docume
 ---
 
 A rule ends a passage. It carries no text, so a filter never keeps a section for it.
+
+# 📊 Diagrams
+
+Write a diagram as text, and docs.plus draws it under the text. **Every diagram below is drawn live in your browser**, not pasted as a picture.
+
+![Diagram text above, the drawn diagram below it](/demo-assets/d17-diagrams.png)
+_The text is the diagram. Change a word and the picture follows._
+
+The text is Mermaid, the diagram language GitHub and Obsidian read. Pele draws it, the small Mermaid renderer by Steph Ango, CEO of Obsidian. Flowcharts, sequences, states, timelines, pie charts and more all work.
+
+Type `/diagram` on an empty line, or pick Diagram from the Code menu, and you get a small example to change — needs a document you can edit. Try it in [/new](/new).
+
+On this read-only page each diagram starts with its text folded away. Hover a diagram for three buttons: **Syntax** opens the Mermaid reference, **Copy** copies the text, and **Show source** opens it — try it here. Your choice is yours alone, and this browser remembers it.
+
+Each diagram below sits under its own heading, so each one has its own chatroom — try it here.
+
+## How a heading becomes a room
+
+```mermaid
+flowchart LR
+  H["# A heading"] --> T["Table of contents row"]
+  H --> C["Its own chatroom"]
+  H --> F["A fold"]
+  H --> L["A link to it, ?id="]
+  H --> W["A filter by word"]
+  C --> M["Comments, mentions, alerts"]
+  T --> U["Unread count"]
+  C -.-> U
+```
+
+One heading gives you five things at once. The rest of this page shows each of them.
+
+## Two people, one page
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor Ana
+  participant S as docs.plus
+  actor Ben
+  participant H as History
+  Ana->>S: Types a sentence
+  S-->>Ben: The same sentence, live
+  Ben->>S: Answers in the chatroom
+  S-->>Ana: The answer, beside the passage
+  Note over S: Waits for 10 s of quiet, never more than 60 s
+  S->>H: Saves a version
+  Note over Ben,H: Ben can compare any two versions, and restore one
+```
+
+Edits reach everyone at once. History keeps a version after 10 seconds of quiet, and never waits more than 60.
+
+## A document's life
+
+```mermaid
+stateDiagram-v2
+  state "Read-only" as ReadOnly
+  [*] --> Draft: open /new
+  Draft --> Saved: first edit
+  state Saved {
+    Open --> Private: owner turns on Private
+    Private --> Open: owner turns it off
+    Open --> ReadOnly: owner turns on Read-only
+    ReadOnly --> Open: owner turns it off
+    ReadOnly --> Private: Private clears Read-only
+  }
+  Saved --> Trash: owner deletes it
+  Trash --> Saved: restore within 30 days
+  Trash --> [*]: purged after 30 days
+```
+
+Private and Read-only belong to the owner, and only one is on at a time. Trash keeps a document for 30 days.
+
+## From Etherpad fork to diagrams
+
+```mermaid
+timeline
+  title docs.plus, release by release
+  2022 : 1.8.18, the last Etherpad fork
+  August 2026 : 2.0.0 : A chatroom on every heading : Version history and restore
+  October 2026 : 2.1.0 : AI apps in your documents : Change digest email : Find bar and QR code
+  Now : Diagrams drawn in the page
+```
+
+## 2.1.0 in one picture
+
+```mermaid
+pie showData
+  title 136 issues closed in 2.1.0
+  "Bugs" : 71
+  "Security fixes" : 33
+  "Other changes" : 32
+```
+
+## When a diagram goes wrong
+
+A mistake shows one second after you stop typing, with the line it is on. The last good drawing stays on screen, faded, so the page never jumps — needs a document you can edit.
+
+A diagram over **15,000 characters or 500 arrows** is not drawn. The message names the limit it hit and the count, and asks you to split it.
+
+A connected AI app can write diagrams too. docs.plus checks each one before the write, and refuses one that does not parse or is too large — needs an account.
+
+History, print and dark mode all show the drawn diagram. Markdown export keeps the text as a `mermaid` block, so a diagram survives the trip out and back.
+
+Filtered to this section? [Show the whole document](/demo).
 
 # 📜 What the history holds
 
