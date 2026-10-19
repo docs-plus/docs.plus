@@ -1,4 +1,5 @@
 import { useAuthStore, useStore } from '@stores'
+import { isDocumentOwner } from '@utils/isDocumentOwner'
 import { supabaseClient } from '@utils/supabase'
 import { useEffect } from 'react'
 
@@ -7,14 +8,14 @@ const useTouchDocumentOpened = (documentId?: string, ssrOwnerId?: string | null)
   const profileId = useAuthStore((state) => state.profile?.id)
   // The store learns a first-edit owner live, while the SSR prop stays null until a
   // reload. After a route switch the store still holds the old pad until it matches.
-  const ownerId = useStore((state) =>
-    documentId && state.settings.metadata?.documentId === documentId
-      ? state.settings.metadata.ownerId
-      : ssrOwnerId
-  )
+  const isOwner = useStore((state) => {
+    const metadata = state.settings.metadata
+    const ownerId = documentId && metadata.documentId === documentId ? metadata.ownerId : ssrOwnerId
+    return isDocumentOwner({ documentId, ownerId }, profileId)
+  })
 
   useEffect(() => {
-    if (!documentId || !ownerId || !profileId || ownerId !== profileId) return
+    if (!documentId || !isOwner) return
 
     let cancelled = false
     const run = async () => {
@@ -31,7 +32,7 @@ const useTouchDocumentOpened = (documentId?: string, ssrOwnerId?: string | null)
     return () => {
       cancelled = true
     }
-  }, [documentId, ownerId, profileId])
+  }, [documentId, isOwner])
 }
 
 export default useTouchDocumentOpened

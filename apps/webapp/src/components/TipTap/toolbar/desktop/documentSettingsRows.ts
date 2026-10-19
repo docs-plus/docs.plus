@@ -1,13 +1,13 @@
 import type { FaceSource } from '@utils/avatarFace'
+import { type DocumentOwnerFields, isDocumentOwner } from '@utils/isDocumentOwner'
 
 type DocumentSettingsRowsArgs = {
   userId?: string
   isAuthServiceAvailable?: boolean
-  metadata: {
+  metadata: DocumentOwnerFields & {
     isPrivate?: boolean
     readOnly?: boolean
-    ownerId?: string
-    ownerProfile?: FaceSource & { default_avatar_url?: string | null }
+    ownerProfile?: (FaceSource & { default_avatar_url?: string | null }) | null
   }
 }
 
@@ -19,7 +19,7 @@ export function documentSettingsRows({
 }: DocumentSettingsRowsArgs) {
   const isPrivate = Boolean(metadata.isPrivate)
   const readOnly = Boolean(metadata.readOnly)
-  const isOwner = Boolean(userId && userId === metadata.ownerId)
+  const isOwner = isDocumentOwner(metadata, userId)
   // Hide Follow when nobody else can edit. The owner of a private or read-only pad is
   // that case. A visitor still follows, because the owner can edit.
   const showFollow =

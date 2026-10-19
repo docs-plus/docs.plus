@@ -1,6 +1,6 @@
 import { Tooltip } from '@components/ui/Tooltip'
-import { canEditDocumentMetadata } from '@hooks/canEditDocumentMetadata'
 import { useAuthStore, useStore } from '@stores'
+import { canEditDocumentMetadata } from '@utils/isDocumentOwner'
 import { twMerge } from '@utils/twMerge'
 import DOMPurify from 'dompurify'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -19,7 +19,7 @@ const DocTitle = ({ className }: { className?: string }) => {
 
   const docMetadata = useStore((state) => state.settings.metadata)
   const profileId = useAuthStore((state) => state.profile?.id ?? state.session?.id)
-  const canEdit = useStore((state) => canEditDocumentMetadata(state.settings, profileId))
+  const canEdit = useStore((state) => canEditDocumentMetadata(state.settings.metadata, profileId))
 
   useEffect(() => {
     if (docMetadata?.title) setTitle(plainTitle(docMetadata.title))

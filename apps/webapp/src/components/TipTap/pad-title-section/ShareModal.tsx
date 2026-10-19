@@ -6,6 +6,7 @@ import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { usePadShareUrl } from '@hooks/usePadShareUrl'
 import { Icons } from '@icons'
 import { useAuthStore, useStore } from '@stores'
+import { isDocumentOwner } from '@utils/isDocumentOwner'
 import type { IconType } from 'react-icons'
 import { BsReddit } from 'react-icons/bs'
 import { FaFacebook } from 'react-icons/fa'
@@ -85,7 +86,7 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
 
   const isPrivate = Boolean(docMetadata?.isPrivate)
   const access = accessLines[isPrivate ? 'private' : docMetadata?.readOnly ? 'view' : 'edit']
-  const isOwner = Boolean(profileId && profileId === docMetadata?.ownerId)
+  const isOwner = isDocumentOwner(docMetadata, profileId)
   const canChangeAccess = isOwner && documentSettingsOpenRequest.canRequest()
   const title = docMetadata?.title || 'Untitled document'
 

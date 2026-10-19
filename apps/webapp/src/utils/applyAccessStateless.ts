@@ -2,6 +2,7 @@ import { authStore, useStore } from '@stores'
 
 import { adoptOwner } from './adoptOwner'
 import { exitSealedDocument } from './exitSealedDocument'
+import { isDocumentOwner } from './isDocumentOwner'
 
 type AccessStatelessPayload = {
   type?: string
@@ -34,7 +35,7 @@ export function applyAccessStateless(args: {
 
   const { settings, setWorkspaceSetting } = useStore.getState()
   const metadata = settings.metadata
-  if (metadata?.documentId === documentId) {
+  if (metadata.documentId === documentId) {
     const next =
       data.type === 'readOnly'
         ? { ...metadata, readOnly: Boolean(data.state) }
@@ -46,9 +47,8 @@ export function applyAccessStateless(args: {
   // Prefer the event's ownerId, fresh at seal time, over store metadata, which
   // can be stale for long-open tabs. The server's connection close is the
   // enforcement either way, and this only drives the redirect UX.
-  const ownerId = data.ownerId !== undefined ? data.ownerId : metadata?.ownerId
-  const profileId = authStore.getState().profile?.id
-  if (ownerId && profileId === ownerId) return
+  const ownerId = data.ownerId !== undefined ? data.ownerId : metadata.ownerId
+  if (isDocumentOwner({ documentId, ownerId }, authStore.getState().profile?.id)) return
 
   exitSealedDocument({ to: `/${slug}`, stopReconnect, destroyProvider })
 }

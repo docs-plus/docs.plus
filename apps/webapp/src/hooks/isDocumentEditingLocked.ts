@@ -1,4 +1,5 @@
 import { authStore, useStore, type Workspace } from '@stores'
+import { isDocumentOwner } from '@utils/isDocumentOwner'
 
 /**
  * Durable editing lock: content-fork freeze, mirrored WS `authorizedScope`,
@@ -9,8 +10,10 @@ export const selectDocumentEditingLocked = (settings: Workspace, profileId?: str
   if (settings.providerStatus === 'error') return true
   if (settings.authorizedScope === 'readonly') return true
 
-  const ownerId = settings.metadata?.ownerId
-  return settings.metadata?.readOnly === true && ownerId != null && ownerId !== profileId
+  const metadata = settings.metadata
+  return (
+    metadata.readOnly === true && metadata.ownerId != null && !isDocumentOwner(metadata, profileId)
+  )
 }
 
 export const isDocumentEditingLocked = (): boolean =>

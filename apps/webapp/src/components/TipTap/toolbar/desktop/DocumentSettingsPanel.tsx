@@ -4,7 +4,6 @@ import * as toast from '@components/toast'
 import Button from '@components/ui/Button'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import Textarea from '@components/ui/Textarea'
-import { canEditDocumentMetadata } from '@hooks/canEditDocumentMetadata'
 import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { useDismissPanel } from '@hooks/useDismissPanel'
 import { useDocumentAccessMutation } from '@hooks/useDocumentAccessMutation'
@@ -12,6 +11,7 @@ import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import { Icons } from '@icons'
 import { useAuthStore, useStore } from '@stores'
 import { type PanelSurfaceVariant } from '@types'
+import { canEditDocumentMetadata } from '@utils/isDocumentOwner'
 import React, { useState } from 'react'
 
 import { useDocumentFollow } from '../useDocumentFollow'
@@ -34,7 +34,9 @@ const DocumentSettingsPanel = ({ variant = 'popover' }: DocumentSettingsPanelPro
   const joinedWorkspace = useStore((state) => state.settings.workspaceJoin === 'joined')
   const editingLocked = useStore((state) => selectDocumentEditingLocked(state.settings, user?.id))
   const profileId = useAuthStore((state) => state.profile?.id ?? state.session?.id)
-  const canEditMetadata = useStore((state) => canEditDocumentMetadata(state.settings, profileId))
+  const canEditMetadata = useStore((state) =>
+    canEditDocumentMetadata(state.settings.metadata, profileId)
+  )
 
   const [docDescription, setDocDescription] = useState(docMetadata.description || '')
   const { isPending, mutate } = useUpdateDocMetadata()
