@@ -167,7 +167,7 @@
     "@tiptap/extension-italic": "^3.31.3",
     "@tiptap/extension-link": "^3.31.3",
     "@tiptap/extension-list": "^3.31.3",
-    "@tiptap/extension-mention": "^3.31.3",
+    "@tiptap/extension-mention": "^3.32.0",
     "@tiptap/extension-paragraph": "^3.31.3",
     "@tiptap/extension-strike": "^3.31.3",
     "@tiptap/extension-subscript": "^3.31.3",
