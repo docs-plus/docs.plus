@@ -128,7 +128,7 @@ export interface ApplyRequest {
 export type VersionTrigger = 'api' | 'mcp' | 'checkpoint' | 'revert'
 
 /**
- * Attribution for the version row an apply mints. `forceKey` only widens the
+ * Attribution for the version row a live write mints. `forceKey` only widens the
  * store job id, so a named row cannot dedupe onto an unnamed one for the same
  * bytes. It is not attribution and never reaches the row.
  */
@@ -139,25 +139,12 @@ export interface VersionStamp {
   forceKey?: string
 }
 
+/** Checkpoint and restore: without a key, the named row dedupes onto a recent autosave. */
+export type NamedVersionStamp = VersionStamp & Required<Pick<VersionStamp, 'name' | 'forceKey'>>
+
 /** The applier's view: the wire name has already been resolved into a stamp. */
 export interface ApplyContentRequest extends Omit<ApplyRequest, 'commitMessage'> {
   version?: VersionStamp
-}
-
-/**
- * The DirectConnection context, which the store hook reads to attribute the row
- * it mints. Presence is the contract: an explicit `versionTriggeredBy: null`
- * means nobody, while an absent key means "fall back to the connection user".
- */
-export interface ApplyContext {
-  user?: ApplyActor
-  slug: string
-  documentId: string
-  deviceType: 'service'
-  versionName?: string
-  versionTrigger?: VersionTrigger
-  versionTriggeredBy?: string | null
-  versionForceKey?: string
 }
 
 export interface ContentApplyResponseData {

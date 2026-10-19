@@ -2,6 +2,7 @@ import type { Logger } from 'pino'
 
 import { internalHop } from '../../../lib/internalHop'
 import { isRecord } from '../../../lib/isRecord'
+import { DOCUMENT_BUSY_CODE } from '../../document-content/types'
 import type { WsCheckpointOutcome, WsRevertOutcome } from '../types'
 import { BACKUP_FAILED_CODE, DRAFT_DOCUMENT_CODE, VERSION_OP_TIMEOUT_MS } from '../types'
 
@@ -119,6 +120,8 @@ export const createWsVersionsClient = (deps: WsVersionsClientDeps): WsVersionsCl
     }
 
     const { message, code } = envelopeError(hop.body)
+    // Nothing was restored. Any other 503 stays on the default arm below.
+    if (hop.status === 503 && code === DOCUMENT_BUSY_CODE) return { status: 'busy' }
 
     switch (hop.status) {
       case 200:

@@ -9,6 +9,7 @@ import { captureUnknown } from '../../../lib/instrument'
 import { distinctUserIds } from '../../../lib/profiles'
 import { readContent } from '../../document-content/domain/readContent'
 import { findDocumentMeta } from '../../document-content/infra/contentStore'
+import { DOCUMENT_BUSY_CODE } from '../../document-content/types'
 import { diffBlocks } from '../domain/diffBlocks'
 import {
   deleteVersionRow,
@@ -343,6 +344,13 @@ const restoreResponse = (c: Context, documentId: string, outcome: WsRevertOutcom
       return fail(c, 500, BACKUP_FAILED_CODE, BACKUP_FAILED_MESSAGE)
     case 'persist-failed':
       return fail(c, 500, 'INTERNAL_SERVER_ERROR', PERSIST_FAILED_MESSAGE)
+    case 'busy':
+      return fail(
+        c,
+        503,
+        DOCUMENT_BUSY_CODE,
+        'Another write to this document is still being saved. Nothing was restored. Retry later.'
+      )
     case 'unreachable':
       return fail(c, 503, 'SERVICE_UNAVAILABLE', 'Version service is unavailable')
     case 'upstream-unauthorized':

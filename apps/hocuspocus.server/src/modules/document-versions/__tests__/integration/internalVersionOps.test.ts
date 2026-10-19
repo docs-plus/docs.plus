@@ -7,6 +7,8 @@ import * as Y from 'yjs'
 
 import { createMockPrisma, TestServer } from '../../../../../tests/helpers/test-server'
 import { migrationExtensions } from '../../../../lib/migration-extensions'
+import { stripSnapshotMetadata } from '../../../../lib/snapshotMetadata'
+import { createApplyContent } from '../../../document-content/infra/hocuspocusApply'
 import { createInternalApp } from '../../http/internalApp'
 import { createVersionOps } from '../../infra/versionOps'
 import { MAX_VERSION_NUMBER } from '../../types'
@@ -78,6 +80,7 @@ interface StoreCall {
 const events: string[] = []
 const stores: StoreCall[] = []
 const persisted = new Map<string, Uint8Array>()
+const persistedVersions = new Map<string, number>()
 const rejecting = new Set<string>()
 
 const database = new Database({
@@ -90,12 +93,23 @@ const database = new Database({
     events.push(`store:${typeof snapshot.versionName === 'string' ? snapshot.versionName : '-'}`)
     if (rejecting.has(documentName)) throw new Error('forced store failure')
     persisted.set(documentName, state)
+    persistedVersions.set(documentName, (persistedVersions.get(documentName) ?? 0) + 1)
   }
 })
 
 // Production debounce values: `transact()` and `disconnect()` both store
 // immediately, so nothing is left pending between tests.
 const hocuspocus = new Hocuspocus({ extensions: [database], debounce: 10_000, maxDebounce: 60_000 })
+
+/** The head-row read the commit wait polls, honouring `version: { gt }`. */
+const headRowFrom =
+  (read: (documentId: string) => { version: number; data: Uint8Array } | null) =>
+  async (args: any) => {
+    const head = read(args.where.documentId)
+    const after = args.where.version?.gt
+    if (!head || (after !== undefined && head.version <= after)) return null
+    return { version: head.version, data: Buffer.from(head.data) }
+  }
 
 const metaRows = new Map<string, Record<string, unknown> | null>()
 const versionRows = new Map<string, { version: number; data: Buffer }>()
@@ -105,8 +119,16 @@ const backupRows: Record<string, any>[] = []
 const prisma = createMockPrisma() as any
 prisma.documentMetadata.findUnique = async (args: any) =>
   metaRows.get(args.where.documentId) ?? null
+// A numeric version is a target-row read; anything else is a head read for the
+// restore's commit wait, answered from what the store persisted.
+const headRead = headRowFrom((documentId) => {
+  const data = persisted.get(documentId)
+  return data ? { version: persistedVersions.get(documentId) ?? 0, data } : null
+})
 prisma.documents.findFirst = async (args: any) =>
-  versionRows.get(`${args.where.documentId}:${args.where.version}`) ?? null
+  typeof args.where.version === 'number'
+    ? (versionRows.get(`${args.where.documentId}:${args.where.version}`) ?? null)
+    : headRead(args)
 // The head lock is the only raw query on this path; its single interpolation is
 // the documentId.
 prisma.$queryRaw = async (_strings: unknown, documentId: string) => {
@@ -444,5 +466,103 @@ describe('Internal version ops — wedged persistence', () => {
     // call still writes its own backup, which runs before the restore attempt.
     expect(stores.length).toBe(storesBefore)
     expect(backupRows).toHaveLength(2)
+  })
+})
+
+describe('Internal version ops — the store worker lags (#229)', () => {
+  const WORKER_LAG_MS = 150
+
+  /** One room host shared by restore and content apply, with a worker that commits late. */
+  const laggingRoomHost = (documentId: string) => {
+    const head: { version: number; data: Uint8Array } = {
+      version: 2,
+      data: stripSnapshotMetadata(snapshotBytes([heading('Title'), paragraph('current')]))
+    }
+    const oldRow = { version: 1, data: snapshotBytes([heading('Title'), paragraph('old')]) }
+
+    // The store hook only enqueues; the worker merges raw onto the head later,
+    // as production does. The unload then leaves a window where the next open
+    // reads a head without the restore.
+    const hocuspocus = new Hocuspocus({
+      extensions: [
+        new Database({
+          fetch: async () => head.data,
+          store: async ({ state }) => {
+            setTimeout(() => {
+              head.data = stripSnapshotMetadata(Y.mergeUpdates([head.data, state]))
+              head.version += 1
+            }, WORKER_LAG_MS)
+          }
+        })
+      ],
+      debounce: 10_000,
+      maxDebounce: 60_000
+    })
+    const laggingPrisma = createMockPrisma() as any
+    laggingPrisma.documentMetadata.findUnique = async () => liveMeta(documentId, 'lagging-doc')
+    const headRead = headRowFrom(() => head)
+    laggingPrisma.documents.findFirst = async (args: any) =>
+      typeof args.where.version === 'number'
+        ? args.where.version === oldRow.version
+          ? oldRow
+          : null
+        : headRead(args)
+    laggingPrisma.$queryRaw = async () => [{ version: head.version, data: Buffer.from(head.data) }]
+    laggingPrisma.documents.create = async (args: any) => {
+      head.version = args.data.version
+      head.data = new Uint8Array(args.data.data)
+      return { version: args.data.version }
+    }
+
+    const deps = { hocuspocus, prisma: laggingPrisma, logger: silentLogger }
+    const applyContent = createApplyContent(deps)
+    return {
+      hocuspocus,
+      revert: () => createVersionOps(deps).revertOp(documentId, oldRow.version, { actorId: 'a-1' }),
+      replace: () =>
+        applyContent({
+          documentId,
+          mode: 'replace',
+          content: { type: 'doc', content: [heading('Title'), paragraph('after')] },
+          version: { trigger: 'api', triggeredBy: null }
+        }),
+      settledTexts: async () => {
+        await new Promise((resolve) => setTimeout(resolve, WORKER_LAG_MS * 3))
+        const ydoc = new Y.Doc()
+        Y.applyUpdate(ydoc, head.data)
+        const json = TiptapTransformer.fromYdoc(ydoc, 'default') as {
+          content: Record<string, any>[]
+        }
+        return json.content.map((node) => node.content?.[0]?.text)
+      }
+    }
+  }
+
+  test('a cold-room restore, then a replace, end with one body', async () => {
+    const host = laggingRoomHost('laggingRestoreDocAB')
+
+    const reverted = await host.revert()
+    const applied = await host.replace()
+
+    expect(reverted.status).toBe('reverted')
+    expect(applied.status).toBe('applied')
+    expect(await host.settledTexts()).toEqual(['Title', 'after'])
+  })
+
+  // The history.revert path: the requester holds the room, so the restore
+  // cannot wait for its own commit. Only the shared pending record saves the
+  // replace that opens cold after the holder leaves.
+  test('a held-room restore, then a cold replace, end with one body', async () => {
+    const documentId = 'laggingHeldRestoreA'
+    const host = laggingRoomHost(documentId)
+
+    const held = await host.hocuspocus.openDirectConnection(documentId, { slug: 'lagging-doc' })
+    const reverted = await host.revert()
+    await held.disconnect()
+    const applied = await host.replace()
+
+    expect(reverted.status).toBe('reverted')
+    expect(applied.status).toBe('applied')
+    expect(await host.settledTexts()).toEqual(['Title', 'after'])
   })
 })

@@ -4,7 +4,7 @@ import type { Logger } from 'pino'
 
 import type { VerifyServiceRole } from '../../http/serviceRole'
 import type { GetOwnerProfiles, ProfileLite } from '../../lib/profiles'
-import type { MachineVersionTrigger, StoreDocumentContext, VersionTrigger } from '../../types'
+import type { MachineVersionTrigger, VersionTrigger } from '../../types'
 import type { ReadFormat, TiptapDocJson } from '../document-content/types'
 
 // Re-exported so this stays the module's single type surface: the trigger
@@ -38,28 +38,6 @@ export const buildBackupName = (version: number): string => `Before restore of v
 
 export const buildRestoredName = (version: number): string => `Restored version ${version}`
 
-/**
- * The DirectConnection context an op opens with. Extends the shape `store()`
- * actually reads, so the four `version*` field names cannot drift out of the
- * hook that resolves them. The two extra fields are what a WS connection carries.
- */
-export interface VersionOpContext extends StoreDocumentContext {
-  documentId: string
-  deviceType: 'service'
-}
-
-/**
- * Attribution for the row an op mints. `forceKey` only widens the store job id
- * so a named save cannot dedupe onto a byte-identical autosave; it never
- * reaches the row.
- */
-export interface VersionStamp {
-  name: string
-  trigger: Extract<VersionTrigger, 'checkpoint' | 'revert'>
-  triggeredBy: string | null
-  forceKey: string
-}
-
 export type CheckpointOutcome =
   | { status: 'checkpointed' }
   | { status: 'not-found' }
@@ -75,6 +53,8 @@ export type RevertOutcome =
   | { status: 'open-failed' }
   | { status: 'backup-failed' }
   | { status: 'persist-failed' }
+  /** The document lock or an earlier write's commit outlived the deadline; nothing was restored. */
+  | { status: 'busy' }
 
 /**
  * Hop-only outcomes. `upstream-unauthorized` is separate from `unreachable`
@@ -102,7 +82,7 @@ export type VersionFailureReason =
   | 'invalid-content'
   | 'persist-failed'
   | 'draft-document'
-  /** Raised by the gate, not an op: the per-document revert cooldown. */
+  /** The per-document revert cooldown, or a restore that found the document busy. */
   | 'rate-limited'
 
 export const versionFailureReason = (outcome: VersionOpFailure): VersionFailureReason => {
@@ -113,6 +93,11 @@ export const versionFailureReason = (outcome: VersionOpFailure): VersionFailureR
       return 'draft-document'
     case 'invalid-content':
       return 'invalid-content'
+    // Nothing ran, which the rate-limited copy says. persist-failed would not.
+    // Unruled with that copy: history.revert spends its cooldown slot first. Busy
+    // mostly lands at the 20 s deadline, after that slot expired.
+    case 'busy':
+      return 'rate-limited'
     default:
       return 'persist-failed'
   }
