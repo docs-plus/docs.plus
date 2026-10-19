@@ -4,7 +4,7 @@ import { EMAIL_DLQ_NAME } from '../../lib/email/jobIdentity'
 import { adminLogger } from '../../lib/logger'
 import { maskEmail } from '../../lib/maskEmail'
 import { createRedisConnection } from '../../lib/redis'
-import { type GhostDeleteInput, mediaStorageQuerySchema } from '../../schemas/admin.schema'
+import { mediaStorageQuerySchema, type UserIdParamInput } from '../../schemas/admin.schema'
 import type { AppContext } from '../../types/hono.types'
 import { toBullMQConnection } from '../../types/redis.types'
 import * as ghost from '../services/adminGhostAccounts.service'
@@ -357,16 +357,40 @@ export async function deleteGhostAccount(c: AppContext) {
     const adminAuth = getSupabaseClient()
     if (!adminAuth) return c.json({ error: 'Supabase not configured' }, 500)
 
-    const { id: userId } = c.req.valid('param' as never) as GhostDeleteInput
-    const result = await ghost.deleteGhostAccount(adminAuth, c.get('prisma'), userId)
-    if (result.status === 'refused') return c.json({ error: result.reason }, 409)
-    if (result.status === 'error') throw new Error(result.message)
-    if (result.status === 'soft_delete') {
-      return c.json({ success: true, strategy: 'soft_delete', reason: result.reason })
+    const { id: userId } = c.req.valid('param' as never) as UserIdParamInput
+    const store = ghost.supabaseAccountStore(adminAuth, c.get('prisma'))
+    const [outcome] = await ghost.eraseAccounts(store, 'ghost', [userId])
+    if (outcome.status === 'refused') return c.json({ error: outcome.reason }, 409)
+    if (outcome.status === 'failed') throw outcome.error
+    // Every step is safe to repeat, so the log says to retry.
+    if (outcome.status === 'incomplete')
+      throw new Error(`Profile cleared; ${ghost.erasureFailureText(outcome)}. Retry.`)
+    if (outcome.status === 'soft_deleted') {
+      return c.json({ success: true, strategy: 'soft_delete', reason: outcome.reason })
     }
     return c.json({ success: true, strategy: 'hard_delete' })
   } catch (error) {
     adminLogger.error({ err: error }, 'Failed to delete ghost account')
+    return c.json({ error: 'Failed to delete account' }, 500)
+  }
+}
+
+/** Soft-deletes one account on its owner's request. Answers 409 for an unknown id or an admin. */
+export async function deleteUserAccount(c: AppContext) {
+  try {
+    const adminAuth = getSupabaseClient()
+    if (!adminAuth) return c.json({ error: 'Supabase not configured' }, 500)
+
+    const { id: userId } = c.req.valid('param' as never) as UserIdParamInput
+    const store = ghost.supabaseAccountStore(adminAuth, c.get('prisma'))
+    const [outcome] = await ghost.eraseAccounts(store, 'owner_request', [userId])
+    if (outcome.status === 'refused') return c.json({ error: outcome.reason }, 409)
+    if (outcome.status === 'failed') throw outcome.error
+    if (outcome.status === 'incomplete')
+      throw new Error(`Profile cleared; ${ghost.erasureFailureText(outcome)}. Retry.`)
+    return c.json({ success: true })
+  } catch (error) {
+    adminLogger.error({ err: error }, 'Failed to delete user account')
     return c.json({ error: 'Failed to delete account' }, 500)
   }
 }
@@ -377,8 +401,16 @@ export async function bulkDeleteGhostAccounts(c: AppContext) {
     if (!adminAuth) return c.json({ error: 'Supabase not configured' }, 500)
 
     const { userIds } = await c.req.json()
-    const results = await ghost.bulkDeleteGhostAccounts(adminAuth, c.get('prisma'), userIds)
-    return c.json({ success: true, ...results })
+    const store = ghost.supabaseAccountStore(adminAuth, c.get('prisma'))
+    const outcomes = await ghost.eraseAccounts(store, 'ghost', userIds, { batch: true })
+    const failed = outcomes.filter(ghost.isUnfinishedErasure)
+    return c.json({
+      success: true,
+      hard_deleted: outcomes.filter((o) => o.status === 'hard_deleted').length,
+      soft_deleted: outcomes.filter((o) => o.status === 'soft_deleted').length,
+      failed: failed.length,
+      errors: failed.map((o) => `${o.id}: ${ghost.erasureFailureText(o)}`)
+    })
   } catch (error) {
     adminLogger.error({ err: error }, 'Failed to bulk delete ghost accounts')
     return c.json({ error: 'Failed to bulk delete' }, 500)

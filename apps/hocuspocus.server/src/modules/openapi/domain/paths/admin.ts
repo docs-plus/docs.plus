@@ -12,7 +12,6 @@ import {
   ghostAccountsQuerySchema,
   ghostBulkDeleteSchema,
   ghostCleanupAnonymousSchema,
-  ghostDeleteSchema,
   ghostResendSchema,
   listDocumentsQuerySchema,
   mcpUsageQuerySchema,
@@ -20,7 +19,8 @@ import {
   paginationQuerySchema,
   staleDocumentsQuerySchema,
   trendQuerySchema,
-  updateDocumentSchema
+  updateDocumentSchema,
+  userIdParamSchema
 } from '../../../../schemas/admin.schema'
 import type {
   HttpMethod,
@@ -195,6 +195,21 @@ const routes: AdminRoute[] = [
     description:
       'Refuses your own id and the last admin with `403`. A revoke is one locked `admin_revoke_admin` call, so two revokes at once cannot leave zero admins.',
     params: [idParam]
+  },
+  {
+    path: '/users/{id}',
+    method: 'delete',
+    id: 'adminDeleteUserAccount',
+    summary: 'Soft-delete one account',
+    group: 'Dashboard & users',
+    description:
+      'For an owner who asks to delete their account. Clears the profile, removes the avatar, turns off push and email, and bans the user. The email address is kept. Their documents stay. Never a hard delete. A `500` may leave the profile cleared. Retry: every step is safe to repeat. A repeat call on a deleted account answers `200`.',
+    pathSchema: userIdParamSchema,
+    extraResponses: {
+      '409': legacyResponse(
+        '`{ error }` names the refusal: `User not found` or `User is an admin`. Revoke admin first. An unknown id is a 409, not a 404.'
+      )
+    }
   },
   {
     path: '/channels',
@@ -521,7 +536,7 @@ const routes: AdminRoute[] = [
     group: 'Ghost accounts audit',
     description:
       'Reads the account again first, because the list is cached. A user with blocking messages or owned documents outside Trash is soft-deleted: banned, with the public profile cleared. Others are hard-deleted.',
-    pathSchema: ghostDeleteSchema,
+    pathSchema: userIdParamSchema,
     extraResponses: {
       '409': legacyResponse(
         '`{ error }` names the refusal: `User not found`, `User is no longer a ghost account` or `User is an admin`. An unknown id is a 409, not a 404.'

@@ -14,7 +14,6 @@ import {
   ghostAccountsQuerySchema,
   ghostBulkDeleteSchema,
   ghostCleanupAnonymousSchema,
-  ghostDeleteSchema,
   ghostResendSchema,
   listDocumentsQuerySchema,
   mcpUsageQuerySchema,
@@ -22,7 +21,8 @@ import {
   paginationQuerySchema,
   staleDocumentsQuerySchema,
   trendQuerySchema,
-  updateDocumentSchema
+  updateDocumentSchema,
+  userIdParamSchema
 } from '../../schemas/admin.schema'
 import * as adminController from '../controllers/admin.controller'
 import { adminAuthMiddleware } from '../middleware/adminAuth'
@@ -62,6 +62,12 @@ admin.get('/users/document-counts', adminController.getUserDocumentCounts)
 admin.get('/users/admins', adminController.getAdminUserIds)
 
 admin.post('/users/:id/toggle-admin', adminController.toggleAdminRole)
+
+admin.delete(
+  '/users/:id',
+  zValidator('param', userIdParamSchema, houseEnvelopeHook),
+  adminController.deleteUserAccount
+)
 
 admin.get('/documents/stats', adminController.getDocumentStats)
 
@@ -223,7 +229,7 @@ admin.get('/audit/ghost-accounts/:id/impact', adminController.getGhostDeletionIm
 
 admin.delete(
   '/audit/ghost-accounts/:id',
-  zValidator('param', ghostDeleteSchema, houseEnvelopeHook),
+  zValidator('param', userIdParamSchema, houseEnvelopeHook),
   adminController.deleteGhostAccount
 )
 

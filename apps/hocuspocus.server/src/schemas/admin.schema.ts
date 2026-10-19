@@ -94,7 +94,7 @@ export const ghostAccountsQuerySchema = z.object({
   perPage: z.string().regex(/^\d+$/).optional().default('50')
 })
 
-export const ghostDeleteSchema = z.object({
+export const userIdParamSchema = z.object({
   id: z.string().uuid()
 })
 
@@ -149,7 +149,7 @@ export type AuditFailedSubsQuery = z.infer<typeof auditFailedSubsQuerySchema>
 export type AuditEmailBouncesQuery = z.infer<typeof auditEmailBouncesQuerySchema>
 export type DisableFailedSubsInput = z.infer<typeof disableFailedSubsSchema>
 export type GhostAccountsQuery = z.infer<typeof ghostAccountsQuerySchema>
-export type GhostDeleteInput = z.infer<typeof ghostDeleteSchema>
+export type UserIdParamInput = z.infer<typeof userIdParamSchema>
 export type GhostBulkDeleteInput = z.infer<typeof ghostBulkDeleteSchema>
 export type GhostResendInput = z.infer<typeof ghostResendSchema>
 export type GhostCleanupAnonymousInput = z.infer<typeof ghostCleanupAnonymousSchema>
