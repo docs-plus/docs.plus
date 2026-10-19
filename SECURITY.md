@@ -34,7 +34,7 @@ Please include the following in your report:
 ### What to Expect
 
 1. **Acknowledgment**: We will acknowledge receipt of your report within **48 hours**.
-2. **Assessment**: We will investigate and assess the vulnerability within **7 days**.
+2. **Assessment**: We will assess it within **72 hours** for Critical issues, and within **7 days** for all others.
 3. **Resolution**: We aim to release a fix within the target time for its severity. See [Severity Classification](#severity-classification).
 4. **Disclosure**: We will coordinate with you on public disclosure timing.
 
