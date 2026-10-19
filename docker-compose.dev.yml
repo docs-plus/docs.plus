@@ -73,7 +73,7 @@ services:
     build:
       context: .
       dockerfile: apps/hocuspocus.server/docker/Dockerfile.bun
-      target: base
+      target: dev
     restart: unless-stopped
     entrypoint: ['/app/apps/hocuspocus.server/scripts/docker-entrypoint.sh']
     command: ['bun', '--watch', 'src/index.ts']
@@ -149,7 +149,7 @@ services:
     build:
       context: .
       dockerfile: apps/hocuspocus.server/docker/Dockerfile.bun
-      target: base
+      target: dev
     restart: unless-stopped
     entrypoint: ['/app/apps/hocuspocus.server/scripts/docker-entrypoint.sh']
     command: ['bun', '--watch', 'src/hocuspocus.server.ts']
@@ -212,7 +212,7 @@ services:
     build:
       context: .
       dockerfile: apps/hocuspocus.server/docker/Dockerfile.bun
-      target: base
+      target: dev
     restart: unless-stopped
     entrypoint: ['/app/apps/hocuspocus.server/scripts/docker-entrypoint.sh']
     command: ['bun', '--watch', 'src/hocuspocus.worker.ts']
@@ -359,6 +359,8 @@ services:
     build:
       context: .
       dockerfile: apps/admin-dashboard/docker/Dockerfile.bun
+      # The default last stage is the standalone runner, which has no `next` bin.
+      target: deps
       args:
         NODE_ENV: development
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
@@ -381,6 +383,10 @@ services:
       NEXT_PUBLIC_API_URL: http://rest-api:4000/api
     volumes:
       - ./apps/admin-dashboard:/app/apps/admin-dashboard
+      # Keep the image's node_modules, not the host's macOS links.
+      - /app/apps/admin-dashboard/node_modules
+      # Keep the container's .next off the host, so host builds never clash with it.
+      - /app/apps/admin-dashboard/.next
       - /app/node_modules
     command: bun run dev:ci
     working_dir: /app/apps/admin-dashboard

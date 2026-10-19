@@ -56,6 +56,12 @@ RUN bun run --filter @docs.plus/floating-popover build \
 RUN bun install --frozen-lockfile --production --ignore-scripts
 
 # Production runs its own install + generate; no need to generate in base.
+
+# Dev compose target. base has no Prisma client, so @prisma/client fails at boot.
+# Keep this stage above production: the last stage is the default build target.
+FROM base AS dev
+RUN cd apps/hocuspocus.server && bunx prisma@6.19.3 generate
+
 # -----------------------------------------------------------------------------
 # Production: same layout, fresh install in stage (no root node_modules copy)
 # -----------------------------------------------------------------------------
