@@ -5,7 +5,7 @@ import { twMerge } from '@utils/twMerge'
 import type { ReactNode } from 'react'
 import { LuSparkles } from 'react-icons/lu'
 
-import { agentCommands, agentSetupPrompt } from '../utils/agentSetup'
+import { agentCommands, agentSetupPrompt, commandHint } from '../utils/connectTargets'
 import { mcpServerUrl } from '../utils/mcpServerUrl'
 
 // The whole cell copies, so the swap glyph is a picture of the state, like CopyButton's.
@@ -22,7 +22,6 @@ const AgentCell = ({
   name: string
   detail: ReactNode
   text: string
-  /** The full command on hover; the prompt cell leaves it out. */
   title?: string
   label: string
   className?: string
@@ -56,7 +55,7 @@ const AgentCell = ({
   )
 }
 
-/** One copy per terminal agent, then a prompt for any other agent. Desktop only: a phone runs none. */
+/** The caller hides it on a phone, where no agent runs. */
 const AgentSetupGrid = () => {
   const serverUrl = mcpServerUrl()
   // The consent page lives on this site, so its host is the one the person must check.
@@ -73,8 +72,8 @@ const AgentSetupGrid = () => {
       </p>
       {/* gap-px over a base-300 fill draws every divider, at any column count. */}
       <div className="border-base-300 bg-base-300 rounded-box mt-3 grid grid-cols-1 gap-px overflow-hidden border sm:grid-cols-2">
-        {agentCommands(serverUrl).map(({ app, name, command, hint }) => {
-          const { component: Mark, color } = AI_APP_BRANDS[app]
+        {agentCommands(serverUrl).map(({ app, command }) => {
+          const { name, component: Mark, color } = AI_APP_BRANDS[app]
           return (
             <AgentCell
               key={app}
@@ -89,7 +88,7 @@ const AgentSetupGrid = () => {
               name={name}
               detail={
                 <code className="text-base-content/60 block truncate font-mono text-xs">
-                  {hint}
+                  {commandHint(command)}
                 </code>
               }
               text={command}

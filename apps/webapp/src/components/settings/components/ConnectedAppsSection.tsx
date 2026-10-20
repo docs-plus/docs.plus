@@ -5,6 +5,7 @@ import { EmptyState } from '@components/ui/EmptyState'
 import { Icons } from '@icons'
 import type { AppTrust, ConnectedAppGroup } from '@utils/appTrust'
 import { twMerge } from '@utils/twMerge'
+import { useState } from 'react'
 import { LuPlugZap } from 'react-icons/lu'
 
 import { useConnectedApps } from '../hooks/useConnectedApps'
@@ -12,6 +13,8 @@ import { useDisconnectApp } from '../hooks/useDisconnectApp'
 import { openDisconnectAppConfirm } from '../openDisconnectAppConfirm'
 import { appsWithAccessText } from '../utils/appsWithAccessText'
 import { formatShortDate } from '../utils/formatShortDate'
+import { isMobileSurface } from '../utils/isMobileSurface'
+import AgentSetupGrid from './AgentSetupGrid'
 import ConnectCard from './ConnectCard'
 import McpIntroCard from './McpIntroCard'
 import SettingsCard, { SettingsCardHeader } from './SettingsCard'
@@ -123,12 +126,17 @@ const ConnectedCard = () => {
   )
 }
 
-const ConnectedAppsSection = () => (
-  <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
-    <McpIntroCard />
-    <ConnectedCard />
-    <ConnectCard />
-  </div>
-)
+// One phone answer for both cards: a phone can neither run an agent nor open an app link.
+const ConnectedAppsSection = () => {
+  const [isPhone] = useState(() => typeof window !== 'undefined' && isMobileSurface())
+
+  return (
+    <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
+      <McpIntroCard>{!isPhone && <AgentSetupGrid />}</McpIntroCard>
+      <ConnectedCard />
+      <ConnectCard isPhone={isPhone} />
+    </div>
+  )
+}
 
 export default ConnectedAppsSection

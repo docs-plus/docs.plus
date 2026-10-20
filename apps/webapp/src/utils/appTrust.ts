@@ -1,14 +1,13 @@
 import type { OAuthGrant } from '@supabase/supabase-js'
 
-import type { AiAppId } from './aiAppBrands'
+import { AI_APP_BRANDS, type AiAppId } from './aiAppBrands'
 import { displayClientName } from './displayClientName'
 
 // An app picks its own name, but only the real host can receive a code sent to its
 // callback. So trust follows the exact redirect URI, never the name.
-const KNOWN_APPS: { app: AiAppId; name: string; matches: (url: URL) => boolean }[] = [
+const KNOWN_APPS: { app: AiAppId; matches: (url: URL) => boolean }[] = [
   {
     app: 'claude',
-    name: 'Claude',
     // Anthropic documents claude.com as the future callback.
     matches: (url) =>
       (url.origin === 'https://claude.ai' || url.origin === 'https://claude.com') &&
@@ -16,7 +15,6 @@ const KNOWN_APPS: { app: AiAppId; name: string; matches: (url: URL) => boolean }
   },
   {
     app: 'chatgpt',
-    name: 'ChatGPT',
     // The last path segment is a per-connector id.
     matches: (url) =>
       url.origin === 'https://chatgpt.com' && /^\/connector\/oauth\/[\w-]+$/.test(url.pathname)
@@ -48,7 +46,8 @@ function originText(uri: string, url: URL | null): string {
 export function appTrust(redirectUri: string): AppTrust {
   const url = parse(redirectUri)
   const known = url && KNOWN_APPS.find((app) => app.matches(url))
-  if (known) return { kind: 'known', app: known.app, name: known.name, host: url.host }
+  if (known)
+    return { kind: 'known', app: known.app, name: AI_APP_BRANDS[known.app].name, host: url.host }
   if (url && /^https?:$/.test(url.protocol) && LOOPBACK_HOSTS.has(url.hostname)) {
     return { kind: 'local', origin: url.origin }
   }

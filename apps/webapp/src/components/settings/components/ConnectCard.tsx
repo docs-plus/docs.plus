@@ -2,18 +2,18 @@ import { AppMark } from '@components/ui/AppMark'
 import CopyButton from '@components/ui/CopyButton'
 import { PanelTabBar } from '@components/ui/PanelTabBar'
 import { Icons } from '@icons'
-import { AI_APP_BRANDS, type AiAppId } from '@utils/aiAppBrands'
+import { AI_APP_BRANDS } from '@utils/aiAppBrands'
 import { type ReactNode, useState } from 'react'
 import { LuLayoutGrid, LuPlug } from 'react-icons/lu'
 
-import { isMobileSurface } from '../utils/isMobileSurface'
-import { MCP_SERVER_NAME, mcpServerUrl } from '../utils/mcpServerUrl'
+import { type AppLink, appLinks, CHATGPT_PLUGINS_URL, claudeAddUrl } from '../utils/connectTargets'
+import { mcpServerUrl } from '../utils/mcpServerUrl'
 import SettingsCard, { SettingsCardHeader } from './SettingsCard'
 
 // Terminal agents live in the MCP server card's grid, so they have no tab here.
 const TABS = [
-  { label: 'Claude', icon: AI_APP_BRANDS.claude },
-  { label: 'ChatGPT', icon: AI_APP_BRANDS.chatgpt },
+  { label: AI_APP_BRANDS.claude.name, icon: AI_APP_BRANDS.claude },
+  { label: AI_APP_BRANDS.chatgpt.name, icon: AI_APP_BRANDS.chatgpt },
   { label: 'Other', icon: { component: LuLayoutGrid, color: null } }
 ] as const
 type ConnectTab = (typeof TABS)[number]['label']
@@ -73,36 +73,21 @@ const PanelHeader = ({ where, action }: { where: string; action: ReactNode }) =>
   </div>
 )
 
-const OtherRow = ({
-  app,
-  name,
-  note,
-  action
-}: {
-  app: AiAppId
-  name: string
-  note: string
-  action: ReactNode
-}) => (
+const AppLinkRow = ({ app, note, href, newTab }: AppLink) => (
   <li className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
     <AppMark app={app} />
     <div className="min-w-0 flex-1">
-      <p className="text-base-content text-sm font-semibold">{name}</p>
+      <p className="text-base-content text-sm font-semibold">{AI_APP_BRANDS[app].name}</p>
       <p className="text-meta text-base-content/60">{note}</p>
     </div>
-    {action}
+    <a
+      href={href}
+      {...(newTab && { target: '_blank', rel: 'noopener noreferrer' })}
+      className="btn btn-primary btn-soft btn-sm shrink-0 gap-1.5">
+      <Icons.externalLink size={16} aria-hidden />
+      Add to {AI_APP_BRANDS[app].name}
+    </a>
   </li>
-)
-
-// An app link opens the app and leaves this page; a web link would replace Settings, so it gets a tab.
-const AddLink = ({ name, href }: { name: string; href: string }) => (
-  <a
-    href={href}
-    {...(href.startsWith('https:') && { target: '_blank', rel: 'noopener noreferrer' })}
-    className="btn btn-primary btn-soft btn-sm shrink-0 gap-1.5">
-    <Icons.externalLink size={16} aria-hidden />
-    Add to {name}
-  </a>
 )
 
 const ServerUrlField = ({ serverUrl }: { serverUrl: string }) => (
@@ -122,9 +107,8 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
             <OpenAndCopy
               label="Add to Claude"
               text={serverUrl}
-              // Claude shows `connectorName` as the connector title, so it stays "docs.plus", not
-              // the CLI slug. The copied URL covers a Claude that stops reading the parameters.
-              href={`https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=docs.plus&connectorUrl=${encodeURIComponent(serverUrl)}`}
+              // The copied URL covers a Claude that stops reading the parameters.
+              href={claudeAddUrl(serverUrl)}
             />
           }
         />
@@ -149,9 +133,7 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
       <>
         <PanelHeader
           where="Web, with Developer mode on"
-          action={
-            <OpenAndCopy label="Open ChatGPT" text={serverUrl} href="https://chatgpt.com/plugins" />
-          }
+          action={<OpenAndCopy label="Open ChatGPT" text={serverUrl} href={CHATGPT_PLUGINS_URL} />}
         />
         <Steps>
           <Step n={1}>
@@ -175,53 +157,12 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
       </>
     )
   }
-  // Cursor and LM Studio read the same base64 `{ url }` config.
-  const urlConfig = encodeURIComponent(btoa(JSON.stringify({ url: serverUrl })))
-  const vscodeConfig = encodeURIComponent(
-    JSON.stringify({ name: MCP_SERVER_NAME, type: 'http', url: serverUrl })
-  )
-  const replitConfig = encodeURIComponent(
-    btoa(JSON.stringify({ displayName: MCP_SERVER_NAME, baseUrl: serverUrl }))
-  )
   return (
     <>
       <ul className="divide-base-300 divide-y">
-        <OtherRow
-          app="cursor"
-          name="Cursor"
-          note="Opens Cursor with everything filled in."
-          action={
-            <AddLink
-              name="Cursor"
-              href={`cursor://anysphere.cursor-deeplink/mcp/install?name=${MCP_SERVER_NAME}&config=${urlConfig}`}
-            />
-          }
-        />
-        <OtherRow
-          app="vscode"
-          name="VS Code"
-          note="Opens VS Code with everything filled in, for GitHub Copilot."
-          action={<AddLink name="VS Code" href={`vscode:mcp/install?${vscodeConfig}`} />}
-        />
-        <OtherRow
-          app="lmStudio"
-          name="LM Studio"
-          note="Opens LM Studio 0.4.10 or later with everything filled in."
-          action={
-            <AddLink
-              name="LM Studio"
-              href={`lmstudio://add_mcp?name=${MCP_SERVER_NAME}&config=${urlConfig}`}
-            />
-          }
-        />
-        <OtherRow
-          app="replit"
-          name="Replit"
-          note="Opens Replit in a new tab, with everything filled in, for Replit Agent."
-          action={
-            <AddLink name="Replit" href={`https://replit.com/integrations?mcp=${replitConfig}`} />
-          }
-        />
+        {appLinks(serverUrl).map((link) => (
+          <AppLinkRow key={link.app} {...link} />
+        ))}
       </ul>
       <div className="border-base-300 mt-4 border-t pt-4">
         <ServerUrlField serverUrl={serverUrl} />
@@ -234,8 +175,7 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
   )
 }
 
-const ConnectCard = () => {
-  const [isPhone] = useState(() => typeof window !== 'undefined' && isMobileSurface())
+const ConnectCard = ({ isPhone }: { isPhone: boolean }) => {
   const [tab, setTab] = useState<ConnectTab>('Claude')
   const serverUrl = mcpServerUrl()
 

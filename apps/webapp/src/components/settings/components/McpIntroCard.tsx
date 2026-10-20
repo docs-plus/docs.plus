@@ -1,15 +1,13 @@
 import { quietActionClassName } from '@components/ui/Button'
 import { Icons } from '@icons'
 import { twMerge } from '@utils/twMerge'
-import { useState } from 'react'
+import type { ReactNode } from 'react'
 import type { IconType } from 'react-icons'
 import { LuFilePlus, LuPencil } from 'react-icons/lu'
 import { SiModelcontextprotocol } from 'react-icons/si'
 
 import { MCP_GUIDE_URL } from '../constants'
 import { type McpServerStatus, useMcpServerStatus } from '../hooks/useMcpServerStatus'
-import { isMobileSurface } from '../utils/isMobileSurface'
-import AgentSetupGrid from './AgentSetupGrid'
 import SettingsCard, { SettingsCardHeader } from './SettingsCard'
 
 const ABILITIES: { icon: IconType; label: string }[] = [
@@ -37,36 +35,33 @@ const ServerStatus = () => {
   )
 }
 
-const McpIntroCard = () => {
-  const [isPhone] = useState(() => typeof window !== 'undefined' && isMobileSurface())
-
-  return (
-    <SettingsCard>
-      <SettingsCardHeader icon={SiModelcontextprotocol} title="MCP server">
-        <ServerStatus />
-        <a
-          href={MCP_GUIDE_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={twMerge(quietActionClassName, 'ms-auto')}>
-          Setup guide
-          <Icons.externalLink size={14} aria-hidden />
-        </a>
-      </SettingsCardHeader>
-      <p className="text-base-content/70 text-sm">
-        Connect an AI app such as Claude or ChatGPT. Signed in as you, it can:
-      </p>
-      <ul className="mt-3 flex flex-wrap gap-1.5">
-        {ABILITIES.map(({ icon: Icon, label }) => (
-          <li key={label} className="badge badge-soft badge-sm gap-1.5">
-            <Icon size={12} className="text-base-content/70 shrink-0" aria-hidden />
-            {label}
-          </li>
-        ))}
-      </ul>
-      {!isPhone && <AgentSetupGrid />}
-    </SettingsCard>
-  )
-}
+/** `children` close the card, such as the terminal agent grid on a computer. */
+const McpIntroCard = ({ children }: { children?: ReactNode }) => (
+  <SettingsCard>
+    <SettingsCardHeader icon={SiModelcontextprotocol} title="MCP server">
+      <ServerStatus />
+      <a
+        href={MCP_GUIDE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={twMerge(quietActionClassName, 'ms-auto')}>
+        Setup guide
+        <Icons.externalLink size={14} aria-hidden />
+      </a>
+    </SettingsCardHeader>
+    <p className="text-base-content/70 text-sm">
+      Connect an AI app such as Claude or ChatGPT. Signed in as you, it can:
+    </p>
+    <ul className="mt-3 flex flex-wrap gap-1.5">
+      {ABILITIES.map(({ icon: Icon, label }) => (
+        <li key={label} className="badge badge-soft badge-sm gap-1.5">
+          <Icon size={12} className="text-base-content/70 shrink-0" aria-hidden />
+          {label}
+        </li>
+      ))}
+    </ul>
+    {children}
+  </SettingsCard>
+)
 
 export default McpIntroCard
