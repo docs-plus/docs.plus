@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-
-import { mcpServerUrl } from '../utils/mcpServerUrl'
+import { mcpServerUrl } from '@utils/mcpServerUrl'
 
 export type McpServerStatus = 'checking' | 'online' | 'offline' | 'unreachable'
 

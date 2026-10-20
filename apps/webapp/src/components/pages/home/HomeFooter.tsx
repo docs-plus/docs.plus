@@ -41,7 +41,7 @@ export function HomeFooter() {
         </a>
       </div>
 
-      <nav aria-label="Legal" className="flex items-center gap-4 text-xs sm:text-sm">
+      <nav aria-label="Site" className="flex items-center gap-4 text-xs sm:text-sm">
         <Link
           href={PRIVACY_PATH}
           className="rounded-field hover:text-base-content focus-visible:outline-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2">
@@ -51,6 +51,11 @@ export function HomeFooter() {
           href={TERMS_PATH}
           className="rounded-field hover:text-base-content focus-visible:outline-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2">
           Terms
+        </Link>
+        <Link
+          href="/mcp"
+          className="rounded-field hover:text-base-content focus-visible:outline-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2">
+          AI apps
         </Link>
       </nav>
     </footer>

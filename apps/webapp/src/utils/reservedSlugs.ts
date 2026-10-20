@@ -9,6 +9,7 @@ const RESERVED_SLUGS = new Set([
   'auth',
   'privacy',
   'terms',
+  'mcp',
   'oauth',
   'c',
   'unsubscribe',

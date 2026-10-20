@@ -3,11 +3,11 @@ import CopyButton from '@components/ui/CopyButton'
 import { PanelTabBar } from '@components/ui/PanelTabBar'
 import { Icons } from '@icons'
 import { AI_APP_BRANDS } from '@utils/aiAppBrands'
+import { type AppLink, appLinks, CHATGPT_PLUGINS_URL, claudeAddUrl } from '@utils/connectTargets'
+import { mcpServerUrl } from '@utils/mcpServerUrl'
 import { type ReactNode, useState } from 'react'
 import { LuLayoutGrid, LuPlug } from 'react-icons/lu'
 
-import { type AppLink, appLinks, CHATGPT_PLUGINS_URL, claudeAddUrl } from '../utils/connectTargets'
-import { mcpServerUrl } from '../utils/mcpServerUrl'
 import SettingsCard, { SettingsCardHeader } from './SettingsCard'
 
 // Terminal agents live in the MCP server card's grid, so they have no tab here.

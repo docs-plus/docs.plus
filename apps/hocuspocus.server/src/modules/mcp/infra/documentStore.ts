@@ -62,6 +62,7 @@ const ROUTE_SLUGS = new Set([
   'receive',
   'privacy',
   'terms',
+  'mcp',
   'auth',
   'c',
   'oauth',

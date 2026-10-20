@@ -24,6 +24,9 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Changed
 
+- **`create_document` names a document titled "MCP" `mcp-document`.** The
+  webapp now serves a page at `/mcp`, so `mcp` joins the route slugs
+  ([#458](https://github.com/docs-plus/docs.plus/issues/458)).
 - **Presence heartbeats no longer touch every `users` index.**
   `idx_users_online_status` now keys only `id`, so a heartbeat is a HOT
   update. The duplicate `idx_users_username` is dropped; `users_username_key`

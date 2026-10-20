@@ -22,7 +22,7 @@ export const HOME_OG_IMAGE_WIDTH = '1280'
 export const HOME_OG_IMAGE_HEIGHT = '640'
 
 /** Paths allowed in `sitemap.xml` (user docs stay `noindex`). */
-export const INDEXABLE_PATHS = ['/', '/privacy', '/terms'] as const
+export const INDEXABLE_PATHS = ['/', '/privacy', '/terms', '/mcp'] as const
 
 export function buildHomeWebSiteJsonLd(): Record<string, string> {
   return {

@@ -1,12 +1,11 @@
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { Icons } from '@icons'
 import { AI_APP_BRANDS } from '@utils/aiAppBrands'
+import { agentCommands, agentSetupPrompt, commandHint } from '@utils/connectTargets'
+import { mcpServerUrl } from '@utils/mcpServerUrl'
 import { twMerge } from '@utils/twMerge'
 import type { ReactNode } from 'react'
 import { LuSparkles } from 'react-icons/lu'
-
-import { agentCommands, agentSetupPrompt, commandHint } from '../utils/connectTargets'
-import { mcpServerUrl } from '../utils/mcpServerUrl'
 
 // The whole cell copies, so the swap glyph is a picture of the state, like CopyButton's.
 const AgentCell = ({

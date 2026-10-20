@@ -33,6 +33,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   Codex command also starts its sign-in. A last cell, **Any other agent**,
   copies a short prompt that tells the agent to show each change and wait
   for a yes. The **Other** tab gains **Add to LM Studio** and **Add to
+- **A public `/mcp` page shows the MCP server URL and how to add it to each
+  AI app** ([#458](https://github.com/docs-plus/docs.plus/issues/458)). The
+  sitemap lists it, and the home footer links it as **AI apps**. A document
+  named "MCP" now opens on a random slug, because `mcp` is a reserved slug.
   Replit**.
 
 ### Changed
