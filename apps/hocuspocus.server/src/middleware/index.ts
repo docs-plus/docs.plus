@@ -7,7 +7,7 @@ import { RateLimiterRedis } from 'rate-limiter-flexible'
 
 import { HYPERMULTIMEDIA_MOUNT_PATH } from '../api/routers/hypermultimedia.router'
 import { config } from '../config/env'
-import { CONSUME_TIMEOUT_MS, consumeWithin } from '../lib/consumeWithin'
+import { CONSUME_TIMEOUT_MS, consumeWithin, readWithin } from '../lib/consumeWithin'
 import { httpLogger } from '../lib/logger'
 import { rateLimitFailOpenTotal } from '../lib/metrics'
 import { getRedisClient } from '../lib/redis'
@@ -62,19 +62,16 @@ export const rateLimiter = (options: {
   })
 
   // Reads the bucket without spending it. A slow or failing Redis reads as budget
-  // left, the same fail-open answer the consume below gives.
+  // left, the same fail-open answer the consume below gives, and counts the same way.
   const hasBudget = async (c: Context): Promise<boolean> => {
     const ip = clientAddress(c)
     if (ip === null) return true
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const res = await Promise.race([
-      limiter.get(ip).catch(() => null),
-      new Promise<null>((resolve) => {
-        timer = setTimeout(() => resolve(null), CONSUME_TIMEOUT_MS)
-      })
-    ])
-    clearTimeout(timer)
-    return res === null || res.remainingPoints > 0
+    const outcome = await readWithin(limiter, ip)
+    if (outcome.kind === 'unavailable') {
+      rateLimitFailOpenTotal.inc({ reason: outcome.reason, bucket: keyPrefix })
+      return true
+    }
+    return outcome.res === null || outcome.res.remainingPoints > 0
   }
 
   const middleware = async (c: Context, next: Next) => {
@@ -198,10 +195,10 @@ export const pinoLogger = () => {
 
 export interface MiddlewareOptions {
   /** True for an `/api/mcp` call whose OAuth token verified; it skips the global limiter. */
-  isVerifiedMcpCall?: (c: Context, hasBudget: () => Promise<boolean>) => Promise<boolean>
+  isVerifiedMcpCall: (c: Context, hasBudget: () => Promise<boolean>) => Promise<boolean>
 }
 
-export const setupMiddleware = (app: Hono, opts?: MiddlewareOptions) => {
+export const setupMiddleware = (app: Hono, opts: MiddlewareOptions) => {
   // First so preflight OPTIONS gets CORS headers.
   // Development allows any origin. Production restricts to the resolved allowlist;
   // never pair a wildcard origin with credentials.
@@ -286,10 +283,10 @@ export const setupMiddleware = (app: Hono, opts?: MiddlewareOptions) => {
     }
 
     // A hosted AI app sends many people from one address, so a verified MCP call skips the
-    // global limiter while the address has budget left; tool calls spend the per-person budget
-    // (#551). Decided here, not
-    // in the MCP router, because its origin gate and body limit answer before auth.
-    if (await opts?.isVerifiedMcpCall?.(c, () => globalRateLimiter.hasBudget(c))) {
+    // global limiter while the address has budget left; the MCP router then spends per-person
+    // buckets (#551). Decided here, not in that router, because its origin gate and body limit
+    // answer before auth.
+    if (await opts.isVerifiedMcpCall(c, () => globalRateLimiter.hasBudget(c))) {
       return next()
     }
 

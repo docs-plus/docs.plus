@@ -27,8 +27,10 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - **A verified `/api/mcp` call no longer spends the per-address rate limit
   ([#551](https://github.com/docs-plus/docs.plus/issues/551)).** Many people
   on one hosted AI app no longer share one bucket. A request without an
-  accepted OAuth token, and the metadata routes, still spend it. The
-  per-person budget of 60 tool calls a minute is unchanged. The token is
+  accepted OAuth token, and the metadata routes, still spend it. Instead,
+  every request with an accepted token spends a new per-person bucket of 300
+  a minute, so `initialize` and `tools/list` stay bounded. The per-person
+  budget of 60 tool calls a minute is unchanged. The token is
   checked only while the address has budget left. So a spent address gets a
   `429` even for a good token, and makes no Supabase Auth call. A token
   with no `client_id` or a past `exp` is refused before that call. One gap

@@ -3,6 +3,9 @@ import { Hono } from 'hono'
 import { setupMiddleware } from '../../src/middleware'
 import { TestServer } from '../helpers/test-server'
 
+// These tests cover CORS and logging, not the MCP rate-limit skip.
+const NO_MCP_SKIP = { isVerifiedMcpCall: async () => false }
+
 describe('CORS Middleware', () => {
   let testServer: TestServer
   let app: Hono
@@ -13,7 +16,7 @@ describe('CORS Middleware', () => {
     process.env.NODE_ENV = 'development'
 
     app = new Hono()
-    setupMiddleware(app)
+    setupMiddleware(app, NO_MCP_SKIP)
 
     // Add test routes
     app.get('/test', (c) => c.json({ message: 'success' }))

@@ -60,8 +60,30 @@ const openapiModule = openapi.init({
 // above setupMiddleware because secureHeaders rewrites the header after next().
 app.use(openapi.DOCS_PATH, openapi.swaggerUiCsp)
 
-// The same verifier as mcp.init below: the per-request memo assumes one verifier.
-setupMiddleware(app, { isVerifiedMcpCall: mcp.createVerifiedMcpCall(verifySupabaseTokenOutcome) })
+// Built before the middleware, whose rate-limit skip shares this module's bearer check.
+// Its own content client, so hop and decode logs carry the `mcp` module.
+const mcpLogger = logger.child({ module: 'mcp' })
+const mcpModule = mcp.init({
+  prisma,
+  logger: mcpLogger,
+  content: documentContent.createContentClient({
+    baseUrl: config.hocuspocus.internalUrl,
+    serviceRoleKey: config.supabase.serviceRoleKey ?? null,
+    prisma,
+    logger: mcpLogger
+  }),
+  verifyToken: verifySupabaseTokenOutcome,
+  publicBaseUrl: config.app.publicUrl,
+  appUrl: config.email.appUrl,
+  authIssuer: config.mcp.authIssuer,
+  allowedOrigins: config.security.originAllowlist,
+  redis: getRedisClient(),
+  supabase: getServiceRoleClient(),
+  supabaseUrl: config.supabase.url,
+  supabaseKey: config.supabase.serviceRoleKey ?? null,
+  version: pkg.version
+})
+setupMiddleware(app, { isVerifiedMcpCall: mcpModule.isVerifiedMcpCall })
 
 app.use('*', async (c, next) => {
   c.set('prisma', prisma)
@@ -160,28 +182,6 @@ const linkMetadataModule = linkMetadata.init({
   logger: logger.child({ module: 'link-metadata' })
 })
 app.route('/api/metadata', linkMetadataModule.router)
-// Its own content client, so hop and decode logs carry the `mcp` module.
-const mcpLogger = logger.child({ module: 'mcp' })
-const mcpModule = mcp.init({
-  prisma,
-  logger: mcpLogger,
-  content: documentContent.createContentClient({
-    baseUrl: config.hocuspocus.internalUrl,
-    serviceRoleKey: config.supabase.serviceRoleKey ?? null,
-    prisma,
-    logger: mcpLogger
-  }),
-  verifyToken: verifySupabaseTokenOutcome,
-  publicBaseUrl: config.app.publicUrl,
-  appUrl: config.email.appUrl,
-  authIssuer: config.mcp.authIssuer,
-  allowedOrigins: config.security.originAllowlist,
-  redis: getRedisClient(),
-  supabase: getServiceRoleClient(),
-  supabaseUrl: config.supabase.url,
-  supabaseKey: config.supabase.serviceRoleKey ?? null,
-  version: pkg.version
-})
 app.route(mcp.MCP_MOUNT_PATH, mcpModule.router)
 // RFC 9728's standard locations, beside the /api/mcp copy the 401 header names (#550).
 app.route(mcp.RESOURCE_METADATA_PATH, mcpModule.wellKnownRouter)

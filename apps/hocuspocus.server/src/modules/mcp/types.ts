@@ -48,7 +48,7 @@ export interface ServerFactoryDeps {
   prisma: PrismaClient
   logger: Logger
   content: ContentClient
-  budget: ToolBudget
+  budget: CallerBudget
   usage: RecordUsage
   /** Null when Supabase is not configured; the chat tools then refuse. */
   chat: ChatStore | null
@@ -100,7 +100,9 @@ export interface OutlineNode {
   children: OutlineNode[]
 }
 
-export type ToolBudget = (sub: string) => Promise<{ ok: true } | { ok: false; retryAfter: number }>
+export type CallerBudget = (
+  sub: string
+) => Promise<{ ok: true } | { ok: false; retryAfter: number }>
 
 export type ToolOutcome = 'ok' | 'rate-limited' | 'tool-error' | 'error'
 

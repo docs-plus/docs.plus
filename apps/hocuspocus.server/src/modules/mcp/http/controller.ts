@@ -3,7 +3,7 @@ import type { Context, Next } from 'hono'
 
 import { fail } from '../../../http/envelope'
 import { decodeJwtClaims } from '../../../lib/jwtClaims'
-import type { VerifyToken } from '../types'
+import type { Caller, CallerBudget, VerifyToken } from '../types'
 
 export const MCP_MOUNT_PATH = '/api/mcp'
 export const RESOURCE_METADATA_PATH = '/.well-known/oauth-protected-resource'
@@ -11,11 +11,13 @@ export const RESOURCE_METADATA_PATH = '/.well-known/oauth-protected-resource'
 // phone sign-up is off, so no number exists to share. AI apps get name, picture and email.
 const SCOPES = ['openid', 'email', 'profile'] as const
 
+/** The transport's methods. The rate-limit skip and the router both read this list. */
+export const MCP_METHODS = ['POST', 'GET', 'DELETE']
+
 export interface EndpointDeps {
   publicBaseUrl: string | null
   authIssuer: string
   allowedOrigins: readonly string[]
-  verifyToken: VerifyToken
 }
 
 // The configured origin, never a header, when it is set. The local fallback is
@@ -119,29 +121,51 @@ const readBearer = async (
   }
 }
 
-// One check per request: the rate-limit skip and the transport share it, because
-// Supabase Auth's `unavailable` answer is never cached and each call would wait again.
-const bearerChecks = new WeakMap<Context, Promise<AuthInfo | BearerRefusal>>()
-
-const checkBearer = (c: Context, verifyToken: VerifyToken): Promise<AuthInfo | BearerRefusal> => {
-  let check = bearerChecks.get(c)
-  if (!check) {
-    check = readBearer(c.req.header('Authorization'), verifyToken)
-    bearerChecks.set(c, check)
+// `readBearer` built this `extra`. A missing subject is a wiring fault, so it fails
+// loudly rather than running a request as nobody.
+export const callerFrom = (authInfo: AuthInfo | undefined): Caller => {
+  const sub = authInfo?.extra?.sub
+  if (!authInfo || typeof sub !== 'string')
+    throw new Error('MCP request reached tools unauthenticated')
+  const email = authInfo.extra?.email
+  return {
+    sub,
+    email: typeof email === 'string' ? email : undefined,
+    isAnonymous: authInfo.extra?.isAnonymous === true,
+    clientId: authInfo.clientId
   }
-  return check
+}
+
+export type BearerCheck = (c: Context) => Promise<AuthInfo | BearerRefusal>
+
+/**
+ * One check per request: the rate-limit skip and the transport share it, because
+ * Supabase Auth's `unavailable` answer is never cached and each call would wait again.
+ */
+export const createBearerCheck = (verifyToken: VerifyToken): BearerCheck => {
+  const checks = new WeakMap<Context, Promise<AuthInfo | BearerRefusal>>()
+  return (c) => {
+    let check = checks.get(c)
+    if (!check) {
+      check = readBearer(c.req.header('Authorization'), verifyToken)
+      checks.set(c, check)
+    }
+    return check
+  }
 }
 
 export const createAuthenticate =
-  (deps: EndpointDeps) =>
+  (publicBaseUrl: string | null, checkBearer: BearerCheck) =>
   async (c: Context): Promise<AuthInfo | Response> => {
-    const result = await checkBearer(c, deps.verifyToken)
+    const result = await checkBearer(c)
     if (!('status' in result)) return result
     if (result.status === 503) {
       return fail(c, 503, 'AUTH_UNAVAILABLE', 'Auth service temporarily unavailable')
     }
-    return challenge(c, deps.publicBaseUrl, result.message, result.errorDescription)
+    return challenge(c, publicBaseUrl, result.message, result.errorDescription)
   }
+
+export type VerifiedMcpCall = (c: Context, hasBudget: () => Promise<boolean>) => Promise<boolean>
 
 /**
  * True only for a transport call whose token `createAuthenticate` accepts, so a
@@ -150,23 +174,36 @@ export const createAuthenticate =
  * Supabase call. It never calls `createAuthenticate`, whose header would leak onto a 429.
  */
 export const createVerifiedMcpCall =
-  (verifyToken: VerifyToken) =>
-  async (c: Context, hasBudget: () => Promise<boolean>): Promise<boolean> => {
-    if (!['POST', 'GET', 'DELETE'].includes(c.req.method)) return false
+  (checkBearer: BearerCheck): VerifiedMcpCall =>
+  async (c, hasBudget) => {
+    if (!MCP_METHODS.includes(c.req.method)) return false
     if (new URL(c.req.url).pathname !== MCP_MOUNT_PATH) return false
     if (!c.req.header('Authorization')?.startsWith('Bearer ')) return false
     if (!(await hasBudget())) return false
     try {
-      return !('status' in (await checkBearer(c, verifyToken)))
+      return !('status' in (await checkBearer(c)))
     } catch {
       return false
     }
   }
 
+/**
+ * A verified call skips the per-address limit, so every transport request also spends
+ * a per-person bucket. Without it, `initialize` and `tools/list` had no app bound (#551).
+ */
 export const createTransportHandler =
-  (authenticate: (c: Context) => Promise<AuthInfo | Response>, handler: McpHttpHandler) =>
+  (
+    authenticate: (c: Context) => Promise<AuthInfo | Response>,
+    requestBudget: CallerBudget,
+    handler: Pick<McpHttpHandler, 'fetch'>
+  ) =>
   async (c: Context): Promise<Response> => {
     const authInfo = await authenticate(c)
     if (authInfo instanceof Response) return authInfo
+    const budget = await requestBudget(callerFrom(authInfo).sub)
+    if (!budget.ok) {
+      c.header('Retry-After', budget.retryAfter.toString())
+      return fail(c, 429, 'RATE_LIMIT_EXCEEDED', 'Too many requests, please try again later')
+    }
     return handler.fetch(c.req.raw, { authInfo })
   }

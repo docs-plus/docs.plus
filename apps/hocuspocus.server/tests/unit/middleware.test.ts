@@ -2,6 +2,9 @@ import { describe, test, expect, mock, beforeEach, afterEach } from 'bun:test'
 import { Hono } from 'hono'
 import { pinoLogger, setupMiddleware } from '../../src/middleware'
 
+// These tests cover CORS and logging, not the MCP rate-limit skip.
+const NO_MCP_SKIP = { isVerifiedMcpCall: async () => false }
+
 describe('Middleware - Complete Coverage', () => {
   let app: Hono
 
@@ -58,7 +61,7 @@ describe('Middleware - Complete Coverage', () => {
       const devApp = new Hono()
 
       // Just verify middleware can be set up without errors
-      expect(() => setupMiddleware(devApp)).not.toThrow()
+      expect(() => setupMiddleware(devApp, NO_MCP_SKIP)).not.toThrow()
 
       process.env.NODE_ENV = originalEnv
     })
@@ -73,7 +76,7 @@ describe('Middleware - Complete Coverage', () => {
       const prodApp = new Hono()
 
       // Verify middleware can be set up without errors
-      expect(() => setupMiddleware(prodApp)).not.toThrow()
+      expect(() => setupMiddleware(prodApp, NO_MCP_SKIP)).not.toThrow()
 
       process.env.NODE_ENV = originalEnv
       process.env.ALLOWED_ORIGINS = originalOrigins
@@ -89,7 +92,7 @@ describe('Middleware - Complete Coverage', () => {
       const prodApp = new Hono()
 
       // Verify middleware can be set up without errors
-      expect(() => setupMiddleware(prodApp)).not.toThrow()
+      expect(() => setupMiddleware(prodApp, NO_MCP_SKIP)).not.toThrow()
 
       process.env.NODE_ENV = originalEnv
       process.env.ALLOWED_ORIGINS = originalOrigins
@@ -103,7 +106,7 @@ describe('Middleware - Complete Coverage', () => {
       const prodApp = new Hono()
 
       // Verify middleware can be set up and properly trims origins
-      expect(() => setupMiddleware(prodApp)).not.toThrow()
+      expect(() => setupMiddleware(prodApp, NO_MCP_SKIP)).not.toThrow()
 
       process.env.ALLOWED_ORIGINS = originalOrigins
     })

@@ -1012,7 +1012,7 @@ An empty `warnings` array means a clean import.
 
 `/api/mcp` is a Model Context Protocol server (`src/modules/mcp/`). A person adds docs.plus to an AI app as a connector and signs in as themselves. The app's agent then reads and edits that person's documents through the tools below. It uses `@modelcontextprotocol/server` 2.3.1 with `createMcpHandler`. Every request gets a fresh server, so the endpoint holds no session between requests or replicas.
 
-**Supported hosts.** claude.ai, Claude Desktop and ChatGPT add it as a remote connector. Tested against production on 2026-10-20 through dynamic client registration (DCR): Claude Code (sign-in plus all ten tools), Codex and Cursor. Copilot CLI, Cline, VS Code, LM Studio and Replit are not tested yet (#357).
+**Supported hosts.** claude.ai, Claude Desktop and ChatGPT add it as a remote connector. Tested against production on 2026-10-20 through dynamic client registration (DCR): Claude Code (sign-in plus all ten tools), Codex and Cursor. Other hosts, such as Copilot CLI, Cline, VS Code, LM Studio and Replit, are not tested yet (#357).
 
 ### Endpoints
 
@@ -1082,7 +1082,7 @@ Every tool except `find_documents` and `create_document` takes a document slug. 
 
 **Errors.** A tool error is an MCP result with `isError: true`. Its text gives the next step. When one argument is at fault, the text starts with that field. A bad argument never reaches the tool: the SDK answers with the failing field.
 
-**Budget and logs.** Each person gets 60 tool calls a minute, kept in Redis (`mcp-sub`). With no Redis, or a Redis fault, calls run without the budget. A hosted AI app sends many people from one address range, so a transport request whose OAuth token is accepted does not spend the global rate limit while that address still has budget left. A request without an accepted token, and the metadata routes, still spend it. Once an address has spent its budget, every call from it gets `429` until the window resets, accepted token included. The budget is read before the token is verified, so forged tokens cannot make unlimited Supabase calls (#551). Each call logs one line with the keys `tool`, `sub`, `clientId`, `outcome` and `durationMs`. Arguments, headers and tokens are never logged.
+**Budget and logs.** Each person gets 60 tool calls a minute, kept in Redis (`mcp-sub`). Every request with an accepted token also spends a per-person request bucket of 300 a minute (`mcp-req`), so `initialize` and `tools/list` are bounded too. Over it, the transport answers `429 RATE_LIMIT_EXCEEDED` with `Retry-After`. With no Redis, or a Redis fault, calls run without either bucket. A transport call with an accepted OAuth token skips the per-address rate limit while the address has budget left. [Rate limiting](#rate-limiting) gives the rules (#551). Each call logs one line with the keys `tool`, `sub`, `clientId`, `outcome` and `durationMs`. Arguments, headers and tokens are never logged.
 
 **Usage counts.** After each call, one Redis pipeline adds to three keys for the UTC day (`YYYY-MM-DD`). Each key expires 35 days after its first write.
 
@@ -1096,7 +1096,7 @@ The write never blocks or fails the call. It is skipped when Redis is not connec
 
 ### GET /api/connected-apps/redirects
 
-The registered redirect URIs of the caller's own connected apps, keyed by OAuth `client_id`. The webapp needs them because Supabase grants omit them. It shows an app as Claude or ChatGPT only when every URI is that app's exact callback, whatever name the app registered.
+The registered redirect URIs of the caller's own connected apps, keyed by OAuth `client_id`. The webapp needs them because Supabase grants omit them. It names a known app (Claude, ChatGPT or Cursor) only when every URI is that app's exact callback, whatever name the app registered.
 
 ```json
 {
@@ -1356,7 +1356,7 @@ The global limit is `RATE_LIMIT_MAX` requests (default `100`) per 15-minute wind
 
 **Public media reads have their own, larger budget.** A `GET` under `/api/plugins/hypermultimedia/` is charged to a second limiter, which holds ten times the global points over its own 15-minute window. So a pad holding 20 images does not spend 20 points of the global budget on a cold load. The upload `POST` on that path stays on the global budget, as does every other route. The multiplier is a constant in the middleware, not an environment variable.
 
-**A verified `/api/mcp` call skips the global limiter** (#551). It must be a `POST`, `GET` or `DELETE` on `/api/mcp` whose bearer token the MCP transport accepts. Supabase Auth must verify the token. It must carry a `client_id` claim and no past `exp`. Its tool calls spend the per-person tool budget. The app does not charge its other calls, such as `initialize` and `tools/list`. A missing, fake, invalid or browser-session token, an Auth outage, and the metadata routes still spend the global budget. A hosted AI app sends many people from one address, so the person is the fair unit. The server checks the token only while the address has global budget left. So a call from a spent address gets a `429` before its token is checked, even a token that would pass. That keeps a spent address from making Supabase Auth calls. A token with no `client_id` claim or a past `exp` is refused before the Auth call.
+**A verified `/api/mcp` call skips the global limiter** (#551). It must be a `POST`, `GET` or `DELETE` on `/api/mcp` whose bearer token the MCP transport accepts. Supabase Auth must verify the token. It must carry a `client_id` claim and no past `exp`. It spends two per-person buckets instead: 300 requests a minute for every call, and 60 tool calls a minute for its tool calls. A missing, fake, invalid or browser-session token, an Auth outage, and the metadata routes still spend the global budget. A hosted AI app sends many people from one address, so the person is the fair unit. The server checks the token only while the address has global budget left. So a call from a spent address gets a `429` before its token is checked, even a token that would pass. That keeps a spent address from making Supabase Auth calls. A token with no `client_id` claim or a past `exp` is refused before the Auth call.
 
 A response that a limiter charges carries `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` (ISO timestamp). A verified `/api/mcp` call carries none of them. A media read reports its own limiter's numbers in those headers. On `429`, the body is the house envelope with code `RATE_LIMIT_EXCEEDED`, and a `Retry-After` header carries the seconds until the window resets.
 

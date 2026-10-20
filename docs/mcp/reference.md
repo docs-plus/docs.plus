@@ -106,27 +106,28 @@ The check parses only. It does not lay the diagram out. The `markdown` field des
 
 ## Limits
 
-| Limit               | Value                                                                                                                                                                                             |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Read output         | 100 000 characters per call, or `max_chars` when smaller. The text says where it stopped.                                                                                                         |
-| Markdown written    | 65 536 characters per call                                                                                                                                                                        |
-| Chat post           | 2000 characters of text. The stored HTML is capped at 3000 characters.                                                                                                                            |
-| Tool calls          | 60 per minute per person, on a server with Redis. Over it, the tool returns an error with the wait in seconds, not a `429`.                                                                       |
-| Request body        | 1 MiB. A larger body gets `413`.                                                                                                                                                                  |
-| REST API rate limit | The REST API [rate limit](../api/README.md#rate-limiting) is spent only by an `/api/mcp` request without an accepted token. Once an address has spent it, every call from that address gets `429` |
+| Limit               | Value                                                                                                                                                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Read output         | 100 000 characters per call, or `max_chars` when smaller. The text says where it stopped.                                                                                                                                |
+| Markdown written    | 65 536 characters per call                                                                                                                                                                                               |
+| Chat post           | 2000 characters of text. The stored HTML is capped at 3000 characters.                                                                                                                                                   |
+| Requests            | 300 per minute per person, on a server with Redis. This counts every call with an accepted token, `initialize` and `tools/list` included. Over it, the transport answers `429`.                                          |
+| Tool calls          | 60 per minute per person, on a server with Redis. Over it, the tool returns an error with the wait in seconds, not a `429`.                                                                                              |
+| Request body        | 1 MiB. A larger body gets `413`.                                                                                                                                                                                         |
+| REST API rate limit | Every REST API request from one address spends the REST API [rate limit](../api/README.md#rate-limiting), except an `/api/mcp` call with an accepted token. Once an address has spent it, every call from it gets `429`. |
 
 A post with many short lines can pass the text cap and fail the HTML cap.
 
 ## Errors
 
-| Where     | Answer                        | Cause                                                                                                                                                                                         |
-| --------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Transport | `401` with `WWW-Authenticate` | No token, an invalid or expired token, or a token with no `client_id`                                                                                                                         |
-| Transport | `403 FORBIDDEN`               | An `Origin` header that is not on the allowed list                                                                                                                                            |
-| Transport | `413 PAYLOAD_TOO_LARGE`       | A body over 1 MiB                                                                                                                                                                             |
-| Transport | `429 RATE_LIMIT_EXCEEDED`     | The REST API limit for one network address, spent by requests without an accepted token. When it runs out, every call from that address gets this answer. Wait for the `Retry-After` seconds. |
-| Transport | `503 AUTH_UNAVAILABLE`        | The server could not reach Supabase Auth. Retry with a backoff.                                                                                                                               |
-| Tool      | A result with `isError: true` | The tool refused. The text gives the next step.                                                                                                                                               |
+| Where     | Answer                        | Cause                                                                                                                                                                                                 |
+| --------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Transport | `401` with `WWW-Authenticate` | No token, an invalid or expired token, or a token with no `client_id`                                                                                                                                 |
+| Transport | `403 FORBIDDEN`               | An `Origin` header that is not on the allowed list                                                                                                                                                    |
+| Transport | `413 PAYLOAD_TOO_LARGE`       | A body over 1 MiB                                                                                                                                                                                     |
+| Transport | `429 RATE_LIMIT_EXCEEDED`     | Either the person's request limit, or the REST API limit for one network address. When the address limit runs out, every call from that address gets this answer. Wait for the `Retry-After` seconds. |
+| Transport | `503 AUTH_UNAVAILABLE`        | The server could not reach Supabase Auth. Retry with a backoff.                                                                                                                                       |
+| Tool      | A result with `isError: true` | The tool refused. The text gives the next step.                                                                                                                                                       |
 
 When one argument is at fault, the tool error text starts with that field, such as `slug:` or `section_id:`. An argument with the wrong shape never reaches the tool. The MCP SDK on the server refuses it and names the failing field.
 

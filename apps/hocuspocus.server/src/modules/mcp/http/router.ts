@@ -3,12 +3,15 @@ import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 
 import { fail } from '../../../http/envelope'
+import type { CallerBudget } from '../types'
 import {
+  type BearerCheck,
   createAuthenticate,
   createMetadataHandler,
   createOriginGate,
   createTransportHandler,
   type EndpointDeps,
+  MCP_METHODS,
   MCP_MOUNT_PATH,
   RESOURCE_METADATA_PATH
 } from './controller'
@@ -19,6 +22,8 @@ const MAX_MCP_BODY_BYTES = 1024 * 1024
 
 export interface RouterDeps extends EndpointDeps {
   factory: McpServerFactory
+  checkBearer: BearerCheck
+  requestBudget: CallerBudget
 }
 
 export const createRouter = (deps: RouterDeps): Hono => {
@@ -29,14 +34,18 @@ export const createRouter = (deps: RouterDeps): Hono => {
 
   router.get(RESOURCE_METADATA_PATH, createMetadataHandler(deps))
   router.on(
-    ['POST', 'GET', 'DELETE'],
+    MCP_METHODS,
     '/',
     createOriginGate(deps),
     bodyLimit({
       maxSize: MAX_MCP_BODY_BYTES,
       onError: (c) => fail(c, 413, 'PAYLOAD_TOO_LARGE', 'Request body is too large')
     }),
-    createTransportHandler(createAuthenticate(deps), handler)
+    createTransportHandler(
+      createAuthenticate(deps.publicBaseUrl, deps.checkBearer),
+      deps.requestBudget,
+      handler
+    )
   )
   return router
 }

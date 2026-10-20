@@ -125,7 +125,7 @@ console.log('\n[2] Redis lease — expiry and fault arms')
 console.log('\n[3] Media-read bucket — method-scoped, not an exemption')
 {
   const app = new Hono()
-  setupMiddleware(app)
+  setupMiddleware(app, { isVerifiedMcpCall: async () => false })
   // Mounted from the shared constant, so renaming the real mount fails this test
   // instead of silently killing the bucket.
   app.get(`${HYPERMULTIMEDIA_MOUNT_PATH}/:documentId/:mediaId`, (c) => c.text('media'))
