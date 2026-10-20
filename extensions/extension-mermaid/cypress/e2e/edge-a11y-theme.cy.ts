@@ -436,7 +436,14 @@ describe('mermaid — accessibility, pointer, motion and theme edges', () => {
     cy.realPress('ArrowLeft')
     cy.realPress('ArrowRight')
     cy.realType('Z')
-    paragraphTexts().should('include', 'AfZter')
+    // realType resolves before the editor applies the key. A one-shot read still sees "After".
+    cy.getEditor().should((editor) => {
+      const texts: string[] = []
+      editor.state.doc.forEach((node) => {
+        if (node.type.name === 'paragraph') texts.push(node.textContent)
+      })
+      expect(texts).to.include('AfZter')
+    })
     svg().should(($svg) => expect($svg.attr('viewBox')).to.equal(viewBox))
     cy.get('.pele-zoom-reset').should('have.css', 'display', 'none')
 
