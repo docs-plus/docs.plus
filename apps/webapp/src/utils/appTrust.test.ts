@@ -14,6 +14,30 @@ function grant(id: string, name: string, granted_at: string): OAuthGrant {
 }
 
 describe('appTrust', () => {
+  it('knows the exact Cursor callback and nothing near it', () => {
+    expect(appTrust('https://www.cursor.com/agents/mcp/oauth/callback')).toEqual({
+      kind: 'known',
+      app: 'cursor',
+      name: 'Cursor',
+      host: 'www.cursor.com'
+    })
+    expect(appTrust('https://cursor.com/agents/mcp/oauth/callback').kind).toBe('unknown')
+    expect(appTrust('https://www.cursor.com/agents/mcp/oauth/callback/x').kind).toBe('unknown')
+    expect(appTrust('https://www.cursor.com.evil.com/agents/mcp/oauth/callback').kind).toBe(
+      'unknown'
+    )
+    expect(appTrust('cursor://anysphere.cursor-mcp/oauth/callback').kind).toBe('unknown')
+  })
+
+  it('keeps a Cursor client with a loopback URI on this computer', () => {
+    expect(
+      clientTrust([
+        'https://www.cursor.com/agents/mcp/oauth/callback',
+        'http://localhost:8787/callback'
+      ])
+    ).toEqual({ kind: 'local', origin: 'http://localhost:8787' })
+  })
+
   it('knows the exact Claude callback on both hosts', () => {
     expect(appTrust(CLAUDE)).toEqual(claude)
     expect(appTrust('https://claude.com/api/mcp/auth_callback')).toEqual({

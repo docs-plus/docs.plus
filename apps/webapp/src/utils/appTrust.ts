@@ -18,6 +18,13 @@ const KNOWN_APPS: { app: AiAppId; matches: (url: URL) => boolean }[] = [
     // The last path segment is a per-connector id.
     matches: (url) =>
       url.origin === 'https://chatgpt.com' && /^\/connector\/oauth\/[\w-]+$/.test(url.pathname)
+  },
+  {
+    app: 'cursor',
+    // Read from production clients on 2026-10-20. Cursor also registers a loopback URI, so
+    // its Settings row stays "On this computer"; only the consent page shows the brand.
+    matches: (url) =>
+      url.origin === 'https://www.cursor.com' && url.pathname === '/agents/mcp/oauth/callback'
   }
 ]
 
