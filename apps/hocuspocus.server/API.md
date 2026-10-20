@@ -1012,7 +1012,7 @@ An empty `warnings` array means a clean import.
 
 `/api/mcp` is a Model Context Protocol server (`src/modules/mcp/`). A person adds docs.plus to an AI app as a connector and signs in as themselves. The app's agent then reads and edits that person's documents through the tools below. It uses `@modelcontextprotocol/server` 2.3.1 with `createMcpHandler`. Every request gets a fresh server, so the endpoint holds no session between requests or replicas.
 
-**Supported hosts.** claude.ai, Claude Desktop and ChatGPT add it as a remote connector. Claude Code should work through dynamic client registration (DCR). Nobody has tested it yet.
+**Supported hosts.** claude.ai, Claude Desktop and ChatGPT add it as a remote connector. Tested against production on 2026-10-20 through dynamic client registration (DCR): Claude Code (sign-in plus all ten tools), Codex and Cursor. Copilot CLI, Cline, VS Code, LM Studio and Replit are not tested yet (#357).
 
 ### Endpoints
 

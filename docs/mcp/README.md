@@ -6,13 +6,13 @@ You add docs.plus as a connector in the AI app. Then you sign in to docs.plus as
 
 ## Connect from docs.plus Settings
 
-<!-- PENDING-HOST-TEST: Cursor, VS Code, Codex, Copilot CLI, Cline, LM Studio, Replit, agent prompt -->
+<!-- PENDING-HOST-TEST: VS Code, Copilot CLI, Cline, LM Studio, Replit, agent prompt -->
 
 This is the easiest way. One docs.plus page gives the steps for each AI app.
 
 1. Sign in to docs.plus. Open **Settings** and choose **Connected apps**. The direct link is [docs.plus/#settings?tab=connected-apps](https://docs.plus/#settings?tab=connected-apps).
 2. Pick the way that fits your AI app.
-   - **An agent in a terminal**: under **Set up from a terminal agent**, choose **Claude Code**, **Codex**, **Copilot CLI** or **Cline**. That copies one command. Run it in a terminal. The Codex command also starts the sign-in.
+   - **An agent in a terminal**: under **Set up from a terminal agent**, choose **Claude Code**, **Codex**, **Copilot CLI** or **Cline**. That copies one command. Run it in a terminal. Codex then opens the sign-in by itself.
    - **Any other agent**, such as Warp, Kiro or OpenCode: choose **Any other agent**. That copies a short prompt. Paste it into the agent. The agent shows you each change and waits for your yes.
    - **Claude**: under **Add an AI app**, choose **Add to Claude**. Claude's **Add custom connector** dialog opens with docs.plus filled in, and the server URL is copied. Claude warns that an external link suggested the connector. Check that the URL is the docs.plus server URL, then choose **Continue** and **Connect**.
    - **ChatGPT**: turn on **Developer mode** first, as the tab says. Then choose **Open ChatGPT**. ChatGPT Plugins opens, and the server URL is copied. Choose **+**, paste the URL, choose **OAuth**, then **Create**.
@@ -23,7 +23,8 @@ This is the easiest way. One docs.plus page gives the steps for each AI app.
    - Claude: **Returns you to claude.ai**. ChatGPT: **Returns you to chatgpt.com**.
    - Claude Code: `http://localhost:<port>`. Codex: `http://127.0.0.1:<port>`. The `<port>` is a number the app picks.
    - VS Code: `http://127.0.0.1:33418` or `https://vscode.dev`.
-   - Cursor and other AI apps do not document their address yet. Allow only if you started the connection in that app yourself.
+   - Cursor: **Returns you to www.cursor.com**.
+   - Other AI apps do not document their address yet. Allow only if you started the connection in that app yourself.
 
 The tab opens with a short note on what the docs.plus MCP server lets an AI app do, and a **Setup guide** link to this page. Next to the title, **Online** means your browser reached the MCP server. **Unreachable** means it did not; the page checks again every 30 seconds. The terminal agents sit in the same card, under the note. The **MCP server URL** and its **Copy** button are in the **Other** tab, and also in ChatGPT step 2. On a phone, **Add an AI app** shows no tabs, only the MCP server URL, and the terminal agents are hidden. Add apps from docs.plus on a computer. Claude added on the web or in Claude Desktop then works in the Claude phone app too.
 
@@ -56,8 +57,6 @@ ChatGPT keeps the tool list it saw when you connected. When docs.plus adds a too
 
 ## Connect in Claude Code
 
-<!-- PENDING-HOST-TEST: Claude Code -->
-
 1. Run this in the folder where you use Claude Code. It adds docs.plus for that folder only.
 
    ```bash
@@ -81,15 +80,13 @@ These steps use the docs.plus server at `https://prodback.docs.plus/api/mcp`. If
 
 ### Codex
 
-<!-- PENDING-HOST-TEST: Codex -->
-
-1. Run this in a terminal.
+1. Run this in a terminal. Codex finds the docs.plus sign-in and opens a docs.plus page in your browser.
 
    ```bash
    codex mcp add docs-plus --url https://prodback.docs.plus/api/mcp
    ```
 
-2. Run this to sign in. A docs.plus page opens in your browser.
+2. If no browser opened, run this to sign in.
 
    ```bash
    codex mcp login docs-plus
