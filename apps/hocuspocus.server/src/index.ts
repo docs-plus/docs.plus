@@ -182,6 +182,8 @@ const mcpModule = mcp.init({
   version: pkg.version
 })
 app.route(mcp.MCP_MOUNT_PATH, mcpModule.router)
+// RFC 9728's standard locations, beside the /api/mcp copy the 401 header names (#550).
+app.route(mcp.RESOURCE_METADATA_PATH, mcpModule.wellKnownRouter)
 app.route('/api/connected-apps', mcpModule.connectedAppsRouter)
 // Absolute paths (/openapi.json, /docs), so this mounts at the root.
 app.route('/', openapiModule.router)

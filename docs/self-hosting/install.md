@@ -107,17 +107,18 @@ You need three hosts. The editor host is `<APP_HOST>`. The backend host is `<API
 
 Traefik answers the HTTP challenge, so ports 80 and 443 must be reachable from the internet before you start.
 
-Then edit the hard-coded hostname lines in `docker-compose.prod.yml`. Search for `Host(`. There are five in the compose file:
+Then edit the hard-coded hostname lines in `docker-compose.prod.yml`. Search for `Host(`. There are six in the compose file:
 
-| Line | Currently                             | Serves                   | Replace with   |
-| ---- | ------------------------------------- | ------------------------ | -------------- |
-| 224  | `prodback.docs.plus` and `/api`       | The REST API             | `<API_HOST>`   |
-| 230  | `prodback.docs.plus` and `/health`    | Health checks            | `<API_HOST>`   |
-| 334  | `prodback.docs.plus` and `/websocket` | The collaboration socket | `<API_HOST>`   |
-| 539  | `docs.plus` and two aliases           | The editor               | `<APP_HOST>`   |
-| 615  | `admin.docs.plus`                     | The admin dashboard      | `<ADMIN_HOST>` |
+| Line | Currently                                                        | Serves                   | Replace with   |
+| ---- | ---------------------------------------------------------------- | ------------------------ | -------------- |
+| 224  | `prodback.docs.plus` and `/api`                                  | The REST API             | `<API_HOST>`   |
+| 230  | `prodback.docs.plus` and `/health`                               | Health checks            | `<API_HOST>`   |
+| 236  | `prodback.docs.plus` and `/.well-known/oauth-protected-resource` | MCP sign-in metadata     | `<API_HOST>`   |
+| 340  | `prodback.docs.plus` and `/websocket`                            | The collaboration socket | `<API_HOST>`   |
+| 545  | `docs.plus` and two aliases                                      | The editor               | `<APP_HOST>`   |
+| 621  | `admin.docs.plus`                                                | The admin dashboard      | `<ADMIN_HOST>` |
 
-On line 539, replace the whole rule with one ``Host(`<APP_HOST>`)``, and delete the `new.docs.plus` and `www.new.docs.plus` aliases. Traefik asks for one certificate that covers every host in a rule, so a host you do not own makes that request fail.
+On line 545, replace the whole rule with one ``Host(`<APP_HOST>`)``, and delete the `new.docs.plus` and `www.new.docs.plus` aliases. Traefik asks for one certificate that covers every host in a rule, so a host you do not own makes that request fail.
 
 No environment variable covers these, so skipping this step means nothing routes.
 

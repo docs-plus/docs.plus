@@ -62,7 +62,7 @@ Read these before you start. Each one has caught somebody.
 
 **Local disk storage does not work in production.** The template stores uploads on local disk. The REST API runs two replicas with no shared volume, so an upload lands in one container and disappears on the next deploy. Next step: configure object storage before you let anybody upload. [Template values to fix before you deploy](configuration.md#template-values-to-fix-before-you-deploy) names the value to change.
 
-**The Traefik hostnames are hard-coded.** Five label lines in `docker-compose.prod.yml` name `docs.plus`, `prodback.docs.plus`, and `admin.docs.plus`. No environment variable covers them. The shipped Traefik folder also routes two docs.plus test hosts. Next step: edit those five lines to your own domains, or nothing routes. Then remove the test hosts. [Install, step 4](install.md#4-point-your-domains-at-the-server) has both steps.
+**The Traefik hostnames are hard-coded.** Six label lines in `docker-compose.prod.yml` name `docs.plus`, `prodback.docs.plus`, and `admin.docs.plus`. No environment variable covers them. The shipped Traefik folder also routes two docs.plus test hosts. Next step: edit those five lines to your own domains, or nothing routes. Then remove the test hosts. [Install, step 4](install.md#4-point-your-domains-at-the-server) has both steps.
 
 **Values starting with `NEXT_PUBLIC_` are build arguments, not runtime settings.** Changing one in your environment file does nothing until you rebuild the images. Next step: set them correctly before `make build`.
 

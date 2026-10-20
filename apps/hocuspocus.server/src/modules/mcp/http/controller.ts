@@ -23,7 +23,7 @@ export interface EndpointDeps {
 const resourceUrl = (c: Context, publicBaseUrl: string | null): string =>
   `${(publicBaseUrl ?? new URL(c.req.url).origin).replace(/\/+$/, '')}${MCP_MOUNT_PATH}`
 
-/** RFC 9728. Hosts reach it through the 401 header, since Traefik routes only `/api`. */
+/** RFC 9728. Served under `/api/mcp`, which the 401 header names, and at the root `.well-known` URLs. */
 export const createMetadataHandler = (deps: EndpointDeps) => (c: Context) =>
   c.json({
     resource: resourceUrl(c, deps.publicBaseUrl),

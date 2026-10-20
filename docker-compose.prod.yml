@@ -232,6 +232,12 @@ services:
       - 'traefik.http.routers.rest-api-health.tls.certresolver=letsencrypt'
       - 'traefik.http.routers.rest-api-health.service=rest-api'
       - 'traefik.http.routers.rest-api-health.middlewares=security-headers@file'
+      # MCP resource metadata at the RFC 9728 root URLs (#550). The /api/mcp copy stays.
+      - 'traefik.http.routers.rest-api-wellknown.rule=Host(`prodback.docs.plus`) && PathPrefix(`/.well-known/oauth-protected-resource`)'
+      - 'traefik.http.routers.rest-api-wellknown.entrypoints=websecure'
+      - 'traefik.http.routers.rest-api-wellknown.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.rest-api-wellknown.service=rest-api'
+      - 'traefik.http.routers.rest-api-wellknown.middlewares=security-headers@file,rate-limit-api@file'
       - 'traefik.http.services.rest-api.loadbalancer.server.port=4000'
       # Health check - only route to healthy containers. Liveness on purpose, and
       # on a different path from the collaboration block. Both replicas share one

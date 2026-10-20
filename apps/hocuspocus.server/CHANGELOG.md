@@ -32,6 +32,15 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Fixed
 
+- **`claude mcp login` can sign in to the MCP connector
+  ([#550](https://github.com/docs-plus/docs.plus/issues/550)).** It starts
+  sign-in without a first request, so it never saw the `401` header. It probed
+  the RFC 9728 root URLs, got `404`, and fell back to registering at
+  `/register` on the API host. `/.well-known/oauth-protected-resource` and
+  `/.well-known/oauth-protected-resource/api/mcp` now return the same metadata
+  as `/api/mcp/.well-known/oauth-protected-resource`, which the `401` header
+  still names. A new Traefik router, `rest-api-wellknown`, routes only that
+  prefix. Self-hosters edit one more host line (install guide, step 4).
 - **Chat message counts no longer freeze after a channel is deleted.** The
   message counter worker trusted the workspace id stored in each queued event.
   An event for a deleted channel then failed the `channel_id` foreign key, and

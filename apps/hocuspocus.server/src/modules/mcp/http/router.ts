@@ -9,6 +9,7 @@ import {
   createOriginGate,
   createTransportHandler,
   type EndpointDeps,
+  MCP_MOUNT_PATH,
   RESOURCE_METADATA_PATH
 } from './controller'
 
@@ -37,5 +38,14 @@ export const createRouter = (deps: RouterDeps): Hono => {
     }),
     createTransportHandler(createAuthenticate(deps), handler)
   )
+  return router
+}
+
+/** Mounted at `RESOURCE_METADATA_PATH`: the two RFC 9728 URLs a client may probe instead of the 401 header. */
+export const createWellKnownRouter = (deps: EndpointDeps): Hono => {
+  const router = new Hono()
+  const metadata = createMetadataHandler(deps)
+  router.get('/', metadata)
+  router.get(MCP_MOUNT_PATH, metadata)
   return router
 }

@@ -5,7 +5,7 @@
 
 The REST API runs from `src/index.ts` on a Hono app. This document covers the HTTP surface only. For the three-process architecture and environment variables, see [Readme.md](./Readme.md) and [ENV.md](./ENV.md). For the WebSocket protocol, see [WebSocket API](#websocket-api).
 
-**Machine-readable spec.** The same surface is published as OpenAPI 3.1 at `GET /openapi.json`, with Swagger UI at `GET /docs` (`src/modules/openapi/`). Request schemas are generated from the live zod schemas, so they cannot drift from validation. Traefik routes only `/api` and `/health`, so both paths are reachable in local and internal environments but **not** on the public edge. Publishing them is a routing decision, not a code change.
+**Machine-readable spec.** The same surface is published as OpenAPI 3.1 at `GET /openapi.json`, with Swagger UI at `GET /docs` (`src/modules/openapi/`). Request schemas are generated from the live zod schemas, so they cannot drift from validation. Traefik routes only `/api`, `/health` and the MCP resource metadata prefix, so both paths are reachable in local and internal environments but **not** on the public edge. Publishing them is a routing decision, not a code change.
 
 ## Contents
 
@@ -1016,10 +1016,11 @@ An empty `warnings` array means a clean import.
 
 ### Endpoints
 
-| Route                                               | Auth         | What it does                                                                                                    |
-| --------------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------- |
-| `GET /api/mcp/.well-known/oauth-protected-resource` | None         | RFC 9728 metadata: `resource` is `<PUBLIC_RESTAPI_URL>/api/mcp`, `authorization_servers` is `[MCP_AUTH_ISSUER]` |
-| `POST`, `GET`, `DELETE /api/mcp`                    | OAuth bearer | The MCP transport. Legacy (2025) clients get `GET` and `DELETE` answered `405`                                  |
+| Route                                                                                               | Auth         | What it does                                                                                                     |
+| --------------------------------------------------------------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `GET /api/mcp/.well-known/oauth-protected-resource`                                                 | None         | RFC 9728 metadata: `resource` is `<PUBLIC_RESTAPI_URL>/api/mcp`, `authorization_servers` is `[MCP_AUTH_ISSUER]`  |
+| `GET /.well-known/oauth-protected-resource` and `GET /.well-known/oauth-protected-resource/api/mcp` | None         | The same RFC 9728 metadata at the standard root URLs, for clients that probe instead of reading the `401` header |
+| `POST`, `GET`, `DELETE /api/mcp`                                                                    | OAuth bearer | The MCP transport. Legacy (2025) clients get `GET` and `DELETE` answered `405`                                   |
 
 `PUBLIC_RESTAPI_URL` unset (local) makes the metadata use the request origin. `MCP_AUTH_ISSUER` unset means `${SUPABASE_URL}/auth/v1`. Set it to the exact `issuer` from Supabase's `/auth/v1/.well-known/openid-configuration`, or hosts reject the metadata.
 

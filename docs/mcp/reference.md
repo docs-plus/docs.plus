@@ -38,7 +38,7 @@ A request without a valid token gets `401` and this header.
 WWW-Authenticate: Bearer resource_metadata="https://prodback.docs.plus/api/mcp/.well-known/oauth-protected-resource", scope="openid email profile"
 ```
 
-When a token was sent, the header also carries `error="invalid_token"`. Hosts start sign-in from this header. The server asks hosts for `openid`, `email` and `profile` only, in `scope` here and in `scopes_supported` below.
+When a token was sent, the header also carries `error="invalid_token"`. Hosts start sign-in from this header. A host that probes the standard RFC 9728 URLs instead finds the same metadata at `https://prodback.docs.plus/.well-known/oauth-protected-resource` and `https://prodback.docs.plus/.well-known/oauth-protected-resource/api/mcp`. The server asks hosts for `openid`, `email` and `profile` only, in `scope` here and in `scopes_supported` below.
 
 The metadata sits under `/api/mcp`, not at the site root, because only `/api` and `/health` are routed publicly. It answers like this.
 
