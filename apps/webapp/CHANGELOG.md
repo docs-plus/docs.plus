@@ -44,6 +44,9 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   Code and Codex tabs are gone, because the terminal agent grid now holds
   their commands. A web link in **Other**, such as Replit, opens in a new
   tab, so Settings stays open.
+- **The consent page names Cursor.** A Cursor sign-in now shows **Returns you
+  to www.cursor.com**, not the unverified warning. Its Settings row still reads
+  **On this computer**, because Cursor also registers a local address.
 
 ### Fixed
 

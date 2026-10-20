@@ -18,7 +18,7 @@ This is the easiest way. One docs.plus page gives the steps for each AI app.
    - **ChatGPT**: turn on **Developer mode** first, as the tab says. Then choose **Open ChatGPT**. ChatGPT Plugins opens, and the server URL is copied. Choose **+**, paste the URL, choose **OAuth**, then **Create**.
    - **Other**: choose **Add to Cursor**, **Add to VS Code** or **Add to LM Studio**, and the app opens with docs.plus filled in. **Add to Replit** opens Replit in a new tab. For any other AI app, copy the **MCP server URL** and paste it where the app asks for a remote MCP server.
    - The sections below give the steps for each AI app in full.
-3. Start the sign-in. Claude and ChatGPT start it for you. In Claude Code, run `/mcp`. Other agents name their own step.
+3. Start the sign-in. Claude, ChatGPT and Codex start it for you. In Claude Code, run `/mcp`. Other agents name their own step.
 4. A docs.plus page opens. Check the address it returns you to, as [Check the consent page](#check-the-consent-page) explains. Then choose **Allow**.
    - Claude: **Returns you to claude.ai**. ChatGPT: **Returns you to chatgpt.com**.
    - Claude Code: `http://localhost:<port>`. Codex: `http://127.0.0.1:<port>`. The `<port>` is a number the app picks.
@@ -192,7 +192,7 @@ The docs.plus page asks, for example, **Allow Claude to use your docs.plus accou
 
 Any app can register itself with docs.plus under any name, so the name alone proves nothing. docs.plus checks the address the app returns you to instead. Only the real site can receive a sign-in sent to its address. The page shows one of three cases.
 
-- **Claude or ChatGPT.** The page names the app and says **Returns you to claude.ai** or **Returns you to chatgpt.com**.
+- **Claude, ChatGPT or Cursor.** The page names the app and says **Returns you to claude.ai**, **Returns you to chatgpt.com** or **Returns you to www.cursor.com**.
 - **An app on your computer**, such as Claude Code. The page shows an address like `http://localhost:<port>`. Any program on your computer can use that address, so allow it only if you just started the app.
 - **Any other app.** The page puts the name in quotes and shows a warning with the address. Allow it only if you trust that address.
 
@@ -240,7 +240,7 @@ You ask in your own words. To point at one document, paste its link or give its 
 
 The AI app may keep what it already read. To delete that, use the AI app's own settings.
 
-A Claude or ChatGPT row says where the app returns you, such as **Returns you to claude.ai**. An app on your computer is marked **On this computer**. Any other app is marked **Unverified app**, because any app can register itself under any name. An AI app that connected more than once shows the count on its row, such as `· 3 connections`. **Disconnect** ends all of them.
+A Claude or ChatGPT row says where the app returns you, such as **Returns you to claude.ai**. An app on your computer is marked **On this computer**. So is Cursor, because it also registers an address on your computer. Any other app is marked **Unverified app**, because any app can register itself under any name. An AI app that connected more than once shows the count on its row, such as `· 3 connections`. **Disconnect** ends all of them.
 
 ## If something goes wrong
 
