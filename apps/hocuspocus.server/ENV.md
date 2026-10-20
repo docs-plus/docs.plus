@@ -98,12 +98,12 @@ The collaboration process serves one internal listener carrying both `/metrics` 
 
 ## Security
 
-| Variable                    | Type   | Default                   | Notes                                                                                                                                            |
-| --------------------------- | ------ | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `SUPABASE_SERVICE_ROLE_KEY` | string | —                         | Required for admin routes, internal email endpoints, and server-side Supabase reads. Optional in the schema, but those features fail without it. |
-| `ALLOWED_ORIGINS`           | list   | `[]`                      | CORS allowlist. Empty falls back to `[APP_URL]`. With `NODE_ENV=development`, CORS lets any origin pass. See the notes below.                    |
-| `MCP_AUTH_ISSUER`           | string | `${SUPABASE_URL}/auth/v1` | The OAuth issuer `/api/mcp` names in its metadata. Copy `issuer` from Supabase's `/auth/v1/.well-known/openid-configuration` exactly.            |
-| `RATE_LIMIT_MAX`            | number | `100`                     | Requests per 15-minute window (global limiter). Public media reads use a separate bucket at ten times this value, fixed in the middleware        |
+| Variable                    | Type   | Default                   | Notes                                                                                                                                                                                                         |
+| --------------------------- | ------ | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SUPABASE_SERVICE_ROLE_KEY` | string | —                         | Required for admin routes, internal email endpoints, and server-side Supabase reads. Optional in the schema, but those features fail without it.                                                              |
+| `ALLOWED_ORIGINS`           | list   | `[]`                      | CORS allowlist. Empty falls back to `[APP_URL]`. With `NODE_ENV=development`, CORS lets any origin pass. See the notes below.                                                                                 |
+| `MCP_AUTH_ISSUER`           | string | `${SUPABASE_URL}/auth/v1` | The OAuth issuer `/api/mcp` names in its metadata. Copy `issuer` from Supabase's `/auth/v1/.well-known/openid-configuration` exactly.                                                                         |
+| `RATE_LIMIT_MAX`            | number | `100`                     | Requests per 15-minute window (global limiter). Public media reads use a separate bucket at ten times this value, fixed in the middleware. An `/api/mcp` call with an accepted OAuth token does not spend it. |
 
 - **`ALLOWED_ORIGINS` lists both browser apps.** In production, set it to `https://<APP_HOST>,https://<ADMIN_HOST>`. The editor and the admin dashboard both call `https://<API_HOST>` from the browser.
 - **Each entry must equal the browser's `Origin` header.** Write the scheme and the host, plus a port only when it is not the default. Add no path and no trailing slash. The server trims spaces and changes nothing else.

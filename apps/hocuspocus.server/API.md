@@ -1082,7 +1082,7 @@ Every tool except `find_documents` and `create_document` takes a document slug. 
 
 **Errors.** A tool error is an MCP result with `isError: true`. Its text gives the next step. When one argument is at fault, the text starts with that field. A bad argument never reaches the tool: the SDK answers with the failing field.
 
-**Budget and logs.** Each person gets 60 tool calls a minute, kept in Redis (`mcp-sub`). With no Redis, or a Redis fault, calls run without the budget. There is no per-address budget, because every hosted Claude call arrives from one Anthropic address range. The global rate limit still applies to `/api/mcp`. Each call logs one line with the keys `tool`, `sub`, `clientId`, `outcome` and `durationMs`. Arguments, headers and tokens are never logged.
+**Budget and logs.** Each person gets 60 tool calls a minute, kept in Redis (`mcp-sub`). With no Redis, or a Redis fault, calls run without the budget. A hosted AI app sends many people from one address range, so a transport request whose OAuth token is accepted does not spend the global rate limit while that address still has budget left. A request without an accepted token, and the metadata routes, still spend it. Once an address has spent its budget, every call from it gets `429` until the window resets, accepted token included. The budget is read before the token is verified, so forged tokens cannot make unlimited Supabase calls (#551). Each call logs one line with the keys `tool`, `sub`, `clientId`, `outcome` and `durationMs`. Arguments, headers and tokens are never logged.
 
 **Usage counts.** After each call, one Redis pipeline adds to three keys for the UTC day (`YYYY-MM-DD`). Each key expires 35 days after its first write.
 
@@ -1350,13 +1350,15 @@ Admins read the gateway status on `GET /api/admin/push/gateway`: `vapid_configur
 
 ## Rate limiting
 
-Two Redis-backed limiters (`src/middleware/index.ts`) cover every non-`OPTIONS` request except `/health` and `/health/*`. Both are keyed on client IP alone, and **when Redis is unavailable, rate limiting is disabled** (requests pass). User-Agent is not part of the key: a client that varied that header earned a fresh budget on every request. Requests with no `x-forwarded-for` and no `x-real-ip` (direct/internal traffic) skip both.
+Two Redis-backed limiters (`src/middleware/index.ts`) cover every non-`OPTIONS` request except `/health`, `/health/*` and a verified `/api/mcp` call. Both are keyed on client IP alone, and **when Redis is unavailable, rate limiting is disabled** (requests pass). User-Agent is not part of the key: a client that varied that header earned a fresh budget on every request. Requests with no `x-forwarded-for` and no `x-real-ip` (direct/internal traffic) skip both.
 
 The global limit is `RATE_LIMIT_MAX` requests (default `100`) per 15-minute window. Production runs `500`. There is no separate per-role tier in the REST middleware, so a service-role caller shares the same per-IP budget as a browser. Issue #166 tracks whether that should change.
 
 **Public media reads have their own, larger budget.** A `GET` under `/api/plugins/hypermultimedia/` is charged to a second limiter, which holds ten times the global points over its own 15-minute window. So a pad holding 20 images does not spend 20 points of the global budget on a cold load. The upload `POST` on that path stays on the global budget, as does every other route. The multiplier is a constant in the middleware, not an environment variable.
 
-Responses carry `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` (ISO timestamp). A media read reports its own limiter's numbers in those headers. On `429`, the body is the house envelope with code `RATE_LIMIT_EXCEEDED`, and a `Retry-After` header carries the seconds until the window resets.
+**A verified `/api/mcp` call skips the global limiter** (#551). It must be a `POST`, `GET` or `DELETE` on `/api/mcp` whose bearer token the MCP transport accepts. Supabase Auth must verify the token. It must carry a `client_id` claim and no past `exp`. Its tool calls spend the per-person tool budget. The app does not charge its other calls, such as `initialize` and `tools/list`. A missing, fake, invalid or browser-session token, an Auth outage, and the metadata routes still spend the global budget. A hosted AI app sends many people from one address, so the person is the fair unit. The server checks the token only while the address has global budget left. So a call from a spent address gets a `429` before its token is checked, even a token that would pass. That keeps a spent address from making Supabase Auth calls. A token with no `client_id` claim or a past `exp` is refused before the Auth call.
+
+A response that a limiter charges carries `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` (ISO timestamp). A verified `/api/mcp` call carries none of them. A media read reports its own limiter's numbers in those headers. On `429`, the body is the house envelope with code `RATE_LIMIT_EXCEEDED`, and a `Retry-After` header carries the seconds until the window resets.
 
 ## WebSocket API
 

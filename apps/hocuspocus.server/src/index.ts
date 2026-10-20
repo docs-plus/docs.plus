@@ -60,7 +60,8 @@ const openapiModule = openapi.init({
 // above setupMiddleware because secureHeaders rewrites the header after next().
 app.use(openapi.DOCS_PATH, openapi.swaggerUiCsp)
 
-setupMiddleware(app)
+// The same verifier as mcp.init below: the per-request memo assumes one verifier.
+setupMiddleware(app, { isVerifiedMcpCall: mcp.createVerifiedMcpCall(verifySupabaseTokenOutcome) })
 
 app.use('*', async (c, next) => {
   c.set('prisma', prisma)

@@ -1,9 +1,9 @@
 import { isRecord } from './isRecord'
 
 /**
- * Reads a JWT payload without checking the signature. Call it only on a token
- * that `verifySupabaseTokenOutcome` has already accepted: Supabase Auth checked
- * the signature then, so a second network call would add nothing.
+ * Reads a JWT payload without checking the signature. Before verify, use it only
+ * to refuse a token. To accept one, `verifySupabaseTokenOutcome` must accept it
+ * first: Supabase Auth checks the signature, so a second network call adds nothing.
  */
 export const decodeJwtClaims = (token: string): Record<string, unknown> | null => {
   const payload = token.split('.')[1]

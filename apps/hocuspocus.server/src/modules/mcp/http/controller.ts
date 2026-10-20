@@ -61,51 +61,105 @@ const challenge = (
   return fail(c, 401, 'UNAUTHORIZED', message)
 }
 
+type BearerRefusal = { status: 503 } | { status: 401; message: string; errorDescription?: string }
+
+const INVALID_TOKEN: BearerRefusal = {
+  status: 401,
+  message: 'Invalid or expired token',
+  errorDescription: 'The access token is invalid or expired'
+}
+
 /**
  * Only `Authorization: Bearer`, never the house `token` header. Only a token
  * with `client_id` passes: an OAuth grant mints one, a browser session never does.
+ * The claim checks run before verify, so a junk token never costs a Supabase call.
  */
+const readBearer = async (
+  header: string | undefined,
+  verifyToken: VerifyToken
+): Promise<AuthInfo | BearerRefusal> => {
+  const token = header?.startsWith('Bearer ') ? header.slice(7).trim() : ''
+  if (!token) return { status: 401, message: 'Authentication required' }
+
+  const claims = decodeJwtClaims(token)
+  if (!claims) return INVALID_TOKEN
+  const clientId = claims.client_id
+  if (typeof clientId !== 'string' || clientId.length === 0) {
+    return {
+      status: 401,
+      message: 'Connect through OAuth',
+      errorDescription:
+        'This server accepts only OAuth tokens. Add docs.plus as a connector in your app and sign in there.'
+    }
+  }
+  // The verify cache can outlive the token by up to 60 s; `exp` is exact.
+  const expiresAt = typeof claims.exp === 'number' ? claims.exp : undefined
+  if (expiresAt !== undefined && expiresAt * 1000 <= Date.now()) {
+    return {
+      status: 401,
+      message: 'Invalid or expired token',
+      errorDescription: 'The access token has expired'
+    }
+  }
+
+  const outcome = await verifyToken(token)
+  if (outcome.kind === 'unavailable') return { status: 503 }
+  if (outcome.kind === 'invalid') return INVALID_TOKEN
+
+  return {
+    token,
+    clientId,
+    scopes: typeof claims.scope === 'string' ? claims.scope.split(' ').filter(Boolean) : [],
+    expiresAt,
+    extra: {
+      sub: outcome.user.sub,
+      email: outcome.user.email,
+      isAnonymous: outcome.user.is_anonymous === true
+    }
+  }
+}
+
+// One check per request: the rate-limit skip and the transport share it, because
+// Supabase Auth's `unavailable` answer is never cached and each call would wait again.
+const bearerChecks = new WeakMap<Context, Promise<AuthInfo | BearerRefusal>>()
+
+const checkBearer = (c: Context, verifyToken: VerifyToken): Promise<AuthInfo | BearerRefusal> => {
+  let check = bearerChecks.get(c)
+  if (!check) {
+    check = readBearer(c.req.header('Authorization'), verifyToken)
+    bearerChecks.set(c, check)
+  }
+  return check
+}
+
 export const createAuthenticate =
   (deps: EndpointDeps) =>
   async (c: Context): Promise<AuthInfo | Response> => {
-    const header = c.req.header('Authorization')
-    const token = header?.startsWith('Bearer ') ? header.slice(7).trim() : ''
-    const deny = (message: string, errorDescription?: string) =>
-      challenge(c, deps.publicBaseUrl, message, errorDescription)
-    if (!token) return deny('Authentication required')
-
-    const outcome = await deps.verifyToken(token)
-    if (outcome.kind === 'unavailable') {
+    const result = await checkBearer(c, deps.verifyToken)
+    if (!('status' in result)) return result
+    if (result.status === 503) {
       return fail(c, 503, 'AUTH_UNAVAILABLE', 'Auth service temporarily unavailable')
     }
-    if (outcome.kind === 'invalid') {
-      return deny('Invalid or expired token', 'The access token is invalid or expired')
-    }
+    return challenge(c, deps.publicBaseUrl, result.message, result.errorDescription)
+  }
 
-    const claims = decodeJwtClaims(token)
-    const clientId = claims?.client_id
-    if (typeof clientId !== 'string' || clientId.length === 0) {
-      return deny(
-        'Connect through OAuth',
-        'This server accepts only OAuth tokens. Add docs.plus as a connector in your app and sign in there.'
-      )
-    }
-    // The verify cache can outlive the token by up to 60 s; `exp` is exact.
-    const expiresAt = typeof claims?.exp === 'number' ? claims.exp : undefined
-    if (expiresAt !== undefined && expiresAt * 1000 <= Date.now()) {
-      return deny('Invalid or expired token', 'The access token has expired')
-    }
-
-    return {
-      token,
-      clientId,
-      scopes: typeof claims?.scope === 'string' ? claims.scope.split(' ').filter(Boolean) : [],
-      expiresAt,
-      extra: {
-        sub: outcome.user.sub,
-        email: outcome.user.email,
-        isAnonymous: outcome.user.is_anonymous === true
-      }
+/**
+ * True only for a transport call whose token `createAuthenticate` accepts, so a
+ * fake header or a browser session never skips the per-address limit (#551).
+ * It verifies only while the address has budget left, so a spent address costs no
+ * Supabase call. It never calls `createAuthenticate`, whose header would leak onto a 429.
+ */
+export const createVerifiedMcpCall =
+  (verifyToken: VerifyToken) =>
+  async (c: Context, hasBudget: () => Promise<boolean>): Promise<boolean> => {
+    if (!['POST', 'GET', 'DELETE'].includes(c.req.method)) return false
+    if (new URL(c.req.url).pathname !== MCP_MOUNT_PATH) return false
+    if (!c.req.header('Authorization')?.startsWith('Bearer ')) return false
+    if (!(await hasBudget())) return false
+    try {
+      return !('status' in (await checkBearer(c, verifyToken)))
+    } catch {
+      return false
     }
   }
 

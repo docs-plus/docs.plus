@@ -25,6 +25,17 @@ export const MEDIA_READ_BUDGET_FACTOR = 10
 // such as `/api/plugins/hypermultimedia-other` would claim the media budget too.
 const MEDIA_READ_PATH_PREFIX = `${HYPERMULTIMEDIA_MOUNT_PATH}/`
 
+// Genuine internal/direct traffic carries no proxy-forwarding headers — Traefik
+// always sets them for external requests, so this signal can't be spoofed from
+// the edge. Never trust a client-supplied x-internal-request / private-range IP.
+const clientAddress = (c: Context): string | null => {
+  const forwardedFor = c.req.header('x-forwarded-for')
+  const realIp = c.req.header('x-real-ip')
+  if (!forwardedFor && !realIp) return null
+  // x-real-ip is set by Traefik to the true client; fall back to the first XFF hop.
+  return realIp || forwardedFor!.split(',')[0]!.trim() || 'unknown'
+}
+
 export const rateLimiter = (options: {
   points: number
   duration: number // seconds
@@ -35,7 +46,9 @@ export const rateLimiter = (options: {
 
   if (!redisClient) {
     httpLogger.warn('Redis not available, rate limiting disabled')
-    return async (c: Context, next: Next) => next()
+    return Object.assign(async (c: Context, next: Next) => next(), {
+      hasBudget: async (_c: Context) => true
+    })
   }
 
   const limiter = new RateLimiterRedis({
@@ -48,19 +61,27 @@ export const rateLimiter = (options: {
     insuranceLimiter: undefined
   })
 
-  return async (c: Context, next: Next) => {
-    const forwardedFor = c.req.header('x-forwarded-for')
-    const realIp = c.req.header('x-real-ip')
+  // Reads the bucket without spending it. A slow or failing Redis reads as budget
+  // left, the same fail-open answer the consume below gives.
+  const hasBudget = async (c: Context): Promise<boolean> => {
+    const ip = clientAddress(c)
+    if (ip === null) return true
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const res = await Promise.race([
+      limiter.get(ip).catch(() => null),
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), CONSUME_TIMEOUT_MS)
+      })
+    ])
+    clearTimeout(timer)
+    return res === null || res.remainingPoints > 0
+  }
 
-    // Genuine internal/direct traffic carries no proxy-forwarding headers — Traefik
-    // always sets them for external requests, so this signal can't be spoofed from
-    // the edge. Never trust a client-supplied x-internal-request / private-range IP.
-    if (!forwardedFor && !realIp) {
+  const middleware = async (c: Context, next: Next) => {
+    const ip = clientAddress(c)
+    if (ip === null) {
       return next()
     }
-
-    // x-real-ip is set by Traefik to the true client; fall back to the first XFF hop.
-    const ip = realIp || forwardedFor!.split(',')[0]!.trim() || 'unknown'
 
     // The key holds nothing the caller writes. Keying it on User-Agent too gave a
     // client that increments that header a fresh budget on every request. That
@@ -118,6 +139,8 @@ export const rateLimiter = (options: {
 
     return next()
   }
+
+  return Object.assign(middleware, { hasBudget })
 }
 
 export const pinoLogger = () => {
@@ -173,7 +196,12 @@ export const pinoLogger = () => {
   }
 }
 
-export const setupMiddleware = (app: Hono) => {
+export interface MiddlewareOptions {
+  /** True for an `/api/mcp` call whose OAuth token verified; it skips the global limiter. */
+  isVerifiedMcpCall?: (c: Context, hasBudget: () => Promise<boolean>) => Promise<boolean>
+}
+
+export const setupMiddleware = (app: Hono, opts?: MiddlewareOptions) => {
   // First so preflight OPTIONS gets CORS headers.
   // Development allows any origin. Production restricts to the resolved allowlist;
   // never pair a wildcard origin with credentials.
@@ -255,6 +283,14 @@ export const setupMiddleware = (app: Hono) => {
     // stays on the global budget, where its cost belongs.
     if (c.req.method === 'GET' && path.startsWith(MEDIA_READ_PATH_PREFIX)) {
       return mediaReadRateLimiter(c, next)
+    }
+
+    // A hosted AI app sends many people from one address, so a verified MCP call skips the
+    // global limiter while the address has budget left; tool calls spend the per-person budget
+    // (#551). Decided here, not
+    // in the MCP router, because its origin gate and body limit answer before auth.
+    if (await opts?.isVerifiedMcpCall?.(c, () => globalRateLimiter.hasBudget(c))) {
+      return next()
     }
 
     return globalRateLimiter(c, next)
