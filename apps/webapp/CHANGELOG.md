@@ -27,6 +27,20 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   shows the drawn diagram, and a diagram that is too large names the limit it
   hit. The PWA does not precache the renderer
   ([#528](https://github.com/docs-plus/docs.plus/issues/528), [#529](https://github.com/docs-plus/docs.plus/issues/529)).
+- **Set up a terminal agent from Settings › Connected apps.** On a
+  computer, the MCP server card now ends on a grid: Claude Code, Codex,
+  Copilot CLI and Cline. Each cell copies that agent's add command. The
+  Codex command also starts its sign-in. A last cell, **Any other agent**,
+  copies a short prompt that tells the agent to show each change and wait
+  for a yes. The **Other** tab gains **Add to LM Studio** and **Add to
+  Replit**.
+
+### Changed
+
+- **Add an AI app has three tabs: Claude, ChatGPT and Other.** The Claude
+  Code and Codex tabs are gone, because the terminal agent grid now holds
+  their commands. A web link in **Other**, such as Replit, opens in a new
+  tab, so Settings stays open.
 
 ### Fixed
 

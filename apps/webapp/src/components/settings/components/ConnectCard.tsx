@@ -7,16 +7,13 @@ import { type ReactNode, useState } from 'react'
 import { LuLayoutGrid, LuPlug } from 'react-icons/lu'
 
 import { isMobileSurface } from '../utils/isMobileSurface'
-import { mcpServerUrl } from '../utils/mcpServerUrl'
+import { MCP_SERVER_NAME, mcpServerUrl } from '../utils/mcpServerUrl'
 import SettingsCard, { SettingsCardHeader } from './SettingsCard'
 
-const SERVER_NAME = 'docs-plus'
-
+// Terminal agents live in the MCP server card's grid, so they have no tab here.
 const TABS = [
   { label: 'Claude', icon: AI_APP_BRANDS.claude },
   { label: 'ChatGPT', icon: AI_APP_BRANDS.chatgpt },
-  { label: 'Claude Code', icon: AI_APP_BRANDS.claudeCode },
-  { label: 'Codex', icon: AI_APP_BRANDS.codex },
   { label: 'Other', icon: { component: LuLayoutGrid, color: null } }
 ] as const
 type ConnectTab = (typeof TABS)[number]['label']
@@ -97,8 +94,12 @@ const OtherRow = ({
   </li>
 )
 
+// An app link opens the app and leaves this page; a web link would replace Settings, so it gets a tab.
 const AddLink = ({ name, href }: { name: string; href: string }) => (
-  <a href={href} className="btn btn-primary btn-soft btn-sm shrink-0 gap-1.5">
+  <a
+    href={href}
+    {...(href.startsWith('https:') && { target: '_blank', rel: 'noopener noreferrer' })}
+    className="btn btn-primary btn-soft btn-sm shrink-0 gap-1.5">
     <Icons.externalLink size={16} aria-hidden />
     Add to {name}
   </a>
@@ -121,8 +122,8 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
             <OpenAndCopy
               label="Add to Claude"
               text={serverUrl}
-              // Undocumented, but it filled both fields on 2026-09-28. The copied URL covers a
-              // Claude that stops reading the parameters.
+              // Claude shows `connectorName` as the connector title, so it stays "docs.plus", not
+              // the CLI slug. The copied URL covers a Claude that stops reading the parameters.
               href={`https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=docs.plus&connectorUrl=${encodeURIComponent(serverUrl)}`}
             />
           }
@@ -174,49 +175,13 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
       </>
     )
   }
-  if (tab === 'Claude Code') {
-    return (
-      <>
-        <Steps>
-          <Step n={1}>
-            Run this in the folder where you use Claude Code.
-            <CopyLine text={`claude mcp add --transport http ${SERVER_NAME} ${serverUrl}`} />
-          </Step>
-          <Step n={2}>
-            In Claude Code, run <Strong>/mcp</Strong>, pick <Strong>{SERVER_NAME}</Strong>, and sign
-            in.
-          </Step>
-          <Step n={3}>
-            On the page that opens, check that it says <Strong>an app on this computer</Strong>.
-            Then choose <Strong>Allow</Strong>.
-          </Step>
-        </Steps>
-      </>
-    )
-  }
-  if (tab === 'Codex') {
-    return (
-      <>
-        <Steps>
-          <Step n={1}>
-            Run this in a terminal.
-            <CopyLine text={`codex mcp add ${SERVER_NAME} --url ${serverUrl}`} />
-          </Step>
-          <Step n={2}>
-            Then run this to sign in.
-            <CopyLine text={`codex mcp login ${SERVER_NAME}`} />
-          </Step>
-          <Step n={3}>
-            On the page that opens, check that it says <Strong>an app on this computer</Strong>.
-            Then choose <Strong>Allow</Strong>.
-          </Step>
-        </Steps>
-      </>
-    )
-  }
-  const cursorConfig = encodeURIComponent(btoa(JSON.stringify({ url: serverUrl })))
+  // Cursor and LM Studio read the same base64 `{ url }` config.
+  const urlConfig = encodeURIComponent(btoa(JSON.stringify({ url: serverUrl })))
   const vscodeConfig = encodeURIComponent(
-    JSON.stringify({ name: SERVER_NAME, type: 'http', url: serverUrl })
+    JSON.stringify({ name: MCP_SERVER_NAME, type: 'http', url: serverUrl })
+  )
+  const replitConfig = encodeURIComponent(
+    btoa(JSON.stringify({ displayName: MCP_SERVER_NAME, baseUrl: serverUrl }))
   )
   return (
     <>
@@ -228,7 +193,7 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
           action={
             <AddLink
               name="Cursor"
-              href={`cursor://anysphere.cursor-deeplink/mcp/install?name=${SERVER_NAME}&config=${cursorConfig}`}
+              href={`cursor://anysphere.cursor-deeplink/mcp/install?name=${MCP_SERVER_NAME}&config=${urlConfig}`}
             />
           }
         />
@@ -237,6 +202,25 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
           name="VS Code"
           note="Opens VS Code with everything filled in, for GitHub Copilot."
           action={<AddLink name="VS Code" href={`vscode:mcp/install?${vscodeConfig}`} />}
+        />
+        <OtherRow
+          app="lmStudio"
+          name="LM Studio"
+          note="Opens LM Studio 0.4.10 or later with everything filled in."
+          action={
+            <AddLink
+              name="LM Studio"
+              href={`lmstudio://add_mcp?name=${MCP_SERVER_NAME}&config=${urlConfig}`}
+            />
+          }
+        />
+        <OtherRow
+          app="replit"
+          name="Replit"
+          note="Opens Replit in a new tab, with everything filled in, for Replit Agent."
+          action={
+            <AddLink name="Replit" href={`https://replit.com/integrations?mcp=${replitConfig}`} />
+          }
         />
       </ul>
       <div className="border-base-300 mt-4 border-t pt-4">

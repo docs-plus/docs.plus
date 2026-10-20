@@ -399,6 +399,28 @@ export const ConnectedAppsSkeleton = () => {
             </span>
           ))}
         </div>
+        {!isPhone && (
+          <div className="border-base-300 mt-4 border-t pt-4">
+            <TextLine bone="h-3.5 w-44" />
+            <TextLine bone="h-3 w-72 max-w-full" />
+            <div className="border-base-300 bg-base-300 rounded-box mt-3 grid grid-cols-1 gap-px overflow-hidden border sm:grid-cols-2">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className={`bg-base-100 flex items-center gap-3 px-4 py-3 ${i === 4 ? 'sm:col-span-2' : ''}`}>
+                  <div className="skeleton rounded-field size-[22px] shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <TextLine bone="h-3.5 w-24" />
+                    <TextLine box="h-4" bone={i === 4 ? 'h-3 w-64 max-w-full' : 'h-3 w-28'} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* The sign-in line wraps to two lines in the settings column. */}
+            <TextLine className="mt-3" bone="h-3 w-full" />
+            <TextLine bone="h-3 w-1/2" />
+          </div>
+        )}
       </SettingsCard>
       <SettingsCard>
         <CardHeaderSkeleton icon={LuPlug} titleWidth="w-28" description={isPhone} />
@@ -414,7 +436,7 @@ export const ConnectedAppsSkeleton = () => {
           </div>
         ) : (
           <>
-            <PanelTabBarSkeleton tabCount={5} className="p-0" />
+            <PanelTabBarSkeleton tabCount={3} className="p-0" />
             <div className="mt-5">
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <TextLine bone="h-3.5 w-40" />
