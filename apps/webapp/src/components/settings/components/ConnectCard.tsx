@@ -1,9 +1,17 @@
 import { AppMark } from '@components/ui/AppMark'
+import { CodeLine } from '@components/ui/CodeLine'
 import CopyButton from '@components/ui/CopyButton'
 import { PanelTabBar } from '@components/ui/PanelTabBar'
 import { Icons } from '@icons'
 import { AI_APP_BRANDS } from '@utils/aiAppBrands'
-import { type AppLink, appLinks, CHATGPT_PLUGINS_URL, claudeAddUrl } from '@utils/connectTargets'
+import {
+  type AppLink,
+  appLinks,
+  CHATGPT_PLUGINS_URL,
+  claudeAddUrl,
+  CONSENT_HOSTS,
+  OTHER_APP_HINT
+} from '@utils/connectTargets'
 import { mcpServerUrl } from '@utils/mcpServerUrl'
 import { type ReactNode, useState } from 'react'
 import { LuLayoutGrid, LuPlug } from 'react-icons/lu'
@@ -37,9 +45,7 @@ const Step = ({ n, children }: { n: number; children: ReactNode }) => (
 
 const CopyLine = ({ text }: { text: string }) => (
   <div className="mt-2 flex items-center gap-2">
-    <code className="bg-base-200 border-base-300 rounded-field text-base-content min-w-0 flex-1 overflow-x-auto border px-2 py-1.5 font-mono text-xs whitespace-nowrap">
-      {text}
-    </code>
+    <CodeLine text={text} className="min-w-0 flex-1" />
     <CopyButton
       text={text}
       label="Copy"
@@ -121,8 +127,9 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
             In Claude, choose <Strong>Continue</Strong>, then <Strong>Connect</Strong>.
           </Step>
           <Step n={3}>
-            On the page that opens, check that it says <Strong>Returns you to claude.ai</Strong>.
-            Then choose <Strong>Allow</Strong>.
+            On the page that opens, check that it says{' '}
+            <Strong>Returns you to {CONSENT_HOSTS.claude}</Strong>. Then choose{' '}
+            <Strong>Allow</Strong>.
           </Step>
         </Steps>
       </>
@@ -150,8 +157,9 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
             <Strong>Create</Strong>.
           </Step>
           <Step n={4}>
-            On the page that opens, check that it says <Strong>Returns you to chatgpt.com</Strong>.
-            Then choose <Strong>Allow</Strong>.
+            On the page that opens, check that it says{' '}
+            <Strong>Returns you to {CONSENT_HOSTS.chatgpt}</Strong>. Then choose{' '}
+            <Strong>Allow</Strong>.
           </Step>
         </Steps>
       </>
@@ -166,10 +174,7 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
       </ul>
       <div className="border-base-300 mt-4 border-t pt-4">
         <ServerUrlField serverUrl={serverUrl} />
-        <p className="text-meta text-base-content/60 mt-2">
-          For any other AI app, paste this URL where it asks for a remote MCP server. The page that
-          opens may show a warning. Allow only if you started the connection.
-        </p>
+        <p className="text-meta text-base-content/60 mt-2">{OTHER_APP_HINT}</p>
       </div>
     </>
   )

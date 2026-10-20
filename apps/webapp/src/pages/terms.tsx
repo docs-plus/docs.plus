@@ -2,6 +2,7 @@ import {
   LEGAL_CONTACT_EMAIL,
   LEGAL_OPERATOR,
   LEGAL_OPERATOR_URL,
+  LEGAL_UPDATED,
   PRIVACY_PATH,
   TERMS_PATH
 } from '@components/pages/legal/legalMetadata'
@@ -16,6 +17,7 @@ export default function TermsPage() {
     <LegalPage
       title="Terms of use"
       path={TERMS_PATH}
+      updated={LEGAL_UPDATED}
       description="Rules for using docs.plus documents, chat, and accounts.">
       <LegalSection title="The service">
         <p>

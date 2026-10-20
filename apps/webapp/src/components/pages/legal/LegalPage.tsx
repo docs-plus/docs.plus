@@ -9,24 +9,18 @@ import { TextLink } from '@components/ui/TextLink'
 import Head from 'next/head'
 import type { ReactNode } from 'react'
 
-import { LEGAL_UPDATED, PRIVACY_PATH, TERMS_PATH } from './legalMetadata'
+import { PRIVACY_PATH, TERMS_PATH } from './legalMetadata'
 
 interface LegalPageProps {
   title: string
   description: string
   path: string
-  /** The legal-page date; a page that is not a legal text turns it off. */
-  showUpdated?: boolean
+  /** The "Last updated" date. A page that is not a legal text has none. */
+  updated?: string
   children: ReactNode
 }
 
-export function LegalPage({
-  title,
-  description,
-  path,
-  showUpdated = true,
-  children
-}: LegalPageProps) {
+export function LegalPage({ title, description, path, updated, children }: LegalPageProps) {
   const canonicalUrl = `${HOME_SITE_URL}${path}`
   const documentTitle = `${title} — docs.plus`
 
@@ -57,13 +51,8 @@ export function LegalPage({
 
         <main id="legal-main" className="mx-auto w-full max-w-3xl px-4 pb-16 sm:px-6">
           <article className="rounded-box bg-base-100 border-base-300 border p-6 sm:p-10">
-            {showUpdated && (
-              <p className="text-base-content/60 text-sm">Last updated {LEGAL_UPDATED}</p>
-            )}
-            <h1
-              className={`text-base-content text-2xl font-bold sm:text-3xl ${showUpdated ? 'mt-2' : ''}`}>
-              {title}
-            </h1>
+            {updated && <p className="text-base-content/60 mb-2 text-sm">Last updated {updated}</p>}
+            <h1 className="text-base-content text-2xl font-bold sm:text-3xl">{title}</h1>
             <div className="mt-8 space-y-8">{children}</div>
           </article>
         </main>

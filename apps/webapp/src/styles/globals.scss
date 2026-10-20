@@ -554,8 +554,8 @@ html[data-theme] {
   );
 }
 
-/* In the base layer, not unlayered: unlayered CSS beats every Tailwind utility, so the old
-   rule silently defeated `font-mono` and any other font utility. */
+/* In the base layer, so a font utility such as `font-mono` can override it. Unlayered CSS
+   would beat every Tailwind utility. */
 @layer base {
   * {
     box-sizing: border-box;

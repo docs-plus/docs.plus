@@ -1,12 +1,12 @@
 import { quietActionClassName } from '@components/ui/Button'
 import { Icons } from '@icons'
+import { MCP_GUIDE_URL } from '@utils/mcpServerUrl'
 import { twMerge } from '@utils/twMerge'
 import type { ReactNode } from 'react'
 import type { IconType } from 'react-icons'
 import { LuFilePlus, LuPencil } from 'react-icons/lu'
 import { SiModelcontextprotocol } from 'react-icons/si'
 
-import { MCP_GUIDE_URL } from '../constants'
 import { type McpServerStatus, useMcpServerStatus } from '../hooks/useMcpServerStatus'
 import SettingsCard, { SettingsCardHeader } from './SettingsCard'
 

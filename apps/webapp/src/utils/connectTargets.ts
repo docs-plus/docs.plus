@@ -61,6 +61,12 @@ export const claudeAddUrl = (serverUrl: string): string =>
 
 export const CHATGPT_PLUGINS_URL = 'https://chatgpt.com/plugins'
 
+/** The host the consent page names for each chat app, as `appTrust` reads it from the callback. */
+export const CONSENT_HOSTS = { claude: 'claude.ai', chatgpt: 'chatgpt.com' } as const
+
+export const OTHER_APP_HINT =
+  'For any other AI app, paste this URL where it asks for a remote MCP server. The page that opens may show a warning. Allow only if you started the connection.'
+
 /**
  * The text a person pastes into any agent. It names its source and one URL, and makes the agent
  * show each change and wait, so a forged copy with another URL is easier to spot.
