@@ -37,7 +37,15 @@ export const createServerFactory =
         title: 'docs.plus',
         version: deps.version,
         websiteUrl: deps.appUrl,
-        description: 'Find, read, create and edit your docs.plus documents and their chat.'
+        description: 'Find, read, create and edit your docs.plus documents and their chat.',
+        // The transparent PWA icon, so the mark sits on any ground. Built from appUrl for self-hosts.
+        icons: [
+          {
+            src: `${deps.appUrl}/icons/icon-192x192.png`,
+            mimeType: 'image/png',
+            sizes: ['192x192']
+          }
+        ]
       },
       { instructions: INSTRUCTIONS }
     )

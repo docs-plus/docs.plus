@@ -102,7 +102,7 @@ The check parses only. It does not lay the diagram out. The `markdown` field des
 
 `post_chat_message` only adds a message, so it is not destructive. It reaches other people: room members who follow every message and are away get a notification. Every `@` is removed, so it never sends a mention or `@everyone` notification.
 
-**Server instructions.** The `initialize` result carries `instructions`. They say that these tools act as the signed-in person, and that a browser session is not signed in as them. To start a document, they name `create_document`. To change one, they name `replace_text` and `edit_blocks`. They suggest a `mermaid` diagram where a picture is clearer than text. A host may ignore them. The server info also carries `title`, `websiteUrl` and `description`.
+**Server instructions.** The `initialize` result carries `instructions`. They say that these tools act as the signed-in person, and that a browser session is not signed in as them. To start a document, they name `create_document`. To change one, they name `replace_text` and `edit_blocks`. They suggest a `mermaid` diagram where a picture is clearer than text. A host may ignore them. The server info also carries `title`, `websiteUrl`, `description` and `icons`. The one icon is the 192 px docs.plus mark on the web app. Some hosts do not show it.
 
 ## Limits
 

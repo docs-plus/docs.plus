@@ -1010,7 +1010,7 @@ An empty `warnings` array means a clean import.
 
 ## MCP connector
 
-`/api/mcp` is a Model Context Protocol server (`src/modules/mcp/`). A person adds docs.plus to an AI app as a connector and signs in as themselves. The app's agent then reads and edits that person's documents through the tools below. It uses `@modelcontextprotocol/server` 2.0.0 with `createMcpHandler`. Every request gets a fresh server, so the endpoint holds no session between requests or replicas.
+`/api/mcp` is a Model Context Protocol server (`src/modules/mcp/`). A person adds docs.plus to an AI app as a connector and signs in as themselves. The app's agent then reads and edits that person's documents through the tools below. It uses `@modelcontextprotocol/server` 2.3.1 with `createMcpHandler`. Every request gets a fresh server, so the endpoint holds no session between requests or replicas.
 
 **Supported hosts.** claude.ai, Claude Desktop and ChatGPT add it as a remote connector. Claude Code should work through dynamic client registration (DCR). Nobody has tested it yet.
 
@@ -1077,7 +1077,7 @@ Every tool except `find_documents` and `create_document` takes a document slug. 
 
 **Hints.** They follow OpenAI's definitions. Read tools set `destructiveHint: false` and `openWorldHint: false`. Write tools set `openWorldHint: true`, because documents are public by default and a write publishes. `post_chat_message` only adds, so it is not destructive; room members who follow every message and are away get a notification.
 
-**Server instructions.** The `initialize` result carries `instructions`. They say that these tools act as the signed-in person, and that a browser session is not signed in as them. They name `create_document` for a new document. A host may ignore them. The server info also carries `title`, `websiteUrl` (`APP_URL`) and `description`.
+**Server instructions.** The `initialize` result carries `instructions`. They say that these tools act as the signed-in person, and that a browser session is not signed in as them. They name `create_document` for a new document. A host may ignore them. The server info also carries `title`, `websiteUrl` (`APP_URL`), `description` and `icons` (one 192 px PNG at `APP_URL/icons/icon-192x192.png`).
 
 **Errors.** A tool error is an MCP result with `isError: true`. Its text gives the next step. When one argument is at fault, the text starts with that field. A bad argument never reaches the tool: the SDK answers with the failing field.
 

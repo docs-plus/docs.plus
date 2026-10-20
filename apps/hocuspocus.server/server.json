@@ -1,0 +1,14 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "plus.docs/mcp",
+  "title": "docs.plus",
+  "description": "Find, read and edit your docs.plus documents and their heading chats.",
+  "version": "1.0.0",
+  "websiteUrl": "https://docs.plus/mcp",
+  "repository": {
+    "url": "https://github.com/docs-plus/docs.plus",
+    "source": "github",
+    "subfolder": "apps/hocuspocus.server"
+  },
+  "remotes": [{ "type": "streamable-http", "url": "https://prodback.docs.plus/api/mcp" }]
+}

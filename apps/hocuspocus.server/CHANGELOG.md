@@ -14,6 +14,11 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 - **An admin can soft-delete one account on the owner's request ([#471](https://github.com/docs-plus/docs.plus/issues/471)).**
   Use `DELETE /api/admin/users/:id`. It clears the profile, removes the avatar and bans the user. It turns off push and email and drops pending queued email. The email address is kept. It refuses an admin or an unknown id. A `500` may leave the profile cleared. Retry the call.
+- **The MCP server info names an icon.** `icons` lists the 192 px docs.plus mark
+  at `APP_URL/icons/icon-192x192.png`, so a host that shows server icons can
+  draw it. `server.json` describes the server for the official MCP Registry
+  ([#459](https://github.com/docs-plus/docs.plus/issues/459)); publishing it
+  is a separate maintainer step.
 - **AI apps can write Mermaid diagrams through the MCP connector.**
   The server instructions and the `markdown` field descriptions tell an agent that a `mermaid` fence becomes a diagram. The field descriptions also name the types it can start with. Before `create_document`, `append_to_document`, `edit_blocks` or `replace_text` writes, the server parses each diagram with Pele. It refuses an empty diagram, an unsupported type, a parse error, or one over 15 000 characters or 500 edges, and nothing is written. A parse refusal carries Pele's message, so the agent can fix it. The backend now depends on `pele` 1.6.0.
 
