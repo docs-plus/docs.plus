@@ -29,8 +29,7 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   ([#528](https://github.com/docs-plus/docs.plus/issues/528), [#529](https://github.com/docs-plus/docs.plus/issues/529)).
 - **Set up a terminal agent from Settings › Connected apps.** On a
   computer, the MCP server card now ends on a grid: Claude Code, Codex,
-  Copilot CLI and Cline. Each cell copies that agent's add command. The
-  Codex command also starts its sign-in. A last cell, **Any other agent**,
+  Copilot CLI and Cline. Each cell copies that agent's add command. A last cell, **Any other agent**,
   copies a short prompt that tells the agent to show each change and wait
   for a yes. The **Other** tab gains **Add to LM Studio** and **Add to
 - **A public `/mcp` page shows the MCP server URL and how to add it to each

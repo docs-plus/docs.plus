@@ -6,12 +6,12 @@ import { MCP_SERVER_NAME } from './mcpServerUrl'
 
 export type AgentCommand = { app: AiAppId; command: string }
 
-/** One copyable line per terminal agent. Codex chains its sign-in, because it has no `/mcp`. */
+/** One copyable line per terminal agent. `codex mcp add` starts its own sign-in, so nothing is chained. */
 export const agentCommands = (serverUrl: string): AgentCommand[] => [
   { app: 'claudeCode', command: `claude mcp add --transport http ${MCP_SERVER_NAME} ${serverUrl}` },
   {
     app: 'codex',
-    command: `codex mcp add ${MCP_SERVER_NAME} --url ${serverUrl} && codex mcp login ${MCP_SERVER_NAME}`
+    command: `codex mcp add ${MCP_SERVER_NAME} --url ${serverUrl}`
   },
   {
     app: 'copilotCli',
