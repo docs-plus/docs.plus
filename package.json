@@ -51,7 +51,7 @@
     "prosemirror-transform": "1.12.1",
     "prosemirror-view": "1.42.3",
     "source-map-js": "^1.2.2",
-    "pele": "1.6.0"
+    "pele": "1.7.0"
   },
   "prettier": "./.prettierrc.json",
   "scripts": {

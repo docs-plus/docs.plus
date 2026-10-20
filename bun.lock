@@ -127,7 +127,7 @@
         "metascraper-url": "5.50.6",
         "mime": "^4.1.0",
         "nodemailer": "^10.0.16",
-        "pele": "1.6.0",
+        "pele": "1.7.0",
         "pino": "^10.4.0",
         "prom-client": "^15.1.3",
         "rate-limiter-flexible": "^11.2.1",
@@ -360,7 +360,7 @@
       "name": "@docs.plus/extension-mermaid",
       "version": "2.1.0",
       "dependencies": {
-        "pele": "1.6.0",
+        "pele": "1.7.0",
       },
       "devDependencies": {
         "@docs.plus/playground": "workspace:*",
@@ -555,7 +555,7 @@
     "metascraper-title": "5.50.6",
     "metascraper-url": "5.50.6",
     "nanoid": "^3.3.17",
-    "pele": "1.6.0",
+    "pele": "1.7.0",
     "prosemirror-changeset": "2.4.1",
     "prosemirror-model": "1.25.11",
     "prosemirror-transform": "1.12.1",
@@ -3284,7 +3284,7 @@
 
     "pcg": ["pcg@3.0.0", "", {}, "sha512-lHETDr3c//q4xs0iZk9+LRFgmvjLtaUDIE3ztE2KN4IhwyHLcJ3H5VBv93SGop1XHZalC1UFSwoJepoZSMSVLQ=="],
 
-    "pele": ["pele@1.6.0", "", {}, "sha512-VfAiVItsOGlGhvnBfphdT28VCG7mXMZxQNOwAGsCtxI2ztbUsT39MraEOYjsapLxVETkdUZscm0DdotYDQMLdw=="],
+    "pele": ["pele@1.7.0", "", {}, "sha512-nkYb5VnxsTgwD4NThF6j4pJEC4AhGLJ9ptiL4q/vIzGr9q6ZtoRE3hFr94LgHpZ/xy56d1pw42UAQGaZkjM5XA=="],
 
     "pend": ["pend@1.2.0", "", {}, "sha512-F3asv42UuXchdzt+xXqfW1OGlVBe+mxa2mqI0pg5yAHZPvFmY3Y6drSf/GQ1A86WgWEN9Kzh/WrgKa6iGcHXLg=="],
 

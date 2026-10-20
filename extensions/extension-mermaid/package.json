@@ -77,7 +77,7 @@
     "@tiptap/pm": "catalog:"
   },
   "dependencies": {
-    "pele": "1.6.0"
+    "pele": "1.7.0"
   },
   "devDependencies": {
     "@docs.plus/playground": "workspace:*",

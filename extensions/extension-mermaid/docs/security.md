@@ -2,7 +2,7 @@
 
 Part of the [`@docs.plus/extension-mermaid` README](../README.md).
 
-This page states only what the code does. Facts about Pele are read from `pele@1.6.0` in `node_modules`, not run, unless the text says otherwise. Pele's own guidance is at [pele.run/security](https://pele.run/security).
+This page states only what the code does. Facts about Pele are read from `pele@1.6.0` in `node_modules`, not run, unless the text says otherwise. On `1.7.0`, the options this page names and the uses of `maxEdges` were compared again, and they are unchanged. Pele's own guidance is at [pele.run/security](https://pele.run/security).
 
 ## Treat every source as untrusted
 
