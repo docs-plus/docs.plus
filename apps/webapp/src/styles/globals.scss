@@ -554,9 +554,13 @@ html[data-theme] {
   );
 }
 
-* {
-  box-sizing: border-box;
-  font-family: var(--font-sans);
+/* In the base layer, not unlayered: unlayered CSS beats every Tailwind utility, so the old
+   rule silently defeated `font-mono` and any other font utility. */
+@layer base {
+  * {
+    box-sizing: border-box;
+    font-family: var(--font-sans);
+  }
 }
 
 /* Interactive elements should have pointer cursor */

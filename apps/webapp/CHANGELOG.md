@@ -32,11 +32,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   Copilot CLI and Cline. Each cell copies that agent's add command. A last cell, **Any other agent**,
   copies a short prompt that tells the agent to show each change and wait
   for a yes. The **Other** tab gains **Add to LM Studio** and **Add to
+  Replit**.
 - **A public `/mcp` page shows the MCP server URL and how to add it to each
   AI app** ([#458](https://github.com/docs-plus/docs.plus/issues/458)). The
   sitemap lists it, and the home footer links it as **AI apps**. A document
   named "MCP" now opens on a random slug, because `mcp` is a reserved slug.
-  Replit**.
 
 ### Changed
 
@@ -59,6 +59,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - **Add link (Mod-K) with nothing selected inserts the typed URL as the link.**
   Before, Apply showed "Please enter a valid URL" and inserted nothing.
 - **The Discord links point at a working invite** ([#480](https://github.com/docs-plus/docs.plus/issues/480)).
+- **The `font-mono` utility works.** The global `font-family` rule now sits in
+  the Tailwind base layer, so a font utility can override it. URLs and
+  commands on `/mcp` and in Settings › Connected apps now show in a monospace
+  face.
 
 ### Internal
 
