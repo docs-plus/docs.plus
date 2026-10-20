@@ -6,24 +6,26 @@ You add docs.plus as a connector in the AI app. Then you sign in to docs.plus as
 
 ## Connect from docs.plus Settings
 
-<!-- PENDING-HOST-TEST: Cursor, VS Code, Codex -->
+<!-- PENDING-HOST-TEST: Cursor, VS Code, Codex, Copilot CLI, Cline, LM Studio, Replit, agent prompt -->
 
 This is the easiest way. One docs.plus page gives the steps for each AI app.
 
 1. Sign in to docs.plus. Open **Settings** and choose **Connected apps**. The direct link is [docs.plus/#settings?tab=connected-apps](https://docs.plus/#settings?tab=connected-apps).
-2. Under **Add an AI app**, choose the tab for your AI app, and follow its steps.
-   - **Claude**: choose **Add to Claude**. Claude's **Add custom connector** dialog opens with docs.plus filled in, and the server URL is copied. Claude warns that an external link suggested the connector. Check that the URL is the docs.plus server URL, then choose **Continue** and **Connect**.
+2. Pick the way that fits your AI app.
+   - **An agent in a terminal**: under **Set up from a terminal agent**, choose **Claude Code**, **Codex**, **Copilot CLI** or **Cline**. That copies one command. Run it in a terminal. The Codex command also starts the sign-in.
+   - **Any other agent**, such as Warp, Kiro or OpenCode: choose **Any other agent**. That copies a short prompt. Paste it into the agent. The agent shows you each change and waits for your yes.
+   - **Claude**: under **Add an AI app**, choose **Add to Claude**. Claude's **Add custom connector** dialog opens with docs.plus filled in, and the server URL is copied. Claude warns that an external link suggested the connector. Check that the URL is the docs.plus server URL, then choose **Continue** and **Connect**.
    - **ChatGPT**: turn on **Developer mode** first, as the tab says. Then choose **Open ChatGPT**. ChatGPT Plugins opens, and the server URL is copied. Choose **+**, paste the URL, choose **OAuth**, then **Create**.
-   - **Claude Code** and **Codex**: copy each command and run it in a terminal, as the tab says.
-   - **Other**: choose **Add to Cursor** or **Add to VS Code**, and the app opens with docs.plus filled in. For any other AI app, copy the **MCP server URL** and paste it where the app asks for a remote MCP server.
-   - The sections below give the Claude and ChatGPT steps in full.
-3. A docs.plus page opens. Check the address it returns you to, as [Check the consent page](#check-the-consent-page) explains. Then choose **Allow**.
+   - **Other**: choose **Add to Cursor**, **Add to VS Code** or **Add to LM Studio**, and the app opens with docs.plus filled in. **Add to Replit** opens Replit in a new tab. For any other AI app, copy the **MCP server URL** and paste it where the app asks for a remote MCP server.
+   - The sections below give the steps for each AI app in full.
+3. Start the sign-in. Claude and ChatGPT start it for you. In Claude Code, run `/mcp`. Other agents name their own step.
+4. A docs.plus page opens. Check the address it returns you to, as [Check the consent page](#check-the-consent-page) explains. Then choose **Allow**.
    - Claude: **Returns you to claude.ai**. ChatGPT: **Returns you to chatgpt.com**.
    - Claude Code: `http://localhost:<port>`. Codex: `http://127.0.0.1:<port>`. The `<port>` is a number the app picks.
    - VS Code: `http://127.0.0.1:33418` or `https://vscode.dev`.
    - Cursor and other AI apps do not document their address yet. Allow only if you started the connection in that app yourself.
 
-The tab opens with a short note on what the docs.plus MCP server lets an AI app do, and a **Setup guide** link to this page. Next to the title, **Online** means your browser reached the MCP server. **Unreachable** means it did not; the page checks again every 30 seconds. The **MCP server URL** and its **Copy** button are in the **Other** tab, and also in ChatGPT step 2. On a phone, **Add an AI app** shows no tabs, only the MCP server URL. Add apps from docs.plus on a computer. Claude added on the web or in Claude Desktop then works in the Claude phone app too.
+The tab opens with a short note on what the docs.plus MCP server lets an AI app do, and a **Setup guide** link to this page. Next to the title, **Online** means your browser reached the MCP server. **Unreachable** means it did not; the page checks again every 30 seconds. The terminal agents sit in the same card, under the note. The **MCP server URL** and its **Copy** button are in the **Other** tab, and also in ChatGPT step 2. On a phone, **Add an AI app** shows no tabs, only the MCP server URL, and the terminal agents are hidden. Add apps from docs.plus on a computer. Claude added on the web or in Claude Desktop then works in the Claude phone app too.
 
 ## Connect in claude.ai, Claude Desktop, or Claude mobile
 
@@ -70,6 +72,122 @@ ChatGPT keeps the tool list it saw when you connected. When docs.plus adds a too
 
 2. In Claude Code, run `/mcp`, pick `docs-plus`, and choose to sign in. A docs.plus page opens in your browser.
 3. Check that the page returns you to `http://localhost:<port>`, an app on this computer. The `<port>` is a number Claude Code picks. Then choose **Allow**.
+
+## Connect in other AI apps on your computer
+
+Each AI app below runs on your computer. You add docs.plus with one command or one settings entry. Then you sign in to docs.plus in your browser.
+
+These steps use the docs.plus server at `https://prodback.docs.plus/api/mcp`. If you run your own docs.plus server, use its MCP server URL instead.
+
+### Codex
+
+<!-- PENDING-HOST-TEST: Codex -->
+
+1. Run this in a terminal.
+
+   ```bash
+   codex mcp add docs-plus --url https://prodback.docs.plus/api/mcp
+   ```
+
+2. Run this to sign in. A docs.plus page opens in your browser.
+
+   ```bash
+   codex mcp login docs-plus
+   ```
+
+3. Check that the page returns you to `http://127.0.0.1:<port>`, an app on this computer. The `<port>` is a number Codex picks. Then choose **Allow**.
+
+### GitHub Copilot CLI
+
+<!-- PENDING-HOST-TEST: GitHub Copilot CLI -->
+
+1. Run this in a terminal.
+
+   ```bash
+   copilot mcp add --transport http docs-plus https://prodback.docs.plus/api/mcp
+   ```
+
+2. Start Copilot CLI. The first time it connects, a docs.plus page opens in your browser. If it does not open, run `/mcp auth` in Copilot CLI.
+3. Check that the page returns you to `http://127.0.0.1:<port>`, an app on this computer. The `<port>` is a number Copilot CLI picks. Then choose **Allow**.
+
+### Cline
+
+<!-- PENDING-HOST-TEST: Cline CLI -->
+
+1. Run this in a terminal.
+
+   ```bash
+   cline mcp add docs-plus https://prodback.docs.plus/api/mcp --transport http --yes
+   ```
+
+2. Run `cline mcp`, pick `docs-plus`, and choose **Authorize OAuth**. A docs.plus page opens in your browser.
+3. Check that the page returns you to `http://127.0.0.1:1456`, an app on this computer. If that port is busy, Cline uses the next free port. Then choose **Allow**.
+
+### Qwen Code
+
+<!-- PENDING-HOST-TEST: Qwen Code -->
+
+1. Run this in a terminal. If Qwen Code is already running, restart it.
+
+   ```bash
+   qwen mcp add --transport http docs-plus https://prodback.docs.plus/api/mcp
+   ```
+
+2. In Qwen Code, run `/mcp`, select `docs-plus`, and choose **Auth**. A docs.plus page opens in your browser. Sign in from this dialog, because the automatic sign-in can fail.
+3. Check that the page returns you to `http://localhost:7777`, an app on this computer. Then choose **Allow**.
+
+### Devin CLI
+
+<!-- PENDING-HOST-TEST: Devin CLI -->
+
+1. Run this in a terminal. To add docs.plus for every folder, add `-s user` after `add`.
+
+   ```bash
+   devin mcp add docs-plus https://prodback.docs.plus/api/mcp
+   ```
+
+2. Run this to sign in. A docs.plus page opens in your browser.
+
+   ```bash
+   devin mcp login docs-plus
+   ```
+
+3. Devin does not document the address it returns you to. Choose **Allow** only if you just ran the command.
+
+### OpenCode
+
+<!-- PENDING-HOST-TEST: OpenCode -->
+
+1. Add this to your `opencode.json` file.
+
+   ```json
+   {
+     "mcp": {
+       "docs-plus": { "type": "remote", "url": "https://prodback.docs.plus/api/mcp" }
+     }
+   }
+   ```
+
+2. Run this to sign in. A docs.plus page opens in your browser.
+
+   ```bash
+   opencode mcp auth docs-plus
+   ```
+
+3. Check that the page returns you to `http://127.0.0.1:19876`, an app on this computer. Then choose **Allow**.
+
+### Kimi Code
+
+<!-- PENDING-HOST-TEST: Kimi Code -->
+
+1. Add this to `~/.kimi-code/mcp.json`.
+
+   ```json
+   { "mcpServers": { "docs-plus": { "url": "https://prodback.docs.plus/api/mcp" } } }
+   ```
+
+2. In Kimi Code, run `/mcp-config login docs-plus`. A docs.plus page opens in your browser.
+3. Check that the page returns you to `http://127.0.0.1:<port>`, an app on this computer. The `<port>` is a number Kimi Code picks. Then choose **Allow**.
 
 ## Check the consent page
 
