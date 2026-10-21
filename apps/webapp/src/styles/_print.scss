@@ -100,12 +100,12 @@
     break-inside: avoid;
   }
 
-  // A ready diagram prints as the picture; anything else prints the source. The inline
-  // contain and overflow on the host would clip the picture on paper.
+  // A ready diagram prints as the picture; anything else prints the source.
   .mermaid-diagram {
     break-inside: avoid;
   }
 
+  // The inline contain and overflow on the host would clip the picture on paper.
   .mermaid-diagram__diagram {
     contain: none !important;
     overflow: visible !important;

@@ -132,8 +132,8 @@ function preparePreviewClone(source: HTMLElement): HTMLElement {
     frame.setAttribute('tabindex', '-1')
     frame.setAttribute('loading', 'lazy')
   })
-  // Duplicate ids would clash with the live diagram. Its url(#id) refs still resolve to it.
   clone.querySelectorAll('svg.pele').forEach((svg) => svg.setAttribute('tabindex', '-1'))
+  // Duplicate ids would clash with the live diagram. Its url(#id) refs still resolve to it.
   clone.querySelectorAll('.mermaid-diagram [id]').forEach((node) => node.removeAttribute('id'))
   return clone
 }
