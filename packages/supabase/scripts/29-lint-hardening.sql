@@ -315,6 +315,22 @@ END
 $$;
 
 
+-- =============================================================================
+-- 9. Default privileges for role postgres: new objects start closed (#316)
+-- Prod gives anon and authenticated EXECUTE on every new function, and ALL on every new table.
+-- The built-in PUBLIC EXECUTE is global, so only the last statement removes it.
+-- authenticated keeps sequence USAGE: messages.seq uses nextval().
+-- Never name supabase_admin: postgres cannot change its defaults.
+alter default privileges for role postgres in schema public
+  revoke execute on functions from anon, authenticated;
+alter default privileges for role postgres in schema public
+  revoke all on tables from anon;
+alter default privileges for role postgres in schema public
+  revoke all on sequences from anon;
+alter default privileges for role postgres
+  revoke execute on functions from public;
+
+
 COMMIT;
 
 
@@ -350,3 +366,15 @@ COMMIT;
 --   JOIN pg_namespace n ON n.oid=p.pronamespace
 --   WHERE n.nspname='public' AND p.prosecdef = true
 --     AND has_function_privilege('anon', p.oid, 'EXECUTE');
+--
+-- (e) §9 default privileges (expect no anon in any public row, no authenticated
+--     in the public f row, and no PUBLIC in the <all schemas> f row)
+--   SELECT CASE WHEN d.defaclnamespace = 0 THEN '<all schemas>'
+--               ELSE d.defaclnamespace::regnamespace::text END AS schema,
+--          d.defaclobjtype AS objtype,
+--          CASE WHEN a.grantee = 0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END AS grantee,
+--          a.privilege_type
+--   FROM pg_default_acl d, aclexplode(d.defaclacl) a
+--   WHERE d.defaclrole = 'postgres'::regrole
+--     AND (d.defaclnamespace = 0 OR d.defaclnamespace = 'public'::regnamespace)
+--   ORDER BY 1, 2, 3, 4;

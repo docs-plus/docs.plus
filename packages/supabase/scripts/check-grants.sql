@@ -1,5 +1,5 @@
 -- Grant and RLS guard. Read-only; run against prod after every db push. Zero rows = pass.
--- Until #316 lands, the default_acl_* rows are expected and do not fail the check.
+-- A default_acl_* row means a new object would start open again (#316).
 -- Each allowlist here copies a script list (29-lint-hardening.sql §3 and §6, 13-RLS.sql grants).
 -- check-grant-allowlists.ts fails when a copy drifts, so this file stays pasteable.
 with anon_read_ok(t) as (values
