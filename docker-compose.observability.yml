@@ -270,9 +270,12 @@ services:
     image: quay.io/prometheuscommunity/postgres-exporter:v0.17.0
     container_name: docsplus-postgres-exporter
     restart: unless-stopped
+    # The wal collector calls pg_ls_waldir, which needs pg_monitor. The read-only login has
+    # pg_read_all_stats only (DigitalOcean refuses pg_monitor), and no panel reads pg_wal_*.
+    command: ['--no-collector.wal']
     environment:
-      # Prefer the read-only pg_monitor login. DATABASE_URL is the fallback until
-      # the host env file sets POSTGRES_EXPORTER_DSN (#443).
+      # Prefer the read-only metrics login. DATABASE_URL is the fallback when the
+      # host env file does not set POSTGRES_EXPORTER_DSN (#443).
       DATA_SOURCE_NAME: ${POSTGRES_EXPORTER_DSN:-${DATABASE_URL}}
     networks: [docsplus-network]
     logging: { driver: json-file, options: { max-size: '20m', max-file: '3' } }

@@ -405,18 +405,18 @@ Error reporting is off until you set two values from your GlitchTip project:
 
 Metrics, logs, and alerts come from a separate stack, `docker-compose.observability.yml`. It reads its own env file. `scripts/observability/.env.example` is the template for that file. Keep your copy outside the repository.
 
-| Variable                      | Purpose                                                                                       |
-| ----------------------------- | --------------------------------------------------------------------------------------------- |
-| `GRAFANA_ADMIN_PASSWORD`      | The password of the Grafana `admin` user                                                      |
-| `TELEGRAM_BOT_TOKEN`          | The Telegram bot that sends Grafana alerts                                                    |
-| `TELEGRAM_CHAT_ID`            | The Telegram chat that receives the alerts                                                    |
-| `TELEGRAM_WARNINGS_CHAT_ID`   | Optional. A second chat for warning alerts. Empty uses `TELEGRAM_CHAT_ID`                     |
-| `DEADMAN_WEBHOOK_URL`         | A healthchecks.io ping URL. It pages you when the alert pipeline stops                        |
-| `GLITCHTIP_SECRET_KEY`        | The secret key of the GlitchTip server in this stack                                          |
-| `GLITCHTIP_POSTGRES_PASSWORD` | The password of the GlitchTip database in this stack                                          |
-| `GLITCHTIP_EMAIL_URL`         | Optional. The SMTP URL that GlitchTip sends issue mail with. Empty writes mail to the log     |
-| `POSTGRES_EXPORTER_DSN`       | Optional. A read-only `pg_monitor` login for the database exporter. Empty uses `DATABASE_URL` |
-| `DATABASE_URL`                | Your docs.plus database. The exporter uses it when `POSTGRES_EXPORTER_DSN` is empty           |
+| Variable                      | Purpose                                                                                                                                      |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GRAFANA_ADMIN_PASSWORD`      | The password of the Grafana `admin` user                                                                                                     |
+| `TELEGRAM_BOT_TOKEN`          | The Telegram bot that sends Grafana alerts                                                                                                   |
+| `TELEGRAM_CHAT_ID`            | The Telegram chat that receives the alerts                                                                                                   |
+| `TELEGRAM_WARNINGS_CHAT_ID`   | Optional. A second chat for warning alerts. Empty uses `TELEGRAM_CHAT_ID`                                                                    |
+| `DEADMAN_WEBHOOK_URL`         | A healthchecks.io ping URL. It pages you when the alert pipeline stops                                                                       |
+| `GLITCHTIP_SECRET_KEY`        | The secret key of the GlitchTip server in this stack                                                                                         |
+| `GLITCHTIP_POSTGRES_PASSWORD` | The password of the GlitchTip database in this stack                                                                                         |
+| `GLITCHTIP_EMAIL_URL`         | Optional. The SMTP URL that GlitchTip sends issue mail with. Empty writes mail to the log                                                    |
+| `POSTGRES_EXPORTER_DSN`       | Optional. A read-only login for the database exporter, with `pg_monitor` (or `pg_read_all_stats` on DigitalOcean). Empty uses `DATABASE_URL` |
+| `DATABASE_URL`                | Your docs.plus database. The exporter uses it when `POSTGRES_EXPORTER_DSN` is empty                                                          |
 
 To make the `pg_monitor` login, run this on your database as an admin user:
 
@@ -425,7 +425,9 @@ CREATE ROLE <EXPORTER_USER> LOGIN PASSWORD '<EXPORTER_PASSWORD>';
 GRANT pg_monitor TO <EXPORTER_USER>;
 ```
 
-On DigitalOcean managed PostgreSQL, `doadmin` cannot grant `pg_monitor` ("must have admin option"). Grant `pg_read_all_stats` instead. It covers the stats views the exporter reads.
+On DigitalOcean managed PostgreSQL, `doadmin` cannot grant `pg_monitor` ("must have admin option"). Grant `pg_read_all_stats` instead. It covers the stats views the exporter reads. The exporter turns off its `wal` collector, because that one needs `pg_monitor`.
+
+DigitalOcean's connection string ends in `sslmode=verify-full&sslrootcert=/path/to/ca-certificate.crt`. That path is a placeholder. Use `sslmode=require`, as `DATABASE_URL` does, or mount the real CA file and point `sslrootcert` at it. With the placeholder, every scrape fails and the "Postgres down" alert fires.
 
 The compose file also names the docs.plus hosts. Search it for `docs.plus`, and replace each hit with your own host or address.
 
