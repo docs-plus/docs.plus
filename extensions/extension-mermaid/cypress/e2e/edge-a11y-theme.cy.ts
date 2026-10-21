@@ -47,6 +47,9 @@ function caretInParagraph(text: string, offset: number): void {
       .run()
   })
   cy.get('.ProseMirror').should('have.focus')
+  // ProseMirror writes its selection back 20 ms after focus (prosemirror-view `handlers.focus`).
+  // On a slow machine that undoes a real key pressed inside the window, so wait past it.
+  cy.wait(100)
 }
 
 function paragraphTexts(): Cypress.Chainable<string[]> {
