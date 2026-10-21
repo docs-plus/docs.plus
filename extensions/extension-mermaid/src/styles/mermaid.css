@@ -188,7 +188,6 @@
     visibility 0s linear 200ms;
 }
 
-/* Default view */
 :where(.mermaid-diagram__preview) {
   padding: 0.75rem 1rem;
   background: var(--pele-bg);

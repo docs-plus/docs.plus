@@ -28,7 +28,7 @@ export interface Head {
 
 /** Per-editor fold state. The plugin parts and the heads share one registry. */
 export interface Folds {
-  /** Builds the head, prepends it to `frame` and reads the start state once. */
+  /** Builds the head and reads the start state once. It prepends nothing when every control is off. */
   head(frame: HTMLElement, source: string, editable: boolean): Head
   view: () => PluginView
   handleKeyDown: (view: EditorView, event: KeyboardEvent) => boolean

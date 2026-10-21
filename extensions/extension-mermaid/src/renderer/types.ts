@@ -6,7 +6,6 @@ export interface RenderOutcome {
   state: 'ready' | 'error'
   /** Null on `ready`. */
   error: MermaidError | null
-  /** The type detected for this source. */
   diagramType: string | null
   /** Pele plus sanitize, around the synchronous call. */
   durationMs: number

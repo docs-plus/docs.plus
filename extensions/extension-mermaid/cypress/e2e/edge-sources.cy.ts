@@ -571,7 +571,7 @@ ${BRANCH}`
     })
 
     // Assert nodes and labels only: autoDirection may turn this chain to a vertical layout.
-    // 250 arrows is the edge limit, and it binds before the 10000 characters do (about 7,500).
+    // The 250-edge limit binds first; this line is about 7,500 characters.
     it('draws a 250-arrow single line without widening the page', () => {
       const ids: string[] = []
       while (ids.length < 251) ids.push(`n${ids.length}[Step ${ids.length} on one line]`)

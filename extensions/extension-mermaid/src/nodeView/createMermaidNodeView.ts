@@ -129,6 +129,7 @@ export function createMermaidNodeView(
   folds: Folds
 ): NodeViewConstructor {
   return (node, _view, getPos) => {
+    // ProseMirror renders the schema `toDOM` when this returns nothing; the type does not say so.
     if (node.attrs.language !== MERMAID_LANGUAGE) return undefined as unknown as NodeView
     return new MermaidNodeView(node, getPos, editor, options, folds)
   }
