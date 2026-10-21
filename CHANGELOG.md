@@ -17,7 +17,9 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   the new `@docs.plus/extension-mermaid` package ([#521](https://github.com/docs-plus/docs.plus/issues/521)).
   AI apps connected through the MCP connector can write diagrams too. The
   server checks each one before the write and refuses one that does not parse
-  or is too large.
+  or is too large. The size limits, 10,000 characters and 250 arrows, were
+  measured on a real iPhone and a real Android phone, so a large diagram never
+  freezes a phone ([#522](https://github.com/docs-plus/docs.plus/issues/522)).
 - **More AI apps, one page to start.** A public `/mcp` page gives the MCP
   server URL and the steps for each AI app. Settings › Connected apps adds a
   terminal agent grid (Claude Code, Codex, Copilot CLI and Cline), a setup

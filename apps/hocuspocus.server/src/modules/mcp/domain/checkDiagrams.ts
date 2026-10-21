@@ -6,7 +6,7 @@ const MERMAID_LANGUAGE = 'mermaid'
 
 // Mirrors DEFAULT_LIMITS in extensions/extension-mermaid/src/constants.ts, which the pad uses.
 // Change both together, or the pad shows "too large to draw" for a diagram this lets through.
-const LIMITS = { limit: 15000, maxEdges: 500 } satisfies Pele.ParseOptions
+const LIMITS = { limit: 10000, maxEdges: 250 } satisfies Pele.ParseOptions
 
 /** Each was checked with `pele.parse`. Pele draws more types; these are the ones we name. */
 export const DIAGRAM_KEYWORDS = [

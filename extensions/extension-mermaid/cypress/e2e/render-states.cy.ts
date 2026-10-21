@@ -173,15 +173,15 @@ describe('mermaid — render states', () => {
   })
 
   it('shows a limit error for a source over the default character limit', () => {
-    // Follows DEFAULT_LIMITS.characters in src/constants.ts (provisional). Below Pele's own 50000.
+    // Follows DEFAULT_LIMITS.characters in src/constants.ts. Below Pele's own 50000.
     const big = GOOD + '\n' + '%% filler line\n'.repeat(1100)
-    expect(big.length).to.be.greaterThan(15000).and.lessThan(50000)
+    expect(big.length).to.be.greaterThan(10000).and.lessThan(50000)
     cy.setEditorContent(block(big))
     expectState('error')
     cy.get('.mermaid-diagram__message').should('have.text', 'This diagram is too large to draw.')
     cy.get('.mermaid-diagram__advice').should(
       'have.text',
-      `It has ${big.length.toLocaleString('en-US')} characters, and the limit is 15,000. Split it into smaller diagrams.`
+      `It has ${big.length.toLocaleString('en-US')} characters, and the limit is 10,000. Split it into smaller diagrams.`
     )
     // Advice reads as body text, not as mono parser output.
     cy.get('.mermaid-diagram__detail').should('be.empty').and('not.be.visible')

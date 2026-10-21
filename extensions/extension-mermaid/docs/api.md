@@ -13,14 +13,14 @@ Part of the [`@docs.plus/extension-mermaid` README](../README.md).
 | `sanitize`       | `((svg: string) => Node) \| null`                        | `null`                                                 | Host sanitizer for each SVG string before it enters the page.                                          |
 | `images`         | `boolean`                                                | `false`                                                | Remote images make every viewer of a shared document fetch the URL.                                    |
 | `zoom`           | `'auto' \| false`                                        | `'auto'`                                               | Pele zoom controls on fine pointers. Always off on coarse pointers.                                    |
-| `limits`         | `MermaidLimits`                                          | `{ characters: 15000, edges: 500 }` (provisional)      | Sources over these limits show a `limit` error and are never drawn.                                    |
+| `limits`         | `MermaidLimits`                                          | `{ characters: 10000, edges: 250 }`                    | Sources over these limits show a `limit` error and are never drawn.                                    |
 | `fold`           | `MermaidFold \| false`                                   | `{ initial: 'folded-when-read-only', remember: true }` | Lets each viewer hide the source. Nothing is stored in the document. `false` removes the button.       |
 | `helpLink`       | `string \| false`                                        | `'https://mermaid.js.org/intro/syntax-reference.html'` | The "Syntax" button on hover opens this guide in a new tab. `false` hides it.                          |
 | `copy`           | `boolean`                                                | `true`                                                 | The Copy button on hover copies the whole source. `false` hides it.                                    |
 | `HTMLAttributes` | `Record<string, string>`                                 | `{}`                                                   | Extra attributes for the frame element.                                                                |
 | `onStateChange`  | `((event: MermaidStateEvent) => void) \| null`           | `null`                                                 | Called when a diagram's state changes. See [onStateChange](#onstatechange).                            |
 
-The default `limits` are **provisional**. They come from a laptop with a 6x CPU slowdown, not a phone. `characters` is the highest level where every grown test source drew within 200 ms at p99. `edges` comes from flowchart sources only, and the pair was never measured together.
+The default `limits` were measured on a real iPhone and a real Android phone on 2026-10-21. Each one is the highest level where every test source drew within 200 ms at p99 on both phones. The Android phone set `characters`, and both phones set `edges`. [About Pele](pele.md#measured-on-real-phones) has the numbers.
 
 ```ts
 Mermaid.configure({
@@ -100,7 +100,7 @@ The built-in view shows these strings:
 
 Under the message, the view shows Pele's own text, with blank lines removed, in `.mermaid-diagram__detail`.
 
-A `limit` error is different. Its `MermaidError.message` is usually the extension's own sentence, not Pele's. It names the limit, the count where it is known, and a next step, for example `It has more than 500 arrows, and the limit is 500. Split it into smaller diagrams.` The view shows it as body text in `.mermaid-diagram__advice`, and `.mermaid-diagram__detail` stays empty. Pele stops counting edges at the limit, so the edge sentence says "more than". An output that is too big names no number, because the writer never typed it. Pele has other fixed limits, such as nesting depth, block-diagram space blocks and Gantt scheduling work. For those, the message is Pele's own text, because it already names the cause.
+A `limit` error is different. Its `MermaidError.message` is usually the extension's own sentence, not Pele's. It names the limit, the count where it is known, and a next step, for example `It has more than 250 arrows, and the limit is 250. Split it into smaller diagrams.` The view shows it as body text in `.mermaid-diagram__advice`, and `.mermaid-diagram__detail` stays empty. Pele stops counting edges at the limit, so the edge sentence says "more than". An output that is too big names no number, because the writer never typed it. Pele has other fixed limits, such as nesting depth, block-diagram space blocks and Gantt scheduling work. For those, the message is Pele's own text, because it already names the cause.
 
 `MermaidError.line` and `column` are 1-based, or 0 when there is none. The extension maps Pele's line back to the editor line on a best-effort basis. It was probed on flowchart, sequence, class, er and state diagrams. It skips agentflow, and eventmodeling keeps its comment lines. Do not rely on an exact line.
 

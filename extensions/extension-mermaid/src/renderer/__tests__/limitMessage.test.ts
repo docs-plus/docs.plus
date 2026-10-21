@@ -28,17 +28,17 @@ async function peleLimit(
 
 describe('limitMessage', () => {
   it('names the real character count and the limit', async () => {
-    const source = 'flowchart LR\n  A-->B\n%%' + 'x'.repeat(15234 - 23)
-    expect(source.length).toBe(15234)
+    const source = 'flowchart LR\n  A-->B\n%%' + 'x'.repeat(10234 - 23)
+    expect(source.length).toBe(10234)
     expect(limitMessage(source, await peleLimit(source), DEFAULT_LIMITS)).toBe(
-      'It has 15,234 characters, and the limit is 15,000. Split it into smaller diagrams.'
+      'It has 10,234 characters, and the limit is 10,000. Split it into smaller diagrams.'
     )
   })
 
   it('says more than the edge limit, because Pele stops counting there', async () => {
-    const source = edges(501)
+    const source = edges(251)
     expect(limitMessage(source, await peleLimit(source), DEFAULT_LIMITS)).toBe(
-      'It has more than 500 arrows, and the limit is 500. Split it into smaller diagrams.'
+      'It has more than 250 arrows, and the limit is 250. Split it into smaller diagrams.'
     )
   })
 
@@ -51,7 +51,7 @@ describe('limitMessage', () => {
 
   it('follows a host limit, not the default', async () => {
     const source = edges(11)
-    const limits = { characters: 15000, edges: 10 }
+    const limits = { characters: 10000, edges: 10 }
     expect(limitMessage(source, await peleLimit(source, limits), limits)).toBe(
       'It has more than 10 arrows, and the limit is 10. Split it into smaller diagrams.'
     )

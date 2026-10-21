@@ -10,13 +10,13 @@ Anyone who can edit a shared document can write a diagram source. Every viewer d
 
 Pele escapes diagram text, filters links and styles, and limits source and output size. This package keeps Pele's options on their safe side:
 
-| Setting       | Default                     | Effect                                                          |
-| ------------- | --------------------------- | --------------------------------------------------------------- |
-| `links`       | `false`, not an option      | Pele writes no `href` from the source.                          |
-| `images`      | `false`                     | Remote images are off. `true` makes every viewer fetch the URL. |
-| `outputLimit` | 1000000, not an option      | Pele refuses an SVG longer than this many characters.           |
-| `limits`      | 15000 characters, 500 edges | Provisional. A longer or denser source shows a `limit` error.   |
-| `sanitize`    | `null`                      | Pele's SVG is used as it is. See below.                         |
+| Setting       | Default                     | Effect                                                               |
+| ------------- | --------------------------- | -------------------------------------------------------------------- |
+| `links`       | `false`, not an option      | Pele writes no `href` from the source.                               |
+| `images`      | `false`                     | Remote images are off. `true` makes every viewer fetch the URL.      |
+| `outputLimit` | 1000000, not an option      | Pele refuses an SVG longer than this many characters.                |
+| `limits`      | 10000 characters, 250 edges | Measured on phones. A longer or denser source shows a `limit` error. |
+| `sanitize`    | `null`                      | Pele's SVG is used as it is. See below.                              |
 
 ## Sanitizing the SVG
 

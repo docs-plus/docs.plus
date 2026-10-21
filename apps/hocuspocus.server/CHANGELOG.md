@@ -20,7 +20,7 @@ This file is the operator and API changelog. The pad product lives in the [root 
   ([#459](https://github.com/docs-plus/docs.plus/issues/459)); publishing it
   is a separate maintainer step.
 - **AI apps can write Mermaid diagrams through the MCP connector.**
-  The server instructions and the `markdown` field descriptions tell an agent that a `mermaid` fence becomes a diagram. The field descriptions also name the types it can start with. Before `create_document`, `append_to_document`, `edit_blocks` or `replace_text` writes, the server parses each diagram with Pele. It refuses an empty diagram, an unsupported type, a parse error, or one over 15 000 characters or 500 edges, and nothing is written. A parse refusal carries Pele's message, so the agent can fix it. The backend now depends on `pele` 1.6.0.
+  The server instructions and the `markdown` field descriptions tell an agent that a `mermaid` fence becomes a diagram. The field descriptions also name the types it can start with. Before `create_document`, `append_to_document`, `edit_blocks` or `replace_text` writes, the server parses each diagram with Pele. It refuses an empty diagram, an unsupported type, a parse error, or one over 10 000 characters or 250 edges, and nothing is written. Those are the pad's own limits, measured on real phones (#522). A parse refusal carries Pele's message, so the agent can fix it. So does a refusal for one of Pele's other fixed limits, such as block-diagram space blocks. The backend now depends on `pele` 1.7.0.
 
 ### Changed
 
@@ -124,6 +124,14 @@ This file is the operator and API changelog. The pad product lives in the [root 
   `pg_read_all_stats`** ([#443](https://github.com/docs-plus/docs.plus/issues/443)).
   `doadmin` cannot grant `pg_monitor` there. `pg_read_all_stats` covers the
   stats views `postgres-exporter` reads. The self-hosting guide gives both.
+  The exporter now runs with `--no-collector.wal`, because that collector
+  needs `pg_monitor`, and no panel reads it. Do not copy DigitalOcean's sample
+  connection string as it is: its `sslrootcert=/path/to/ca-certificate.crt` is
+  a placeholder, and every scrape fails with it. Use `sslmode=require`.
+- **`follow-redirects` is pinned to 1.16.1.** Version 1.16.0 kept credential
+  headers across a cross-origin redirect (GHSA-q3jh-wrc6-jgq8,
+  GHSA-8r9p-f939-6h3c). It reaches the server through `axios`, which DOCX
+  export uses. The root `overrides` moves only this package.
 - **New tables, sequences and functions start closed ([#316](https://github.com/docs-plus/docs.plus/issues/316)).**
   The default privileges of role `postgres` no longer give `anon` anything new
   in `public`, and no new function gets `PUBLIC` execute in any schema. Existing

@@ -571,14 +571,14 @@ ${BRANCH}`
     })
 
     // Assert nodes and labels only: autoDirection may turn this chain to a vertical layout.
-    it('draws a 10,000 character single line without widening the page', () => {
+    // 250 arrows is the edge limit, and it binds before the 10000 characters do (about 7,500).
+    it('draws a 250-arrow single line without widening the page', () => {
       const ids: string[] = []
-      while (ids.join(' --> ').length < 9900)
-        ids.push(`n${ids.length}[Step ${ids.length} on one line]`)
+      while (ids.length < 251) ids.push(`n${ids.length}[Step ${ids.length} on one line]`)
       const line = ids.join(' --> ')
       const src = `flowchart LR\n  ${line}`
-      expect(line.length).to.be.greaterThan(9900).and.lessThan(10000)
-      expect(src.length).to.be.lessThan(15000)
+      expect(line.length).to.be.greaterThan(7000)
+      expect(src.length).to.be.lessThan(10000)
       cy.setEditorContent(block(src))
       cy.get(VIEW, { timeout: 15000 }).should('have.attr', 'data-state', 'ready')
       svg().find('g.pele-node').should('have.length', ids.length)

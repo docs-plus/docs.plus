@@ -12,7 +12,7 @@ export interface MermaidOptions {
   /** Pele zoom controls on fine pointers. Always off on coarse pointers. */
   zoom: 'auto' | false // default 'auto'
   /** Sources over these limits show a `limit` error and are never drawn. */
-  limits: MermaidLimits // default { characters: 15000, edges: 500 } (provisional until a phone run)
+  limits: MermaidLimits // default { characters: 10000, edges: 250 }, measured on phones
   /** Lets each viewer hide the source. Nothing is stored in the document. `false` removes the button. */
   fold: MermaidFold | false // default { initial: 'folded-when-read-only', remember: true }
   /** The "Syntax" button on hover opens this guide. `false` hides it. */

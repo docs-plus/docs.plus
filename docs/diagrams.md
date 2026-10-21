@@ -33,7 +33,7 @@ The text sits on top, and the diagram sits below it. There is no edit mode to sw
 
 To turn a diagram back into plain code, open the **Code** menu and choose **Code block**.
 
-Very large diagrams are not drawn. They show "This diagram is too large to draw." and name the limit they hit, for example "It has more than 500 arrows, and the limit is 500." Split them into smaller ones.
+Very large diagrams are not drawn. They show "This diagram is too large to draw." and name the limit they hit, for example "It has more than 250 arrows, and the limit is 250." Split them into smaller ones.
 
 ## Syntax
 

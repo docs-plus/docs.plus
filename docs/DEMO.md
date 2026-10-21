@@ -550,7 +550,7 @@ pie showData
 
 A mistake shows one second after you stop typing, with the line it is on. The last good drawing stays on screen, faded, so the page never jumps — needs a document you can edit.
 
-A diagram over **15,000 characters or 500 arrows** is not drawn. The message names the limit it hit and the count, and asks you to split it.
+A diagram over **10,000 characters or 250 arrows** is not drawn, so a big one never freezes a phone. We measured that limit on a real iPhone and a real Android phone. The message names the limit it hit and the count, and asks you to split it.
 
 A connected AI app can write diagrams too. docs.plus checks each one before the write, and refuses one that does not parse or is too large — needs an account.
 

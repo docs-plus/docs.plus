@@ -274,16 +274,16 @@ describe('mermaid — complex flowchart', () => {
     cy.get('@open').should('not.have.been.called')
   })
 
-  it('draws exactly 500 edges and refuses 501, counting each chained arrow', () => {
-    const atLimit = edgeSource(250, 250)
-    const overLimit = edgeSource(250, 251)
-    // Both stay under the 15000 character limit, so only the edge limit can refuse them.
-    expect(atLimit.length).to.be.lessThan(15000)
-    expect(overLimit.length).to.be.lessThan(15000)
+  it('draws exactly 250 edges and refuses 251, counting each chained arrow', () => {
+    const atLimit = edgeSource(125, 125)
+    const overLimit = edgeSource(125, 126)
+    // Both stay under the 10000 character limit, so only the edge limit can refuse them.
+    expect(atLimit.length).to.be.lessThan(10000)
+    expect(overLimit.length).to.be.lessThan(10000)
 
     cy.setEditorContent(block(atLimit))
     cy.get(VIEW, { timeout: 15000 }).should('have.attr', 'data-state', 'ready')
-    cy.get(`${SVG} g.pele-edge`).should('have.length', 500)
+    cy.get(`${SVG} g.pele-edge`).should('have.length', 250)
 
     cy.setEditorContent(block(overLimit))
     expectState('error')
@@ -291,7 +291,7 @@ describe('mermaid — complex flowchart', () => {
     // Pele stops counting at the limit, so the advice says "more than", never a wrong count.
     cy.get('.mermaid-diagram__advice').should(
       'have.text',
-      'It has more than 500 arrows, and the limit is 500. Split it into smaller diagrams.'
+      'It has more than 250 arrows, and the limit is 250. Split it into smaller diagrams.'
     )
   })
 

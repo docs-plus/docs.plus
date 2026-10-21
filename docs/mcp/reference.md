@@ -96,7 +96,7 @@ The `title` becomes the `#` heading, and `markdown`, if given, follows it. The M
 - it is empty;
 - Pele does not draw its type;
 - Pele cannot parse it, and the error text then carries Pele's message;
-- it is larger than 15 000 characters or 500 edges, the pad's own limits.
+- it is larger than 10 000 characters or 250 edges, the pad's own limits. They were measured on real phones.
 
 The check parses only. It does not lay the diagram out. The `markdown` field descriptions name the diagram types an agent can start with.
 

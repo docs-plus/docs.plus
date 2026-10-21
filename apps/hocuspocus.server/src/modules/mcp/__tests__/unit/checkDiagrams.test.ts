@@ -10,9 +10,9 @@ const diagram = (source: string): JSONContent[] => [
 describe('checkDiagrams', () => {
   test('names the size limit only for a size or edge refusal', async () => {
     const edges = Array.from({ length: 600 }, (_, i) => `a${i} --> b${i}`).join('\n')
-    expect(await checkDiagrams(diagram(`flowchart TD\n${edges}`))).toContain('500 edges')
+    expect(await checkDiagrams(diagram(`flowchart TD\n${edges}`))).toContain('250 edges')
     expect(await checkDiagrams(diagram(`flowchart TD\n${'a --> b\n'.repeat(2500)}`))).toContain(
-      '15000 characters'
+      '10000 characters'
     )
   })
 
@@ -20,6 +20,6 @@ describe('checkDiagrams', () => {
     // A short source that trips Pele's block-diagram space limit, not size or edges.
     const problem = await checkDiagrams(diagram('block-beta\n  columns 3\n  a space:1000000 b\n'))
     expect(problem).toContain('space blocks')
-    expect(problem).not.toContain('15000 characters')
+    expect(problem).not.toContain('10000 characters')
   })
 })
