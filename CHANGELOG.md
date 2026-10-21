@@ -18,15 +18,34 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   AI apps connected through the MCP connector can write diagrams too. The
   server checks each one before the write and refuses one that does not parse
   or is too large.
+- **More AI apps, one page to start.** A public `/mcp` page gives the MCP
+  server URL and the steps for each AI app. Settings › Connected apps adds a
+  terminal agent grid (Claude Code, Codex, Copilot CLI and Cline), a setup
+  prompt for any other agent, and Add to LM Studio and Add to Replit. Claude
+  Code, Codex and Cursor now connect to production, and the consent page names
+  Cursor ([#458](https://github.com/docs-plus/docs.plus/issues/458),
+  [#548](https://github.com/docs-plus/docs.plus/issues/548),
+  [#549](https://github.com/docs-plus/docs.plus/issues/549),
+  [#550](https://github.com/docs-plus/docs.plus/issues/550)).
+  Many people on one hosted AI app no longer share one rate limit
+  ([#551](https://github.com/docs-plus/docs.plus/issues/551)).
 - **Safer by default.** Supabase grants are closed on helper functions,
   self-gated RPCs, anon tables and new partitions, and Restore now takes the
-  same per-document lock as content writes.
+  same per-document lock as content writes. New tables and functions start
+  closed. A Private document's images now load only for its owner
+  ([#439](https://github.com/docs-plus/docs.plus/issues/439)).
 
 ### Self-hosting
 
 - Apply the new Supabase migrations in order, then run
   `packages/supabase/scripts/check-grants.sql` (see the
   [hocuspocus CHANGELOG](apps/hocuspocus.server/CHANGELOG.md)).
+- If you run your own proxy instead of the bundled Traefik, also route
+  `/.well-known/oauth-protected-resource` to `rest-api`. Some AI apps look for
+  the MCP metadata there ([#550](https://github.com/docs-plus/docs.plus/issues/550)).
+- Set the new `MEDIA_COOKIE_SECRET` (32 characters or more) on `rest-api`
+  before you deploy. Without it, nobody can load the images of a Private
+  document ([#439](https://github.com/docs-plus/docs.plus/issues/439)).
 - `REDIS_PASSWORD` is new and optional. Set it everywhere before Redis requires
   one ([#438](https://github.com/docs-plus/docs.plus/issues/438)).
 
