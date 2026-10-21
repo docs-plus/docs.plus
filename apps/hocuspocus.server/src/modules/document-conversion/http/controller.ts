@@ -85,11 +85,12 @@ const renderExport = async (
   format: ExportFormat,
   doc: TiptapDocJson,
   title: string,
-  mediaBaseUrl: string | null
+  mediaBaseUrl: string | null,
+  mediaCookie: string | null
 ): Promise<Uint8Array> => {
   switch (format) {
     case 'docx':
-      return exportDocx(doc, title, mediaBaseUrl)
+      return exportDocx(doc, title, mediaBaseUrl, mediaCookie)
     case 'md':
       return Buffer.from(exportMarkdown(doc), 'utf8')
     case 'odt':
@@ -106,6 +107,7 @@ export interface ExportControllerDeps {
   logger: Logger
   /** Doubles as the DOCX image allowlist — see `renderDocumentHtml`. */
   mediaPublicBaseUrl: string | null
+  mediaCookieFor: (uid: string) => string | null
 }
 
 export const createGetExportHandler =
@@ -136,9 +138,12 @@ export const createGetExportHandler =
     }
 
     const title = titleHeadingText(doc) || meta.slug
+    // The gate above already allowed this read. The media route still needs the
+    // owner's cookie, or a Private document exports with no images.
+    const mediaCookie = meta.isPrivate && meta.ownerId ? deps.mediaCookieFor(meta.ownerId) : null
     let bytes: Uint8Array
     try {
-      bytes = await renderExport(format, doc, title, deps.mediaPublicBaseUrl)
+      bytes = await renderExport(format, doc, title, deps.mediaPublicBaseUrl, mediaCookie)
     } catch (error) {
       deps.logger.error({ err: error, documentId, format }, 'Document export failed')
       return fail(

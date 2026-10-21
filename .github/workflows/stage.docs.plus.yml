@@ -238,6 +238,13 @@ jobs:
               exit 1
             fi
           done
+
+          # Private document media fails closed without it (#439). Never print the value.
+          media_secret=$(grep -E '^MEDIA_COOKIE_SECRET=' "${{ env.ENV_FILE }}" | head -1 | cut -d= -f2- | tr -d "\"'")
+          if [ "${#media_secret}" -lt 32 ]; then
+            echo "::error::MEDIA_COOKIE_SECRET is missing or shorter than 32 characters in ${{ env.ENV_SOURCE }}. Without it, no one can load a Private document's media. Set it (openssl rand -hex 32), then redeploy."
+            exit 1
+          fi
           echo "✅ Environment prepared"
 
       - name: 🧹 Clear Stale Docker Cache

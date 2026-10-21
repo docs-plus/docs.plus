@@ -12,6 +12,8 @@ export interface InitDeps {
    * and DOCX export embeds none, since it is also the export fetch allowlist.
    */
   mediaPublicBaseUrl: string | null
+  /** A `Cookie` header that lets DOCX export load a Private document's media as `uid`. */
+  mediaCookieFor: (uid: string) => string | null
 }
 
 export interface InitResult {

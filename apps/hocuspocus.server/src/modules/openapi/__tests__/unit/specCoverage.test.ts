@@ -58,7 +58,12 @@ const mounted = (): Set<string> => {
     ],
     [
       '/api/documents',
-      documentConversion.init({ prisma: stub, logger, mediaPublicBaseUrl: null }).router
+      documentConversion.init({
+        prisma: stub,
+        logger,
+        mediaPublicBaseUrl: null,
+        mediaCookieFor: () => null
+      }).router
     ],
     ['/api/metadata', linkMetadata.init({ redis: null as never, logger }).router],
     [

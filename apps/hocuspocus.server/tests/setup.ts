@@ -9,7 +9,9 @@ const defaults: Record<string, string> = {
   SUPABASE_ANON_KEY: 'test-anon-key',
   // verifyServiceRole fails closed on an unset key, so the service-role branches
   // of the documents routes are untestable without one.
-  SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key'
+  SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key',
+  // An empty secret refuses every Private media read, so the gate needs one.
+  MEDIA_COOKIE_SECRET: 'test-media-cookie-secret-of-32-characters'
 }
 
 for (const [key, value] of Object.entries(defaults)) {

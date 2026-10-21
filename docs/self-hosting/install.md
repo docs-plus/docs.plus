@@ -69,6 +69,7 @@ Then edit it. [Configuration](configuration.md) explains the groups. The values 
 - The Supabase URL and keys, both the server-side and the `NEXT_PUBLIC_` ones.
 - The object-storage endpoint, region, bucket, and key pair.
 - `PERSIST_TO_LOCAL_STORAGE=false`. See [Template values to fix before you deploy](configuration.md#template-values-to-fix-before-you-deploy).
+- `MEDIA_COOKIE_SECRET`, 32 characters or more, so Private documents can show their media. The repository deploy workflows refuse to deploy without it.
 
 A Let's Encrypt email is optional. Traefik reads it from `traefik.yml`, not from `.env.production`. See [Choose where Traefik reads its config](configuration.md#choose-where-traefik-reads-its-config).
 
@@ -88,6 +89,7 @@ The template points every URL at `localhost`. Replace each of these with your ow
 | `ALLOWED_ORIGINS`          | Runtime | [ENV.md, Security](../../apps/hocuspocus.server/ENV.md#security)           |
 | `APP_URL`                  | Runtime | [ENV.md, Email](../../apps/hocuspocus.server/ENV.md#email)                 |
 | `EMAIL_UNSUBSCRIBE_SECRET` | Runtime | [ENV.md, Email](../../apps/hocuspocus.server/ENV.md#email)                 |
+| `MEDIA_COOKIE_SECRET`      | Runtime | [ENV.md, Private media](../../apps/hocuspocus.server/ENV.md#private-media) |
 
 `ALLOWED_ORIGINS` must list two origins, `https://<APP_HOST>` and `https://<ADMIN_HOST>`. The editor and the admin dashboard both call `<API_HOST>` from the browser. [ENV.md, Security](../../apps/hocuspocus.server/ENV.md#security) gives the format.
 

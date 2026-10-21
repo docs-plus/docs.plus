@@ -1,4 +1,5 @@
 import { conversionLogger } from '../../../lib/logger'
+import { MEDIA_SESSION_PATH } from '../../../lib/mediaSession'
 import { documentExportImagesDroppedTotal } from '../../../lib/metrics'
 import { readCappedBody } from '../../../lib/readCappedBody'
 import {
@@ -36,7 +37,11 @@ export const isSafeImageSignature = (bytes: Uint8Array): ExportImageMime | null 
 
 /** Logged per URL rather than per element, so one bad image in a document
  *  repeated fifty times writes one line. The counter does the counting. */
-const fetchInlineable = async (url: string, cap: number): Promise<string | null> => {
+const fetchInlineable = async (
+  url: string,
+  cap: number,
+  mediaCookie: string | null
+): Promise<string | null> => {
   const drop = (reason: string): null => {
     conversionLogger.warn({ reason, url: url.slice(0, 200) }, 'Export image dropped')
     return null
@@ -47,7 +52,15 @@ const fetchInlineable = async (url: string, cap: number): Promise<string | null>
   try {
     // A redirect would leave the allowlisted origin the caller already checked,
     // which is the hop the origin filter exists to refuse.
-    const response = await fetch(url, { redirect: 'error', signal: controller.signal })
+    const response = await fetch(url, {
+      redirect: 'error',
+      signal: controller.signal,
+      // The cookie names the owner, so it goes only to the media route.
+      headers:
+        mediaCookie && new URL(url).pathname.startsWith(`${MEDIA_SESSION_PATH}/`)
+          ? { Cookie: mediaCookie }
+          : undefined
+    })
     if (!response.ok) return drop(`status ${response.status}`)
 
     // readCappedBody answers null for a bodyless response too, so the cap is not the
@@ -72,9 +85,12 @@ const fetchInlineable = async (url: string, cap: number): Promise<string | null>
  * The converter hands every image to a bundled `image-size` whose ICNS, HEIF and
  * JXL parsers loop forever, and it does that on the `data:` path too — so the
  * sniff is what closes the hang, and inlining only stops it opening a socket.
- * Callers must apply the origin allowlist first: this fetches what it is given.
+ * Apply the origin allowlist first: this fetches what it is given, with `mediaCookie`.
  */
-export const inlineExportImages = async (images: ForeignImage[]): Promise<void> => {
+export const inlineExportImages = async (
+  images: ForeignImage[],
+  mediaCookie: string | null = null
+): Promise<void> => {
   const fetched = new Map<string, string | null>()
   const deadline = Date.now() + EXPORT_IMAGE_TOTAL_TIMEOUT_MS
   let remaining = MAX_EXPORT_INLINED_BYTES
@@ -91,7 +107,10 @@ export const inlineExportImages = async (images: ForeignImage[]): Promise<void> 
     const spent =
       inlined >= MAX_EXPORT_IMAGES || fetched.size >= MAX_EXPORT_IMAGES || Date.now() > deadline
     if (!spent && !fetched.has(src)) {
-      fetched.set(src, await fetchInlineable(src, Math.min(MAX_EXPORT_IMAGE_BYTES, remaining)))
+      fetched.set(
+        src,
+        await fetchInlineable(src, Math.min(MAX_EXPORT_IMAGE_BYTES, remaining), mediaCookie)
+      )
     }
 
     // Charged per element, not per URL: N nodes sharing one src inline N copies.

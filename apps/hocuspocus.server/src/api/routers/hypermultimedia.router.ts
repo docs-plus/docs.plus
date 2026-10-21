@@ -3,17 +3,18 @@ import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 
 import { houseEnvelopeHook } from '../../http/envelope'
+import { MEDIA_SESSION_PATH } from '../../lib/mediaSession'
 import { documentIdParamSchema, mediaIdParamSchema } from '../../schemas/hypermultimedia.schema'
 import * as documentsController from '../controllers/documents.controller'
 import { requireUser } from '../middleware/auth'
 import { MEDIA_MAX_FILE_SIZE } from '../services/media.service'
 
 /**
- * The mount path, exported so the media-read rate-limit bucket in
- * `middleware/index.ts` cannot drift from it. `src/index.ts` still repeats the
- * literal in its own `app.route` call; align that before calling this the only source.
+ * One literal serves the mount, the media-read rate-limit bucket in
+ * `middleware/index.ts` and the media cookie Path. It lives in `lib/mediaSession.ts`,
+ * because the controller needs it, and the router imports the controller.
  */
-export const HYPERMULTIMEDIA_MOUNT_PATH = '/api/plugins/hypermultimedia'
+export const HYPERMULTIMEDIA_MOUNT_PATH = MEDIA_SESSION_PATH
 
 const hypermultimedia = new Hono()
 
@@ -27,7 +28,12 @@ const uploadBodyLimit = bodyLimit({
     c.json({ success: false, error: { message: 'File too large', code: 'PAYLOAD_TOO_LARGE' } }, 413)
 })
 
-// Public read: media renders inside public documents for anonymous viewers.
+// Before `POST /:documentId`: `session` passes `documentIdField`, so that route
+// would claim it as a document id.
+hypermultimedia.post('/session', requireUser, documentsController.createMediaSession)
+hypermultimedia.delete('/session', documentsController.clearMediaSession)
+
+// Public read for a public document. A Private one needs the media cookie.
 hypermultimedia.get(
   '/:documentId/:mediaId',
   zValidator('param', mediaIdParamSchema, houseEnvelopeHook),

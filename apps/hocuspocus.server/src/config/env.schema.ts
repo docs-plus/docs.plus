@@ -109,6 +109,13 @@ export const envSchema = z.object({
   DO_STORAGE_ACCESS_KEY_ID: z.string().optional().default(''),
   DO_STORAGE_SECRET_ACCESS_KEY: z.string().optional().default(''),
   DO_STORAGE_MAX_FILE_SIZE: positiveByteString('10485760'),
+  // Signs the Private media cookie. Empty boots, and Private media then loads
+  // for nobody. A short secret is refused, as for EMAIL_UNSUBSCRIBE_SECRET.
+  MEDIA_COOKIE_SECRET: z
+    .string()
+    .refine((v) => v === '' || v.length >= 32, 'must be empty or at least 32 characters')
+    .optional()
+    .default(''),
 
   // Parsed only. Email decisions live in config/email.ts; providers read
   // config.email.delivery. Plain strings, so an odd value holds mail instead of

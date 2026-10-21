@@ -30,9 +30,10 @@ const DOCTYPE = /^\s*<!doctype[^>]*>/i
 export const exportDocx = async (
   doc: TiptapDocJson,
   title: string,
-  mediaBaseUrl: string | null
+  mediaBaseUrl: string | null,
+  mediaCookie: string | null
 ): Promise<Buffer> => {
-  const html = (await renderDocumentHtml(doc, title, mediaBaseUrl))
+  const html = (await renderDocumentHtml(doc, title, mediaBaseUrl, mediaCookie))
     .replace(DOCTYPE, '')
     .replace(XML_CONTROL_CHARS, '')
   const output = await HTMLtoDOCX(html, null, { title: toCorePropertyTitle(title) })

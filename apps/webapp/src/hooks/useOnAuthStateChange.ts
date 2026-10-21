@@ -8,6 +8,8 @@ import { captureUnknown, setObservabilityUser } from '@utils/observability'
 import { supabaseClient } from '@utils/supabase'
 import { useCallback, useEffect } from 'react'
 
+import { clearMediaSession, postMediaSession, retryMediaAfterSession } from './mediaSession'
+
 let pkceFailureHandled = false
 
 // supabase-js auto-exchanges ?code= on load but swallows network failures
@@ -46,10 +48,18 @@ export const useOnAuthStateChange = () => {
 
     setLoading(true)
     reportPkceExchangeFailure()
+    const stopMediaRetry = retryMediaAfterSession()
     const { data } = supabaseClient.auth.onAuthStateChange((event, session) => {
       if (!navigator.onLine) {
         setLoading(false)
         return
+      }
+
+      if (
+        (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') &&
+        session?.access_token
+      ) {
+        postMediaSession(session.access_token)
       }
 
       if (event === 'SIGNED_IN') {
@@ -74,6 +84,8 @@ export const useOnAuthStateChange = () => {
       if (event === 'SIGNED_OUT') {
         // The bell hook stops at a null profile, so it never zeroes the app icon.
         writeAppBadge(0)
+        // Every sign-out path and every other tab lands here.
+        void clearMediaSession()
         setObservabilityUser(null)
         useAuthStore.getState().setSession(null)
         useAuthStore.getState().setProfile(null)
@@ -86,6 +98,7 @@ export const useOnAuthStateChange = () => {
     // every later auth event. A full reload used to hide that; it no longer does.
     return () => {
       data.subscription.unsubscribe()
+      stopMediaRetry()
     }
   }, [getUserProfile, setLoading])
 }

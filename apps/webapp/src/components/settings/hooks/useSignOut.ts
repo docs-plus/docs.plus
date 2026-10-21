@@ -1,6 +1,7 @@
 import { signOut } from '@api'
 import * as toast from '@components/toast'
 import { clearAllComposerDrafts } from '@db/messageComposerDB'
+import { clearMediaSession } from '@hooks/mediaSession'
 import { isPushSupported, unregisterPushSubscription } from '@utils/push-notifications'
 import { supabaseClient } from '@utils/supabase'
 import { useState } from 'react'
@@ -30,6 +31,9 @@ export const useSignOut = () => {
         return
       }
     }
+    // After signOut, so a failed sign-out keeps Private media loading. Awaited before
+    // the reload, for 3 s at most. A failure does not stop the sign-out.
+    await clearMediaSession(AbortSignal.timeout(3000))
     // After signOut, so a failed sign-out keeps the drafts. The four keys are no longer
     // written; this removes them from browsers that still hold them.
     await clearAllComposerDrafts()

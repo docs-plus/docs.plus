@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll, beforeEach, mock } from 'bun:test'
+import { afterEach, describe, test, expect, beforeAll, beforeEach, mock, spyOn } from 'bun:test'
 
 // Drive requireUser through the real auth module + a stubbed anon client.
 // Do NOT mock `lib/auth` itself — that sticky mock.module poisons later suites.
@@ -28,6 +28,13 @@ mock.module('../../src/lib/supabase', () => ({
 
 import { Hono } from 'hono'
 import hypermultimediaRouter from '../../src/api/routers/hypermultimedia.router'
+import * as mediaService from '../../src/api/services/media.service'
+import { config } from '../../src/config/env'
+import {
+  MEDIA_SESSION_COOKIE,
+  MEDIA_SESSION_TTL_S,
+  signMediaSession
+} from '../../src/lib/mediaSession'
 import { TestServer, createMockPrisma, createMockRedis } from '../helpers/test-server'
 import { createTestFile } from '../fixtures/documents'
 
@@ -171,6 +178,101 @@ describe('Hypermultimedia API (Direct Route)', () => {
       expect([200, 404, 500]).toContain(response.status)
 
       delete process.env.PERSIST_TO_LOCAL_STORAGE
+    })
+  })
+
+  describe('Private media (#439)', () => {
+    const secret = config.storage.mediaCookieSecret
+    const url = '/api/plugins/hypermultimedia/private-doc/x.jpg'
+    const cookieFor = (uid: string, nowSeconds?: number) =>
+      `${MEDIA_SESSION_COOKIE}=${signMediaSession({ uid, secret, nowSeconds })}`
+    const read = (cookie?: string) =>
+      testServer.app.request(`http://localhost:3001${url}`, {
+        headers: cookie ? { Cookie: cookie } : {}
+      })
+    // The gate answers the house envelope. The store answers a bare `{ error }`.
+    const refusedByGate = async (response: Response) =>
+      response.status === 404 && (await response.json()).error?.code === 'NOT_FOUND'
+    // No file exists, so a read the gate passed ends at the store's own 404. A crash is a 500.
+    // The test env has no store, so a read the gate passes is answered by this stand-in.
+    // A crash is a 500, so only the stand-in's body proves the gate let the read through.
+    const STORED = 'stored-bytes'
+    const reachedStore = async (response: Response) =>
+      response.status === 200 && (await response.text()) === STORED
+    let storeRead: ReturnType<typeof spyOn> | undefined
+    afterEach(() => storeRead?.mockRestore())
+
+    beforeEach(() => {
+      mockPrisma.documentMetadata.findUnique = async () => ({
+        deletedAt: null,
+        isPrivate: true,
+        ownerId: 'user-123'
+      })
+      storeRead = spyOn(mediaService, 'getMedia').mockImplementation(async (_d, _m, c) =>
+        c.body(STORED, 200)
+      )
+    })
+
+    test('refuses a Private read with no cookie', async () => {
+      expect(await refusedByGate(await read())).toBe(true)
+    })
+
+    test("refuses another user's cookie", async () => {
+      expect(await refusedByGate(await read(cookieFor('user-456')))).toBe(true)
+    })
+
+    test('refuses an expired cookie', async () => {
+      const longAgo = Math.floor(Date.now() / 1000) - MEDIA_SESSION_TTL_S - 60
+      expect(await refusedByGate(await read(cookieFor('user-123', longAgo)))).toBe(true)
+    })
+
+    test('refuses a tampered cookie', async () => {
+      const [ownerPayload] = signMediaSession({ uid: 'user-123', secret }).split('.')
+      const [, otherSignature] = signMediaSession({ uid: 'user-456', secret }).split('.')
+      const forged = `${MEDIA_SESSION_COOKIE}=${ownerPayload}.${otherSignature}`
+      expect(await refusedByGate(await read(forged))).toBe(true)
+    })
+
+    test("passes the owner's cookie to the store, uncached by shared caches", async () => {
+      const response = await read(cookieFor('user-123'))
+      expect(response.headers.get('Cache-Control')).toBe('private, no-cache')
+      expect(await reachedStore(response)).toBe(true)
+    })
+
+    test('a public document needs no cookie', async () => {
+      mockPrisma.documentMetadata.findUnique = async () => ({
+        deletedAt: null,
+        isPrivate: false,
+        ownerId: 'user-123'
+      })
+      const response = await read()
+      expect(response.headers.get('Cache-Control')).not.toBe('private, no-cache')
+      expect(await reachedStore(response)).toBe(true)
+    })
+
+    test('POST /session sets an HttpOnly cookie that the owner read accepts', async () => {
+      const response = await testServer.app.request(
+        'http://localhost:3001/api/plugins/hypermultimedia/session',
+        { method: 'POST', headers: { token: 'valid-test-token' } }
+      )
+      expect(response.status).toBe(204)
+      const setCookie = response.headers.get('Set-Cookie') ?? ''
+      expect(setCookie).toContain('HttpOnly')
+      expect(setCookie).toContain('Path=/api/plugins/hypermultimedia')
+      expect(setCookie).toContain('SameSite=Lax')
+
+      const ownerRead = await read(setCookie.split(';')[0])
+      expect(ownerRead.headers.get('Cache-Control')).toBe('private, no-cache')
+      expect(await reachedStore(ownerRead)).toBe(true)
+    })
+
+    test('DELETE /session expires the cookie', async () => {
+      const response = await testServer.app.request(
+        'http://localhost:3001/api/plugins/hypermultimedia/session',
+        { method: 'DELETE' }
+      )
+      expect(response.status).toBe(204)
+      expect(response.headers.get('Set-Cookie') ?? '').toContain('Max-Age=0')
     })
   })
 

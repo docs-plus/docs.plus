@@ -1,9 +1,19 @@
+import { getCookie, setCookie } from 'hono/cookie'
+
+import { config } from '../../config/env'
 import { fail, ok } from '../../http/envelope'
 import { sendNewDocumentNotification } from '../../lib/email/document-notification'
 import { AppError, getErrorResponse } from '../../lib/errors'
 import { captureHttpError } from '../../lib/instrument'
 import { getJoinedDocumentIds } from '../../lib/joinedDocuments'
 import { documentsControllerLogger } from '../../lib/logger'
+import {
+  MEDIA_SESSION_COOKIE,
+  MEDIA_SESSION_PATH,
+  MEDIA_SESSION_TTL_S,
+  signMediaSession,
+  verifyMediaSession
+} from '../../lib/mediaSession'
 import { resolvePrivateAccess } from '../../lib/privateAccess'
 import { getOwnerProfile } from '../../lib/profiles'
 import { createDocumentWithContent } from '../../modules/document-content'
@@ -419,16 +429,58 @@ export const getMedia = async (c: AppContext): Promise<Response> => {
     // media sits under ids that never had a row.
     const meta = await prisma.documentMetadata.findUnique({
       where: { documentId },
-      select: { deletedAt: true }
+      select: { deletedAt: true, isPrivate: true, ownerId: true }
     })
     if (meta?.deletedAt) {
       return fail(c, 404, 'NOT_FOUND', 'Document not found')
     }
 
-    return await mediaService.getMedia(documentId, mediaId, c)
+    // An image request carries no token, so the reader proves itself with the
+    // media cookie. A refusal answers like Trash, so the route reveals nothing.
+    if (meta?.isPrivate) {
+      const uid = verifyMediaSession({
+        value: getCookie(c, MEDIA_SESSION_COOKIE),
+        secret: config.storage.mediaCookieSecret
+      })
+      const access = resolvePrivateAccess({ isPrivate: true, ownerId: meta.ownerId, userId: uid })
+      if (access !== 'allow') return fail(c, 404, 'NOT_FOUND', 'Document not found')
+    }
+
+    const res = await mediaService.getMedia(documentId, mediaId, c)
+    if (meta?.isPrivate) res.headers.set('Cache-Control', 'private, no-cache')
+    return res
   } catch (error) {
     return handleError(c, error, { documentId, mediaId })
   }
+}
+
+const mediaCookieOptions = {
+  httpOnly: true,
+  secure: config.app.env === 'production',
+  sameSite: 'Lax',
+  path: MEDIA_SESSION_PATH
+} as const
+
+export const createMediaSession = async (c: AppContext): Promise<Response> => {
+  const secret = config.storage.mediaCookieSecret
+  if (!secret) return fail(c, 503, 'SERVICE_UNAVAILABLE', 'Private media is not configured')
+  const userId = c.get('userId')
+  if (!userId || c.get('user')?.is_anonymous) {
+    return fail(c, 403, 'FORBIDDEN', 'An anonymous user cannot load private media')
+  }
+
+  setCookie(c, MEDIA_SESSION_COOKIE, signMediaSession({ uid: userId, secret }), {
+    ...mediaCookieOptions,
+    maxAge: MEDIA_SESSION_TTL_S
+  })
+  return c.body(null, 204)
+}
+
+// No auth: after sign-out there is no token, and JavaScript cannot clear an
+// HttpOnly cookie itself.
+export const clearMediaSession = async (c: AppContext): Promise<Response> => {
+  setCookie(c, MEDIA_SESSION_COOKIE, '', { ...mediaCookieOptions, maxAge: 0 })
+  return c.body(null, 204)
 }
 
 export const uploadMedia = async (c: AppContext): Promise<Response> => {

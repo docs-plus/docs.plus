@@ -70,7 +70,8 @@ export const config = {
       accessKeyId: env.DO_STORAGE_ACCESS_KEY_ID,
       secretAccessKey: env.DO_STORAGE_SECRET_ACCESS_KEY,
       maxFileSize: env.DO_STORAGE_MAX_FILE_SIZE
-    }
+    },
+    mediaCookieSecret: env.MEDIA_COOKIE_SECRET
   },
 
   supabase: {

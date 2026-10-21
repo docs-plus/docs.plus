@@ -157,6 +157,15 @@ Read by `src/lib/prisma.ts` from the validated config only. There are no runtime
 | `DO_STORAGE_ACCESS_KEY_ID`     | string  | `''`                     |                                                                                   |
 | `DO_STORAGE_SECRET_ACCESS_KEY` | string  | `''`                     |                                                                                   |
 | `DO_STORAGE_MAX_FILE_SIZE`     | number  | `10485760` (10 MB)       | Max upload size for hypermultimedia (`/api/plugins/hypermultimedia/:documentId`). |
+| `MEDIA_COOKIE_SECRET`          | string  | `''`                     | Signs the media cookie for Private documents. Empty, or 32 characters or more.    |
+
+### Private media
+
+`MEDIA_COOKIE_SECRET` signs the `dp_media` cookie. The webapp asks for that cookie after sign-in, and the browser sends it on every media request. A Private document's media loads only for its owner, with a valid cookie.
+
+- **Unset fails closed.** Nobody can load a Private document's media, `POST /api/plugins/hypermultimedia/session` answers `503`, and REST logs one warning at start. Public documents are not affected.
+- **REST must be same-site with the webapp**, for example `docs.plus` and `prodback.docs.plus`. A cookie from another site is not sent with an image request.
+- Set it on `rest-api`, then recreate that container. Never reuse `EMAIL_UNSUBSCRIBE_SECRET` here.
 
 ## Email
 

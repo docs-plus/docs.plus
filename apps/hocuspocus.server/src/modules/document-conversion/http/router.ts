@@ -15,6 +15,7 @@ export interface RouterDeps {
   prisma: PrismaClient
   logger: Logger
   mediaPublicBaseUrl: string | null
+  mediaCookieFor: (uid: string) => string | null
 }
 
 // Sized above the file cap so multipart boundary and header overhead cannot turn
@@ -42,7 +43,8 @@ export const createRouter = (deps: RouterDeps): Hono => {
     createGetExportHandler({
       prisma: deps.prisma,
       logger: deps.logger,
-      mediaPublicBaseUrl: deps.mediaPublicBaseUrl
+      mediaPublicBaseUrl: deps.mediaPublicBaseUrl,
+      mediaCookieFor: deps.mediaCookieFor
     })
   )
 

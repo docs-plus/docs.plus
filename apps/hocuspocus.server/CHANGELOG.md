@@ -107,6 +107,22 @@ This file is the operator and API changelog. The pad product lives in the [root 
   `packages/supabase/scripts/check-grants.sql` read-only before and after the
   push (#317). The run before the push is a baseline. After the push, any row
   blocks the next push until it is fixed or ruled.
+- **A Private document's media loads only for its owner ([#439](https://github.com/docs-plus/docs.plus/issues/439)).**
+  An image request carries no token, so the webapp trades the session for an
+  `HttpOnly` cookie, `dp_media`, after sign-in and on each token refresh. The
+  media route serves a Private document's files only with the owner's cookie,
+  with `Cache-Control: private, no-cache`. Anyone else gets `404`, as for
+  Trash. Sign-out expires the cookie, and the cookie lasts one hour. A duplicate
+  skips media from a Private document the requester cannot read, and a DOCX
+  export of a Private document still includes its images. Set the new
+  `MEDIA_COOKIE_SECRET` (32 characters or more) on `rest-api` before you deploy.
+  Unset fails closed: no one can load Private media, and REST logs one warning.
+  The prod and staging deploys now stop when the secret is missing or shorter
+  than 32 characters, and both env templates carry the line.
+- **On DigitalOcean managed PostgreSQL, the exporter login gets
+  `pg_read_all_stats`** ([#443](https://github.com/docs-plus/docs.plus/issues/443)).
+  `doadmin` cannot grant `pg_monitor` there. `pg_read_all_stats` covers the
+  stats views `postgres-exporter` reads. The self-hosting guide gives both.
 - **New tables, sequences and functions start closed ([#316](https://github.com/docs-plus/docs.plus/issues/316)).**
   The default privileges of role `postgres` no longer give `anon` anything new
   in `public`, and no new function gets `PUBLIC` execute in any schema. Existing

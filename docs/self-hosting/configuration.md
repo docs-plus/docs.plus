@@ -46,7 +46,7 @@ Next step: run that after any runtime change, then run the checks in [Install st
 | Redis                    | Host, port, password, database index, timeouts                                                     | Shared by sync, queues, and the rate limiter                                                                                                                                                                       |
 | Supabase, server-side    | Project URL, [`SUPABASE_ANON_KEY`](../../apps/hocuspocus.server/ENV.md#required), service-role key | The backend checks each user token with the anon key. `.env.example` ships local demo keys. Replace the anon key and the service-role key with your project's keys. Never expose the service-role key to a browser |
 | Supabase, client-side    | The `NEXT_PUBLIC_` pair                                                                            | Build values. See [Webapp and admin build values](#webapp-and-admin-build-values)                                                                                                                                  |
-| Storage                  | Endpoint, region, bucket, key pair                                                                 | Set `PERSIST_TO_LOCAL_STORAGE=false`                                                                                                                                                                               |
+| Storage                  | Endpoint, region, bucket, key pair, media secret                                                   | Set `PERSIST_TO_LOCAL_STORAGE=false`                                                                                                                                                                               |
 | Email                    | SMTP or Resend credentials                                                                         | The worker and the REST API both send. Both read `.env.production`                                                                                                                                                 |
 | Push notifications       | VAPID key pair                                                                                     | See [Turn on push notifications](#turn-on-push-notifications)                                                                                                                                                      |
 | CORS                     | Allowed origins                                                                                    |                                                                                                                                                                                                                    |
@@ -83,6 +83,16 @@ Next step: run that after any runtime change, then run the checks in [Install st
 The template is written for local development. Fix these defaults before you deploy to a server.
 
 **`PERSIST_TO_LOCAL_STORAGE=true`** must become `false`. The REST API runs two replicas with no shared volume. An upload lands in one container, is invisible to the other, and disappears when you recreate the container.
+
+**Keep the bucket private.** Every read goes through the REST API, which checks Trash and Private documents. A public bucket lets anyone skip those checks. So turn off public file listing, and make sure no object is public-read. On DigitalOcean Spaces, set **File Listing** to **Restricted**. To make existing objects private, run this from a machine where `s3cmd` holds your key:
+
+```bash
+s3cmd setacl --acl-private --recursive s3://<BUCKET>/production/
+```
+
+A CDN in front of the bucket keeps its cached copies until they expire, so set a short edge cache time first.
+
+**`MEDIA_COOKIE_SECRET`** must be 32 characters or more, for example `openssl rand -hex 32`. Empty means nobody can load a Private document's media.
 
 **`NEW_DOCUMENT_NOTIFICATION_EMAILS`** holds two sample addresses at a real domain. Set your own addresses, or leave it empty. Empty sends no new-document mail. See [ENV.md](../../apps/hocuspocus.server/ENV.md#email).
 
@@ -136,11 +146,13 @@ Next step: read [`apps/hocuspocus.server/Readme.md`](../../apps/hocuspocus.serve
 
 ## When a value is wrong
 
-Most misconfiguration here fails quietly rather than loudly. [Install](install.md) lists the silent ones together. Two are worth repeating.
+Most misconfiguration here fails quietly rather than loudly. [Install](install.md) lists the silent ones together. Three are worth repeating here.
 
 **Redis unavailable turns rate limiting off**, and every request passes. That is deliberate, because the other choice refused every request while Redis recovered. But a Redis problem then widens your exposure instead of narrowing it.
 
 **An upload cap under 1 MB is ignored** and floored to 10 MB, with a warning at startup. Next step: read the startup log after a cap change.
+
+**A Private document's images do not load** when `MEDIA_COOKIE_SECRET` is unset, or when the REST API is on a different site from the webapp. The browser sends the media cookie only to the same site, such as `docs.plus` and `prodback.docs.plus`. Next step: set the secret, keep both hosts under one domain, and read [ENV.md](../../apps/hocuspocus.server/ENV.md#private-media).
 
 ## Email in 5 minutes
 
@@ -410,6 +422,8 @@ To make the `pg_monitor` login, run this on your database as an admin user:
 CREATE ROLE <EXPORTER_USER> LOGIN PASSWORD '<EXPORTER_PASSWORD>';
 GRANT pg_monitor TO <EXPORTER_USER>;
 ```
+
+On DigitalOcean managed PostgreSQL, `doadmin` cannot grant `pg_monitor` ("must have admin option"). Grant `pg_read_all_stats` instead. It covers the stats views the exporter reads.
 
 The compose file also names the docs.plus hosts. Search it for `docs.plus`, and replace each hit with your own host or address.
 

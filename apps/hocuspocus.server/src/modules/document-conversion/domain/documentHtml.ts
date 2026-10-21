@@ -38,7 +38,8 @@ const originOf = (value: string): string | null => {
 export const renderDocumentHtml = async (
   doc: TiptapDocJson,
   title: string,
-  mediaBaseUrl: string | null
+  mediaBaseUrl: string | null,
+  mediaCookie: string | null
 ): Promise<string> => {
   const schema = getRenderSchema()
   const node = PMNode.fromJSON(schema, toPortableJson(doc))
@@ -62,7 +63,7 @@ export const renderDocumentHtml = async (
     image.remove()
   }
   // Origin first: this fetches whatever it is handed.
-  await inlineExportImages(permitted)
+  await inlineExportImages(permitted, mediaCookie)
 
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${escapeHtml(title)}</title></head><body>${body.innerHTML}</body></html>`
 }

@@ -19,6 +19,7 @@ import {
 import { documentsServiceLogger } from '../../lib/logger'
 import { isDocumentOwner, isOpenDocument } from '../../lib/ownerAccess'
 import { isPadTitleChange, notifyPadTitleChange } from '../../lib/padTitleChange'
+import { resolvePrivateAccess } from '../../lib/privateAccess'
 import { getOwnerProfile, getOwnerProfiles } from '../../lib/profiles'
 import { rehostMediaUrls } from '../../lib/rehostMediaUrls'
 import { normalizeSlug, withUniqueSlug } from '../../lib/slug'
@@ -872,16 +873,28 @@ export const duplicateDocument = async (
     // leaves only orphans, which the catch removes.
     const rehosted = bytes ? rehostMediaUrls(bytes, documentId) : null
     if (rehosted?.data) {
-      // A URL may name a trashed document's prefix. Copying it would serve that media
-      // again under the copy's prefix. So the copy shows a missing image there, as for
-      // a purged one.
+      // A URL may name a trashed document's prefix, or a Private one the requester
+      // cannot read. Copying it would serve that media again under the copy's public
+      // prefix. So the copy shows a missing image there, as for a purged one.
       const prefixes = [...new Set(rehosted.references.map((ref) => ref.documentId))]
-      const trashed = await prisma.documentMetadata.findMany({
-        where: { documentId: { in: prefixes }, deletedAt: { not: null } },
-        select: { documentId: true }
+      const prefixRows = await prisma.documentMetadata.findMany({
+        where: { documentId: { in: prefixes } },
+        select: { documentId: true, deletedAt: true, isPrivate: true, ownerId: true }
       })
-      const trashedIds = new Set(trashed.map((row) => row.documentId))
-      const live = rehosted.references.filter((ref) => !trashedIds.has(ref.documentId))
+      const refusedIds = new Set(
+        prefixRows
+          .filter(
+            (row) =>
+              row.deletedAt !== null ||
+              resolvePrivateAccess({
+                isPrivate: row.isPrivate,
+                ownerId: row.ownerId,
+                userId: requesterId
+              }) !== 'allow'
+          )
+          .map((row) => row.documentId)
+      )
+      const live = rehosted.references.filter((ref) => !refusedIds.has(ref.documentId))
 
       // Refused before a single object is written, so nothing needs rolling back.
       if (live.length > MAX_DUPLICATE_MEDIA_OBJECTS) {

@@ -67,6 +67,13 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   commands on `/mcp` and in Settings › Connected apps now show in a monospace
   face.
 
+### Security
+
+- **A Private document's images load only for its owner ([#439](https://github.com/docs-plus/docs.plus/issues/439)).**
+  After sign-in and on each token refresh, the webapp asks the REST API for the
+  media cookie that the image requests carry. Sign-out clears it. An image that
+  loads before the cookie arrives retries once after it does.
+
 ### Internal
 
 - One Presence awareness room is the only writer of presence faces.

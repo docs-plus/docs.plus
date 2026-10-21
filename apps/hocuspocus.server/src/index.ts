@@ -23,6 +23,7 @@ import { deliverEmail } from './lib/email/sender'
 import { AppError, getErrorResponse } from './lib/errors'
 import { captureHttpError, captureUnknown, flushObservability } from './lib/instrument'
 import { conversionLogger, logger, restApiLogger } from './lib/logger'
+import { mediaCookieHeader } from './lib/mediaSession'
 import { httpMetricsMiddleware, metricsContentType, metricsText } from './lib/metrics'
 import { prisma, shutdownDatabase } from './lib/prisma'
 import { getOwnerProfiles } from './lib/profiles'
@@ -138,10 +139,14 @@ const documentConversionModule = documentConversion.init({
   // `PUBLIC_RESTAPI_URL`, never a request header: this is persisted into document
   // content, and `X-Forwarded-Host` is client-settable. Unset drops imported
   // images with a warning rather than storing an origin nobody can resolve.
-  mediaPublicBaseUrl: config.app.publicUrl
+  mediaPublicBaseUrl: config.app.publicUrl,
+  mediaCookieFor: (uid) => mediaCookieHeader(uid, config.storage.mediaCookieSecret)
 })
 app.route('/api/documents', documentConversionModule.router)
 app.route(HYPERMULTIMEDIA_MOUNT_PATH, hypermultimediaRouter)
+if (!config.storage.mediaCookieSecret) {
+  restApiLogger.warn('MEDIA_COOKIE_SECRET is not set: Private document media loads for nobody')
+}
 app.route('/api/email', emailRouter)
 // Optional: with no valid secret the route stays unmounted and answers 404.
 // An invalid secret never holds product mail; it only logs why.
