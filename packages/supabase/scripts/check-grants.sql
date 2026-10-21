@@ -68,4 +68,14 @@ where exists (
   select 1 from pg_default_acl d, aclexplode(d.defaclacl) a
   where d.defaclrole = 'postgres'::regrole and d.defaclnamespace = 'public'::regnamespace
     and d.defaclobjtype = 'f' and a.grantee = 'authenticated'::regrole)
+union all
+-- With no global function row, built-in defaults give PUBLIC execute on every new function.
+select 'default_acl_public_exec', 'f:EXECUTE'
+where not exists (
+    select 1 from pg_default_acl d
+    where d.defaclrole = 'postgres'::regrole and d.defaclnamespace = 0 and d.defaclobjtype = 'f')
+  or exists (
+    select 1 from pg_default_acl d, aclexplode(d.defaclacl) a
+    where d.defaclrole = 'postgres'::regrole and d.defaclnamespace = 0
+      and d.defaclobjtype = 'f' and a.grantee = 0)
 order by 1, 2;
