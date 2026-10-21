@@ -565,6 +565,13 @@ jobs:
             exit 1
           fi
 
+          # Redis runs with --requirepass (#438). Never print the value.
+          redis_password=$(grep -E '^REDIS_PASSWORD=' "${ENV_FILE}" | head -1 | cut -d= -f2- | tr -d "\"'")
+          if [ "${#redis_password}" -lt 32 ]; then
+            echo "::error::REDIS_PASSWORD is missing or shorter than 32 characters in ${ENV_SOURCE}. Redis requires it. Set it (openssl rand -hex 32) here and in .env.observability, then redeploy."
+            exit 1
+          fi
+
           # Stash the previous successful tag (if any) for the rollback step.
           mkdir -p "${DEPLOY_STATE_DIR}"
           if [ -f "${LAST_GOOD_TAG_FILE}" ]; then

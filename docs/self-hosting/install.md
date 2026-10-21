@@ -70,6 +70,7 @@ Then edit it. [Configuration](configuration.md) explains the groups. The values 
 - The object-storage endpoint, region, bucket, and key pair.
 - `PERSIST_TO_LOCAL_STORAGE=false`. See [Template values to fix before you deploy](configuration.md#template-values-to-fix-before-you-deploy).
 - `MEDIA_COOKIE_SECRET`, 32 characters or more, so Private documents can show their media. The repository deploy workflows refuse to deploy without it.
+- `REDIS_PASSWORD`, 32 characters or more. Redis in `docker-compose.prod.yml` requires it, so the stack does not start without it. If you run the observability stack, put the same value in `.env.observability`.
 
 A Let's Encrypt email is optional. Traefik reads it from `traefik.yml`, not from `.env.production`. See [Choose where Traefik reads its config](configuration.md#choose-where-traefik-reads-its-config).
 

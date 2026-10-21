@@ -87,13 +87,14 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Security
 
-- **Every Redis client can now send a password ([#438](https://github.com/docs-plus/docs.plus/issues/438)).**
-  Set the optional `REDIS_PASSWORD` so each client sends a password. Redis
-  itself still has no `requirepass`. An empty value keeps today's behaviour.
-  The `redis-exporter` service in `docker-compose.observability.yml` needs the
-  password too. It now passes `REDIS_PASSWORD`, read from
-  `.env.observability`, not `.env.production`. Set the value there before you
-  turn on `requirepass`.
+- **Redis now requires a password ([#438](https://github.com/docs-plus/docs.plus/issues/438)).**
+  Before, any container on the Docker network could read and write the queues
+  and the sync pub/sub. `docker-compose.prod.yml` runs Redis with
+  `--requirepass`, and every client sends `REDIS_PASSWORD`. Set it (32
+  characters or more) in `.env.production`, or `docker compose up` stops. The
+  `redis-exporter` service in `docker-compose.observability.yml` reads its copy
+  from `.env.observability`, so set the same value there. The deploy workflows
+  refuse to deploy without it. Dev and local Redis still run with no password.
 - **MCP titles now stay inside the data frame ([#457](https://github.com/docs-plus/docs.plus/issues/457)).**
   This closes the known gap that 2.1.0 shipped with. `find_documents` frames
   its title list. `get_outline` and `list_chat_rooms` no longer repeat heading

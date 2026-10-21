@@ -46,8 +46,10 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 - Set the new `MEDIA_COOKIE_SECRET` (32 characters or more) on `rest-api`
   before you deploy. Without it, nobody can load the images of a Private
   document ([#439](https://github.com/docs-plus/docs.plus/issues/439)).
-- `REDIS_PASSWORD` is new and optional. Set it everywhere before Redis requires
-  one ([#438](https://github.com/docs-plus/docs.plus/issues/438)).
+- Set the new `REDIS_PASSWORD` (32 characters or more) in `.env.production`
+  and `.env.observability` before you deploy. Redis in `docker-compose.prod.yml`
+  now requires it, so the stack does not start without it
+  ([#438](https://github.com/docs-plus/docs.plus/issues/438)).
 
 ## [2.1.0] — 2026-10-13
 

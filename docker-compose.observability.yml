@@ -261,7 +261,7 @@ services:
     restart: unless-stopped
     environment:
       REDIS_ADDR: redis://docsplus-redis:6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     networks: [docsplus-network]
     logging: { driver: json-file, options: { max-size: '20m', max-file: '3' } }
     deploy: { resources: { limits: { memory: 32M } } }

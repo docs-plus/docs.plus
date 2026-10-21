@@ -121,6 +121,10 @@ services:
       --lazyfree-lazy-eviction yes
       --lazyfree-lazy-expire yes
       --lazyfree-lazy-server-del yes
+      --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    # redis-cli reads it, so the healthcheck and the runbook commands need no flag (#438).
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
     volumes:
       - redis-data:/data
     networks:

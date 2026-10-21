@@ -94,6 +94,8 @@ A CDN in front of the bucket keeps its cached copies until they expire, so set a
 
 **`MEDIA_COOKIE_SECRET`** must be 32 characters or more, for example `openssl rand -hex 32`. Empty means nobody can load a Private document's media.
 
+**`REDIS_PASSWORD`** must be 32 characters or more, for example `openssl rand -hex 32`. Redis runs with `--requirepass`, so other containers on the Docker network cannot read or write the queues without it. Empty stops `docker compose up`. `redis-exporter` reads its copy from `.env.observability`.
+
 **`NEW_DOCUMENT_NOTIFICATION_EMAILS`** holds two sample addresses at a real domain. Set your own addresses, or leave it empty. Empty sends no new-document mail. See [ENV.md](../../apps/hocuspocus.server/ENV.md#email).
 
 ## Choose where Traefik reads its config

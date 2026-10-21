@@ -245,6 +245,13 @@ jobs:
             echo "::error::MEDIA_COOKIE_SECRET is missing or shorter than 32 characters in ${{ env.ENV_SOURCE }}. Without it, no one can load a Private document's media. Set it (openssl rand -hex 32), then redeploy."
             exit 1
           fi
+
+          # Redis runs with --requirepass (#438). Never print the value.
+          redis_password=$(grep -E '^REDIS_PASSWORD=' "${{ env.ENV_FILE }}" | head -1 | cut -d= -f2- | tr -d "\"'")
+          if [ "${#redis_password}" -lt 32 ]; then
+            echo "::error::REDIS_PASSWORD is missing or shorter than 32 characters in ${{ env.ENV_SOURCE }}. Redis requires it. Set it (openssl rand -hex 32), then redeploy."
+            exit 1
+          fi
           echo "✅ Environment prepared"
 
       - name: 🧹 Clear Stale Docker Cache

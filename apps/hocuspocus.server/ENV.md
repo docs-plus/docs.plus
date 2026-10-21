@@ -123,7 +123,7 @@ Redis is optional; features degrade gracefully without it (rate limiting is disa
 | `REDIS_HOST`            | string  | `localhost` | If unset at runtime, `getRedisClient()` returns `null` (Redis disabled)                                                                         |
 | `REDIS_PORT`            | number  | `6379`      |                                                                                                                                                 |
 | `REDIS_DB`              | number  | `0`         | Logical Redis database index                                                                                                                    |
-| `REDIS_PASSWORD`        | string  | —           | Sent by every Redis client. Set it when Redis runs with `--requirepass`.                                                                        |
+| `REDIS_PASSWORD`        | string  | —           | Sent by every Redis client. Required by `docker-compose.prod.yml`, whose Redis runs with `--requirepass`. Use 32 characters or more.            |
 | `REDIS_TLS`             | boolean | `false`     |                                                                                                                                                 |
 | `REDIS_CONNECT_TIMEOUT` | number  | `30000`     |                                                                                                                                                 |
 | `REDIS_COMMAND_TIMEOUT` | number  | `60000`     | Producer-only connections override this with 5s in `lib/queue.ts`; the blocking worker connections set no command timeout at all.               |
