@@ -106,14 +106,25 @@ This file is the operator and API changelog. The pad product lives in the [root 
   `20261014121200` and `20261014121300` (#469, #318, #470, #315). Run
   `packages/supabase/scripts/check-grants.sql` read-only before and after the
   push (#317). The run before the push is a baseline. After the push, any row
-  blocks the next push until it is fixed or ruled. The `default_acl_*` rows stay
-  until #316 is ruled and lands.
+  blocks the next push until it is fixed or ruled.
+- **New tables, sequences and functions start closed ([#316](https://github.com/docs-plus/docs.plus/issues/316)).**
+  The default privileges of role `postgres` no longer give `anon` anything new
+  in `public`, and no new function gets `PUBLIC` execute in any schema. Existing
+  objects do not change. A migration that adds a browser-facing object must now
+  grant it in the same file. Apply the Supabase migration `20261021120000`, then
+  run `packages/supabase/scripts/check-grants.sql`: it should return no rows.
 
 ### Removed
 
 - **`create_direct_message_channel` and the `pg_net` extension.** Nothing in the
   repo called either one. Apply the Supabase migrations `20261014121400` and
   `20261014121500` (#319, #321).
+- **Five objects that only production had.** Four `public` functions
+  (`cleanup_push_subscriptions`, `get_push_notification_stats`,
+  `get_push_subscriptions`, `reset_workspace_unread_counts`) and the empty
+  `PushSentLog` table. No code calls them, and the push cleanup cron job keeps
+  running `internal.cleanup_push_subscriptions()`. Apply the Supabase migration
+  `20261021120100` ([#320](https://github.com/docs-plus/docs.plus/issues/320)).
 
 ## [2.1.0] — 2026-10-13
 

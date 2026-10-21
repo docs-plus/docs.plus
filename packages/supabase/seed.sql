@@ -1802,6 +1802,27 @@ drop function if exists public.send_push_notification() cascade;
 drop function if exists internal.get_push_config() cascade;
 drop function if exists public.set_push_config(text, text) cascade;
 
+-- Prod-only leftovers that no repo file creates (#320). Schema public only:
+-- internal.cleanup_push_subscriptions() runs the live cron job and must stay.
+-- No CASCADE: a dependent object must stop this, not vanish with it.
+do $$
+declare
+  f record;
+begin
+  for f in
+    select p.oid::regprocedure as sig
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname = any (array['cleanup_push_subscriptions',
+        'get_push_notification_stats','get_push_subscriptions',
+        'reset_workspace_unread_counts'])
+  loop
+    execute format('drop function %s', f.sig);
+  end loop;
+end $$;
+
+drop table if exists public."PushSentLog";
+
 
 -- =============================================================================
 -- 10. Enable Realtime for Notification Tables
