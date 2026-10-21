@@ -6,5 +6,4 @@
 /apps/webapp/src/styles/globals.scss           @HMarzban
 /apps/admin-dashboard/src/styles/globals.scss  @HMarzban
 /.claude/settings.json                         @HMarzban
-/scripts/hooks/design-system-lock.ts           @HMarzban
 /.github/CODEOWNERS                            @HMarzban
