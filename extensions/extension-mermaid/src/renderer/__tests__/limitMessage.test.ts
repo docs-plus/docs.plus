@@ -35,6 +35,14 @@ describe('limitMessage', () => {
     )
   })
 
+  it('draws exactly the character limit and refuses one more', async () => {
+    const pad = (n: number) => 'flowchart LR\n  A-->B\n%%' + 'x'.repeat(n - 23)
+    const { characters, edges: maxEdges } = DEFAULT_LIMITS
+    const drawn = await renderAsync(pad(characters), { limit: characters, maxEdges })
+    expect(drawn.svg).toContain('<svg')
+    expect(await peleLimit(pad(characters + 1))).toMatch(/longer than the limit/)
+  })
+
   it('says more than the edge limit, because Pele stops counting there', async () => {
     const source = edges(251)
     expect(limitMessage(source, await peleLimit(source), DEFAULT_LIMITS)).toBe(
