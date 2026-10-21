@@ -4,7 +4,7 @@ Part of the [`@docs.plus/extension-mermaid` README](../README.md).
 
 ## What Pele is
 
-Pele turns Mermaid text into SVG. The facts below come from the `pele@1.7.0` package and its README.
+Pele turns Mermaid text into SVG. The facts below come from the `pele@1.8.0` package and its README.
 
 - Its `render()` call is synchronous.
 - It has no runtime dependencies and its own layout engine.
@@ -15,7 +15,7 @@ Pele turns Mermaid text into SVG. The facts below come from the `pele@1.7.0` pac
 
 ## How this package uses it
 
-- The package lists `pele` in `dependencies` pinned to exactly `1.7.0`. npm installs it with the extension. Each family release moves the pin on purpose, because Pele changes fast.
+- The package lists `pele` in `dependencies` pinned to exactly `1.8.0`. npm installs it with the extension. Each family release moves the pin on purpose, because Pele changes fast.
 - The only import of Pele is a dynamic `import('pele/lazy')` in one folder, `src/renderer/`. Pele loads on demand, and one chunk loads per diagram type.
 - The package never imports Pele's main entry, which registers all 33 types.
 - Pele is never bundled into `dist`. No Pele type appears in the public `.d.ts`.

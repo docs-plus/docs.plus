@@ -20,7 +20,7 @@ This file is the operator and API changelog. The pad product lives in the [root 
   ([#459](https://github.com/docs-plus/docs.plus/issues/459)); publishing it
   is a separate maintainer step.
 - **AI apps can write Mermaid diagrams through the MCP connector.**
-  The server instructions and the `markdown` field descriptions tell an agent that a `mermaid` fence becomes a diagram. The field descriptions also name the types it can start with. Before `create_document`, `append_to_document`, `edit_blocks` or `replace_text` writes, the server parses each diagram with Pele. It refuses an empty diagram, an unsupported type, a parse error, or one over 10 000 characters or 250 edges, and nothing is written. Those are the pad's own limits, measured on real phones (#522). A parse refusal carries Pele's message, so the agent can fix it. So does a refusal for one of Pele's other fixed limits, such as block-diagram space blocks. The backend now depends on `pele` 1.7.0.
+  The server instructions and the `markdown` field descriptions tell an agent that a `mermaid` fence becomes a diagram. The field descriptions also name the types it can start with. Before `create_document`, `append_to_document`, `edit_blocks` or `replace_text` writes, the server parses each diagram with Pele. It refuses an empty diagram, an unsupported type, a parse error, or one over 10 000 characters or 250 edges, and nothing is written. Those are the pad's own limits, measured on real phones (#522). A parse refusal carries Pele's message, so the agent can fix it. So does a refusal for one of Pele's other fixed limits, such as block-diagram space blocks. The backend now depends on `pele` 1.8.0.
 
 ### Changed
 
