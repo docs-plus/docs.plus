@@ -58,9 +58,11 @@ const problemOf = async (source: string): Promise<string | null> => {
     if (err.code === 'unsupported-diagram') {
       return `Pele found no diagram type. Start it with one of: ${DIAGRAM_KEYWORDS.join(', ')}.`
     }
-    if (err.code === 'limit') {
+    // Pele's other fixed limits (nesting, space blocks, gantt work) name their own cause.
+    if (err.code === 'limit' && (source.length > LIMITS.limit || /\bedge/i.test(err.message))) {
       return `It is over ${LIMITS.limit} characters or ${LIMITS.maxEdges} edges, the most the pad draws.`
     }
+    if (err.code === 'limit') return `Pele refused it: ${tidy(err.message)}`
     return `Pele could not parse it: ${tidy(err.message)}`
   }
 }
