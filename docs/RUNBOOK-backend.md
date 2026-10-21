@@ -87,6 +87,29 @@ Grafana alert: `Redis down (redis_up==0)`. Severity critical, after 1 minute.
 
 3. Confirm saves resumed, as in step 5 of [Edits arriving but no document saved](#edits-arriving-but-no-document-saved).
 
+**If the container is `healthy`, check the password first.** Redis runs with `--requirepass` (#438). An exporter that logs `Couldn't connect to redis instance` reads a different `REDIS_PASSWORD` from `.env.observability` than Redis has from `.env.production`. Make the two equal, then recreate `redis-exporter`. While the observability deploy runs before a Redis restart, this alert fires for a few minutes and then clears.
+
+If the apps log `NOAUTH` after a deploy, this turns the password off at once, until the next Redis recreate:
+
+```bash
+dc exec redis redis-cli CONFIG SET requirepass ""
+```
+
+Then fix the env files, and recreate Redis. A revert commit is the lasting fix.
+
+## Postgres down
+
+Grafana alert: `Postgres down (pg_up==0)`. It comes from `postgres-exporter`, so first check whether the database or only the exporter is down.
+
+1. If the apps are `healthy` and documents save, the database is up. Read the exporter log:
+
+   ```bash
+   docker logs --since 10m docsplus-postgres-exporter
+   ```
+
+2. `open /path/to/ca-certificate.crt: no such file or directory` means `POSTGRES_EXPORTER_DSN` holds DigitalOcean's sample TLS options. Change `sslmode=verify-full&sslrootcert=/path/to/ca-certificate.crt` to `sslmode=require` in `.env.observability`, then recreate `postgres-exporter`.
+3. `permission denied for function pg_ls_waldir` is the `wal` collector, which needs `pg_monitor`. The exporter turns it off with `--no-collector.wal`. This line does not set `pg_up` to 0.
+
 ## Dead-letter queue not empty
 
 Grafana alert: `Dead-letter queue not empty`. Severity warning, after 5 minutes. The alert names the queue.

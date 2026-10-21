@@ -14,7 +14,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: Postgres is down (pg_up==0)
+          summary: Postgres is down (pg_up==0). If the apps are healthy, the exporter may be what fails. Read its log first.
+          runbook_url: 'https://github.com/docs-plus/docs.plus/blob/main/docs/RUNBOOK-backend.md#postgres-down'
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }
