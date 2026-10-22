@@ -548,18 +548,18 @@ pie showData
 
 ## Measured on real phones
 
-How big may a diagram be before it slows a phone down? We did not guess. We drew each size 50 times on a real Android phone and a real iPhone, and kept the slowest draw. Our budget is **200 ms**, the orange line. Every bar above it failed.
+How big may a diagram be before it slows a phone down? We did not guess. We drew test diagrams of each size 50 times on a real Android phone and a real iPhone. That was on 21 October 2026, with Pele 1.7.0. For each size, we kept the slowest draw of the slowest test diagram. Our budget is **200 ms**, the orange line. Every bar above it failed.
 
 ```mermaid
 xychart-beta
-  title "Android phone: milliseconds to draw one diagram"
+  title "Android phone: slowest draw of a test diagram"
   x-axis "Diagram size, in characters" ["5,000", "10,000", "15,000", "20,000"]
   y-axis "Milliseconds (slowest of 50 draws)" 0 --> 2000
   bar [105, 176, 1097, 1946]
   line [200, 200, 200, 200]
 ```
 
-At 10,000 characters the phone stays under budget. At 15,000 it takes **1.1 seconds**, more than five times the budget. So a diagram stops at 10,000 characters.
+At 10,000 characters the phone stays under budget. At 15,000 the slowest draw took **1.1 seconds**, more than five times the budget. So a diagram stops at 10,000 characters.
 
 ```mermaid
 xychart-beta
@@ -579,7 +579,7 @@ Arrows cost more than text. Both phones went over budget at 500 arrows, so a dia
 | 250 arrows        | 21 ms | 119 ms     | 119 ms       |
 | 500 arrows        | 37 ms | **229 ms** | **202 ms**   |
 
-A laptop would have said 20,000 characters is fine. The phone in your pocket is the real test. These two charts are drawn live by Pele too, from eight lines of text each.
+A Mac drew even a 20,000-character diagram in 51 ms. The phone in your pocket is the real test. These two charts are drawn live by Pele too, from six lines of text each.
 
 ## When a diagram goes wrong
 
