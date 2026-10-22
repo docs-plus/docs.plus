@@ -1,6 +1,6 @@
 {
   "name": "@docs.plus/extension-mermaid",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Tiptap extension that draws Mermaid code blocks as live SVG diagrams with Pele, loaded on demand",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

@@ -1,6 +1,6 @@
 {
   "name": "@docs.plus/extension-placeholder",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "A performance-optimized Tiptap placeholder extension using O(depth) cursor-based decoration",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

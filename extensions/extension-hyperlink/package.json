@@ -1,6 +1,6 @@
 {
   "name": "@docs.plus/extension-hyperlink",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Tiptap extension for hyperlinks with built-in popovers, auto-linking, and 50+ URL scheme support",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

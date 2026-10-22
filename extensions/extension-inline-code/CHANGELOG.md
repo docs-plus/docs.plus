@@ -4,6 +4,10 @@ All notable changes to `@docs.plus/extension-inline-code` are documented here. T
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-10-22
+
+No behaviour change; aligned to the family.
+
 ### Documentation
 
 - The README and the guide describe the Safari before 16.4 fallback correctly ([#485](https://github.com/docs-plus/docs.plus/issues/485)).

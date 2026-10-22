@@ -4,6 +4,10 @@ All notable changes to `@docs.plus/extension-indent` are documented here. The fo
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-10-22
+
+No behaviour change; aligned to the family.
+
 ### Documentation
 
 - The README links to the new Discord invite ([#480](https://github.com/docs-plus/docs.plus/issues/480)).

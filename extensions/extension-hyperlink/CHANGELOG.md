@@ -10,6 +10,10 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-10-22
+
+No behaviour change; aligned to the family.
+
 ### Documentation
 
 - The README links to the new Discord invite ([#480](https://github.com/docs-plus/docs.plus/issues/480)).

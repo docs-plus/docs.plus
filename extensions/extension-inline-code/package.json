@@ -1,6 +1,6 @@
 {
   "name": "@docs.plus/extension-inline-code",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Tiptap inline-code mark with stored-mark caret entry — no placeholder character enters the document",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
