@@ -157,7 +157,10 @@ const Editor = ({
       },
       // 3.30+ ListKeymap Tab sinks a following paragraph into the previous list.
       // Indent owns Tab. StarterKit's copy is replaced below.
-      listKeymap: false
+      listKeymap: false,
+      // Under `heading block*` the trailing node is an empty H1 that saves as an
+      // untitled section. Gapcursor still allows typing below a final table.
+      trailingNode: false
     }),
     ListKeymapWithoutTab,
     ListGapJoin,

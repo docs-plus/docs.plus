@@ -62,14 +62,13 @@ export const collectBlockClientIds = (
 
 /**
  * Document positions of the live editor's top-level blocks, or null when its node
- * types do not match the decoded version in order. Trailing extras are tolerated:
- * TrailingNode appends an empty paragraph the version JSON does not carry.
+ * types do not match the decoded version in order.
  */
 export const buildBlockRanges = (
   doc: PMNode,
   types: string[]
 ): { from: number; to: number }[] | null => {
-  if (doc.childCount < types.length) return null
+  if (doc.childCount !== types.length) return null
 
   const ranges: { from: number; to: number }[] = []
   let offset = 0

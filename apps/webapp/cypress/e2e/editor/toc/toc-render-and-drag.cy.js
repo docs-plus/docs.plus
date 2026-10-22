@@ -79,8 +79,7 @@ describe('TOC drag keeps heading scale sizes', () => {
     cy.dragTocItem('Section B', 'Section A', { position: 'before' })
 
     cy.get('.docy_editor > .tiptap.ProseMirror > :is(h1, h2, h3, h4, h5, h6)').should(($all) => {
-      // TrailingNode appends an empty H1.
-      const els = [...$all].filter((el) => el.textContent.trim())
+      const els = [...$all]
       const texts = els.map((el) => el.textContent.trim())
       expect(texts).to.deep.equal(['Scale Title', 'Section B', 'Detail B', 'Section A', 'Detail A'])
       expect(els[0].getAttribute('style') ?? '').not.to.contain('--hd-size')

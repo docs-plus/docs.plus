@@ -69,18 +69,6 @@ export const TEST_TITLE = {
     'This is a Very Long Title That Should Test the Maximum Length Limits of the Title Field in Various Scenarios'
 }
 
-/**
- * StarterKit's `trailingNode` appends an empty heading whenever the document
- * ends in another block, because `heading block*` makes heading the default
- * type. The TOC and Markdown export both drop it, so only raw DOM counts see it.
- */
-export const haveNamedHeadingCount =
-  (count: number) =>
-  ($headings: JQuery<HTMLElement>): void => {
-    const named = $headings.toArray().filter((el) => (el.textContent ?? '').trim() !== '')
-    expect(named, 'headings with text').to.have.length(count)
-  }
-
 function generatePredictableText(sentenceCount: number): string {
   const generateSentence = (index: number) =>
     `This is test sentence number ${index + 1} with predictable content.`

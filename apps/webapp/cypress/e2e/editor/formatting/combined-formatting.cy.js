@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 
 import { heading, paragraph, section } from '../../../fixtures/docMaker'
-import { TEST_TITLE, haveNamedHeadingCount } from '../../../support/commands'
+import { TEST_TITLE } from '../../../support/commands'
 
 const SimpleDocument = {
   documentName: TEST_TITLE.HelloDocy,
@@ -258,7 +258,7 @@ describe('Combined Formatting', () => {
     cy.createDocument(ComplexHierarchyDocument)
     cy.wait(350)
 
-    cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should(haveNamedHeadingCount(7))
+    cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should('have.length', 7)
 
     cy.putPosCaretInHeading(4, 'S4-H4', 'end')
     cy.get('.docy_editor').realPress(['Meta', 'b'])

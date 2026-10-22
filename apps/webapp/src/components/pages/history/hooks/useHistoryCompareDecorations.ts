@@ -61,8 +61,8 @@ export const useHistoryCompareDecorations = () => {
       return
     }
 
-    // Read the live doc first. TrailingNode appends an empty paragraph the decoded
-    // version JSON does not carry, and any size drift shifts every later decoration.
+    // Read the live doc first. Positions come from it, and any size drift from the
+    // decoded version JSON shifts every later decoration.
     const capturedDoc = editor.state.doc
     const jsonA = getCachedProsemirrorFromHistoryYdoc(compareBaseItem.version, compareBaseItem.data)
     if (jsonA == null) {

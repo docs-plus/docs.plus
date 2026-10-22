@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 
 import { heading, paragraph, section } from '../../../fixtures/docMaker'
-import { TEST_TITLE, haveNamedHeadingCount } from '../../../support/commands'
+import { TEST_TITLE } from '../../../support/commands'
 
 const SimpleDocument = {
   documentName: TEST_TITLE.HelloDocy,
@@ -153,7 +153,7 @@ describe('List Edge Cases', () => {
     cy.createDocument(DeepHierarchyDocument)
     cy.wait(300)
 
-    cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should(haveNamedHeadingCount(7))
+    cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should('have.length', 7)
 
     cy.putPosCaretInHeading(4, 'S4-H4', 'end')
     cy.realPress('Enter')
