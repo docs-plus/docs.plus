@@ -16,18 +16,25 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-10-22
+
+This entry holds the pad UI notes for this package. The highlights of the
+release and the self-hosting steps are in the
+[root CHANGELOG](../../CHANGELOG.md).
+
 ### Added
 
 - **Mermaid diagrams in the pad, History and `/editor`.** Type a
   ` ```mermaid ` fence, or pick Diagram from the slash menu or the Code
   select, which inserts a starter example. The live diagram draws under the
-  source. Writers start with the source open; read-only views, History and
+  source. Writers start with the source open. Read-only views, History and
   visitors start with it folded, and each viewer's choice is remembered. The
-  head shows Syntax, Copy and Hide source on hover. The SVG is sanitized, print
-  shows the drawn diagram, and a diagram that is too large names the limit it
-  hit. The PWA does not precache the renderer
+  head shows Syntax, Copy and Hide source on hover. The SVG is sanitized, and
+  print shows the drawn diagram. A diagram over 10,000 characters or 250 edges
+  names the limit it hit. The PWA does not precache the renderer
   ([#528](https://github.com/docs-plus/docs.plus/issues/528), [#529](https://github.com/docs-plus/docs.plus/issues/529)).
-- **Set up a terminal agent from Settings › Connected apps.** On a
+- **Set up a terminal agent from Settings › Connected apps
+  ([#548](https://github.com/docs-plus/docs.plus/issues/548)).** On a
   computer, the MCP server card now ends on a grid: Claude Code, Codex,
   Copilot CLI and Cline. Each cell copies that agent's add command. A last cell, **Any other agent**,
   copies a short prompt that tells the agent to show each change and wait
@@ -40,13 +47,16 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
-- **Add an AI app has three tabs: Claude, ChatGPT and Other.** The Claude
+- **Add an AI app has three tabs: Claude, ChatGPT and Other
+  ([#548](https://github.com/docs-plus/docs.plus/issues/548)).** The Claude
   Code and Codex tabs are gone, because the terminal agent grid now holds
   their commands. A web link in **Other**, such as Replit, opens in a new
   tab, so Settings stays open.
-- **The consent page names Cursor.** A Cursor sign-in now shows **Returns you
-  to www.cursor.com**, not the unverified warning. Its Settings row still reads
-  **On this computer**, because Cursor also registers a local address.
+- **The consent page names Cursor
+  ([3eef1c98b](https://github.com/docs-plus/docs.plus/commit/3eef1c98b)).** A
+  Cursor sign-in now shows **Returns you to www.cursor.com**, not the
+  unverified warning. Its Settings row still reads **On this computer**,
+  because Cursor also registers a local address.
 
 ### Fixed
 
@@ -57,15 +67,23 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   ([#493](https://github.com/docs-plus/docs.plus/issues/493)).
 - **Hyperlink suggestions no longer ask for bookmarks before sign-in**
   ([#318](https://github.com/docs-plus/docs.plus/issues/318)).
-- **A failed access change cannot write an old pad's data back.** After a pad
-  switch, the rollback now does nothing.
-- **Add link (Mod-K) with nothing selected inserts the typed URL as the link.**
+- **A failed access change cannot write an old pad's data back
+  ([633972f69](https://github.com/docs-plus/docs.plus/commit/633972f69)).**
+  After a pad switch, the rollback now does nothing.
+- **Add link (Mod-K) with nothing selected inserts the typed URL as the link
+  ([1dac1cf64](https://github.com/docs-plus/docs.plus/commit/1dac1cf64)).**
   Before, Apply showed "Please enter a valid URL" and inserted nothing.
 - **The Discord links point at a working invite** ([#480](https://github.com/docs-plus/docs.plus/issues/480)).
-- **The `font-mono` utility works.** The global `font-family` rule now sits in
-  the Tailwind base layer, so a font utility can override it. URLs and
-  commands on `/mcp` and in Settings › Connected apps now show in a monospace
-  face.
+- **The `font-mono` utility works
+  ([ebdc6cd47](https://github.com/docs-plus/docs.plus/commit/ebdc6cd47)).**
+  The global `font-family` rule now sits in the Tailwind base layer, so a
+  font utility can override it. URLs and commands on `/mcp` and in Settings ›
+  Connected apps now show in a monospace face.
+- **The Codex command opens one sign-in
+  ([5af33da38](https://github.com/docs-plus/docs.plus/commit/5af33da38)).**
+  `codex mcp add` already starts the sign-in. The 2.1.0 Codex tab also told
+  you to run `codex mcp login`, which opened a second one. The grid copies
+  only `codex mcp add`.
 
 ### Security
 
@@ -76,10 +94,14 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Internal
 
-- One Presence awareness room is the only writer of presence faces.
-- One Pad session opens a pad; the duplicate `workspaceId` store field is gone.
-- One module answers every read-side owner question (`isDocumentOwner`).
-- One Settings opener owns open state, the tab and hash intake for all hosts.
+- One Presence awareness room is the only writer of presence faces
+  ([8527f1540](https://github.com/docs-plus/docs.plus/commit/8527f1540)).
+- One Pad session opens a pad; the duplicate `workspaceId` store field is gone
+  ([633972f69](https://github.com/docs-plus/docs.plus/commit/633972f69)).
+- One module answers every read-side owner question (`isDocumentOwner`)
+  ([d9cf3df7d](https://github.com/docs-plus/docs.plus/commit/d9cf3df7d)).
+- One Settings opener owns open state, the tab and hash intake for all hosts
+  ([b0ae382fc](https://github.com/docs-plus/docs.plus/commit/b0ae382fc)).
 
 ## [2.1.0] — 2026-10-13
 

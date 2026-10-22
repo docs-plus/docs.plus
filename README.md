@@ -294,8 +294,6 @@ Or use `pnpm add`, `yarn add`, or `bun add` with the same package name.
 | [`extension-mermaid`](extensions/extension-mermaid/)                 | Mermaid diagram preview for `codeBlock`, drawn by Pele                                        |
 | [`extension-placeholder`](extensions/extension-placeholder/)         | Hint text in the empty textblock at the cursor; cost tracks cursor depth, not document length |
 
-`extension-mermaid` is not on npm yet; it publishes with the next family release.
-
 Install notes, recommended pairings, and contributing: [extensions/README.md](extensions/README.md). Release policy: [RELEASE_POLICY.md](RELEASE_POLICY.md).
 
 ## 🤝 Contributing

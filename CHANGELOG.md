@@ -4,54 +4,152 @@
 
 All notable changes to docs.plus are documented here.
 
-This file is the product changelog. The webapp package keeps [`apps/webapp/CHANGELOG.md`](apps/webapp/CHANGELOG.md). The hocuspocus app keeps [`apps/hocuspocus.server/CHANGELOG.md`](apps/hocuspocus.server/CHANGELOG.md). The five `@docs.plus/extension-*` packages keep their own `CHANGELOG.md` files. Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Section headings follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) plus the house order in [`RELEASE_POLICY.md`](RELEASE_POLICY.md).
+This file is the product changelog. The webapp package keeps [`apps/webapp/CHANGELOG.md`](apps/webapp/CHANGELOG.md). The hocuspocus app keeps [`apps/hocuspocus.server/CHANGELOG.md`](apps/hocuspocus.server/CHANGELOG.md). The six `@docs.plus/extension-*` packages keep their own `CHANGELOG.md` files. Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Section headings follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) plus the house order in [`RELEASE_POLICY.md`](RELEASE_POLICY.md).
 
 ---
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-10-22
+
+**A release for AI apps and diagrams, and a security round for self-hosters.** The webapp and
+hocuspocus share `2.2.0`. Admin stays `1.0.0`. Semantic Versioning would make this `3.0.0`.
+It stays `2.2.0`, because the breaks touch only self-hoster config and API callers, and the
+`2.x` pad product line is unchanged ([RELEASE_POLICY.md Status](RELEASE_POLICY.md#status)).
+
+The six `@docs.plus/extension-*` packages publish `2.2.0` together.
+`@docs.plus/extension-mermaid` is new, and this is its first publish. Each package's
+`CHANGELOG.md` lists its changes.
+
 ### Highlights
 
 - **Mermaid diagrams.** Write a ` ```mermaid ` block and see the diagram
-  under it, in the pad and in History. Pele draws it. The same engine ships as
+  under it, in the pad and in History. [Pele](https://pele.run), the Mermaid
+  renderer by Steph Ango ([@kepano](https://x.com/kepano)), draws it. The same engine ships as
   the new `@docs.plus/extension-mermaid` package ([#521](https://github.com/docs-plus/docs.plus/issues/521)).
   AI apps connected through the MCP connector can write diagrams too. The
   server checks each one before the write and refuses one that does not parse
-  or is too large. The size limits, 10,000 characters and 250 arrows, were
-  measured on a real iPhone and a real Android phone, so a large diagram never
-  freezes a phone ([#522](https://github.com/docs-plus/docs.plus/issues/522)).
+  or is too large. The size limits are 10,000 characters and 250 edges. They
+  were measured on a real iPhone and a real Android phone, so a large diagram
+  never freezes a phone ([#522](https://github.com/docs-plus/docs.plus/issues/522)).
 - **More AI apps, one page to start.** A public `/mcp` page gives the MCP
   server URL and the steps for each AI app. Settings › Connected apps adds a
-  terminal agent grid (Claude Code, Codex, Copilot CLI and Cline), a setup
-  prompt for any other agent, and Add to LM Studio and Add to Replit. Claude
-  Code, Codex and Cursor now connect to production, and the consent page names
-  Cursor ([#458](https://github.com/docs-plus/docs.plus/issues/458),
+  terminal agent grid for Claude Code, Codex, Copilot CLI and Cline. It also
+  adds a setup prompt for any other agent, and Add to LM Studio and Add to
+  Replit. Claude Code, Codex and Cursor now connect to production, and the
+  consent page names Cursor ([#458](https://github.com/docs-plus/docs.plus/issues/458),
   [#548](https://github.com/docs-plus/docs.plus/issues/548),
   [#549](https://github.com/docs-plus/docs.plus/issues/549),
   [#550](https://github.com/docs-plus/docs.plus/issues/550)).
   Many people on one hosted AI app no longer share one rate limit
   ([#551](https://github.com/docs-plus/docs.plus/issues/551)).
+- **Nobody misses chat because docs.plus thought they were online.** Some
+  people showed as Online for good, so a plain chat message sent them no bell,
+  push or email. Online now means a recent heartbeat, and nobody is stuck
+  ([#489](https://github.com/docs-plus/docs.plus/issues/489),
+  [#490](https://github.com/docs-plus/docs.plus/issues/490)). A chat email is
+  skipped when you already read the message in the chat
+  ([#497](https://github.com/docs-plus/docs.plus/issues/497)).
 - **Safer by default.** Supabase grants are closed on helper functions,
-  self-gated RPCs, anon tables and new partitions, and Restore now takes the
-  same per-document lock as content writes. New tables and functions start
-  closed. A Private document's images now load only for its owner
+  self-gated RPCs, anon tables and new partitions
+  ([#469](https://github.com/docs-plus/docs.plus/issues/469),
+  [#470](https://github.com/docs-plus/docs.plus/issues/470),
+  [#318](https://github.com/docs-plus/docs.plus/issues/318),
+  [#315](https://github.com/docs-plus/docs.plus/issues/315)). New tables and
+  functions start closed ([#316](https://github.com/docs-plus/docs.plus/issues/316)).
+  Restore now takes the same per-document lock as content writes
+  ([047cc0b34](https://github.com/docs-plus/docs.plus/commit/047cc0b34)).
+  A Private document's images now load only for its owner
   ([#439](https://github.com/docs-plus/docs.plus/issues/439)).
+- **Extensions 2.2.0.** All six `@docs.plus/extension-*` packages ship `2.2.0` together.
+  Changed lists what each package brings.
 
-### Self-hosting
+### Breaking
 
-- Apply the new Supabase migrations in order, then run
-  `packages/supabase/scripts/check-grants.sql` (see the
-  [hocuspocus CHANGELOG](apps/hocuspocus.server/CHANGELOG.md)).
-- If you run your own proxy instead of the bundled Traefik, also route
-  `/.well-known/oauth-protected-resource` to `rest-api`. Some AI apps look for
-  the MCP metadata there ([#550](https://github.com/docs-plus/docs.plus/issues/550)).
-- Set the new `MEDIA_COOKIE_SECRET` (32 characters or more) on `rest-api`
-  before you deploy. Without it, nobody can load the images of a Private
-  document ([#439](https://github.com/docs-plus/docs.plus/issues/439)).
-- Set the new `REDIS_PASSWORD` (32 characters or more) in `.env.production`
-  and `.env.observability` before you deploy. Redis in `docker-compose.prod.yml`
-  now requires it, so the stack does not start without it
+- Set `REDIS_PASSWORD`, or the stack does not start
   ([#438](https://github.com/docs-plus/docs.plus/issues/438)).
+- Set `MEDIA_COOKIE_SECRET`, or nobody can load a Private document's images
+  ([#439](https://github.com/docs-plus/docs.plus/issues/439)).
+- With the bundled Traefik, edit the `Host` in the new `rest-api-wellknown` rule
+  in `docker-compose.prod.yml`. With your own proxy, route
+  `/.well-known/oauth-protected-resource` to `rest-api`
+  ([#550](https://github.com/docs-plus/docs.plus/issues/550)).
+- New Supabase tables, sequences and functions start closed. A custom migration
+  must grant its own objects ([#316](https://github.com/docs-plus/docs.plus/issues/316)).
+- Open Supabase grants are revoked. A caller that uses the anon key or
+  PostgREST directly may lose access
+  ([#469](https://github.com/docs-plus/docs.plus/issues/469),
+  [#470](https://github.com/docs-plus/docs.plus/issues/470),
+  [#318](https://github.com/docs-plus/docs.plus/issues/318)).
+- `create_direct_message_channel`, the `pg_net` extension, four `public`
+  functions and the `PushSentLog` table are dropped
+  ([#319](https://github.com/docs-plus/docs.plus/issues/319),
+  [#320](https://github.com/docs-plus/docs.plus/issues/320),
+  [#321](https://github.com/docs-plus/docs.plus/issues/321)).
+- The MCP read tools return text only, with no `structuredContent`
+  ([#456](https://github.com/docs-plus/docs.plus/issues/456),
+  [#457](https://github.com/docs-plus/docs.plus/issues/457)).
+- `/mcp` is now a reserved slug
+  ([#458](https://github.com/docs-plus/docs.plus/issues/458)).
+
+### Migration
+
+**If you self-host.** Read the [hocuspocus Migration](apps/hocuspocus.server/CHANGELOG.md#migration)
+before you deploy, and follow its order. Set `REDIS_PASSWORD` (32 characters or more) in
+`.env.production`, and in `.env.observability` if you run the observability stack. Set
+`MEDIA_COOKIE_SECRET` (32 characters or more) in `.env.production`. Edit the
+`rest-api-wellknown` `Host` line, or route the well-known path in your own proxy. Run
+`packages/supabase/scripts/check-grants.sql` before and after the 14 new Supabase
+migrations. After them it should return no rows.
+
+**If you use the npm extensions.** The five existing packages need no change. To draw
+diagrams, add `@docs.plus/extension-mermaid`. Its `CHANGELOG.md` has the details.
+
+### Changed
+
+- **Extensions 2.2.0.** The six npm packages share one version.
+  - [`extension-mermaid`](extensions/extension-mermaid/CHANGELOG.md): new. It draws a
+    Mermaid code block as a live diagram, with Pele
+    ([#521](https://github.com/docs-plus/docs.plus/issues/521)).
+  - [`extension-hyperlink`](extensions/extension-hyperlink/CHANGELOG.md),
+    [`extension-hypermultimedia`](extensions/extension-hypermultimedia/CHANGELOG.md),
+    [`extension-indent`](extensions/extension-indent/CHANGELOG.md),
+    [`extension-inline-code`](extensions/extension-inline-code/CHANGELOG.md) and
+    [`extension-placeholder`](extensions/extension-placeholder/CHANGELOG.md): no behaviour
+    change. They move to `2.2.0` with the family. Their READMEs link the new Discord invite
+    ([#480](https://github.com/docs-plus/docs.plus/issues/480)). The hyperlink,
+    hypermultimedia and inline-code docs now match the 2.x code
+    ([#485](https://github.com/docs-plus/docs.plus/issues/485)).
+
+### Fixed
+
+- **Small things in the pad and Settings work better.**
+  - Add link (Mod-K) with no selection inserts the URL you typed
+    ([1dac1cf64](https://github.com/docs-plus/docs.plus/commit/1dac1cf64)).
+  - URLs and commands on `/mcp` and in Connected apps show in a monospace face
+    ([ebdc6cd47](https://github.com/docs-plus/docs.plus/commit/ebdc6cd47)).
+  - Your online status stays right when you switch tabs or reload
+    ([#492](https://github.com/docs-plus/docs.plus/issues/492)).
+  - The @ picker and the avatars agree on who is online
+    ([#493](https://github.com/docs-plus/docs.plus/issues/493)).
+  - The Discord links work again ([#480](https://github.com/docs-plus/docs.plus/issues/480)).
+  - The Codex setup command opens one sign-in, not two
+    ([5af33da38](https://github.com/docs-plus/docs.plus/commit/5af33da38)).
+- The full-Docker dev stack works. It mounts the webapp source, starts the backend
+  and admin containers, and reaches the host Supabase on Linux
+  ([#482](https://github.com/docs-plus/docs.plus/issues/482)).
+
+### Internal
+
+- Register `extension-mermaid` as the sixth family package
+  ([#527](https://github.com/docs-plus/docs.plus/issues/527)).
+- Make the generated Supabase types reproducible. A failed run never empties
+  `supabase.ts`, and two runs on an unchanged database give the same file
+  ([#498](https://github.com/docs-plus/docs.plus/issues/498)).
+- Check Supabase script parity and grant allowlists in `check:ci`. One check
+  fails when a function in `scripts/` differs from its newest migration.
+  Another fails when copies of a role allowlist disagree
+  ([92ec0aebb](https://github.com/docs-plus/docs.plus/commit/92ec0aebb)).
 
 ## [2.1.0] — 2026-10-13
 
@@ -97,7 +195,7 @@ lockstep family release; each package's `CHANGELOG.md` lists its changes.
 
 ### Migration
 
-**If you self-host.** Read the [hocuspocus Migration](apps/hocuspocus.server/CHANGELOG.md#migration)
+**If you self-host.** Read the [hocuspocus Migration](apps/hocuspocus.server/CHANGELOG.md#migration-1)
 before you deploy, and follow its order. Set `EMAIL_PROVIDER` and `EMAIL_FROM`, or mail does
 not send. Set `EMAIL_UNSUBSCRIBE_SECRET` to at least 32 characters, or unsubscribe links do
 not work. Apply two Supabase migrations later than the others:
@@ -953,7 +1051,8 @@ docs.plus reaches this tag through two code lines. They share no common ancestor
 
 ---
 
-[Unreleased]: https://github.com/docs-plus/docs.plus/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/docs-plus/docs.plus/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/docs-plus/docs.plus/releases/tag/v2.2.0
 [2.1.0]: https://github.com/docs-plus/docs.plus/releases/tag/v2.1.0
 [2.0.1]: https://github.com/docs-plus/docs.plus/releases/tag/v2.0.1
 [2.0.0]: https://github.com/docs-plus/docs.plus/releases/tag/v2.0.0

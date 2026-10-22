@@ -10,17 +10,158 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-10-22
+
+The webapp and hocuspocus share `2.2.0`. Admin stays `1.0.0`. This package is private and is not published to npm.
+
+This minor release is a SemVer exception. Its Breaking items touch only self-hoster config and API callers, while the `2.x` pad product line is unchanged ([RELEASE_POLICY.md Status](../../RELEASE_POLICY.md#status)).
+
+### Highlights
+
+- **More AI apps sign in to the MCP connector ([#550](https://github.com/docs-plus/docs.plus/issues/550), [#551](https://github.com/docs-plus/docs.plus/issues/551)).**
+  The protected-resource metadata also answers at the RFC 9728 root URLs, so
+  `claude mcp login` can sign in. A verified `/api/mcp` call spends a
+  per-person budget, not the per-address limit.
+- **AI apps can write Mermaid diagrams ([#522](https://github.com/docs-plus/docs.plus/issues/522)).**
+  The server parses each diagram with Pele before the write. It refuses a
+  diagram that the pad cannot draw, and nothing is written.
+- **Redis requires a password ([#438](https://github.com/docs-plus/docs.plus/issues/438)).**
+  Set `REDIS_PASSWORD` before you deploy.
+- **A Private document's media loads only for its owner ([#439](https://github.com/docs-plus/docs.plus/issues/439)).**
+  Set `MEDIA_COOKIE_SECRET` before you deploy.
+- **Supabase grants are closed in one pass.** Helper functions, self-gated
+  RPCs, trigger functions, anon tables and new partitions lose their open
+  grants. New tables, sequences and functions start closed
+  ([#469](https://github.com/docs-plus/docs.plus/issues/469),
+  [#470](https://github.com/docs-plus/docs.plus/issues/470),
+  [#318](https://github.com/docs-plus/docs.plus/issues/318),
+  [#315](https://github.com/docs-plus/docs.plus/issues/315),
+  [#316](https://github.com/docs-plus/docs.plus/issues/316)).
+- **An admin can soft-delete one account on the owner's request ([#471](https://github.com/docs-plus/docs.plus/issues/471)).**
+
+### Breaking
+
+- **Redis needs `REDIS_PASSWORD` ([#438](https://github.com/docs-plus/docs.plus/issues/438)).**
+  `docker-compose.prod.yml` reads it with `:?`, so `docker compose up` stops
+  when it is empty. The prod, stage and observability deploy workflows refuse
+  to deploy without it.
+- **Private media needs `MEDIA_COOKIE_SECRET` ([#439](https://github.com/docs-plus/docs.plus/issues/439)).**
+  When it is unset, Private media answers `404`, even to the owner. The prod
+  and stage deploy workflows refuse to deploy without it.
+- **The bundled Traefik needs one more `Host` line ([#550](https://github.com/docs-plus/docs.plus/issues/550)).**
+  The new `rest-api-wellknown` router in `docker-compose.prod.yml` names
+  `prodback.docs.plus`. Set it to your API host. With your own proxy, route
+  `/.well-known/oauth-protected-resource` to `rest-api`.
+- **New objects start closed ([#316](https://github.com/docs-plus/docs.plus/issues/316)).**
+  A new table, sequence or function in `public` gives `anon` nothing. A new
+  function in any schema gets no `PUBLIC` execute. A custom migration must
+  grant its own objects in the same file.
+- **Open grants are revoked ([#469](https://github.com/docs-plus/docs.plus/issues/469), [#470](https://github.com/docs-plus/docs.plus/issues/470), [#318](https://github.com/docs-plus/docs.plus/issues/318)).**
+  A caller that uses the anon key or PostgREST directly may lose access to an
+  `internal` helper, a table or an RPC. See Security.
+- **Five functions, a table and an extension are dropped ([#319](https://github.com/docs-plus/docs.plus/issues/319), [#320](https://github.com/docs-plus/docs.plus/issues/320), [#321](https://github.com/docs-plus/docs.plus/issues/321)).**
+  `create_direct_message_channel`, four `public` functions, the `PushSentLog`
+  table and the `pg_net` extension are gone. See Removed.
+- **The MCP read tools return text only ([#456](https://github.com/docs-plus/docs.plus/issues/456), [#457](https://github.com/docs-plus/docs.plus/issues/457)).**
+  `find_documents`, `get_outline`, `read_document`, `list_chat_rooms` and
+  `read_chat_thread` return one framed text block and no `structuredContent`.
+  A client that read their `structuredContent` must read the text block. The
+  write tools and `create_document` keep theirs.
+- **`/mcp` is a reserved slug ([#458](https://github.com/docs-plus/docs.plus/issues/458)).**
+  The webapp serves a page at `/mcp`. Production had no document with that
+  slug, checked on 2026-10-21.
+
+### Migration
+
+Follow these steps in order to upgrade from `2.1.0`. Each step names the
+installs it is for. A **scripts install** was built from
+`packages/supabase/scripts/`, as
+[install step 2](../../docs/self-hosting/install.md#2-prepare-supabase) says.
+It has no migration history. A **migration-history install** applies Supabase
+migrations with `supabase db push`, as docs.plus production does.
+
+1. **Back up** (every install). See
+   [Back up your data](../../docs/self-hosting/README.md#back-up-your-data).
+   Migrations only go forward.
+2. **Set `REDIS_PASSWORD`** (every install). Use 32 characters or more, for
+   example `openssl rand -hex 32`. Put it in `.env.production`. If you run the
+   observability stack, put the same value in `.env.observability`. Compose
+   reads it with `:?`, so the stack does not start without it. The prod, stage
+   and observability workflows refuse to deploy without it.
+3. **Set `MEDIA_COOKIE_SECRET`** (every install). Use 32 characters or more,
+   in `.env.production`. The prod and stage workflows refuse to deploy without
+   it. When it is unset, Private media answers `404`, even to the owner.
+4. **Route the well-known path** (every install). With the bundled Traefik,
+   edit the `Host` in the new `rest-api-wellknown` rule in
+   `docker-compose.prod.yml`, as
+   [install step 4](../../docs/self-hosting/install.md#4-point-your-domains-at-the-server)
+   says. With your own proxy, route `/.well-known/oauth-protected-resource` to
+   `rest-api`.
+5. **Grant the exporter login `pg_read_all_stats`** (installs on DigitalOcean
+   managed PostgreSQL that run `postgres-exporter`). `doadmin` cannot grant
+   `pg_monitor` there
+   ([#443](https://github.com/docs-plus/docs.plus/issues/443)). Use
+   `sslmode=require` in `POSTGRES_EXPORTER_DSN`. See Security.
+6. **Run `packages/supabase/scripts/check-grants.sql` as a baseline** (every
+   install). Run it read-only: in the Supabase SQL editor, or with `psql` and
+   `PGOPTIONS='-c default_transaction_read_only=on'`. Rows are expected
+   before the migrations. Keep them to compare.
+7. **Apply the 14 Supabase migrations** (every install). Apply them in
+   timestamp order, before the new server starts. No migration is held.
+   - Scripts install: apply each file by hand in the Supabase SQL editor, as
+     [install](../../docs/self-hosting/install.md#upgrade-to-a-new-release)
+     upgrade item 6 says. Do not run `supabase db push`.
+   - Migration-history install: run one `supabase db push`.
+8. **Run `check-grants.sql` again** (every install). Expect 0 rows. Any row
+   blocks the next push until it is fixed or ruled.
+9. **Deploy the new apps first** (every install). Build the images and run the
+   database migration, as install upgrade items 8 and 9 say. This release adds
+   no Prisma migration. Then restart the apps, as item 10 says. The new apps
+   send `REDIS_PASSWORD`, and a Redis with no password still accepts it, so
+   nothing breaks yet. This also recreates `rest-api`, which carries the new
+   router.
+10. **Then recreate Redis, so it requires the password** (every install). Item
+    10 uses `--no-deps`, so it never recreates Redis on its own. At the
+    repository root:
+
+    ```bash
+    docker compose -f docker-compose.prod.yml --env-file .env.production up -d redis
+    ```
+
+    Do this only after every app runs the new image. An old app sends no
+    password, and gets `NOAUTH` once Redis requires one. If you run the
+    observability stack, redeploy it next, so `redis-exporter` reads its copy
+    of the password.
+
+**The 14 new Supabase migrations**, in timestamp order:
+
+| Migration                                                     | Issue                                                                |
+| ------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `20261014120000_presence_stamp_online_only`                   | [#489](https://github.com/docs-plus/docs.plus/issues/489)            |
+| `20261014120100_bell_reads_online_lease`                      | [#490](https://github.com/docs-plus/docs.plus/issues/490)            |
+| `20261014120300_skip_email_when_channel_read`                 | [#497](https://github.com/docs-plus/docs.plus/issues/497)            |
+| `20261014121000_revoke_internal_helper_execute`               | [#469](https://github.com/docs-plus/docs.plus/issues/469)            |
+| `20261014121100_close_self_gated_and_trigger_function_grants` | [#318](https://github.com/docs-plus/docs.plus/issues/318)            |
+| `20261014121200_revoke_anon_default_table_privileges`         | [#470](https://github.com/docs-plus/docs.plus/issues/470)            |
+| `20261014121300_close_new_document_views_partitions`          | [#315](https://github.com/docs-plus/docs.plus/issues/315)            |
+| `20261014121400_drop_create_direct_message_channel`           | [#319](https://github.com/docs-plus/docs.plus/issues/319)            |
+| `20261014121500_drop_pg_net`                                  | [#321](https://github.com/docs-plus/docs.plus/issues/321)            |
+| `20261019120000_skip_notification_for_deleted_receiver`       | [f21eb3810](https://github.com/docs-plus/docs.plus/commit/f21eb3810) |
+| `20261019130000_message_counter_skip_deleted_channel`         | [7f0840b3e](https://github.com/docs-plus/docs.plus/commit/7f0840b3e) |
+| `20261019140000_users_heartbeat_hot_index`                    | [#491](https://github.com/docs-plus/docs.plus/issues/491)            |
+| `20261021120000_default_privileges_close_new_objects`         | [#316](https://github.com/docs-plus/docs.plus/issues/316)            |
+| `20261021120100_drop_prod_only_drift`                         | [#320](https://github.com/docs-plus/docs.plus/issues/320)            |
+
 ### Added
 
 - **An admin can soft-delete one account on the owner's request ([#471](https://github.com/docs-plus/docs.plus/issues/471)).**
   Use `DELETE /api/admin/users/:id`. It clears the profile, removes the avatar and bans the user. It turns off push and email and drops pending queued email. The email address is kept. It refuses an admin or an unknown id. A `500` may leave the profile cleared. Retry the call.
-- **The MCP server info names an icon.** `icons` lists the 192 px docs.plus mark
+- **The MCP server info names an icon ([#459](https://github.com/docs-plus/docs.plus/issues/459)).** `icons` lists the 192 px docs.plus mark
   at `APP_URL/icons/icon-192x192.png`, so a host that shows server icons can
-  draw it. `server.json` describes the server for the official MCP Registry
-  ([#459](https://github.com/docs-plus/docs.plus/issues/459)); publishing it
-  is a separate maintainer step.
-- **AI apps can write Mermaid diagrams through the MCP connector.**
-  The server instructions and the `markdown` field descriptions tell an agent that a `mermaid` fence becomes a diagram. The field descriptions also name the types it can start with. Before `create_document`, `append_to_document`, `edit_blocks` or `replace_text` writes, the server parses each diagram with Pele. It refuses an empty diagram, an unsupported type, a parse error, or one over 10 000 characters or 250 edges, and nothing is written. Those are the pad's own limits, measured on real phones (#522). A parse refusal carries Pele's message, so the agent can fix it. So does a refusal for one of Pele's other fixed limits, such as block-diagram space blocks. The backend now depends on `pele` 1.8.0.
+  draw it. `server.json` describes the server for the official MCP Registry.
+  Publishing it is a separate maintainer step.
+- **AI apps can write Mermaid diagrams through the MCP connector ([#522](https://github.com/docs-plus/docs.plus/issues/522)).**
+  The server instructions and the `markdown` field descriptions tell an agent that a `mermaid` fence becomes a diagram. The field descriptions also name the types it can start with. Before `create_document`, `append_to_document`, `edit_blocks` or `replace_text` writes, the server parses each diagram with Pele. It refuses an empty diagram, an unsupported type, a parse error, or one over 10 000 characters or 250 edges. Then nothing is written. Those are the pad's own limits, measured on real phones. A parse refusal carries Pele's message, so the agent can fix it. So does a refusal for one of Pele's other fixed limits, such as block-diagram space blocks. The backend now depends on `pele` 1.8.0.
 
 ### Changed
 
@@ -34,7 +175,7 @@ This file is the operator and API changelog. The pad product lives in the [root 
   checked only while the address has budget left. So a spent address gets a
   `429` even for a good token, and makes no Supabase Auth call. A token
   with no `client_id` or a past `exp` is refused before that call. One gap
-  stays: parallel requests that pass the budget check just before the address
+  stays. Parallel requests that pass the budget check just before the address
   runs out each cost one Auth call, once per window.
 - **`create_document` names a document titled "MCP" `mcp-document`.** The
   webapp now serves a page at `/mcp`, so `mcp` joins the route slugs
@@ -43,7 +184,8 @@ This file is the operator and API changelog. The pad product lives in the [root 
   `idx_users_online_status` now keys only `id`, so a heartbeat is a HOT
   update. The duplicate `idx_users_username` is dropped; `users_username_key`
   serves the same lookups. Apply the Supabase migration
-  `20261019140000_users_heartbeat_hot_index` (#491).
+  `20261019140000_users_heartbeat_hot_index`
+  ([#491](https://github.com/docs-plus/docs.plus/issues/491)).
 
 ### Fixed
 
@@ -53,13 +195,13 @@ This file is the operator and API changelog. The pad product lives in the [root 
   the RFC 9728 root URLs, got `404`, and fell back to registering at
   `/register` on the API host. `/.well-known/oauth-protected-resource` and
   `/.well-known/oauth-protected-resource/api/mcp` now return the same metadata
-  as `/api/mcp/.well-known/oauth-protected-resource`, which the `401` header
-  still names. A new Traefik router, `rest-api-wellknown`, routes only that
+  as `/api/mcp/.well-known/oauth-protected-resource`. The `401` header
+  still names that last URL. A new Traefik router, `rest-api-wellknown`, routes only that
   prefix. Self-hosters edit one more host line (install guide, step 4).
-- **Chat message counts no longer freeze after a channel is deleted.** The
+- **Chat message counts no longer freeze after a channel is deleted ([7f0840b3e](https://github.com/docs-plus/docs.plus/commit/7f0840b3e)).** The
   message counter worker trusted the workspace id stored in each queued event.
-  An event for a deleted channel then failed the `channel_id` foreign key, and
-  that one error rolled back every cron run, so no count updated again. The
+  An event for a deleted channel then failed the `channel_id` foreign key. That
+  one error rolled back every cron run, so no count updated again. The
   worker now reads the live channel row and drops events whose channel is gone.
   Apply the Supabase migration `20261019130000_message_counter_skip_deleted_channel`.
 - **Claude Code now reads document and chat text through the MCP connector ([#456](https://github.com/docs-plus/docs.plus/issues/456)).**
@@ -67,23 +209,24 @@ This file is the operator and API changelog. The pad product lives in the [root 
   shows the model only `structuredContent`. `read_document` and
   `read_chat_thread` kept their text in the text block, so the model saw
   metadata and no text. The five read tools now return text only.
-- **A person who left is no longer stuck `ONLINE`.** A one-time data fix sets
+- **A person who left is no longer stuck `ONLINE` ([#489](https://github.com/docs-plus/docs.plus/issues/489)).** A one-time data fix sets
   `ONLINE` rows with a NULL `online_at` to `OFFLINE`. The `update-user-status`
   sweep never matched them, so those people got no bell, push or email.
   `update_user_online_at` now stamps `online_at` only on an `ONLINE` write, so
-  a sweep or tab hide keeps the last heartbeat. This narrows the 2.1.0 #417
-  entry. Apply the Supabase migration `20261014120000_presence_stamp_online_only` (#489).
-- **The chat bell now uses the online lease, as push does.** A member counts as
+  a sweep or tab hide keeps the last heartbeat. This narrows the 2.1.0
+  [#417](https://github.com/docs-plus/docs.plus/issues/417) entry. Apply the
+  Supabase migration `20261014120000_presence_stamp_online_only`.
+- **The chat bell now uses the online lease, as push does ([#490](https://github.com/docs-plus/docs.plus/issues/490)).** A member counts as
   online only when `status` is `ONLINE` and `online_at` is under 2 minutes old.
   Before, a member left `ONLINE` with a stale or NULL `online_at` got no bell,
-  push or email. Apply the Supabase migration `20261014120100_bell_reads_online_lease` (#490).
+  push or email. Apply the Supabase migration `20261014120100_bell_reads_online_lease`.
 - **A queued email is skipped when the member already read the message in the
-  channel.** The email check looked only at the bell read mark, so reading in
+  channel ([#497](https://github.com/docs-plus/docs.plus/issues/497)).** The email check looked only at the bell read mark, so reading in
   the channel did not stop it. Apply the Supabase migration
-  `20261014120300_skip_email_when_channel_read` (#497).
-- **A restore on a cold document waits for its own commit ([#229](https://github.com/docs-plus/docs.plus/issues/229)).**
+  `20261014120300_skip_email_when_channel_read`.
+- **A restore on a cold document waits for its own commit ([047cc0b34](https://github.com/docs-plus/docs.plus/commit/047cc0b34)).**
   It answers `503 DOCUMENT_BUSY` when earlier writes are still saving at the 20 s deadline, and nothing is restored.
-- **An erased account no longer gets bell rows.** Push and email already stopped. Apply the Supabase migration `20261019120000_skip_notification_for_deleted_receiver`.
+- **An erased account no longer gets bell rows ([f21eb3810](https://github.com/docs-plus/docs.plus/commit/f21eb3810)).** Push and email already stopped. Apply the Supabase migration `20261019120000_skip_notification_for_deleted_receiver`.
 
 ### Security
 
@@ -104,17 +247,21 @@ This file is the operator and API changelog. The pad product lives in the [root 
   the self-gated RPCs, the trigger functions and the anon table rights lose
   their open default grants. New document-view partitions close themselves.
   Apply these Supabase migrations in order: `20261014121000`, `20261014121100`,
-  `20261014121200` and `20261014121300` (#469, #318, #470, #315). Run
+  `20261014121200` and `20261014121300`
+  ([#469](https://github.com/docs-plus/docs.plus/issues/469),
+  [#318](https://github.com/docs-plus/docs.plus/issues/318),
+  [#470](https://github.com/docs-plus/docs.plus/issues/470),
+  [#315](https://github.com/docs-plus/docs.plus/issues/315)). Run
   `packages/supabase/scripts/check-grants.sql` read-only before and after the
-  push (#317). The run before the push is a baseline. After the push, any row
+  push ([#317](https://github.com/docs-plus/docs.plus/issues/317)). The run before the push is a baseline. After the push, any row
   blocks the next push until it is fixed or ruled.
 - **A Private document's media loads only for its owner ([#439](https://github.com/docs-plus/docs.plus/issues/439)).**
-  An image request carries no token, so the webapp trades the session for an
+  An image request carries no token. So the webapp trades the session for an
   `HttpOnly` cookie, `dp_media`, after sign-in and on each token refresh. The
   media route serves a Private document's files only with the owner's cookie,
   with `Cache-Control: private, no-cache`. Anyone else gets `404`, as for
   Trash. Sign-out expires the cookie, and the cookie lasts one hour. A duplicate
-  skips media from a Private document the requester cannot read, and a DOCX
+  skips media from a Private document the requester cannot read. A DOCX
   export of a Private document still includes its images. Set the new
   `MEDIA_COOKIE_SECRET` (32 characters or more) on `rest-api` before you deploy.
   Unset fails closed: no one can load Private media, and REST logs one warning.
@@ -126,9 +273,9 @@ This file is the operator and API changelog. The pad product lives in the [root 
   stats views `postgres-exporter` reads. The self-hosting guide gives both.
   The exporter now runs with `--no-collector.wal`, because that collector
   needs `pg_monitor`, and no panel reads it. Do not copy DigitalOcean's sample
-  connection string as it is: its `sslrootcert=/path/to/ca-certificate.crt` is
+  connection string as it is. Its `sslrootcert=/path/to/ca-certificate.crt` is
   a placeholder, and every scrape fails with it. Use `sslmode=require`.
-- **`follow-redirects` is pinned to 1.16.1.** Version 1.16.0 kept credential
+- **`follow-redirects` is pinned to 1.16.1 ([1dd664802](https://github.com/docs-plus/docs.plus/commit/1dd664802)).** Version 1.16.0 kept credential
   headers across a cross-origin redirect (GHSA-q3jh-wrc6-jgq8,
   GHSA-8r9p-f939-6h3c). It reaches the server through `axios`, which DOCX
   export uses. The root `overrides` moves only this package.
@@ -138,12 +285,21 @@ This file is the operator and API changelog. The pad product lives in the [root 
   objects do not change. A migration that adds a browser-facing object must now
   grant it in the same file. Apply the Supabase migration `20261021120000`, then
   run `packages/supabase/scripts/check-grants.sql`: it should return no rows.
+- **Known gap: production access is not fully tightened yet ([#570](https://github.com/docs-plus/docs.plus/issues/570)).**
+  This release ships with five gaps open. The Spaces access key reaches
+  every bucket on the account. The Spaces CORS rules are too wide. The
+  production database cluster also hosts other projects. On Supabase, role
+  `postgres` still gives `anon` default rights on new sequences in `pgmq`. It
+  also gives `anon` and `authenticated` default rights on new tables,
+  sequences and functions in `storage`. The fixes are tracked on the issue.
 
 ### Removed
 
-- **`create_direct_message_channel` and the `pg_net` extension.** Nothing in the
+- **`create_direct_message_channel` and the `pg_net` extension
+  ([#319](https://github.com/docs-plus/docs.plus/issues/319),
+  [#321](https://github.com/docs-plus/docs.plus/issues/321)).** Nothing in the
   repo called either one. Apply the Supabase migrations `20261014121400` and
-  `20261014121500` (#319, #321).
+  `20261014121500`.
 - **Five objects that only production had.** Four `public` functions
   (`cleanup_push_subscriptions`, `get_push_notification_stats`,
   `get_push_subscriptions`, `reset_workspace_unread_counts`) and the empty
@@ -1312,5 +1468,8 @@ This package shipped as `2.0.0-beta.103` with the webapp. There is no earlier ho
 
 ---
 
-[Unreleased]: https://github.com/docs-plus/docs.plus/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/docs-plus/docs.plus/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/docs-plus/docs.plus/releases/tag/v2.2.0
+[2.1.0]: https://github.com/docs-plus/docs.plus/releases/tag/v2.1.0
+[2.0.1]: https://github.com/docs-plus/docs.plus/releases/tag/v2.0.1
 [2.0.0]: https://github.com/docs-plus/docs.plus/releases/tag/v2.0.0

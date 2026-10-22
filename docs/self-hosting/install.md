@@ -13,7 +13,7 @@ git clone https://github.com/docs-plus/docs.plus.git
 cd docs.plus
 ```
 
-The clone starts on `main`, which can hold changes that no release has yet. Install from the newest release tag instead. At the time of writing, that tag is `v2.1.0`.
+The clone starts on `main`, which can hold changes that no release has yet. Install from the newest release tag instead. At the time of writing, that tag is `v2.2.0`.
 
 At the root of the clone, list the tags, newest first, and check out the newest tag:
 
@@ -114,14 +114,14 @@ Then edit the hard-coded hostname lines in `docker-compose.prod.yml`. Search for
 
 | Line | Currently                                                        | Serves                   | Replace with   |
 | ---- | ---------------------------------------------------------------- | ------------------------ | -------------- |
-| 224  | `prodback.docs.plus` and `/api`                                  | The REST API             | `<API_HOST>`   |
-| 230  | `prodback.docs.plus` and `/health`                               | Health checks            | `<API_HOST>`   |
-| 236  | `prodback.docs.plus` and `/.well-known/oauth-protected-resource` | MCP sign-in metadata     | `<API_HOST>`   |
-| 340  | `prodback.docs.plus` and `/websocket`                            | The collaboration socket | `<API_HOST>`   |
-| 545  | `docs.plus` and two aliases                                      | The editor               | `<APP_HOST>`   |
-| 621  | `admin.docs.plus`                                                | The admin dashboard      | `<ADMIN_HOST>` |
+| 228  | `prodback.docs.plus` and `/api`                                  | The REST API             | `<API_HOST>`   |
+| 234  | `prodback.docs.plus` and `/health`                               | Health checks            | `<API_HOST>`   |
+| 240  | `prodback.docs.plus` and `/.well-known/oauth-protected-resource` | MCP sign-in metadata     | `<API_HOST>`   |
+| 344  | `prodback.docs.plus` and `/websocket`                            | The collaboration socket | `<API_HOST>`   |
+| 549  | `docs.plus` and two aliases                                      | The editor               | `<APP_HOST>`   |
+| 625  | `admin.docs.plus`                                                | The admin dashboard      | `<ADMIN_HOST>` |
 
-On line 545, replace the whole rule with one ``Host(`<APP_HOST>`)``, and delete the `new.docs.plus` and `www.new.docs.plus` aliases. Traefik asks for one certificate that covers every host in a rule, so a host you do not own makes that request fail.
+On line 549, replace the whole rule with one ``Host(`<APP_HOST>`)``, and delete the `new.docs.plus` and `www.new.docs.plus` aliases. Traefik asks for one certificate that covers every host in a rule, so a host you do not own makes that request fail.
 
 No environment variable covers these, so skipping this step means nothing routes.
 

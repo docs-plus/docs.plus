@@ -80,7 +80,7 @@
     },
     "apps/hocuspocus.server": {
       "name": "@docs.plus/hocuspocus",
-      "version": "2.1.0",
+      "version": "2.2.0",
       "dependencies": {
         "@docs.plus/email-templates": "workspace:*",
         "@docs.plus/extension-hyperlink": "workspace:*",
@@ -146,7 +146,7 @@
     },
     "apps/webapp": {
       "name": "@docs.plus/webapp",
-      "version": "2.1.0",
+      "version": "2.2.0",
       "dependencies": {
         "@dicebear/core": "^10.7.0",
         "@dicebear/styles": "^10.6.0",
@@ -258,7 +258,7 @@
     },
     "extensions/extension-hyperlink": {
       "name": "@docs.plus/extension-hyperlink",
-      "version": "2.1.0",
+      "version": "2.2.0",
       "dependencies": {
         "@floating-ui/dom": "^1.8.0",
         "linkifyjs": "^4.3.3",
@@ -288,7 +288,7 @@
     },
     "extensions/extension-hypermultimedia": {
       "name": "@docs.plus/extension-hypermultimedia",
-      "version": "2.1.0",
+      "version": "2.2.0",
       "dependencies": {
         "@floating-ui/dom": "^1.8.0",
       },
@@ -316,7 +316,7 @@
     },
     "extensions/extension-indent": {
       "name": "@docs.plus/extension-indent",
-      "version": "2.1.0",
+      "version": "2.2.0",
       "devDependencies": {
         "@docs.plus/playground": "workspace:*",
         "@docs.plus/release-tooling": "workspace:*",
@@ -336,7 +336,7 @@
     },
     "extensions/extension-inline-code": {
       "name": "@docs.plus/extension-inline-code",
-      "version": "2.1.0",
+      "version": "2.2.0",
       "devDependencies": {
         "@docs.plus/playground": "workspace:*",
         "@docs.plus/release-tooling": "workspace:*",
@@ -358,7 +358,7 @@
     },
     "extensions/extension-mermaid": {
       "name": "@docs.plus/extension-mermaid",
-      "version": "2.1.0",
+      "version": "2.2.0",
       "dependencies": {
         "pele": "1.8.0",
       },
@@ -384,7 +384,7 @@
     },
     "extensions/extension-placeholder": {
       "name": "@docs.plus/extension-placeholder",
-      "version": "2.1.0",
+      "version": "2.2.0",
       "devDependencies": {
         "@docs.plus/playground": "workspace:*",
         "@docs.plus/release-tooling": "workspace:*",
