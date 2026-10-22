@@ -533,7 +533,7 @@ timeline
   2022 : 1.8.18, the last Etherpad fork
   August 2026 : 2.0.0 : A chatroom on every heading : Version history and restore
   October 2026 : 2.1.0 : AI apps in your documents : Change digest email : Find bar and QR code
-  Now : Diagrams drawn in the page
+  22 October 2026 : 2.2.0 : Diagrams drawn in the page : More AI apps, one page to start
 ```
 
 ## 2.1.0 in one picture
@@ -545,6 +545,41 @@ pie showData
   "Security fixes" : 33
   "Other changes" : 32
 ```
+
+## Measured on real phones
+
+How big may a diagram be before it slows a phone down? We did not guess. We drew each size 50 times on a real Android phone and a real iPhone, and kept the slowest draw. Our budget is **200 ms**, the orange line. Every bar above it failed.
+
+```mermaid
+xychart-beta
+  title "Android phone: milliseconds to draw one diagram"
+  x-axis "Diagram size, in characters" ["5,000", "10,000", "15,000", "20,000"]
+  y-axis "Milliseconds (slowest of 50 draws)" 0 --> 2000
+  bar [105, 176, 1097, 1946]
+  line [200, 200, 200, 200]
+```
+
+At 10,000 characters the phone stays under budget. At 15,000 it takes **1.1 seconds**, more than five times the budget. So a diagram stops at 10,000 characters.
+
+```mermaid
+xychart-beta
+  title "The slower phone: milliseconds to draw a flowchart"
+  x-axis "Arrows in the flowchart" ["250", "500", "750", "1,000"]
+  y-axis "Milliseconds (slowest of 50 draws)" 0 --> 2000
+  bar [119, 229, 328, 1937]
+  line [200, 200, 200, 200]
+```
+
+Arrows cost more than text. Both phones went over budget at 500 arrows, so a diagram stops at 250.
+
+| Size              | Mac   | iPhone     | Android      |
+| ----------------- | ----- | ---------- | ------------ |
+| 10,000 characters | 25 ms | 94 ms      | 176 ms       |
+| 15,000 characters | 37 ms | 132 ms     | **1,097 ms** |
+| 250 arrows        | 21 ms | 119 ms     | 119 ms       |
+| 500 arrows        | 37 ms | **229 ms** | **202 ms**   |
+
+A laptop would have said 20,000 characters is fine. The phone in your pocket is the real test. These two charts are drawn live by Pele too, from eight lines of text each.
 
 ## When a diagram goes wrong
 
@@ -722,5 +757,54 @@ Chat messages and channels now accept changes only from the people allowed to ma
 - 5 extensions at 2.1.0
 
 Read every change in the [GitHub Release](https://github.com/docs-plus/docs.plus/releases/tag/v2.1.0) and the [CHANGELOG](https://github.com/docs-plus/docs.plus/blob/main/CHANGELOG.md).
+
+Filtered to this section? [Show the whole document](/demo).
+
+# 🆕 What's new in docs.plus 2.2.0
+
+![docs.plus 2.2.0: Mermaid diagrams drawn live in an open-source collaborative editor, with a new Tiptap extension](/demo-assets/release-2.2.0-banner.png)
+
+This is the 2.2.0 release, from 22 October 2026. Most parts end with a filter link to the place on this page that shows it.
+
+## Draw a diagram with text
+
+You can now write a `mermaid` code block, and docs.plus draws the diagram under it, in the pad and in History. Flowcharts, sequences, states, timelines, pie charts and 28 more types all work.
+
+Hide source folds the text away, so readers see only the picture. This read-only page starts folded — try it here. Type `/diagram` on an empty line to insert one — needs a document you can edit.
+
+On this page: [/demo/diagram](/demo/diagram).
+
+## Limits measured on real phones
+
+A diagram over 10,000 characters or 250 arrows is not drawn, so a big one never freezes a phone. We measured those limits on a real iPhone and a real Android phone, and the charts show why.
+
+On this page: [/demo/phones](/demo/phones).
+
+## More AI apps, one page to start
+
+You can now start at [docs.plus/mcp](https://docs.plus/mcp), which gives the server URL and the steps for each AI app. Settings › Connected apps adds Claude Code, Codex, Copilot CLI and Cline, plus Add to LM Studio and Add to Replit — needs an account.
+
+Your AI app can write diagrams too. docs.plus checks each one before the write, and tells the app why it refused one. On this page: [/demo/connected app](/demo/connected%20app).
+
+## No more missed chat
+
+Some people showed as Online for good, even months after they left. A plain chat message then sent them no bell, push or email. Now online means a recent heartbeat, and nobody is stuck.
+
+A chat email is skipped when you already read the message in the chatroom. Someone who is typing now shows as present in the mention list too.
+
+## Safer by default
+
+A private document's images now load only for its owner. New database tables and functions start closed, and a guard checks the grants after each database update.
+
+An AI app reads document titles inside a safe frame, so a title cannot pass itself off as an instruction. This release closes 20 security issues.
+
+## In numbers
+
+- 103 commits in 9 days
+- 53 issues closed, with 12 bugs and 20 security fixes
+- 1,401 tests pass
+- 6 extensions at 2.2.0
+
+Read every change in the [GitHub Release](https://github.com/docs-plus/docs.plus/releases/tag/v2.2.0) and the [CHANGELOG](https://github.com/docs-plus/docs.plus/blob/main/CHANGELOG.md).
 
 Filtered to this section? [Show the whole document](/demo).

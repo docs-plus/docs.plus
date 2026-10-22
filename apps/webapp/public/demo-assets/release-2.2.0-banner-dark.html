@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>docs.plus 2.2.0: welcome, diagrams</title>
+<style>body{margin:0} .stage{color-scheme:dark} /*
+ * Defaults sit under :where(), so any host rule wins. Set --pele-* on .mermaid-diagram
+ * itself, not on an ancestor, because these defaults shadow inherited values.
+ * light-dark() follows the nearest ancestor color-scheme.
+ */
+:where(.mermaid-diagram) {
+  --mermaid-diagram-border: light-dark(#e5e7eb, #374151);
+  --mermaid-diagram-radius: 8px;
+  --pele-bg: light-dark(#ffffff, #1f2937);
+  --pele-fg: light-dark(#111827, #f3f4f6);
+  --pele-muted: light-dark(#6b7280, #9ca3af);
+  --pele-line: light-dark(#6b7280, #9ca3af);
+  --pele-border: light-dark(#e5e7eb, #374151);
+  --pele-surface: light-dark(#f3f4f6, #374151);
+  --pele-surface-alt: light-dark(#e5e7eb, #2b3544);
+  --pele-accent: light-dark(#2563eb, #60a5fa);
+  --pele-critical: light-dark(#dc2626, #f87171);
+  --pele-font:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --pele-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  margin-block: 0.75em;
+  overflow: hidden;
+  color: var(--pele-fg);
+  font-family: var(--pele-font);
+  background: var(--pele-bg);
+  border: 1px solid var(--mermaid-diagram-border);
+  border-radius: var(--mermaid-diagram-radius);
+}
+
+/* Head: the corner cell holds the label and the actions in the same place. */
+:where(.mermaid-diagram__head) {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.25rem 0.5rem 0.25rem 1rem;
+  color: var(--pele-muted);
+  font-size: 12px;
+  line-height: 1;
+  background: light-dark(#f3f4f6, #111827);
+  user-select: none;
+}
+
+:where(.mermaid-diagram__summary) {
+  display: none;
+  grid-area: 1 / 1;
+}
+
+:where(.mermaid-diagram[data-source='folded'] .mermaid-diagram__summary) {
+  display: inline;
+  cursor: pointer;
+}
+
+:where(.mermaid-diagram__label, .mermaid-diagram__actions) {
+  grid-area: 1 / 2;
+  justify-self: end;
+}
+
+:where(.mermaid-diagram__label) {
+  padding-inline: 0.5rem;
+  font-family: var(--pele-font-mono);
+  /* The faded label sits above the actions, so it must not take their clicks. */
+  pointer-events: none;
+  transition:
+    opacity 80ms ease-in,
+    transform 80ms ease-in;
+}
+
+:where(.mermaid-diagram__actions) {
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transform: translateX(6px);
+  pointer-events: none;
+  transition:
+    opacity 80ms ease-in,
+    transform 80ms ease-in;
+}
+
+:where(
+  .mermaid-diagram:hover .mermaid-diagram__label,
+  .mermaid-diagram__head:focus-within .mermaid-diagram__label
+) {
+  opacity: 0;
+  transform: translateX(-6px);
+}
+
+:where(
+  .mermaid-diagram:hover .mermaid-diagram__actions,
+  .mermaid-diagram__head:focus-within .mermaid-diagram__actions
+) {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition:
+    opacity 120ms ease-out,
+    transform 120ms ease-out;
+}
+
+:where(.mermaid-diagram__help, .mermaid-diagram__copy, .mermaid-diagram__fold) {
+  display: inline-flex;
+  gap: 0.375rem;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  color: inherit;
+  font: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease-out,
+    color 120ms ease-out,
+    transform 80ms ease-out;
+  appearance: none;
+}
+
+:where(.mermaid-diagram__help:hover, .mermaid-diagram__copy:hover, .mermaid-diagram__fold:hover) {
+  color: var(--pele-fg);
+  background: var(--pele-surface);
+}
+
+:where(
+  .mermaid-diagram__help:active,
+  .mermaid-diagram__copy:active,
+  .mermaid-diagram__fold:active
+) {
+  transform: scale(0.96);
+}
+
+:where(.mermaid-diagram__icon) {
+  display: inline-grid;
+  transition: transform 200ms ease;
+}
+
+:where(.mermaid-diagram__icon > svg) {
+  grid-area: 1 / 1;
+  transition: opacity 120ms ease-out;
+}
+
+:where(.mermaid-diagram__copy .mermaid-diagram__icon > svg:last-child),
+:where(.mermaid-diagram__copy[data-copied] .mermaid-diagram__icon > svg:first-child) {
+  opacity: 0;
+}
+
+:where(.mermaid-diagram__copy[data-copied] .mermaid-diagram__icon > svg:last-child) {
+  color: var(--pele-accent);
+  opacity: 1;
+}
+
+:where(.mermaid-diagram[data-source='folded'] .mermaid-diagram__fold .mermaid-diagram__icon) {
+  transform: rotate(-90deg);
+}
+
+/* Source: a one-row grid, so the fold tweens the row from 1fr to 0fr. */
+:where(.mermaid-diagram__source) {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 200ms ease;
+}
+
+:where(.mermaid-diagram__source > pre) {
+  min-height: 0;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  font-family: var(--pele-font-mono);
+  font-size: 0.875em;
+  line-height: 1.5;
+  background: light-dark(#f3f4f6, #111827);
+  transition:
+    padding-block 200ms ease,
+    visibility 0s;
+}
+
+:where(.mermaid-diagram[data-source='folded'] .mermaid-diagram__source) {
+  grid-template-rows: 0fr;
+}
+
+/* The delay runs on fold only, so a folded source takes no Tab stop but opening is instant. */
+:where(.mermaid-diagram[data-source='folded'] .mermaid-diagram__source > pre) {
+  padding-block: 0;
+  visibility: hidden;
+  transition:
+    padding-block 200ms ease,
+    visibility 0s linear 200ms;
+}
+
+:where(.mermaid-diagram__preview) {
+  padding: 0.75rem 1rem;
+  background: var(--pele-bg);
+  border-top: 1px solid var(--mermaid-diagram-border);
+}
+
+:where(.mermaid-diagram__preview[data-state='empty']) {
+  display: none;
+}
+
+:where(.mermaid-diagram__preview[data-state='loading'] .mermaid-diagram__diagram) {
+  display: grid;
+  place-items: center;
+  min-height: 6rem;
+}
+
+:where(.mermaid-diagram svg.pele) {
+  display: block;
+  max-width: 100%;
+  margin-inline: auto;
+  transition: opacity 200ms ease;
+}
+
+:where(.mermaid-diagram__spinner) {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentcolor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: mermaid-diagram-spin 700ms linear infinite;
+}
+
+:where(.mermaid-diagram__error) {
+  margin: 0.5rem 0 0;
+  color: var(--pele-critical);
+  font-size: 0.8125rem;
+  animation: mermaid-diagram-rise 200ms ease-out;
+}
+
+:where(.mermaid-diagram__detail) {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--pele-muted);
+  font-family: var(--pele-font-mono);
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+}
+
+:where(.mermaid-diagram__detail:empty) {
+  display: none;
+}
+
+:where(.mermaid-diagram__advice) {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--pele-muted);
+}
+
+:where(.mermaid-diagram__advice:empty) {
+  display: none;
+}
+
+:where(.mermaid-diagram__retry) {
+  margin-top: 0.5rem;
+  margin-inline-start: 0.5rem;
+  padding: 0.25rem 0.625rem;
+  color: var(--pele-fg);
+  font: inherit;
+  background: transparent;
+  border: 1px solid var(--mermaid-diagram-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 80ms ease-out;
+}
+
+:where(.mermaid-diagram__retry:active) {
+  transform: scale(0.96);
+}
+
+/* Pele overrides. Pele sets an inline opacity on a failed redraw, so these need !important. */
+.mermaid-diagram .pele-error {
+  display: none;
+}
+
+.mermaid-diagram svg.pele {
+  opacity: 1 !important;
+}
+
+/* The host clips paint and the svg sits flush in it, so the focus ring has to sit inside. */
+:where(.mermaid-diagram svg.pele:focus-visible) {
+  outline-offset: -2px;
+}
+
+.mermaid-diagram
+  > :is([data-state='error'], [data-state='load-error'], [data-state='skipped'])
+  svg.pele {
+  opacity: 0.4 !important;
+}
+
+@keyframes mermaid-diagram-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes mermaid-diagram-rise {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+
+/* Touch: actions always show, icon only, 44px targets. */
+@media (pointer: coarse) {
+  :where(.mermaid-diagram__label, .mermaid-diagram__text) {
+    display: none;
+  }
+
+  :where(.mermaid-diagram__actions) {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  :where(
+    .mermaid-diagram__help,
+    .mermaid-diagram__copy,
+    .mermaid-diagram__fold,
+    .mermaid-diagram__retry
+  ) {
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Print: a ready diagram prints as the picture, anything else prints the source. */
+@media print {
+  :where(.mermaid-diagram) {
+    break-inside: avoid;
+  }
+
+  :where(.mermaid-diagram__head) {
+    display: none;
+  }
+
+  /* Pele styles its zoom controls inline. */
+  .mermaid-diagram .pele-zoom {
+    display: none !important;
+  }
+
+  /* The host's inline overflow and contain would clip the picture on paper. */
+  .mermaid-diagram__diagram {
+    overflow: visible !important;
+    contain: none !important;
+  }
+
+  :where(.mermaid-diagram:has(> [data-state='ready']) > .mermaid-diagram__source),
+  :where(.mermaid-diagram > [data-state]:not([data-state='ready'])) {
+    display: none;
+  }
+
+  /* A folded source with no drawn diagram would otherwise print nothing. */
+  :where(.mermaid-diagram[data-source='folded'] .mermaid-diagram__source) {
+    grid-template-rows: 1fr;
+  }
+
+  :where(.mermaid-diagram[data-source='folded'] .mermaid-diagram__source > pre) {
+    padding-block: 0.75rem;
+    visibility: visible;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.mermaid-diagram, .mermaid-diagram *) {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+</style></head>
+<body><div class="stage" style="width:1280px;height:720px;box-sizing:border-box;position:relative;background:#0B1220;font-family:Helvetica,Arial,sans-serif;color:#E6EDF7;overflow:hidden"><div style="position:absolute;inset:0;background-image:radial-gradient(#22304A 1.2px,transparent 1.3px);background-size:22px 22px;opacity:0.7"></div><div style="position:absolute;left:64px;top:52px;display:flex;align-items:center;gap:14px"><svg width="52" height="52" role="img" aria-label="docs.plus logo" style="display: block" viewBox="0 0 2688 2688" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M1563.98 140.891H638.833C550.006 140.891 476 214.897 476 303.724V2379.79C476 2468.62 550.006 2542.63 638.833 2542.63H2052.48C2141.31 2542.63 2215.31 2468.62 2215.31 2379.79V795.903L1834.14 522.061L1563.98 140.891Z" fill="#2678FF"></path>
+<path d="M1612.1 747.781L2215.29 1358.4V795.9L1612.1 747.781Z" fill="url(#paint0_linear)"></path>
+<rect x="1456.37" y="38.0469" width="974.321" height="974.321"></rect>
+<path d="M1561.68 142.566V634.745C1561.68 723.572 1635.68 797.578 1724.51 797.578H2212.98L1561.68 142.566Z" fill="#8AB5FF"></path>
+<path d="M638.833 140.891C550.006 140.891 476 214.897 476 303.723V318.52C476 229.693 550.006 155.687 638.833 155.687H1563.98V140.891H638.833Z" fill="white" fill-opacity="0.2"></path>
+<path d="M2052.48 2531.51H638.833C550.006 2531.51 476 2457.5 476 2368.68V2383.47C476 2472.3 550.006 2546.31 638.833 2546.31H2052.48C2141.31 2546.31 2215.31 2472.3 2215.31 2383.47V2368.68C2215.29 2457.48 2141.28 2531.51 2052.48 2531.51Z" fill="#1A237E" fill-opacity="0.2"></path>
+<path d="M1726.81 795.899C1637.99 795.899 1563.98 721.893 1563.98 633.066V647.863C1563.98 736.69 1637.99 810.695 1726.81 810.695H2215.29V795.899H1726.81Z" fill="#1A237E" fill-opacity="0.1"></path>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M1294.31 1076.28C1253.11 1076.28 1219.71 1109.68 1219.71 1150.88V1474.65C1219.71 1490.03 1207.24 1502.5 1191.86 1502.5H868.087C826.885 1502.5 793.484 1535.9 793.484 1577.11V1637.07C793.484 1678.28 826.885 1711.68 868.087 1711.68H1191.86C1207.24 1711.68 1219.71 1724.15 1219.71 1739.53V2063.3C1219.71 2104.5 1253.11 2137.9 1294.31 2137.9H1354.28C1395.48 2137.9 1428.88 2104.5 1428.88 2063.3V1739.53C1428.88 1724.15 1441.35 1711.68 1456.73 1711.68H1780.5C1821.7 1711.68 1855.1 1678.28 1855.1 1637.07V1577.11C1855.1 1535.9 1821.7 1502.5 1780.5 1502.5H1456.73C1441.35 1502.5 1428.88 1490.03 1428.88 1474.65V1150.88C1428.88 1109.68 1395.48 1076.28 1354.28 1076.28H1294.31Z" fill="white"></path>
+<rect x="790.574" y="1453.14" width="1095.67" height="295.67" rx="124.338" fill="white"></rect>
+<rect x="1486.24" y="1053.14" width="1095.67" height="295.67" rx="124.338" transform="rotate(90 1486.24 1053.14)" fill="white"></rect>
+<defs>
+<linearGradient id="paint0_linear" x1="1913.7" y1="800.703" x2="1913.7" y2="1356.47" gradientUnits="userSpaceOnUse">
+<stop stop-color="#1A237E" stop-opacity="0.2"></stop>
+<stop offset="1" stop-color="#1A237E" stop-opacity="0.02"></stop>
+</linearGradient>
+</defs>
+</svg><span style="font-size:28px;font-weight:600">docs.plus</span>
+<span style="margin-left:6px;background:#4C8DFF;color:#fff;border-radius:999px;padding:5px 14px;font-size:18px;font-weight:700">2.2.0</span></div>
+<div style="position:absolute;left:60px;top:112px;font-size:90px;line-height:92px;font-weight:800;letter-spacing:-3.2px">Welcome,<br><span style="color:#4C8DFF">diagrams.</span></div>
+<div style="position:absolute;left:64px;top:304px;width:500px;font-size:22px;line-height:30px;color:rgba(230,237,247,0.66)">Write Mermaid, or let your AI app write it. docs.plus draws it live, in <b style="color:#E6EDF7">33 types</b>.</div>
+<div style="position:absolute;left:64px;top:376px;display:flex;align-items:center;gap:8px;background:rgba(76,141,255,0.18);border-radius:999px;padding:6px 14px 6px 8px;font-size:15px;color:#E6EDF7"><span style="width:24px;height:24px;border-radius:999px;background:#4C8DFF;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg></span>More AI apps connect at <b>docs.plus/mcp</b></div><div style="position:absolute;left:586px;top:48px;width:404px;height:508px;box-sizing:border-box;background:#111A2E;border:1px solid #22304A;border-radius:14px;box-shadow:0 40px 80px -16px rgba(0,0,0,0.6);overflow:hidden">
+<div style="height:44px;border-bottom:1px solid #22304A;display:flex;align-items:center;padding:0 16px;gap:10px"><span style="flex-grow:1;font-size:17px;font-weight:600">Release review</span>
+<span style="width:20px;height:20px;border-radius:999px;background:#F59E0B;border:2px solid #111A2E"></span><span style="width:20px;height:20px;border-radius:999px;background:#10B981;border:2px solid #111A2E;margin-left:-13px"></span><span style="width:20px;height:20px;border-radius:999px;background:#8B5CF6;border:2px solid #111A2E;margin-left:-13px"></span></div>
+<div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px"><div style="font-size:20px;font-weight:600">Where the work went</div>
+<div style="font-size:12px"><div style="width:372px;box-sizing:border-box;background:#0A1222;border:1px solid #22304A;border-radius:10px;padding:10px 14px;font-family:Menlo,ui-monospace,monospace;font-size:11.5px;line-height:17px;color:#E6EDF7">
+<div style="font-size:12px;color:rgba(230,237,247,0.66);margin-bottom:4px">mermaid</div><span style="color:#C026D3">radar-beta</span><br>&nbsp;&nbsp;title Issues closed per week<br>&nbsp;&nbsp;axis s["Security"], b["Bugs"], c["Chat"], …<br>&nbsp;&nbsp;curve a["2.1.0"]{5.4, 11.6, 8.5, 0.8, …}<br>&nbsp;&nbsp;curve b["2.2.0"]{15.6, 9.3, 5.4, 6.2, …}</div></div>
+<div style="position:relative;border:1px solid #22304A;border-radius:10px;padding:4px;display:flex;justify-content:center">
+<span style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#4C8DFF;color:#fff;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700">drawn live ↓</span><div class="mermaid-diagram" style="background:transparent;border:0;padding:0"><svg xmlns="http://www.w3.org/2000/svg" class="pele pele-radar" viewBox="0 0 506 438" width="506" height="438" style="width:292px;height:auto;display:block;max-width:100%;height:auto;--_bg:var(--pele-bg,#fff);--_fg:var(--pele-fg,#1f1f1f);--_m:var(--pele-muted,#6e6e6e);--_l:var(--pele-line,#1f1f1f);--_s:var(--pele-surface,#f3f3f3);--_a:var(--pele-surface-alt,#e6e6e6);--_b:var(--pele-border,#8a8a8a);--_c:var(--pele-accent,#5b7bd5);color:var(--_fg);--_tw:var(--pele-title-weight,bold);--_fm:var(--pele-font-mono,monospace);font:16px sans-serif;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;font-family:var(--pele-font,sans-serif)" fill="var(--_fg)" role="graphics-document document" aria-roledescription="radar"><text class="pele-title" font-weight="var(--_tw)" text-anchor="middle" xml:space="preserve"><tspan x="253" y="25.6">Issues closed per week</tspan></text><g transform="translate(218.57,235)"><g class="pele-graticule" fill="none" stroke="var(--_a)"><circle r="32"/><circle r="64"/><circle r="96"/><circle r="128"/><circle r="160"/></g><path class="pele-axes" d="M0,0L0,-160M0,0L113.14,-113.14M0,0L160,0M0,0L113.14,113.14M0,0L0,160M0,0L-113.14,113.14M0,0L-160,0M0,0L-113.14,-113.14" fill="none" stroke="var(--_b)"/><g class="pele-curves" fill-opacity="0.2" stroke-width="1.5" stroke-linejoin="round"><path class="pele-curve" data-id="e1-a" fill="var(--pele-series-1,#4c78a8)" stroke="var(--pele-series-1,#4c78a8)" d="M0,-54 C13.94,-67.94 67.57,-91.2 82.02,-82.02 C96.47,-72.84 97.98,-14.91 85,0 C72.02,14.91 20.11,4.81 5.66,5.66 C-8.79,6.51 4.69,2.24 0,5 C-4.69,7.76 -16.31,22.77 -21.92,21.92 C-27.53,21.07 -36.73,3.73 -33,0 C-29.27,-3.73 -5.61,9.18 0,0 C5.61,-9.18 -13.94,-40.06 0,-54 Z"/><path class="pele-curve" data-id="e1-b" fill="var(--pele-series-2,#f58518)" stroke="var(--pele-series-2,#f58518)" d="M0,-156 C13.94,-164.41 56.58,-92.28 65.76,-65.76 C74.94,-39.24 57.73,-18.63 54,0 C50.27,18.63 53.02,28.03 43.84,43.84 C34.66,59.65 17.79,90.12 0,93 C-17.79,95.88 -52.82,76.62 -60.81,60.81 C-68.8,45 -54.57,13.1 -47,0 C-39.43,-13.1 -24.25,10.26 -16.26,-16.26 C-8.27,-42.78 -13.94,-147.59 0,-156 Z"/></g><g class="pele-axis-labels" font-size="14"><g class="pele-axis-label" data-id="e1-s"><text x="0" y="-179.6" text-anchor="middle">Security</text></g><g class="pele-axis-label" data-id="e1-b"><text x="138.99" y="-128.64" text-anchor="middle">Bugs</text></g><g class="pele-axis-label" data-id="e1-c"><text x="188.78" y="4.9" text-anchor="middle">Chat</text></g><g class="pele-axis-label" data-id="e1-x"><text x="157.27" y="138.44" text-anchor="middle">Extensions</text></g><g class="pele-axis-label" data-id="e1-d"><text x="0" y="189.4" text-anchor="middle">Docs</text></g><g class="pele-axis-label" data-id="e1-o"><text x="-148.32" y="138.44" text-anchor="middle">DevOps</text></g><g class="pele-axis-label" data-id="e1-e"><text x="-192.28" y="4.9" text-anchor="middle">Editor</text></g><g class="pele-axis-label" data-id="e1-p"><text x="-143.27" y="-128.64" text-anchor="middle">Speed</text></g></g><g class="pele-legend" font-size="14"><g class="pele-legend-item" data-id="e1-a"><rect x="227.57" y="-19" width="12" height="12" rx="2" fill="var(--pele-series-1,#4c78a8)" fill-opacity="0.4" stroke="var(--pele-series-1,#4c78a8)"/><text x="263.14" y="-8.1" text-anchor="middle">2.1.0</text></g><g class="pele-legend-item" data-id="e1-b"><rect x="227.57" y="7" width="12" height="12" rx="2" fill="var(--pele-series-2,#f58518)" fill-opacity="0.4" stroke="var(--pele-series-2,#f58518)"/><text x="263.14" y="17.9" text-anchor="middle">2.2.0</text></g></g></g></svg></div></div></div></div><div style="position:absolute;left:984px;top:70px;width:244px;box-sizing:border-box;background:#111A2E;border:1px solid #22304A;border-radius:12px;box-shadow:0 40px 80px -16px rgba(0,0,0,0.6);padding:16px 12px 10px;transform:rotate(2deg)"><span style="position:absolute;top:-11px;left:14px;background:#111A2E;border:1px solid #22304A;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:rgba(230,237,247,0.66)">Mind map</span><div class="mermaid-diagram" style="background:transparent;border:0;padding:0"><svg xmlns="http://www.w3.org/2000/svg" class="pele pele-mindmap" viewBox="0 0 689 143" width="689" height="143" style="width:218px;height:auto;display:block;max-width:100%;height:auto;--_bg:var(--pele-bg,#fff);--_fg:var(--pele-fg,#1f1f1f);--_m:var(--pele-muted,#6e6e6e);--_l:var(--pele-line,#1f1f1f);--_s:var(--pele-surface,#f3f3f3);--_a:var(--pele-surface-alt,#e6e6e6);--_b:var(--pele-border,#8a8a8a);--_c:var(--pele-accent,#5b7bd5);color:var(--_fg);--_fm:var(--pele-font-mono,monospace);font:16px sans-serif;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;font-family:var(--pele-font,sans-serif)" fill="var(--_fg)" role="graphics-document document" aria-roledescription="mindmap"><g transform="translate(341.83,71.5)"><g class="pele-branch pele-section-0"><g class="pele-edges" fill="none" stroke="var(--pele-series-1,#4c78a8)" stroke-width="1.5"><path class="pele-edge" d="M63.13,0C89.13,0 89.13,-35.5 115.13,-35.5"/><path class="pele-edge" d="M207.58,-35.5C225.58,-35.5 225.58,-51.5 243.58,-51.5"/><path class="pele-edge" d="M207.58,-35.5C225.58,-35.5 225.58,-19.5 243.58,-19.5"/></g><g class="pele-node pele-shape-branch" data-id="e6-Diagrams" transform="translate(161.35,-35.5)"><rect x="-46.22" y="-15" width="92.45" height="30" rx="15" fill="var(--pele-series-1,#4c78a8)" fill-opacity="0.22" stroke="var(--pele-series-1,#4c78a8)"/><text class="pele-label" x="0" y="5.6" text-anchor="middle">Diagrams</text></g><g class="pele-node pele-shape-text" data-id="e6-33 types" transform="translate(279.82,-51.5)"><text class="pele-label" x="0" y="5.6" text-anchor="middle">33 types</text></g><g class="pele-node pele-shape-text" data-id="e6-Live redraw" transform="translate(290.92,-19.5)"><text class="pele-label" x="0" y="5.6" text-anchor="middle">Live redraw</text></g></g><g class="pele-branch pele-section-1"><g class="pele-edges" fill="none" stroke="var(--pele-series-2,#f58518)" stroke-width="1.5"><path class="pele-edge" d="M63.13,0C89.13,0 89.13,35.5 115.13,35.5"/><path class="pele-edge" d="M193.39,35.5C211.39,35.5 211.39,35.5 229.39,35.5"/></g><g class="pele-node pele-shape-branch" data-id="e6-AI apps" transform="translate(154.26,35.5)"><rect x="-39.13" y="-15" width="78.26" height="30" rx="15" fill="var(--pele-series-2,#f58518)" fill-opacity="0.22" stroke="var(--pele-series-2,#f58518)"/><text class="pele-label" x="0" y="5.6" text-anchor="middle">AI apps</text></g><g class="pele-node pele-shape-text" data-id="e6-MCP" transform="translate(253.16,35.5)"><text class="pele-label" x="0" y="5.6" text-anchor="middle">MCP</text></g></g><g class="pele-branch pele-section-2"><g class="pele-edges" fill="none" stroke="var(--pele-series-3,#54a24b)" stroke-width="1.5"><path class="pele-edge" d="M-63.13,0C-89.13,0 -89.13,-29 -115.13,-29"/><path class="pele-edge" d="M-172.92,-29C-190.92,-29 -190.92,-29 -208.92,-29"/></g><g class="pele-node pele-shape-branch" data-id="e6-Chat" transform="translate(-144.03,-29)"><rect x="-28.9" y="-15" width="57.79" height="30" rx="15" fill="var(--pele-series-3,#54a24b)" fill-opacity="0.22" stroke="var(--pele-series-3,#54a24b)"/><text class="pele-label" x="0" y="5.6" text-anchor="middle">Chat</text></g><g class="pele-node pele-shape-text" data-id="e6-No missed bells" transform="translate(-271.38,-29)"><text class="pele-label" x="0" y="5.6" text-anchor="middle">No missed bells</text></g></g><g class="pele-branch pele-section-3"><g class="pele-edges" fill="none" stroke="var(--pele-series-4,#e45756)" stroke-width="1.5"><path class="pele-edge" d="M-63.13,0C-89.13,0 -89.13,29 -115.13,29"/><path class="pele-edge" d="M-196.92,29C-214.92,29 -214.92,29 -232.92,29"/></g><g class="pele-node pele-shape-branch" data-id="e6-Security" transform="translate(-156.03,29)"><rect x="-40.9" y="-15" width="81.79" height="30" rx="15" fill="var(--pele-series-4,#e45756)" fill-opacity="0.22" stroke="var(--pele-series-4,#e45756)"/><text class="pele-label" x="0" y="5.6" text-anchor="middle">Security</text></g><g class="pele-node pele-shape-text" data-id="e6-20 fixes" transform="translate(-266.49,29)"><text class="pele-label" x="0" y="5.6" text-anchor="middle">20 fixes</text></g></g><g class="pele-node pele-shape-circle pele-root" data-id="e6-root" transform="translate(0,0)"><circle r="63.13" fill="var(--_s)" stroke="var(--_b)"/><text class="pele-label" x="0" y="5.6" text-anchor="middle">docs.plus 2.2.0</text></g></g></svg></div></div><div style="position:absolute;left:1010px;top:168px;width:206px;box-sizing:border-box;background:#111A2E;border:1px solid #22304A;border-radius:12px;box-shadow:0 40px 80px -16px rgba(0,0,0,0.6);padding:16px 12px 10px;transform:rotate(-2.5deg)"><span style="position:absolute;top:-11px;left:14px;background:#111A2E;border:1px solid #22304A;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:rgba(230,237,247,0.66)">Pie</span><div class="mermaid-diagram" style="background:transparent;border:0;padding:0"><svg xmlns="http://www.w3.org/2000/svg" class="pele pele-pie" viewBox="0 0 454 296" width="454" height="296" style="width:180px;height:auto;display:block;max-width:100%;height:auto;--_bg:var(--pele-bg,#fff);--_fg:var(--pele-fg,#1f1f1f);--_m:var(--pele-muted,#6e6e6e);--_l:var(--pele-line,#1f1f1f);--_s:var(--pele-surface,#f3f3f3);--_a:var(--pele-surface-alt,#e6e6e6);--_b:var(--pele-border,#8a8a8a);--_c:var(--pele-accent,#5b7bd5);color:var(--_fg);--_tw:var(--pele-title-weight,bold);--_fm:var(--pele-font-mono,monospace);font:16px sans-serif;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;font-family:var(--pele-font,sans-serif)" fill="var(--_fg)" role="graphics-document document" aria-roledescription="pie"><text class="pele-title" font-weight="var(--_tw)" text-anchor="middle" xml:space="preserve"><tspan x="227" y="25.6">53 issues closed</tspan></text><g class="pele-slices" transform="translate(128,168)" stroke="var(--_bg)" stroke-width="1" stroke-linejoin="round"><path class="pele-slice" data-id="e4-Security" d="M0,0L0,-120A120,120 0 0 1 83.59,86.1Z" fill="var(--pele-series-1,#4c78a8)"/><path class="pele-slice" data-id="e4-Other bugs" d="M0,0L83.59,86.1A120,120 0 0 1 -35.05,114.77Z" fill="var(--pele-series-2,#f58518)"/><path class="pele-slice" data-id="e4-Features and more" d="M0,0L-35.05,114.77A120,120 0 0 1 0,-120Z" fill="var(--pele-series-3,#54a24b)"/></g><g class="pele-slice-labels" transform="translate(128,168)" font-size="14" text-anchor="middle" fill="var(--_bg)"><text x="83.4" y="-28.92">38%</text><text x="21.14" y="92.38">17%</text><text x="-89.01" y="-8.39">45%</text></g><g class="pele-legend" font-size="14"><g class="pele-legend-item" data-id="e4-Security"><rect x="280" y="136" width="12" height="12" rx="2" fill="var(--pele-series-1,#4c78a8)"/><text x="338.91" y="146.9" text-anchor="middle">Security [20]</text></g><g class="pele-legend-item" data-id="e4-Other bugs"><rect x="280" y="162" width="12" height="12" rx="2" fill="var(--pele-series-2,#f58518)"/><text x="344.36" y="172.9" text-anchor="middle">Other bugs [9]</text></g><g class="pele-legend-item" data-id="e4-Features and more"><rect x="280" y="188" width="12" height="12" rx="2" fill="var(--pele-series-3,#54a24b)"/><text x="372.76" y="198.9" text-anchor="middle">Features and more [24]</text></g></g></svg></div></div><div style="position:absolute;left:974px;top:350px;width:252px;box-sizing:border-box;background:#111A2E;border:1px solid #22304A;border-radius:12px;box-shadow:0 40px 80px -16px rgba(0,0,0,0.6);padding:16px 12px 10px;transform:rotate(1.5deg)"><span style="position:absolute;top:-11px;left:14px;background:#111A2E;border:1px solid #22304A;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:rgba(230,237,247,0.66)">Gantt</span><div class="mermaid-diagram" style="background:transparent;border:0;padding:0"><svg xmlns="http://www.w3.org/2000/svg" class="pele pele-gantt" viewBox="0 0 800 227" width="800" height="227" style="width:226px;height:auto;display:block;max-width:100%;height:auto;--_bg:var(--pele-bg,#fff);--_fg:var(--pele-fg,#1f1f1f);--_m:var(--pele-muted,#6e6e6e);--_l:var(--pele-line,#1f1f1f);--_s:var(--pele-surface,#f3f3f3);--_a:var(--pele-surface-alt,#e6e6e6);--_b:var(--pele-border,#8a8a8a);--_c:var(--pele-accent,#5b7bd5);color:var(--_fg);--_r:var(--pele-radius,4px);--_tw:var(--pele-title-weight,bold);--_fm:var(--pele-font-mono,monospace);font:16px sans-serif;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;font-family:var(--pele-font,sans-serif)" fill="var(--_fg)" role="graphics-document document" aria-roledescription="gantt"><text class="pele-title" font-weight="var(--_tw)" text-anchor="middle" xml:space="preserve"><tspan x="400" y="25.6">Road to 2.2.0</tspan></text><g class="pele-sections"><rect class="pele-section pele-section-0" x="0" y="48" width="800" height="120" fill="var(--_s)"/><rect class="pele-section pele-section-1" x="0" y="168" width="800" height="30" fill="none"/></g><g class="pele-grid" fill="none"><path d="M60.9,48V198M160.96,48V198M261.02,48V198M361.08,48V198M461.14,48V198M561.2,48V198M661.26,48V198M761.32,48V198" stroke="var(--_b)" stroke-dasharray="1 3"/><path d="M60.9,198H761.32" stroke="var(--_b)"/></g><g class="pele-today"><path d="M705.56,48V198" fill="none" stroke="var(--_c)" stroke-width="2"/><path d="M701.56,43H709.56L705.56,49Z" fill="var(--_c)"/></g><g class="pele-tasks" font-size="13"><g class="pele-task" data-id="e7-a1"><rect x="60.9" y="51" width="400.24" height="24" fill="var(--_c)" stroke="var(--_c)" style="rx:var(--_r)"/><text class="pele-label" fill="var(--_bg)" x="261.02" y="67.55" text-anchor="middle">Stuck Online fix</text></g><g class="pele-task" data-id="e7-a2"><rect x="361.08" y="81" width="300.18" height="24" fill="var(--_c)" stroke="var(--_c)" style="rx:var(--_r)"/><text class="pele-label" fill="var(--_bg)" x="511.17" y="97.55" text-anchor="middle">Security hardening</text></g><g class="pele-task" data-id="e7-a3"><rect x="361.08" y="111" width="300.18" height="24" fill="var(--_c)" stroke="var(--_c)" style="rx:var(--_r)"/><text class="pele-label" fill="var(--_bg)" x="511.17" y="127.55" text-anchor="middle">Mermaid diagrams</text></g><g class="pele-task" data-id="e7-a4"><rect x="461.14" y="141" width="100.06" height="24" fill="var(--_c)" stroke="var(--_c)" style="rx:var(--_r)"/><text class="pele-label" fill="var(--_bg)" x="511.17" y="157.55" text-anchor="middle">AI app page</text></g><g class="pele-task" data-id="e7-b1"><rect x="661.26" y="171" width="100.06" height="24" fill="var(--_c)" stroke="var(--_c)" style="rx:var(--_r)"/><text class="pele-label" fill="var(--_bg)" x="711.29" y="187.55" text-anchor="middle">Release 2.2.0</text></g></g><g class="pele-section-labels" font-size="13"><text class="pele-section-label" data-id="e7-Build" x="30.45" y="112.55" text-anchor="middle">Build</text><text class="pele-section-label" data-id="e7-Ship" x="29.01" y="187.55" text-anchor="middle">Ship</text></g><g class="pele-axis" font-size="12" fill="var(--_m)"><text x="60.9" y="214.7" text-anchor="middle">2026-10-16</text><text x="160.96" y="214.7" text-anchor="middle">2026-10-17</text><text x="261.02" y="214.7" text-anchor="middle">2026-10-18</text><text x="361.08" y="214.7" text-anchor="middle">2026-10-19</text><text x="461.14" y="214.7" text-anchor="middle">2026-10-20</text><text x="561.2" y="214.7" text-anchor="middle">2026-10-21</text><text x="661.26" y="214.7" text-anchor="middle">2026-10-22</text><text x="761.32" y="214.7" text-anchor="middle">2026-10-23</text></g></svg></div></div><span style="position:absolute;left:1102px;top:318px;transform:rotate(-2.5deg);background:#4C8DFF;color:#fff;border-radius:999px;padding:4px 11px;font-size:13px;font-weight:700;box-shadow:0 40px 80px -16px rgba(0,0,0,0.6)">+ 29 more types</span><div style="position:absolute;left:884px;top:462px;width:332px;box-sizing:border-box;background:#111A2E;border:1px solid #22304A;border-radius:12px;box-shadow:0 40px 80px -16px rgba(0,0,0,0.6);padding:14px 16px;display:flex;align-items:center;gap:14px">
+<div style="width:58px;flex-shrink:0"><svg style="width:58px;height:auto;display:block" width="449" height="336" viewBox="0 0 449 336" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M235.551 0C271.13 0.000167847 299.182 22.2354 314.819 46.2305C324.002 60.3206 336.121 75.7272 350.308 93.6172C364.136 111.055 379.644 130.51 393.902 151.078C422.08 191.725 448.859 241.456 448.859 297.93V335.859H0V297.93C0 255.228 14.8217 218.487 29.748 188.821C37.0704 174.268 45.2357 159.91 51.4795 148.366C58.1349 136.061 62.939 126.378 65.8428 118.067L65.8447 118.061L65.8477 118.054L65.9629 117.725C73.3614 96.549 82.6832 69.5422 94.957 47.9932C104.403 31.409 131.93 0 160.43 0.000285468L235.551 0Z" class="pele-outline" fill="#EC8B49"/>
+<path d="M190.779 49.9004C200.914 63.3292 213.044 82.0306 217.091 99.9521C220.836 116.537 219.647 129.844 214.972 141.204C210.426 152.251 202.949 160.474 196.233 167.327C195.177 168.406 194.137 169.456 193.117 170.485C208.219 179.715 220.269 179.431 229.335 176.524C240.699 172.88 249.32 164.463 254.047 158.835L270.787 172.894C265.015 179.767 253.142 191.847 236.01 197.34C219.624 202.594 199.927 201.341 178.506 187.082C174.071 193.722 171.359 201.156 171.359 211.359C171.359 220.745 177.093 230.046 185.383 240.958C189.129 245.889 193.682 251.536 197.027 256.705C200.294 261.753 203.859 268.419 203.859 275.859V314.789H22V298.859C22 261.251 35.041 228.178 49.4004 199.639C56.5334 185.462 64.2687 171.894 70.8301 159.763C77.5284 147.378 83.0796 136.362 86.6113 126.254L86.7266 125.925C94.3086 104.224 102.986 79.2767 114.073 59.8115C124.797 40.9849 140.234 22.9297 162.93 22.9297H167.544C174.101 29.6662 183.498 40.2526 190.779 49.9004ZM235.551 22.9297C261.515 22.9298 283.458 39.3318 296.388 59.1719C306.232 74.2777 319.027 90.5076 333.07 108.217C346.995 125.776 362.041 144.662 375.822 164.542C403.272 204.139 426.859 249.252 426.859 298.859V314.789H266V298.859C266 294.263 268.718 291.51 269.649 290.67C270.769 289.659 271.846 289.105 272.308 288.88C273.317 288.387 274.241 288.118 274.652 288.002C275.628 287.728 276.708 287.516 277.627 287.354C279.572 287.009 282.18 286.644 285.104 286.277C306.773 283.558 319.552 261.326 311.011 242.192C308.662 236.93 309.51 230.79 313.199 226.362L317.643 221.03L308.201 211.588L302.233 205.621L306.497 198.338L310.32 191.807C313.792 185.875 314.354 178.68 311.845 172.281C310.06 167.73 306.837 163.886 302.667 161.335L276.355 145.235C262.882 136.992 253.47 123.934 249.07 109.216C244.489 93.8895 240.203 83.0012 234.568 73.0156C228.92 63.0065 221.677 53.4795 210.738 41.0957L194.691 22.9297H235.551Z" class="pele-hair" fill="#3E1715"/>
+</svg>
+</div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:rgba(230,237,247,0.66)">Diagrams drawn by</span>
+<span style="font-size:22px;font-weight:700;color:#E6EDF7">Pele</span><span style="font-size:15px;color:rgba(230,237,247,0.66)">by Steph Ango · @kepano</span></div></div><div style="position:absolute;left:64px;top:446px;width:470px;box-sizing:border-box;background:#111A2E;border:1px solid #22304A;border-radius:14px;box-shadow:0 40px 80px -16px rgba(0,0,0,0.6);padding:14px 16px 14px">
+<div style="position:absolute;top:-18px;left:16px;display:flex;align-items:center;gap:8px">
+<span style="height:34px;box-sizing:border-box;background:#0D0D0D;border:1px solid #22304A;color:#fff;border-radius:9px;padding:0 12px;display:flex;align-items:center;box-shadow:0 40px 80px -16px rgba(0,0,0,0.6)"><svg width="76" height="18" viewBox="0 0 84 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M28.2939 2.38667H38.6146V4.59824H34.7075V15.3612H32.201V4.59824H28.2939V2.38667Z" fill="currentColor"></path>
+<path d="M40.0963 4.4508V2.0918H42.4553V4.4508H40.0963ZM40.0963 15.3612V5.6303H42.4553V15.3612H40.0963Z" fill="currentColor"></path>
+<path d="M46.7388 5.6303V5.99889C46.7388 6.38592 46.6466 6.68079 46.4807 7.01253C46.407 7.19682 46.278 7.41798 46.4623 7.51013C46.6466 7.60228 46.7572 7.36269 46.7941 7.28897C47.3838 6.25691 48.3606 5.48286 49.8718 5.48286C52.3967 5.48286 54.1106 7.69443 54.1106 10.4957C54.1106 13.2971 52.3967 15.5086 49.8718 15.5086C48.3974 15.5086 47.3838 14.753 46.7941 13.6841C46.7572 13.6288 46.6835 13.4445 46.5176 13.4998C46.3149 13.5735 46.3886 13.7578 46.4807 13.9421C46.6466 14.2738 46.7388 14.5687 46.7388 14.9373V18.8997H44.3798V5.6303H46.7388ZM49.3189 13.3708C50.9776 13.3708 51.7516 12.0438 51.7516 10.4957C51.7516 8.94765 50.9776 7.62071 49.3189 7.62071C47.7708 7.62071 46.7388 8.94765 46.7388 10.4957C46.7388 12.0438 47.7708 13.3708 49.3189 13.3708Z" fill="currentColor"></path>
+<path d="M61.3459 7.69443H58.692V12.136C58.692 13.2049 58.7104 13.2971 59.7056 13.2971H61.3459V15.3612H59.208C57.2545 15.3612 56.333 14.7161 56.333 12.3756V7.69443H54.5638V5.6303H56.333V2.97642H58.692V5.6303H61.3459V7.69443Z" fill="currentColor"></path>
+<path d="M69.7536 5.6303H72.1126V15.3612H69.7536V14.9373C69.7536 14.5687 69.8457 14.2738 70.0116 13.9421C70.1037 13.7578 70.1775 13.5735 69.9747 13.4998C69.8089 13.4445 69.7351 13.6288 69.6983 13.6841C69.0164 14.6977 68.0949 15.5086 66.6205 15.5086C64.0957 15.5086 62.3817 13.2971 62.3817 10.4957C62.3817 7.69443 64.0957 5.48286 66.6205 5.48286C68.1318 5.48286 69.1638 6.22005 69.6983 7.28897C69.7351 7.36269 69.8457 7.60228 70.03 7.51013C70.2143 7.41798 70.1037 7.19682 70.0116 7.01253C69.8457 6.68079 69.7536 6.38592 69.7536 5.99889V5.6303ZM67.1734 13.3708C68.7215 13.3708 69.7536 12.0438 69.7536 10.4957C69.7536 8.94765 68.7215 7.62071 67.1734 7.62071C65.5147 7.62071 64.7407 8.94765 64.7407 10.4957C64.7407 12.0438 65.5147 13.3708 67.1734 13.3708Z" fill="currentColor"></path>
+<path d="M76.3991 5.6303V5.99889C76.3991 6.38592 76.3069 6.68079 76.141 7.01253C76.0673 7.19682 75.9383 7.41798 76.1226 7.51013C76.3069 7.60228 76.4175 7.36269 76.4544 7.28897C77.0441 6.25691 78.0209 5.48286 79.5321 5.48286C82.057 5.48286 83.771 7.69443 83.771 10.4957C83.771 13.2971 82.057 15.5086 79.5321 15.5086C78.0577 15.5086 77.0441 14.753 76.4544 13.6841C76.4175 13.6288 76.3438 13.4445 76.1779 13.4998C75.9752 13.5735 76.0489 13.7578 76.141 13.9421C76.3069 14.2738 76.3991 14.5687 76.3991 14.9373V18.8997H74.0401V5.6303H76.3991ZM78.9792 13.3708C80.6379 13.3708 81.4119 12.0438 81.4119 10.4957C81.4119 8.94765 80.6379 7.62071 78.9792 7.62071C77.4311 7.62071 76.3991 8.94765 76.3991 10.4957C76.3991 12.0438 77.4311 13.3708 78.9792 13.3708Z" fill="currentColor"></path>
+<path d="M10.2499 0C8.40798 0 6.68237 0.497993 5.20039 1.36667C4.90185 1.54167 4.77093 1.93059 5.02448 2.16608C5.24757 2.37329 5.54646 2.5 5.87494 2.5H14.6248C14.9533 2.5 15.2522 2.37329 15.4753 2.16608C15.7289 1.93059 15.5979 1.54167 15.2994 1.36667C13.8174 0.497993 12.0918 0 10.2499 0Z" fill="currentColor"></path>
+<path d="M20.2498 10C20.2498 9.30963 19.6902 8.75 18.9998 8.75H1.49999C0.809625 8.75 0.25 9.30963 0.25 10C0.25 10.6904 0.809625 11.25 1.49999 11.25H18.9998C19.6902 11.25 20.2498 10.6904 20.2498 10Z" fill="currentColor"></path>
+<path d="M15.4753 17.8339C15.7289 18.0694 15.5979 18.4583 15.2994 18.6333C13.8174 19.502 12.0918 20 10.2499 20C8.40798 20 6.68236 19.502 5.20039 18.6333C4.90185 18.4583 4.77092 18.0694 5.02447 17.8339C5.24756 17.6267 5.54646 17.5 5.87494 17.5H14.6248C14.9533 17.5 15.2522 17.6267 15.4753 17.8339Z" fill="currentColor"></path>
+<path d="M1.49999 5.625C1.49999 4.93463 2.05961 4.375 2.74997 4.375H17.7498C18.4402 4.375 18.9998 4.93463 18.9998 5.625C18.9998 6.31537 18.4402 6.875 17.7498 6.875H2.74997C2.05961 6.875 1.49999 6.31537 1.49999 5.625Z" fill="currentColor"></path>
+<path d="M1.49999 14.375C1.49999 13.6846 2.05961 13.125 2.74997 13.125H17.7498C18.4402 13.125 18.9998 13.6846 18.9998 14.375C18.9998 15.0654 18.4402 15.625 17.7498 15.625H2.74997C2.05961 15.625 1.49999 15.0654 1.49999 14.375Z" fill="currentColor"></path>
+</svg>
+</span>
+<span style="height:34px;box-sizing:border-box;background:#111A2E;border:1px solid #22304A;border-radius:9px;padding:0 11px;display:flex;align-items:center;gap:7px;font-size:15px;font-weight:700;color:#E6EDF7;box-shadow:0 40px 80px -16px rgba(0,0,0,0.6)"><svg stroke="#E6EDF7" fill="#E6EDF7" stroke-width="0" role="img" viewBox="0 0 24 24" height="18" width="18" xmlns="http://www.w3.org/2000/svg"><path d="M22.47 10.47c0 2.831-1.123 5.4-2.948 7.284.659 1.65 1.139 3.287 2.179 6.246-2.687-1.972-4.4-2.744-5.883-3.546h.001c-1.008-.545-1.917-1.106-2.946-2.07-1.02-.954-2.193-2.225-2.787-3.393 1.45 3.263 4.86 5.53 4.86 5.53l.003-.001A10.5 10.5 0 0 1 12 20.94c-5.783 0-10.47-4.688-10.47-10.47S6.217 0 12 0s10.47 4.688 10.47 10.47M12 1.53a8.94 8.94 0 0 0-8.941 8.94 8.94 8.94 0 0 0 7.517 8.827 6.5 6.5 0 0 1-1.532-.748c-3.131-2.145-2.67-6.929-2.66-9.71.011-2.916 2.629-4.702 5.123-4.65 2.987.05 5.153 2.216 4.917 5.122a49 49 0 0 0-.143 2.49c.337.352.659.78.954 1.308a48 48 0 0 1 1.619 3.103A8.941 8.941 0 0 0 12 1.53m.39 10.224c4.065-.01 4.024-5.071 1.653-5.092-1.047-.02-1.54.934-1.54.934s-.41-1.19-1.848-1.18c-3.08.02-2.956 5.348 1.735 5.338m.164-2.207c1.109 0 .206 1.53-.061 2.145-.185-.862-1.047-2.145.061-2.145m-.626-.483c0 .585-.472 1.047-1.047 1.047a1.045 1.045 0 0 1-1.047-1.047c0-.585.472-1.047 1.047-1.047.585 0 1.047.472 1.047 1.047m2.987-.01c0 .585-.41 1.047-.903 1.047-.503 0-.903-.472-.903-1.047 0-.585.41-1.047.903-1.047.503 0 .903.472.903 1.047"></path></svg>ProseMirror</span>
+<span style="height:34px;box-sizing:border-box;background:#16A34A;color:#fff;border-radius:9px;padding:0 12px;display:flex;align-items:center;font-size:13px;font-weight:800;letter-spacing:0.06em;box-shadow:0 40px 80px -16px rgba(0,0,0,0.6)">NEW</span></div>
+<div style="margin-top:12px;font-size:20px;font-weight:700;color:#E6EDF7">@docs.plus/extension-mermaid</div>
+<div style="font-size:15px;color:rgba(230,237,247,0.66);margin:2px 0 7px">Mermaid diagrams for any Tiptap editor, drawn by Pele.</div>
+<div style="font-family:Menlo,ui-monospace,monospace;font-size:14px;white-space:nowrap;background:#0A1222;border:1px solid #22304A;border-radius:8px;padding:7px 10px;color:#E6EDF7"><span style="color:rgba(230,237,247,0.66)">$</span> npm i @docs.plus/extension-mermaid</div></div><div style="position:absolute;left:64px;top:576px;width:1152px;height:112px;box-sizing:border-box;border-top:1px solid #22304A;padding-top:20px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:24px"><div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;align-items:center;gap:12px">
+<span style="width:42px;height:42px;border-radius:10px;background:rgba(76,141,255,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4C8DFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><line x1="3" x2="9" y1="12" y2="12"></line><line x1="15" x2="21" y1="12" y2="12"></line></svg></span>
+<span style="font-size:40px;line-height:44px;font-weight:700;color:#E6EDF7">103</span></div>
+<span style="font-size:19px;line-height:24px;color:rgba(230,237,247,0.66)">commits in 9 days</span></div><div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;align-items:center;gap:12px">
+<span style="width:42px;height:42px;border-radius:10px;background:rgba(76,141,255,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4C8DFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg></span>
+<span style="font-size:40px;line-height:44px;font-weight:700;color:#E6EDF7">53</span></div>
+<span style="font-size:19px;line-height:24px;color:rgba(230,237,247,0.66)">issues closed</span></div><div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;align-items:center;gap:12px">
+<span style="width:42px;height:42px;border-radius:10px;background:rgba(76,141,255,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4C8DFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg></span>
+<span style="font-size:40px;line-height:44px;font-weight:700;color:#E6EDF7">20</span></div>
+<span style="font-size:19px;line-height:24px;color:rgba(230,237,247,0.66)">security fixes</span></div><div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;align-items:center;gap:12px">
+<span style="width:42px;height:42px;border-radius:10px;background:rgba(76,141,255,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4C8DFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"></path><path d="M8.5 2h7"></path><path d="M7 16h10"></path></svg></span>
+<span style="font-size:40px;line-height:44px;font-weight:700;color:#E6EDF7">1,401</span></div>
+<span style="font-size:19px;line-height:24px;color:rgba(230,237,247,0.66)">tests pass</span></div><div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;align-items:center;gap:12px">
+<span style="width:42px;height:42px;border-radius:10px;background:rgba(76,141,255,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4C8DFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z"></path></svg></span>
+<span style="font-size:40px;line-height:44px;font-weight:700;color:#E6EDF7">6</span></div>
+<span style="font-size:19px;line-height:24px;color:rgba(230,237,247,0.66)">extensions at 2.2.0</span></div></div></div></body></html>
