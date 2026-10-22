@@ -89,7 +89,7 @@ Check every page the release makes wrong: `README.md` (extension status), `exten
 
 - Source: `docs/DEMO.md`, shown at https://docs.plus/demo. It is a read-only document. The owner pastes it through Settings → Markdown replace.
 - First run a feature-truth audit: check every claim on the page against the code, and fix the lines that are now wrong.
-- Then append a final H1, `# 🆕 What's new in docs.plus X.Y.Z`, with the banner image and one H2 per headline. End each H2 with a filter link such as `/demo/connected%20app`.
+- The page ends with one H1, `# 🆕 What's new`, newest release first. Add the release as `## docs.plus X.Y.Z` right under that H1, with the banner image, the date, and one H3 per headline. End each H3 with a filter link such as `/demo/connected%20app`. Never add a second What's new H1 (maintainer ruling, 2026-10-22).
 
 ### 6. Banner
 

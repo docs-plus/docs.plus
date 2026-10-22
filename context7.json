@@ -27,7 +27,7 @@
   ],
   "rules": [
     "Inside the docs.plus monorepo, use Bun for every package operation: `bun install`, `bun run`, `bunx`. Never npm, yarn, pnpm or npx there.",
-    "Install a docs.plus Tiptap extension in an app with `npm install @docs.plus/extension-<name>`; pnpm, yarn or bun add also work. The packages: extension-hyperlink, extension-hypermultimedia, extension-indent, extension-inline-code, extension-mermaid, extension-placeholder. extension-mermaid is not on npm yet; it publishes with the next family release.",
+    "Install a docs.plus Tiptap extension with `npm install @docs.plus/extension-<name>`; pnpm, yarn or bun add also work. The names: hyperlink, hypermultimedia, indent, inline-code, mermaid, placeholder.",
     "Read each extension's README and package.json for its version and Tiptap peer requirements. Resolve catalog references from the root package.json.",
     "With extension-hyperlink set `StarterKit.configure({ link: false })`. StarterKit v3 bundles its own link mark claiming the same commands and the same a[href] parse rule. The clash is silent.",
     "With extension-hyperlink set `popovers.previewHyperlink`, for example to `previewHyperlinkPopover`. With that slot empty, a click on a link opens no popover.",
@@ -36,7 +36,8 @@
     "With extension-inline-code set `StarterKit.configure({ code: false })`. Both marks render <code> and both bind Mod-e. The clash is silent.",
     "With extension-placeholder, remove the Tiptap built-in placeholder from the extensions array. Both register the name `placeholder`.",
     "extension-hypermultimedia requires its own stylesheet, or media nodes render unstyled. extension-hyperlink ships an optional one.",
-    "With extension-mermaid, import @docs.plus/extension-mermaid/styles.css. Without it, Pele's own error text shows and the diagram dims while the source has a mistake. A host addNodeView for codeBlock, or an earlier plugin that sets nodeViews.codeBlock, replaces the diagram view with no error.",
+    "With extension-mermaid, import @docs.plus/extension-mermaid/styles.css. Without it, Pele's own error text shows and the diagram dims while the source has a mistake.",
+    "In extension-mermaid, a host addNodeView for codeBlock, or an earlier plugin that sets nodeViews.codeBlock, replaces the diagram view with no error.",
     "extension-indent, extension-inline-code and extension-placeholder ship no CSS. extension-placeholder renders nothing until the host adds the CSS rule from its README.",
     "A docs.plus document is a tree of headings. One heading id serves the table of contents, the Heading Chatroom and the URL. Never write a heading id into stored content.",
     "Durable persistence is eventual. The collaboration server debounces a save for 10 seconds idle, or 60 seconds while typing continues.",
