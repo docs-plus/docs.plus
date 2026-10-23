@@ -24,6 +24,10 @@ sides land, the member faces, the roster and the admin member counts fail. Then 
   member count. The lookup now uses the document's id, never its slug
   ([#574](https://github.com/docs-plus/docs.plus/issues/574)).
 
+### Security
+
+- The webapp runs Next.js 15.5.28 and DOMPurify 3.4.17. The admin dashboard runs Next.js 16.4.3. Redeploy both apps.
+
 ## [2.2.0] — 2026-10-22
 
 **A release for AI apps and diagrams, and a security round for self-hosters.** The webapp and
