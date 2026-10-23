@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 
 import type { DocumentViewMode } from '../constants'
 import type { DocumentsListScope } from '../documentsQueryKey'
-import { documentMembersKey, useDocumentMembers } from '../hooks/useDocumentMembers'
+import { useDocumentMembers } from '../hooks/useDocumentMembers'
 import type { DocumentsListActions } from '../hooks/useDocumentsListActions'
 import type { OwnedDocument } from '../types'
 import { buildDocumentsListItems, type DocumentsListItem } from '../utils/documentsListItems'
@@ -37,7 +37,10 @@ function DocumentsList({
   className
 }: DocumentsListProps) {
   const items = useMemo(() => buildDocumentsListItems(docs, scope.sortKey), [docs, scope.sortKey])
-  const { data: membersMap } = useDocumentMembers(docs.map(documentMembersKey), !!scope.userId)
+  const { data: membersMap } = useDocumentMembers(
+    docs.map((d) => d.documentId),
+    !!scope.userId
+  )
   const { bindListRef, activeIndex, setActiveIndex, handleListKeyDown, handleDelete } = actions
 
   const isListView = viewMode === 'list'
@@ -71,7 +74,7 @@ function DocumentsList({
     const shared = {
       doc: item.doc,
       scope,
-      members: membersMap?.get(documentMembersKey(item.doc)),
+      members: membersMap?.get(item.doc.documentId),
       onOpenDocument,
       index: item.index,
       isActive: item.index === activeIndex,

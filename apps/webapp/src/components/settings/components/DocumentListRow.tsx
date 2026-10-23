@@ -176,7 +176,7 @@ function DocumentListRow({
         </button>
 
         <DocumentMembersCluster
-          workspaceId={doc.documentId.toLowerCase()}
+          documentId={doc.documentId}
           memberCount={members?.member_count ?? 0}
           previews={members?.previews ?? []}
           tabIndex={-1}

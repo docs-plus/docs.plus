@@ -132,10 +132,11 @@ export async function listDocuments(prisma: PrismaClient, params: ListDocumentsP
   }))
 
   const ownerIds = [...new Set(documents.filter((d) => d.ownerId).map((d) => d.ownerId))]
-  // Supabase keys both surfaces on lower(documentId) despite calling the column
-  // `slug`; the human slug matches nothing. `docId` below stays the human slug —
-  // the admin UI links to it.
-  const workspaceKeys = documents.map((d) => d.documentId.toLowerCase())
+  // Member counts match workspaces.id with the documentId verbatim; old workspaces hold
+  // the human slug in `slug` (#574). View stats key on lower(documentId). `docId` below
+  // stays the human slug — the admin UI links to it.
+  const documentIds = documents.map((d) => d.documentId)
+  const viewStatsKeys = documentIds.map((id) => id.toLowerCase())
 
   if (ownerIds.length > 0) {
     try {
@@ -163,25 +164,25 @@ export async function listDocuments(prisma: PrismaClient, params: ListDocumentsP
     }
   }
 
-  if (workspaceKeys.length > 0) {
+  if (documentIds.length > 0) {
     try {
       const supabase = getSupabaseClient()
       if (supabase) {
         const { data: memberData, error: memberError } = await supabase.rpc(
           'admin_get_document_member_counts',
-          { p_slugs: workspaceKeys }
+          { p_document_ids: documentIds }
         )
         if (memberError) {
           adminLogger.error({ err: memberError }, 'RPC admin_get_document_member_counts failed')
         } else if (Array.isArray(memberData)) {
           const memberMap = new Map(
-            memberData.map((row: { slug: string; member_count: number }) => [
-              row.slug,
+            memberData.map((row: { document_id: string; member_count: number }) => [
+              row.document_id,
               row.member_count
             ])
           )
           docsWithDefaults.forEach((doc) => {
-            const count = memberMap.get(doc.documentId.toLowerCase())
+            const count = memberMap.get(doc.documentId)
             if (count !== undefined) doc.memberCount = count
           })
         }
@@ -191,12 +192,12 @@ export async function listDocuments(prisma: PrismaClient, params: ListDocumentsP
     }
   }
 
-  if (workspaceKeys.length > 0) {
+  if (viewStatsKeys.length > 0) {
     try {
       const viewStats = await fetchByIds(
         'document_view_stats',
         'document_slug',
-        workspaceKeys,
+        viewStatsKeys,
         'document_slug,views_7d,unique_users_7d'
       )
       const statsMap = new Map(

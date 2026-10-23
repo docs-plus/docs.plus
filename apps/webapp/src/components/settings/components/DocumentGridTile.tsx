@@ -92,7 +92,7 @@ function DocumentGridTile({
 
       <div className="mt-auto flex items-center gap-2 px-3 pt-1 pb-2">
         <DocumentMembersCluster
-          workspaceId={doc.documentId.toLowerCase()}
+          documentId={doc.documentId}
           memberCount={members?.member_count ?? 0}
           previews={members?.previews ?? []}
           size="xs"

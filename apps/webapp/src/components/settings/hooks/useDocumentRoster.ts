@@ -15,16 +15,16 @@ export interface DocumentRosterMember {
 
 /**
  * Full member roster for one document, fetched lazily when the roster popover opens
- * (its host only mounts inside PopoverContent). Cached per slug.
+ * (its host only mounts inside PopoverContent). Cached per documentId, sent verbatim (#574).
  */
-export function useDocumentRoster(slug: string) {
+export function useDocumentRoster(documentId: string) {
   return useQuery({
-    queryKey: ['document-roster', slug],
-    enabled: !!slug,
+    queryKey: ['document-roster', documentId],
+    enabled: !!documentId,
     staleTime: 30_000,
     // await dispatches the lazy PostgrestBuilder (packages/supabase/CLAUDE.md §Supabase — lazy rpc).
     queryFn: async () => {
-      const res = await supabaseClient.rpc('get_document_members', { p_slug: slug })
+      const res = await supabaseClient.rpc('get_document_members', { p_document_id: documentId })
       if (res.error) throw res.error
       return (res.data ?? []) as DocumentRosterMember[]
     }

@@ -15,8 +15,7 @@ type TSetDocumentFollowParams = {
 export const setDocumentFollow = async (
   arg: TSetDocumentFollowParams
 ): Promise<PostgrestSingleResponse<TSetDocumentFollowReturn>> => {
-  // documentId verbatim. The RPC matches workspace_members.workspace_id, never the
-  // lowercased workspaces.slug that get_document_members takes.
+  // documentId verbatim. The RPC matches workspace_members.workspace_id, never a slug (#574).
   // await dispatches the lazy PostgrestBuilder (packages/supabase/CLAUDE.md §Supabase — lazy rpc).
   return await supabaseClient.rpc('set_document_follow', {
     p_document_id: arg.documentId,

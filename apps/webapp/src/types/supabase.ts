@@ -1138,10 +1138,10 @@ export type Database = {
       ack_push_message: { Args: { p_msg_id: number }; Returns: boolean }
       add_reaction: { Args: { p_emoji: string; p_message_id: string }; Returns: Json }
       admin_get_document_member_counts: {
-        Args: { p_slugs: string[] }
+        Args: { p_document_ids: string[] }
         Returns: {
+          document_id: string
           member_count: number
-          slug: string
         }[]
       }
       admin_get_failed_push_subs: {
@@ -1340,15 +1340,15 @@ export type Database = {
       }
       get_document_follow_state: { Args: { p_document_id: string }; Returns: boolean }
       get_document_member_previews: {
-        Args: { p_slugs: string[] }
+        Args: { p_document_ids: string[] }
         Returns: {
+          document_id: string
           member_count: number
           previews: Json
-          slug: string
         }[]
       }
       get_document_members: {
-        Args: { p_slug: string }
+        Args: { p_document_id: string }
         Returns: {
           avatar_updated_at: string
           avatar_url: string

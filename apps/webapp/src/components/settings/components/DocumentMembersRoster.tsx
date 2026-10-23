@@ -9,7 +9,7 @@ import { type DocumentRosterMember, useDocumentRoster } from '../hooks/useDocume
 import { formatShortDate } from '../utils/formatShortDate'
 
 interface DocumentMembersRosterProps {
-  workspaceId: string
+  documentId: string
   // Passed from the cluster so the header count is correct during the loading skeleton.
   memberCount: number
 }
@@ -23,8 +23,8 @@ const seenAfterJoin = (joined: string, lastVisit: string) =>
   Math.abs(new Date(lastVisit).getTime() - new Date(joined).getTime()) >= 60_000
 
 /** Lazy-fetches on open — the host only mounts inside PopoverContent. */
-function DocumentMembersRoster({ workspaceId, memberCount }: DocumentMembersRosterProps) {
-  const { data: members, isLoading, isError, isFetching, refetch } = useDocumentRoster(workspaceId)
+function DocumentMembersRoster({ documentId, memberCount }: DocumentMembersRosterProps) {
+  const { data: members, isLoading, isError, isFetching, refetch } = useDocumentRoster(documentId)
 
   return (
     <div className={twMerge(popoverPanelClassName, 'w-64 overflow-hidden p-0')}>

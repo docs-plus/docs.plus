@@ -87,47 +87,34 @@ comment on trigger notify_on_workspace_join on public.workspace_members is
 -- Admin: document member counts (used by admin dashboard)
 -- =============================================================================
 
--- Returns workspace member counts for a batch of document slugs.
+-- Returns workspace member counts for a batch of documentIds.
 -- SECURITY DEFINER bypasses RLS. Callable by service_role only: the admin
 -- API calls it with the service key (adminStats.service.ts).
-
-create or replace function public.admin_get_document_member_counts(p_slugs text[])
+-- Keyed on workspaces.id: workspaces made before 2026-08-09 hold the human slug (#574).
+drop function if exists public.admin_get_document_member_counts(text[]);
+create function public.admin_get_document_member_counts(p_document_ids text[])
 returns table (
-    slug text,
+    document_id text,
     member_count bigint
 )
-language plpgsql
+language sql
+stable
 security definer
 set search_path = public
 as $$
-declare
-    v_jwt_role text;
-begin
-    -- Only service_role holds EXECUTE, so this guard is redundant.
-    -- Drop it in the next migration that recreates this function.
-    v_jwt_role := coalesce(current_setting('request.jwt.claim.role', true), '');
-
-    if v_jwt_role not in ('service_role') then
-        if auth.uid() is not null and not public.is_admin(auth.uid()) then
-            raise exception 'Access denied: user is not an admin.';
-        end if;
-    end if;
-
-    return query
     select
-        w.slug,
+        w.id::text as document_id,
         count(wm.id) as member_count
     from public.workspaces w
     left join public.workspace_members wm
         on wm.workspace_id = w.id
         and wm.left_at is null
-    where w.slug = any(p_slugs)
-    group by w.slug;
-end;
+    where w.id = any(p_document_ids)
+    group by w.id;
 $$;
 
 comment on function public.admin_get_document_member_counts(text[]) is
-'Returns workspace member counts per document slug. Service role only; bypasses RLS.';
+'Returns workspace member counts per documentId (workspaces.id, exact case). Service role only; bypasses RLS.';
 
 revoke all on function public.admin_get_document_member_counts(text[]) from public, anon, authenticated;
 grant execute on function public.admin_get_document_member_counts(text[]) to service_role;
@@ -137,7 +124,6 @@ grant execute on function public.admin_get_document_member_counts(text[]) to ser
 -- (idempotent — safe to re-run)
 -- ============================================================
 ALTER FUNCTION public.notify_user_join_workspace() SET search_path = public;
-ALTER FUNCTION public.admin_get_document_member_counts(p_slugs text[]) SET search_path = public;
 
 -- Trigger functions run as postgres (DEFINER) so internal side effects
 -- (counters, previews, notifications) bypass RLS on side-effect tables.
@@ -151,16 +137,16 @@ ALTER FUNCTION public.notify_user_join_workspace() SECURITY DEFINER;
 -- Membership = "opened a document while signed in". No roles, no anonymous
 -- viewers, no realtime presence. The membership gate is the caller's own
 -- workspace membership, so a non-member gets 0 rows (never an error).
--- Slug → workspace id is resolved through the workspaces join; never compare
--- a slug to workspace_id (varchar36). Distinct from admin_get_document_member_counts,
--- which is service-role only.
+-- Both functions take the documentId verbatim and match workspaces.id. Never
+-- match workspaces.slug: workspaces made before 2026-08-09 hold the human slug (#574).
+-- Distinct from admin_get_document_member_counts, which is service-role only.
 
 -- Batched avatar-cluster previews for the visible document list. Returns the
--- true member_count plus up to 4 earliest-joined members per slug as jsonb.
+-- true member_count plus up to 4 earliest-joined members per document as jsonb.
 drop function if exists public.get_document_member_previews(text[]);
-create function public.get_document_member_previews(p_slugs text[])
+create function public.get_document_member_previews(p_document_ids text[])
 returns table (
-    slug text,
+    document_id text,
     member_count bigint,
     previews jsonb
 )
@@ -171,7 +157,7 @@ set search_path = public
 as $$
     with ranked as (
         select
-            w.slug as ws_slug,
+            w.id::text as ws_id,
             wm.member_id,
             u.display_name,
             u.avatar_url,
@@ -183,11 +169,11 @@ as $$
             and wm.left_at is null
         join public.users u
             on u.id = wm.member_id
-        where w.slug = any(p_slugs)
+        where w.id = any(p_document_ids)
           and internal.is_workspace_member(w.id)
     )
     select
-        ws_slug as slug,
+        ws_id as document_id,
         count(*)::bigint as member_count,
         jsonb_agg(
             jsonb_build_object(
@@ -198,19 +184,19 @@ as $$
             ) order by rn
         ) filter (where rn <= 4) as previews
     from ranked
-    group by ws_slug;
+    group by ws_id;
 $$;
 
 comment on function public.get_document_member_previews(text[]) is
-'Member-gated avatar-cluster previews (member_count + up to 4 earliest members) per document slug. Caller must be an active workspace member; non-member slugs return no row.';
+'Member-gated avatar-cluster previews (member_count + up to 4 earliest members) per documentId (workspaces.id, exact case). Caller must be an active workspace member; a non-member document returns no row.';
 
 revoke execute on function public.get_document_member_previews(text[]) from public, anon;
-grant execute on function public.get_document_member_previews(text[]) to authenticated;
+grant execute on function public.get_document_member_previews(text[]) to authenticated, service_role;
 
 -- Full roster for one document when the cluster popover opens. Caller sorts
 -- first, then by join order. last_visit_at falls back to join time.
 drop function if exists public.get_document_members(text);
-create function public.get_document_members(p_slug text)
+create function public.get_document_members(p_document_id text)
 returns table (
     member_id uuid,
     username text,
@@ -243,16 +229,16 @@ as $$
         and wm.left_at is null
     join public.users u
         on u.id = wm.member_id
-    where w.slug = p_slug
+    where w.id = p_document_id
       and internal.is_workspace_member(w.id)
     order by (wm.member_id = auth.uid()) desc, wm.created_at asc;
 $$;
 
 comment on function public.get_document_members(text) is
-'Member-gated full member roster for one document slug (caller first, then join order). Caller must be an active workspace member; non-member returns no rows.';
+'Member-gated full member roster for one documentId (workspaces.id, exact case), caller first, then join order. Caller must be an active workspace member; non-member returns no rows.';
 
 revoke execute on function public.get_document_members(text) from public, anon;
-grant execute on function public.get_document_members(text) to authenticated;
+grant execute on function public.get_document_members(text) to authenticated, service_role;
 
 -- The content-change subscription is workspace membership itself. There is no
 -- new table: content_email_muted_at holds the whole state, null means following.
@@ -293,7 +279,7 @@ end;
 $$;
 
 comment on function public.set_document_follow(varchar, boolean) is
-'Sets the caller''s content-change follow state for one document. p_document_id is the documentId verbatim, the value held in workspace_members.workspace_id and workspaces.id, never the lowercased workspaces.slug. UPDATE-only, and never writes updated_at. Returns true when a membership row matched, false when the caller has no active membership.';
+'Sets the caller''s content-change follow state for one document. p_document_id is the documentId verbatim, the value held in workspace_members.workspace_id and workspaces.id, never workspaces.slug. UPDATE-only, and never writes updated_at. Returns true when a membership row matched, false when the caller has no active membership.';
 
 -- Reads the same state back. Null means the caller has no active membership
 -- row, which is a different answer from "muted".
@@ -312,7 +298,7 @@ as $$
 $$;
 
 comment on function public.get_document_follow_state(varchar) is
-'Returns the caller''s content-change follow state for one document: true when following, false when muted, null when the caller has no active membership. p_document_id is the documentId verbatim, the value held in workspace_members.workspace_id, never the lowercased workspaces.slug that get_document_members takes.';
+'Returns the caller''s content-change follow state for one document: true when following, false when muted, null when the caller has no active membership. p_document_id is the documentId verbatim, the value held in workspace_members.workspace_id, never workspaces.slug.';
 
 -- Stated here like every other browser-facing function in this file. §5 of
 -- 29-lint-hardening sweeps it away on a local seed and §6 restores it, but the
@@ -361,7 +347,7 @@ end;
 $$;
 
 comment on function public.mark_document_connection_closed(varchar, uuid, timestamptz) is
-'Stamps the instant one live document session ended for one member. p_document_id is the documentId verbatim, the value held in workspace_members.workspace_id and workspaces.id, never the lowercased workspaces.slug. UPDATE-only, so it never mints a membership row, and it never writes updated_at. The write is monotone, so a p_closed_at older than the stored value leaves the value alone. A p_closed_at after now() is clamped to now(). Returns true when an active membership row matched, which does not say the stamp advanced.';
+'Stamps the instant one live document session ended for one member. p_document_id is the documentId verbatim, the value held in workspace_members.workspace_id and workspaces.id, never workspaces.slug. UPDATE-only, so it never mints a membership row, and it never writes updated_at. The write is monotone, so a p_closed_at older than the stored value leaves the value alone. A p_closed_at after now() is clamped to now(). Returns true when an active membership row matched, which does not say the stamp advanced.';
 
 -- The worker holds the service-role key and is the only caller. No browser path
 -- exists, so this stays out of the 29-lint-hardening §6 authenticated list.
