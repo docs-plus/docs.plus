@@ -16,6 +16,13 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- **The Documents list shows member faces and the roster on older documents
+  ([#574](https://github.com/docs-plus/docs.plus/issues/574)).** The faces and the roster
+  now send the `documentId` exactly as stored. They used to send `lower(documentId)`, which
+  matched no workspace made before 2026-08-09. Needs Supabase migration `20261023120000`.
+
 ## [2.2.0] — 2026-10-22
 
 This entry holds the pad UI notes for this package. The highlights of the

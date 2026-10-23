@@ -10,6 +10,21 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ## [Unreleased]
 
+### Migration
+
+Push Supabase migration `20261023120000` with this deploy. It drops and re-creates
+`get_document_member_previews`, `get_document_members` and
+`admin_get_document_member_counts` with new parameter names (`p_document_ids`,
+`p_document_id`) and a `document_id` result column. An old client gets an error until both
+sides land. Run `packages/supabase/scripts/check-grants.sql` after the push.
+
+### Fixed
+
+- **The admin dashboard counts members on older documents
+  ([#574](https://github.com/docs-plus/docs.plus/issues/574)).** `adminStats.service.ts`
+  sends the exact `documentId` and maps rows by `document_id`. The old lowercased key
+  matched no workspace made before 2026-08-09.
+
 ## [2.2.0] — 2026-10-22
 
 The webapp and hocuspocus share `2.2.0`. Admin stays `1.0.0`. This package is private and is not published to npm.

@@ -10,6 +10,20 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 
 ## [Unreleased]
 
+### Migration
+
+**If you self-host.** Push Supabase migration `20261023120000` together with the backend
+and frontend deploy. It renames the parameters of three member functions, so until both
+sides land, the member faces, the roster and the admin member counts fail. Then run
+`packages/supabase/scripts/check-grants.sql`. It should return no rows.
+
+### Fixed
+
+- **Member faces show on every document again.** Documents made before 2026-08-09, the
+  `/demo` pad among them, showed no faces in the Documents list, no roster and no admin
+  member count. The lookup now uses the document's id, never its slug
+  ([#574](https://github.com/docs-plus/docs.plus/issues/574)).
+
 ## [2.2.0] — 2026-10-22
 
 **A release for AI apps and diagrams, and a security round for self-hosters.** The webapp and
