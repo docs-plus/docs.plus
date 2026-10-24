@@ -8,6 +8,14 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
+### Changed
+
+- The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.0`. It was `^3.31.3`.
+
+### Internal
+
+- The linked-image spec ignores `img.ProseMirror-separator`. TipTap 3.32 inserts that zero-size image inside a link.
+
 ## [2.2.0] — 2026-10-22
 
 No behaviour change; aligned to the family.

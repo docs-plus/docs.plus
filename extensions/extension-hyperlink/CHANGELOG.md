@@ -10,6 +10,10 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ## [Unreleased]
 
+### Changed
+
+- The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.0`. It was `^3.31.3`.
+
 ## [2.2.0] — 2026-10-22
 
 No behaviour change; aligned to the family.

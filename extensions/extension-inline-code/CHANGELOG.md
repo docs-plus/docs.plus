@@ -4,6 +4,10 @@ All notable changes to `@docs.plus/extension-inline-code` are documented here. T
 
 ## [Unreleased]
 
+### Changed
+
+- The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.0`. It was `^3.31.3`.
+
 ## [2.2.0] — 2026-10-22
 
 No behaviour change; aligned to the family.

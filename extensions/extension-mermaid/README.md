@@ -38,7 +38,7 @@ npm install @docs.plus/extension-mermaid
 
 Or use `pnpm add @docs.plus/extension-mermaid`, `yarn add @docs.plus/extension-mermaid`, or `bun add @docs.plus/extension-mermaid`.
 
-Requires **`@tiptap/core` ^3.31.3** and **`@tiptap/pm` ^3.31.3** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.32.0** and **`@tiptap/pm` ^3.32.0** (Tiptap 3.x).
 
 This package imports no React, Vue, or Next.js code. Use it from a plain page, Vite, React, Vue, Svelte, Next.js, Nuxt, or SvelteKit. Create the editor in the browser.
 

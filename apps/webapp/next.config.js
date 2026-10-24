@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 
-const { withSentryConfig } = require('@sentry/nextjs')
+const { withSentryConfig } = require('@sentry/nextjs/config')
 const runtimeCaching = require('./config/pwa/workbox-runtime-caching')
 const {
   X_SCRIPT_HOSTS,
@@ -436,7 +436,7 @@ module.exports = withPWA({
 // build stays capture-only and byte-identical (no upload plugin activity).
 module.exports = withSentryConfig(module.exports, {
   silent: true,
-  disableLogger: true,
+  bundleSizeOptimizations: { excludeDebugStatements: true },
   ...(process.env.SENTRY_AUTH_TOKEN
     ? {
         telemetry: false,

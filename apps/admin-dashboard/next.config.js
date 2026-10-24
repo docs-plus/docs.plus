@@ -1,4 +1,4 @@
-const { withSentryConfig } = require('@sentry/nextjs')
+const { withSentryConfig } = require('@sentry/nextjs/config')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -113,6 +113,6 @@ const nextConfig = {
 
 module.exports = withSentryConfig(nextConfig, {
   silent: true,
-  disableLogger: true,
+  bundleSizeOptimizations: { excludeDebugStatements: true },
   sourcemaps: { disable: true }
 })

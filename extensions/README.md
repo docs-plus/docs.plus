@@ -40,7 +40,7 @@ Or use `pnpm add @docs.plus/extension-hyperlink`, `yarn add @docs.plus/extension
 
 Use the matching package name from the table above (`@docs.plus/extension-hypermultimedia`, `@docs.plus/extension-indent`, and so on).
 
-Requires **`@tiptap/core` ^3.31.3** and **`@tiptap/pm` ^3.31.3** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.32.0** and **`@tiptap/pm` ^3.32.0** (Tiptap 3.x).
 
 `extension-hyperlink` installs `@floating-ui/dom` and `linkifyjs`. `extension-hypermultimedia` installs `@floating-ui/dom`. `extension-mermaid` installs `pele`, which declares Node 20 or later. The other three install with no runtime dependencies. None of the six packages declares its own Node or Bun engine floor.
 

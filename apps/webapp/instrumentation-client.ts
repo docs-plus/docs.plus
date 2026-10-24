@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/nextjs'
 
+import { sentryDataCollection } from './sentryDataCollection'
 import { CHUNK_ERROR_PATTERNS } from './src/utils/chunkErrorPatterns'
 import { isChunkRecoveryExhausted } from './src/utils/chunkLoadRecovery'
 
@@ -31,6 +32,7 @@ if (dsn) {
     environment: process.env.NODE_ENV ?? 'production',
     release: process.env.NEXT_PUBLIC_GIT_HASH || undefined,
     tracesSampleRate: 0,
+    dataCollection: sentryDataCollection,
     beforeSend(event) {
       if (event.exception && isNonActionable(event)) return null
       return event

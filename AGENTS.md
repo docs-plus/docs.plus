@@ -160,7 +160,7 @@ The release procedure lives in the [`release-extensions`](.cursor/skills/release
 - **Do not close an issue while its fix commit exists only on local `main`.** The commit link in the closing comment does not resolve until the push. If you close it anyway, tell the maintainer to push.
 - **A raw product idea goes to GitHub Discussions in the Ideas category, not to an issue.** Its first line says that it is a raw idea that needs a discussion and a plan. Mention the people that the maintainer names. Bugs and backlog tasks stay issues.
 - **A security finding may become a public GitHub issue when the maintainer files it.** Maintainer ruling, 2026-10-07. It replaces the 2026-08-19 rule that kept every security row in the local backlog. Label the issue `Security` (capital S) plus one or two area labels. Write it as the fix to make, never as step-by-step misuse, and never include secrets or production values. `SECURITY.md` routes reports from outside contributors to GitHub private vulnerability reporting first, then to `security@docs.plus`. Do not commit a report file that names an unfixed weakness with file and line references; the issue is its one public home.
-- **A GitHub issue title is plain sentence case with no prefix.** Only a tracker takes `[Tracking] `.
+- **A GitHub issue title is plain sentence case with no prefix.** Only a tracker takes `[Tracking]`.
 
 ### UI And Theme
 
@@ -203,6 +203,7 @@ The release procedure lives in the [`release-extensions`](.cursor/skills/release
 - Dependency update flow:
   - Bump version ranges: `bun run update` (patch + minor only; root catalog + every `apps/*`, `extensions/*`, `packages/*` via `scripts/update-packages.sh`). Majors: `bun run update --upgrade`. Preview: `bun run update --dry-run`. The underlying tool is `npm-check-updates` — not `npm-check`, and not a verbose `bun update --recursive` wrapper; keep `scripts/update-packages.sh` minimal.
   - **`bun run update` moves the pinned `metascraper*` ranges.** `apps/hocuspocus.server/package.json` pins them at exact `5.50.6`, and the script has no reject option. A plain run rewrites them, which breaks the pin above. Run the same `bunx npm-check-updates --target minor --upgrade` calls by hand, with `--reject 'metascraper*'`, at the root and in each workspace.
+  - Also reject `prosemirror-changeset` and `pele`. Changeset stays at `2.4.1`. Pele stays at `1.8.0`.
   - After `update`, run `bun install` at the repo root. Do not run parallel `bun update` / installs inside individual packages; shared `bun.lock` can race with `EEXIST`.
   - When adding a workspace package, keep `bun.lock` diffs scoped to that package's graph. Avoid unrelated root devDependency churn from a blind full `bun install`. Surgically merge lockfile entries if needed.
 - Removed tools/scripts stay removed: per-package `update:packages`, `scripts/reinstall-packages.sh`, `reinstall:all-packages`, `update:all-packages`.
@@ -232,6 +233,8 @@ The release procedure lives in the [`release-extensions`](.cursor/skills/release
   - `bun test` is Bun's native runner — not a substitute for Jest where Next/Jest or local Jest configs are used.
   - Slice unit tests must call `enableMapSet()` from `immer` at module scope. Slice files do not enable it themselves; only `stores/useStore.ts` and `stores/chat/useChatStore.ts` do at production load. Isolated slice instantiations otherwise fail with "MapSet plugin not loaded".
 - Cypress conventions:
+  - Cypress 16 removes `Cypress.env()`. Read a public value with `Cypress.expose()`. Pass it with `--expose`.
+  - `config.env` in `setupNodeEvents` still exists. `allowCypressEnv` and `experimentalMemoryManagement` are gone.
   - Split tests by concern and include a README for scope.
   - Use `it()`, not `test()`. Consolidate overlapping tests.
   - ProseMirror `handleDOMEvents.click` is not triggered by Cypress `realClick()` / `.click()`. Dispatch a native `MouseEvent('click', { bubbles: true, clientX, clientY })` using `getBoundingClientRect()` coordinates. Use the same pattern for popover `keydown` Escape dismissal.
@@ -414,4 +417,15 @@ Inbox only. New workspace facts go into the topical section that owns the subjec
 - Extension upgrade notes and third-party outreach must cite the npm `latest` version that is actually published. A higher version that exists only in git `package.json` / README is not the install target until that release is on the registry.
 - Email HTML must survive Gmail. Gmail strips inline SVG, the CSS `position` property, and negative margins. The digest mark and bell are hosted PNGs at `apps/webapp/public/email/mark.png` and `bell.png`, linked through `APP_URL`. The unread badge is its own linked cell. A test in `packages/email-templates/src/__tests__/engine.test.ts` fails on `<svg`, `position:`, or a negative margin. The PNGs ship with the webapp and the mail ships with the backend, so a change to both goes out with `(build): back front`.
 - **Key a document's Supabase workspace and member data on the documentId verbatim (`workspaces.id`), never on a slug or `lower(documentId)`.** Workspaces made before 2026-08-09 hold the human slug in `workspaces.slug`, so a slug match silently drops them (#574, maintainer rule 2026-10-23). The pad URL keeps the human slug. Details in [`packages/supabase/CLAUDE.md`](packages/supabase/CLAUDE.md).
-- Prod deploys read only the pushed tip commit. `prod.docs.plus.yml` parses `github.event.head_commit.message`, so an earlier `(build):` commit inside the same push does not deploy. To ship a range, the tip itself must start with `(build): ` (a colon, then one space). `(build):front` fails triage, and the deploy does not start. A green `bun run check:ci` does not parse the deploy line.
+- Prod deploys read only the pushed tip commit. `prod.docs.plus.yml` parses `github.event.head_commit.message`, so an earlier `(build):` commit inside the same push does not deploy. To ship a range, the tip itself must start with `(build):` (a colon, then one space). `(build):front` fails triage, and the deploy does not start. A green `bun run check:ci` does not parse the deploy line.
+- The TipTap catalog and overrides are `3.32.0`. `@tiptap/y-tiptap` is `^3.0.10`.
+- Keep all `@tiptap` package versions aligned. Bump them in one change.
+- TipTap 3.32 inserts a zero-size image inside a link. Linked-image checks must ignore `img.ProseMirror-separator`.
+- That tree pins `prosemirror-model` `1.25.12`, `prosemirror-transform` `1.12.2`, and `prosemirror-view` `1.42.6`. `prosemirror-changeset` stays `2.4.1`.
+- `@tiptap/pm` 3.32.0 asks for `prosemirror-changeset` `^2.4.4`. Do not take `2.4.2` or later. It halves `MAX_DIFF_SIZE`.
+- `@sentry/nextjs` and `@sentry/bun` are `11.9.0` in that tree. Load `withSentryConfig` from `@sentry/nextjs/config`.
+- `disableLogger` is gone. Use `bundleSizeOptimizations.excludeDebugStatements`.
+- `dataCollection` keeps the version 10 baseline. MCP tool text is off. Each app keeps its own `sentryDataCollection.ts`. `genAI` set to false does not cover MCP tool text. Set `mcp` inputs and outputs to false on each copy. Leave stack-frame values on. Version 10 already collected them.
+- Cypress is `16.2.0` in that tree. `Cypress.env()` is gone. Use `Cypress.expose()` for a public value.
+- `pele` stays `1.8.0` in hocuspocus and `extension-mermaid`. Do not take `1.9.0` until diagram labels are handled.
+- Pull requests `#534`, `#535`, `#536`, and `#538` are merged. `#539`, `#540`, `#537`, and `#473` wait on this tree. `#364` is set aside.

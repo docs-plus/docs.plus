@@ -76,11 +76,9 @@ const draftAnchorTasks = {
 
 export default defineConfig({
   projectId: '5vy66e',
-  allowCypressEnv: false,
   video: false,
   screenshotOnRunFailure: true,
   numTestsKeptInMemory: 0,
-  experimentalMemoryManagement: true,
 
   e2e: {
     excludeSpecPattern: ['**/manual-browser-test/**'],

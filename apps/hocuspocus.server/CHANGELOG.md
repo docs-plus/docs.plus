@@ -25,6 +25,12 @@ sides land. Run `packages/supabase/scripts/check-grants.sql` after the push.
   sends the exact `documentId` and maps rows by `document_id`. The old lowercased key
   matched no workspace made before 2026-08-09.
 
+### Internal
+
+- `@sentry/bun` is `11.9.0`. The init uses the same `dataCollection` baseline as the webapp.
+- The root overrides pin `prosemirror-model` `1.25.12`, `prosemirror-transform` `1.12.2`, and `prosemirror-view` `1.42.6`.
+- `prosemirror-changeset` stays `2.4.1`. `@tiptap/pm` 3.32.0 asks for `^2.4.4`. Later versions halve `MAX_DIFF_SIZE`.
+
 ## [2.2.0] — 2026-10-22
 
 The webapp and hocuspocus share `2.2.0`. Admin stays `1.0.0`. This package is private and is not published to npm.

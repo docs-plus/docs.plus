@@ -280,7 +280,7 @@ function runGalleryScene(scene: GalleryScene, theme: ReadmeGalleryTheme): void {
 }
 
 describe('README screenshot gallery', () => {
-  const raw = Cypress.env('gallerySlugs')
+  const raw = Cypress.expose('gallerySlugs')
   const slugs = typeof raw === 'string' && raw.length > 0 ? new Set(raw.split('+')) : null
 
   for (const theme of ['light', 'dark'] as const) {
