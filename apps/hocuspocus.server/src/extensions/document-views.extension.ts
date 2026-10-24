@@ -97,7 +97,10 @@ export class DocumentViewsExtension implements Extension {
 
   async onDisconnect({ context }: onDisconnectPayload) {
     const ctx = context?.viewContext as ViewContext | undefined
-    if (!ctx?.viewId) return
+    if (!ctx) return
+    // Hocuspocus 3.4.4 runs this hook twice for one close (#601), so the first run takes the marker.
+    delete context.viewContext
+    if (!ctx.viewId) return
 
     // Fire-and-forget so teardown never blocks on the duration write.
     void updateDuration(ctx.viewId, Date.now() - ctx.connectedAt)

@@ -240,6 +240,8 @@ export class DocumentOccupancyExtension implements Extension {
     // fires this hook carrying the owner's id and never fires `connected`.
     const occupancy = readOccupancyContext(context)
     if (!occupancy) return
+    // Hocuspocus 3.4.4 runs this hook twice for one close (#601), so the first run takes the marker.
+    delete (context as ConnectionContext).occupancy
 
     void releaseAndStamp(documentName, occupancy).catch(() => {})
   }
