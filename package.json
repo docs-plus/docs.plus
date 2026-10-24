@@ -191,7 +191,7 @@
     "@typescript-eslint/eslint-plugin": "^8.71.1",
     "@typescript-eslint/parser": "^8.71.1",
     "bun-types": "^1.4.2",
-    "cypress": "^15.21.1",
+    "cypress": "^16.2.0",
     "cypress-real-events": "^1.15.0",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
