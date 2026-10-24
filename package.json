@@ -148,7 +148,7 @@
     "immer": "^11.1.18",
     "prettier": "^3.9.9",
     "prettier-plugin-tailwindcss": "^0.7.4",
-    "tailwind-merge": "^3.6.0",
+    "tailwind-merge": "^3.7.0",
     "tailwindcss": "^4.3.3",
     "y-indexeddb": "^9.0.12",
     "yjs": "^13.6.32",
