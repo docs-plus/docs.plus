@@ -125,6 +125,48 @@ groups:
                 - evaluator: { type: gt, params: [3] }
               refId: C
 
+      - uid: worker-push-deactivations
+        title: Push subscriptions switched off (3 or more in 1h)
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: '3 or more push subscriptions were switched off in 1h. Reason gone is a 404/410 reply from the push service. Reason failed-count is a row that reached 5 failures. The FCM outage of 2026-08-09 switched devices off this way and nobody saw it for two months.'
+          runbook_url: 'Check the push block of the worker /health, the push_subscriptions rows with is_active false and their last_error, and the FCM status page.'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # increase() stretches the count to the window edges, so 2 events
+              # can read as 2.03. The 2.5 threshold keeps the rule at 3 or more.
+              expr: 'sum(increase(push_subscriptions_deactivated_total[1h]))'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [2.5] }
+              refId: C
+
       - uid: worker-dlq-depth
         title: Dead-letter queue not empty
         condition: C

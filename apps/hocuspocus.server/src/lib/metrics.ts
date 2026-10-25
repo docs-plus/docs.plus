@@ -294,6 +294,16 @@ export const jobsTotal = new Counter({
   registers: [register]
 })
 
+// An FCM outage on 2026-08-09 switched devices off, and nobody saw it for two
+// months. `failed-count` is counted when the sender writes the value the cleanup
+// job switches off on, so it leads the real switch-off by up to 5 minutes.
+export const pushSubscriptionsDeactivatedTotal = new Counter({
+  name: 'push_subscriptions_deactivated_total',
+  help: 'Push subscriptions switched off, by reason: gone (404/410 reply) or failed-count (reached 5 failures)',
+  labelNames: ['reason'] as const,
+  registers: [register]
+})
+
 // BullMQ stamps processedOn/finishedOn in ms; absent only on malformed jobs.
 export function recordJobOutcome(
   queue: string,
@@ -324,6 +334,9 @@ export const seedWsAlertSeries = (): void => {
 export const seedWorkerAlertSeries = (): void => {
   for (const queue of ['store-documents', EMAIL_QUEUE_NAME, 'push-notifications']) {
     jobsTotal.inc({ queue, status: 'failed' }, 0)
+  }
+  for (const reason of ['gone', 'failed-count']) {
+    pushSubscriptionsDeactivatedTotal.inc({ reason }, 0)
   }
 }
 

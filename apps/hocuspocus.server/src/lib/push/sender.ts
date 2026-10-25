@@ -7,6 +7,7 @@ import type {
   PushSubscription
 } from '../../types/push.types'
 import { pushLogger } from '../logger'
+import { pushSubscriptionsDeactivatedTotal } from '../metrics'
 import { isSafeUrl, resolvesToPublicAddress } from '../ssrf'
 import { getServiceRoleClient } from '../supabase'
 
@@ -46,6 +47,11 @@ function getSupabaseClient() {
 
 type SupabaseLike = ReturnType<typeof getSupabaseClient>
 
+type Failure = { id: string; failed_count: number; last_error: string; reachesLimit: boolean }
+
+// Mirrors internal.cleanup_push_subscriptions, which switches off rows at failed_count >= 5.
+const CLEANUP_FAILED_COUNT = 5
+
 const NETWORK_ERROR_CODES = new Set([
   'ECONNRESET',
   'ECONNREFUSED',
@@ -68,15 +74,27 @@ function isNetworkError(error: { code?: unknown; message?: string }): boolean {
 
 /**
  * Success/invalid rows share identical values so each is one `.in()` UPDATE;
- * failures group by their (failed_count, last_error) pair to keep queries low.
+ * failures group by (failed_count, last_error, reachesLimit) to keep queries low.
  */
 async function flushSubscriptionUpdates(
   supabase: SupabaseLike,
   successIds: string[],
   invalidIds: string[],
-  failures: { id: string; failed_count: number; last_error: string }[]
+  failures: Failure[]
 ): Promise<void> {
   const writes: PromiseLike<unknown>[] = []
+  // Count rows the write changed, not send results. Concurrent jobs and retries
+  // can send to the same row; the guard lets only the first write match it.
+  const countSwitchedOff =
+    (reason: 'gone' | 'failed-count') =>
+    ({ data, error }: { data: { failed_count: number }[] | null; error: unknown }) => {
+      // A gone row at the limit was already counted as failed-count and waits for
+      // the cleanup job. The gone write keeps failed_count, so skip those rows.
+      // The failed-count write returns its new value, so it skips nothing.
+      const rows =
+        reason === 'gone' ? data?.filter((r) => r.failed_count < CLEANUP_FAILED_COUNT) : data
+      if (!error && rows?.length) pushSubscriptionsDeactivatedTotal.inc({ reason }, rows.length)
+    }
 
   if (successIds.length > 0) {
     writes.push(
@@ -93,30 +111,38 @@ async function flushSubscriptionUpdates(
         .from('push_subscriptions')
         .update({ is_active: false, last_error: 'Subscription expired or invalid' })
         .in('id', invalidIds)
+        .eq('is_active', true)
+        .select('failed_count')
+        .then(countSwitchedOff('gone'))
     )
   }
 
-  const failureGroups = new Map<
-    string,
-    { ids: string[]; failed_count: number; last_error: string }
-  >()
+  const failureGroups = new Map<string, Omit<Failure, 'id'> & { ids: string[] }>()
   for (const f of failures) {
-    const key = `${f.failed_count}|${f.last_error}`
+    const key = `${f.failed_count}|${f.last_error}|${f.reachesLimit}`
     const group = failureGroups.get(key)
     if (group) group.ids.push(f.id)
     else
       failureGroups.set(key, {
         ids: [f.id],
         failed_count: f.failed_count,
-        last_error: f.last_error
+        last_error: f.last_error,
+        reachesLimit: f.reachesLimit
       })
   }
   for (const group of failureGroups.values()) {
+    const write = supabase
+      .from('push_subscriptions')
+      .update({ failed_count: group.failed_count, last_error: group.last_error })
+      .in('id', group.ids)
     writes.push(
-      supabase
-        .from('push_subscriptions')
-        .update({ failed_count: group.failed_count, last_error: group.last_error })
-        .in('id', group.ids)
+      group.reachesLimit
+        ? write
+            .lt('failed_count', CLEANUP_FAILED_COUNT)
+            .eq('is_active', true)
+            .select('failed_count')
+            .then(countSwitchedOff('failed-count'))
+        : write
     )
   }
 
@@ -168,7 +194,7 @@ export async function sendPushNotification(
   // then be flushed as batched queries below, instead of one UPDATE per send (N+1).
   const successIds: string[] = []
   const invalidIds: string[] = []
-  const failures: { id: string; failed_count: number; last_error: string }[] = []
+  const failures: Failure[] = []
   let filtered = 0
 
   const results = await Promise.allSettled(
@@ -218,10 +244,14 @@ export async function sendPushNotification(
           // Charging them let one provider outage switch devices off (#417).
           const network = isNetworkError(error)
           const transient = status ? status === 429 || status >= 500 : network
+          const previousCount = sub.failed_count || 0
+          const failedCount = previousCount + (transient ? 0 : 1)
           failures.push({
             id: sub.id,
-            failed_count: (sub.failed_count || 0) + (transient ? 0 : 1),
-            last_error: status ? `HTTP ${status}` : network ? 'Network error' : 'Send error'
+            failed_count: failedCount,
+            last_error: status ? `HTTP ${status}` : network ? 'Network error' : 'Send error',
+            reachesLimit:
+              previousCount < CLEANUP_FAILED_COUNT && failedCount >= CLEANUP_FAILED_COUNT
           })
         }
 
