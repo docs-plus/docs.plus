@@ -77,6 +77,16 @@ describe('Markdown import/export — all media nodes', () => {
         expect(exported).to.include('height=80')
       })
     })
+
+    it('round-trips video width/height attrs into the rendered player', () => {
+      cy.setMarkdown(`![video](${FIXTURES.video} width=400 height=300)`)
+      cy.nodeCount('video').should('eq', 1)
+      cy.expectRenderedMediaSize('#editor .hypermultimedia--video__content video', 'width', 400)
+      cy.expectRenderedMediaSize('#editor .hypermultimedia--video__content video', 'height', 300)
+      cy.getMarkdown().then((exported) => {
+        expect(exported).to.include(`![video](${FIXTURES.video} width=400 height=300)`)
+      })
+    })
   })
 
   describe('command insert → export', () => {

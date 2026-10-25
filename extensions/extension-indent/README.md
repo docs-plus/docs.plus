@@ -85,6 +85,7 @@ You should see one paragraph that asks you to press Tab. Click before its first 
 - **`configure({ allowedIndentContexts })` replaces the default allowlist instead of merging into it.** Passing one rule drops both defaults, so list every rule you keep.
 - **Headings, code blocks and every textblock outside the default allowlist ignore Tab.** In those textblocks Tab moves focus out of the editor, because the handler returns `false`. Add one rule for each textblock and parent you need.
 - **`editor.getHTML()` writes the indent out, and `setContent(savedHtml)` drops it on load.** See [Keep the indent in saved HTML](#keep-the-indent-in-saved-html).
+- **In Markdown, an indent does not survive reliably.** Markdown has no indent syntax, so export writes the literal leading characters. On import, four or more spaces, or one tab, start a code block. A two-space indent survives, except right after a list. There, any indented line joins the last list item.
 
 The full list, with the reason for each, is in [Caveats](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/api.md#caveats).
 

@@ -74,6 +74,7 @@ You should see the image in the editor. Hover it with a mouse: the media toolbar
 - **`resizeGripper: false` removes the whole media toolbar for that node.** To remove the drag handles alone, replace the media toolbar with [`mediaToolbar`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/media-toolbar.md#bring-your-own-toolbar).
 - **A link extension can claim a media URL before the kit sees it.** See [Keep media URLs out of a link extension](#keep-media-urls-out-of-a-link-extension).
 - **The paste handler drops pasted image files silently without a listener.** Add an `editorFileUpload` listener, as [Image file paste](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/paste-and-import.md#image-file-paste-editorfileupload) shows.
+- **Markdown keeps only `src`, the image `alt`, and the `width` and `height` of `audio` and `video`.** Only whole-number sizes survive. Any other size turns the whole line into plain text on import. Export and import drop every other attribute. That covers the caption, the image `title`, `float`, `margin`, `display`, `clear`, `justifyContent`, the size of every other node, and every player option. An image alt that holds a `[` loses the whole image on import. [#244](https://github.com/docs-plus/docs.plus/issues/244) tracks the fix, in slices 2 to 6.
 
 The full list, with the reason for each, is in [Caveats](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/api.md#caveats).
 
