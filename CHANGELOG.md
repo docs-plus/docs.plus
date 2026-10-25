@@ -29,6 +29,10 @@ sides land, the member faces, the roster and the admin member counts fail. Then 
 - The webapp runs Next.js 15.5.28 and DOMPurify 3.4.17. The admin dashboard runs Next.js 16.4.3. Redeploy both apps.
 - **Sentry stays on the narrow collection baseline.** `@sentry/nextjs` and `@sentry/bun` are `11.9.0`. `withSentryConfig` loads from `@sentry/nextjs/config`. `dataCollection` keeps the version 10 limits. MCP tool text stays off. A live GlitchTip event is still unproven.
 
+### Self-hosting
+
+- The production deploy now aborts below 20 GB free disk, up from 10 GB. It prunes Docker build cache toward a free-space target, not by age.
+
 ## [2.2.0] — 2026-10-22
 
 **A release for AI apps and diagrams, and a security round for self-hosters.** The webapp and

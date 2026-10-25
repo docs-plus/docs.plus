@@ -425,6 +425,10 @@ jobs:
     # fits 30m. A mid-deploy SIGTERM here is worse than a slow deploy.
     timeout-minutes: 45
     needs: [triage, build]
+    outputs:
+      free_gb_before: ${{ steps.disk_guard.outputs.free_gb_before }}
+      free_gb: ${{ steps.disk_guard.outputs.free_gb }}
+      load1: ${{ steps.disk_guard.outputs.load1 }}
     concurrency:
       group: ${{ github.workflow }}-deploy
       cancel-in-progress: false
@@ -585,25 +589,77 @@ jobs:
           echo "✅ Environment ready"
 
       - name: 💾 Pre-deploy disk guard
+        id: disk_guard
         run: |
-          echo "📊 Disk before prune:"
+          free_gib() { echo $(( $(df --output=avail / | tail -1) / 1024 / 1024 )); }
+          FREE_BEFORE=$(free_gib)
+          echo "📊 Disk before prune: ${FREE_BEFORE} GB free"
           df -h / | tail -1
 
-          # Free space proactively. Without this, --no-cache builds can fill
-          # the root volume between deploys and silently OOM/ENOSPC the build
-          # step (job ends in <2min with no error). Runs before build, not after.
-          docker image prune -af --filter "until=24h" 2>/dev/null || true
-          docker builder prune -af --filter "until=24h" 2>/dev/null || true
+          # Rollback needs every image at PREVIOUS_TAG (read from
+          # LAST_GOOD_TAG_FILE above). `docker image prune -a` cannot exclude
+          # one tag, so remove old docsplus-* tags one by one instead. Keep this
+          # run's tag, PREVIOUS_TAG and every image a container uses.
+          SWEEP=1
+          KEEP_TAGS=" ${DEPLOY_TAG} "
+          if [ -f "${LAST_GOOD_TAG_FILE}" ]; then
+            if [[ "${PREVIOUS_TAG:-}" =~ ^[0-9a-f]{40}$ ]]; then
+              KEEP_TAGS+="${PREVIOUS_TAG} "
+            else
+              echo "::warning::${LAST_GOOD_TAG_FILE} holds no commit SHA. Skipping the image sweep."
+              SWEEP=0
+            fi
+          fi
+          # -a: a stopped container still pins its image.
+          if ! USED_IDS=$(docker ps -aq | xargs -r docker inspect -f '{{.Image}}' | sort -u); then
+            echo "::warning::Could not list in-use images. Skipping the image sweep."
+            SWEEP=0
+          fi
+          if [ "${SWEEP}" -eq 1 ]; then
+            echo "🔒 Keeping tags:${KEEP_TAGS}and every image a container uses"
+            for repo in docsplus-webapp docsplus-rest-api docsplus-hocuspocus docsplus-admin; do
+              while read -r tag id; do
+                case "${KEEP_TAGS}" in *" ${tag} "*) continue ;; esac
+                if grep -qxF "${id}" <<< "${USED_IDS}"; then continue; fi
+                # No -f: Docker refuses an image that a container still uses.
+                if docker rmi "${repo}:${tag}" >/dev/null; then
+                  echo "🗑️  Removed ${repo}:${tag}"
+                else
+                  echo "::warning::docker rmi refused ${repo}:${tag}. Kept it."
+                fi
+              done < <(docker image ls "${repo}" --no-trunc --format '{{.Tag}} {{.ID}}' | grep -v '^<none> ' || true)
+            done
+          fi
+          docker image prune -f || echo "::warning::Dangling image prune failed."
+          if [ -n "${PREVIOUS_TAG:-}" ]; then
+            for img in docsplus-webapp docsplus-rest-api docsplus-hocuspocus docsplus-admin; do
+              docker image inspect "${img}:${PREVIOUS_TAG}" >/dev/null 2>&1 \
+                || echo "::warning::Rollback image ${img}:${PREVIOUS_TAG} is missing. A failed deploy cannot roll back."
+            done
+          fi
 
-          # Hard guard: refuse to build when <10 GB free. Fail loud here
-          # rather than fail silently mid-build.
-          AVAIL_KB=$(df --output=avail / | tail -1)
-          AVAIL_GB=$((AVAIL_KB / 1024 / 1024))
-          echo "📊 Disk after prune: ${AVAIL_GB} GB free"
-          if [ "${AVAIL_GB}" -lt 10 ]; then
-            echo "::error::Less than 10 GB free on /. Aborting deploy. SSH to host and run 'docker system prune -af --volumes'."
+          # Prune the build cache toward a free-space target, oldest first, and
+          # never below the reserved size. No age filter: on 2026-10-20 the
+          # 24 h filter freed 0 B on three deploys. Called as buildx, because
+          # only buildx has --min-free-space; `docker builder` routes to it.
+          if ! docker buildx prune -af --reserved-space 15GB --min-free-space 45GB; then
+            echo "::warning::docker buildx prune failed. The hard guard below still runs."
+          fi
+
+          FREE_AFTER=$(free_gib)
+          echo "📊 Disk after prune: ${FREE_AFTER} GB free"
+          docker system df
+          {
+            echo "free_gb_before=${FREE_BEFORE}"
+            echo "free_gb=${FREE_AFTER}"
+            echo "load1=$(cut -d' ' -f1 /proc/loadavg)"
+          } >> "$GITHUB_OUTPUT"
+          echo "💾 Free disk on /: ${FREE_BEFORE} GB before the prune, ${FREE_AFTER} GB after" >> "$GITHUB_STEP_SUMMARY"
+
+          # Hard guard. One build wrote 14 GB on 2026-10-20 (47 GB free, then 33 GB).
+          if [ "${FREE_AFTER}" -lt 20 ]; then
+            echo "::error::Less than 20 GB free on / after the prune. Aborting before the build; production is unchanged. Free space by hand with 'docker buildx prune -af' (build cache only). Do not prune images or volumes: rollback needs the last-good images, and redis-data and traefik-certs are volumes."
             df -h /
-            docker system df
             exit 1
           fi
 
@@ -887,10 +943,9 @@ jobs:
           echo "↩️  Rolling back to: ${PREVIOUS_TAG}"
 
           # Multi-image precondition (A2): ALL service images for the previous
-          # tag must still exist locally. The cleanup step honors --filter
-          # until=24h, so within a 24h window this works reliably; outside
-          # that window we fail loudly rather than partially-rollback into a
-          # mixed-version cluster.
+          # tag must still exist locally. The disk guard never removes the
+          # PREVIOUS_TAG images. If a person removed one by hand, we fail
+          # loudly rather than partially-rollback into a mixed-version cluster.
           MISSING=()
           for img in docsplus-webapp docsplus-rest-api docsplus-hocuspocus docsplus-admin; do
             if ! docker image inspect "${img}:${PREVIOUS_TAG}" >/dev/null 2>&1; then
