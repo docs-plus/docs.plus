@@ -272,12 +272,13 @@ jobs:
 
   extension-tests:
     name: 🧪 Ext (${{ matrix.ext }})
-    needs: [triage, changes, back-validation]
+    # No `back-validation` need: this job reads none of its output, and `build`
+    # still needs both, so a backend failure still blocks the deploy.
+    needs: [triage, changes]
     # Run for a `front` trigger OR a normal app-CI commit; only changed extensions.
     if: |
       always() &&
       needs.triage.outputs.skip_app_ci != 'true' &&
-      needs.back-validation.result != 'failure' &&
       needs.changes.outputs.changed_extensions != '[]' &&
       (needs.triage.outputs.has_front == 'true' || needs.triage.outputs.triggered != 'true' || github.event_name == 'pull_request')
     strategy:
@@ -311,12 +312,12 @@ jobs:
     name: 🧪 Webapp Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [triage, back-validation]
+    # No `back-validation` need, for the same reason as `extension-tests`.
+    needs: [triage]
     if: |
       always() &&
       github.event_name != 'schedule' &&
       needs.triage.outputs.skip_app_ci != 'true' &&
-      needs.back-validation.result != 'failure' &&
       (needs.triage.outputs.has_front == 'true' || needs.triage.outputs.triggered != 'true' || github.event_name == 'pull_request')
     permissions:
       contents: read

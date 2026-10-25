@@ -62,7 +62,7 @@ Parsed by `.github/scripts/parse-build-trigger.sh` from the **first line** of th
 - Duplicates dedupe silently (`back back front` → `{back, front}`).
 - A subject not starting with `(build)` is a **normal commit**: quality gates run, nothing deploys.
 
-**Four domains** (canonical execution order is fixed regardless of token order in the message):
+**Four domains** (the canonical order is fixed regardless of token order in the message):
 
 | #   | Domain          | Validation it runs                                                                              | Deploy target                                                  |
 | --- | --------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
@@ -81,16 +81,18 @@ Legend: **Back-val** = backend-ci + typecheck + security · **App deploy** = sma
 
 | Commit subject                                  | Back-val      | App deploy | Obs | UK  | Order                         |
 | ----------------------------------------------- | ------------- | ---------- | --- | --- | ----------------------------- |
-| `(build): back front observability uptime-kuma` | ✅            | ✅         | ✅  | ✅  | back → front → app → obs → uk |
-| `(build): back front`                           | ✅            | ✅         | ⏭️  | ⏭️  | back → front → app            |
+| `(build): back front observability uptime-kuma` | ✅            | ✅         | ✅  | ✅  | back + front → app → obs → uk |
+| `(build): back front`                           | ✅            | ✅         | ⏭️  | ⏭️  | back + front → app            |
 | `(build): back observability`                   | ✅            | ✅         | ✅  | ⏭️  | back → app → obs              |
-| `(build): front uptime-kuma`                    | ⏭️            | ✅         | ⏭️  | ✅  | front → app → uk              |
+| `(build): front uptime-kuma`                    | ✅            | ✅         | ⏭️  | ✅  | back + front → app → uk       |
 | `(build): observability`                        | ⏭️            | ⏭️         | ✅  | ⏭️  | obs only (all app CI skipped) |
 | `(build): uptime-kuma`                          | ⏭️            | ⏭️         | ⏭️  | ✅  | uk only                       |
 | `(build): back front no-deploy`                 | ✅            | ⏭️         | ⏭️  | ⏭️  | validate only; no deploy      |
 | `fix: …` (normal commit)                        | gates only    | ⏭️         | ⏭️  | ⏭️  | quality gates, no deploy      |
 | PR to `main`                                    | ✅ gates      | ⏭️         | ⏭️  | ⏭️  | gates + build verification    |
 | `schedule` (Sun 00:00 UTC)                      | security only | ⏭️         | n/a | n/a | weekly security audit         |
+
+`back + front` means the two validations run at the same time. Build Verification and the app deploy wait for both. Every app deploy runs Back-val, because the deploy runs the migration and rolls all three backend services.
 
 `workflow_dispatch` with `force_deploy=true` bypasses the commit-message gate and deploys the app; `skip_quality_gates` skips quality gates only.
 
