@@ -118,9 +118,9 @@ jobs:
         working-directory: apps/hocuspocus.server
         run: bun --env-file=../../.env.local scripts/e2e-versions.ts
 
-      # Same closed-port caveat, and it costs this one more: every assertion
-      # needs three verifiable Supabase sessions, so CI runs it as one skip.
-      # The attribution evidence comes from a local run against real Auth.
+      # Same closed-port caveat. The signed-out checks need no Auth and assert
+      # here. The signed-in checks skip until #586, so the script prints
+      # SKIPPED and exits 0. A local run against real Auth covers them.
       - name: 🧪 Run real-infra E2E (change attribution)
         working-directory: apps/hocuspocus.server
         run: bun run test:e2e:change-attribution

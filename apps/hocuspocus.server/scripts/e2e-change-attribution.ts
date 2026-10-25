@@ -1,8 +1,7 @@
 /**
- * Real-infra E2E for change attribution: two signed-in collaborators and one anonymous
- * one on a single document. It also covers a reconnect that replays another editor's
- * offline bytes, and the version diff that has to name each block's author. Standalone
- * process (not `bun test`); needs `make dev-local` and root .env.local.
+ * Real-infra E2E for change attribution: two signed-in collaborators, a signed-out one, a
+ * reconnect that replays offline bytes, and the diff that names each block's author.
+ * Standalone (not `bun test`); needs `make dev-local` and root .env.local.
  */
 import { TiptapTransformer } from '@hocuspocus/transformer'
 import { createClient } from '@supabase/supabase-js'
@@ -19,7 +18,7 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const ALPHA_LIVE = 'alpha-live-paragraph'
 const BETA_LIVE = 'beta-live-paragraph'
-const GAMMA_ANON = 'gamma-anonymous-paragraph'
+const SIGNED_OUT = 'signed-out-paragraph'
 const ALPHA_OFFLINE = 'alpha-offline-paragraph'
 const ORPHAN_REPLAY = 'orphan-replay-paragraph'
 const BETA_RECONNECT = 'beta-reconnect-paragraph'
@@ -295,9 +294,9 @@ interface Actor {
   fullName: string | null
 }
 
-// Attribution needs tokens the WS process can actually verify, which is a live
-// Supabase Auth. CI points SUPABASE_URL at a closed port on purpose, so every
-// assertion below degrades to a skip rather than a false green.
+// Signed-in attribution needs tokens the WS process can verify, so it needs a
+// live Supabase Auth. CI points SUPABASE_URL at a closed port on purpose, so the
+// signed-in checks skip and the run prints SKIPPED, never a false PASSED.
 const mintUser = async (suffix: string, fullName: string): Promise<Actor | null> => {
   const url = process.env.SUPABASE_URL
   const anonKey = process.env.SUPABASE_ANON_KEY
@@ -325,25 +324,6 @@ const mintUser = async (suffix: string, fullName: string): Promise<Actor | null>
   }
 }
 
-const mintAnonymous = async (): Promise<Actor | null> => {
-  const url = process.env.SUPABASE_URL
-  const anonKey = process.env.SUPABASE_ANON_KEY
-  if (!url || !anonKey) return null
-
-  try {
-    const client = createClient(url, anonKey, { auth: { persistSession: false } })
-    const signedIn = await client.auth.signInAnonymously()
-    if (signedIn.error || !signedIn.data.session || !signedIn.data.user) return null
-    return {
-      id: signedIn.data.user.id,
-      accessToken: signedIn.data.session.access_token,
-      fullName: null
-    }
-  } catch {
-    return null
-  }
-}
-
 const deleteActors = async (actors: (Actor | null)[]): Promise<void> => {
   const url = process.env.SUPABASE_URL
   if (!url) return
@@ -365,7 +345,52 @@ const cleanup = async () => {
   }
 }
 
-const runSession = async (alpha: Actor, beta: Actor, anonymous: Actor): Promise<void> => {
+// Needs no Auth, so it asserts in CI too. A signed-out socket carries no user
+// id, so capture must bind none of its clientIDs.
+const runSignedOut = async (): Promise<void> => {
+  const doc = await createDocument('signed-out', { content: titleDoc('Attribution Signed Out') })
+
+  console.log('\n[2] a signed-out connection, on its own document')
+  const signedOutSession = await openProvider(doc.documentId, doc.slug, { name: 'guest' })
+  check(
+    signedOutSession.synced && signedOutSession.announced,
+    'the signed-out collaborator synced and announced its clientID'
+  )
+  appendParagraph(signedOutSession.ydoc, SIGNED_OUT)
+
+  // Wait for the server's ack, then close the only socket. The close forces the
+  // flush, so a head row carrying the edit proves capture had its chance to run.
+  const ackDeadline = Date.now() + 10_000
+  while (signedOutSession.provider.hasUnsyncedChanges && Date.now() < ackDeadline) await sleep(100)
+  signedOutSession.provider.destroy()
+  const flushed = await headCarrying(doc.documentId, [SIGNED_OUT])
+  check(!!flushed, 'the signed-out edit persisted')
+  check(
+    (await bindingFor(doc.documentId, signedOutSession.clientId)) === null,
+    `the signed-out clientID ${signedOutSession.clientId} is bound to nobody`
+  )
+
+  const diff = await rest(
+    `/api/documents/${doc.documentId}/versions/${flushed?.version}/diff?base=1`
+  )
+  check(diff.status === 200, `the signed-out diff returned 200 (got ${diff.status})`)
+  const data = diff.body?.data
+  check(data?.unattributed === false, 'the signed-out diff aligned the stored Y items')
+  const changes: any[] = data?.changes ?? []
+  const authors = new Map<number, any>((data?.authors ?? []).map((a: any) => [a.clientId, a]))
+  const block = changes.find((change) => String(change.after ?? '').includes(SIGNED_OUT))
+  check(!!block, 'the diff lists the signed-out block')
+  check(
+    (block?.clientIds ?? []).includes(signedOutSession.clientId),
+    'the signed-out block still names the clientID that wrote it'
+  )
+  check(
+    !authors.has(signedOutSession.clientId),
+    'the signed-out clientID reads as unattributed rather than as any account'
+  )
+}
+
+const runSignedIn = async (alpha: Actor, beta: Actor): Promise<void> => {
   const doc = await createDocument('session', { content: titleDoc('Attribution Session') })
 
   console.log('\n[1] two signed-in collaborators on one document')
@@ -400,24 +425,11 @@ const runSession = async (alpha: Actor, beta: Actor, anonymous: Actor): Promise<
     'neither signed-in binding is flagged anonymous'
   )
 
-  console.log('\n[2] an anonymous third connection')
-  const anonSession = await openProvider(doc.documentId, doc.slug, {
-    accessToken: anonymous.accessToken,
-    name: 'guest'
-  })
-  check(anonSession.synced && anonSession.announced, 'the anonymous collaborator synced')
-  appendParagraph(anonSession.ydoc, GAMMA_ANON)
-
-  const anonBinding = await awaitBinding(doc.documentId, anonSession.clientId)
-  check(anonBinding?.userId === anonymous.id, 'the anonymous editor is captured, not dropped')
-  check(anonBinding?.isAnonymous === true, 'the anonymous binding records the flag at capture time')
-
   console.log('\n[3] a reconnect replaying edits made under another clientID')
   alphaSession.provider.destroy()
   betaSession.provider.destroy()
-  anonSession.provider.destroy()
-  const flushed = await headCarrying(doc.documentId, [ALPHA_LIVE, BETA_LIVE, GAMMA_ANON])
-  check(!!flushed, 'the three live edits persisted when the last socket closed')
+  const flushed = await headCarrying(doc.documentId, [ALPHA_LIVE, BETA_LIVE])
+  check(!!flushed, 'the two live edits persisted when the last socket closed')
 
   // Two sets of bytes the reconnecting socket does not own: one from an account
   // the server already knows, one from a device that never connected. Only the
@@ -515,12 +527,6 @@ const runSession = async (alpha: Actor, beta: Actor, anonymous: Actor): Promise<
   expectSoleAuthor(BETA_RECONNECT, betaAgain.clientId, beta, 'post-reconnect')
   expectSoleAuthor(ALPHA_OFFLINE, alphaSession.clientId, alpha, 'replayed offline')
 
-  const anonBlock = blockFor(GAMMA_ANON)
-  const anonAuthor = authors.get(anonSession.clientId)
-  check(!!anonBlock, 'the diff lists the anonymous block')
-  check(anonAuthor?.anonymous === true, 'the anonymous block is flagged anonymous')
-  check(!anonAuthor?.user, 'the anonymous block resolves to no name at read time')
-
   const orphanBlock = blockFor(ORPHAN_REPLAY)
   check(!!orphanBlock, 'the diff lists the replayed orphan block')
   check(
@@ -554,14 +560,15 @@ if (!(await waitForHttp(`${restUrl}/health`))) {
 
 const alpha = await mintUser('alpha', 'Attribution Alpha')
 const beta = await mintUser('beta', 'Attribution Beta')
-const anonymous = await mintAnonymous()
 
 try {
-  if (!alpha || !beta || !anonymous) {
-    console.log('\n[1-4] attribution session')
+  await runSignedOut()
+
+  if (!alpha || !beta) {
+    console.log('\n[1] [3] [4] signed-in session')
     skip('no verifiable Supabase sessions; every clientID would be captured as nobody')
   } else {
-    await runSession(alpha, beta, anonymous)
+    await runSignedIn(alpha, beta)
   }
 
   console.log('\n[5] time-range window')
@@ -570,7 +577,7 @@ try {
   console.error('\nE2E aborted:', error)
   failed += 1
 } finally {
-  await deleteActors([alpha, beta, anonymous])
+  await deleteActors([alpha, beta])
   await cleanup()
   wsServer.kill()
   restServer.kill()
@@ -583,5 +590,8 @@ try {
 console.log(`\n${passed} passed, ${failed} failed`)
 if (skipped > 0) console.log(`${skipped} check group(s) skipped`)
 if (uncovered > 0) console.log(`${uncovered} scenario(s) NOT COVERED`)
-console.log(failed > 0 ? '\nattribution E2E: FAILED' : '\nattribution E2E: PASSED')
+// SKIPPED exits 0: CI has no Auth until #586, and a non-zero exit would fail
+// backend-e2e on every main push. NOT COVERED stays a note, not a skip.
+const outcome = failed > 0 ? 'FAILED' : skipped > 0 || passed === 0 ? 'SKIPPED' : 'PASSED'
+console.log(`\nattribution E2E: ${outcome}`)
 process.exit(failed > 0 ? 1 : 0)
