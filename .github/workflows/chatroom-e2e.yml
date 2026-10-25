@@ -71,3 +71,11 @@ jobs:
             Notes/chatroom-server.log
             apps/webapp/cypress/screenshots/
           retention-days: 7
+      - name: 📣 Notify chatroom E2E failure
+        if: failure() && github.event_name == 'push'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          bash scripts/ci/notify-telegram.sh - \
+            "🧪 Chatroom E2E FAILED on main (${GITHUB_SHA::9}): ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"

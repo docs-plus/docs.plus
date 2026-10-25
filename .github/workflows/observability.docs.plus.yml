@@ -44,8 +44,8 @@ jobs:
     # github.ref is the caller's ref too, so the push to main still runs, and a
     # dispatch from any other branch skips (#437).
     if: github.ref == 'refs/heads/main' && inputs.action != 'down'
-    # No `environment: production` — it would inherit the production environment's
-    # required-reviewer protection and gate every monitoring deploy on manual approval.
+    # No `environment: production`. It has no protection rules today (2026-10-20),
+    # but any rule added to it later would also gate every monitoring deploy.
     permissions:
       contents: read
     steps:

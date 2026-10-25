@@ -1,8 +1,7 @@
 # Pages Telegram when a self-hosted runner drops offline OR none is registered
 # (GitHub auto-deregisters runners dead >14 days — zero registered is terminal).
-# Needs RUNNER_WATCHDOG_TOKEN (fine-grained PAT with repo Administration:read —
-# the runners API is not grantable to the workflow GITHUB_TOKEN). Silent no-op
-# until all three secrets exist.
+# Needs RUNNER_WATCHDOG_TOKEN (PAT, repo Administration:read; GITHUB_TOKEN cannot
+# read runners). Without all three secrets, each run warns and checks nothing.
 name: Runner Watchdog
 
 on:
@@ -29,7 +28,14 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          if [ -z "${GH_TOKEN}" ] || [ -z "${TELEGRAM_BOT_TOKEN}" ] || [ -z "${TELEGRAM_CHAT_ID}" ]; then exit 0; fi
+          MISSING=""
+          [ -n "${GH_TOKEN}" ] || MISSING="${MISSING} RUNNER_WATCHDOG_TOKEN"
+          [ -n "${TELEGRAM_BOT_TOKEN}" ] || MISSING="${MISSING} TELEGRAM_BOT_TOKEN"
+          [ -n "${TELEGRAM_CHAT_ID}" ] || MISSING="${MISSING} TELEGRAM_CHAT_ID"
+          if [ -n "${MISSING}" ]; then
+            echo "::warning::Runner watchdog checked nothing. Missing repo secrets:${MISSING}"
+            exit 0
+          fi
           if ! RESP=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runners"); then
             echo "::warning::Could not list runners (token may lack administration:read)"; exit 0
           fi

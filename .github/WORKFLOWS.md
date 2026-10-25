@@ -39,9 +39,10 @@ This file is intentionally not named `README.md` so the repository root `README.
   - Setup/update validates `prometheus.yml` with `promtool` before `up -d`, then restarts prometheus + grafana so mounted config edits load; failures notify Telegram
 - `workflows/runner-watchdog.yml`
   - Every 30 min (GitHub-hosted): checks the repo's self-hosted runner status and notifies Telegram when a runner is offline **or when zero runners are registered**. GitHub auto-deregisters runners dead >14 days, so an empty list is the terminal failure state, not health
-  - No-op until the `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` repo secrets are set
+  - Needs three repo secrets: `RUNNER_WATCHDOG_TOKEN` (fine-grained PAT, repo Administration: read), `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`. Without them each run warns with the missing names and checks nothing
 - `workflows/chatroom-e2e.yml`
   - Chatroom browser tests on a PR or push to `main` when webapp, extension or package code changes, plus `workflow_dispatch`
+  - A failed `push` run sends a Telegram alert through `scripts/ci/notify-telegram.sh`, with the `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` repo secrets. It is not a deploy gate
 - `workflows/lockstep-guard.yml`
   - Fails a PR that changes an extension `package.json` when the publishable extension versions differ. The `lockstep-bypass` label skips it
 - `workflows/discord-release.yml`
@@ -97,5 +98,5 @@ Legend: **Back-val** = backend-ci + typecheck + security · **App deploy** = sma
 
 - Composite action: `actions/setup-bun/action.yml`
 - Trigger tokenizer: `.github/scripts/parse-build-trigger.sh`
-- Telegram notifier: `scripts/ci/notify-telegram.sh` (shared by prod deploy, observability, and runner-watchdog failure steps; never fails the caller)
+- Telegram notifier: `scripts/ci/notify-telegram.sh` (shared by prod deploy, observability, runner-watchdog, and chatroom-e2e failure steps; never fails the caller)
 - Run report: `.github/scripts/write-run-report.sh` (reads `gh run view --json jobs` output; prints Markdown)

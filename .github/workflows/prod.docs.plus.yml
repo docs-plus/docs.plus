@@ -115,8 +115,8 @@ jobs:
   # ===========================================================================
   # STAGE 0 — CHANGE DETECTION (cheap; gates the expensive extension suite)
   # ===========================================================================
-  # The clean-room extension suite (~14 min) is the pipeline's long pole and is
-  # a hard deploy gate. It only needs to run when something that affects an
+  # Each clean-room extension suite takes a median of 151 s (max 289 s, 2026-10-20)
+  # and is a hard deploy gate. It only needs to run when something that affects an
   # extension build/test actually changed. This job emits a boolean the
   # extension-tests job keys off; lint/typecheck/security stay always-on
   # because they are fast and repo-global (typecheck still catches extension
@@ -286,7 +286,8 @@ jobs:
         # `|| '[]'` guards the runtime throw if `changes` is skipped and the output is '' (actionlint won't catch this).
         ext: ${{ fromJson(needs.changes.outputs.changed_extensions || '[]') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # Max 289 s, median 151 s per suite (85 runs to 2026-10-20). 15 min still kills a hang.
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -352,7 +353,8 @@ jobs:
   build:
     name: 🏗️ Build Verification
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    # Max 232 s, median 191 s (85 runs to 2026-10-20). 15 min still kills a hang.
+    timeout-minutes: 15
     needs:
       [
         triage,
