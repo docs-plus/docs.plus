@@ -60,7 +60,7 @@ export function editHyperlinkComposerMobile(opts: EditHyperlinkOptions): HTMLEle
     nodePos,
     validate: opts.validate,
     initialHref: attrs.href ?? '',
-    initialText: getHyperlinkDisplayText(opts.editor, nodePos, opts.link)
+    initialText: getHyperlinkDisplayText(opts.editor, { nodePos, link: opts.link })
   })
   return null
 }

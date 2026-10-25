@@ -10,6 +10,7 @@ import type { Editor } from '@tiptap/core'
 import { applyCreate } from './commands/applyCreate'
 import { applyEdit } from './commands/applyEdit'
 import { setActivePopover } from './hyperlinkPopoverStore'
+import { getHyperlinkDisplayText } from './linkMarkUtils'
 import type { ActivePopover } from './types'
 
 /** Ask the extension's controller to hide; close() detaches the host and emits `idle`, the store subscriber clears `active`, the portal unmounts. */
@@ -58,8 +59,7 @@ const buildEditProps = (opts: EditHyperlinkOptions): ActivePopover['props'] => (
   mode: 'edit',
   editor: opts.editor,
   initialHref: opts.link.getAttribute('href') ?? '',
-  // `innerText` is browser-only; `textContent` is the JSDom-safe fallback.
-  initialText: opts.link.innerText ?? opts.link.textContent ?? '',
+  initialText: getHyperlinkDisplayText(opts.editor, { nodePos: opts.nodePos, link: opts.link }),
   validate: opts.validate,
   defaultSuggestionsState: 'collapsed',
   onApply: ({ href, text }) => {

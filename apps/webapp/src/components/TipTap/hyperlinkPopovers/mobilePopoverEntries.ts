@@ -8,6 +8,7 @@ import { useSheetStore } from '@stores'
 
 import { applyCreate } from './commands/applyCreate'
 import { applyEdit } from './commands/applyEdit'
+import { getHyperlinkDisplayText } from './linkMarkUtils'
 
 /** Caller `onBack` wins; otherwise rebuild the preview popover from the live `<a>` and hand back. Mirrors the prebuilt edit popover's Back. */
 const handleEditBack = (opts: EditHyperlinkOptions): void => {
@@ -44,7 +45,7 @@ export function editHyperlinkMobile(opts: EditHyperlinkOptions): HTMLElement | n
     mode: 'edit',
     editor: opts.editor,
     initialHref: opts.link.getAttribute('href') ?? '',
-    initialText: opts.link.innerText ?? opts.link.textContent ?? '',
+    initialText: getHyperlinkDisplayText(opts.editor, { nodePos: opts.nodePos, link: opts.link }),
     validate: opts.validate,
     onSubmit: (result) => applyEdit(opts, result),
     onBack: () => handleEditBack(opts)

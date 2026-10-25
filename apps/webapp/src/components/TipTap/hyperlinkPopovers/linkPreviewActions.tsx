@@ -4,13 +4,13 @@ import { copyToClipboard } from '@docs.plus/extension-hyperlink'
 import { isDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import type { SheetDataMap } from '@stores'
 import { useSheetStore } from '@stores'
-import { getMarkRange } from '@tiptap/core'
 import type { ReactNode } from 'react'
 
 import { applyEdit } from './commands/applyEdit'
 import { navigateHref } from './hrefEventHandler'
 import { classifyInternalDocumentLink } from './internalDocumentLink'
 import { runInternalDocumentLink } from './internalDocumentLinkActions'
+import { getHyperlinkDisplayText } from './linkMarkUtils'
 
 const ICON_SIZE = 16
 
@@ -78,12 +78,7 @@ export function buildLinkPreviewActions({
       icon: <Icons.pencil size={ICON_SIZE} />,
       onClick: () => {
         // attrs.title is metadata, not the visible anchor label — seed from the mark range.
-        const $pos = editor.state.doc.resolve(nodePos)
-        const mark = editor.schema.marks.hyperlink
-        const range = mark ? getMarkRange($pos, mark) : null
-        const initialText = range
-          ? editor.state.doc.textBetween(range.from, range.to, '')
-          : undefined
+        const initialText = getHyperlinkDisplayText(editor, { nodePos, href })
 
         switchSheet('linkEditor', {
           mode: 'edit',

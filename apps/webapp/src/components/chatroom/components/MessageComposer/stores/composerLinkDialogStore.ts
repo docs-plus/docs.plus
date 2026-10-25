@@ -114,7 +114,7 @@ export const useComposerLinkDialogStore = create<{
           editor: preview.editor,
           nodePos: preview.nodePos,
           initialHref: preview.href,
-          initialText: getHyperlinkDisplayText(preview.editor, preview.nodePos),
+          initialText: getHyperlinkDisplayText(preview.editor, { nodePos: preview.nodePos }),
           validate: preview.validate,
           returnToPreview: preview
         }

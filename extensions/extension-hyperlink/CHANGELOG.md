@@ -14,6 +14,10 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 - The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.0`. It was `^3.31.3`.
 
+### Fixed
+
+- The prebuilt edit popover fills Text from the document, not from `innerText`. Before, CSS such as `text-transform` could change the text that Apply wrote back ([#518](https://github.com/docs-plus/docs.plus/issues/518)).
+
 ## [2.2.0] — 2026-10-22
 
 No behaviour change; aligned to the family.

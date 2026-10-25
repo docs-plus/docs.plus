@@ -5,6 +5,7 @@ import { buildPreviewOptionsFromAnchor } from '../openers/buildPreviewOptionsFro
 import { openPreviewHyperlink } from '../openers/openPreviewHyperlink'
 import { createHTMLElement, validateURL } from '../utils'
 import { Link, Title } from '../utils/icons'
+import { getHyperlinkDisplayText } from './getHyperlinkDisplayText'
 
 export default function editHyperlinkPopover(options: EditHyperlinkOptions): HTMLElement {
   const { editor, link, validate } = options
@@ -20,7 +21,11 @@ export default function editHyperlinkPopover(options: EditHyperlinkOptions): HTM
   })
   const linkTextInput = createHTMLElement('input', {
     type: 'text',
-    value: link.innerText || '',
+    value: getHyperlinkDisplayText(editor, {
+      nodePos: options.nodePos,
+      link,
+      markName: options.markName
+    }),
     placeholder: 'Enter link text'
   })
   const textError = createHTMLElement('div', {

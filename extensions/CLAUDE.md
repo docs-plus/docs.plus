@@ -31,6 +31,7 @@ Extension-internal rules (schema, commands, click handling, safety/normalization
 - The extension stays host-agnostic. `popovers.createHyperlink` / `popovers.editHyperlink` are callbacks returning `HTMLElement | null`.
 - Desktop create/edit entries create an empty host and set only `host.dataset.testid`. Never set `host.className`.
 - Register `{ kind, host, props }` via `setActivePopover` in `hyperlinkPopoverStore.ts`.
+- Webapp Edit forms fill Text through `getHyperlinkDisplayText` in `linkMarkUtils.ts`, never from `innerText` directly.
 - Return the host so the extension's floating controller positions it.
 - A control that opens the create popover must not chain `.focus()` before `openCreateHyperlinkPopover()`. TipTap's `focus()` calls `view.focus()` in a rAF when the pad is blurred, so it takes the caret back from the URL field. Use `.scrollIntoView()` when the selection must scroll. `Mod-k` and the slash item keep the pad focused, so they do not race.
 - A single React `<HyperlinkPopoverPortal>` reads the active popover via `useActivePopover` and portals `<HyperlinkEditor>` with `<HyperlinkSuggestions>` into the host. `DesktopEditor.tsx` mounts it; `pages/editor.tsx` mounts it for the standalone playground. Never mount a second `HyperlinkPopoverPortal` inside `MessageComposer` when `DesktopEditor` already mounts the page-level one.
