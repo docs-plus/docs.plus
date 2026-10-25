@@ -235,49 +235,6 @@ $$;
 
 comment on function public.mark_bookmark_as_read is 'Marks or unmarks a bookmark as read. Returns true if successful, false if bookmark not found or not owned by user.';
 
--- Function: get_bookmark_count
--- Description: Gets the total count of bookmarks for the current user
-create or replace function public.get_bookmark_count(
-    p_workspace_id varchar(36) default null,
-    p_archived boolean default false
-)
-returns int
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-    v_user_id uuid;
-    v_count int;
-begin
-    -- Get the current user ID
-    v_user_id := auth.uid();
-
-    if v_user_id is null then
-        raise exception 'User not authenticated';
-    end if;
-
-    select count(*)::int into v_count
-    from message_bookmarks mb
-    join messages m on mb.message_id = m.id
-    join channels c on m.channel_id = c.id
-    join workspaces w on c.workspace_id = w.id
-    where mb.user_id = v_user_id
-        and m.deleted_at is null
-        and c.deleted_at is null
-        and w.deleted_at is null
-        and (p_workspace_id is null or w.id = p_workspace_id)
-        and (
-            (p_archived = true and mb.archived_at is not null)
-            or (p_archived = false and mb.archived_at is null)
-        );
-
-    return v_count;
-end;
-$$;
-
-comment on function public.get_bookmark_count is 'Returns the total number of bookmarks for the current user. Can filter by workspace and archived status.';
-
 -- Function: get_bookmark_stats
 -- Description: Gets bookmark statistics for the current user
 create or replace function public.get_bookmark_stats(
@@ -340,7 +297,6 @@ ALTER FUNCTION public.toggle_message_bookmark(p_message_id uuid) SET search_path
 ALTER FUNCTION public.get_user_bookmarks(p_workspace_id character varying, p_archived boolean, p_limit integer, p_offset integer, p_marked_as_read boolean) SET search_path = public;
 ALTER FUNCTION public.archive_bookmark(p_bookmark_id bigint, p_archive boolean) SET search_path = public;
 ALTER FUNCTION public.mark_bookmark_as_read(p_bookmark_id bigint, p_mark_as_read boolean) SET search_path = public;
-ALTER FUNCTION public.get_bookmark_count(p_workspace_id character varying, p_archived boolean) SET search_path = public;
 ALTER FUNCTION public.get_bookmark_stats(p_workspace_id character varying) SET search_path = public;
 
 -- Each body refuses a guest, so close the grant too (#318).
@@ -354,6 +310,3 @@ GRANT EXECUTE ON FUNCTION public.get_user_bookmarks(character varying, boolean, 
 GRANT EXECUTE ON FUNCTION public.archive_bookmark(bigint, boolean) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.mark_bookmark_as_read(bigint, boolean) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.get_bookmark_stats(character varying) TO authenticated, service_role;
--- No caller exists. The body raises for a guest, so it is service_role only.
-REVOKE ALL ON FUNCTION public.get_bookmark_count(character varying, boolean) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.get_bookmark_count(character varying, boolean) TO service_role;

@@ -424,9 +424,8 @@ export async function getUserNotificationSubs(c: AppContext) {
       return result[id]
     }
 
-    // Read push_subscriptions directly via service_role (RLS-bypassed). Do NOT
-    // call admin_get_user_notification_subs here — its in-body is_admin(auth.uid())
-    // gate evaluates auth.uid()=NULL under service_role and returns zero rows.
+    // Read push_subscriptions directly via service_role (RLS-bypassed). An RPC gated
+    // on is_admin(auth.uid()) would see auth.uid()=NULL here and return zero rows.
     const pushRows = await fetchAllRows(supabase, 'push_subscriptions', {
       columns: 'user_id, platform, is_active',
       orderColumn: 'user_id'

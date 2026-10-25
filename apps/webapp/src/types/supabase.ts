@@ -1174,13 +1174,6 @@ export type Database = {
           username: string
         }[]
       }
-      admin_get_user_notification_subs: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          platforms: string[]
-          user_id: string
-        }[]
-      }
       admin_revoke_admin: { Args: { p_user_id: string }; Returns: boolean }
       advance_read_cursor: {
         Args: { p_channel_id: string; p_up_to_seq: number }
@@ -1279,10 +1272,6 @@ export type Database = {
           usage_percent: number
           workspace_id: string
         }[]
-      }
-      get_bookmark_count: {
-        Args: { p_archived?: boolean; p_workspace_id?: string }
-        Returns: number
       }
       get_bookmark_stats: { Args: { p_workspace_id?: string }; Returns: Json }
       get_channel_aggregate_data: {

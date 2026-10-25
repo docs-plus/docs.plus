@@ -504,34 +504,6 @@ revoke execute on function public.get_push_queue_stats() from public, anon, auth
 grant  execute on function public.get_push_queue_stats() to service_role;
 
 
--- 7b. Admin: aggregated push subscription platforms per user (bypasses RLS)
-create or replace function public.admin_get_user_notification_subs()
-returns table (
-    user_id uuid,
-    platforms text[]
-)
-language sql
-stable
-security definer
-set search_path = public
-as $$
-    select
-        ps.user_id,
-        array_agg(distinct ps.platform) as platforms
-    from public.push_subscriptions ps
-    where ps.is_active = true
-      and public.is_admin(auth.uid())
-    group by ps.user_id;
-$$;
-
-comment on function public.admin_get_user_notification_subs() is
-'Returns aggregated push subscription platforms per user. Admin-only, bypasses RLS.';
-
--- No caller exists. The body gates on is_admin(auth.uid()), which is null under service_role.
-revoke execute on function public.admin_get_user_notification_subs() from public, anon, authenticated;
-grant execute on function public.admin_get_user_notification_subs() to service_role;
-
-
 -- 7c. Admin: recent push activity across all users (bypasses RLS)
 create or replace function public.admin_get_recent_push_activity(p_limit int default 10)
 returns table (
@@ -770,7 +742,6 @@ ALTER FUNCTION public.ack_push_message(p_msg_id bigint) SET search_path = public
 ALTER FUNCTION public.register_push_subscription(p_device_id text, p_device_name text, p_platform text, p_push_credentials jsonb) SET search_path = public;
 ALTER FUNCTION public.unregister_push_subscription(p_device_id text) SET search_path = public;
 ALTER FUNCTION public.get_push_queue_stats() SET search_path = public;
-ALTER FUNCTION public.admin_get_user_notification_subs() SET search_path = public;
 ALTER FUNCTION public.admin_get_recent_push_activity(p_limit integer) SET search_path = public;
 ALTER FUNCTION public.admin_get_failed_push_subs(p_limit integer) SET search_path = public;
 
