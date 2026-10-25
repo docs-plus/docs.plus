@@ -370,6 +370,8 @@ It prints a public key and a private key.
 
 5. Recreate the containers, as in [Recreate, or the change does not land](#recreate-or-the-change-does-not-land).
 
+In production, the worker `/health` reports `unhealthy` until `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` are all valid.
+
 [ENV.md](../../apps/hocuspocus.server/ENV.md#push-notifications-vapid) defines the three server keys. [Webapp and admin build values](#webapp-and-admin-build-values) defines the build key.
 
 ## Turn off password sign-in

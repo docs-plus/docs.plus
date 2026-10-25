@@ -71,6 +71,7 @@ Then edit it. [Configuration](configuration.md) explains the groups. The values 
 - `PERSIST_TO_LOCAL_STORAGE=false`. See [Template values to fix before you deploy](configuration.md#template-values-to-fix-before-you-deploy).
 - `MEDIA_COOKIE_SECRET`, 32 characters or more, so Private documents can show their media. The repository deploy workflows refuse to deploy without it.
 - `REDIS_PASSWORD`, 32 characters or more. Redis in `docker-compose.prod.yml` requires it, so the stack does not start without it. If you run the observability stack, put the same value in `.env.observability`.
+- `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`, plus the same public key in `NEXT_PUBLIC_VAPID_PUBLIC_KEY`. Without the two server keys, the worker `/health` reports `unhealthy`. [Turn on push notifications](configuration.md#turn-on-push-notifications) has the steps.
 
 A Let's Encrypt email is optional. Traefik reads it from `traefik.yml`, not from `.env.production`. See [Choose where Traefik reads its config](configuration.md#choose-where-traefik-reads-its-config).
 
@@ -221,7 +222,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.production exec hocusp
   bun -e "fetch('http://localhost:4002/health').then(r => r.json()).then(h => console.log(h.status))"
 ```
 
-Expect `healthy`. This route always answers 200, so the status code proves nothing. Only `healthy` means the worker is really draining the save queue.
+Expect `healthy`. This route always answers 200, so the status code proves nothing. Only `healthy` means the worker is really draining the save queue. An `unhealthy` worker can also mean the VAPID settings are missing or wrong. See [Turn on push notifications](configuration.md#turn-on-push-notifications).
 
 Last, open `https://<APP_HOST>` in a browser, create a document, type in it, reload, and confirm the text survived. That round trip is the only check that proves the whole chain works: socket, Redis, worker, and database together.
 

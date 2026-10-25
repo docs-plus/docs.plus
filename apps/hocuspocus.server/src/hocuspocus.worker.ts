@@ -181,6 +181,8 @@ healthApp.get('/health', async (c) => {
     pushConsumerHealth.running &&
     // A held consumer is by design under `invalid`; it pages through its own log line.
     (emailConsumerHealth.running || emailConfigStatus === 'invalid') &&
+    // Dev keeps empty VAPID keys on purpose (#482). In production, missing keys must page.
+    (pushHealth.vapid_configured || config.app.env !== 'production') &&
     dbHealthy &&
     redisHealthy
 
