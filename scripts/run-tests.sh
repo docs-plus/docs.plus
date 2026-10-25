@@ -94,9 +94,11 @@ record_extension_gate() {
 mkdir -p "$REPORT_DIR"
 
 if $RUN_E2E; then
-  if ! curl -s --max-time 3 "$BASE_URL" > /dev/null 2>&1; then
-    echo -e "${YELLOW}WARNING: Dev server not reachable at ${BASE_URL}${NC}"
+  # Any HTTP answer is not enough: another app on the port also answers.
+  if ! curl -sf --max-time 3 "$BASE_URL/api/health" > /dev/null 2>&1; then
+    echo -e "${YELLOW}WARNING: Health check failed at ${BASE_URL}/api/health${NC}"
     echo -e "${YELLOW}  Start it with: make dev-local${NC}"
+    echo -e "${YELLOW}  make dev-local serves http://localhost:3000, so set BASE_URL=http://localhost:3000.${NC}"
     echo -e "${YELLOW}  Or set BASE_URL env var if running elsewhere.${NC}"
     echo ""
     if [ "${CI:-}" = "true" ] || [ ! -t 0 ]; then
@@ -565,7 +567,8 @@ if $RUN_E2E; then
   echo '' >> "$TIMINGS_TMP"
   echo ']}' >> "$TIMINGS_TMP"
   # A scoped run must not replace timings for the rest of the webapp suite.
-  if [ "$E2E_SPEC_ROOT" = "$WEBAPP_DIR/cypress/e2e" ] && [ "$(wc -l < "$TIMINGS_TMP")" -gt 3 ]; then
+  # A failed run keeps the old timings, so a crash cannot skew the split.
+  if [ "$E2E_EXIT" -eq 0 ] && [ "$E2E_SPEC_ROOT" = "$WEBAPP_DIR/cypress/e2e" ] && [ "$(wc -l < "$TIMINGS_TMP")" -gt 3 ]; then
     mv "$TIMINGS_TMP" "$TIMINGS_FILE"
     echo -e "  ${DIM}Updated timings: ${TIMINGS_FILE}${NC}"
   else

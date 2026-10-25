@@ -18,6 +18,12 @@ It starts a temporary standalone server on port 3211 and stops that server after
 Set `CHATROOM_PORT` to use another free port.
 Keep other Next servers in this checkout stopped while the build runs.
 
+Do not run these specs against `next dev`.
+With no GlitchTip DSN, `captureUnknown` logs the error through `console.error`.
+The Next dev overlay shows that call as a Runtime Error dialog, and the dialog covers the Retry button.
+So "retries an RLS failure with the original message id" in `send-and-retry.cy.ts` fails, although the app handles the failure correctly.
+Use `scripts/test-chatroom.sh`, which serves a production build.
+
 The test environment uses localhost service URLs and dummy authentication.
 The shared fixtures seed the `sb-localhost-auth-token` cookie and intercept the HTTP requests.
 No running Supabase, Redis, or collaboration server is required.
