@@ -62,11 +62,14 @@ where n.nspname in ('public', 'internal') and p.prosecdef
         and has_function_privilege('authenticated', p.oid, 'EXECUTE')
         and (n.nspname::text, p.proname::text) not in (select schema_name, fn from authenticated_definer_ok)))
 union all
-select 'default_acl_anon', d.defaclobjtype::text || ':' || string_agg(a.privilege_type, ',' order by a.privilege_type)
-from pg_default_acl d, aclexplode(d.defaclacl) a
-where d.defaclrole = 'postgres'::regrole and d.defaclnamespace = 'public'::regnamespace
-  and a.grantee = 'anon'::regrole
-group by d.defaclobjtype
+-- public keeps authenticated defaults on r and S; pgmq and storage close both roles (#570).
+select 'default_acl_open', n.nspname || ':' || d.defaclobjtype::text || ':' || pg_get_userbyid(a.grantee)
+    || ':' || string_agg(a.privilege_type, ',' order by a.privilege_type)
+from pg_default_acl d join pg_namespace n on n.oid = d.defaclnamespace, aclexplode(d.defaclacl) a
+where d.defaclrole = 'postgres'::regrole and n.nspname in ('public', 'pgmq', 'storage')
+  and (a.grantee = 'anon'::regrole
+    or (a.grantee = 'authenticated'::regrole and n.nspname in ('pgmq', 'storage')))
+group by n.nspname, d.defaclobjtype, a.grantee
 union all
 select 'default_acl_authenticated_exec', 'f:EXECUTE'
 where exists (

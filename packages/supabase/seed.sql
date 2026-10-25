@@ -11509,6 +11509,19 @@ alter default privileges for role postgres in schema public
   revoke all on sequences from anon;
 alter default privileges for role postgres
   revoke execute on functions from public;
+-- #570: pgmq and storage close both roles. Storage objects belong to supabase_storage_admin.
+alter default privileges for role postgres in schema pgmq
+  revoke all on tables from anon, authenticated;
+alter default privileges for role postgres in schema pgmq
+  revoke all on sequences from anon, authenticated;
+alter default privileges for role postgres in schema pgmq
+  revoke execute on functions from anon, authenticated;
+alter default privileges for role postgres in schema storage
+  revoke all on tables from anon, authenticated;
+alter default privileges for role postgres in schema storage
+  revoke all on sequences from anon, authenticated;
+alter default privileges for role postgres in schema storage
+  revoke execute on functions from anon, authenticated;
 
 
 COMMIT;
@@ -11548,7 +11561,8 @@ COMMIT;
 --     AND has_function_privilege('anon', p.oid, 'EXECUTE');
 --
 -- (e) §9 default privileges (expect no anon in any public row, no authenticated
---     in the public f row, and no PUBLIC in the <all schemas> f row)
+--     in the public f row, no anon or authenticated in any pgmq or storage row,
+--     and no PUBLIC in the <all schemas> f row)
 --   SELECT CASE WHEN d.defaclnamespace = 0 THEN '<all schemas>'
 --               ELSE d.defaclnamespace::regnamespace::text END AS schema,
 --          d.defaclobjtype AS objtype,
@@ -11556,7 +11570,8 @@ COMMIT;
 --          a.privilege_type
 --   FROM pg_default_acl d, aclexplode(d.defaclacl) a
 --   WHERE d.defaclrole = 'postgres'::regrole
---     AND (d.defaclnamespace = 0 OR d.defaclnamespace = 'public'::regnamespace)
+--     AND (d.defaclnamespace = 0
+--          OR d.defaclnamespace::regnamespace::text IN ('public', 'pgmq', 'storage'))
 --   ORDER BY 1, 2, 3, 4;
 
 
