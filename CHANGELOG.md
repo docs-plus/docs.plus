@@ -23,6 +23,9 @@ sides land, the member faces, the roster and the admin member counts fail. Then 
   `/demo` pad among them, showed no faces in the Documents list, no roster and no admin
   member count. The lookup now uses the document's id, never its slug
   ([#574](https://github.com/docs-plus/docs.plus/issues/574)).
+- **Imported links now open in the link preview.** Markdown import and connected-app (MCP)
+  writes now store links on the hyperlink mark, so the pad can preview and edit them
+  ([#335](https://github.com/docs-plus/docs.plus/issues/335)).
 
 ### Security
 

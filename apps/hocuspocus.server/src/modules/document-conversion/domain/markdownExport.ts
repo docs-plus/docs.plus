@@ -12,9 +12,12 @@ import { toPortableJson } from './portableJson'
 // so every link and highlight would serialize as bare text. Keep both in step.
 const STUB_MARKS = new Set(['hyperlink', 'highlight'])
 
+// `@tiptap/markdown` gives a token to the first extension that claims it. That
+// order is not documented. Hyperlink goes first so import yields `hyperlink`;
+// StarterKit's `link` stays so stored `link` marks still serialize.
 const markdownExtensions: Extensions = [
-  ...migrationExtensions.filter((extension) => !STUB_MARKS.has(extension.name)),
   Hyperlink,
+  ...migrationExtensions.filter((extension) => !STUB_MARKS.has(extension.name)),
   Highlight
 ]
 

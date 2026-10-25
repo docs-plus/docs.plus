@@ -1,8 +1,40 @@
 import { describe, expect, test } from 'bun:test'
 
-import { importMarkdown } from '../../domain/markdownImport'
+import { importMarkdown, parseMarkdown } from '../../domain/markdownImport'
 
 const types = (content: Record<string, unknown>[]) => content.map((node) => node.type)
+
+const firstBlock = (markdown: string) => parseMarkdown(markdown).content[0] as Record<string, any>
+
+const firstText = (markdown: string) => firstBlock(markdown).content[0] as Record<string, any>
+
+// #335: StarterKit's `link` claimed the token while it came first, and the pad
+// cannot preview or edit a `link` mark.
+describe('parseMarkdown', () => {
+  test('puts a Markdown link on the hyperlink mark', () => {
+    const text = firstText('[Budget](https://example.test/p?id=a)')
+
+    expect(text.marks).toHaveLength(1)
+    expect(text.marks[0].type).toBe('hyperlink')
+    expect(text.marks[0].attrs.href).toBe('https://example.test/p?id=a')
+  })
+
+  test('keeps bold next to the hyperlink mark', () => {
+    const text = firstText('**[bold](https://a.test)**')
+
+    expect(text.marks.map((mark: Record<string, unknown>) => mark.type).sort()).toEqual([
+      'bold',
+      'hyperlink'
+    ])
+  })
+
+  test('still turns a bare media URL on its own line into media', () => {
+    const paragraph = firstBlock('https://example.test/pic.png')
+
+    expect(paragraph.content[0].type).toBe('image')
+    expect(paragraph.content[0].attrs.src).toBe('https://example.test/pic.png')
+  })
+})
 
 describe('importMarkdown', () => {
   // `marked` emits a lone image as a root node. `image` is inline, so the result

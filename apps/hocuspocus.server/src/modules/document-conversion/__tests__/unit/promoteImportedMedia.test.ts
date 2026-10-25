@@ -65,7 +65,7 @@ describe('promoteImportedMedia via importMarkdown', () => {
 
     const list = content.content[1] as Record<string, any>
     const text = list.content[0].content[0].content[0]
-    expect(text.marks[0].type).toBe('link')
+    expect(text.marks[0].type).toBe('hyperlink')
     expect(text.marks[0].attrs.href).toBe('/demo/start%20here')
     expect(encode(content).ok).toBe(true)
   })
@@ -78,7 +78,7 @@ describe('promoteImportedMedia via importMarkdown', () => {
 
     expect(types(content.content)).toEqual(['heading', 'paragraph'])
     const text = (content.content[1] as Record<string, any>).content[0]
-    expect(text.marks[0].type).toBe('link')
+    expect(text.marks[0].type).toBe('hyperlink')
     expect(encode(content).ok).toBe(true)
   })
 
@@ -108,7 +108,7 @@ describe('promoteImportedMedia via importMarkdown', () => {
     const list = content.content[1] as Record<string, any>
     expect(list.type).toBe('bulletList')
     expect(list.content[0].content[0].type).toBe('paragraph')
-    expect(list.content[0].content[0].content[0].marks[0].type).toBe('link')
+    expect(list.content[0].content[0].content[0].marks[0].type).toBe('hyperlink')
     expect(encode(content).ok).toBe(true)
   })
 
@@ -122,7 +122,7 @@ describe('promoteImportedMedia via importMarkdown', () => {
     const para = content.content[1] as Record<string, any>
     expect(
       para.content.some(
-        (child: { marks?: { type: string }[] }) => child.marks?.[0]?.type === 'link'
+        (child: { marks?: { type: string }[] }) => child.marks?.[0]?.type === 'hyperlink'
       )
     ).toBe(true)
     expect(para.content.some((child: { type?: string }) => child.type === 'youtube')).toBe(false)
