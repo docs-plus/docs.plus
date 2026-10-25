@@ -658,8 +658,8 @@ jobs:
       - name: 🔧 Ensure Infrastructure
         run: |
           # First step that mutates the prod host — everything before (env guard,
-          # disk guard, image build) leaves production untouched, and the failure
-          # notification keys off this marker to avoid a false rollback page.
+          # disk guard, image build) leaves production untouched. The failure
+          # notice keys off this marker; the rollback keys off ROLL_STARTED.
           echo "DEPLOY_STARTED=true" >> "$GITHUB_ENV"
           echo "🔧 Ensuring infrastructure..."
 
@@ -702,6 +702,7 @@ jobs:
           done
 
       - name: 🗄️ Migrate database (one-shot gate)
+        id: migrate
         run: |
           # Single prod migration runner: fail-fast BEFORE any app replica scales
           # up, so a bad migration aborts the deploy and the old version keeps
@@ -714,6 +715,9 @@ jobs:
 
       - name: 🚀 Deploy Services (rolling replace)
         run: |
+          # First line on purpose: the rollback keys off this marker. The runner
+          # still applies GITHUB_ENV when this step fails.
+          echo "ROLL_STARTED=true" >> "$GITHUB_ENV"
           echo "🚀 Starting rolling deployment..."
           source "${RUNNER_TEMP}/deploy-service.sh"
 
@@ -868,7 +872,8 @@ jobs:
 
       - name: 🚨 Rollback on Failure
         id: rollback
-        if: failure()
+        # No app replica changes before the roll, so an earlier rollback only churns live services.
+        if: failure() && env.ROLL_STARTED == 'true'
         run: |
           echo "⚠️ Deployment failed — attempting rollback..."
 
@@ -905,6 +910,9 @@ jobs:
           # Override DEPLOY_TAG in the env file and re-deploy with previous images.
           sed -i.bak "s|^DEPLOY_TAG=.*|DEPLOY_TAG=${PREVIOUS_TAG}|" "${ENV_FILE}"
           rm -f "${ENV_FILE}.bak"
+          # Compose interpolation prefers the shell over --env-file, and the
+          # workflow env sets DEPLOY_TAG to the failed SHA. Override it here too.
+          export DEPLOY_TAG="${PREVIOUS_TAG}"
 
           # Identical route to the forward deploy, by construction — a
           # --force-recreate here restarts every service at once and takes the
@@ -966,11 +974,16 @@ jobs:
         if: failure()
         env:
           ROLLBACK_OUTCOME: ${{ steps.rollback.outcome }}
+          MIGRATE_OUTCOME: ${{ steps.migrate.outcome }}
         run: |
           # Credentials live in the observability env file on this host. Never fatal.
           OBS_ENV=/opt/projects/prod.docs.plus/.env.observability
           if [ "${DEPLOY_STARTED:-}" != "true" ]; then
-            TEXT="⚠️ docs.plus deploy of ${DEPLOY_TAG} aborted before touching prod (env guard or build); production unchanged"
+            TEXT="⚠️ docs.plus deploy of ${DEPLOY_TAG} aborted before touching prod (env guard, disk guard or build); production unchanged"
+          elif [ "${ROLL_STARTED:-}" != "true" ] && [ "${MIGRATE_OUTCOME}" = "failure" ]; then
+            TEXT="🛑 docs.plus deploy of ${DEPLOY_TAG} stopped: migration failed; app unchanged, no rollback ran. Check the migration state before the next deploy"
+          elif [ "${ROLL_STARTED:-}" != "true" ]; then
+            TEXT="🛑 docs.plus deploy of ${DEPLOY_TAG} stopped in Ensure Infrastructure; app services unchanged, no rollback ran. Check traefik and redis"
           elif [ "${ROLLBACK_OUTCOME}" = "success" ] && [ -n "${PREVIOUS_TAG:-}" ]; then
             TEXT="🚨 docs.plus deploy of ${DEPLOY_TAG} FAILED — rolled back to ${PREVIOUS_TAG}"
           else
