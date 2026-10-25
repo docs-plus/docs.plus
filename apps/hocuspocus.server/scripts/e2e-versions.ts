@@ -218,6 +218,7 @@ interface Session {
   provider: any
   ydoc: Y.Doc
   synced: boolean
+  authFailed: boolean
   stateless: any[]
 }
 
@@ -229,6 +230,7 @@ const openProvider = async (
   const ydoc = new Y.Doc()
   const stateless: any[] = []
   let synced = false
+  let authFailed = false
   const provider = new HocuspocusProvider({
     url: `ws://127.0.0.1:${wsPort}`,
     name: documentId,
@@ -242,6 +244,9 @@ const openProvider = async (
     onSynced: () => {
       synced = true
     },
+    onAuthenticationFailed: () => {
+      authFailed = true
+    },
     onStateless: ({ payload }: { payload: string }) => {
       try {
         stateless.push(JSON.parse(payload))
@@ -252,8 +257,8 @@ const openProvider = async (
   })
 
   const deadline = Date.now() + 15_000
-  while (!synced && Date.now() < deadline) await sleep(100)
-  return { provider, ydoc, synced, stateless }
+  while (!synced && !authFailed && Date.now() < deadline) await sleep(100)
+  return { provider, ydoc, synced, authFailed, stateless }
 }
 
 const revertOverStateless = async (
@@ -697,7 +702,8 @@ try {
 
   // 7. The stateless revert op is the one write path that never passes through
   //    MessageReceiver, so it carries its own identity and readOnly gates.
-  console.log('\n[7] stateless revert gates')
+  //    It also pins the WS Read-only lock and Private deny with anonymous sockets.
+  console.log('\n[7] stateless revert and WS access gates')
   {
     const doc = await createDocument('stateless', { content: titleDoc('Stateless') })
     const anonymous = await openProvider(doc.documentId, doc.slug)
@@ -713,6 +719,55 @@ try {
     check(mismatch?.error === 'history_failed', 'a room mismatch is refused')
     check(mismatch?.reason === undefined, 'the mismatch refusal carries no machine reason')
     anonymous.provider.destroy()
+
+    // An anonymous socket is a non-owner, so the WS access gates run in CI without
+    // Auth. The unlocked control runs last: without it, a broken socket also passes.
+    const relays = async (documentId: string, slug: string, marker: string) => {
+      const writer = await openProvider(documentId, slug)
+      const observer = await openProvider(documentId, slug)
+      const bothSynced = writer.synced && observer.synced
+      appendParagraph(writer.ydoc, marker)
+      const seen = () => observer.ydoc.getXmlFragment('default').toString().includes(marker)
+      const deadline = Date.now() + 3_000
+      while (!seen() && Date.now() < deadline) await sleep(50)
+      const arrived = seen()
+      writer.provider.destroy()
+      observer.provider.destroy()
+      return { bothSynced, arrived }
+    }
+
+    const wsLocked = await createDocument('ws-locked', { content: titleDoc('WS locked') })
+    await prisma.documentMetadata.update({
+      where: { documentId: wsLocked.documentId },
+      data: { readOnly: true }
+    })
+    const wsOpen = await createDocument('ws-open', { content: titleDoc('WS open') })
+
+    const lockedRun = await relays(wsLocked.documentId, wsLocked.slug, `${PREFIX}-locked-edit`)
+    check(lockedRun.bothSynced, 'two anonymous collaborators synced on the read-only document')
+    check(
+      lockedRun.bothSynced && !lockedRun.arrived,
+      'an anonymous edit on a read-only document never reaches the other client'
+    )
+    const openRun = await relays(wsOpen.documentId, wsOpen.slug, `${PREFIX}-open-edit`)
+    check(openRun.bothSynced, 'two anonymous collaborators synced on the unlocked document')
+    check(
+      openRun.arrived,
+      'control: the same edit on an unlocked document reaches the other client'
+    )
+
+    const wsPrivate = await createDocument('ws-private', { content: titleDoc('WS private') })
+    await prisma.documentMetadata.update({
+      where: { documentId: wsPrivate.documentId },
+      data: { isPrivate: true }
+    })
+    const outsider = await openProvider(wsPrivate.documentId, wsPrivate.slug)
+    check(
+      outsider.authFailed,
+      'an anonymous socket on a Private document gets authenticationFailed'
+    )
+    check(!outsider.synced, 'the refused socket never synced the Private document')
+    outsider.provider.destroy()
 
     if (!actor) {
       skip('no verifiable Supabase session; the read-only gate needs a signed-in non-owner')
