@@ -73,8 +73,8 @@ export const createDraftDocument = async (prisma: PrismaClient, slug: string) =>
 
 // Anchor a draft's identity on the first real edit, so a reload's slug lookup returns the
 // same documentId: the IndexedDB key and WS room the mirror restores early edits from.
-// The create may carry the first signed-in editor as owner. P2002 = already anchored, or
-// a concurrent first-open won the slug: we cede and never claim. True only on a create.
+// The row may carry the first signed-in editor as owner. skipDuplicates cedes when the row is
+// already anchored or a concurrent first-open won the slug: no write, no error log, no claim.
 export const ensureDraftDocumentMetadata = async (
   prisma: PrismaClient,
   params: { documentId: string; slug: string; ownerId?: string | null; email?: string | null }
@@ -82,9 +82,9 @@ export const ensureDraftDocumentMetadata = async (
   const newSlug = normalizeSlug(params.slug)
   if (!newSlug) return false
 
-  try {
-    await prisma.documentMetadata.create({
-      data: {
+  const { count } = await prisma.documentMetadata.createMany({
+    data: [
+      {
         documentId: params.documentId,
         slug: newSlug,
         title: newSlug,
@@ -93,12 +93,10 @@ export const ensureDraftDocumentMetadata = async (
         ownerId: params.ownerId ?? null,
         email: params.email ?? null
       }
-    })
-    return true
-  } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') return false
-    throw err
-  }
+    ],
+    skipDuplicates: true
+  })
+  return count === 1
 }
 
 export const createDocument = async (prisma: PrismaClient, params: CreateDocumentParams) => {

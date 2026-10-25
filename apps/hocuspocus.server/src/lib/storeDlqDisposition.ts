@@ -47,9 +47,9 @@ export function judgeStoreDlqEntry(
   now: number,
   deleteRetentionMs: number
 ): StoreDlqVerdict {
-  // A live row is the newest fact, so it decides ahead of the tombstone. Only a
-  // tombstone proves a purge, and an absent row does not. The eager anchor skips
-  // a slugless edit, cedes on P2002, and swallows its own write failure. That
+  // A live row is the newest fact, so it decides ahead of the tombstone. Only a tombstone
+  // proves a purge, and an absent row does not. The eager anchor skips a slugless edit, cedes
+  // on a taken slug (skipDuplicates, count 0), and swallows its own write failure. That
   // residue is a state this cannot read, so it is not destroyed.
   let disposition: StoreDlqDisposition
   if (facts.trashed) disposition = 'skip-trashed'
