@@ -336,6 +336,7 @@ describe('chatroom attachments', () => {
       cy.get('[data-message-layout="media-only"]').should('exist')
     })
 
+    // Parked with the media-only filter (94bfa1bc3); un-skip when it returns. https://github.com/docs-plus/docs.plus/issues/594
     it.skip('filters the feed to messages with attachments only', () => {
       cy.intercept('POST', '**/rest/v1/rpc/fetch_media_message_window*', {
         statusCode: 200,
