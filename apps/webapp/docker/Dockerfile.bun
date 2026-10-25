@@ -95,16 +95,28 @@ COPY --from=deps /app/packages ./packages
 # apps/* package.json — their workspace members must exist or `bun install --frozen-lockfile` fails
 COPY --from=deps /app/apps ./apps
 
-# Overwrite extension source with context (in case deps had stale copy)
+# Manifests only, so an extension source edit leaves the install below CACHED.
+COPY extensions/extension-hyperlink/package.json ./extensions/extension-hyperlink/
+COPY extensions/extension-hypermultimedia/package.json ./extensions/extension-hypermultimedia/
+COPY extensions/extension-indent/package.json ./extensions/extension-indent/
+COPY extensions/extension-inline-code/package.json ./extensions/extension-inline-code/
+COPY extensions/extension-placeholder/package.json ./extensions/extension-placeholder/
+COPY extensions/extension-mermaid/package.json ./extensions/extension-mermaid/
+
+ENV CYPRESS_INSTALL_BINARY=0
+# No build step here needs a dependency install script, and the scripts are
+# most of this install's time. Native binaries come from optional packages.
+# AGENTS.md §Docker records the check.
+RUN bun install --frozen-lockfile --ignore-scripts
+
+# Sources after the install. COPY merges into each directory, so the
+# extensions/*/node_modules the install wrote survive. Never add --link here.
 COPY extensions/extension-hyperlink ./extensions/extension-hyperlink
 COPY extensions/extension-hypermultimedia ./extensions/extension-hypermultimedia
 COPY extensions/extension-indent ./extensions/extension-indent
 COPY extensions/extension-inline-code ./extensions/extension-inline-code
 COPY extensions/extension-placeholder ./extensions/extension-placeholder
 COPY extensions/extension-mermaid ./extensions/extension-mermaid
-
-ENV CYPRESS_INSTALL_BINARY=0
-RUN bun install --frozen-lockfile
 
 # Build floating-popover + floating-tooltip first — hyperlink/hypermultimedia bundle their dist.
 RUN cd packages/floating-popover && bun run build
@@ -188,7 +200,8 @@ COPY .prettierrc.json ./
 COPY tsconfig.json ./
 
 ENV CYPRESS_INSTALL_BINARY=0
-RUN bun install --frozen-lockfile
+# Same flag and reason as the build-extensions install.
+RUN bun install --frozen-lockfile --ignore-scripts
 
 # Below the install: source changes on nearly every deploy and the install never
 # reads it. The COPY --from=deps above already supplies apps/webapp/package.json,
