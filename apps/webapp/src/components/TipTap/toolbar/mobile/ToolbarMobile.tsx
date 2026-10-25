@@ -43,7 +43,7 @@ const ToolbarMobile = () => {
     }
   }, [isEditable])
 
-  if (!editor || !isKeyboardOpen || !padOwnsKeyboard) return null
+  if (!editor || !isEditable || !isKeyboardOpen || !padOwnsKeyboard) return null
 
   const toggleFormatSelection = (event: React.TouchEvent | React.MouseEvent) => {
     event.stopPropagation()

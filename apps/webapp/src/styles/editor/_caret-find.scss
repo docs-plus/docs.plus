@@ -9,8 +9,8 @@
   box-shadow: 0 0 0 1px var(--color-warning);
 }
 
-// ToolbarMobile has no find check: it would show pad edit controls in read mode, and its
-// `onTouchEnd` refocuses the editor. The browser tracks focus, so no store or reset is needed.
+// In edit mode ToolbarMobile would still show, and its `onTouchEnd` refocuses the editor.
+// The browser tracks focus, so no store or reset is needed.
 .mobileLayoutRoot:has(.caret-find-bar:focus-within) > .mobileToolbarBottom {
   display: none;
 }
