@@ -71,9 +71,19 @@ create index if not exists idx_push_subscriptions_cleanup
 
 alter table public.push_subscriptions enable row level security;
 
+-- FOR ALL with no WITH CHECK reuses USING for INSERT, so an erased account
+-- (users.deleted_at set) can neither read nor write a row with its live token (#579).
 drop policy if exists "Users can manage own subscriptions" on public.push_subscriptions;
 create policy "Users can manage own subscriptions" on public.push_subscriptions
-    for all using ((select auth.uid()) = user_id);
+    for all using (
+        (select auth.uid()) = user_id
+        and exists (
+            select 1
+              from public.users u
+             where u.id = (select auth.uid())
+               and u.deleted_at is null
+        )
+    );
 
 comment on table public.push_subscriptions is
 'Browser/device push notification subscriptions per user';
@@ -378,6 +388,15 @@ as $$
 declare
     v_subscription_id uuid;
 begin
+    -- Definer skips the policy, so refuse an erased account here too (#579).
+    if exists (
+        select 1
+          from public.users u
+         where u.id = auth.uid()
+           and u.deleted_at is not null
+    ) then
+        return null;
+    end if;
     insert into public.push_subscriptions (
         user_id, device_id, device_name, platform, push_credentials, is_active
     ) values (

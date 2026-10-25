@@ -89,6 +89,7 @@ begin
     update public.users
        set notification_preferences = notification_preferences || p_patch
      where id = v_user_id
+       and deleted_at is null  -- definer skips RLS; an erased account writes nothing (#579)
      returning notification_preferences into v_next;
     return v_next;
 end;

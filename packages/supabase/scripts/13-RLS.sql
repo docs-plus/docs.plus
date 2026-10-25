@@ -75,9 +75,11 @@ CREATE POLICY users_select ON public.users
   FOR SELECT TO authenticated
   USING (true);
 
+-- An erased account keeps a live token for up to an hour, so USING also refuses
+-- a row with `deleted_at` set (#579). update_profile is INVOKER, so this covers it.
 CREATE POLICY users_self_update ON public.users
   FOR UPDATE TO authenticated
-  USING      (id = (select auth.uid()))
+  USING      (id = (select auth.uid()) and deleted_at is null)
   WITH CHECK (id = (select auth.uid()));
 
 -- Mirror the anon column whitelist for authenticated. `email`, `status` and

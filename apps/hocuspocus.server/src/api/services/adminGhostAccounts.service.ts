@@ -293,10 +293,10 @@ export type SoftDeleteOutcome =
   | { id: string; status: 'incomplete'; steps: string[] }
 
 /**
- * The `users` read policies are `USING (true)`, so a flag alone leaves the
- * profile public. Clear the row first, so no render points at a deleted avatar.
- * Push and email go off explicitly: `push_enabled` defaults to true. A failed
- * avatar, ban, push or queued-email step is logged and returned as `incomplete`.
+ * The `users` read policies are `USING (true)`, so a flag alone leaves the profile public.
+ * Stamp first so the #579 checks block user writes. Then clear the row before the avatar goes,
+ * so no render points at a deleted avatar. Push and email go off: `push_enabled` defaults to
+ * true. A failed avatar, ban, push or queued-email step is logged and returned as `incomplete`.
  */
 async function softDeleteUsers(
   client: AdminClient,
@@ -305,6 +305,14 @@ async function softDeleteUsers(
   const now = new Date().toISOString()
   return Promise.all(
     userIds.map(async (id) => {
+      // First write wins, so a retry keeps the original deletion time.
+      const stamp = await client
+        .from('users')
+        .update({ deleted_at: now })
+        .eq('id', id)
+        .is('deleted_at', null)
+      if (stamp.error) return { id, status: 'failed', error: stamp.error.message }
+
       const { error } = await client
         .from('users')
         .update({
@@ -317,14 +325,6 @@ async function softDeleteUsers(
         })
         .eq('id', id)
       if (error) return { id, status: 'failed', error: error.message }
-
-      // First write wins, so a retry keeps the original deletion time.
-      const stamp = await client
-        .from('users')
-        .update({ deleted_at: now })
-        .eq('id', id)
-        .is('deleted_at', null)
-      if (stamp.error) return { id, status: 'failed', error: stamp.error.message }
 
       const [avatars, ban, pushRows, queuedEmail] = await Promise.allSettled([
         removeAvatarObjects(client, id),
