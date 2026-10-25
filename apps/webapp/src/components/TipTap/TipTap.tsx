@@ -27,6 +27,7 @@ import { type CaretUser, getCursorUser } from '@utils/getCursorUser'
 import { captureMessageOnce } from '@utils/observability'
 import { sanitizeDiagramSvg } from '@utils/sanitizeContent'
 import { scrollElementInMobilePadEditor } from '@utils/scrollMobilePadEditor'
+import { scrollNearestInScroller } from '@utils/scrollNearestInScroller'
 import bash from 'highlight.js/lib/languages/bash'
 import css from 'highlight.js/lib/languages/css'
 import js from 'highlight.js/lib/languages/javascript'
@@ -109,10 +110,11 @@ const scrollDown = () => {
 
   if (!id) return
   setTimeout(() => {
-    const el = document.querySelector(`[data-toc-id="${id}"]`)
+    const el = document.querySelector(`[data-toc-id="${CSS.escape(id)}"]`)
     if (!el) return
     if (!scrollElementInMobilePadEditor(el, { block: 'nearest', behavior: 'auto' })) {
-      el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' })
+      // Not scrollIntoView: it moves Chrome's focus starting point past the skip link (#309).
+      scrollNearestInScroller(el)
     }
   }, 200)
 }
