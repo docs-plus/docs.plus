@@ -10,7 +10,7 @@ function openLinkFromClick(event: React.MouseEvent<HTMLDivElement>) {
   if (!href) return
   event.preventDefault()
   event.stopPropagation()
-  navigateHref(href)
+  navigateHref(href, undefined, event)
 }
 
 export const HTMLBody = () => {
