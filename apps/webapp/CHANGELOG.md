@@ -25,6 +25,18 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - **Opening a link preview no longer changes the document
   ([#519](https://github.com/docs-plus/docs.plus/issues/519)).** Peers get no update, and the
   change digest no longer counts it.
+- **The phone edit toolbar stays hidden when the pad is read-only
+  ([#308](https://github.com/docs-plus/docs.plus/issues/308)).** An input that opened the
+  keyboard in read mode used to show edit controls.
+- **The skip link stays first in Tab order after a heading deep link
+  ([#309](https://github.com/docs-plus/docs.plus/issues/309)).** On desktop, the first Tab
+  went to a TOC row. It now goes to "Skip to main content".
+- **Tab stays inside a bottom sheet while the sheet opens
+  ([#310](https://github.com/docs-plus/docs.plus/issues/310)).** Focus moves into the sheet on
+  its first visible frame. The sheet backdrop is no longer a Tab stop.
+- **A push notification click marks the notification read when it opens a new window
+  ([#312](https://github.com/docs-plus/docs.plus/issues/312)).** The bell and the app icon
+  badge used to keep the old count.
 
 ## [2.2.0] — 2026-10-22
 

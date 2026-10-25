@@ -45,7 +45,11 @@ export function editHyperlinkMobile(opts: EditHyperlinkOptions): HTMLElement | n
     mode: 'edit',
     editor: opts.editor,
     initialHref: opts.link.getAttribute('href') ?? '',
-    initialText: getHyperlinkDisplayText(opts.editor, { nodePos: opts.nodePos, link: opts.link }),
+    initialText: getHyperlinkDisplayText(opts.editor, {
+      nodePos: opts.nodePos,
+      link: opts.link,
+      markName: opts.markName
+    }),
     validate: opts.validate,
     onSubmit: (result) => applyEdit(opts, result),
     onBack: () => handleEditBack(opts)

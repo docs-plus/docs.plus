@@ -59,7 +59,11 @@ const buildEditProps = (opts: EditHyperlinkOptions): ActivePopover['props'] => (
   mode: 'edit',
   editor: opts.editor,
   initialHref: opts.link.getAttribute('href') ?? '',
-  initialText: getHyperlinkDisplayText(opts.editor, { nodePos: opts.nodePos, link: opts.link }),
+  initialText: getHyperlinkDisplayText(opts.editor, {
+    nodePos: opts.nodePos,
+    link: opts.link,
+    markName: opts.markName
+  }),
   validate: opts.validate,
   defaultSuggestionsState: 'collapsed',
   onApply: ({ href, text }) => {

@@ -7,7 +7,7 @@ import { BOT_USER_AGENT } from '../domain/types'
 
 const ICON_TIMEOUT_MS = 3000
 const HIT_CACHE_HEADER = 'public, max-age=604800'
-const CLEAN_MISS_CACHE_HEADER = 'public, max-age=86400'
+export const CLEAN_MISS_CACHE_HEADER = 'public, max-age=86400'
 const ERROR_MISS_CACHE_HEADER = 'public, max-age=600'
 
 // These upstream answers may change soon, so the miss is cached for a short time only.

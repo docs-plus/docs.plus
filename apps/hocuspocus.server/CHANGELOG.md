@@ -12,11 +12,18 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Migration
 
-Push Supabase migration `20261023120000` with this deploy. It drops and re-creates
-`get_document_member_previews`, `get_document_members` and
-`admin_get_document_member_counts` with new parameter names (`p_document_ids`,
-`p_document_id`) and a `document_id` result column. An old client gets an error until both
-sides land. Run `packages/supabase/scripts/check-grants.sql` after the push.
+Push three Supabase migrations with this deploy, in this order:
+
+1. `20261023120000` drops and re-creates `get_document_member_previews`,
+   `get_document_members` and `admin_get_document_member_counts` with new parameter names
+   (`p_document_ids`, `p_document_id`) and a `document_id` result column. An old client
+   gets an error until both sides land.
+2. `20261024120000` blocks profile, preference and push writes after an account erase
+   ([#579](https://github.com/docs-plus/docs.plus/issues/579)).
+3. `20261025120000` drops `get_bookmark_count` and `admin_get_user_notification_subs`
+   ([#605](https://github.com/docs-plus/docs.plus/issues/605)).
+
+Run `packages/supabase/scripts/check-grants.sql` once, after all three.
 
 The bundled `scripts/traefik/traefik.yml` now drops query strings from the access log. That key
 needs Traefik v3.6.18 or later, and older builds refuse it and do not start. Before you deploy
@@ -41,6 +48,16 @@ older image then does not start.
   ([#574](https://github.com/docs-plus/docs.plus/issues/574)).** `adminStats.service.ts`
   sends the exact `documentId` and maps rows by `document_id`. The old lowercased key
   matched no workspace made before 2026-08-09.
+- **A failed view-stats read now fails the stale audit
+  ([#578](https://github.com/docs-plus/docs.plus/issues/578)).**
+  `GET /api/admin/documents/stale/summary` and `GET /api/admin/documents/stale` answer `500`
+  when the read fails or Supabase is not set. `POST /api/admin/documents/stale/bulk-delete`
+  answers `500` and purges nothing. Before, a failed read scored every document as never
+  viewed.
+- **Markdown links land on the hyperlink mark
+  ([#335](https://github.com/docs-plus/docs.plus/issues/335)).**
+  `POST /api/documents/:documentId/import` with Markdown, and MCP writes, store links on
+  the `hyperlink` mark, not `link`.
 
 ### Internal
 

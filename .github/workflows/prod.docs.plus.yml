@@ -713,9 +713,10 @@ jobs:
 
       - name: 🔧 Ensure Infrastructure
         run: |
-          # First step that mutates the prod host — everything before (env guard,
-          # disk guard, image build) leaves production untouched. The failure
-          # notice keys off this marker; the rollback keys off ROLL_STARTED.
+          # First step that changes live services. Earlier steps (env guard, disk
+          # guard, image build) prune and build images on the host, but leave
+          # production untouched. The failure notice keys off this marker; the
+          # rollback keys off ROLL_STARTED.
           echo "DEPLOY_STARTED=true" >> "$GITHUB_ENV"
           echo "🔧 Ensuring infrastructure..."
 
@@ -888,7 +889,6 @@ jobs:
         continue-on-error: true # cleanup failure shouldn't fail an otherwise green deploy
         run: |
           docker image prune -f
-          docker image prune -f --filter "until=24h" 2>/dev/null || true
           echo "✅ Cleanup complete"
 
       - name: 📊 Summary

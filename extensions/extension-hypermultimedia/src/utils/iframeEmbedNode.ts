@@ -236,7 +236,7 @@ export function renderIframeEmbedHTML<TOptions extends IframeEmbedNodeOptions>(
     height: HTMLAttributes.height ?? node.attrs.height
   })
 
-  const layout = mediaLayoutStyleProps(
+  const layoutProps = mediaLayoutStyleProps(
     {
       display: String(HTMLAttributes.display ?? node.attrs.display ?? 'block'),
       height,
@@ -249,8 +249,8 @@ export function renderIframeEmbedHTML<TOptions extends IframeEmbedNodeOptions>(
     'export-embed'
   )
   const caption = readCaption(node)
-  const split = caption ? splitCaptionLayoutCss(layout) : null
-  const style = split ? split.media : formatMediaLayoutCss(layout)
+  const split = caption ? splitCaptionLayoutCss(layoutProps) : null
+  const style = split ? split.media : formatMediaLayoutCss(layoutProps)
 
   const iframeAttrs = config.resolveIframeAttributes(node.attrs, options, width, height)
   const { allowfullscreen, ...restIframeAttrs } = iframeAttrs

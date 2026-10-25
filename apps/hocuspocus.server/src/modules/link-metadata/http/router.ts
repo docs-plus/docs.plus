@@ -5,7 +5,7 @@ import { isIconOrigin } from '../domain/icon'
 import type { ErrorResponse } from '../domain/types'
 import type { ControllerDeps } from './controller'
 import { createController } from './controller'
-import { createIconController } from './iconController'
+import { CLEAN_MISS_CACHE_HEADER, createIconController } from './iconController'
 import { ICON_ORIGIN_MAX_LENGTH, iconQuerySchema, metadataQuerySchema } from './schema'
 
 export const LINK_METADATA_MOUNT_PATH = '/api/metadata'
@@ -55,5 +55,5 @@ const iconHook = (result: { success: boolean; data: unknown }, c: Context) => {
         message: 'origin query parameter must be a bare http(s) origin with no port'
       }
     : { success: false, code: 'BLOCKED_URL', message: 'origin is not allowed' }
-  return c.json(body, 400, { 'Cache-Control': 'public, max-age=86400' })
+  return c.json(body, 400, { 'Cache-Control': CLEAN_MISS_CACHE_HEADER })
 }
