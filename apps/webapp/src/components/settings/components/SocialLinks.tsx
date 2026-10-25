@@ -5,7 +5,7 @@ import { EmptyState } from '@components/ui/EmptyState'
 import TextInput from '@components/ui/TextInput'
 import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
-import { getFormattedHref, getGoogleFaviconUrl } from '@utils/link-helpers'
+import { getFormattedHref, getSiteIconUrl } from '@utils/link-helpers'
 import { useCallback, useId, useMemo, useState } from 'react'
 import { LuExternalLink, LuLink, LuMail, LuPhone, LuPlus, LuTrash2 } from 'react-icons/lu'
 
@@ -78,7 +78,7 @@ const isDuplicate = (links: LinkItem[], url: string): boolean => {
 
 const getFaviconUrl = (link: LinkItem): string | undefined => {
   if (link.type === LinkType.Email || link.type === LinkType.Phone) return undefined
-  return getGoogleFaviconUrl(link.url)
+  return getSiteIconUrl(link.url)
 }
 
 interface SocialLinksProps {

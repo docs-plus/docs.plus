@@ -20,6 +20,7 @@ export interface PipelineInput {
   cache: Cache
   scraper: Scraper
   stages: PipelineStages
+  publicUrl?: string | null
   /** Optional logger hook the controller wires up; pipeline stays framework-free. */
   onStage?: (event: { stage: string; hit: boolean; durationMs: number }) => void
 }
@@ -31,7 +32,7 @@ export type PipelineResult =
 const orderedStageNames = ['oembed', 'special', 'html'] as const
 
 export const runPipeline = async (input: PipelineInput): Promise<PipelineResult> => {
-  const { requestedUrl, acceptLanguage, cache, scraper, stages, onStage } = input
+  const { requestedUrl, acceptLanguage, cache, scraper, stages, publicUrl, onStage } = input
 
   if (!isSafeUrl(requestedUrl)) {
     let parsed: URL | null = null
@@ -77,7 +78,7 @@ export const runPipeline = async (input: PipelineInput): Promise<PipelineResult>
     }
   }
 
-  const fallback = runFallback(canonical, requestedUrl)
+  const fallback = runFallback(canonical, requestedUrl, publicUrl ?? null)
   await writeCache(cache, canonical, acceptLanguage, fallback, 'negative')
   onStage?.({ stage: 'fallback', hit: true, durationMs: 0 })
   return { kind: 'success', payload: fallback, fromCache: false }

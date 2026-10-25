@@ -6,9 +6,9 @@ Self-contained link-unfurling service. Designed as a modular monolith so it can 
 
 1. **Single bounded folder.** Code, tests, types, infra adapters all live here. Files outside this folder may only import from `./index.ts`.
 2. **One public surface.** `index.ts` exports `{ init, LINK_METADATA_MOUNT_PATH, LINK_ICON_PATH, type MetadataResponse, type ErrorResponse }`. The host mounts the router at the first path constant, and the rate limiter matches the second. Nothing else is consumable from outside.
-3. **DI at the seam.** Module exports `init({ redis, logger, iconMaxBytes })`. `iconMaxBytes` is optional and defaults to `16384`. The module does not call `getRedisClient()` or read env vars for infra clients.
+3. **DI at the seam.** Module exports `init({ redis, logger, iconMaxBytes, publicUrl })`. `iconMaxBytes` is optional and defaults to `16384`. `publicUrl` is optional and defaults to `null`; the fallback stage builds its `favicon` URL from it. The module does not call `getRedisClient()` or read env vars for infra clients.
 4. **Framework-free domain.** Files under `domain/` import zero infra SDKs (no `hono`, no `ioredis`, no `metascraper`). `infra/` is the only place SDKs live. Domain↔infra contracts use tiny inline port types declared in `domain/types.ts`.
-5. **Stable wire contract.** `http/schema.ts` (request) and `domain/types.ts` `MetadataResponse` / `ErrorResponse` (response) are the published contract. Additive changes only within v1.
+5. **Stable wire contract.** `http/schema.ts` (request) and `domain/types.ts` `MetadataResponse` / `ErrorResponse` (response) are the published contract. Additive changes only within v1. One recorded exception: the fallback's `favicon` changed from a Google URL to this server's icon route URL ([#517](https://github.com/docs-plus/docs.plus/issues/517), maintainer ruling 2026-10-18).
 6. **No shared mutable state.** No module-level singletons or top-level side effects. Adapters are constructed inside `init()` and held in closure.
 7. **Tests live inside the module.** `__tests__/` moves with the folder during extraction.
 

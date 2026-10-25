@@ -185,7 +185,8 @@ app.route('/api/admin', adminRouter)
 const linkMetadataModule = linkMetadata.init({
   redis: getRedisClient(),
   logger: logger.child({ module: 'link-metadata' }),
-  iconMaxBytes: config.linkMetadata.iconMaxBytes
+  iconMaxBytes: config.linkMetadata.iconMaxBytes,
+  publicUrl: config.app.publicUrl
 })
 app.route(linkMetadata.LINK_METADATA_MOUNT_PATH, linkMetadataModule.router)
 app.route(mcp.MCP_MOUNT_PATH, mcpModule.router)

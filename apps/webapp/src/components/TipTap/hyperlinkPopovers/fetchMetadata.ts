@@ -1,4 +1,5 @@
 import { normalizeHref } from '@docs.plus/extension-hyperlink'
+import { apiBaseUrl } from '@utils/apiBaseUrl'
 
 export interface MetadataResponse {
   success: true
@@ -58,19 +59,13 @@ const setCachedMetadata = (href: string, data: MetadataResponse | null): void =>
   sessionCache.set(cacheKey(href), { data, expiresAt: Date.now() + CACHE_TTL_MS })
 }
 
-const apiBaseUrl = (): string => {
-  const base = process.env.NEXT_PUBLIC_RESTAPI_URL
-  if (!base) throw new Error('NEXT_PUBLIC_RESTAPI_URL is not configured')
-  return base
-}
-
 export interface FetchMetadataOptions {
   signal?: AbortSignal
 }
 
 /**
  * Backend never returns 5xx for upstream failures — it falls back to
- * hostname+favicon. Non-ok here is validation (400) or rate-limit (429).
+ * hostname, with a `favicon` marker. Non-ok here is validation (400) or rate-limit (429).
  * Both are cached as null to avoid hammering.
  */
 export const fetchMetadata = async (

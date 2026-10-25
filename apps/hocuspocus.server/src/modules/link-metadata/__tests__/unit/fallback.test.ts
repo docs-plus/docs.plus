@@ -19,10 +19,14 @@ describe('runFallback', () => {
     expect(result.requested_url).toBe('https://example.com/x')
   })
 
-  test('emits a google favicon service URL', () => {
-    const result = runFallback('https://example.com/x')
+  test('emits the icon route URL when publicUrl is set', () => {
+    const result = runFallback(
+      'https://example.com/x',
+      'https://example.com/x',
+      'http://localhost:4000'
+    )
     expect(result.favicon).toBe(
-      'https://www.google.com/s2/favicons?domain=https%3A%2F%2Fexample.com&sz=64'
+      'http://localhost:4000/api/metadata/icon?origin=https%3A%2F%2Fexample.com'
     )
   })
 

@@ -2,6 +2,7 @@ import type { Editor } from '@tiptap/core'
 import { type LinkItem, type LinkMetadata, LinkType } from '@types'
 
 import { headingSlugTrail } from './headingSlugTrail'
+import { iconRouteUrl } from './iconRouteUrl'
 
 export const getFormattedHref = (link: LinkItem): string => {
   switch (link.type) {
@@ -15,16 +16,17 @@ export const getFormattedHref = (link: LinkItem): string => {
 }
 
 /**
- * Google's favicon service always answers with a cached PNG, so there is no
- * broken-image case. undefined means the input was not a URL (email, phone).
+ * Our REST icon route. A miss is an empty 404, so each <img> needs onError.
+ * Credentials are refused because `mailto:a@b.com` parses as user `mailto` at `b.com`.
  */
-export const getGoogleFaviconUrl = (url: string, size: 32 | 64 = 32): string | undefined => {
+export const getSiteIconUrl = (url: string): string | undefined => {
   try {
-    const withProtocol = url.startsWith('http') ? url : `https://${url}`
-    const { origin } = new URL(withProtocol)
-    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(origin)}&sz=${size}`
+    const u = new URL(/^[a-z][a-z\d+.-]*:\/\//i.test(url) ? url : `https://${url}`)
+    if ((u.protocol !== 'http:' && u.protocol !== 'https:') || u.username || u.password)
+      return undefined
+    return iconRouteUrl(u.origin)
   } catch {
-    return undefined
+    return undefined // also covers apiBaseUrl() throwing when the variable is unset
   }
 }
 
@@ -50,7 +52,7 @@ export const sanitizeMetadata = (raw: Record<string, unknown>): LinkMetadata => 
   return {
     title: str(raw.title),
     description: str(raw.description),
-    icon: httpStr(raw.icon) || httpStr(raw.favicon),
+    icon: httpStr(raw.icon),
     themeColor: str(publisher?.theme_color) || str(raw.themeColor)
   }
 }

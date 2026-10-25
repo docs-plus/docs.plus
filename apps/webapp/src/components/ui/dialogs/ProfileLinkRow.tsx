@@ -1,6 +1,6 @@
 import SocialIcon from '@components/settings/components/SocialIcon'
 import { getSocialColor, isSocialDomain } from '@components/settings/utils/socialIcons'
-import { getGoogleFaviconUrl } from '@utils/link-helpers'
+import { getSiteIconUrl } from '@utils/link-helpers'
 import { LuLink, LuMail, LuPhone } from 'react-icons/lu'
 
 import { profileLinkAnchorProps, type SanitizedProfileLink } from './profileLinks'
@@ -33,7 +33,7 @@ function ProfileLinkIcon({ link }: { link: SanitizedProfileLink }) {
     }
   }
 
-  const faviconUrl = getGoogleFaviconUrl(link.url)
+  const faviconUrl = getSiteIconUrl(link.url)
   if (faviconUrl) {
     return (
       <>

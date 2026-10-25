@@ -5,6 +5,7 @@ import {
   type SpecialUrlType
 } from '@docs.plus/extension-hyperlink'
 import type { Editor } from '@tiptap/core'
+import { getSiteIconUrl } from '@utils/link-helpers'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { IconType } from 'react-icons'
@@ -105,13 +106,13 @@ export const createMetadataContent = (data: MetadataResponse | null, href: strin
   container.append(titleLink)
 
   // Prefer the high-res icon → publisher logo → image thumbnail → special-icon SVG.
-  // Each candidate runs through `safeImageSrc` so a hostile data:/javascript:
-  // URL from a third-party JSON source can never reach `<img src>`.
+  // Each third-party candidate runs through `safeImageSrc` so a hostile data:/javascript:
+  // URL can never reach `<img src>`. `favicon` is only a fallback marker; we build our own URL.
   const imageUrl =
     safeImageSrc(data?.icon) ||
     safeImageSrc(data?.publisher?.logo) ||
     safeImageSrc(data?.image?.url) ||
-    safeImageSrc(data?.favicon) ||
+    (data?.favicon ? getSiteIconUrl(href) : undefined) ||
     safeImageSrc(data?.oembed?.thumbnail)
   if (imageUrl) {
     const img = createHTMLElement('img', {

@@ -1147,6 +1147,8 @@ Base path `/api/metadata` (self-contained module at `src/modules/link-metadata`)
 
 Success (`200`) returns the `MetadataResponse` contract from `src/modules/link-metadata/domain/types.ts` — `success: true`, `url`, `requested_url`, `title`, optional `description`/`image`/`author`/`publisher`/`oembed`/etc., plus `cached` and `fetched_at`. Responses set `Cache-Control` (positive cache for hits, short negative cache for fallbacks) and `Vary: Accept-Language`.
 
+A fallback result's `favicon`, when present, is this server's `GET /api/metadata/icon` URL for the site's origin.
+
 Errors (`400`) use this module's own shape — top-level `code` and `message`, not the nested envelope:
 
 ```json

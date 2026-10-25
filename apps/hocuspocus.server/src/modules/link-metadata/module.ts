@@ -14,6 +14,7 @@ export interface InitDeps {
   redis: RedisClient | null
   logger: Logger
   iconMaxBytes?: number
+  publicUrl?: string | null
 }
 
 export interface InitResult {
@@ -35,7 +36,8 @@ export const init = (deps: InitDeps): InitResult => {
     scraper,
     stages,
     logger: deps.logger,
-    iconMaxBytes: deps.iconMaxBytes ?? ICON_MAX_BYTES_DEFAULT
+    iconMaxBytes: deps.iconMaxBytes ?? ICON_MAX_BYTES_DEFAULT,
+    publicUrl: deps.publicUrl ?? null
   })
   return { router }
 }

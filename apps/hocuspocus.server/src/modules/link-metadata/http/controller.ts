@@ -9,6 +9,7 @@ export interface ControllerDeps {
   scraper: Scraper
   stages: PipelineStages
   logger: Logger
+  publicUrl?: string | null
 }
 
 const POSITIVE_CACHE_HEADER = 'public, max-age=3600, stale-while-revalidate=86400'
@@ -27,6 +28,7 @@ export const createController = (deps: ControllerDeps) => {
       cache: deps.cache,
       scraper: deps.scraper,
       stages: deps.stages,
+      publicUrl: deps.publicUrl,
       onStage: (e) => stageEvents.push(e)
     })
 
