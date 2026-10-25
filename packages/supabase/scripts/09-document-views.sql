@@ -5,7 +5,7 @@
 --
 -- ARCHITECTURE:
 --   1. Hocuspocus calls `enqueue_document_view()` → fast pgmq.send()
---   2. pg_cron worker processes queue batch every 10 seconds
+--   2. pg_cron worker processes queue batch every 10 minutes
 --   3. Worker deduplicates and inserts views
 --   4. Hocuspocus calls `update_view_duration()` on disconnect
 --   5. Aggregation runs every 5 minutes
@@ -347,7 +347,7 @@ grant execute on function public.enqueue_document_view(text, text, uuid, boolean
 
 
 -- -----------------------------------------------------------------------------
--- 6. Document Views Queue Worker (pg_cron - every 10 seconds)
+-- 6. Document Views Queue Worker (pg_cron - every 10 minutes)
 -- -----------------------------------------------------------------------------
 -- Processes queued views in batches, handles deduplication.
 
@@ -407,12 +407,16 @@ begin
                     v_duplicates := v_duplicates + 1;
                 else
                     -- Insert the view
+                    -- duration_ms is set when the visit closed before this drain (#603).
                     insert into public.document_views (
                         id, document_slug, user_id, session_id, viewed_at, view_date,
-                        is_anonymous, is_authenticated, device_type
+                        is_anonymous, is_authenticated, device_type,
+                        duration_ms, is_bounce
                     ) values (
                         v_view_id, v_document_slug, v_user_id, v_session_id, v_viewed_at, v_view_date,
-                        v_is_anonymous, v_is_authenticated, v_device_type
+                        v_is_anonymous, v_is_authenticated, v_device_type,
+                        coalesce((rec.message->>'duration_ms')::integer, 0),
+                        coalesce((rec.message->>'duration_ms')::integer < 3000, true)
                     );
                     v_processed := v_processed + 1;
                 end if;
@@ -467,6 +471,8 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+    v_queued boolean;
 begin
     if p_view_id is null or p_duration_ms is null then
         return false;
@@ -474,6 +480,14 @@ begin
 
     -- Cap duration at 30 minutes
     p_duration_ms := least(greatest(p_duration_ms, 0), 1800000);
+
+    -- Queue first, then the table (#603). If a drain holds this message,
+    -- this update waits for it and then matches 0 rows. The table update
+    -- below takes a new snapshot, so it sees the drained row.
+    update pgmq.q_document_views
+    set message = message || jsonb_build_object('duration_ms', p_duration_ms)
+    where message->>'view_id' = p_view_id::text;
+    v_queued := found;
 
     -- Update by view_id (works across partitions)
     update public.document_views
@@ -483,12 +497,12 @@ begin
     where id = p_view_id
       and viewed_at > now() - interval '24 hours';
 
-    return found;
+    return v_queued or found;
 end;
 $$;
 
 comment on function public.update_view_duration(uuid, integer) is
-'Updates duration for a view by view_id. Called by Hocuspocus on disconnect.';
+'Updates duration for a view by view_id, in the queued message and in the table. Called by Hocuspocus on disconnect.';
 
 revoke all on function public.update_view_duration(uuid, integer) from public, anon, authenticated;
 grant execute on function public.update_view_duration(uuid, integer)
