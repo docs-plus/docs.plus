@@ -5,13 +5,15 @@
  * This reads every copy and fails when two disagree. It never writes SQL.
  */
 
-import { readFile } from 'fs/promises'
+import { readdir, readFile } from 'fs/promises'
 import { join } from 'path'
 
 import { seedScriptFiles } from './generate-seed.ts'
 
 const read = async (path: string) =>
-  (await readFile(join(import.meta.dir, path), 'utf-8')).replace(/--[^\n]*/g, '')
+  (await readFile(join(import.meta.dir, path), 'utf-8'))
+    // One pass, so whichever comment marker comes first wins.
+    .replace(/--[^\n]*|\/\*[\s\S]*?\*\//g, '')
 
 /** Names in the first capture group of `re`. A missing anchor or an empty list throws. */
 function names(label: string, text: string, re: RegExp, item = /'(\w+)'/g): Set<string> {
@@ -49,13 +51,24 @@ function anonTableGrants(label: string, sql: string): Set<string> {
   return out
 }
 
-/** `public.users` columns in every `grant select (cols) on [table] public.users to <roles incl. anon>`. */
-function anonUsersColumns(label: string, sql: string): Set<string> {
-  const re = /grant\s+select\s+\(([^)]*)\)\s*on\s+(?:table\s+)?public\.users\s+to\s+([^;]+);/gi
+/**
+ * `public.users` columns that `role` (or PUBLIC) gets from `select (cols)` or `all (cols)`
+ * on public.users or on all tables in schema public.
+ * A grant of SELECT or ALL with no column list throws, because it includes `email`.
+ */
+function usersColumns(label: string, sql: string, role: string): Set<string> {
+  const re = /grant\s+([^;]*?)\s+on\s+(?:table\s+)?([^;]*?)\s+to\s+([^;]+);/gi
   const out = new Set<string>()
-  for (const [, cols, roles] of sql.matchAll(re)) {
-    if (!roles.split(/[\s,]+/).some((r) => r.toLowerCase() === 'anon')) continue
-    for (const c of cols.match(/\w+/g) ?? []) out.add(c)
+  for (const [stmt, privileges, targets, roles] of sql.matchAll(re)) {
+    const usersTarget =
+      /(?<![\w."])(?:"?public"?\.)?"?users"?(?![\w"])|all\s+tables\s+in\s+schema\s+"?public"?\b/i
+    if (!usersTarget.test(targets)) continue
+    const grantees = roles.split(/[\s,]+/).map((r) => r.replaceAll('"', '').toLowerCase())
+    if (!grantees.some((r) => [role, 'public'].includes(r))) continue
+    if (/\b(?:select|all)\b(?!\s*\(|\s+privileges\s*\()/i.test(privileges))
+      throw new Error(`${label}: table-wide grant includes email: "${stmt}".`)
+    for (const [, cols] of privileges.matchAll(/(?:select|all(?:\s+privileges)?)\s*\(([^)]*)\)/gi))
+      for (const c of cols.match(/\w+/g) ?? []) out.add(c)
   }
   if (out.size === 0) throw new Error(`${label}: list not found. Update check-grant-allowlists.ts.`)
   return out
@@ -76,6 +89,12 @@ async function main(): Promise<void> {
   const m200 = await read('migrations/20261014121200_revoke_anon_default_table_privileges.sql')
   const seedFiles = await seedScriptFiles()
   const scripts = (await Promise.all(seedFiles.map((f) => read(`scripts/${f}`)))).join('\n')
+  const migrationFiles = (await readdir(join(import.meta.dir, 'migrations'))).filter((f) =>
+    f.endsWith('.sql')
+  )
+  const migrations = (await Promise.all(migrationFiles.map((f) => read(`migrations/${f}`)))).join(
+    '\n'
+  )
   const lint3 = /FROM anon;([\s\S]*?)REVOKE ALL ON public\.admin_users/.exec(lint)?.[1] ?? ''
 
   const lists = {
@@ -91,12 +110,23 @@ async function main(): Promise<void> {
       guard,
       /anon_read_ok\(t\) as \(values([\s\S]*?)anon_definer_ok/
     ),
-    '29 §3 users columns': anonUsersColumns('29 §3 users', lint3),
-    '121200 users columns': anonUsersColumns('121200 users', m200),
-    'check-grants hidden columns': names(
-      'check-grants hidden',
+    '29 §3 users columns': usersColumns('29 §3 users', lint3, 'anon'),
+    '121200 users columns': usersColumns('121200 users', m200, 'anon'),
+    'check-grants anon hidden columns': names(
+      'check-grants anon hidden',
       guard,
-      /from unnest\(array\[([^\]]*)\]\) as c/
+      /'anon_hidden_column', 'users\.' \|\| c\s*from unnest\(array\[([^\]]*)\]\)/
+    ),
+    // Every authenticated grant ever written, because a migration can re-grant email on prod.
+    'authenticated users columns': usersColumns(
+      'authenticated users',
+      `${scripts}\n${migrations}`,
+      'authenticated'
+    ),
+    'check-grants authenticated hidden columns': names(
+      'check-grants authenticated hidden',
+      guard,
+      /'authenticated_hidden_column', 'users\.' \|\| c\s*from unnest\(array\[([^\]]*)\]\)/
     ),
     'scripts internal anon': internalGrants('scripts anon', scripts, 'anon'),
     'scripts internal authenticated': internalGrants(
@@ -133,7 +163,8 @@ async function main(): Promise<void> {
     ['29 §3 anon tables', 'equal to', '121200 read_ok'],
     ['29 §3 anon tables', 'equal to', 'check-grants anon_read_ok'],
     ['29 §3 users columns', 'equal to', '121200 users columns'],
-    ['check-grants hidden columns', 'disjoint from', '29 §3 users columns'],
+    ['check-grants anon hidden columns', 'disjoint from', '29 §3 users columns'],
+    ['check-grants authenticated hidden columns', 'disjoint from', 'authenticated users columns'],
     ['scripts internal anon', 'equal to', '121000 anon_ok'],
     ['scripts internal authenticated', 'equal to', '121000 authenticated_ok'],
     ['scripts internal service_role', 'equal to', '121000 service_ok'],

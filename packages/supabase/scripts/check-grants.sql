@@ -43,8 +43,13 @@ where has_any_column_privilege('anon', oid, 'SELECT')
   and relname not in (select t from anon_read_ok)
 union all
 select 'anon_hidden_column', 'users.' || c
-from unnest(array['email', 'status', 'online_at']) as c
+from unnest(array['email', 'status', 'online_at', 'notification_preferences']) as c
 where has_column_privilege('anon', 'public.users', c, 'SELECT')
+union all
+-- SELECT only. Migration asserts cover status and online_at, and the heartbeat needs UPDATE on status.
+select 'authenticated_hidden_column', 'users.' || c
+from unnest(array['email', 'notification_preferences']) as c
+where has_column_privilege('authenticated', 'public.users', c, 'SELECT')
 union all
 select 'definer_exec', p.oid::regprocedure::text
 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
