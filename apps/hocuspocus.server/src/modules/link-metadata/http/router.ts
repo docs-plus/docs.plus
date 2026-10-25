@@ -1,12 +1,19 @@
 import { zValidator } from '@hono/zod-validator'
-import { Hono } from 'hono'
+import { type Context, Hono } from 'hono'
 
+import { isIconOrigin } from '../domain/icon'
 import type { ErrorResponse } from '../domain/types'
 import type { ControllerDeps } from './controller'
 import { createController } from './controller'
-import { metadataQuerySchema } from './schema'
+import { createIconController } from './iconController'
+import { ICON_ORIGIN_MAX_LENGTH, iconQuerySchema, metadataQuerySchema } from './schema'
 
-export const createRouter = (deps: ControllerDeps): Hono => {
+export const LINK_METADATA_MOUNT_PATH = '/api/metadata'
+export const LINK_ICON_PATH = `${LINK_METADATA_MOUNT_PATH}/icon`
+
+export type RouterDeps = ControllerDeps & { iconMaxBytes: number }
+
+export const createRouter = (deps: RouterDeps): Hono => {
   const router = new Hono()
   router.get(
     '/',
@@ -26,5 +33,27 @@ export const createRouter = (deps: ControllerDeps): Hono => {
     }),
     createController(deps)
   )
+  router.get(
+    '/icon',
+    zValidator('query', iconQuerySchema, iconHook),
+    createIconController({ iconMaxBytes: deps.iconMaxBytes })
+  )
   return router
+}
+
+// On failure `result.data` is the raw query, so a repeated `origin` arrives as an array.
+// A value that is a well-formed origin failed only the SSRF check.
+const iconHook = (result: { success: boolean; data: unknown }, c: Context) => {
+  if (result.success) return
+  const origin = (result.data as { origin?: unknown }).origin
+  const isInvalid =
+    typeof origin !== 'string' || origin.length > ICON_ORIGIN_MAX_LENGTH || !isIconOrigin(origin)
+  const body: ErrorResponse = isInvalid
+    ? {
+        success: false,
+        code: 'INVALID_URL',
+        message: 'origin query parameter must be a bare http(s) origin with no port'
+      }
+    : { success: false, code: 'BLOCKED_URL', message: 'origin is not allowed' }
+  return c.json(body, 400, { 'Cache-Control': 'public, max-age=86400' })
 }

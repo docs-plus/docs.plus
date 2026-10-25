@@ -1,5 +1,8 @@
 import { z } from 'zod'
 
+import { isIconOrigin } from '../domain/icon'
+import { isSafeUrl } from '../domain/ssrf'
+
 /**
  * Additive v1 contract. Scheme guard at the HTTP edge so INVALID_URL stays
  * honest; SSRF would catch non-http(s) anyway, but validation skips a
@@ -14,3 +17,12 @@ export const metadataQuerySchema = z.object({
 })
 
 export type MetadataQuery = z.infer<typeof metadataQuerySchema>
+
+export const ICON_ORIGIN_MAX_LENGTH = 300
+
+export const iconQuerySchema = z.object({
+  origin: z
+    .string()
+    .max(ICON_ORIGIN_MAX_LENGTH)
+    .refine((origin) => isIconOrigin(origin) && isSafeUrl(origin))
+})

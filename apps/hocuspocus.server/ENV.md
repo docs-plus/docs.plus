@@ -98,12 +98,12 @@ The collaboration process serves one internal listener carrying both `/metrics` 
 
 ## Security
 
-| Variable                    | Type   | Default                   | Notes                                                                                                                                                                                                         |
-| --------------------------- | ------ | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SUPABASE_SERVICE_ROLE_KEY` | string | —                         | Required for admin routes, internal email endpoints, and server-side Supabase reads. Optional in the schema, but those features fail without it.                                                              |
-| `ALLOWED_ORIGINS`           | list   | `[]`                      | CORS allowlist. Empty falls back to `[APP_URL]`. With `NODE_ENV=development`, CORS lets any origin pass. See the notes below.                                                                                 |
-| `MCP_AUTH_ISSUER`           | string | `${SUPABASE_URL}/auth/v1` | The OAuth issuer `/api/mcp` names in its metadata. Copy `issuer` from Supabase's `/auth/v1/.well-known/openid-configuration` exactly.                                                                         |
-| `RATE_LIMIT_MAX`            | number | `100`                     | Requests per 15-minute window (global limiter). Public media reads use a separate bucket at ten times this value, fixed in the middleware. An `/api/mcp` call with an accepted OAuth token does not spend it. |
+| Variable                    | Type   | Default                   | Notes                                                                                                                                                                                                                                                  |
+| --------------------------- | ------ | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SUPABASE_SERVICE_ROLE_KEY` | string | —                         | Required for admin routes, internal email endpoints, and server-side Supabase reads. Optional in the schema, but those features fail without it.                                                                                                       |
+| `ALLOWED_ORIGINS`           | list   | `[]`                      | CORS allowlist. Empty falls back to `[APP_URL]`. With `NODE_ENV=development`, CORS lets any origin pass. See the notes below.                                                                                                                          |
+| `MCP_AUTH_ISSUER`           | string | `${SUPABASE_URL}/auth/v1` | The OAuth issuer `/api/mcp` names in its metadata. Copy `issuer` from Supabase's `/auth/v1/.well-known/openid-configuration` exactly.                                                                                                                  |
+| `RATE_LIMIT_MAX`            | number | `100`                     | Requests per 15-minute window (global limiter). Public media reads and favicons (`/api/metadata/icon`) each use a separate bucket at ten times this value, fixed in the middleware. An `/api/mcp` call with an accepted OAuth token does not spend it. |
 
 - **`ALLOWED_ORIGINS` lists both browser apps.** In production, set it to `https://<APP_HOST>,https://<ADMIN_HOST>`. The editor and the admin dashboard both call `https://<API_HOST>` from the browser.
 - **Each entry must equal the browser's `Origin` header.** Write the scheme and the host, plus a port only when it is not the default. Add no path and no trailing slash. The server trims spaces and changes nothing else.
@@ -166,6 +166,19 @@ Read by `src/lib/prisma.ts` from the validated config only. There are no runtime
 - **Unset fails closed.** Nobody can load a Private document's media, `POST /api/plugins/hypermultimedia/session` answers `503`, and REST logs one warning at start. Public documents are not affected.
 - **REST must be same-site with the webapp**, for example `docs.plus` and `prodback.docs.plus`. A cookie from another site is not sent with an image request.
 - Set it on `rest-api`, then recreate that container. Never reuse `EMAIL_UNSUBSCRIBE_SECRET` here.
+
+## Link metadata
+
+| Variable              | Type   | Default | Notes                                                                                      |
+| --------------------- | ------ | ------- | ------------------------------------------------------------------------------------------ |
+| `LINK_ICON_MAX_BYTES` | number | `16384` | Byte cap for one favicon at `GET /api/metadata/icon`. A larger icon is a miss. No ceiling. |
+
+- **Write a plain byte count.** The value is read with `parseInt`, so `16KiB` reads as `16` and hides almost every icon. `0` or text that is not a number falls back to `16384`.
+- **Memory.** Each icon request holds up to this many bytes in memory. The route sets no ceiling, so the operator owns that trade.
+- **Trade-off.** At 16 KiB, 38% to 40% of probed origins show no icon. At 32 KiB or more, 28% show none. Source: two laptop runs, 60 origins each, a plain fetch with no SSRF guard.
+- **To change it on a plain Compose host,** set `LINK_ICON_MAX_BYTES` in `.env.production`. Then run `docker compose -f docker-compose.prod.yml --env-file .env.production up -d --force-recreate rest-api` at the repo root.
+- **On a host that `prod.docs.plus.yml` deploys,** set it in the host env file that the workflow copies to `.env.production` (`ENV_SOURCE`). Then deploy again.
+- **Proxy log.** `scripts/traefik/traefik.yml` drops query strings from the Traefik access log. So an icon miss logs no `?origin=` there. That setting needs Traefik v3.6.18 or later.
 
 ## Email
 

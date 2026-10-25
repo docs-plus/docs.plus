@@ -74,6 +74,10 @@ export const config = {
     mediaCookieSecret: env.MEDIA_COOKIE_SECRET
   },
 
+  linkMetadata: {
+    iconMaxBytes: env.LINK_ICON_MAX_BYTES
+  },
+
   supabase: {
     url: env.SUPABASE_URL,
     anonKey: env.SUPABASE_ANON_KEY,

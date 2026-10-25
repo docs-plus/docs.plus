@@ -184,9 +184,10 @@ app.route('/api/admin/email/setup', emailSetupModule.router)
 app.route('/api/admin', adminRouter)
 const linkMetadataModule = linkMetadata.init({
   redis: getRedisClient(),
-  logger: logger.child({ module: 'link-metadata' })
+  logger: logger.child({ module: 'link-metadata' }),
+  iconMaxBytes: config.linkMetadata.iconMaxBytes
 })
-app.route('/api/metadata', linkMetadataModule.router)
+app.route(linkMetadata.LINK_METADATA_MOUNT_PATH, linkMetadataModule.router)
 app.route(mcp.MCP_MOUNT_PATH, mcpModule.router)
 // RFC 9728's standard locations, beside the /api/mcp copy the 401 header names (#550).
 app.route(mcp.RESOURCE_METADATA_PATH, mcpModule.wellKnownRouter)

@@ -32,6 +32,11 @@ accessLog:
   filters:
     statusCodes:
       - '400-599'
+  # Drop query strings, or each icon miss logs the reader's IP beside ?origin=.
+  # Needs Traefik v3.6.18 or later; older versions refuse the key.
+  fields:
+    queryParameters:
+      defaultMode: drop
 
 # -----------------------------------------------------------------------------
 # Entrypoints

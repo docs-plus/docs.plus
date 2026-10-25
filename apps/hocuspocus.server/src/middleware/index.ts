@@ -11,6 +11,7 @@ import { CONSUME_TIMEOUT_MS, consumeWithin, readWithin } from '../lib/consumeWit
 import { httpLogger } from '../lib/logger'
 import { rateLimitFailOpenTotal } from '../lib/metrics'
 import { getRedisClient } from '../lib/redis'
+import { LINK_ICON_PATH } from '../modules/link-metadata'
 
 const redisClient = getRedisClient()
 
@@ -24,6 +25,10 @@ export const MEDIA_READ_BUDGET_FACTOR = 10
 // onto the global budget. The trailing slash is load-bearing: without it a path
 // such as `/api/plugins/hypermultimedia-other` would claim the media budget too.
 const MEDIA_READ_PATH_PREFIX = `${HYPERMULTIMEDIA_MOUNT_PATH}/`
+
+// One cold pad spends one point per distinct link origin, so a link-heavy page
+// would eat the global budget in a few loads.
+export const LINK_ICON_BUDGET_FACTOR = 10
 
 // Genuine internal/direct traffic carries no proxy-forwarding headers — Traefik
 // always sets them for external requests, so this signal can't be spoofed from
@@ -265,6 +270,11 @@ export const setupMiddleware = (app: Hono, opts: MiddlewareOptions) => {
     duration: 15 * 60,
     keyPrefix: 'media-read'
   })
+  const linkIconRateLimiter = rateLimiter({
+    points: config.security.rateLimitMax * LINK_ICON_BUDGET_FACTOR,
+    duration: 15 * 60,
+    keyPrefix: 'metadata-icon'
+  })
   app.use('*', async (c, next) => {
     if (c.req.method === 'OPTIONS') {
       return next()
@@ -274,6 +284,11 @@ export const setupMiddleware = (app: Hono, opts: MiddlewareOptions) => {
     const path = new URL(c.req.url).pathname
     if (path === '/health' || path.startsWith('/health/')) {
       return next()
+    }
+
+    // No method check: Hono runs a HEAD through the GET route, so HEAD spends this budget too.
+    if (path === LINK_ICON_PATH) {
+      return linkIconRateLimiter(c, next)
     }
 
     // The public read only. The POST on this same prefix is an upload, and it

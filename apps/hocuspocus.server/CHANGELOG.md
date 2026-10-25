@@ -18,6 +18,23 @@ Push Supabase migration `20261023120000` with this deploy. It drops and re-creat
 `p_document_id`) and a `document_id` result column. An old client gets an error until both
 sides land. Run `packages/supabase/scripts/check-grants.sql` after the push.
 
+The bundled `scripts/traefik/traefik.yml` now drops query strings from the access log. That key
+needs Traefik v3.6.18 or later, and older builds refuse it and do not start. Before you deploy
+this commit, run `docker pull traefik:v3.6` on the production host. Check that
+`docker run --rm traefik:v3.6 version` prints 3.6.18 or later. The deploy copies `traefik.yml`
+into the live config folder, so any Traefik restart after it reads the new key. A 3.6.17 or
+older image then does not start.
+
+### Added
+
+- **`GET /api/metadata/icon?origin=<origin>` returns a favicon
+  ([#515](https://github.com/docs-plus/docs.plus/issues/515)).** The route fetches
+  `<origin>/favicon.ico` through the SSRF guard, checks the bytes, and answers with the
+  image or an empty `404`. `LINK_ICON_MAX_BYTES` caps the body, default `16384`. The route
+  has its own rate limit at ten times `RATE_LIMIT_MAX`. One risk is accepted: a host that
+  changes its DNS answer during the fetch can return private bytes. The leak is limited
+  to sniffed image bytes, up to the cap, within 3 s.
+
 ### Fixed
 
 - **The admin dashboard counts members on older documents

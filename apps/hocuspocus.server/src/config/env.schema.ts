@@ -13,7 +13,8 @@ const numericString = (defaultValue: string) =>
     .default(defaultValue)
     .transform((val) => parseInt(val, 10))
 
-// Upload caps: treat 0/empty as unset so misconfigured env does not block all uploads.
+// Byte caps: 0, empty or non-numeric falls back to the default, so a zero cap never blocks everything.
+// A suffix such as 16KiB still parses as 16.
 const positiveByteString = (defaultValue: string) => {
   const fallback = parseInt(defaultValue, 10)
   return z
@@ -109,6 +110,7 @@ export const envSchema = z.object({
   DO_STORAGE_ACCESS_KEY_ID: z.string().optional().default(''),
   DO_STORAGE_SECRET_ACCESS_KEY: z.string().optional().default(''),
   DO_STORAGE_MAX_FILE_SIZE: positiveByteString('10485760'),
+  LINK_ICON_MAX_BYTES: positiveByteString('16384'),
   // Signs the Private media cookie. Empty boots, and Private media then loads
   // for nobody. A short secret is refused, as for EMAIL_UNSUBSCRIBE_SECRET.
   MEDIA_COOKIE_SECRET: z
