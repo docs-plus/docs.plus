@@ -1,3 +1,5 @@
+import * as dns from 'node:dns/promises'
+
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import { Hono } from 'hono'
 import pino from 'pino'
@@ -168,5 +170,38 @@ describe('GET /api/metadata (integration)', () => {
     const second = await app.request(url)
     const body = await readBody(second)
     expect(body.cached).toBe(true)
+  })
+})
+
+// The schema passes example.com on its string check, so only safeFetch's DNS
+// check can refuse this. A removed check would fetch and serve the PNG below.
+describe('GET /api/metadata/icon DNS refusal (integration)', () => {
+  let fetchSpy: ReturnType<typeof spyOn>
+  let dnsSpy: ReturnType<typeof spyOn>
+
+  beforeEach(() => {
+    const png = new Uint8Array(32)
+    png.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+    fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(
+      (async () =>
+        new Response(png, { status: 200, headers: { 'content-type': 'image/png' } })) as never
+    )
+    dnsSpy = spyOn(dns, 'lookup').mockResolvedValue([{ address: '10.0.0.5', family: 4 }] as never)
+  })
+
+  afterEach(() => {
+    fetchSpy.mockRestore()
+    dnsSpy.mockRestore()
+  })
+
+  test('answers 404 without a fetch when the origin resolves to a private address', async () => {
+    const app = buildApp()
+    const response = await app.request(
+      'http://localhost/api/metadata/icon?origin=' + encodeURIComponent('https://example.com')
+    )
+    expect(response.status).toBe(404)
+    // Only the controller's catch sends this header; a route miss sends none.
+    expect(response.headers.get('cache-control')).toBe('public, max-age=600')
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
 })
