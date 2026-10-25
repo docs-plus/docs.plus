@@ -115,17 +115,79 @@ describe('verifySupabaseTokenOutcome', () => {
   })
 
   test('maps a getUser stalled past deadlineMs to unavailable and caches nothing', async () => {
+    // The stall must end: a later verify of this token joins the call in flight.
+    let release: (r: GetUserResult) => void = () => {}
     const stalled = await verifySupabaseTokenOutcome('tok-deadline-race', {
-      getUser: () => new Promise(() => {}),
+      getUser: () => new Promise((resolve) => (release = resolve)),
       deadlineMs: 50
     })
     expect(stalled.kind).toBe('unavailable')
+    release({ data: { user: null }, error: { status: 503, message: 'upstream down' } })
+    await Bun.sleep(0)
 
     // A cached negative entry would answer invalid here without calling getUser.
     const outcome = await verifySupabaseTokenOutcome('tok-deadline-race', {
       getUser: stubGetUser(() => ({ data: { user: { id: 'u-late' } }, error: null }))
     })
     expect(outcome.kind).toBe('user')
+  })
+
+  // Resolves after delayMs, so concurrent verifies overlap the one call in flight.
+  function slowGetUser(delayMs: number, result: () => GetUserResult) {
+    const counter = { calls: 0 }
+    const getUser: NonNullable<VerifyTokenOptions['getUser']> = async () => {
+      counter.calls += 1
+      await Bun.sleep(delayMs)
+      return result()
+    }
+    return { counter, getUser }
+  }
+
+  test('concurrent verifies of one token share one getUser call', async () => {
+    const { counter, getUser } = slowGetUser(20, () => ({
+      data: { user: { id: 'u-burst' } },
+      error: null
+    }))
+    const outcomes = await Promise.all(
+      Array.from({ length: 20 }, () => verifySupabaseTokenOutcome('tok-burst', { getUser }))
+    )
+    expect(counter.calls).toBe(1)
+    expect(outcomes.every((o) => o.kind === 'user')).toBe(true)
+  })
+
+  test('a shared unavailable result reaches every joined caller and is not cached', async () => {
+    let down = true
+    const { counter, getUser } = slowGetUser(20, () =>
+      down
+        ? { data: { user: null }, error: { status: 503, message: 'upstream down' } }
+        : { data: { user: { id: 'u-burst-503' } }, error: null }
+    )
+    const outcomes = await Promise.all(
+      Array.from({ length: 20 }, () => verifySupabaseTokenOutcome('tok-burst-503', { getUser }))
+    )
+    expect(counter.calls).toBe(1)
+    expect(outcomes.every((o) => o.kind === 'unavailable')).toBe(true)
+
+    down = false
+    expect((await verifySupabaseTokenOutcome('tok-burst-503', { getUser })).kind).toBe('user')
+    expect(counter.calls).toBe(2)
+  })
+
+  test("one caller's deadline never ends a joined caller early", async () => {
+    const { counter, getUser } = slowGetUser(150, () => ({
+      data: { user: { id: 'u-joined' } },
+      error: null
+    }))
+    const a = verifySupabaseTokenOutcome('tok-joined', { getUser, deadlineMs: 50 })
+    const b = verifySupabaseTokenOutcome('tok-joined', { getUser })
+    // C starts after A's deadline fired, so it proves the timeout kept the key.
+    await Bun.sleep(80)
+    const c = verifySupabaseTokenOutcome('tok-joined', { getUser })
+
+    expect((await a).kind).toBe('unavailable')
+    expect((await b).kind).toBe('user')
+    expect((await c).kind).toBe('user')
+    expect(counter.calls).toBe(1)
   })
 
   // Reads one metric sample, so the assertions below compare deltas rather than

@@ -62,6 +62,7 @@ const NEG_TOKEN_CACHE_TTL_MS = 30_000
 // Raise the number only when the gauge below shows real saturation in production.
 export const MAX_TOKEN_CACHE = 1000
 const tokenCache = new Map<string, { user: SupabaseUser | null; expiresAt: number }>()
+const inFlight = new Map<string, Promise<TokenVerifyOutcome>>()
 
 // Defined beside the Map so a process without this cache publishes no sample at
 // all. Registered in metrics.ts it reported 0 from the worker, which never imports
@@ -116,24 +117,42 @@ export const verifySupabaseTokenOutcome = async (
       return supabase.auth.getUser(accessToken)
     })
 
+  // A reconnect burst verifies one token many times before the first answer is
+  // cached. Later callers join the one Auth call in flight. Each caller's own deadline
+  // races outside it, so a short deadline never ends a caller without one early.
+  let shared = inFlight.get(token)
+  if (!shared) {
+    shared = fetchTokenOutcome(token, getUser).finally(() => inFlight.delete(token))
+    inFlight.set(token, shared)
+  }
+
+  const deadlineMs = opts?.deadlineMs
+  if (deadlineMs == null) return shared
+
   let deadlineTimer: ReturnType<typeof setTimeout> | undefined
   try {
-    const deadlineMs = opts?.deadlineMs
-    // The rejection lands in the catch below, which caches nothing (#596).
+    // The timeout caches nothing and leaves the shared call running (#596).
+    return await Promise.race([
+      shared,
+      new Promise<TokenVerifyOutcome>((resolve) => {
+        deadlineTimer = setTimeout(() => {
+          const error = new Error(`Token verification exceeded ${deadlineMs} ms`)
+          jwtLogger.error({ err: error }, 'Error verifying token')
+          resolve({ kind: 'unavailable', cause: error })
+        }, deadlineMs)
+      })
+    ])
+  } finally {
+    clearTimeout(deadlineTimer)
+  }
+}
+
+async function fetchTokenOutcome(token: string, getUser: AuthGetUser): Promise<TokenVerifyOutcome> {
+  try {
     const {
       data: { user },
       error
-    } = await (deadlineMs == null
-      ? getUser(token)
-      : Promise.race([
-          getUser(token),
-          new Promise<never>((_, reject) => {
-            deadlineTimer = setTimeout(
-              () => reject(new Error(`Token verification exceeded ${deadlineMs} ms`)),
-              deadlineMs
-            )
-          })
-        ]))
+    } = await getUser(token)
 
     if (error || !user) {
       jwtLogger.warn({ error }, 'Token verification failed')
@@ -155,11 +174,10 @@ export const verifySupabaseTokenOutcome = async (
     jwtLogger.debug({ userId: user.id }, 'Token verified')
     return { kind: 'user', user: result }
   } catch (error) {
-    // getUser threw (network/timeout) rather than returning an AuthError.
+    // getUser threw rather than returning an AuthError. auth-js returns network
+    // errors, so only an unexpected throw lands here.
     jwtLogger.error({ err: error }, 'Error verifying token')
     return { kind: 'unavailable', cause: error }
-  } finally {
-    clearTimeout(deadlineTimer)
   }
 }
 
