@@ -413,7 +413,7 @@ export const createDocumentWorker = () => {
         // The slug retry wraps the WHOLE transaction. A P2002 aborts the Postgres
         // transaction, so retrying inside it only ever hit 25P02, and the next
         // debounce re-enqueued into the same dead end.
-        const { savedDoc, createdSlug, isFirstCreation } = await withUniqueSlug(
+        const { savedDoc, versionData, createdSlug, isFirstCreation } = await withUniqueSlug(
           baseSlug,
           (candidateSlug) =>
             prisma.$transaction(
@@ -472,10 +472,12 @@ export const createDocumentWorker = () => {
                     trigger: data.trigger ?? null,
                     triggeredBy: data.triggeredBy ?? null,
                     contributors: data.contributors ?? []
-                  }
+                  },
+                  // Select only version. The full row would send the snapshot back inside the lock.
+                  select: { version: true }
                 })
 
-                return { savedDoc: doc, createdSlug: slug, isFirstCreation: isFirst }
+                return { savedDoc: doc, versionData, createdSlug: slug, isFirstCreation: isFirst }
               },
               // Under bursts jobs queue on the pool; waiting must degrade into
               // latency, not P2028 errors that burn the retry budget.
@@ -497,7 +499,7 @@ export const createDocumentWorker = () => {
         try {
           await refreshDocumentGridPreview(prisma, {
             documentId: data.documentName,
-            data: savedDoc.data
+            data: versionData
           })
         } catch (err) {
           queueLogger.warn(

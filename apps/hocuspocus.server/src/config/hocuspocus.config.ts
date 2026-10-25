@@ -309,7 +309,8 @@ const configureExtensions = (): { extensions: Extension[]; redisWired: boolean }
                     trigger,
                     triggeredBy,
                     contributors
-                  }
+                  },
+                  select: { version: true }
                 })
               })
 

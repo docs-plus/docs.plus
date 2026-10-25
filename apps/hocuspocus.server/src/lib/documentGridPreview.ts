@@ -178,10 +178,12 @@ const persistDocumentGridPreview = async (
     return
   }
 
+  // Most saves leave the first lines alone. The jsonb guard skips that no-op row write.
   await prisma.$executeRaw`
     UPDATE "DocumentMetadata"
     SET preview = CAST(${payload} AS jsonb)
     WHERE "documentId" = ${documentId}
+      AND preview IS DISTINCT FROM CAST(${payload} AS jsonb)
   `
 }
 
