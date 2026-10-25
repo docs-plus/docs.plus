@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { PrismaClient } from '@prisma/client'
+import type { PrismaClient } from '../../generated/prisma/client'
 import type { Logger } from 'pino'
 
 import { createRetention, reapCutoff } from '../retention'

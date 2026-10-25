@@ -1,6 +1,6 @@
-import { Prisma, PrismaClient } from '@prisma/client'
 import ShortUniqueId from 'short-unique-id'
 
+import { Prisma, PrismaClient } from '../../generated/prisma/client'
 import { publishDocumentAccessEvent } from '../../lib/accessRealtime'
 import { writeDocumentAccessMirror } from '../../lib/documentAccessMirror'
 import {

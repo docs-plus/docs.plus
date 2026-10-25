@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
-import type { PrismaClient } from '@prisma/client'
+import type { PrismaClient } from '../../src/generated/prisma/client'
 
 import * as documentPurgeService from '../../src/api/services/documentPurge.service'
 import { bulkDeleteStale } from '../../src/api/services/adminStaleDocuments.service'

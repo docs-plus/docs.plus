@@ -1,9 +1,9 @@
 import type { Hocuspocus } from '@hocuspocus/server'
-import type { PrismaClient } from '@prisma/client'
 import type { Context, MiddlewareHandler } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import type { Logger } from 'pino'
 
+import type { PrismaClient } from '../../../generated/prisma/client'
 import { fail, ok } from '../../../http/envelope'
 import { captureUnknown } from '../../../lib/instrument'
 import { emptyContent, liveDocJson, readContent } from '../domain/readContent'

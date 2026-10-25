@@ -1,18 +1,3 @@
-export interface DocumentMetadata {
-  id: number
-  slug: string
-  title: string | null
-  description: string | null
-  keywords: string | null
-  isPrivate: boolean
-  readOnly: boolean
-  ownerId: string | null
-  email: string | null
-  documentId: string
-  createdAt: Date
-  updatedAt: Date
-}
-
 export interface CreateDocumentParams {
   slug: string
   title: string

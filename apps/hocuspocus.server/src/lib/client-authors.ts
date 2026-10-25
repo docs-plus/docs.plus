@@ -1,12 +1,13 @@
-import type { PrismaClient } from '@prisma/client'
 import * as Y from 'yjs'
 
+import type { PrismaClient } from '../generated/prisma/client'
 import type { StoreDocumentContext } from '../types'
 import { logger } from './logger'
 
 const clientAuthorLogger = logger.child({ service: 'client-authors' })
 
 export interface ClientAuthorBinding {
+  // BigInt in Prisma (DocumentClientAuthor), number on the wire. Read sites map it with Number().
   clientId: number
   userId: string
   isAnonymous: boolean

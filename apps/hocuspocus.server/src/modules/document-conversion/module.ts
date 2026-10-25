@@ -1,7 +1,7 @@
-import type { PrismaClient } from '@prisma/client'
 import type { Hono } from 'hono'
 import type { Logger } from 'pino'
 
+import type { PrismaClient } from '../../generated/prisma/client'
 import { createRouter } from './http/router'
 
 export interface InitDeps {

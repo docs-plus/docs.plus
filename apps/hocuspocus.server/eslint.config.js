@@ -3,6 +3,9 @@ import baseConfig from '../../packages/eslint-config/index.js'
 export default [
   ...baseConfig,
 
+  // Prisma client output (gitignored), written by `prisma generate`.
+  { ignores: ['src/generated/**'] },
+
   // link-metadata module: domain layer must not import infra SDKs.
   // Keeps the module extractable as a microservice (boundary rule 4).
   {

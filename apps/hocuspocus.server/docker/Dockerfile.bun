@@ -57,10 +57,10 @@ RUN bun install --frozen-lockfile --production --ignore-scripts
 
 # Production runs its own install + generate; no need to generate in base.
 
-# Dev compose target. base has no Prisma client, so @prisma/client fails at boot.
+# Dev compose target. base has no generated Prisma client, so its import fails at boot.
 # Keep this stage above production: the last stage is the default build target.
 FROM base AS dev
-RUN cd apps/hocuspocus.server && bunx prisma@6.19.3 generate
+RUN cd apps/hocuspocus.server && bunx prisma@7.10.1 generate
 
 # -----------------------------------------------------------------------------
 # Production: same layout, fresh install in stage (no root node_modules copy)
@@ -91,7 +91,7 @@ COPY --from=base --chown=appuser:appuser /app/extensions ./extensions
 # and worker processes never import. The webapp and admin manifests are still
 # COPY'd above, because --frozen-lockfile must resolve every workspace member.
 RUN bun install --frozen-lockfile --production --ignore-scripts --filter '@docs.plus/hocuspocus'
-RUN cd apps/hocuspocus.server && bunx prisma@6.19.3 generate
+RUN cd apps/hocuspocus.server && bunx prisma@7.10.1 generate
 
 COPY --from=base /app/apps/hocuspocus.server/scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
@@ -106,7 +106,7 @@ RUN mkdir -p /app/apps/hocuspocus.server/temp \
 USER appuser
 # Warm the Prisma CLI into appuser's bunx cache so the entrypoint migrate runs
 # offline (prisma is a devDep, pruned by --production, else downloaded per boot).
-RUN cd /app/apps/hocuspocus.server && bunx prisma@6.19.3 --version
+RUN cd /app/apps/hocuspocus.server && bunx prisma@7.10.1 --version
 EXPOSE 4000 4001 4002
 # Probe the app's /health endpoint (replaces the old no-op `bun --version`).
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \

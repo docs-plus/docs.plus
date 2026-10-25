@@ -1,6 +1,7 @@
-/** Provenance the server stamps on a version row. `websocket` is a live collaborative save. */
-export type VersionTrigger =
-  'websocket' | 'api' | 'mcp' | 'checkpoint' | 'revert' | 'revert-backup' | 'schema-migration'
+// One source: the backend union. Type-only, so no backend code reaches the bundle.
+import type { VersionTrigger } from '../../../hocuspocus.server/src/types/versionTrigger'
+
+export type { VersionTrigger }
 
 /** Why the server refused a version op. Drives the toast copy. */
 export type VersionFailureReason =

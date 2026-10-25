@@ -1,6 +1,6 @@
-import { Prisma, type PrismaClient } from '@prisma/client'
 import * as Y from 'yjs'
 
+import { Prisma, type PrismaClient } from '../../../generated/prisma/client'
 import type { MachineVersionTrigger, VersionSnapshot } from '../types'
 
 export interface VersionRow {
@@ -67,11 +67,11 @@ export const findVersionRow = (
   prisma: PrismaClient,
   documentId: string,
   version: number
-): Promise<{ data: Buffer; version: number } | null> =>
+): Promise<{ data: Uint8Array; version: number } | null> =>
   prisma.documents.findFirst({
     where: { documentId, version },
     select: { data: true, version: true }
-  }) as Promise<{ data: Buffer; version: number } | null>
+  }) as Promise<{ data: Uint8Array; version: number } | null>
 
 /**
  * Both sides in one transaction so a concurrent delete cannot hand back a pair
@@ -160,7 +160,7 @@ export const appendBackupRow = async (
 ): Promise<BackupRowOutcome> => {
   const append = (): Promise<number> =>
     prisma.$transaction(async (tx) => {
-      const rows = await tx.$queryRaw<{ version: number; data: Buffer }[]>`
+      const rows = await tx.$queryRaw<{ version: number; data: Uint8Array }[]>`
         SELECT version, data FROM "Documents"
         WHERE "documentId" = ${params.documentId}
         ORDER BY version DESC

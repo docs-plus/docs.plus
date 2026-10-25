@@ -59,13 +59,21 @@ export class DatabaseError extends AppError {
   }
 }
 
+// Prisma 7 driver adapters drop `meta.target`. A unique violation names its
+// columns, or else its index, in the adapter cause.
+export const uniqueViolationFields = (error: any): string[] => {
+  const constraint = error?.meta?.driverAdapterError?.cause?.constraint
+  if (Array.isArray(constraint?.fields)) return constraint.fields
+  return typeof constraint?.index === 'string' ? [constraint.index] : []
+}
+
 export const handlePrismaError = (error: any): AppError => {
   // Prisma error codes: https://www.prisma.io/docs/reference/api-reference/error-reference
   if (error.code) {
     switch (error.code) {
       case 'P2002': // Unique constraint violation
         return new ConflictError('A record with this value already exists', {
-          field: error.meta?.target,
+          field: uniqueViolationFields(error),
           prismaCode: error.code
         })
 
@@ -76,13 +84,11 @@ export const handlePrismaError = (error: any): AppError => {
 
       case 'P2003': // Foreign key constraint failed
         return new BadRequestError('Related record not found', {
-          field: error.meta?.field_name,
           prismaCode: error.code
         })
 
       case 'P2011': // Null constraint violation
         return new ValidationError('Required field is missing', {
-          field: error.meta?.constraint,
           prismaCode: error.code
         })
 

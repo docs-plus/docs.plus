@@ -1,5 +1,7 @@
-import { Prisma } from '@prisma/client'
 import slugify from 'slugify'
+
+import { Prisma } from '../generated/prisma/client'
+import { uniqueViolationFields } from './errors'
 
 // The one slug normalizer. `deriveDocumentId` consumes its output, so a caller
 // that normalizes differently mints an id the purge epoch can never key on.
@@ -26,10 +28,12 @@ export async function withUniqueSlug<T>(
       if (
         err instanceof Prisma.PrismaClientKnownRequestError &&
         err.code === 'P2002' &&
-        (err.meta?.target as string[] | undefined)?.includes('slug') &&
         attempt < maxRetries
       ) {
-        continue
+        const fields = uniqueViolationFields(err)
+        if (fields.includes('slug') || fields.includes('DocumentMetadata_slug_key')) {
+          continue
+        }
       }
       throw err
     }

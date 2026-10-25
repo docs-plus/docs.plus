@@ -1,5 +1,4 @@
-import type { PrismaClient } from '@prisma/client'
-
+import type { PrismaClient } from '../../generated/prisma/client'
 import { publishDocumentAccessEvent } from '../../lib/accessRealtime'
 import { writeDocumentAccessMirror } from '../../lib/documentAccessMirror'
 import { adminLogger } from '../../lib/logger'

@@ -1,8 +1,8 @@
-import type { PrismaClient } from '@prisma/client'
 import type { Context } from 'hono'
 import type { Logger } from 'pino'
 import slugify from 'slugify'
 
+import type { PrismaClient } from '../../../generated/prisma/client'
 import { fail, ok } from '../../../http/envelope'
 import { decideDocumentAccess } from '../../../lib/documentAccess'
 import { ydocToPmJson } from '../../../lib/nested-flat-migration'

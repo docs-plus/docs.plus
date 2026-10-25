@@ -18,3 +18,4 @@
 apps/webapp/src/types/supabase.ts
 .agents/skills
 .claude/worktrees
+apps/hocuspocus.server/src/generated

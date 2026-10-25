@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client'
+import type { PrismaClient } from '../../generated/prisma/client'
 import { beforeEach, describe, expect, test } from 'bun:test'
 import * as Y from 'yjs'
 

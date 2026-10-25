@@ -1,8 +1,8 @@
 import type { Hocuspocus } from '@hocuspocus/server'
-import type { PrismaClient } from '@prisma/client'
 import type { Logger } from 'pino'
 import * as Y from 'yjs'
 
+import type { PrismaClient } from '../../../generated/prisma/client'
 import { captureUnknown } from '../../../lib/instrument'
 import type { StoreDocumentContext } from '../../../types'
 import type { ApplyActor, NamedVersionStamp, VersionStamp } from '../types'

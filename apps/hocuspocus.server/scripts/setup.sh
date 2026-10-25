@@ -25,9 +25,9 @@ bun --version
 echo -e "\n${BLUE}📦 Installing dependencies...${NC}"
 bun install
 
-# Generate Prisma client (pin Prisma 6.19.0)
+# Generate Prisma client (pin Prisma 7.10.1)
 echo -e "\n${BLUE}🔧 Generating Prisma client...${NC}"
-bunx prisma@6.19.0 generate
+bunx prisma@7.10.1 generate
 
 # Check if .env exists
 if [ ! -f .env.development ]; then
@@ -43,7 +43,7 @@ echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━�
 
 echo -e "\n${BLUE}Next steps:${NC}"
 echo -e "1. Set up your .env.development file"
-echo -e "2. Run migrations: ${YELLOW}bunx prisma@6.19.0 migrate deploy${NC}"
+echo -e "2. Run migrations: ${YELLOW}bunx prisma@7.10.1 migrate deploy${NC}"
 echo -e "3. Start development:"
 echo -e "   - REST API: ${YELLOW}bun --filter @docs.plus/hocuspocus dev:rest${NC}"
 echo -e "   - WebSocket: ${YELLOW}bun --filter @docs.plus/hocuspocus dev:ws${NC}"

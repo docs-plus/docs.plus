@@ -1,9 +1,9 @@
 import type { CallToolResult } from '@modelcontextprotocol/server'
-import type { PrismaClient } from '@prisma/client'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { JSONContent } from '@tiptap/core'
 import type { Logger } from 'pino'
 
+import type { PrismaClient } from '../../generated/prisma/client'
 import type { TokenVerifyOutcome } from '../../lib/auth'
 import type { RedisClient } from '../../types/redis.types'
 import type { ContentClient } from '../document-content'

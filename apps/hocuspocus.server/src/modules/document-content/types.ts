@@ -1,10 +1,11 @@
 import type { Hocuspocus } from '@hocuspocus/server'
-import type { DocumentMetadata, PrismaClient } from '@prisma/client'
 import type { JSONContent } from '@tiptap/core'
 import type { Logger } from 'pino'
 import type * as Y from 'yjs'
 
+import type { DocumentMetadata, PrismaClient } from '../../generated/prisma/client'
 import type { VerifyServiceRole } from '../../http/serviceRole'
+import type { VersionTrigger as StoredVersionTrigger } from '../../types'
 
 export type { VerifyServiceRole }
 
@@ -125,7 +126,7 @@ export interface ApplyRequest {
 }
 
 /** Why a version row exists. Projected onto the row, never a read predicate. */
-export type VersionTrigger = 'api' | 'mcp' | 'checkpoint' | 'revert'
+export type VersionTrigger = Extract<StoredVersionTrigger, 'api' | 'mcp' | 'checkpoint' | 'revert'>
 
 /**
  * Attribution for the version row a live write mints. `forceKey` only widens the

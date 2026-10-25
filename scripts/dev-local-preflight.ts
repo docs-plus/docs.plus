@@ -14,7 +14,7 @@ import {
   writeFileSync
 } from 'fs'
 import { createConnection } from 'net'
-import { dirname, resolve } from 'path'
+import { resolve } from 'path'
 
 import { PUBLISHABLE_EXTENSION_DIRS } from './publishable-extensions'
 
@@ -254,14 +254,9 @@ async function ensureSupabase(): Promise<void> {
 }
 
 // Package presence is not generation: postinstall's `|| true` can mask a failed
-// generate, so check the emitted client (works in isolated and hoisted layouts).
+// generate, so check the emitted client (the gitignored generator output).
 function prismaClientGenerated(): boolean {
-  try {
-    const entry = Bun.resolveSync('@prisma/client', resolve(ROOT, 'apps/hocuspocus.server'))
-    return existsSync(resolve(dirname(entry), '../../.prisma/client'))
-  } catch {
-    return false
-  }
+  return existsSync(resolve(ROOT, 'apps/hocuspocus.server/src/generated/prisma/client.ts'))
 }
 
 async function ensurePrisma(): Promise<void> {

@@ -11,7 +11,7 @@ echo "🔄 Entrypoint starting (monorepo layout)..."
 # instead of booting a half-migrated app behind a green /health check.
 if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
   echo "🔄 Running database migrations..."
-  bunx prisma@6.19.3 migrate deploy
+  bunx prisma@7.10.1 migrate deploy
   echo "✅ Migrations done"
 fi
 echo "🚀 Starting: $*"

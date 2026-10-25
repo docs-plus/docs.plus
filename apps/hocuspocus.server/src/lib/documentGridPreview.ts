@@ -1,7 +1,7 @@
 import { TiptapTransformer } from '@hocuspocus/transformer'
-import type { PrismaClient } from '@prisma/client'
 import * as Y from 'yjs'
 
+import type { PrismaClient } from '../generated/prisma/client'
 import { dbLogger } from './logger'
 import { sanitizePlainText } from './sanitizePlainText'
 
@@ -204,9 +204,9 @@ export const fillMissingDocumentPreviews = async (
   const filled = new Map<string, DocumentGridPreview>()
   if (documentIds.length === 0) return filled
 
-  let latest: { documentId: string; data: Buffer }[] = []
+  let latest: { documentId: string; data: Uint8Array }[] = []
   try {
-    latest = await prisma.$queryRaw<{ documentId: string; data: Buffer }[]>`
+    latest = await prisma.$queryRaw<{ documentId: string; data: Uint8Array }[]>`
       SELECT DISTINCT ON ("documentId") "documentId", data
       FROM "Documents"
       WHERE "documentId" = ANY(${documentIds})

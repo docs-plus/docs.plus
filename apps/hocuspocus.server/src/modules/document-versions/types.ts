@@ -1,7 +1,7 @@
 import type { Hocuspocus } from '@hocuspocus/server'
-import type { PrismaClient } from '@prisma/client'
 import type { Logger } from 'pino'
 
+import type { PrismaClient } from '../../generated/prisma/client'
 import type { VerifyServiceRole } from '../../http/serviceRole'
 import type { GetOwnerProfiles, ProfileLite } from '../../lib/profiles'
 import type { MachineVersionTrigger, VersionTrigger } from '../../types'

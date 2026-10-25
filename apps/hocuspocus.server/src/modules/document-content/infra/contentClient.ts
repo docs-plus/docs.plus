@@ -1,7 +1,7 @@
-import type { PrismaClient } from '@prisma/client'
 import type { JSONContent } from '@tiptap/core'
 import type { Logger } from 'pino'
 
+import type { PrismaClient } from '../../../generated/prisma/client'
 import { internalHop } from '../../../lib/internalHop'
 import { isRecord } from '../../../lib/isRecord'
 import { emptyContent, readContent } from '../domain/readContent'

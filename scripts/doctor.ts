@@ -3,7 +3,7 @@
 import { $ } from 'bun'
 import { existsSync, readFileSync } from 'fs'
 import { createConnection } from 'net'
-import { dirname, resolve } from 'path'
+import { resolve } from 'path'
 
 const ROOT_DIR = resolve(import.meta.dir, '..')
 
@@ -279,15 +279,10 @@ async function checkNodeModules(): Promise<CheckResult> {
 }
 
 async function checkPrismaClient(): Promise<CheckResult> {
-  // Derive from module resolution — the generated client lands in Bun's
-  // isolated store, not under the package's own node_modules.
-  let generated = false
-  try {
-    const entry = Bun.resolveSync('@prisma/client', resolve(ROOT_DIR, 'apps/hocuspocus.server'))
-    generated = existsSync(resolve(dirname(entry), '../../.prisma/client'))
-  } catch {
-    generated = false
-  }
+  // The generator writes into the package source (gitignored), not node_modules.
+  const generated = existsSync(
+    resolve(ROOT_DIR, 'apps/hocuspocus.server/src/generated/prisma/client.ts')
+  )
 
   if (generated) {
     return {

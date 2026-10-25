@@ -8,7 +8,7 @@ async function startProduction() {
 
     // Run database migrations
     console.log('📦 Running database migrations...')
-    await $`bunx prisma@6.19.3 migrate deploy`
+    await $`bunx prisma@7.10.1 migrate deploy`
 
     console.log('✅ Migrations completed successfully')
 
@@ -29,7 +29,7 @@ async function startProduction() {
         console.log('✅ Migration fixed, retrying...')
 
         // Retry migrations
-        await $`bunx prisma@6.19.3 migrate deploy`
+        await $`bunx prisma@7.10.1 migrate deploy`
         console.log('✅ Migrations completed successfully')
 
         // Start the main application

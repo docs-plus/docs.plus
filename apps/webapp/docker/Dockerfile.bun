@@ -196,6 +196,8 @@ RUN bun install --frozen-lockfile
 # existing directory, so apps/webapp/node_modules survives.
 # Never add --link here: it overrides the directory mode and defeats the merge.
 COPY apps/webapp ./apps/webapp
+# src/types/history.ts type-imports VersionTrigger from here, and next build typechecks.
+COPY apps/hocuspocus.server/src/types/versionTrigger.ts ./apps/hocuspocus.server/src/types/versionTrigger.ts
 
 # Declared here, not above, because both change on every deploy. An ENV enters a
 # later RUN's cache key while an unchanged COPY does not, so placing them above

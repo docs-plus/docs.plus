@@ -1,8 +1,8 @@
 import { zValidator } from '@hono/zod-validator'
-import type { PrismaClient } from '@prisma/client'
 import { Hono } from 'hono'
 import type { Logger } from 'pino'
 
+import type { PrismaClient } from '../../../generated/prisma/client'
 import { houseEnvelopeHook } from '../../../http/envelope'
 import { requireServiceRole } from '../../../http/serviceRole'
 import type { ContentClient } from '../infra/contentClient'

@@ -1,6 +1,6 @@
-import type { PrismaClient } from '@prisma/client'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import type { PrismaClient } from '../../generated/prisma/client'
 import { publishDocumentAccessEvent } from '../../lib/accessRealtime'
 import { deriveDocumentId, INITIAL_EPOCH } from '../../lib/documentId'
 import { documentsServiceLogger as purgeLogger } from '../../lib/logger'

@@ -5,9 +5,9 @@
  */
 
 import { TiptapTransformer } from '@hocuspocus/transformer'
-import type { PrismaClient } from '@prisma/client'
 import * as Y from 'yjs'
 
+import type { PrismaClient } from '../../generated/prisma/client'
 import { adminLogger } from '../../lib/logger'
 import { getSupabaseClient, supabaseRest } from '../utils/supabase'
 import { fetchByIds } from '../utils/supabaseFetchByIds'
@@ -335,7 +335,7 @@ async function getStructures(
   }
 
   if (missing.length > 0) {
-    const latestDocs = await prisma.$queryRaw<{ documentId: string; data: Buffer }[]>`
+    const latestDocs = await prisma.$queryRaw<{ documentId: string; data: Uint8Array }[]>`
       SELECT DISTINCT ON ("documentId") "documentId", data
       FROM "Documents"
       WHERE "documentId" = ANY(${missing})

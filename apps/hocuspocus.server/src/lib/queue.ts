@@ -422,7 +422,7 @@ export const createDocumentWorker = () => {
                 // top-1 by the (documentId, version) unique index. ORDER BY id DESC
                 // had no supporting index and scanned every version of the document.
                 const existingDocs = await tx.$queryRaw<
-                  { id: number; version: number; data: Buffer }[]
+                  { id: number; version: number; data: Uint8Array }[]
                 >`
             SELECT id, version, data FROM "Documents"
             WHERE "documentId" = ${data.documentName}

@@ -1,11 +1,11 @@
 import type { Hocuspocus } from '@hocuspocus/server'
 import { zValidator } from '@hono/zod-validator'
-import type { PrismaClient } from '@prisma/client'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { requestId } from 'hono/request-id'
 import type { Logger } from 'pino'
 
+import type { PrismaClient } from '../../../generated/prisma/client'
 import { fail, houseEnvelopeHook } from '../../../http/envelope'
 import { requireServiceRole } from '../../../http/serviceRole'
 import { captureUnknown } from '../../../lib/instrument'

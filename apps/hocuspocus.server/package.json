@@ -39,7 +39,7 @@
     "@types/web-push": "^3.6.4",
     "bun-types": "catalog:",
     "pino-pretty": "^13.2.0",
-    "prisma": "^6.19.3"
+    "prisma": "7.10.1"
   },
   "dependencies": {
     "@docs.plus/email-templates": "workspace:*",
@@ -54,8 +54,8 @@
     "@hocuspocus/transformer": "catalog:",
     "@hono/zod-validator": "^0.9.1",
     "@modelcontextprotocol/server": "2.3.1",
-    "@prisma/adapter-pg": "^6.19.3",
-    "@prisma/client": "^6.19.3",
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
     "@sentry/bun": "^11.9.0",
     "@supabase/supabase-js": "catalog:",
     "@tiptap/core": "catalog:",

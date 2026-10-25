@@ -165,7 +165,7 @@ services:
     image: docsplus-hocuspocus:${DEPLOY_TAG:-latest}
     env_file: .env.production
     restart: 'no'
-    entrypoint: ['sh', '-c', 'cd /app/apps/hocuspocus.server && bunx prisma@6.19.3 migrate deploy']
+    entrypoint: ['sh', '-c', 'cd /app/apps/hocuspocus.server && bunx prisma@7.10.1 migrate deploy']
     environment:
       DATABASE_URL: ${DATABASE_URL}
     networks:

@@ -93,3 +93,6 @@ docker-compose*.yml
 # directories too, so the root-level case stays covered.
 **/*.pem
 **/*.key
+
+# Prisma client output. Each image stage that needs it runs `prisma generate`.
+apps/hocuspocus.server/src/generated

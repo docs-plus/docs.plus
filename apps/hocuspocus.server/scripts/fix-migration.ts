@@ -7,7 +7,7 @@ async function fixMigration() {
     console.log('🔧 Fixing migration state...')
 
     // Mark failed migration as rolled back
-    await $`bunx prisma@6.19.3 migrate resolve --rolled-back "init"`
+    await $`bunx prisma@7.10.1 migrate resolve --rolled-back "init"`
 
     console.log('✅ Migration state fixed')
   } catch (error: any) {

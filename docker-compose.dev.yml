@@ -118,6 +118,8 @@ services:
       - 'host.docker.internal:host-gateway'
     volumes:
       - ./apps/hocuspocus.server/src:/app/apps/hocuspocus.server/src
+      # Keep the image's generated Prisma client; the src bind mount would hide it.
+      - /app/apps/hocuspocus.server/src/generated
       - ./apps/hocuspocus.server/package.json:/app/apps/hocuspocus.server/package.json
       - /app/node_modules
     depends_on:
@@ -181,6 +183,8 @@ services:
       - 'host.docker.internal:host-gateway'
     volumes:
       - ./apps/hocuspocus.server/src:/app/apps/hocuspocus.server/src
+      # Keep the image's generated Prisma client; the src bind mount would hide it.
+      - /app/apps/hocuspocus.server/src/generated
       - ./apps/hocuspocus.server/package.json:/app/apps/hocuspocus.server/package.json
       - /app/node_modules
     depends_on:
@@ -253,6 +257,8 @@ services:
       - 'host.docker.internal:host-gateway'
     volumes:
       - ./apps/hocuspocus.server/src:/app/apps/hocuspocus.server/src
+      # Keep the image's generated Prisma client; the src bind mount would hide it.
+      - /app/apps/hocuspocus.server/src/generated
       - ./apps/hocuspocus.server/package.json:/app/apps/hocuspocus.server/package.json
       - /app/node_modules
     depends_on:

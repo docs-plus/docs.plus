@@ -1,8 +1,8 @@
-import type { PrismaClient } from '@prisma/client'
 import ShortUniqueId from 'short-unique-id'
 import slugify from 'slugify'
 import * as Y from 'yjs'
 
+import type { PrismaClient } from '../../../generated/prisma/client'
 import { handlePrismaError } from '../../../lib/errors'
 import { withUniqueSlug } from '../../../lib/slug'
 import { encodeContent } from '../domain/encodeContent'
@@ -32,12 +32,12 @@ export const findDocumentMeta = (
 export const findHeadRow = (
   prisma: PrismaClient,
   documentId: string
-): Promise<{ data: Buffer; version: number } | null> =>
+): Promise<{ data: Uint8Array; version: number } | null> =>
   prisma.documents.findFirst({
     where: { documentId },
     orderBy: { version: 'desc' },
     select: { data: true, version: true }
-  }) as Promise<{ data: Buffer; version: number } | null>
+  }) as Promise<{ data: Uint8Array; version: number } | null>
 
 /** Head version only, 0 when no row exists. The commit wait compares against it. */
 export const findHeadVersion = async (
@@ -57,12 +57,12 @@ export const findHeadRowAfter = (
   prisma: PrismaClient,
   documentId: string,
   version: number
-): Promise<{ data: Buffer; version: number } | null> =>
+): Promise<{ data: Uint8Array; version: number } | null> =>
   prisma.documents.findFirst({
     where: { documentId, version: { gt: version } },
     orderBy: { version: 'desc' },
     select: { data: true, version: true }
-  }) as Promise<{ data: Buffer; version: number } | null>
+  }) as Promise<{ data: Uint8Array; version: number } | null>
 
 export interface CreateWithContentParams {
   slug: string

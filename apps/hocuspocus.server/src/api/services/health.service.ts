@@ -1,5 +1,4 @@
-import type { PrismaClient } from '@prisma/client'
-
+import type { PrismaClient } from '../../generated/prisma/client'
 import { restApiLogger } from '../../lib/logger'
 import { getRedisStats } from '../../lib/redis'
 import { getAnonClient } from '../../lib/supabase'

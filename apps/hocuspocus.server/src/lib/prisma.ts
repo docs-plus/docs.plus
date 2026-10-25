@@ -1,11 +1,14 @@
 import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from '@prisma/client'
 
 import { config } from '../config/env'
+import { PrismaClient } from '../generated/prisma/client'
 import { dbLogger } from './logger'
 
+// Every level the dev config emits as an event, so `$on` is typed for each.
+type EmittedLogLevel = 'query' | 'error' | 'warn'
+
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
+  prisma: PrismaClient<EmittedLogLevel> | undefined
 }
 
 /**
@@ -56,7 +59,7 @@ const adapter = new PrismaPg(poolConfig, {
   }
 })
 
-export const prisma =
+export const prisma: PrismaClient<EmittedLogLevel> =
   globalForPrisma.prisma ??
   new PrismaClient({
     adapter,
@@ -71,16 +74,16 @@ export const prisma =
   })
 
 if (config.app.env === 'development') {
-  prisma.$on('query' as never, (e: any) => {
+  prisma.$on('query', (e) => {
     dbLogger.debug({ duration: `${e.duration}ms`, query: e.query }, 'Database query')
   })
 }
 
-prisma.$on('error' as never, (e: any) => {
+prisma.$on('error', (e) => {
   dbLogger.error({ err: e }, 'Database error')
 })
 
-prisma.$on('warn' as never, (e: any) => {
+prisma.$on('warn', (e) => {
   dbLogger.warn(e, 'Database warning')
 })
 

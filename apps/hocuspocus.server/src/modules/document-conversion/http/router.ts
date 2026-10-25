@@ -1,10 +1,10 @@
 import { zValidator } from '@hono/zod-validator'
-import type { PrismaClient } from '@prisma/client'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import type { Logger } from 'pino'
 
 import { requireServiceRoleOrUser } from '../../../api/middleware/auth'
+import type { PrismaClient } from '../../../generated/prisma/client'
 import { fail, houseEnvelopeHook } from '../../../http/envelope'
 import { documentIdParamSchema } from '../../document-content/http/schema'
 import { MAX_IMPORT_BYTES } from '../types'

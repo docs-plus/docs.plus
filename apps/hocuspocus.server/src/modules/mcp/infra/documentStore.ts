@@ -1,5 +1,4 @@
-import type { PrismaClient } from '@prisma/client'
-
+import type { PrismaClient } from '../../../generated/prisma/client'
 import { sendNewDocumentNotification } from '../../../lib/email/document-notification'
 import { emailLogger } from '../../../lib/logger'
 import { normalizeSlug } from '../../../lib/slug'

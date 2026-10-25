@@ -1,6 +1,6 @@
-import type { PrismaClient } from '@prisma/client'
 import type { Context } from 'hono'
 
+import type { PrismaClient } from '../generated/prisma/client'
 import type { SupabaseUser } from '../lib/auth'
 import type { RedisClient } from './redis.types'
 

@@ -4,8 +4,7 @@
  * trigger bug, never an account to delete.
  */
 
-import type { PrismaClient } from '@prisma/client'
-
+import type { PrismaClient } from '../../generated/prisma/client'
 import { adminLogger } from '../../lib/logger'
 import { getSupabaseClient } from '../utils/supabase'
 

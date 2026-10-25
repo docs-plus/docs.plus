@@ -1,6 +1,6 @@
-import { Prisma, type PrismaClient } from '@prisma/client'
 import type { Logger } from 'pino'
 
+import { Prisma, type PrismaClient } from '../generated/prisma/client'
 import { MACHINE_VERSION_TRIGGERS } from '../types'
 
 const PRUNE_BATCH_SIZE = 1000

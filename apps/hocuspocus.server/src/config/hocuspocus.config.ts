@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client'
+import { Prisma } from '../generated/prisma/client'
 import type { Extension } from '@hocuspocus/server'
 import { TiptapTransformer } from '@hocuspocus/transformer'
 import * as Y from 'yjs'
@@ -55,7 +55,7 @@ async function persistMigratedSnapshot(
 ): Promise<Uint8Array> {
   try {
     return await prisma.$transaction(async (tx) => {
-      const rows = await tx.$queryRaw<{ version: number; data: Buffer }[]>`
+      const rows = await tx.$queryRaw<{ version: number; data: Uint8Array }[]>`
         SELECT version, data FROM "Documents"
         WHERE "documentId" = ${documentName}
         ORDER BY version DESC
@@ -279,7 +279,7 @@ const configureExtensions = (): { extensions: Extension[]; redisWired: boolean }
             // the worker does. A plain insert of divergent state would clobber.
             const saveMergedVersion = () =>
               prisma.$transaction(async (tx) => {
-                const existingDocs = await tx.$queryRaw<{ version: number; data: Buffer }[]>`
+                const existingDocs = await tx.$queryRaw<{ version: number; data: Uint8Array }[]>`
                   SELECT version, data FROM "Documents"
                   WHERE "documentId" = ${documentName}
                   ORDER BY version DESC

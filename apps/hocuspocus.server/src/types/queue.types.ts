@@ -1,16 +1,8 @@
 import type { StoreDlqDisposition } from '../lib/storeDlqDisposition'
+import type { MachineVersionTrigger, VersionTrigger } from './versionTrigger'
 
-// Rows the server mints for itself: the pre-restore safety copy and the
-// one-time schema rebuild. They carry a name, so retention can only tell them
-// from a checkpoint a person chose by reading this (see pruneAutosaveVersions).
-export const MACHINE_VERSION_TRIGGERS = ['revert-backup', 'schema-migration'] as const
-export type MachineVersionTrigger = (typeof MACHINE_VERSION_TRIGGERS)[number]
-
-// Provenance stamped on a Documents row. Live collaborative saves are
-// 'websocket'; the rest are one-shot operations that ride the connection
-// context of the caller that opened the direct connection.
-export type VersionTrigger =
-  'websocket' | 'api' | 'mcp' | 'checkpoint' | 'revert' | MachineVersionTrigger
+export { MACHINE_VERSION_TRIGGERS } from './versionTrigger'
+export type { MachineVersionTrigger, VersionTrigger }
 
 export interface StoreDocumentContext {
   slug?: string

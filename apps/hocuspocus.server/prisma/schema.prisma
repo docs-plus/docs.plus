@@ -1,11 +1,13 @@
+// The output is gitignored. Every install, image build and preflight generates it.
 generator client {
-  provider        = "prisma-client-js"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
   previewFeatures = ["fullTextSearchPostgres"]
 }
 
+// The connection URL lives in prisma.config.ts.
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Documents {

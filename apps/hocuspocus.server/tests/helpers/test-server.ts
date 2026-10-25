@@ -1,5 +1,6 @@
-import type { PrismaClient } from '@prisma/client'
 import { Hono } from 'hono'
+
+import type { PrismaClient } from '../../src/generated/prisma/client'
 
 export class TestServer {
   public app: Hono

@@ -1,8 +1,8 @@
-import type { PrismaClient } from '@prisma/client'
 import type { Context, MiddlewareHandler } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import type { Logger } from 'pino'
 
+import type { PrismaClient } from '../../../generated/prisma/client'
 import { fail, ok } from '../../../http/envelope'
 import { type ClientAuthorBinding, resolveClientAuthors } from '../../../lib/client-authors'
 import { captureUnknown } from '../../../lib/instrument'
