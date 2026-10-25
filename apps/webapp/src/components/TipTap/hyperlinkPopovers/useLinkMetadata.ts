@@ -37,32 +37,13 @@ const toLinkMetadata = (data: MetadataResponse): LinkMetadata => ({
   oembed: data.oembed ? { thumbnail: data.oembed.thumbnail } : undefined
 })
 
-const fromMarkAttrs = (title: string, image: string | undefined): LinkMetadata => ({
-  title,
-  image: image ? { url: image } : undefined
-})
-
-export interface UseLinkMetadataOptions {
-  initialTitle?: string
-  initialImage?: string
-}
-
 /**
- * Cache-first: L1 mark attrs → L2 session cache → L3 network, aborting on
- * unmount. `href` and `options` are read once on mount; the bottom sheet
- * remounts per link, so no consumer needs reactive option updates.
+ * Session cache, then REST, aborting on unmount. Stored mark attrs are
+ * never read. `href` is read once on mount; the bottom sheet remounts per
+ * link, so no consumer needs a reactive update.
  */
-export const useLinkMetadata = (
-  href: string,
-  options?: UseLinkMetadataOptions
-): UseLinkMetadataResult => {
-  const initialTitle = options?.initialTitle
-  const initialImage = options?.initialImage
-
+export const useLinkMetadata = (href: string): UseLinkMetadataResult => {
   const [state, setState] = useState<UseLinkMetadataResult>(() => {
-    if (initialTitle) {
-      return { status: 'loaded', data: fromMarkAttrs(initialTitle, initialImage) }
-    }
     // `getCachedMetadata` returns a tri-state:
     //   `undefined` → no entry (need to fetch)
     //   `null`      → previously cached failure (treat as error, don't refetch)

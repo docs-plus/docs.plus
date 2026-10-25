@@ -18,9 +18,9 @@ export interface SheetDataMap {
   bookmarks: Record<string, never>
   documentSettings: Record<string, never>
   /**
-   * Mobile hyperlink preview sheet payload. `editor`, `nodePos`, and
-   * `attrs` are passed through so the sheet can render metadata, write
-   * the L1 cache back onto the mark, and dispatch unset/edit chains.
+   * Mobile hyperlink preview sheet payload. `editor`, `nodePos` and
+   * `attrs` let the sheet actions edit or unset the link, and let Back
+   * reopen the preview.
    */
   linkPreview: {
     href: string

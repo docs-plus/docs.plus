@@ -22,6 +22,9 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   ([#574](https://github.com/docs-plus/docs.plus/issues/574)).** The faces and the roster
   now send the `documentId` exactly as stored. They used to send `lower(documentId)`, which
   matched no workspace made before 2026-08-09. Needs Supabase migration `20261023120000`.
+- **Opening a link preview no longer changes the document
+  ([#519](https://github.com/docs-plus/docs.plus/issues/519)).** Peers get no update, and the
+  change digest no longer counts it.
 
 ## [2.2.0] — 2026-10-22
 

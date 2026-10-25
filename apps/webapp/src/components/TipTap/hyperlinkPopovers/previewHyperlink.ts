@@ -76,18 +76,13 @@ const buildAndObserveDesktopPopover = (options: PreviewHyperlinkOptions): HTMLEl
   const { link, editor, nodePos, attrs } = options
   const href = attrs.href ?? link.getAttribute('href') ?? ''
   const controller = new AbortController()
-  const ctx: PreviewContext = { href, editor, nodePos, attrs, signal: controller.signal }
-  const built = buildDesktopPopover(ctx, options)
+  const ctx: PreviewContext = { href, editor, nodePos, signal: controller.signal }
+  const element = buildDesktopPopover(ctx, options)
 
-  // Flush the mark-attr write (L1 cache) only AFTER the popover detaches.
-  // Writing while open would re-render the underlying `<a>` element and
-  // floating-ui would hide the popover via the referenceHidden middleware.
-  observeDetachment(built.element, () => {
-    controller.abort()
-    built.flush()
-  })
+  // The observer aborts the fetch on detach.
+  observeDetachment(element, () => controller.abort())
 
-  return built.element
+  return element
 }
 
 /**
@@ -97,7 +92,7 @@ const buildAndObserveDesktopPopover = (options: PreviewHyperlinkOptions): HTMLEl
 const buildDesktopPopover = (
   ctx: PreviewContext,
   options: PreviewHyperlinkOptions
-): { element: HTMLElement; flush: () => void } => {
+): HTMLElement => {
   const { href, editor, nodePos } = ctx
   const { link, validate, isAllowedUri } = options
 
@@ -161,11 +156,11 @@ const buildDesktopPopover = (
   const internalLink = classifyInternalDocumentLink(href, window.location.pathname)
   if (internalLink) {
     popover.append(createInternalLinkChip(internalLink, editor), copyButton, ...editControls)
-    return { element: popover, flush: () => {} }
+    return popover
   }
 
   const metadataContainer = createHTMLElement('div', { className: 'metadata' })
-  const { flush } = renderMetadataInto(metadataContainer, ctx)
+  renderMetadataInto(metadataContainer, ctx)
   popover.append(metadataContainer, copyButton, ...editControls)
-  return { element: popover, flush }
+  return popover
 }

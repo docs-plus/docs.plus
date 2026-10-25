@@ -6,11 +6,11 @@ import { Icons } from '@icons'
 import { type SheetDataMap, useSheetStore } from '@stores'
 import { sheetBodyPadClassName } from '@utils/sheetBodyPadding'
 import { twMerge } from '@utils/twMerge'
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 
 import { InternalLinkChip } from './components/InternalLinkChip'
 import { classifyInternalDocumentLink } from './internalDocumentLink'
-import { safeImageSrc, writeLinkMetadataAttrs } from './linkMarkUtils'
+import { safeImageSrc } from './linkMarkUtils'
 import { buildLinkPreviewActions } from './linkPreviewActions'
 import { type LinkMetadata, useLinkMetadata } from './useLinkMetadata'
 
@@ -30,17 +30,8 @@ const pickImageSrc = (data: LinkMetadata | null): string | undefined =>
  * own component so the metadata fetch hook never runs for internal links.
  */
 const ExternalLinkHeader = ({ data: payload }: LinkPreviewSheetProps) => {
-  const { href, editor, nodePos, attrs } = payload
-  const { status, data } = useLinkMetadata(href, {
-    initialTitle: typeof attrs?.title === 'string' ? attrs.title : undefined,
-    initialImage: typeof attrs?.image === 'string' ? attrs.image : undefined
-  })
-
-  // Safe while the sheet is open: mobile sheet is viewport-fixed, not anchored to link DOM.
-  useEffect(() => {
-    if (status !== 'loaded' || !data) return
-    writeLinkMetadataAttrs(editor, nodePos, href, data)
-  }, [status, data, editor, nodePos, href])
+  const { href } = payload
+  const { status, data } = useLinkMetadata(href)
 
   const imageUrl = pickImageSrc(data)
   const title = data?.title || href

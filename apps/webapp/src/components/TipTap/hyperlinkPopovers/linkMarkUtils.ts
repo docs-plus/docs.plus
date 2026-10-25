@@ -14,62 +14,6 @@ export const safeImageSrc = (url: string | undefined): string | undefined => {
 }
 
 /**
- * Kept minimal so both the desktop popover's `MetadataResponse` and the mobile
- * sheet's narrowed `LinkMetadata` satisfy it without conversion.
- */
-export interface MarkMetadata {
-  title: string
-  image?: { url: string } | undefined
-}
-
-/**
- * Desktop MUST defer this until the popover detaches (use `renderMetadataInto`'s
- * `flush`): the attr write re-renders the `<a>`, and floating-ui's
- * `hide({ strategy: 'referenceHidden' })` then hides the popover. The mobile
- * sheet isn't anchored to the link DOM, so it can write immediately.
- */
-export const writeLinkMetadataAttrs = (
-  editor: Editor,
-  nodePos: number,
-  href: string,
-  data: MarkMetadata
-): void => {
-  const { state } = editor
-  const node = state.doc.nodeAt(nodePos)
-  if (!node) return
-
-  const hyperlinkType = state.schema.marks.hyperlink
-  if (!hyperlinkType) return
-
-  const existingMark = node.marks.find((m) => m.type === hyperlinkType && m.attrs.href === href)
-  if (!existingMark) return
-
-  const range = getMarkRange(state.doc.resolve(nodePos), hyperlinkType, { href })
-  if (!range) return
-
-  const nextAttrs = {
-    ...existingMark.attrs,
-    title: data.title,
-    image: data.image?.url
-  }
-  if (
-    existingMark.attrs.title === nextAttrs.title &&
-    existingMark.attrs.image === nextAttrs.image
-  ) {
-    return
-  }
-
-  const nextMark = hyperlinkType.create(nextAttrs)
-  // Background metadata is not an undoable user action.
-  const tr = state.tr
-    .removeMark(range.from, range.to, hyperlinkType)
-    .addMark(range.from, range.to, nextMark)
-    .setMeta('addToHistory', false)
-
-  editor.view.dispatch(tr)
-}
-
-/**
  * Link text from the document. The live <a> wins over a stale nodePos; the href match stops a neighbour's text.
  * DOM text is the last resort. Keep the body equal to the extension's internal copy; change both together.
  */

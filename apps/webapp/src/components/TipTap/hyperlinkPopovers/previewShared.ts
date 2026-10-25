@@ -2,7 +2,6 @@ import { Icons } from '@components/icons/registry'
 import {
   createHTMLElement,
   getSpecialUrlInfo,
-  type HyperlinkAttributes,
   type SpecialUrlType
 } from '@docs.plus/extension-hyperlink'
 import type { Editor } from '@tiptap/core'
@@ -14,7 +13,7 @@ import { fetchMetadata, type MetadataResponse } from './fetchMetadata'
 import { hrefEventHandler } from './hrefEventHandler'
 import { describeInternalDocumentLink } from './internalDocumentLink'
 import { runInternalDocumentLink } from './internalDocumentLinkActions'
-import { safeImageSrc, writeLinkMetadataAttrs } from './linkMarkUtils'
+import { safeImageSrc } from './linkMarkUtils'
 import type { InternalDocumentLink } from './types'
 
 /**
@@ -73,7 +72,6 @@ export interface PreviewContext {
   href: string
   editor: Editor
   nodePos: number
-  attrs: HyperlinkAttributes
   signal: AbortSignal
 }
 
@@ -148,53 +146,20 @@ const createLoadingSkeleton = (): HTMLElement => {
   return skeleton
 }
 
-export interface RenderHandle {
-  flush: () => void
-}
-
 /**
- * A failed fetch degrades to href-as-title: the link still works, so visible
- * error styling would be noise. The caller MUST invoke `flush()` only AFTER
- * the popover detaches — see `writeLinkMetadataAttrs` for why.
+ * Read-only: data comes from the session cache, then REST. Stored mark
+ * `title`/`image` are not read, and nothing is written to the document.
+ * A failed fetch degrades to href-as-title; error styling would be noise.
  */
-export const renderMetadataInto = (container: HTMLElement, ctx: PreviewContext): RenderHandle => {
-  const { href, attrs, signal } = ctx
-
-  // L1 cache: persisted mark attrs (Y.js). Skip fetch entirely on hit.
-  const existingTitle = typeof attrs?.title === 'string' ? attrs.title : undefined
-  const existingImage = typeof attrs?.image === 'string' ? attrs.image : undefined
-  if (existingTitle) {
-    container.replaceChildren(
-      createMetadataContent(
-        {
-          success: true,
-          url: href,
-          requested_url: href,
-          title: existingTitle,
-          image: existingImage ? { url: existingImage } : undefined,
-          cached: true,
-          fetched_at: new Date(0).toISOString()
-        },
-        href
-      )
-    )
-    return { flush: () => {} }
-  }
+export const renderMetadataInto = (container: HTMLElement, ctx: PreviewContext): void => {
+  const { href, signal } = ctx
 
   container.replaceChildren(createLoadingSkeleton())
 
-  let pending: MetadataResponse | null = null
   fetchMetadata(href, { signal }).then((data) => {
     if (signal.aborted || !container.isConnected) return
     container.replaceChildren(createMetadataContent(data, href))
-    pending = data
   })
-
-  return {
-    flush: () => {
-      if (pending) writeLinkMetadataAttrs(ctx.editor, ctx.nodePos, ctx.href, pending)
-    }
-  }
 }
 
 /**
