@@ -15,6 +15,7 @@ import {
 } from '@floating-ui/react'
 import { useHistoryDismiss } from '@hooks/useHistoryDismiss'
 import { type SheetData, type SheetDataMap, sheetTransitionHandlers, useSheetStore } from '@stores'
+import { useMotionValueEvent } from 'motion/react'
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Sheet, SheetProps } from 'react-modal-sheet'
 
@@ -131,6 +132,12 @@ const SHEETS: { [K in keyof SheetDataMap]: SheetEntry<K> } = {
 
 const DEFAULT_SHEET_PROPS: Partial<SheetProps> = { id: 'bottom_sheet' }
 
+/** The library renders this only while the sheet is not closed, so a closed sheet holds no listener. */
+const FocusOnTween = ({ focusSheet }: { focusSheet: () => void }) => {
+  useMotionValueEvent(Sheet.useContext().y, 'change', focusSheet)
+  return null
+}
+
 const BottomSheet = () => {
   const { activeSheet, closeSheet, sheetData } = useSheetStore()
   const isOpen = !!activeSheet
@@ -177,13 +184,41 @@ const BottomSheet = () => {
         : null
   }, [isOpen])
 
-  // The sheet root stays `visibility: hidden` until its open tween moves it, so focus waits for the end.
+  // The root stays `visibility: hidden` until the open tween moves it, and focus() on it fails
+  // silently. So `FocusOnTween` retries each frame, and focus enters on the first visible frame.
+  // `onOpenEnd` covers an instant tween. Once focus is inside, or the sheet stops trapping, this does nothing.
   const focusSheet = useCallback(() => {
     const container = refs.floating.current
     if (trapFocus && container && !container.contains(document.activeElement)) {
       container.focus({ preventScroll: true })
     }
   }, [refs, trapFocus])
+
+  // Block Tab before focus first enters, and on <body>, a guard or the backdrop. The last two sit beside the
+  // container under the sheet root. A guard refocuses one frame late, so a fast burst would pass it.
+  // After entry, focus elsewhere, such as a portaled menu from the content, keeps its own Tab.
+  useLayoutEffect(() => {
+    if (!trapFocus || !activeSheet) return
+    let entered = !!refs.floating.current?.contains(document.activeElement)
+    const onFocusIn = (event: FocusEvent) => {
+      if (refs.floating.current?.contains(event.target as Node)) entered = true
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      const sheet = refs.floating.current
+      const active = document.activeElement
+      if (event.key !== 'Tab' || sheet?.contains(active)) return
+      if (entered && active !== document.body && !sheet?.parentElement?.contains(active)) return
+      event.preventDefault()
+      event.stopPropagation()
+      focusSheet()
+    }
+    document.addEventListener('focusin', onFocusIn, true)
+    document.addEventListener('keydown', onKeyDown, true)
+    return () => {
+      document.removeEventListener('focusin', onFocusIn, true)
+      document.removeEventListener('keydown', onKeyDown, true)
+    }
+  }, [refs, trapFocus, activeSheet, focusSheet])
 
   // The backdrop is a `<button>`, so a tap focuses it outside the sheet, and the focus manager then
   // skips its return. Pull focus back inside first, so a backdrop dismiss returns like Close does.
@@ -225,6 +260,7 @@ const BottomSheet = () => {
       {...sheetTransitionHandlers}
       onCloseEnd={onCloseEnd}
       onOpenEnd={focusSheet}>
+      <FocusOnTween focusSheet={focusSheet} />
       {/* Guards set aria-hidden on the page, never inert: inert recreates media node views. */}
       <FloatingFocusManager
         context={context}
@@ -243,7 +279,8 @@ const BottomSheet = () => {
           <Sheet.Content disableScroll>{content}</Sheet.Content>
         </Sheet.Container>
       </FloatingFocusManager>
-      <Sheet.Backdrop onTap={closeFromBackdrop} />
+      {/* The library renders a nameless `<button>` here. Tap is its only job, so hide it from Tab and readers. */}
+      <Sheet.Backdrop onTap={closeFromBackdrop} aria-hidden tabIndex={-1} />
     </Sheet>
   )
 }
