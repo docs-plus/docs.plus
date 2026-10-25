@@ -1,0 +1,105 @@
+import { beforeEach, describe, expect, mock, test } from 'bun:test'
+
+import * as realSupabase from '../../../../lib/supabase'
+
+// Other test files map these tokens too. bun test shares one process and one
+// token cache, so a shared token must map to the same user id in every file.
+const USERS: Record<string, string> = {
+  'valid-test-token': 'user-123',
+  'other-user-token': 'user-456'
+}
+
+// Do NOT mock `lib/auth`: the real requireUser must verify the token.
+mock.module('../../../../lib/supabase', () => ({
+  ...realSupabase,
+  getAnonClient: () => ({
+    auth: {
+      getUser: async (token: string) => {
+        const id = USERS[token]
+        if (id) {
+          return {
+            data: {
+              user: { id, email: `${id}@example.com`, is_anonymous: false, user_metadata: {} }
+            },
+            error: null
+          }
+        }
+        return { data: { user: null }, error: { status: 401, message: 'invalid' } }
+      }
+    }
+  }),
+  getServiceRoleClient: () => null
+}))
+
+import { Hono } from 'hono'
+import type { Logger } from 'pino'
+
+import { createMockPrisma, TestServer } from '../../../../../tests/helpers/test-server'
+import { createRouter } from '../../http/router'
+
+const DOCUMENT_ID = 'abcdefghij123456789'
+const NON_OWNER = { Authorization: 'Bearer other-user-token' }
+
+const silentLogger = {
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+  debug: () => {},
+  child: () => silentLogger
+} as unknown as Logger
+
+const privateMeta = {
+  slug: 'garden',
+  ownerId: 'user-123',
+  deletedAt: null,
+  isPrivate: true,
+  readOnly: false
+}
+
+// requireServiceRoleOrUser answers a signed-out call with 401 before deny() runs,
+// so only a signed-in non-owner proves the controller's access check.
+describe('Document conversion routes — a non-owner on a Private document', () => {
+  let server: TestServer
+
+  beforeEach(() => {
+    const prisma = createMockPrisma() as any
+    prisma.documentMetadata.findUnique = async () => privateMeta
+    const app = new Hono()
+    app.route(
+      '/api/documents',
+      createRouter({
+        prisma,
+        logger: silentLogger,
+        mediaPublicBaseUrl: null,
+        mediaCookieFor: () => null
+      })
+    )
+    server = new TestServer(app)
+  })
+
+  for (const format of ['docx', 'md', 'odt']) {
+    test(`export as ${format} gets 403`, async () => {
+      const response = await server.get(
+        `/api/documents/${DOCUMENT_ID}/export?format=${format}`,
+        NON_OWNER
+      )
+      expect(response.status).toBe(403)
+      expect((await response.json()).error).toHaveProperty('code', 'FORBIDDEN')
+    })
+  }
+
+  test('import gets 403', async () => {
+    const form = new FormData()
+    form.append(
+      'documentFile',
+      new File(['# Garden\n\nText'], 'garden.md', { type: 'text/markdown' })
+    )
+    const response = await server.app.request(`/api/documents/${DOCUMENT_ID}/import`, {
+      method: 'POST',
+      headers: NON_OWNER,
+      body: form
+    })
+    expect(response.status).toBe(403)
+    expect(((await response.json()) as any).error).toHaveProperty('code', 'FORBIDDEN')
+  })
+})

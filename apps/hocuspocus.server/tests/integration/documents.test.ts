@@ -11,16 +11,16 @@ mock.module('../../src/lib/supabase', () => ({
   getAnonClient: () => ({
     auth: {
       getUser: async (token: string) => {
-        if (token === 'valid-test-token') {
+        // Other test files map these tokens too. bun test shares one process and
+        // one token cache, so a shared token must map to the same user id in every file.
+        const users: Record<string, { id: string; email: string }> = {
+          'valid-test-token': { id: 'user-123', email: 'owner@example.com' },
+          'other-user-token': { id: 'user-456', email: 'other@example.com' }
+        }
+        const user = users[token]
+        if (user) {
           return {
-            data: {
-              user: {
-                id: 'user-123',
-                email: 'owner@example.com',
-                is_anonymous: false,
-                user_metadata: {}
-              }
-            },
+            data: { user: { ...user, is_anonymous: false, user_metadata: {} } },
             error: null
           }
         }
@@ -955,12 +955,12 @@ describe('Documents API', () => {
       expect(data.success).toBe(true)
     })
 
-    test('should update readOnly flag', async () => {
-      mockPrisma.documentMetadata.upsert = async (data: any) => ({
-        id: 1,
-        documentId: 'abc123',
-        readOnly: data.update.readOnly
-      })
+    test('drops a readOnly change on a signed-out create', async () => {
+      let upsertArgs: any
+      mockPrisma.documentMetadata.upsert = async (data: any) => {
+        upsertArgs = data
+        return { id: 1, documentId: 'abc123', readOnly: false }
+      }
 
       const response = await testServer.put('/api/documents/abc123', {
         readOnly: true
@@ -969,6 +969,71 @@ describe('Documents API', () => {
 
       expect(response.status).toBe(200)
       expect(data.success).toBe(true)
+      // A signed-out create has no owner, so the lock is dropped, never written.
+      for (const payload of [upsertArgs.update, upsertArgs.create]) {
+        expect(payload).not.toHaveProperty('readOnly')
+        expect(payload).not.toHaveProperty('isPrivate')
+      }
+    })
+
+    // Without the owner refusal, anyone could retitle a document someone owns.
+    test('refuses a metadata change on an owned document from anyone but its owner', async () => {
+      mockPrisma.documentMetadata.findUnique = async () => ({
+        ownerId: 'user-123',
+        readOnly: false,
+        isPrivate: false,
+        deletedAt: null,
+        title: 'Owned'
+      })
+      let upserted = 0
+      mockPrisma.documentMetadata.upsert = async () => {
+        upserted++
+        return {}
+      }
+
+      for (const headers of [{}, { token: 'other-user-token' }]) {
+        const response = await testServer.put('/api/documents/abc123', { title: 'Taken' }, headers)
+        const data = await response.json()
+
+        expect(response.status).toBe(403)
+        expect(data.error).toHaveProperty('code', 'FORBIDDEN')
+      }
+      expect(upserted).toBe(0)
+    })
+
+    // A lock on an ownerless row seals it against everyone, with nobody able to undo it.
+    test('drops a lock change on an open document, signed out or signed in', async () => {
+      mockPrisma.documentMetadata.findUnique = async () => ({
+        ownerId: null,
+        readOnly: false,
+        isPrivate: false,
+        deletedAt: null,
+        title: 'Open'
+      })
+      const upserts: any[] = []
+      mockPrisma.documentMetadata.upsert = async (data: any) => {
+        upserts.push(data)
+        return { id: 1, documentId: 'abc123', ownerId: null, readOnly: false, isPrivate: false }
+      }
+
+      const cases = [
+        [{ readOnly: true }, {}],
+        [{ isPrivate: true }, {}],
+        [{ readOnly: true }, { token: 'valid-test-token' }],
+        [{ isPrivate: true }, { token: 'valid-test-token' }]
+      ] as const
+      for (const [body, headers] of cases) {
+        const response = await testServer.put('/api/documents/abc123', body, headers)
+        expect(response.status).toBe(200)
+      }
+
+      expect(upserts).toHaveLength(cases.length)
+      for (const { update, create } of upserts) {
+        for (const payload of [update, create]) {
+          expect(payload).not.toHaveProperty('readOnly')
+          expect(payload).not.toHaveProperty('isPrivate')
+        }
+      }
     })
 
     test('should update isPrivate flag when owner', async () => {
