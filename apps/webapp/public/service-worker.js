@@ -202,9 +202,14 @@ self.addEventListener("notificationclick", (event) => {
             return;
           }
         }
-        // Open new window if none exists
+        // Open new window if none exists. It gets no postMessage, so the id goes in the
+        // URL. The page marks it read once the session exists.
         if (clients.openWindow) {
-          return clients.openWindow(url);
+          const notificationId = event.notification.data?.notification_id;
+          if (!notificationId) return clients.openWindow(url);
+          const target = new URL(url, self.location.origin);
+          target.searchParams.set("notification_id", String(notificationId));
+          return clients.openWindow(target.href);
         }
       })
   );
