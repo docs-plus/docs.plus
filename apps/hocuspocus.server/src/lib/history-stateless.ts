@@ -102,9 +102,13 @@ const toVersion = (value: unknown): number | undefined =>
     ? value
     : undefined
 
+/** Returned in place of a snapshot when `admitWatch` refuses the bytes. */
+export const WATCH_RATE_LIMITED = Symbol('watch-rate-limited')
+
 /** Document version history over the Hocuspocus stateless channel. */
 export async function handleHistoryStateless(
-  payload: HistoryPayload & { type: 'history.list' | 'history.watch' }
+  payload: HistoryPayload & { type: 'history.list' | 'history.watch' },
+  options: { admitWatch: (encodedBytes: number) => boolean }
 ): Promise<unknown> {
   const { type, documentId } = payload
 
@@ -188,6 +192,11 @@ export async function handleHistoryStateless(
       })
 
       if (!doc) return null
+
+      // Charge the base64 size here, after the read and with no await before
+      // the encode. A gate before the read let a burst of frames all pass.
+      const encodedBytes = Math.ceil(doc.data.length / 3) * 4
+      if (!options.admitWatch(encodedBytes)) return WATCH_RATE_LIMITED
 
       return toSnapshot(doc)
     }

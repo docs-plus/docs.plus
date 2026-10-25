@@ -18,7 +18,7 @@ import { READING_MSG } from './extensions/document-occupancy.extension'
 import { decideStatelessRelay, MAX_STATELESS_RELAY_BYTES } from './extensions/statelessRelay'
 import { type SupabaseUser, verifyServiceRole, verifySupabaseTokenOutcome } from './lib/auth'
 import { countActiveConnections } from './lib/health'
-import { handleHistoryStateless } from './lib/history-stateless'
+import { handleHistoryStateless, WATCH_RATE_LIMITED } from './lib/history-stateless'
 import { captureUnknown, flushObservability } from './lib/instrument'
 import { decodeJwtClaims, isConnectedAppToken } from './lib/jwtClaims'
 import { wsLogger } from './lib/logger'
@@ -44,6 +44,7 @@ import { prisma, shutdownDatabase } from './lib/prisma'
 import { closeQueues, refreshPendingStateKeyTtls } from './lib/queue'
 import { disconnectRedis, getRedisClient } from './lib/redis'
 import { createRevertCooldown } from './lib/revertCooldown'
+import { admitWatchBytes, watchOverBudget } from './lib/watchBudget'
 import { resolveWsAccess } from './lib/wsAccess'
 import * as documentContent from './modules/document-content'
 import type { RevertOutcome, VersionFailureReason, VersionOps } from './modules/document-versions'
@@ -120,23 +121,6 @@ const listCoolingDown = (connection: Connection, now: number): boolean => {
   const previous = lastListAt.get(connection)
   if (previous !== undefined && now - previous < LIST_COOLDOWN_MS) return true
   lastListAt.set(connection, now)
-  return false
-}
-
-// A refused watch used to make the client evict the row and ask for the next
-// one, which walks the list. The cap still refuses, and the client stops.
-const WATCH_WINDOW_MS = 10_000
-const WATCH_MAX = 8
-const watchTimes = new WeakMap<Connection, number[]>()
-
-const watchOverBudget = (connection: Connection, now: number): boolean => {
-  const recent = (watchTimes.get(connection) ?? []).filter((at) => now - at < WATCH_WINDOW_MS)
-  if (recent.length >= WATCH_MAX) {
-    watchTimes.set(connection, recent)
-    return true
-  }
-  recent.push(now)
-  watchTimes.set(connection, recent)
   return false
 }
 
@@ -327,13 +311,20 @@ const statelessExtension = {
 
       try {
         // Inline, so `type` keeps its narrowed literal union.
-        const response = await handleHistoryStateless({
-          type,
-          documentId: canonicalId,
-          version,
-          beforeVersion,
-          since
-        })
+        const response = await handleHistoryStateless(
+          { type, documentId: canonicalId, version, beforeVersion, since },
+          { admitWatch: (encodedBytes) => admitWatchBytes(connection, Date.now(), encodedBytes) }
+        )
+        if (response === WATCH_RATE_LIMITED) {
+          sendHistoryResponse(
+            connection,
+            type,
+            null,
+            { error: HISTORY_FAILED, reason: 'rate-limited' },
+            echo
+          )
+          return
+        }
         sendHistoryResponse(connection, type, response, undefined, echo)
       } catch (error) {
         wsLogger.error({ err: error }, 'Error handling history event')
