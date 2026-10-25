@@ -90,23 +90,21 @@ async function fetchViewStatsMap(slugs: string[]): Promise<Map<string, ViewStat>
   const map = new Map<string, ViewStat>()
   if (slugs.length === 0) return map
 
-  try {
-    const viewStats = await fetchByIds(
-      'document_view_stats',
-      'document_slug',
-      slugs,
-      'document_slug,views_7d,views_30d,last_viewed_at'
-    )
-    ;(viewStats as ({ document_slug: string } & ViewStat)[]).forEach((v) => {
-      map.set(v.document_slug, {
-        views_7d: v.views_7d || 0,
-        views_30d: v.views_30d || 0,
-        last_viewed_at: v.last_viewed_at || null
-      })
+  // No catch: a failed read must fail the list and the purge. An empty map would
+  // score every document as unviewed (#578).
+  const viewStats = await fetchByIds(
+    'document_view_stats',
+    'document_slug',
+    slugs,
+    'document_slug,views_7d,views_30d,last_viewed_at'
+  )
+  ;(viewStats as ({ document_slug: string } & ViewStat)[]).forEach((v) => {
+    map.set(v.document_slug, {
+      views_7d: v.views_7d || 0,
+      views_30d: v.views_30d || 0,
+      last_viewed_at: v.last_viewed_at || null
     })
-  } catch (err) {
-    adminLogger.error({ err }, 'Failed to fetch view stats')
-  }
+  })
   return map
 }
 
