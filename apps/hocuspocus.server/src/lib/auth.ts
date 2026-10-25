@@ -39,6 +39,8 @@ type AuthGetUser = (token: string) => Promise<{
 export type VerifyTokenOptions = {
   /** Test seam — production always uses the anon Supabase client. */
   getUser?: AuthGetUser
+  /** auth-js `getUser` takes no signal, so a timer race bounds it. A timeout reads as unavailable. */
+  deadlineMs?: number
 }
 
 /** auth-js RETURNS (not throws) AuthError for 429/5xx/network — treat those as unavailable. */
@@ -114,11 +116,24 @@ export const verifySupabaseTokenOutcome = async (
       return supabase.auth.getUser(accessToken)
     })
 
+  let deadlineTimer: ReturnType<typeof setTimeout> | undefined
   try {
+    const deadlineMs = opts?.deadlineMs
+    // The rejection lands in the catch below, which caches nothing (#596).
     const {
       data: { user },
       error
-    } = await getUser(token)
+    } = await (deadlineMs == null
+      ? getUser(token)
+      : Promise.race([
+          getUser(token),
+          new Promise<never>((_, reject) => {
+            deadlineTimer = setTimeout(
+              () => reject(new Error(`Token verification exceeded ${deadlineMs} ms`)),
+              deadlineMs
+            )
+          })
+        ]))
 
     if (error || !user) {
       jwtLogger.warn({ error }, 'Token verification failed')
@@ -143,6 +158,8 @@ export const verifySupabaseTokenOutcome = async (
     // getUser threw (network/timeout) rather than returning an AuthError.
     jwtLogger.error({ err: error }, 'Error verifying token')
     return { kind: 'unavailable', cause: error }
+  } finally {
+    clearTimeout(deadlineTimer)
   }
 }
 

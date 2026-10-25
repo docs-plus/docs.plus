@@ -60,12 +60,22 @@ export async function requireServiceRoleOrUser(c: Context, next: Next) {
   return requireUser(c, next)
 }
 
+// For the GET pad render: the webapp aborts it at 10 s, so a stalled Auth read degrades
+// instead of sending /500 (#596). Writes keep the old bound, so a slow signed-in PUT
+// still records its owner and passes the owner check.
+const OPTIONAL_USER_AUTH_DEADLINE_MS = 2000
+
 /** Attach the user when a valid token is present; never rejects. For routes with
  *  mixed public/privileged actions that gate per-field downstream. */
 export async function optionalUser(c: Context, next: Next) {
   const token = extractToken(c)
   if (token) {
-    const outcome = await verifySupabaseTokenOutcome(token)
+    const outcome = await verifySupabaseTokenOutcome(token, {
+      deadlineMs:
+        c.req.method === 'GET' && c.req.param('docName') !== undefined
+          ? OPTIONAL_USER_AUTH_DEADLINE_MS
+          : undefined
+    })
     // Transient outage → proceed anonymous; only a verified user is attached.
     // A connected app's token proceeds anonymous too: it belongs to /api/mcp.
     if (outcome.kind === 'user' && !isConnectedAppToken(token)) {

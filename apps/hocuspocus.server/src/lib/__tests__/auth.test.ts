@@ -114,6 +114,20 @@ describe('verifySupabaseTokenOutcome', () => {
     expect(outcome.kind).toBe('unavailable')
   })
 
+  test('maps a getUser stalled past deadlineMs to unavailable and caches nothing', async () => {
+    const stalled = await verifySupabaseTokenOutcome('tok-deadline-race', {
+      getUser: () => new Promise(() => {}),
+      deadlineMs: 50
+    })
+    expect(stalled.kind).toBe('unavailable')
+
+    // A cached negative entry would answer invalid here without calling getUser.
+    const outcome = await verifySupabaseTokenOutcome('tok-deadline-race', {
+      getUser: stubGetUser(() => ({ data: { user: { id: 'u-late' } }, error: null }))
+    })
+    expect(outcome.kind).toBe('user')
+  })
+
   // Reads one metric sample, so the assertions below compare deltas rather than
   // totals. Other tests in this file also verify tokens, so a total would drift.
   const sample = async (name: string, label?: string): Promise<number> => {

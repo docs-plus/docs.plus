@@ -41,20 +41,36 @@ export const getOwnerProfiles: GetOwnerProfiles = async (userIds) => {
   return (data ?? []) as ProfileLite[]
 }
 
+// The pad render waits on this read, and the webapp aborts that render at 10 s
+// (fetchDocument.ts). The shared 10 s Supabase bound would land after that abort,
+// so a stalled read sent the pad to /500. A late name is worth less than the page (#596).
+export const OWNER_PROFILE_DEADLINE_MS = 2000
+
 /** The singular twin, same table and same columns, so the two cannot drift apart. */
-export const getOwnerProfile = async (userId: string): Promise<ProfileLite | null> => {
-  const supabase = getServiceRoleClient()
+export const getOwnerProfile = async (
+  userId: string,
+  supabase = getServiceRoleClient()
+): Promise<ProfileLite | null> => {
   if (!supabase) return null
-  const { data, error } = await supabase
-    .from('users')
-    .select(OWNER_PROFILE_COLUMNS)
-    .eq('id', userId)
-    .maybeSingle()
-  if (error) {
-    documentsServiceLogger.warn({ err: error, userId }, 'Owner profile lookup failed')
-    return null
+  // controller.abort(), as in timedFetch, so the error is an AbortError
+  // and keeps the postgrest-js abort hint.
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), OWNER_PROFILE_DEADLINE_MS)
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select(OWNER_PROFILE_COLUMNS)
+      .eq('id', userId)
+      .abortSignal(controller.signal)
+      .maybeSingle()
+    if (error) {
+      documentsServiceLogger.warn({ err: error, userId }, 'Owner profile lookup failed')
+      return null
+    }
+    return (data ?? null) as ProfileLite | null
+  } finally {
+    clearTimeout(timer)
   }
-  return (data ?? null) as ProfileLite | null
 }
 
 /** Every id an attribution row can name: the trigger, plus every contributor. */
