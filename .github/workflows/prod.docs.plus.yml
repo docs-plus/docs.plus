@@ -7,6 +7,7 @@
 #   2. Build Verification: extension + Next.js builds (smoke test)
 #   3. Deploy Gate: parses commit message with a strict regex (anti-footgun)
 #   4. Deploy: docker compose build on the prod host → blue-green rollout
+#   5. Report: every run writes a timing table to its summary (`report` job)
 #
 # Triggers:
 #   - push to main: full pipeline. Deploy chain gated by triage outputs
@@ -1111,3 +1112,53 @@ jobs:
             if docker exec uptime-kuma wget -qO- http://localhost:3001 >/dev/null 2>&1; then echo "✅ uptime-kuma healthy"; break; fi
             [ "$i" -eq 20 ] && echo "⚠️ uptime-kuma health timeout (continuing)"; sleep 2
           done
+
+  # Every run ends here and writes its timing table to the run summary. It reads
+  # the API only, so it never touches the prod host and starts after M1 ends.
+  # List every job of this file in `needs`; the script warns about a missing one.
+  report:
+    name: 📊 Run Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+      [
+        triage,
+        changes,
+        lint,
+        typecheck,
+        security,
+        back-validation,
+        extension-tests,
+        webapp-unit-tests,
+        build,
+        deploy,
+        observability-deploy,
+        uptime-kuma-deploy
+      ]
+    if: always()
+    # The report explains the run. It must never turn a green run red.
+    continue-on-error: true
+    permissions:
+      actions: read
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/scripts
+
+      - name: 📊 Write timing table
+        env:
+          RUN_SUBJECT: ${{ github.event.head_commit.message || inputs.dry_run_subject || github.event.pull_request.title }}
+          FREE_GB: ${{ needs.deploy.outputs.free_gb }}
+          LOAD1: ${{ needs.deploy.outputs.load1 }}
+        run: |
+          run_json="${RUNNER_TEMP}/run.json"
+          for _ in 1 2 3; do
+            gh run view "${GITHUB_RUN_ID}" -R "${GITHUB_REPOSITORY}" --attempt "${GITHUB_RUN_ATTEMPT}" \
+              --json createdAt,attempt,event,jobs > "${run_json}" && break
+            rm -f "${run_json}"
+            sleep 5
+          done
+          bash .github/scripts/write-run-report.sh "${run_json}" | tee -a "${GITHUB_STEP_SUMMARY}"

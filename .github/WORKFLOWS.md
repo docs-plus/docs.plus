@@ -7,13 +7,14 @@ This file is intentionally not named `README.md` so the repository root `README.
 - `workflows/prod.docs.plus.yml`
   - Production CI/CD pipeline
   - Triggers: push to `main`, PR to `main`, weekly schedule, and `workflow_dispatch`
-  - Stages: triage (`parse-build-trigger.sh`) → quality gates → build verification → deploy chain (app → observability → uptime-kuma, fail-fast)
+  - Stages: triage (`parse-build-trigger.sh`) → quality gates → build verification → deploy chain (app → observability → uptime-kuma, fail-fast) → run report
   - Deploy guard: `GLITCHTIP_DSN` and `NEXT_PUBLIC_GLITCHTIP_DSN` must be non-empty in the host `.env` or the deploy aborts before building
   - Disk guard: before the build, it removes old `docsplus-*` tags. It keeps this run's tag, the last-good tag and every image a container uses. Then it prunes the build cache toward 45 GB free and keeps at least 15 GB of cache. It aborts below 20 GB free and exposes `free_gb_before`, `free_gb` and `load1` as deploy job outputs
   - A manual dispatch with `force_deploy` deploys only from `main`. From any other branch, the deploy job skips ([#437](https://github.com/docs-plus/docs.plus/issues/437))
   - The deploy copies `scripts/traefik/` to `/opt/projects/prod.docs.plus/.deploy/traefik/` before `up -d traefik redis`. It rewrites only a changed dynamic file, by rename. Traefik reads that copy through `TRAEFIK_CONFIG_DIR` in the host `.env`, so a checkout on the runner does not change live routing
   - Two GitHub settings are manual, not code ([#437](https://github.com/docs-plus/docs.plus/issues/437)). The `production` environment should allow only `main`. A `prod.docs.plus` runner group should accept only `prod.docs.plus.yml` and `observability.docs.plus.yml` from `main`
   - On success, posts a `deploy <sha>` annotation to Grafana. On failure, it notifies Telegram (credentials from the host's `.env.observability`). The rollback runs only after `🚀 Deploy Services` has started (`ROLL_STARTED`). The notice has five texts: aborted before touching prod (production unchanged), stopped in Ensure Infrastructure (app unchanged), migration failed (app unchanged), rolled back to the previous tag, or rollback failed (manual intervention)
+  - Every run, the weekly cron included, ends with `📊 Run Report`. It writes job times, deploy steps and the benchmark metrics (M1, M2g, M2i, M3, M4, M5, W, M6) to the run summary. It reads the API only and never fails the run
 - `workflows/stage.docs.plus.yml`
   - Staging CI/CD pipeline (**not yet migrated** to the four-domain grammar; uses loose `contains()` on `front`/`back`)
   - Triggers: push to `dev`, PR to `dev`, and `workflow_dispatch`. No `dev` branch exists now, so only a manual `workflow_dispatch` runs this workflow
@@ -97,3 +98,4 @@ Legend: **Back-val** = backend-ci + typecheck + security · **App deploy** = sma
 - Composite action: `actions/setup-bun/action.yml`
 - Trigger tokenizer: `.github/scripts/parse-build-trigger.sh`
 - Telegram notifier: `scripts/ci/notify-telegram.sh` (shared by prod deploy, observability, and runner-watchdog failure steps; never fails the caller)
+- Run report: `.github/scripts/write-run-report.sh` (reads `gh run view --json jobs` output; prints Markdown)
