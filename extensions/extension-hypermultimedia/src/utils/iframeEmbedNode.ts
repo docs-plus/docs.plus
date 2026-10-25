@@ -1,7 +1,13 @@
 import { type Editor, mergeAttributes, type NodeViewRendererProps } from '@tiptap/core'
+import type { DOMOutputSpec } from '@tiptap/pm/model'
 import type { NodeView, ViewMutationRecord } from '@tiptap/pm/view'
 
-import { type CaptionHandle, createCaptionElement, readCaption } from '../caption'
+import {
+  type CaptionHandle,
+  createCaptionElement,
+  readCaption,
+  wrapRenderWithCaption
+} from '../caption'
 import {
   layoutAttrsChanged,
   parseLayoutDimensions,
@@ -15,7 +21,7 @@ import {
   resolveFullscreenIframeAttributes
 } from './embedKit'
 import { ignoreNodeViewSubtreeMutation } from './ignoreNodeViewMutation'
-import { mediaLayoutCss } from './layoutStyle'
+import { formatMediaLayoutCss, mediaLayoutStyleProps, splitCaptionLayoutCss } from './layoutStyle'
 import type { StyleLayoutOptions } from './utils'
 
 export type IframeAttrs = Record<string, unknown>
@@ -221,7 +227,7 @@ export function renderIframeEmbedHTML<TOptions extends IframeEmbedNodeOptions>(
     node: { attrs: IframeAttrs }
     HTMLAttributes: Record<string, unknown>
   }
-): [string, Record<string, unknown>, [string, Record<string, unknown>]] {
+): DOMOutputSpec {
   const src = String(HTMLAttributes.src ?? node.attrs.src ?? '')
   const embedUrl = config.buildEmbedUrl(src, node.attrs, options) ?? ''
 
@@ -230,7 +236,7 @@ export function renderIframeEmbedHTML<TOptions extends IframeEmbedNodeOptions>(
     height: HTMLAttributes.height ?? node.attrs.height
   })
 
-  const style = mediaLayoutCss(
+  const layout = mediaLayoutStyleProps(
     {
       display: String(HTMLAttributes.display ?? node.attrs.display ?? 'block'),
       height,
@@ -242,11 +248,14 @@ export function renderIframeEmbedHTML<TOptions extends IframeEmbedNodeOptions>(
     },
     'export-embed'
   )
+  const caption = readCaption(node)
+  const split = caption ? splitCaptionLayoutCss(layout) : null
+  const style = split ? split.media : formatMediaLayoutCss(layout)
 
   const iframeAttrs = config.resolveIframeAttributes(node.attrs, options, width, height)
   const { allowfullscreen, ...restIframeAttrs } = iframeAttrs
 
-  return [
+  const rendered: DOMOutputSpec = [
     'div',
     { [config.dataVideoAttr]: '', class: config.renderWrapperClass, style },
     [
@@ -261,4 +270,5 @@ export function renderIframeEmbedHTML<TOptions extends IframeEmbedNodeOptions>(
       })
     ]
   ]
+  return wrapRenderWithCaption(rendered, caption, split?.figure)
 }

@@ -1,6 +1,6 @@
 import { Node, nodeInputRule } from '@tiptap/core'
 
-import { captionAttribute } from '../../caption'
+import { captionAttribute, ignoreFigcaptionParseRule } from '../../caption'
 import { AUDIO_LAYOUT_FALLBACK } from '../../loading'
 import { createTypedMediaMarkdownHooks } from '../../markdown/typedMediaMarkdown'
 import { layoutAttrDefaults } from '../../utils/embedKit'
@@ -127,7 +127,8 @@ export const Audio = Node.create<AudioOptions>({
     return [
       {
         tag: 'div[data-audio] audio[src]'
-      }
+      },
+      ignoreFigcaptionParseRule
     ]
   },
 

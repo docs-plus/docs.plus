@@ -1,6 +1,6 @@
 import { Node, nodePasteRule } from '@tiptap/core'
 
-import { captionAttribute } from '../../caption'
+import { captionAttribute, ignoreFigcaptionParseRule } from '../../caption'
 import { createTypedMediaMarkdownHooks } from '../../markdown/typedMediaMarkdown'
 import {
   EMBED_BLOCK_LAYOUT_DEFAULTS,
@@ -85,7 +85,7 @@ export const Loom = Node.create<LoomOptions>({
   },
 
   parseHTML() {
-    return [{ tag: 'div[data-loom-video] iframe' }]
+    return [{ tag: 'div[data-loom-video] iframe' }, ignoreFigcaptionParseRule]
   },
 
   renderHTML({ node, HTMLAttributes }) {

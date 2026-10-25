@@ -138,6 +138,27 @@ export function formatMediaLayoutCss(props: LayoutStyleBag): string {
     .join(' ')
 }
 
+/**
+ * The caption `<figure>` takes the placement, so the caption moves with the media.
+ * The stylesheet makes the figure inline-block, which shrinks to its content and
+ * turns an inner `auto` margin into 0. Inline `display:table` keeps `margin:auto` working.
+ */
+export function splitCaptionLayoutCss(props: LayoutStyleBag): { figure: string; media: string } {
+  // maxWidth is set only for a floated media node (resolvePlacement).
+  if (props.maxWidth == null) {
+    const { clear, margin, ...rest } = props
+    return {
+      figure: formatMediaLayoutCss({ ...EMPTY_BAG, display: 'table', clear, margin }),
+      media: formatMediaLayoutCss({ ...rest, clear: null, margin: null })
+    }
+  }
+  const { float, clear, margin, maxWidth, ...size } = props
+  return {
+    figure: formatMediaLayoutCss({ ...EMPTY_BAG, float, clear, margin, maxWidth }),
+    media: formatMediaLayoutCss({ ...EMPTY_BAG, ...size, maxWidth: '100%' })
+  }
+}
+
 export function mediaLayoutCss(
   attrs: StyleLayoutOptions,
   mode: MediaLayoutStyleMode,

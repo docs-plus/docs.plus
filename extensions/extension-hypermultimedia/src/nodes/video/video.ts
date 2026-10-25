@@ -1,6 +1,6 @@
 import { Node, nodeInputRule } from '@tiptap/core'
 
-import { captionAttribute } from '../../caption'
+import { captionAttribute, ignoreFigcaptionParseRule } from '../../caption'
 import { createTypedMediaMarkdownHooks } from '../../markdown/typedMediaMarkdown'
 import { layoutAttrDefaults, resolveEmbedLayoutDimensions } from '../../utils/embedKit'
 import {
@@ -134,7 +134,8 @@ export const Video = Node.create<VideoOptions>({
     return [
       {
         tag: 'div[data-video] video[src]'
-      }
+      },
+      ignoreFigcaptionParseRule
     ]
   },
 

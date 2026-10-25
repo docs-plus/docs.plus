@@ -170,7 +170,7 @@ describe('embed caption', () => {
     cy.get('#editor .hypermultimedia--youtube__content').trigger('mouseover', { force: true })
   })
 
-  it('persists a caption via the node attribute + JSON round-trip, never serializing <figure>', () => {
+  it('persists a caption through JSON and serializes it as a <figure>', () => {
     cy.get('#editor .media-toolbar [data-action-id="caption"]').click()
     cy.get('#editor .hypermultimedia--youtube__content .hm-caption').type('Embed caption')
     cy.get('#editor .hypermultimedia--youtube__content .hm-caption').blur()
@@ -179,9 +179,9 @@ describe('embed caption', () => {
       editor.commands.setContent(editor.getJSON())
     })
     cy.nodeAttr('youtube', 'caption').should('eq', 'Embed caption')
-    // embeds intentionally do not serialize the caption to standalone HTML
+    // #244: the embed serializes its caption as a <figure>.
     cy.getEditor().then((editor) => {
-      expect(editor.getHTML()).to.not.contain('data-hm-figure')
+      expect(editor.getHTML()).to.contain('data-hm-figure')
     })
   })
 

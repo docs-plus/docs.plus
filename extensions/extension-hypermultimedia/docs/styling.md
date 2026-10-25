@@ -70,7 +70,7 @@ These names are the stable styling contract. A custom toolbar, a custom action a
 | `.floating-tooltip`                                                     | Shared hover and focus tooltip bubble on icon buttons.                               |
 | `.floating-popover`                                                     | Positioning container for every menu and form the toolbar opens.                     |
 | `.hm-caption`                                                           | Editable `<figcaption>`. Adds `--empty` when the text is blank.                      |
-| `.hypermultimedia--figure`                                              | The node emits this `<figure>` wrapper for a captioned image.                        |
+| `.hypermultimedia--figure`                                              | The node emits this `<figure>` wrapper in HTML for any captioned media.              |
 | `.hypermultimedia--<type>__content`                                     | Media wrapper per node, for example `.hypermultimedia--youtube__content`.            |
 | `.hypermultimedia__resize-gripper`                                      | Gripper widget. Adds `--active` on hover and `--dragging` during a drag.             |
 | `.ProseMirror-selectednode`                                             | Selected media wrapper. Its `.hm-media-host` gets a 1px `--hm-resize-border` frame.  |

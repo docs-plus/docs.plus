@@ -61,6 +61,27 @@ function roundTripHtml(): void {
   })
 }
 
+function setCaption(node: MediaNode, caption: string): void {
+  cy.getEditor().then((editor) => {
+    let pos = -1
+    editor.state.doc.descendants((child, at) => {
+      if (pos === -1 && child.type.name === node) pos = at
+    })
+    expect(pos, `${node} position`).to.be.at.least(0)
+    editor.view.dispatch(editor.state.tr.setNodeAttribute(pos, 'caption', caption))
+  })
+}
+
+function paragraphTexts(): Cypress.Chainable<string[]> {
+  return cy.getEditor().then((editor) => {
+    const texts: string[] = []
+    editor.state.doc.descendants((child) => {
+      if (child.type.name === 'paragraph') texts.push(child.textContent)
+    })
+    return texts
+  })
+}
+
 describe('HTML copy/paste round-trip (getHTML → setContent)', () => {
   beforeEach(() => {
     cy.intercept('GET', 'https://publish.x.com/oembed*', {
@@ -154,6 +175,27 @@ describe('HTML copy/paste round-trip (getHTML → setContent)', () => {
     roundTripHtml()
     cy.nodeCount('x').should('eq', 1)
     cy.nodeAttr('x', 'src').should('include', 'jack/status/20')
+  })
+
+  // #244: every node emits a <figure> when captioned, so copy/paste keeps the caption.
+  describe('caption', () => {
+    for (const node of Object.keys(FIXTURES) as MediaNode[]) {
+      it(`round-trips the ${node} caption without a stray paragraph`, () => {
+        const caption = `Caption for ${node}`
+        insertMediaNode(node)
+        setCaption(node, caption)
+        cy.nodeAttr(node, 'caption').should('eq', caption)
+        cy.getEditor().then((editor) => {
+          expect(editor.getHTML()).to.contain('data-hm-figure')
+        })
+        roundTripHtml()
+        cy.nodeCount(node).should('eq', 1)
+        cy.nodeAttr(node, 'caption').should('eq', caption)
+        paragraphTexts().should((texts) => {
+          expect(texts.join('\n')).to.not.include(caption)
+        })
+      })
+    }
   })
 
   describe('hyperlink coexistence', () => {

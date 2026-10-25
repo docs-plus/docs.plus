@@ -97,7 +97,9 @@ HyperMultimediaKit.configure({
 
 Every media node view carries an editable `<figcaption>`. The text lives in the node's `caption` attribute, which is the source of truth, so it persists through collaboration and JSON. The toolbar Caption action reveals and focuses the field, and `Enter` commits.
 
-Two limits apply. Markdown export keeps `![alt](src)` only, so it never carries a caption. The kit round-trips `<figure>` and `<figcaption>` for `image` only, meaning it both renders and parses them. Video, audio, the provider embeds and X keep the editable caption and the attribute, but they emit no `<figure>` in HTML. Every path that serializes to HTML therefore drops their caption, including clipboard copy and the toolbar Copy action. Re-importing exported HTML cannot bring a caption back as stray text.
+All nine nodes render a captioned media node as a `<figure data-hm-figure>` with a `<figcaption>` in HTML, and they parse it back. So `getHTML()`, clipboard copy and the toolbar Copy action keep the caption. The parser reads the `<figcaption>` into the `caption` attribute only, never into a paragraph. For a floated media node, the `<figure>` takes the float, clear and margin, so the caption floats with the media element. The media element inside keeps its width and height. For a media node that is not floated, the `<figure>` takes the clear and margin, so a `margin: auto` media node stays centered. Image always puts its float, clear and margin on the `<figure>`. X writes no layout to HTML, so its `<figure>` has no placement. A node without a caption renders no `<figure>`.
+
+One limit applies. Markdown export keeps `![alt](src)` only, so it never carries a caption.
 
 ## Bring your own toolbar
 

@@ -1,12 +1,13 @@
 import type { Editor } from '@tiptap/core'
-import type { DOMOutputSpec, Node as ProseMirrorNode } from '@tiptap/pm/model'
+import type { DOMOutputSpec, Node as ProseMirrorNode, TagParseRule } from '@tiptap/pm/model'
 import { NodeSelection, TextSelection } from '@tiptap/pm/state'
 
 import { setMediaCaption } from './utils/media-node-attrs'
 
-/** Single reader for the nullable `caption` attr so node views don't repeat the cast. */
-export function readCaption(node: ProseMirrorNode): string | null {
-  return (node.attrs.caption as string | null) ?? null
+/** Single caption reader. Collab attrs are never re-validated, so a non-string reads as null. */
+export function readCaption(node: Pick<ProseMirrorNode, 'attrs'>): string | null {
+  const value = node.attrs.caption
+  return typeof value === 'string' && value ? value : null
 }
 
 /** NodeSelection can outlive caption DOM focus; collapse it before typing replaces the node. */
@@ -121,12 +122,21 @@ export function captionAttribute(): {
 } {
   return {
     default: null as string | null,
-    parseHTML: (element: HTMLElement) =>
-      element.tagName === 'FIGURE'
-        ? element.querySelector('figcaption')?.textContent?.trim() || null
-        : null,
+    // Image parses from the figure itself; the other nodes parse from the media inside it.
+    parseHTML: (element: HTMLElement) => {
+      const figure = element.closest('figure[data-hm-figure]')
+      if (!figure) return null
+      const figcaption = Array.from(figure.children).find((el) => el.tagName === 'FIGCAPTION')
+      return figcaption?.textContent?.trim() || null
+    },
     renderHTML: () => ({})
   }
+}
+
+/** The `caption` attr already holds this text; without the rule it also parses as a paragraph. */
+export const ignoreFigcaptionParseRule: TagParseRule = {
+  tag: 'figure[data-hm-figure] > figcaption',
+  ignore: true
 }
 
 /** Wrap a rendered media spec in `<figure>…<figcaption>` when caption is present. */

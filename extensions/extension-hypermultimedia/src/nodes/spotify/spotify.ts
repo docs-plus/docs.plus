@@ -1,6 +1,6 @@
 import { Node, nodePasteRule } from '@tiptap/core'
 
-import { captionAttribute } from '../../caption'
+import { captionAttribute, ignoreFigcaptionParseRule } from '../../caption'
 import { createTypedMediaMarkdownHooks } from '../../markdown/typedMediaMarkdown'
 import {
   EMBED_BLOCK_LAYOUT_DEFAULTS,
@@ -127,7 +127,8 @@ export const Spotify = Node.create<SpotifyOptions>({
           typeof node !== 'string' && parseSpotifyEntity(node.getAttribute('src') ?? '')
             ? {}
             : false
-      }
+      },
+      ignoreFigcaptionParseRule
     ]
   },
 

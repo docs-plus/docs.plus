@@ -1,6 +1,6 @@
 import { Node, nodePasteRule } from '@tiptap/core'
 
-import { captionAttribute } from '../../caption'
+import { captionAttribute, ignoreFigcaptionParseRule } from '../../caption'
 import { createTypedMediaMarkdownHooks } from '../../markdown/typedMediaMarkdown'
 import {
   EMBED_BLOCK_LAYOUT_DEFAULTS,
@@ -100,7 +100,7 @@ export const Youtube = Node.create<YoutubeOptions>({
   },
 
   parseHTML() {
-    return [{ tag: 'div[data-youtube-video] iframe' }]
+    return [{ tag: 'div[data-youtube-video] iframe' }, ignoreFigcaptionParseRule]
   },
 
   addCommands() {

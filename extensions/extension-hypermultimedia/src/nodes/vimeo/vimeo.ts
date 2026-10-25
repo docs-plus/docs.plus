@@ -1,6 +1,6 @@
 import { Node, nodePasteRule } from '@tiptap/core'
 
-import { captionAttribute } from '../../caption'
+import { captionAttribute, ignoreFigcaptionParseRule } from '../../caption'
 import { createTypedMediaMarkdownHooks } from '../../markdown/typedMediaMarkdown'
 import {
   EMBED_BLOCK_LAYOUT_DEFAULTS,
@@ -97,7 +97,7 @@ export const Vimeo = Node.create<VimeoOptions>({
   },
 
   parseHTML() {
-    return [{ tag: 'div[data-vimeo-video] iframe' }]
+    return [{ tag: 'div[data-vimeo-video] iframe' }, ignoreFigcaptionParseRule]
   },
 
   addCommands() {

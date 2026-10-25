@@ -182,7 +182,7 @@ The media toolbar, the paste path, the insert commands and the caption each carr
 - **`setX` types `width` and `height` but the `x` node stores neither.** `setX` accepts both values, and the node then ignores them. Size an X post with `maxwidth`.
 - **`dnt` cannot be set per node.** It is a kit option and a node attribute. But `AddXOptions` omits it, so `setX` cannot write it in a type-safe way. Set it on the kit.
 - **A drag can appear to stop early.** Resize clamps to a 160 × 80 minimum, and `soundcloud` and `spotify` raise the height floor further. See [Resize](./resize-and-loading.md#resize).
-- **A caption survives HTML round-trip for `image` only.** Every other node keeps the editable caption and the attribute, but emits no `<figure>`. So clipboard copy and the toolbar Copy action drop the text. Markdown export drops every caption. See [Caption](./media-toolbar.md#caption).
+- **Markdown export drops every caption.** HTML keeps it, because all nine nodes render a captioned media node as a `<figure>`. So clipboard copy and the toolbar Copy action keep the text. See [Caption](./media-toolbar.md#caption).
 - **The paste handler drops pasted image files silently without a listener.** Add an `editorFileUpload` listener and insert the nodes yourself. See [Image file paste (`editorFileUpload`)](./paste-and-import.md#image-file-paste-editorfileupload).
 
 ### React Native and WebView hosts

@@ -1,7 +1,13 @@
 import { type Editor, mergeAttributes, type NodeViewRendererProps } from '@tiptap/core'
+import type { DOMOutputSpec } from '@tiptap/pm/model'
 import type { NodeView, ViewMutationRecord } from '@tiptap/pm/view'
 
-import { type CaptionHandle, createCaptionElement, readCaption } from '../caption'
+import {
+  type CaptionHandle,
+  createCaptionElement,
+  readCaption,
+  wrapRenderWithCaption
+} from '../caption'
 import {
   layoutAttrsChanged,
   parseLayoutDimensions,
@@ -10,7 +16,7 @@ import {
 } from '../loading'
 import { EMBED_LAYOUT_ATTR_KEYS, embedAttrsEqual } from './embedKit'
 import { ignoreNodeViewSubtreeMutation } from './ignoreNodeViewMutation'
-import { mediaLayoutCss } from './layoutStyle'
+import { formatMediaLayoutCss, mediaLayoutStyleProps, splitCaptionLayoutCss } from './layoutStyle'
 import { omitNullishAndFalse, type StyleLayoutOptions } from './utils'
 
 export interface HtmlMediaNodeConfig {
@@ -144,9 +150,9 @@ export function renderHtmlMediaHTML(
     node: { attrs: Record<string, unknown> }
     HTMLAttributes: Record<string, unknown>
   }
-): [string, Record<string, unknown>, [string, Record<string, unknown>]] {
+): DOMOutputSpec {
   const mediaClass = `hypermultimedia--${config.tag}__content`
-  const style = mediaLayoutCss(
+  const layoutProps = mediaLayoutStyleProps(
     {
       height: parseInt(String(HTMLAttributes.height)),
       width: parseInt(String(HTMLAttributes.width)),
@@ -157,6 +163,9 @@ export function renderHtmlMediaHTML(
     'export-html',
     options
   )
+  const caption = readCaption(node)
+  const split = caption ? splitCaptionLayoutCss(layoutProps) : null
+  const style = split ? split.media : formatMediaLayoutCss(layoutProps)
 
   const htmlAttributes = pickMediaElementAttrs(node, HTMLAttributes, config.elementAttrKeys)
 
@@ -169,9 +178,10 @@ export function renderHtmlMediaHTML(
   )
 
   // Leaf node: no content hole — a trailing `0` makes DOMSerializer throw on getHTML/copy.
-  return [
+  const rendered: DOMOutputSpec = [
     'div',
     { [`data-${config.tag}`]: '', class: mediaClass, style },
     [config.tag, mergeAttributes(htmlAttributes, layout, { class: mediaClass, style })]
   ]
+  return wrapRenderWithCaption(rendered, caption, split?.figure)
 }

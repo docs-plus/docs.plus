@@ -4,7 +4,9 @@ import {
   captionAttribute,
   type CaptionHandle,
   createCaptionElement,
-  readCaption
+  ignoreFigcaptionParseRule,
+  readCaption,
+  wrapRenderWithCaption
 } from '../../caption'
 import { layoutAttrsChanged, wrapMediaWithLoadingShell } from '../../loading'
 import { createTypedMediaMarkdownHooks } from '../../markdown/typedMediaMarkdown'
@@ -106,7 +108,8 @@ export const X = Node.create<XOptions>({
           // throw in renderHTML on the null text child.
           return src ? { src } : false
         }
-      }
+      },
+      ignoreFigcaptionParseRule
     ]
   },
 
@@ -115,13 +118,17 @@ export const X = Node.create<XOptions>({
     // src, and collaborative attrs are never re-validated — gate the read too.
     const url = normalizeXUrl(String(HTMLAttributes.src ?? node.attrs.src ?? '')) ?? ''
 
-    // Serialize the standard twitter-tweet markup only; the per-node oEmbed and layout
-    // attrs are runtime nodeView concerns and would be invalid attributes on <blockquote>.
-    return [
-      'blockquote',
-      mergeAttributes(this.options.HTMLAttributes, { class: 'twitter-tweet' }),
-      ['a', { href: url }, url]
-    ]
+    // Serialize the standard twitter-tweet markup, plus a figure when captioned. The
+    // per-node oEmbed and layout attrs are runtime nodeView concerns and would be
+    // invalid attributes on <blockquote>.
+    return wrapRenderWithCaption(
+      [
+        'blockquote',
+        mergeAttributes(this.options.HTMLAttributes, { class: 'twitter-tweet' }),
+        ['a', { href: url }, url]
+      ],
+      readCaption(node)
+    )
   },
 
   addNodeView() {

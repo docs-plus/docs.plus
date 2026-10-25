@@ -136,8 +136,8 @@ HyperMultimediaKit.configure({
 ## Caption
 
 Add a caption from the toolbar; the text is stored in the node `caption` attribute
-and persists via collaboration and JSON. Audio emits no `<figure>` in HTML — the
-caption is editor and attribute only (HTML `<figure>` round-trip is `image`-only).
+and persists via collaboration and JSON. HTML carries the caption as
+`<figure>/<figcaption>`, so copy and paste keep it.
 Audio also exposes a Download action.
 
 ## Commands
