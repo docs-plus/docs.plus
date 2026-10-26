@@ -110,7 +110,7 @@ export const envSchema = z.object({
   DO_STORAGE_ACCESS_KEY_ID: z.string().optional().default(''),
   DO_STORAGE_SECRET_ACCESS_KEY: z.string().optional().default(''),
   DO_STORAGE_MAX_FILE_SIZE: positiveByteString('10485760'),
-  LINK_ICON_MAX_BYTES: positiveByteString('16384'),
+  LINK_ICON_MAX_BYTES: positiveByteString('32768'),
   // Signs the Private media cookie. Empty boots, and Private media then loads
   // for nobody. A short secret is refused, as for EMAIL_UNSUBSCRIBE_SECRET.
   MEDIA_COOKIE_SECRET: z

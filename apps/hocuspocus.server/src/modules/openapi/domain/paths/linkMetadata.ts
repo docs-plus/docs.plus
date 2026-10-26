@@ -44,7 +44,7 @@ export const linkMetadataPaths: OpenApiPaths = {
       operationId: 'getLinkIcon',
       summary: 'Fetch a favicon',
       description:
-        'Fetches `<origin>/favicon.ico` through the SSRF guard, with a 3 s budget. The body is capped at `LINK_ICON_MAX_BYTES` (default 16384). `Content-Type` comes from the bytes only: PNG, ICO, GIF, JPEG or WebP. Every miss is an empty `404`, so an `<img>` fires `onerror`. `HEAD` runs the same handler with no body. Rate-limited by its own bucket.',
+        'Fetches `<origin>/favicon.ico` through the SSRF guard, with a 3 s budget. When it misses, reads the head of `<origin>/` and fetches one `rel=icon` or `apple-touch-icon` href through the same guard, skipping SVG and `data:`. The body is capped at `LINK_ICON_MAX_BYTES` (default 32768). `Content-Type` comes from the bytes only: PNG, ICO, GIF, JPEG or WebP. Every miss is an empty `204`, so an `<img>` fires `onerror` and Chrome logs no `404`. `HEAD` runs the same handler with no body. Rate-limited by its own bucket.',
       tags: ['Link metadata'],
       security: [{}],
       parameters: toParameters(iconQuerySchema, 'query', {
@@ -65,7 +65,7 @@ export const linkMetadataPaths: OpenApiPaths = {
           },
           headers: { 'Cache-Control': { schema: { type: 'string' } } }
         },
-        '404': {
+        '204': {
           description:
             'No usable icon. The body is empty. A clean miss is cached for one day. These misses are cached for ten minutes: a timeout, a network or DNS error, the SSRF guard on any hop, too many redirects, or upstream 5xx, 408 or 429.',
           headers: { 'Cache-Control': { schema: { type: 'string' } } }

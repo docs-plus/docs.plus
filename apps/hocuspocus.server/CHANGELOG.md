@@ -47,11 +47,14 @@ Before you deploy this commit, check that `.env.production` holds both `VAPID_PU
 
 - **`GET /api/metadata/icon?origin=<origin>` returns a favicon
   ([#515](https://github.com/docs-plus/docs.plus/issues/515)).** The route fetches
-  `<origin>/favicon.ico` through the SSRF guard, checks the bytes, and answers with the
-  image or an empty `404`. `LINK_ICON_MAX_BYTES` caps the body, default `16384`. The route
-  has its own rate limit at ten times `RATE_LIMIT_MAX`. One risk is accepted: a host that
-  changes its DNS answer during the fetch can return private bytes. The leak is limited
-  to sniffed image bytes, up to the cap, within 3 s.
+  `<origin>/favicon.ico` through the SSRF guard and checks the bytes. When that file misses,
+  it reads the head of `<origin>/`, at most 64 KiB, and fetches one `rel=icon` or
+  `apple-touch-icon` href through the same guard. It skips SVG and `data:` URLs. It answers
+  with the image or an empty `204`, so Chrome logs no `404` for a link with no icon.
+  `LINK_ICON_MAX_BYTES` caps the body, default `32768`. The route has its own rate limit at
+  ten times `RATE_LIMIT_MAX`. One risk is accepted: a host that changes its DNS answer
+  during the fetch can return private bytes. The leak is limited to sniffed image bytes, up
+  to the cap, within 3 s.
 - **`push_subscriptions_deactivated_total{reason}` counts the push subscriptions the server
   switches off ([#607](https://github.com/docs-plus/docs.plus/issues/607)).** `gone` is a
   `404` or `410` reply from the push service. `failed-count` is a row that reaches 5 failures,

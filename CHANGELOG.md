@@ -34,6 +34,14 @@ counts fail. `20261025150000` replaces `update_view_duration` and
 Migration section for when it goes. As the last step, run
 `packages/supabase/scripts/check-grants.sql`. It should return no rows.
 
+### Added
+
+- The server icon route `GET /api/metadata/icon` finds a site's icon for pad links. It
+  tries `/favicon.ico` first. When that file has no icon, it reads the site's page head, as
+  on Notion. `LINK_ICON_MAX_BYTES` caps one icon at 32768 bytes by default, so the LinkedIn
+  and Figma icons fit. A link with no icon gets an empty `204`, so the browser console shows
+  no `404` ([#515](https://github.com/docs-plus/docs.plus/issues/515)).
+
 ### Changed
 
 - The production deploy now aborts below 20 GB free disk, up from 10 GB. It prunes Docker

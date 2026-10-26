@@ -2,7 +2,7 @@ export const LINK_METADATA_MOUNT_PATH = '/api/metadata'
 export const LINK_ICON_ROUTE = '/icon'
 export const LINK_ICON_PATH = `${LINK_METADATA_MOUNT_PATH}${LINK_ICON_ROUTE}`
 
-export const ICON_MAX_BYTES_DEFAULT = 16384
+export const ICON_MAX_BYTES_DEFAULT = 32768
 
 const MIN_SNIFF_BYTES = 16
 

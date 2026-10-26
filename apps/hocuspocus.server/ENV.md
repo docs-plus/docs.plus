@@ -171,11 +171,11 @@ Read by `src/lib/prisma.ts` from the validated config only. There are no runtime
 
 | Variable              | Type   | Default | Notes                                                                                      |
 | --------------------- | ------ | ------- | ------------------------------------------------------------------------------------------ |
-| `LINK_ICON_MAX_BYTES` | number | `16384` | Byte cap for one favicon at `GET /api/metadata/icon`. A larger icon is a miss. No ceiling. |
+| `LINK_ICON_MAX_BYTES` | number | `32768` | Byte cap for one favicon at `GET /api/metadata/icon`. A larger icon is a miss. No ceiling. |
 
-- **Write a plain byte count.** The value is read with `parseInt`, so `16KiB` reads as `16` and hides almost every icon. `0` or text that is not a number falls back to `16384`.
-- **Memory.** Each icon request holds up to this many bytes in memory. The route sets no ceiling, so the operator owns that trade.
-- **Trade-off.** At 16 KiB, 38% to 40% of probed origins show no icon. At 32 KiB or more, 28% show none. Source: two laptop runs, 60 origins each, a plain fetch with no SSRF guard.
+- **Write a plain byte count.** The value is read with `parseInt`, so `32KiB` reads as `32` and hides almost every icon. `0` or text that is not a number falls back to `32768`.
+- **Memory.** Each icon request holds up to this many bytes in memory, plus up to 64 KiB of the site's HTML page. The route sets no ceiling, so the operator owns that trade.
+- **Trade-off.** At 16 KiB, 38% to 40% of probed origins show no icon. At 32 KiB or more, 28% show none. Source: two laptop runs, 60 origins each, a plain fetch with no SSRF guard. On 2026-10-26 LinkedIn's `favicon.ico` measured 24,838 B and Figma's 16,958 B, so the default rose to 32768.
 - **To change it on a plain Compose host,** set `LINK_ICON_MAX_BYTES` in `.env.production`. Then run `docker compose -f docker-compose.prod.yml --env-file .env.production up -d --force-recreate rest-api` at the repo root.
 - **On a host that `prod.docs.plus.yml` deploys,** set it in the host env file that the workflow copies to `.env.production` (`ENV_SOURCE`). Then deploy again.
 - **Proxy log.** `scripts/traefik/traefik.yml` drops query strings from the Traefik access log. So an icon miss logs no `?origin=` there. That setting needs Traefik v3.6.18 or later.

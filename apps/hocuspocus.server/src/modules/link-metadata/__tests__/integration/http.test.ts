@@ -194,14 +194,130 @@ describe('GET /api/metadata/icon DNS refusal (integration)', () => {
     dnsSpy.mockRestore()
   })
 
-  test('answers 404 without a fetch when the origin resolves to a private address', async () => {
+  test('answers 204 without a fetch when the origin resolves to a private address', async () => {
     const app = buildApp()
     const response = await app.request(
       'http://localhost/api/metadata/icon?origin=' + encodeURIComponent('https://example.com')
     )
-    expect(response.status).toBe(404)
+    expect(response.status).toBe(204)
     // Only the controller's catch sends this header; a route miss sends none.
     expect(response.headers.get('cache-control')).toBe('public, max-age=600')
     expect(fetchSpy).not.toHaveBeenCalled()
   })
+})
+
+// Routes each mocked fetch by URL. An unknown URL is a 404, so a test sees every hop it did not plan.
+type Route = (init: RequestInit) => Response | Promise<Response>
+const pngBytes = (size: number): Uint8Array => {
+  const bytes = new Uint8Array(size)
+  bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+  return bytes
+}
+const html = (head: string): Response =>
+  new Response(`<!doctype html><html><head>${head}</head><body></body></html>`, {
+    status: 200,
+    headers: { 'content-type': 'text/html; charset=utf-8' }
+  })
+const notFound = (): Response => new Response(null, { status: 404 })
+// Settles only when the route's signal aborts, like a peer that never answers.
+const hangUntilAbort = (init: RequestInit): Promise<Response> =>
+  new Promise((_resolve, reject) => {
+    init.signal?.addEventListener('abort', () => reject(new Error('aborted')), { once: true })
+  })
+
+describe('GET /api/metadata/icon (integration)', () => {
+  let fetchSpy: ReturnType<typeof spyOn>
+  let dnsSpy: ReturnType<typeof spyOn>
+  let routes: Record<string, Route>
+
+  const fetchedUrls = (): string[] => fetchSpy.mock.calls.map((call: unknown[]) => String(call[0]))
+  const requestIcon = (origin: string) =>
+    buildApp().request('http://localhost/api/metadata/icon?origin=' + encodeURIComponent(origin))
+
+  beforeEach(() => {
+    routes = {}
+    fetchSpy = spyOn(globalThis, 'fetch').mockImplementation((async (
+      input: string,
+      init: RequestInit
+    ) => (routes[String(input)] ?? notFound)(init)) as never)
+    dnsSpy = spyOn(dns, 'lookup').mockImplementation((async (host: string) =>
+      host === 'intranet.example.com'
+        ? [{ address: '10.0.0.5', family: 4 }]
+        : [{ address: '93.184.216.34', family: 4 }]) as never)
+  })
+
+  afterEach(() => {
+    fetchSpy.mockRestore()
+    dnsSpy.mockRestore()
+  })
+
+  test('a miss is an empty 204 with the clean-miss cache header', async () => {
+    const response = await requestIcon('https://example.com')
+    expect(response.status).toBe(204)
+    expect(await response.text()).toBe('')
+    expect(response.headers.get('cache-control')).toBe('public, max-age=86400')
+  })
+
+  // LinkedIn's favicon.ico was 24,838 B and missed under the old 16 KiB default.
+  test('the default cap serves a 24,838 B favicon and refuses 32,769 B', async () => {
+    routes['https://example.com/favicon.ico'] = () => new Response(pngBytes(24_838))
+    const hit = await requestIcon('https://example.com')
+    expect(hit.status).toBe(200)
+    expect((await hit.arrayBuffer()).byteLength).toBe(24_838)
+
+    routes['https://example.com/favicon.ico'] = () => new Response(pngBytes(32_769))
+    expect((await requestIcon('https://example.com')).status).toBe(204)
+  })
+
+  test('falls back to a PNG link icon in the page head when /favicon.ico is 404', async () => {
+    routes['https://example.com/'] = () =>
+      html(
+        '<link rel="mask-icon" href="/mask.svg"><link rel="apple-touch-icon" href="/touch.png">' +
+          '<link rel="icon" type="image/png" sizes="32x32" href="https://cdn.example.net/i.png?v=1&amp;s=32">'
+      )
+    routes['https://cdn.example.net/i.png?v=1&s=32'] = () => new Response(pngBytes(64))
+
+    const response = await requestIcon('https://example.com')
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toBe('image/png')
+    expect(response.headers.get('cache-control')).toBe('public, max-age=604800')
+  })
+
+  test.each([
+    ['a private IP', 'http://10.0.0.5/i.png'],
+    ['a host that resolves to a private address', 'https://intranet.example.com/i.png']
+  ])('refuses an icon href that points to %s', async (_name, href) => {
+    routes['https://example.com/'] = () => html(`<link rel="icon" href="${href}">`)
+    routes[href] = () => new Response(pngBytes(64))
+
+    const response = await requestIcon('https://example.com')
+    expect(response.status).toBe(204)
+    expect(response.headers.get('cache-control')).toBe('public, max-age=600')
+    expect(fetchedUrls()).not.toContain(href)
+  })
+
+  test('never fetches an SVG link icon', async () => {
+    routes['https://example.com/'] = () =>
+      html('<link rel="icon" type="image/svg+xml" href="/a"><link rel="icon" href="/b.svg">')
+
+    const response = await requestIcon('https://example.com')
+    expect(response.status).toBe(204)
+    expect(fetchedUrls()).toEqual(['https://example.com/favicon.ico', 'https://example.com/'])
+  })
+
+  test('one 3 s timer bounds the whole chain', async () => {
+    // A slow favicon miss, then a page that never answers: a timer per hop would run past 5 s.
+    routes['https://example.com/favicon.ico'] = (init) =>
+      Promise.race([
+        new Promise<Response>((resolve) => setTimeout(() => resolve(notFound()), 2000)),
+        hangUntilAbort(init)
+      ])
+    routes['https://example.com/'] = hangUntilAbort
+
+    const started = performance.now()
+    const response = await requestIcon('https://example.com')
+    expect(performance.now() - started).toBeLessThan(3500)
+    expect(response.status).toBe(204)
+    expect(response.headers.get('cache-control')).toBe('public, max-age=600')
+  }, 6000)
 })

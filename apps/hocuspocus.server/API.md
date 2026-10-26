@@ -1159,7 +1159,11 @@ Errors (`400`) use this module's own shape — top-level `code` and `message`, n
 
 ### GET /api/metadata/icon?origin=\<origin\>
 
-Returns the favicon for one origin. The server fetches `<origin>/favicon.ico` through the same SSRF guard, with `User-Agent: DocsplusBot/1.0` and `Accept: image/*`. It forwards no caller header. One 3 s timer covers every redirect hop, the DNS checks and the body read. `HEAD` runs the same handler and sends no body.
+Returns the favicon for one origin. The server fetches `<origin>/favicon.ico` through the same SSRF guard, with `User-Agent: DocsplusBot/1.0` and `Accept: image/*`. It forwards no caller header. `HEAD` runs the same handler and sends no body.
+
+Sometimes `/favicon.ico` misses: a status that is not 2xx, bytes that are not an image, or a body over the cap. The server then reads the HTML page `<origin>/`, at most 64 KiB, and stops at `</head>`. It takes the `href` of `<link rel="icon">`, `rel="shortcut icon"` or `rel="apple-touch-icon"`, resolved against the page URL. It prefers `rel="icon"`, then PNG or ICO, then the size nearest 32 px. It skips SVG and `data:` URLs, and fetches one href. A thrown favicon fetch, such as a DNS error, a timeout or the SSRF guard, ends the request without the HTML step.
+
+The page, the chosen href and every redirect go through the same SSRF guard and the same byte cap. One 3 s timer covers every hop, the DNS checks and every body read.
 
 `origin` must be a bare origin, exactly as `new URL(href).origin` gives it:
 
@@ -1172,14 +1176,16 @@ Returns the favicon for one origin. The server fetches `<origin>/favicon.ico` th
 | ------ | ------------------------------------------ | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `200`  | The icon bytes                             | `public, max-age=604800` | The bytes are PNG, ICO, GIF, JPEG or WebP. `Content-Type` comes from the bytes, never from the upstream site.                                                        |
 | `400`  | `{ success, code, message }`, module shape | `public, max-age=86400`  | `INVALID_URL`: `origin` is missing, repeated, too long or not a bare origin. `BLOCKED_URL`: the SSRF guard refused it.                                               |
-| `404`  | Empty                                      | `public, max-age=86400`  | A clean miss: upstream 4xx other than 408 and 429, a 204, a 3xx with no `Location`, an empty body, bytes that are not one of the five types, or a body over the cap. |
-| `404`  | Empty                                      | `public, max-age=600`    | An error miss: a timeout, a network or DNS error, the SSRF guard on any hop, too many redirects, or upstream 5xx, 408 or 429.                                        |
+| `204`  | Empty                                      | `public, max-age=86400`  | A clean miss: upstream 4xx other than 408 and 429, a 204, a 3xx with no `Location`, an empty body, bytes that are not one of the five types, or a body over the cap. |
+| `204`  | Empty                                      | `public, max-age=600`    | An error miss: a timeout, a network or DNS error, the SSRF guard on any hop, too many redirects, or upstream 5xx, 408 or 429.                                        |
 
-The body cap is `LINK_ICON_MAX_BYTES` bytes, default `16384`. Each request holds up to that many bytes in memory. SVG, HTML and CUR files are always a miss. The route sends no ETag and keeps nothing in Redis, so the browser HTTP cache does all the caching.
+A miss answers `204`, not `404`, because Chrome logs a console error for every image that gets a `404`. An `<img>` still fires `onerror` on the empty `204`. A miss is `max-age=600` when any step had an error miss, and `max-age=86400` otherwise.
+
+The body cap is `LINK_ICON_MAX_BYTES` bytes, default `32768`. Each request holds up to that many bytes in memory, plus up to 64 KiB of HTML. SVG, HTML and CUR files are always a miss. The route sends no ETag and keeps nothing in Redis, so the browser HTTP cache does all the caching.
 
 The route has its own rate limit. See [Rate limiting](#rate-limiting).
 
-**Accepted risk.** `safeFetch` checks the DNS answer and then connects in a separate step. A host that changes its DNS answer between those two steps can reach a private address. This route returns bytes from that fetch. So the leak is limited to bytes that pass the image check, up to the cap, within 3 s.
+**Accepted risk.** `safeFetch` checks the DNS answer and then connects in a separate step. A host that changes its DNS answer between those two steps can reach a private address. This route returns bytes from that fetch. So the leak is limited to bytes that pass the image check, up to the cap, within 3 s. The HTML step lets a site's own page name any public image URL for the server to fetch. That URL gets the same guard, cap, sniff and timer.
 
 ## Email
 
