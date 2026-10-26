@@ -10,7 +10,7 @@ import '@docs.plus/extension-hyperlink/styles.css'
 
 The package's JavaScript never imports this file. Skip the import with a fully custom UI, and no CSS from this package reaches your bundle.
 
-The stylesheet skins the popovers only. The mark renders a plain `<a>` with no class, so style your document links yourself:
+The stylesheet skins the popovers and sizes link icons. With `linkIcon` unset, the mark renders a plain `<a>` with no class. With `linkIcon` set, each iconed `<a>` holds a `.hyperlink-icon` element, then the link text in a `<span>`. Style your document links yourself:
 
 ```ts
 Hyperlink.configure({ HTMLAttributes: { class: 'my-link' } })
@@ -84,25 +84,26 @@ html[data-theme='dark'] {
 
 Stable class names you can target:
 
-| Class                        | Element                                                                      |
-| ---------------------------- | ---------------------------------------------------------------------------- |
-| `.floating-popover`          | Popover container (adds `.visible` after mount).                             |
-| `.floating-popover-arrow`    | Arrow pointing at the anchor (adds `-top` / `-bottom` / `-left` / `-right`). |
-| `.floating-popover-content`  | Content wrapper inside the popover.                                          |
-| `.floating-tooltip`          | Tooltip on popover icon buttons (adds `.visible`).                           |
-| `.hyperlink-create-popover`  | Create-link form root.                                                       |
-| `.hyperlink-preview-popover` | Preview toolbar root.                                                        |
-| `.hyperlink-edit-popover`    | Edit-link form root.                                                         |
-| `.inputs-wrapper`            | Input group container (adds `.error` on validation).                         |
-| `.text-wrapper`              | Edit-form text input row (adds `.error`).                                    |
-| `.href-wrapper`              | Edit-form URL input row (adds `.error`).                                     |
-| `.buttons-wrapper`           | Button group container.                                                      |
-| `.back-button`               | Edit-form back action.                                                       |
-| `.apply-button`              | Edit-form apply action.                                                      |
-| `.copy`                      | Preview-toolbar copy icon button.                                            |
-| `.edit`                      | Preview-toolbar edit icon button.                                            |
-| `.remove`                    | Preview-toolbar remove icon button.                                          |
-| `.search-icon`               | Leading icon inside an input group.                                          |
-| `.error-message`             | Validation error text (shown with `.show`).                                  |
+| Class                        | Element                                                                                                        |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `.floating-popover`          | Popover container (adds `.visible` after mount).                                                               |
+| `.floating-popover-arrow`    | Arrow pointing at the anchor (adds `-top` / `-bottom` / `-left` / `-right`).                                   |
+| `.floating-popover-content`  | Content wrapper inside the popover.                                                                            |
+| `.floating-tooltip`          | Tooltip on popover icon buttons (adds `.visible`).                                                             |
+| `.hyperlink-create-popover`  | Create-link form root.                                                                                         |
+| `.hyperlink-preview-popover` | Preview toolbar root.                                                                                          |
+| `.hyperlink-edit-popover`    | Edit-link form root.                                                                                           |
+| `.hyperlink-icon`            | Icon from the `linkIcon` option, first inside the `<a>`. `styles.css` gives it a `1em` box and a `0.25em` gap. |
+| `.inputs-wrapper`            | Input group container (adds `.error` on validation).                                                           |
+| `.text-wrapper`              | Edit-form text input row (adds `.error`).                                                                      |
+| `.href-wrapper`              | Edit-form URL input row (adds `.error`).                                                                       |
+| `.buttons-wrapper`           | Button group container.                                                                                        |
+| `.back-button`               | Edit-form back action.                                                                                         |
+| `.apply-button`              | Edit-form apply action.                                                                                        |
+| `.copy`                      | Preview-toolbar copy icon button.                                                                              |
+| `.edit`                      | Preview-toolbar edit icon button.                                                                              |
+| `.remove`                    | Preview-toolbar remove icon button.                                                                            |
+| `.search-icon`               | Leading icon inside an input group.                                                                            |
+| `.error-message`             | Validation error text (shown with `.show`).                                                                    |
 
 The bundled `@docs.plus/floating-tooltip` ships the tooltips on the prebuilt popovers' icon buttons. It appends one bubble per bundle to the body, and shows it on hover and on keyboard focus. `styles.css` skins that bubble with a fixed literal block, and the block stays in lockstep with extension-hypermultimedia. See [Tooltip primitive](./advanced.md#tooltip-primitive) to attach the same labels to your own buttons.

@@ -91,6 +91,11 @@ You should see a paragraph with one link. Click the link to open the preview pop
 - **`linkOnPaste: false` does not stop every paste from linking.** The linkify paste rule stays registered, so a pasted bare URL still becomes a link. To stop that path too, set `shouldAutoLink: () => false`, which every autolink path consults.
 - **`HTMLAttributes.target` reaches the DOM.** `HTMLAttributes: { target: '_blank' }` does emit `<a target="_blank">`. A browser-driven `target="_blank"` navigation skips the click gate. Leave `target` at `null` and let the click handler open the link.
 - **Markdown keeps only the link `href`.** Export writes `[text](href)`, and import reads the href alone, so a link `title` is lost both ways. A custom `rel` is lost too, and import sets the default `rel`. `target`, `class` and `image` never reach Markdown, by design.
+- **A link icon needs CSS for `.hyperlink-icon`.** Without `styles.css` or your own rule, the icon shows at its natural size. A Tailwind host also breaks the line, because preflight sets `img` and `svg` to `display: block`.
+- **`linkIcon` must return a fresh element with no text.** `null` gives a plain link with no error. Any other result, or a throw, gives a plain link and one console error for that `linkIcon` function.
+- **A host mark above `priority: 1000` splits one link into two icons.** That mark renders outside the link. When it covers part of a link, the `<a>` splits in two, and each part gets an icon.
+- **`Hyperlink.extend({ addMarkView })` replaces the icon mark view.** To keep the icon, call `this.parent?.()` and wrap its result.
+- **Legacy `link` marks get no icon.** Only the `hyperlink` mark renders through the icon mark view.
 
 The full list, with the reason for each, is in [Caveats](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md#caveats).
 
@@ -133,6 +138,22 @@ a.my-link {
 ```
 
 For theme tokens, dark mode, and class names, see [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/styling.md).
+
+### Show an icon before each link
+
+`linkIcon` takes a sync function. It receives `{ href }` and returns a fresh element, or `null` for a plain link:
+
+```ts
+Hyperlink.configure({
+  linkIcon: ({ href }) => {
+    const icon = document.createElement('span')
+    icon.style.background = href.startsWith('https:') ? '#16a34a' : '#9ca3af'
+    return icon
+  }
+})
+```
+
+The icon goes first inside each `<a>`, and the link text sits in a `<span>` after it. Only safe hrefs reach the function. `styles.css` sizes the icon to `1em`. See [Options](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md#options).
 
 ## Gallery
 

@@ -20,6 +20,7 @@ Every key below goes into `Hyperlink.configure({ … })`.
 | `shouldAutoLink`       | `(uri: string) => boolean`                                                                                                                                                                                                                                           | `undefined`                                                              | Per-URI autolink veto. The autolink plugin, the paste handler, and the linkify paste rule all consult it. An explicit `setHyperlink` write skips it, because that is user intent.                                                                                                                                                                                                                                                                                                  |
 | `enableClickSelection` | `boolean`                                                                                                                                                                                                                                                            | `false`                                                                  | With `true`, a click inside a link in an editable editor selects the whole mark range. That expansion also needs a collapsed selection. Every other case places the caret at the clicked position, and keeps a non-empty selection only when it overlaps the link. A read-only editor is one of those cases. All paths need a mounted preview popover, so with an empty `popovers.previewHyperlink` slot the package writes no selection at all. Mirrors `@tiptap/extension-link`. |
 | `exitable`             | `boolean`                                                                                                                                                                                                                                                            | `false`                                                                  | With `true`, ArrowRight at the end of a link drops a stored hyperlink mark, such as one `setHyperlink` leaves on a collapsed caret. Text typed at the right edge is plain either way, because the mark is never inclusive.                                                                                                                                                                                                                                                         |
+| `linkIcon`             | `(ctx: LinkIconContext) => HTMLElement \| null`                                                                                                                                                                                                                      | `undefined`                                                              | Draws an icon at the start of every `<a>`. Sync: return a fresh element with no text, or `null` for a plain link. Unset means the default `<a>`. See [Link icons](#link-icons).                                                                                                                                                                                                                                                                                                    |
 
 These option shapes need an example:
 
@@ -45,6 +46,27 @@ Pick one. Setting both works, because they compose and a URL must pass both, but
 `isSafeHref` plus your `validate` and `isAllowedUri` hooks form the composed gate. The package docs use that name.
 
 `validateURL(url, { customValidator })` is a different tool. It is the form-level shape check the prebuilt popovers run before they call a command. It runs `isSafeHref` first, then the shape check, then your `customValidator`.
+
+### Link icons
+
+An iconed link has this DOM:
+
+```html
+<a href="https://example.com" rel="noopener noreferrer nofollow">
+  <span class="hyperlink-icon" contenteditable="false" aria-hidden="true"></span>
+  <span>link text</span>
+</a>
+```
+
+- Only hrefs that pass `isSafeHref` reach `linkIcon`. An unsafe href renders blank, with no icon.
+- The function runs once per rendered `<a>`. A `title` or `image` write keeps the same `<a>` and icon, and a new href draws a new one.
+- The icon starts every iconed `<a>`, image-led and image-only links included. A mark view gets no content, so it cannot place the icon after an image.
+- Serializers use the mark's `toDOM`, so no icon reaches `getHTML()`, Markdown, copy or drag.
+- A parse rule ignores `.hyperlink-icon`, so a paste or a native split never turns an icon into an Image node. Screen readers read only the link text.
+- An icon click puts the caret at the link start.
+- At a link that starts its block, the caret shows after the icon, but typed text lands before the link. This is a deliberate exception to Google Docs, Word and Notion, whose links carry no icon.
+- The clean-room tests run on `prosemirror-view` 1.42.6, the version `@tiptap/pm` 3.32.0 asks for.
+- With `linkIcon` unset, the package still registers a mark view, which draws the same `<a>` as `renderHTML`.
 
 ## Commands
 
@@ -112,6 +134,11 @@ The mark runs at `priority: 1000`, above the Tiptap default `100`. `@tiptap/exte
 - **Markdown keeps only the link `href`.** Export writes `[text](href)`, and import reads the href alone, so a link `title` is lost both ways. A custom `rel` is lost too, and import sets the default `rel`. `target`, `class` and `image` never reach Markdown, by design. See [Markdown](./url-handling.md#markdown).
 - **The mark name is fixed at `hyperlink`.** Stored documents and the markdown wiring both key on it. `openPreviewHyperlink`, `openEditHyperlink`, and `openCreateHyperlink` throw when no extension answers to that name. Do not rename the mark.
 - **[`getDefaultController()`](./advanced.md#ui-controller) owns one controller per bundle, not one per page.** A host that also loads `@docs.plus/extension-hypermultimedia` gets two controllers. Opening a popover in one package does not dismiss the popover of the other. Close the other popover yourself when you open one.
+- **A link icon needs CSS for `.hyperlink-icon`.** Without `styles.css` or your own rule, the icon shows at its natural size. A Tailwind host also breaks the line, because preflight sets `img` and `svg` to `display: block`. See [Styling](./styling.md).
+- **`linkIcon` must return a fresh element with no text.** An element that already has a parent, an element with text, any other non-null value, or a throw gives a plain link. The package logs one console error per `linkIcon` function, not one per link.
+- **A host mark above `priority: 1000` splits one link into two icons.** That mark renders outside the link. When it covers part of a link, the `<a>` splits in two, and each part gets an icon.
+- **`Hyperlink.extend({ addMarkView })` replaces the icon mark view.** Tiptap gives no warning. To keep the icon, call `this.parent?.()` and wrap its result.
+- **Legacy `link` marks get no icon.** Only the `hyperlink` mark renders through the icon mark view.
 
 ## Server bundles
 
@@ -121,7 +148,7 @@ Module scope touches no browser API, so a server bundle can import the package. 
 
 The package bundles the type definitions. The complete public surface, grouped by role:
 
-- **Extension** — `Hyperlink`, also the default export. Types `HyperlinkOptions`, `HyperlinkAttributes`, `HyperlinkStorage`, `HyperlinkPublicCommands`, `SetHyperlinkAttributes`, `EditHyperlinkAttributes`, `IsAllowedUriContext`, `LinkProtocolOptions`. `HyperlinkAttributes` is generic. `HyperlinkAttributes<{ ariaLabel: string }>` extends the built-in `href` / `target` / `rel` / `class` / `title` / `image` keys with your own typed fields. The default parameter is `Record<string, unknown>`, so the unparameterized type stays open; supplying your own `Extra` replaces it and closes the type.
+- **Extension** — `Hyperlink`, also the default export. Types `HyperlinkOptions`, `HyperlinkAttributes`, `HyperlinkStorage`, `HyperlinkPublicCommands`, `SetHyperlinkAttributes`, `EditHyperlinkAttributes`, `IsAllowedUriContext`, `LinkProtocolOptions`, `LinkIconContext` (the `linkIcon` argument, `{ href: string }`). `HyperlinkAttributes` is generic. `HyperlinkAttributes<{ ariaLabel: string }>` extends the built-in `href` / `target` / `rel` / `class` / `title` / `image` keys with your own typed fields. The default parameter is `Record<string, unknown>`, so the unparameterized type stays open; supplying your own `Extra` replaces it and closes the type.
 - **Popover factories** — `previewHyperlinkPopover`, `createHyperlinkPopover`, `editHyperlinkPopover`. Types `PreviewHyperlinkOptions`, `CreateHyperlinkOptions`, `EditHyperlinkOptions`, documented under [Popover-factory option shapes](./popovers.md#popover-factory-option-shapes).
 - **Openers** — `openPreviewHyperlink`, `openEditHyperlink`, `openCreateHyperlink`, `buildPreviewOptionsFromAnchor`. Type `BuildPreviewOptionsFromAnchorArgs`. See [Openers](./popovers.md#openers).
 - **Floating-popover primitive** — `createPopover`, `DEFAULT_OFFSET`. Types `Popover`, `PopoverOptions`. See [Floating-popover primitive](./advanced.md#floating-popover-primitive).

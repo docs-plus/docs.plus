@@ -94,15 +94,26 @@ Moving selection across the link makes the floating toolbar think the user navig
 - Icon-only buttons in the prebuilt popovers get hover/focus tooltips from `@docs.plus/floating-tooltip` (bundled like the engine, never externalized; no native `title` — that would double the label). The `.floating-tooltip` skin in `styles.css` stays in lockstep with hypermultimedia's `media-toolbar.css` copy. Every opener composes `hideTooltip` into `createPopover`'s `onHide`, so dismissal cannot strand the shared bubble.
 - Regression coverage: `cypress/e2e/scroll-stickiness.cy.ts` (live anchoring), `custom-popover.cy.ts` (controller contract), `destroy-lifecycle.cy.ts` (ownership).
 
+## Link icons
+
+- `linkIconMarkView.ts` builds the `<a>` only through the mark's `toDOM`, with the same arguments prosemirror-view uses. `renderHTML` blanks an unsafe href there. Never build the `<a>` from Tiptap's `HTMLAttributes` prop, which skips `renderHTML`.
+- Call `isSafeHref` before `linkIcon`. An unsafe href never reaches it.
+- The parse rule `{ tag: '.hyperlink-icon', ignore: true, priority: 1000 }` comes first. Without it, a host `img[src]` rule turns an icon into an Image node on paste or a native split.
+- Keep `ignoreMutation`. It ignores changes inside the icon, such as an image load. Without it, unhiding every icon rebuilds every link view.
+- The sweep moves stray text from the `<a>` into the text `<span>`. It must restore the DOM caret afterwards, or typed characters come out reversed. It never runs while composing; `linkIconCompositionSweep` runs it after `compositionend`.
+- The icon click rule tests the point against the icon box, because the icon has `pointer-events: none`. `posAtDOM(link, 0)` then gives the link start.
+- With `linkIcon` unset, `addMarkView` returns the plain view and no composition plugin loads.
+- DOM unit tests import `link-icons/__tests__/setupDom.ts` first and need `test:unit` to keep `--isolate`.
+
 ## Clean-Room Harness
 
 - Release-gate harness: `test/playground/main.ts` (editor fixture) + shared `@docs.plus/playground` (`docs-playground` serves the page shell; `setupPlayground` wires title/tokens/theme). Vanilla Tiptap + StarterKit; no Vite.
 - Playground loads built `dist/` + `styles.css` via the published exports map, **not** monorepo source.
-- Cypress specs cover create, preview-edit, autolink, xss-guards, styling, custom-popover, scroll-stickiness, and special-schemes. `_debug.cy.ts` is scratch and excluded from release counts.
+- Cypress specs cover create, preview-edit, autolink, xss-guards, styling, custom-popover, scroll-stickiness, special-schemes, and link-icons. `link-edges.cy.ts` runs every case with and without `?icons=element`. `_debug.cy.ts` is scratch and excluded from release counts.
 - Run with `bun run test`. `pretest` builds, `start-server-and-test` boots `docs-playground` on `127.0.0.1:5173`, Cypress runs, then teardown. Manual dev: `bun run playground` (`bun --hot docs-playground`). Append `?popover=custom` for custom popover factories in custom-popover tests.
 - Support file is single-file `cypress/support/e2e.ts`. Do not split it; Cypress 15 JIT skipped split imports.
 - `cypress/tsconfig.json` extends `@docs.plus/playground/cypress/tsconfig.json` with `include: ["./**/*.ts"]` so tsc does not inherit the package `rootDir: src`.
 - Every `cypress/e2e/*.cy.ts` file must end with `export {}` to avoid top-level constant collisions under project-level type-checking.
 - Tests use `window._editor` + `window._hyperlink`. Use structural checks instead of `instanceof RegExp` because Cypress iframe realm breaks cross-realm `instanceof`.
-- Unit tests use Bun native runner: `bun test src`.
+- Unit tests use Bun native runner: `bun test --isolate src`. `--isolate` gives each file fresh globals, so the jsdom globals of a DOM test file do not leak into the others.
 - Repo-wide test orchestration runs the hyperlink clean-room Cypress suite after `extension-indent` Jest and before webapp Jest, via `scripts/run-tests.sh`.

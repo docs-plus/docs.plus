@@ -213,7 +213,7 @@ The release procedure lives in the [`release-extensions`](.cursor/skills/release
 - Unit + E2E stack: Jest and Cypress. Script names and `CYPRESS_PARALLEL` semantics are defined in the naming convention doc; this section captures docs.plus-specific orchestration, Jest wiring, and authoring conventions. Policy (when to write a test, what shapes to avoid) is in §Test Policy.
 - Run order comes from `scripts/publishable-extensions.ts` (the SSOT gate list `scripts/run-tests.sh` reads at :162); each extension runs its own `bun run test`:
   1. `@docs.plus/extension-indent` — Jest (local `jest.config.cjs`) then clean-room Cypress against built `dist/`.
-  2. `@docs.plus/extension-hyperlink` — clean-room Cypress against built `dist/` (preceded by `bun test src` units).
+  2. `@docs.plus/extension-hyperlink` — clean-room Cypress against built `dist/` (preceded by `bun test --isolate src` units).
   3. `@docs.plus/extension-hypermultimedia` — clean-room Cypress against built `dist/`.
   4. `@docs.plus/extension-inline-code` — clean-room Cypress against built `dist/`.
   5. `@docs.plus/extension-placeholder` — clean-room Cypress against built `dist/`.

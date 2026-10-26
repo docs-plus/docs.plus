@@ -1,6 +1,6 @@
-// Pure factory wiring only. Editor-level integration lives in the Cypress
-// suite: a real Tiptap editor would drag jsdom into a deliberately headless
-// unit-test layer.
+// Pure factory wiring only, with no DOM. A test that needs a DOM imports
+// link-icons/__tests__/setupDom.ts first, and `--isolate` keeps its jsdom
+// globals in that file. Editor flows live in the Cypress suite.
 import { describe, expect, it, mock } from 'bun:test'
 
 import { PREVENT_AUTOLINK_META } from '../../constants'

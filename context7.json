@@ -35,7 +35,7 @@
     "Before writing setup code or Markdown for an extension, read its README Caveats. They list every setup mistake that fails with no error, and everything that Markdown drops.",
     "With extension-inline-code set `StarterKit.configure({ code: false })`. Both marks render <code> and both bind Mod-e. The clash is silent.",
     "With extension-placeholder, remove the Tiptap built-in placeholder from the extensions array. Both register the name `placeholder`.",
-    "extension-hypermultimedia requires its own stylesheet, or media nodes render unstyled. extension-hyperlink ships an optional one.",
+    "extension-hypermultimedia requires its own stylesheet, or media nodes render unstyled. extension-hyperlink ships an optional one. With `linkIcon` set, icons need it or your own `.hyperlink-icon` rule.",
     "With extension-mermaid, import @docs.plus/extension-mermaid/styles.css. Without it, Pele's own error text shows and the diagram dims while the source has a mistake.",
     "In extension-mermaid, a host addNodeView for codeBlock replaces the diagram view. Call mermaidNodeView(editor) inside that addNodeView to keep diagrams. In development the console warns once.",
     "extension-indent, extension-inline-code and extension-placeholder ship no CSS. extension-placeholder renders nothing until the host adds the CSS rule from its README.",

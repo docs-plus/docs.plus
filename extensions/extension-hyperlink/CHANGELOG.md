@@ -10,9 +10,19 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ## [Unreleased]
 
+### Added
+
+- The `linkIcon` option draws an icon at the start of every link. It takes a sync function that receives `{ href }` and returns a fresh element, or `null` for a plain link. Only safe hrefs reach it ([#513](https://github.com/docs-plus/docs.plus/issues/513)).
+- The `LinkIconContext` type is a root export.
+- `styles.css` sizes `.hyperlink-icon` to a `1em` box with a `0.25em` gap.
+
 ### Changed
 
 - The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.0`. It was `^3.31.3`.
+- The `hyperlink` mark now renders through a mark view. With `linkIcon` unset, the `<a>` is the same as before.
+- With `linkIcon` set, an iconed `<a>` holds the icon first, then the link text in a `<span>`. No icon reaches `getHTML()`, Markdown, or the clipboard.
+- A click on a link icon puts the caret at the link start.
+- The clean-room tests run on `prosemirror-view` 1.42.6. They ran on 1.42.3.
 
 ### Fixed
 

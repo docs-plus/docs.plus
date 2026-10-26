@@ -21,6 +21,20 @@ function findLinkFromEvent(
   return link
 }
 
+// The icon has pointer-events: none, so a real click targets the <a>. Test the point as well.
+function isOnLinkIcon(
+  link: HTMLAnchorElement,
+  target: EventTarget | null,
+  x: number,
+  y: number
+): boolean {
+  if (target instanceof Element && target.closest('.hyperlink-icon')) return true
+  const icon = link.querySelector(':scope > .hyperlink-icon')
+  if (!icon) return false
+  const r = icon.getBoundingClientRect()
+  return r.width > 0 && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom
+}
+
 function isNavigable(href: string | null | undefined, ctx: LinkContext): href is string {
   return ctx.urls.forRead(href).navigable
 }
@@ -153,8 +167,10 @@ export function createClickHandlerInteraction(ctx: LinkContext): Plugin {
 
           event.preventDefault()
           const { clientX, clientY } = event.changedTouches[0]
-          const pos = view.posAtCoords({ left: clientX, top: clientY })
-          return openPreviewPopoverFromClick(view, link, ctx, pos?.pos)
+          const pos = isOnLinkIcon(link, event.target, clientX, clientY)
+            ? view.posAtDOM(link, 0)
+            : view.posAtCoords({ left: clientX, top: clientY })?.pos
+          return openPreviewPopoverFromClick(view, link, ctx, pos)
         },
 
         click: (view: EditorView, event: MouseEvent) => {
@@ -164,8 +180,11 @@ export function createClickHandlerInteraction(ctx: LinkContext): Plugin {
           if (!link) return false
 
           event.preventDefault()
-          const pos = view.posAtCoords({ left: event.clientX, top: event.clientY })
-          return openPreviewPopoverFromClick(view, link, ctx, pos?.pos)
+          const { clientX, clientY } = event
+          const pos = isOnLinkIcon(link, event.target, clientX, clientY)
+            ? view.posAtDOM(link, 0)
+            : view.posAtCoords({ left: clientX, top: clientY })?.pos
+          return openPreviewPopoverFromClick(view, link, ctx, pos)
         }
       }
     }

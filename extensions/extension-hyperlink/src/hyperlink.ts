@@ -14,6 +14,8 @@ import { registerCustomProtocol } from 'linkifyjs'
 import { buildHyperlinkCommands } from './commands'
 import { HYPERLINK_MARK_NAME } from './constants'
 import { createInteractions, createLinkContext, type LinkContext } from './interactions'
+import { linkIconCompositionSweep, linkIconMarkView } from './link-icons/linkIconMarkView'
+import type { LinkIconResolver } from './link-icons/types'
 import { closeOwnedPopover } from './openers/popoverOwnership'
 import { isSafeHref } from './url-decisions'
 import { DEFAULT_PROTOCOL, normalizeHref } from './utils/normalizeHref'
@@ -105,6 +107,8 @@ export interface HyperlinkOptions {
   enableClickSelection: boolean
   /** ArrowRight at the right edge of a link drops a stored link mark. Mirrors `@tiptap/extension-link`. */
   exitable: boolean
+  /** Sync. A fresh element with no text, or null for a plain link. A throw counts as null and logs once. */
+  linkIcon?: LinkIconResolver
 }
 
 /** Extension storage; one slot per editor instance. */
@@ -205,7 +209,8 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
       isAllowedUri: undefined,
       shouldAutoLink: undefined,
       enableClickSelection: false,
-      exitable: false
+      exitable: false,
+      linkIcon: undefined
     }
   },
 
@@ -249,6 +254,7 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
     // input/paste rules, command, click, preview). Returning `false`
     // here tells ProseMirror to skip the mark.
     return [
+      { tag: '.hyperlink-icon', ignore: true, priority: 1000 },
       {
         tag: 'a[href]',
         getAttrs: (node: HTMLElement | string) => {
@@ -300,8 +306,13 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
     return createInteractions(getContext(this)).pasteRules
   },
 
+  addMarkView() {
+    return linkIconMarkView(this.options.linkIcon)
+  },
+
   addProseMirrorPlugins() {
-    return createInteractions(getContext(this)).plugins
+    const { plugins } = createInteractions(getContext(this))
+    return this.options.linkIcon ? [...plugins, linkIconCompositionSweep] : plugins
   }
 })
 

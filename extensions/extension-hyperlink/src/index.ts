@@ -29,6 +29,9 @@ export * from './hyperlink'
 export { createHyperlinkPopover, editHyperlinkPopover, previewHyperlinkPopover } from './popovers'
 export { attachTooltip, hideTooltip } from '@docs.plus/floating-tooltip'
 
+// Link icons: the argument type of HyperlinkOptions.linkIcon.
+export type { LinkIconContext } from './link-icons/types'
+
 // Utilities (validateURL, isSafeHref, …) re-exported for BYO popovers.
 export * from './utils'
 

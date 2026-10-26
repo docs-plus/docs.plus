@@ -24,7 +24,8 @@ const PUBLIC_CLASS_NAMES = [
   '.floating-popover-content',
   '.hyperlink-create-popover',
   '.hyperlink-preview-popover',
-  '.hyperlink-edit-popover'
+  '.hyperlink-edit-popover',
+  '.hyperlink-icon'
 ]
 
 const ruleExists = (doc: Document, selector: string): boolean => {

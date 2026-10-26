@@ -47,6 +47,23 @@ const readOnly = params.get('readonly') === 'on'
 const blockAutoLink = params.get('shouldAutoLink') === 'block'
 const enableClickSelection = params.get('clickSelection') === 'on'
 const exitable = params.get('exitable') === 'on'
+// `icons=element` draws a coloured box before every http(s) link, with no network.
+// `icons=throw` also throws for throw.example hrefs, for the console error spec.
+const icons = params.get('icons')
+
+const linkIcon =
+  icons === 'element' || icons === 'throw'
+    ? ({ href }: HyperlinkModule.LinkIconContext): HTMLElement | null => {
+        window._iconCalls = (window._iconCalls ?? 0) + 1
+        if (icons === 'throw' && href.includes('throw.example')) throw new Error('icon failed')
+        if (!/^https?:/i.test(href)) return null
+        const box = document.createElement('span')
+        box.style.background = '#2563eb'
+        box.style.borderRadius = '2px'
+        return box
+      }
+    : undefined
+if (linkIcon) window._iconCalls = 0
 
 // Stable reference for custom-popover.cy.ts; permissive so preview fixture hrefs pass.
 const configuredValidate = (url: string): boolean => /^https?:/i.test(url)
@@ -146,6 +163,7 @@ const editor = new Editor({
       ...(blockAutoLink && { shouldAutoLink: () => false }),
       ...(enableClickSelection && { enableClickSelection: true }),
       ...(exitable && { exitable: true }),
+      ...(linkIcon && { linkIcon }),
       popovers
     })
   ],
@@ -160,6 +178,7 @@ declare global {
     _editor: Editor
     _hyperlink: typeof HyperlinkModule
     _byo?: ByoState
+    _iconCalls?: number
     _getMarkdown?: () => string
     _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
   }

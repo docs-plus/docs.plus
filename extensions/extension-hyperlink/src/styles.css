@@ -31,6 +31,25 @@
   --hl-transition: 120ms ease-out;
 }
 
+/* Inline link icon from the linkIcon option. Two classes beat a host `.ProseMirror img` rule. */
+.ProseMirror .hyperlink-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-inline-end: 0.25em;
+  vertical-align: -0.125em;
+  pointer-events: none;
+  -webkit-touch-callout: none;
+}
+.ProseMirror .hyperlink-icon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.ProseMirror .hyperlink-icon[hidden] {
+  display: none;
+}
+
 /* Shared shell. Positioning is inline from createPopover (`zIndex` option). Lockstep copy in hypermultimedia media-toolbar.css. */
 .floating-popover {
   opacity: 0;

@@ -14,6 +14,9 @@ registerPlaygroundMarkdownCommands()
 
 interface VisitPlaygroundOptions {
   popover?: 'custom'
+  /** Extra playground params, such as `icons=element`. */
+  query?: string
+  onBeforeLoad?: (win: Cypress.AUTWindow) => void
 }
 
 /**
@@ -31,6 +34,7 @@ declare global {
     _editor: Editor
     _hyperlink: typeof HyperlinkModule
     _byo?: PlaygroundByoState
+    _iconCalls?: number
     _getMarkdown?: () => string
     _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
   }
@@ -64,7 +68,10 @@ Cypress.Commands.add('getVisibleFloatingPopover', () => {
 })
 
 Cypress.Commands.add('visitPlayground', (options: VisitPlaygroundOptions = {}) => {
-  cy.visit(options.popover === 'custom' ? '/?popover=custom' : '/')
+  const search = [options.popover && `popover=${options.popover}`, options.query]
+    .filter(Boolean)
+    .join('&')
+  cy.visit(search ? `/?${search}` : '/', { onBeforeLoad: options.onBeforeLoad })
   cy.window({ timeout: 10000 }).should('have.property', '_editor')
   cy.window().its('_editor').should('be.an', 'object')
   if (options.popover === 'custom') {
@@ -83,6 +90,11 @@ Cypress.Commands.add('focusEditor', (position?: FocusPosition) => {
     editor.commands.focus(position)
   })
   cy.get('#editor [contenteditable="true"]').should('have.focus')
+  // On a focused editor that check passes at once, but the queued view.focus() still resets the
+  // DOM caret. Wait one frame so it runs before the key, or the key's move is lost.
+  cy.window().then(
+    (win) => new Cypress.Promise<void>((done) => win.requestAnimationFrame(() => done()))
+  )
 })
 
 Cypress.Commands.add('selectText', (text: string) => {
