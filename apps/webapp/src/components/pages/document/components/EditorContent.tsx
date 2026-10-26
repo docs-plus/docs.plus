@@ -36,23 +36,24 @@ const EditorContent = ({ className }: { className?: string }) => {
 
   const needsAuth = isSessionExpired(providerStatus)
 
-  if (providerSyncing && shouldShowSyncErrorWhileLoading(providerStatus)) {
-    return (
+  const cover =
+    providerSyncing && shouldShowSyncErrorWhileLoading(providerStatus) ? (
       <SyncErrorCard
         offline={providerStatus === 'offline'}
         needsAuth={needsAuth}
         className={className}
       />
+    ) : (
+      <EditorContentSkeleton className={className} />
     )
-  }
 
-  if (loading || providerSyncing || !editor) {
-    return <EditorContentSkeleton className={className} />
-  }
+  if (loading || !editor) return cover
 
+  // Mount the editor hidden before first sync. Mounting it later re-runs createNodeViews()
+  // over the filled doc and rebuilds every block (four builds in dev, two in production).
   return (
     <>
-      {needsAuth && <SessionExpiredBanner />}
+      {providerSyncing ? cover : needsAuth && <SessionExpiredBanner />}
       <TiptapEditor
         inputMode={'text'}
         enterKeyHint={'enter'}
@@ -61,7 +62,8 @@ const EditorContent = ({ className }: { className?: string }) => {
         className={twMerge(
           'tiptap__editor docy_editor relative w-full',
           fadeIn && 'motion-safe:animate-[doc-content-in_240ms_ease-out_both]',
-          className
+          className,
+          providerSyncing && 'hidden'
         )}
         editor={editor}
         onTouchEnd={handleDoubleTap}
