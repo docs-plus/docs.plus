@@ -33,6 +33,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- **The offline mirror stays at one row
+  ([#638](https://github.com/docs-plus/docs.plus/issues/638)).** y-indexeddb stores a full doc
+  copy on each load and trims only past 500 rows. `useYdocAndProvider` now merges the store to
+  one row with `storeState`, 2 s after the first sync. On a 2000-link pad, 20 reloads used to
+  leave 42 rows (22.6 MB) and a 202 ms replay frame. Now the store stays at 1 row (0.55 MB),
+  and a replay after the fill costs about 8 ms of script.
 - **The Documents list shows member faces and the roster on older documents
   ([#574](https://github.com/docs-plus/docs.plus/issues/574)).** The faces and the roster
   now send the `documentId` exactly as stored. They used to send `lower(documentId)`, which

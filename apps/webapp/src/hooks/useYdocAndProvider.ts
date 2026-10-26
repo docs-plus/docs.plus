@@ -5,7 +5,7 @@ import { captureCollabIssueOnce } from '@utils/observability'
 import { supabaseClient } from '@utils/supabase'
 import { onDocTitleStateless } from '@utils/titleWrite'
 import { useEffect, useRef } from 'react'
-import { IndexeddbPersistence } from 'y-indexeddb'
+import { IndexeddbPersistence, storeState } from 'y-indexeddb'
 import * as Y from 'yjs'
 
 import {
@@ -29,6 +29,9 @@ import { guardProviderAwareness } from './guardProviderAwareness'
 type DeviceType = 'desktop' | 'mobile' | 'tablet'
 
 let persistRequested = false
+
+// Keeps the mirror merge out of the load frames.
+const MIRROR_COMPACT_DELAY_MS = 2000
 
 // Asked on the first local edit, not on open, so readers never see Firefox's
 // permission prompt. persisted() first stops a second ask once granted.
@@ -106,6 +109,21 @@ const useYdocAndProvider = ({
       )
       .catch(flagMirrorFailed)
 
+    // y-indexeddb adds a full doc copy on each load and trims only past 500 rows, so the
+    // replay grew by about 10 ms per reload of a large pad (#638). Merge to one row once
+    // per mount, after first sync, with y-indexeddb's own trim.
+    let mirrorCompactArmed = false
+    const compactMirror = () => {
+      if (!persistence || mirrorCompactArmed) return
+      mirrorCompactArmed = true
+      void persistence.whenSynced.then(() =>
+        setTimeout(() => {
+          if (mirrorDisposed || persistence._destroyed || persistence._dbsize <= 1) return
+          storeState(persistence).catch(flagMirrorFailed)
+        }, MIRROR_COMPACT_DELAY_MS)
+      )
+    }
+
     providerRef.current = new HocuspocusProvider({
       url: providerUrl,
       name: documentId,
@@ -161,7 +179,10 @@ const useYdocAndProvider = ({
 
         setWorkspaceSetting('providerStatus', 'saved')
 
-        if (data?.state) setWorkspaceEditorSetting('providerSyncing', false)
+        if (data?.state) {
+          setWorkspaceEditorSetting('providerSyncing', false)
+          compactMirror()
+        }
 
         if (data?.state && !useStore.getState().settings.hocuspocusProvider) {
           setWorkspaceSetting('hocuspocusProvider', providerRef.current)
