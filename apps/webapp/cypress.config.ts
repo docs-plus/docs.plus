@@ -3,10 +3,11 @@ import { execFileSync } from 'node:child_process'
 import { defineConfig } from 'cypress'
 import codeCoverageTask from '@cypress/code-coverage/task'
 import cypressSplit from 'cypress-split'
+import * as Y from 'yjs'
 
-// Full-stack draft-anchor E2E DB assertions. Targets the Prisma pg
+// Full-stack DB assertions for the e2e/document specs. Targets the Prisma pg
 // (docsy-postgres-local:5432/docsplus) — NOT Supabase (:54322) — via `docker
-// exec` so no `pg` dependency is added. Only used by draft-first-edit-anchor.cy.ts.
+// exec` so no `pg` dependency is added.
 // execFileSync (no shell) + psql `-v` variables (`:'slug'` is server-side quoted)
 // keep both the shell and SQL layers injection-safe.
 const psql = (vars: string[], sql: string): string => {
@@ -45,7 +46,7 @@ const queryDocBySlug = (slug: string): { documentId: string; ownerId: string | n
   const [documentId, ownerId] = out.split('|')
   return { documentId, ownerId: ownerId || null }
 }
-const draftAnchorTasks = {
+const documentDbTasks = {
   queryDocBySlug,
   queryDocVersionCount(documentId: string): number {
     return (
@@ -56,6 +57,18 @@ const draftAnchorTasks = {
         )
       ) || 0
     )
+  },
+  // Reads the stored head row directly, so no service-role key is needed.
+  // Postgres wraps base64 every 76 chars; strip that before decoding.
+  queryDocHeadText(documentId: string): string | null {
+    const b64 = psql(
+      ['-v', `docid=${documentId}`],
+      `select encode(data,'base64') from "Documents" where "documentId" = :'docid' order by version desc limit 1`
+    )
+    if (!b64) return null
+    const doc = new Y.Doc()
+    Y.applyUpdate(doc, Buffer.from(b64.replace(/\s+/g, ''), 'base64'))
+    return doc.getXmlFragment('default').toString()
   },
   async waitForDocBySlug(slug: string): Promise<ReturnType<typeof queryDocBySlug>> {
     for (let i = 0; i < 40; i++) {
@@ -99,7 +112,7 @@ export default defineConfig({
           console.log(message)
           return null
         },
-        ...draftAnchorTasks
+        ...documentDbTasks
       })
       return config
     }
