@@ -4,6 +4,10 @@ All notable changes to `@docs.plus/extension-mermaid` are documented here. The f
 
 ## [Unreleased]
 
+### Added
+
+- `mermaidNodeView(editor)` draws diagrams inside your own `codeBlock` node view. The guide has a recipe for `CodeBlockLowlight.extend({ addNodeView })` ([#628](https://github.com/docs-plus/docs.plus/issues/628)).
+
 ### Changed
 
 - The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.0`. It was `^3.31.3`.

@@ -1,8 +1,14 @@
 import '@docs.plus/extension-mermaid/styles.css'
 
-import { Mermaid, type MermaidOptions, type MermaidView } from '@docs.plus/extension-mermaid'
+import {
+  Mermaid,
+  type MermaidOptions,
+  type MermaidView,
+  mermaidNodeView
+} from '@docs.plus/extension-mermaid'
 import { setupPlayground } from '@docs.plus/playground/setup'
 import { Editor, Extension, type Extensions } from '@tiptap/core'
+import { CodeBlock } from '@tiptap/extension-code-block'
 import { Markdown } from '@tiptap/markdown'
 import { Plugin } from '@tiptap/pm/state'
 import type { NodeView } from '@tiptap/pm/view'
@@ -87,9 +93,25 @@ const LowerView = Extension.create({
   }
 })
 
+// `?host=app`: the app's own `addNodeView`. `?host=app-factory`: the same view, with `mermaidNodeView`.
+const AppCodeBlock = CodeBlock.extend({
+  addNodeView() {
+    const own = ({ node }: { node: { attrs: Record<string, unknown> } }) =>
+      testCodeBlockView('app-view', node)
+    if (params.get('host') !== 'app-factory') return own
+    const mermaid = mermaidNodeView(this.editor)
+    return (props) => mermaid(props) ?? own(props)
+  }
+})
+
+const host = params.get('host')
 const lower = params.get('lower')
 const mermaid = Mermaid.configure(options)
-const extensions: Extensions = [StarterKit, Markdown.configure()]
+const extensions: Extensions = [
+  host ? StarterKit.configure({ codeBlock: false }) : StarterKit,
+  Markdown.configure()
+]
+if (host) extensions.push(AppCodeBlock)
 if (lower === 'plugin') extensions.push(LowerView, mermaid)
 else if (lower === 'plugin-first') extensions.push(mermaid, LowerView)
 else extensions.push(mermaid)

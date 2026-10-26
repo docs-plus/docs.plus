@@ -4,7 +4,7 @@ import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
 import { DEFAULT_LIMITS, MERMAID_LANGUAGE } from './constants'
 import { createMermaidNodeView } from './nodeView/createMermaidNodeView'
 import { createFolds } from './nodeView/fold'
-import type { MermaidOptions } from './types'
+import type { MermaidOptions, MermaidStorage } from './types'
 
 const MERMAID_PLUGIN_KEY = new PluginKey('mermaid')
 
@@ -15,7 +15,7 @@ const STARTER = [
   '  B -- No --> A'
 ].join('\n')
 
-export const Mermaid = Extension.create<MermaidOptions>({
+export const Mermaid = Extension.create<MermaidOptions, MermaidStorage>({
   name: 'mermaid',
 
   addOptions() {
@@ -34,16 +34,23 @@ export const Mermaid = Extension.create<MermaidOptions>({
     }
   },
 
+  // `mermaidNodeView` and the plugin share one fold state; whichever runs first creates it.
+  addStorage() {
+    return { folds: null, factoryUsed: false, warned: false }
+  },
+
   // A plugin prop ranks below the editor's own node views. A host `codeBlock` with
-  // `addNodeView` therefore wins, and the diagram never draws.
+  // `addNodeView` therefore wins, and the diagram never draws unless that view uses `mermaidNodeView`.
   addProseMirrorPlugins() {
-    const folds = createFolds(this.options)
+    const storage = this.storage
+    const folds = (storage.folds ??= createFolds(this.options))
+    const codeBlock = createMermaidNodeView(this.editor, this.options, folds)
     return [
       new Plugin({
         key: MERMAID_PLUGIN_KEY,
         view: folds.view,
         props: {
-          nodeViews: { codeBlock: createMermaidNodeView(this.editor, this.options, folds) },
+          nodeViews: { codeBlock },
           handleKeyDown: folds.handleKeyDown
         }
       })

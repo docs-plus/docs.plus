@@ -1,4 +1,5 @@
 export { Mermaid } from './mermaid'
+export { mermaidNodeView } from './mermaidNodeView'
 export type {
   MermaidError,
   MermaidFold,

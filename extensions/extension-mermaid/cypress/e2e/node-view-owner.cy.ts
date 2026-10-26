@@ -55,4 +55,34 @@ describe('node view owner', () => {
     jsBlock().should('have.attr', 'data-testid', 'lower-view')
     ownerWarnings().should('eq', 0)
   })
+
+  it('draws diagrams inside an app view that uses mermaidNodeView (#628)', () => {
+    visitWithWarnSpy('?host=app-factory')
+    mermaidBlock().should('have.class', 'mermaid-diagram').find('svg').should('exist')
+    jsBlock().should('have.attr', 'data-testid', 'app-view')
+
+    setLanguage(0, 'js')
+    mermaidBlock().should('have.attr', 'data-testid', 'app-view')
+    ownerWarnings().should('eq', 0)
+  })
+
+  // The fold state is shared between the plugin and the factory, so the key step still opens the block.
+  it('opens a folded diagram on a real ArrowDown inside an app view (#628)', () => {
+    cy.clearLocalStorage()
+    cy.visitPlayground('?host=app-factory')
+    cy.setEditorContent('<p>Before</p>' + DOC)
+    cy.get('.mermaid-diagram__fold').focus().click()
+    cy.get('.mermaid-diagram').should('have.attr', 'data-source', 'folded')
+    cy.get('.mermaid-diagram__source pre').should('not.be.visible')
+    cy.getEditor().then((editor) => {
+      editor
+        .chain()
+        .focus()
+        .setTextSelection(editor.state.doc.firstChild!.nodeSize - 1)
+        .run()
+    })
+    cy.get('.ProseMirror').should('have.focus')
+    cy.realPress('ArrowDown')
+    cy.get('.mermaid-diagram').should('have.attr', 'data-source', 'open')
+  })
 })

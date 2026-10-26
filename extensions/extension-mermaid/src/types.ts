@@ -1,5 +1,7 @@
 import type { Editor } from '@tiptap/core'
 
+import type { Folds } from './nodeView/fold'
+
 export interface MermaidOptions {
   /** Pele colour and font variables, set on each frame. Values are CSS, so `var()` and `light-dark()` work. */
   theme: MermaidTheme | null // default null (Pele or styles.css defaults)
@@ -92,6 +94,13 @@ export interface MermaidStateEvent extends MermaidSnapshot {
   getPos: () => number | undefined
   /** Render time (Pele plus sanitize) in ms on `ready` and `error`; null otherwise. */
   durationMs: number | null
+}
+
+/** Per-editor state shared by the plugin and `mermaidNodeView`. Internal, not a public API. */
+export interface MermaidStorage {
+  folds: Folds | null
+  factoryUsed: boolean
+  warned: boolean
 }
 
 declare module '@tiptap/core' {
