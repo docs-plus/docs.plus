@@ -8,6 +8,7 @@ This file is intentionally not named `README.md` so the repository root `README.
   - Production CI/CD pipeline
   - Triggers: push to `main`, PR to `main`, weekly schedule, and `workflow_dispatch`
   - Stages: triage (`parse-build-trigger.sh`) → quality gates and the prod-host `images` build → build verification → deploy chain (app → observability → uptime-kuma, fail-fast) → run report
+  - Build Verification uploads the webapp Next trace files as the `webapp-next-trace-<sha>` artifact, kept 7 days. The webapp Docker build prints Next's `next:build:build-traces` debug lines. Both are measurement aids and never fail a run
   - Deploy guard: `GLITCHTIP_DSN` and `NEXT_PUBLIC_GLITCHTIP_DSN` must be non-empty in the host `.env` or the `images` job aborts before building
   - A later push to `main` while the `images` job runs cancels that run's deploy. To ship it, push a new `(build):` tip or run a `force_deploy` dispatch. A later `(build):` push can also remove the images of an earlier run whose deploy has not started. That deploy then stops at `📦 Verify images present`, and production is unchanged.
   - `📦 Verify images present` also stops the deploy when the host env file changed after `images` copied it, because the webapp image baked the old `NEXT_PUBLIC_*` values. Use Re-run all jobs. Production is unchanged.

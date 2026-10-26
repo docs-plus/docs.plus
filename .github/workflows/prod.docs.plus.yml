@@ -446,6 +446,23 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key' }}
 
+      # Measurement aid for the "Collecting build traces" phase; it must never block a deploy.
+      - name: 📤 Upload webapp build trace
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        timeout-minutes: 5
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: webapp-next-trace-${{ github.sha }}
+          path: |
+            apps/webapp/.next/trace
+            apps/webapp/.next/*.nft.json
+            apps/webapp/.next/server/**/*.nft.json
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 7
+          overwrite: true
+
       - name: 🏗️ Build Admin Dashboard
         run: bun run --filter @docs.plus/admin-dashboard build:ci
         env:

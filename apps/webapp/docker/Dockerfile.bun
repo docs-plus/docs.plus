@@ -224,7 +224,10 @@ WORKDIR /app/apps/webapp
 # layer can never be reused. The deploy prunes build cache toward a free-space
 # target, oldest record first, so a recently used mount usually survives. The runner
 # copies only .next/standalone and .next/static, so nothing here reaches the image.
-RUN --mount=type=cache,target=/app/apps/webapp/.next/cache bunx next build
+# DEBUG prints "starting build traces" and "finished build tracing <ms>ms", so the
+# deploy log splits the "Collecting build traces" phase into trace and copy time.
+RUN --mount=type=cache,target=/app/apps/webapp/.next/cache \
+  DEBUG=next:build:build-traces bunx next build
 
 # ============================================================================
 # Stage 5: Runner - Production runtime
