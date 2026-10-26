@@ -1,4 +1,17 @@
-import { afterEach, describe, test, expect, beforeAll, beforeEach, mock, spyOn } from 'bun:test'
+import {
+  afterAll,
+  afterEach,
+  describe,
+  test,
+  expect,
+  beforeAll,
+  beforeEach,
+  mock,
+  spyOn
+} from 'bun:test'
+import { mkdtemp, readdir, rm } from 'fs/promises'
+import os from 'os'
+import path from 'path'
 
 // Drive requireUser through the real auth module + a stubbed anon client.
 // Do NOT mock `lib/auth` itself — that sticky mock.module poisons later suites.
@@ -62,10 +75,9 @@ describe('Hypermultimedia API (Direct Route)', () => {
   })
 
   describe('POST /api/plugins/hypermultimedia/:documentId', () => {
-    // Upload is gated by requireUser: it is a write, so it needs a verified
-    // Supabase user. With no live Supabase to mint one in this harness, these
-    // tests assert the auth gate. The storage path itself is covered by
-    // tests/unit/storage.local.test.ts; the S3 arm has no runtime coverage.
+    // Upload is a write, so requireUser needs a verified user. The stubbed anon
+    // client verifies valid-test-token, and the signed-in cases write to a temp
+    // local store. The S3 arm has no runtime coverage.
     test('rejects an upload with no token', async () => {
       const file = createTestFile('test-image.jpg', 'image/jpeg', 2048)
       const response = await testServer.upload('/api/plugins/hypermultimedia/test-doc-123', file)
@@ -97,6 +109,94 @@ describe('Hypermultimedia API (Direct Route)', () => {
       )
 
       expect(response.status).toBe(401)
+    })
+
+    // The path segment is the storage prefix, so the row decides who may write under it.
+    describe('signed in', () => {
+      const localStore = config.storage.local as { enabled: boolean }
+      const originalEnabled = localStore.enabled
+      const originalPath = process.env.LOCAL_STORAGE_PATH
+      let storageDir: string
+
+      beforeAll(async () => {
+        storageDir = await mkdtemp(path.join(os.tmpdir(), 'hm-upload-'))
+        process.env.LOCAL_STORAGE_PATH = storageDir
+        localStore.enabled = true
+      })
+
+      afterAll(async () => {
+        localStore.enabled = originalEnabled
+        if (originalPath === undefined) delete process.env.LOCAL_STORAGE_PATH
+        else process.env.LOCAL_STORAGE_PATH = originalPath
+        await rm(storageDir, { recursive: true, force: true })
+      })
+
+      const upload = (file = createTestFile('photo.jpg', 'image/jpeg', 2048)) => {
+        const formData = new FormData()
+        formData.append('mediaFile', file)
+        return testServer.app.request('http://localhost:3001/api/plugins/hypermultimedia/doc-1', {
+          method: 'POST',
+          body: formData,
+          headers: { token: 'valid-test-token' }
+        })
+      }
+      const row = (over: Record<string, unknown> = {}) => {
+        mockPrisma.documentMetadata.findUnique = async () => ({
+          ownerId: 'user-123',
+          deletedAt: null,
+          isPrivate: false,
+          readOnly: false,
+          ...over
+        })
+      }
+      const storedFiles = async () => readdir(path.join(storageDir, 'doc-1')).catch(() => [])
+      const refused = async (response: Response, status: number, code: string) => {
+        expect(response.status).toBe(status)
+        const body = (await response.json()) as { error: { code: string } }
+        expect(body.error).toHaveProperty('code', code)
+        expect(await storedFiles()).toHaveLength(0)
+      }
+
+      beforeEach(async () => {
+        await rm(path.join(storageDir, 'doc-1'), { recursive: true, force: true })
+      })
+
+      test('the owner uploads an image and it lands in the store', async () => {
+        row()
+        const response = await upload()
+
+        expect(response.status).toBe(201)
+        const { fileAddress } = (await response.json()) as { fileAddress: string }
+        expect(await storedFiles()).toEqual([path.basename(fileAddress)])
+      })
+
+      test('a document with no row is not found', async () => {
+        await refused(await upload(), 404, 'NOT_FOUND')
+      })
+
+      test('a document in Trash is not found', async () => {
+        row({ deletedAt: new Date() })
+        await refused(await upload(), 404, 'NOT_FOUND')
+      })
+
+      test("another user's Private document is forbidden", async () => {
+        row({ ownerId: 'user-456', isPrivate: true })
+        await refused(await upload(), 403, 'FORBIDDEN')
+      })
+
+      test("another user's Read-only document is forbidden", async () => {
+        row({ ownerId: 'user-456', readOnly: true })
+        await refused(await upload(), 403, 'FORBIDDEN')
+      })
+
+      test('the owner cannot upload text/html', async () => {
+        row()
+        await refused(
+          await upload(createTestFile('page.html', 'text/html', 512)),
+          415,
+          'UNSUPPORTED_MEDIA_TYPE'
+        )
+      })
     })
   })
 

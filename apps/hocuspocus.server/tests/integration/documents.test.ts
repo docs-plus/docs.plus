@@ -41,7 +41,11 @@ mock.module('../../src/api/services/documentPurge.service', () => ({
   }
 }))
 
+import { mkdtemp, readdir, rm } from 'fs/promises'
+import os from 'os'
+import path from 'path'
 import { Hono } from 'hono'
+import * as Y from 'yjs'
 import { searchDocuments } from '../../src/api/services/documents.service'
 import documentsRouter from '../../src/api/routers/documents.router'
 import { config } from '../../src/config/env'
@@ -1357,6 +1361,86 @@ describe('Documents API', () => {
       expect(data.data.documentId).toBe(metaCreate.data.documentId)
       expect(data.data.title).toBe('My Notes (copy)')
       expect(data.data).toHaveProperty('slug')
+    })
+
+    // A copy is public, so copying an object it may not read would serve that media again.
+    test("copies only live media the owner may read, never another user's Private or a trashed one", async () => {
+      const localStore = config.storage.local as { enabled: boolean }
+      const originalEnabled = localStore.enabled
+      const originalPath = process.env.LOCAL_STORAGE_PATH
+      const storageDir = await mkdtemp(path.join(os.tmpdir(), 'dup-media-'))
+      const media = [
+        ['private-doc', 'secret.png'],
+        ['trashed-doc', 'gone.png'],
+        ['abc123', 'own.png']
+      ]
+      try {
+        process.env.LOCAL_STORAGE_PATH = storageDir
+        localStore.enabled = true
+        // Every source object exists, so only the filter can keep one out of the copy.
+        for (const [prefix, fileName] of media) {
+          await Bun.write(path.join(storageDir, prefix, fileName), `bytes of ${fileName}`)
+        }
+
+        const source = new Y.Doc()
+        source.getXmlFragment('default').insert(
+          0,
+          media.map(([prefix, fileName]) => {
+            const image = new Y.XmlElement('image')
+            image.setAttribute(
+              'src',
+              `http://localhost:4000/api/plugins/hypermultimedia/${prefix}/${fileName}`
+            )
+            return image
+          })
+        )
+        mockPrisma.documentMetadata.findUnique = async () => ({
+          ownerId: 'user-123',
+          title: 'Media',
+          deletedAt: null
+        })
+        mockPrisma.documents.findFirst = async () => ({
+          data: Buffer.from(Y.encodeStateAsUpdate(source))
+        })
+        mockPrisma.documentMetadata.findMany = async () => [
+          { documentId: 'private-doc', deletedAt: null, isPrivate: true, ownerId: 'user-456' },
+          {
+            documentId: 'trashed-doc',
+            deletedAt: new Date(),
+            isPrivate: false,
+            ownerId: 'user-456'
+          },
+          { documentId: 'abc123', deletedAt: null, isPrivate: false, ownerId: 'user-123' }
+        ]
+        let docsCreate: any
+        mockPrisma.documents.create = async (args: any) => {
+          docsCreate = args
+          return { id: 9, ...args.data }
+        }
+
+        const response = await testServer.post(
+          '/api/documents/abc123/duplicate',
+          {},
+          { token: 'valid-test-token' }
+        )
+        expect(response.status).toBe(200)
+        const copyId = (await response.json()).data.documentId
+
+        expect(await readdir(path.join(storageDir, copyId))).toEqual(['own.png'])
+
+        // Every URL now names the copy's prefix; the refused ones point at nothing.
+        const copy = new Y.Doc()
+        Y.applyUpdate(copy, new Uint8Array(docsCreate.data.data))
+        const stored = copy.getXmlFragment('default').toString()
+        expect(stored).toContain(`/hypermultimedia/${copyId}/own.png`)
+        expect(stored).not.toContain('/private-doc/')
+        expect(stored).not.toContain('/trashed-doc/')
+      } finally {
+        localStore.enabled = originalEnabled
+        if (originalPath === undefined) delete process.env.LOCAL_STORAGE_PATH
+        else process.env.LOCAL_STORAGE_PATH = originalPath
+        await rm(storageDir, { recursive: true, force: true })
+      }
     })
   })
 

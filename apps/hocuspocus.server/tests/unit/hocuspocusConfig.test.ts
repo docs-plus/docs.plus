@@ -5,6 +5,7 @@ import type { EnqueueStoreDocumentParams, StoreDocumentContext } from '../../src
 import { Database } from '@hocuspocus/extension-database'
 import * as Y from 'yjs'
 
+import { type DocumentAccessEvent, handleDocumentAccessEvent } from '../../src/lib/accessRealtime'
 import { recordContributor } from '../../src/lib/contributors'
 import { documentStoreRejectionsTotal } from '../../src/lib/metrics'
 
@@ -90,8 +91,24 @@ const liveDoc = (metadata: Record<string, unknown> = {}) => {
   const document = new Y.Doc()
   const meta = document.getMap('metadata')
   for (const [key, value] of Object.entries(metadata)) meta.set(key, value)
-  return document
+  // The two Document methods the access handler calls. The room has no sockets.
+  return Object.assign(document, { broadcastStateless: () => {}, getConnections: () => [] })
 }
+
+const accessEvent = (
+  document: Y.Doc,
+  event: Pick<DocumentAccessEvent, 'deleted' | 'purged'>
+): void =>
+  handleDocumentAccessEvent(
+    document as unknown as Parameters<typeof handleDocumentAccessEvent>[0],
+    DOCUMENT_NAME,
+    {
+      documentId: DOCUMENT_NAME,
+      ownerId: 'owner-1',
+      timestamp: new Date().toISOString(),
+      ...event
+    }
+  )
 
 const rejectionsFor = async (reason: string): Promise<number> => {
   const { values } = await documentStoreRejectionsTotal.get()
@@ -201,5 +218,36 @@ describe('store hook — a failed save must not wedge the debouncer', () => {
 
     expect(enqueued).toHaveLength(1)
     expect(enqueued[0]?.jobId).toBe(jobIdFor(DOCUMENT_NAME, OTHER_BYTES))
+  })
+})
+
+describe('store hook — sealed room', () => {
+  test('a purge seals the room, so the close-time flush enqueues nothing', async () => {
+    const document = liveDoc()
+    accessEvent(document, { deleted: true, purged: true })
+
+    await store(document, {})
+
+    expect(enqueued).toHaveLength(0)
+  })
+
+  // Trash keeps every Documents row, so dropping this flush would only lose the last edits.
+  test('a soft delete closes the room but still flushes', async () => {
+    const document = liveDoc()
+    accessEvent(document, { deleted: true })
+
+    await store(document, {})
+
+    expect(enqueued).toHaveLength(1)
+  })
+
+  test('a restore after a purge unseals the same room', async () => {
+    const document = liveDoc()
+    accessEvent(document, { deleted: true, purged: true })
+    accessEvent(document, { deleted: false })
+
+    await store(document, {})
+
+    expect(enqueued).toHaveLength(1)
   })
 })
