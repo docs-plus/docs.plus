@@ -83,22 +83,53 @@ Parsed by `.github/scripts/parse-build-trigger.sh` from the **first line** of th
 
 Legend: **Back-val** = backend-ci + typecheck + security · **App deploy** = smart front checks + Next.js build + blue-green deploy of all 5 services · **Obs** = observability stack · **UK** = uptime-kuma · ⏭️ = skipped
 
-| Commit subject                                  | Back-val      | App deploy | Obs | UK  | Order                         |
-| ----------------------------------------------- | ------------- | ---------- | --- | --- | ----------------------------- |
-| `(build): back front observability uptime-kuma` | ✅            | ✅         | ✅  | ✅  | back + front → app → obs → uk |
-| `(build): back front`                           | ✅            | ✅         | ⏭️  | ⏭️  | back + front → app            |
-| `(build): back observability`                   | ✅            | ✅         | ✅  | ⏭️  | back → app → obs              |
-| `(build): front uptime-kuma`                    | ✅            | ✅         | ⏭️  | ✅  | back + front → app → uk       |
-| `(build): observability`                        | ⏭️            | ⏭️         | ✅  | ⏭️  | obs only (all app CI skipped) |
-| `(build): uptime-kuma`                          | ⏭️            | ⏭️         | ⏭️  | ✅  | uk only                       |
-| `(build): back front no-deploy`                 | ✅            | ⏭️         | ⏭️  | ⏭️  | validate only; no deploy      |
-| `fix: …` (normal commit)                        | gates only    | ⏭️         | ⏭️  | ⏭️  | quality gates, no deploy      |
-| PR to `main`                                    | ✅ gates      | ⏭️         | ⏭️  | ⏭️  | gates + build verification    |
-| `schedule` (Sun 00:00 UTC)                      | security only | ⏭️         | n/a | n/a | weekly security audit         |
+| Commit subject                                  | Back-val                          | App deploy | Obs | UK  | Order                                         |
+| ----------------------------------------------- | --------------------------------- | ---------- | --- | --- | --------------------------------------------- |
+| `(build): back front observability uptime-kuma` | ✅                                | ✅         | ✅  | ✅  | back + front → app → obs → uk                 |
+| `(build): back front`                           | ✅                                | ✅         | ⏭️  | ⏭️  | back + front → app                            |
+| `(build): back observability`                   | ✅                                | ✅         | ✅  | ⏭️  | back → app → obs                              |
+| `(build): front uptime-kuma`                    | ✅                                | ✅         | ⏭️  | ✅  | back + front → app → uk                       |
+| `(build): observability`                        | ⏭️                                | ⏭️         | ✅  | ⏭️  | obs only (all app CI skipped)                 |
+| `(build): uptime-kuma`                          | ⏭️                                | ⏭️         | ⏭️  | ✅  | uk only                                       |
+| `(build): back front no-deploy`                 | ✅                                | ⏭️         | ⏭️  | ⏭️  | validate only; no deploy                      |
+| `fix: …` (normal commit)                        | typecheck by scope, no backend-ci | ⏭️         | ⏭️  | ⏭️  | gates for changed scopes, no deploy           |
+| PR to `main`                                    | changed scopes                    | ⏭️         | ⏭️  | ⏭️  | gates + build verification for changed scopes |
+| `schedule` (Sun 00:00 UTC)                      | security only                     | ⏭️         | n/a | n/a | weekly security audit                         |
 
 `back + front` means the two validations run at the same time. Build Verification and the app deploy wait for both. Every app deploy runs Back-val, because the deploy runs the migration and rolls all three backend services.
 
 `workflow_dispatch` with `force_deploy=true` bypasses the commit-message gate and deploys the app; `skip_quality_gates` skips quality gates only.
+
+## Change scopes (PRs and pushes without `(build):`)
+
+`🔎 Detect Changes` runs `.github/scripts/detect-change-scopes.sh` on the changed files. It emits `webapp`, `admin`, `backend` and `docs_only`. Lint and security always run.
+
+The script classes each changed path by the first row that matches.
+
+| Order | Class                  | Paths                                                                                                                                                                                                                                   | Effect                                                                                   |
+| ----- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| 1     | Never docs             | `extensions/*/README.md`, `extensions/*/CHANGELOG.md`, any path under a `src/` folder, `apps/webapp/public/**`                                                                                                                          | Skips row 2. Row 3 still applies, so anything under `extensions/<ext>/assets/` is media. |
+| 2     | Docs                   | `**/*.md`, `docs/**`, `.github/ISSUE_TEMPLATE/**`, root `LICENSE`                                                                                                                                                                       | No scope. Counts toward `docs_only`.                                                     |
+| 3     | Extension README media | `extensions/<ext>/assets/**`, and a `.gif`, `.png`, `.jpg`, `.jpeg`, `.webp` or `.mp4` file at an extension root                                                                                                                        | No scope                                                                                 |
+| 4     | Shared                 | Root `package.json`, `bun.lock`, `bunfig.toml`, `tsconfig*.json`, `tsup.base.ts`, `.prettierrc*`, `.prettierignore`, `eslint.config.*`, `.stylelintrc*`, `docker-compose*.yml`; `.github/**`; `scripts/**`; `packages/eslint-config/**` | Every scope on                                                                           |
+| 5     | webapp                 | `apps/webapp/**`, `extensions/**`, `packages/floating-*/**`, `packages/supabase/**`                                                                                                                                                     | `webapp` on                                                                              |
+| 5     | admin                  | `apps/admin-dashboard/**`                                                                                                                                                                                                               | `admin` on                                                                               |
+| 5     | backend                | `apps/hocuspocus.server/**`, `packages/email-templates/**`, `packages/supabase/**`, `packages/floating-*/**`, `extensions/extension-hyperlink/**`, `extensions/extension-hypermultimedia/**`, `extensions/extension-inline-code/**`     | `backend` on                                                                             |
+| 6     | Unmatched              | Any other path, for example `packages/document-swarm/**`, `packages/playground/**`, `packages/release-tooling/**`, `Makefile`, `.cursor/rules/*.mdc`                                                                                    | Every scope on                                                                           |
+
+`docs_only` is `true` only when every path is in row 2. Row 2 comes before row 4, so `.github/WORKFLOWS.md` and `.github/PULL_REQUEST_TEMPLATE.md` count as docs.
+
+| Job                                    | Runs when                                                             |
+| -------------------------------------- | --------------------------------------------------------------------- |
+| triage, Detect Changes, lint, security | Always                                                                |
+| Type Check                             | `webapp`, `admin` or `backend` is on                                  |
+| Backend Validation                     | Pull request: `backend` is on. Push without `(build):`: never.        |
+| Ext suites                             | The extension filter selects the suite, and `docs_only` is not `true` |
+| Webapp Unit Tests                      | `webapp` is on                                                        |
+| Build Verification                     | `webapp` or `admin` is on, and every gate passed or was skipped       |
+| deploy, observability, Uptime Kuma     | Unchanged                                                             |
+
+Every scope is on for a `(build):` push, a `workflow_dispatch`, the weekly cron, a missing diff base, more than 500 files, a missing file count, an empty list, or a list whose length differs from the count. The `scopes` step logs one class line per path and a `reason` line.
 
 ## Related files
 
@@ -106,5 +137,6 @@ Legend: **Back-val** = backend-ci + typecheck + security · **App deploy** = sma
 - Cache rule for `setup-bun` and `setup-cypress`: pull requests restore only. Other events save once per key. The `--ignore-scripts` install never saves.
 - `setup-bun` pins the Bun version for CI. Bump it by hand. The Docker images stay on `oven/bun:1-slim`.
 - Trigger tokenizer: `.github/scripts/parse-build-trigger.sh`
+- Change-scope classifier: `.github/scripts/detect-change-scopes.sh` (test: `detect-change-scopes.test.sh`)
 - Telegram notifier: `scripts/ci/notify-telegram.sh` (shared by prod deploy, observability, runner-watchdog, chatroom-e2e, and editor-e2e failure steps; never fails the caller)
 - Run report: `.github/scripts/write-run-report.sh` (reads `gh run view --json jobs` output; prints Markdown)

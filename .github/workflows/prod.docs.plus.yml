@@ -121,9 +121,10 @@ jobs:
   # Each clean-room extension suite is a hard deploy gate (timings at
   # `extension-tests`). It only needs to run when something that affects an
   # extension build/test actually changed. This job emits a boolean the
-  # extension-tests job keys off; lint/typecheck/security stay always-on
-  # because they are fast and repo-global (typecheck still catches extension
-  # TYPE regressions on every push even when the Cypress suite is skipped).
+  # extension-tests job keys off. It also emits the webapp, admin, backend and
+  # docs_only scopes from detect-change-scopes.sh. Lint and security always
+  # run. On a PR or a push without `(build):`, Type Check, Backend Validation,
+  # Webapp Unit Tests and Build Verification run only for scopes that are on.
   # ===========================================================================
   changes:
     name: 🔎 Detect Changes
@@ -143,6 +144,10 @@ jobs:
       contents: read
     outputs:
       changed_extensions: ${{ steps.assemble.outputs.list }}
+      webapp: ${{ steps.scopes.outputs.webapp }}
+      admin: ${{ steps.scopes.outputs.admin }}
+      backend: ${{ steps.scopes.outputs.backend }}
+      docs_only: ${{ steps.scopes.outputs.docs_only }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -181,6 +186,29 @@ jobs:
           if [ "${#sel[@]}" -eq 0 ]; then echo "list=[]" >> "$GITHUB_OUTPUT"; else
             IFS=,; echo "list=[${sel[*]}]" >> "$GITHUB_OUTPUT"; fi
 
+      # Every changed path, for the scope map. Its own step: the extension filter
+      # above has its own predicate quantifier. A `(build):` push needs no list.
+      - id: files
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && needs.triage.outputs.triggered != 'true')
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          list-files: json
+          filters: |
+            all:
+              - '**'
+
+      - id: scopes
+        env:
+          # The `assemble` fallback, plus every `(build):` push: scopes never
+          # narrow a deploy push's gate set.
+          ALL_SCOPES: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event.before == '0000000000000000000000000000000000000000' || (github.event_name == 'push' && needs.triage.outputs.triggered == 'true') }}
+          FILE_COUNT: ${{ steps.files.outputs.all_count }}
+          # Over 500 paths the list could pass the env size limit; the script turns every scope on.
+          FILES_JSON: ${{ fromJSON(steps.files.outputs.all_count || '0') <= 500 && steps.files.outputs.all_files || '[]' }}
+        run: |
+          set -euo pipefail
+          printf '%s' "${FILES_JSON}" | jq -r '.[]' | bash .github/scripts/detect-change-scopes.sh
+
   # ===========================================================================
   # STAGE 1 — QUALITY GATES (parallel, fast feedback)
   # ===========================================================================
@@ -196,11 +224,12 @@ jobs:
     name: 📝 Type Check
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [triage]
-    # Skip on infra-only commits (skip_app_ci=true) or schedule.
+    needs: [triage, changes]
+    # Skip on infra-only commits (skip_app_ci=true), schedule, or no code scope.
     if: |
       github.event_name != 'schedule' &&
-      needs.triage.outputs.skip_app_ci != 'true'
+      needs.triage.outputs.skip_app_ci != 'true' &&
+      (needs.changes.outputs.webapp == 'true' || needs.changes.outputs.admin == 'true' || needs.changes.outputs.backend == 'true')
     permissions:
       contents: read
 
@@ -265,12 +294,15 @@ jobs:
 
   back-validation:
     name: 🔧 Backend Validation
-    needs: [triage]
+    needs: [triage, changes]
     # `app_deploy` is the value the deploy job gates on, and the deploy always
     # runs the Prisma migration and rolls all three backend services. Gating on
     # `has_back` alone let a `(build): front` push deploy backend code no test
     # had ever touched. `has_back` stays so `(build): back no-deploy` still runs.
-    if: github.event_name == 'pull_request' || needs.triage.outputs.has_back == 'true' || needs.triage.outputs.app_deploy == 'true'
+    # A PR runs it only for the backend scope; a `(build):` push turns every scope on.
+    if: |
+      (github.event_name == 'pull_request' || needs.triage.outputs.has_back == 'true' || needs.triage.outputs.app_deploy == 'true') &&
+      needs.changes.outputs.backend == 'true'
     uses: ./.github/workflows/backend-ci.yml
     with:
       run_e2e: ${{ github.event_name != 'pull_request' }}
@@ -285,6 +317,7 @@ jobs:
       always() &&
       needs.triage.outputs.skip_app_ci != 'true' &&
       needs.changes.outputs.changed_extensions != '[]' &&
+      needs.changes.outputs.docs_only != 'true' &&
       (needs.triage.outputs.has_front == 'true' || needs.triage.outputs.triggered != 'true' || github.event_name == 'pull_request')
     strategy:
       fail-fast: false
@@ -318,11 +351,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # No `back-validation` need, for the same reason as `extension-tests`.
-    needs: [triage]
+    needs: [triage, changes]
     if: |
       always() &&
       github.event_name != 'schedule' &&
       needs.triage.outputs.skip_app_ci != 'true' &&
+      needs.changes.outputs.webapp == 'true' &&
       (needs.triage.outputs.has_front == 'true' || needs.triage.outputs.triggered != 'true' || github.event_name == 'pull_request')
     permissions:
       contents: read
@@ -377,6 +411,7 @@ jobs:
       github.event_name != 'schedule' &&
       needs.triage.outputs.skip_app_ci != 'true' &&
       needs.changes.result == 'success' &&
+      (needs.changes.outputs.webapp == 'true' || needs.changes.outputs.admin == 'true') &&
       (needs.lint.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
       (needs.typecheck.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
       (needs.security.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
