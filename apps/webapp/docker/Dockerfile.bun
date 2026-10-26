@@ -223,6 +223,10 @@ ARG GIT_HASH
 ARG NEXT_PUBLIC_GIT_HASH
 ENV GIT_HASH=${GIT_HASH} \
   NEXT_PUBLIC_GIT_HASH=${NEXT_PUBLIC_GIT_HASH}
+# Below the install for the same cache reason as GIT_HASH. Only the prod deploy
+# sets 1; empty (stage, Makefile, dev, self-hosters) keeps Next's type check.
+ARG NEXT_SKIP_TYPECHECK
+ENV NEXT_SKIP_TYPECHECK=${NEXT_SKIP_TYPECHECK}
 
 # Build Next.js app (bunx resolves next from root node_modules; "next build" is build:ci)
 WORKDIR /app/apps/webapp

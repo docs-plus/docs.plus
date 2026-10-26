@@ -687,6 +687,7 @@ jobs:
         env:
           DOCKER_BUILDKIT: '1'
           COMPOSE_DOCKER_CLI_BUILD: '1'
+          SKIP_QUALITY_GATES: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates }}
         run: |
           echo "🔨 Building images with tag: ${DEPLOY_TAG}"
 
@@ -710,8 +711,12 @@ jobs:
           # No --parallel: it is not a `docker compose build` flag in Compose v2
           # (absent from `docker compose build --help`). Named services already
           # build concurrently.
+          # Typecheck and Build Verification already ran tsc on this commit. An
+          # emergency dispatch (skip_quality_gates) keeps the check in the image.
+          NEXT_SKIP_TYPECHECK=1
+          if [ "${SKIP_QUALITY_GATES}" = "true" ]; then NEXT_SKIP_TYPECHECK=0; fi
           docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
-            build webapp admin-dashboard
+            build --build-arg "NEXT_SKIP_TYPECHECK=${NEXT_SKIP_TYPECHECK}" webapp admin-dashboard
 
           echo "✅ Images built"
 

@@ -76,10 +76,6 @@ module.exports = withPWA({
 
   // Dev mode optimizations (faster compilation, especially in Docker)
   ...(process.env.NODE_ENV === 'development' && {
-    // Skip type checking during dev (Next.js handles it separately)
-    typescript: {
-      ignoreBuildErrors: false // Still check, but don't block compilation
-    },
     // Faster refresh
     reactStrictMode: true,
     // Reduce logging in dev
@@ -191,6 +187,11 @@ module.exports = withPWA({
         pathname: '/**'
       }
     ]
+  },
+  // The prod deploy sets NEXT_SKIP_TYPECHECK=1 on the Docker build only. The
+  // `typecheck` job and Build Verification already type-check that commit.
+  typescript: {
+    ignoreBuildErrors: process.env.NEXT_SKIP_TYPECHECK === '1'
   },
   eslint: {
     ignoreDuringBuilds: true
