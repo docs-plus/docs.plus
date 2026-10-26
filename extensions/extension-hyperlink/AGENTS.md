@@ -69,7 +69,7 @@ Moving selection across the link makes the floating toolbar think the user navig
 - `utils/specialUrls.ts` covers 50+ app schemes plus `DOMAIN_MAPPINGS`. Catalog source: <https://github.com/bhagyas/app-urls>.
 - Domain matching strips `www.` and supports subdomain suffixes (e.g. `api.github.com` → `github.com`).
 - `getSpecialUrlInfo` returns `{ type: SpecialUrlType, title, category }`.
-- `SpecialUrlType` is a string-literal union for compile-time exhaustiveness without runtime bytes. The extension ships no icon catalog; consumers own `type → icon` mapping.
+- `SpecialUrlType` is a string-literal union for compile-time exhaustiveness without runtime bytes. The extension ships no icon catalog; consumers own `type → icon` mapping. `linkIconMap` holds only the host's own table.
 - `SpecialUrlType` naming convention:
   - lowercase single-word brands: `whatsapp`, `figma`;
   - kebab-case multi-word brands: `facetime-audio`, `apple-tv`, `app-store`;
@@ -103,13 +103,18 @@ Moving selection across the link makes the floating toolbar think the user navig
 - The sweep moves stray text from the `<a>` into the text `<span>`. It must restore the DOM caret afterwards, or typed characters come out reversed. It never runs while composing; `linkIconCompositionSweep` runs it after `compositionend`.
 - The icon click rule tests the point against the icon box, because the icon has `pointer-events: none`. `posAtDOM(link, 0)` then gives the link start.
 - With `linkIcon` unset, `addMarkView` returns the plain view and no composition plugin loads.
+- `linkIconMap` and `linkIconFetcher` live in `src/link-icons/` with the internal `imgIcon.ts`. The barrel exports the two helpers only, not their option types or `imgIcon.ts`.
+- Each helper keeps a failed-URL set: an image URL that errored once gets no `src` again. A transient failure therefore hides that icon until reload. Do not add an in-flight request cache; the browser shares one load per URL.
+- The helpers add no `window` or `document` listener, only `onload` and `onerror` on their own `<img>`. They never clear `src`. A pair follows `color-scheme` through `light-dark()`, with no JS listener.
+- A map lookup with no hit returns `null`. Never fall back to another entry: an unlisted host would then wear a listed site's icon.
 - DOM unit tests import `link-icons/__tests__/setupDom.ts` first and need `test:unit` to keep `--isolate`.
 
 ## Clean-Room Harness
 
 - Release-gate harness: `test/playground/main.ts` (editor fixture) + shared `@docs.plus/playground` (`docs-playground` serves the page shell; `setupPlayground` wires title/tokens/theme). Vanilla Tiptap + StarterKit; no Vite.
 - Playground loads built `dist/` + `styles.css` via the published exports map, **not** monorepo source.
-- Cypress specs cover create, preview-edit, autolink, xss-guards, styling, custom-popover, scroll-stickiness, special-schemes, and link-icons. `link-edges.cy.ts` runs every case with and without `?icons=element`. `_debug.cy.ts` is scratch and excluded from release counts.
+- Cypress specs cover create, preview-edit, autolink, xss-guards, styling, custom-popover, scroll-stickiness, special-schemes, link-icons, and link-edges. `link-edges.cy.ts` runs every case with no query, with `?icons=element` and with `?icons=map`. `_debug.cy.ts` is scratch and excluded from release counts.
+- Icon params: `icons=element|throw|map|fetcher|both` and `tile=on`. The `playground` script passes `--readme-media-dir ./test/playground/icons`, so the test PNGs load from `/readme-media/<file>`. Each page load adds a `?run=` token to every icon URL, so the HTTP cache never hides a request across tests.
 - Run with `bun run test`. `pretest` builds, `start-server-and-test` boots `docs-playground` on `127.0.0.1:5173`, Cypress runs, then teardown. Manual dev: `bun run playground` (`bun --hot docs-playground`). Append `?popover=custom` for custom popover factories in custom-popover tests.
 - Support file is single-file `cypress/support/e2e.ts`. Do not split it; Cypress 15 JIT skipped split imports.
 - `cypress/tsconfig.json` extends `@docs.plus/playground/cypress/tsconfig.json` with `include: ["./**/*.ts"]` so tsc does not inherit the package `rootDir: src`.

@@ -4,6 +4,7 @@
 // isolated Cypress TS project (erased at runtime).
 import type {} from '@tiptap/starter-kit'
 import type { Editor } from '@tiptap/core'
+import type { Interception } from 'cypress/types/net-stubbing'
 
 const ICON = '#editor a > .hyperlink-icon'
 const PREVIEW = '.hyperlink-preview-popover'
@@ -219,6 +220,171 @@ describe('link icons — a throwing linkIcon (icons=throw)', () => {
     cy.get('@err')
       .should('have.been.calledOnce')
       .and('have.been.calledWith', '[extension-hyperlink]')
+  })
+})
+
+// The helper modes load PNGs from test/playground/icons, served at /readme-media/<file>.
+// Each page load adds its own ?run= token, so the HTTP cache never hides a request.
+const iconOf = (host: string): string => `#editor a[href^="https://${host}"] > .hyperlink-icon`
+
+const visitIcons = (query: string): void => {
+  cy.intercept({ method: 'GET', pathname: /^\/readme-media\// }).as('icon')
+  cy.visitPlayground({ query })
+}
+
+// Requests so far for one icon file, matched on the path.
+const requestsFor = (file: string): Cypress.Chainable<number> =>
+  cy
+    .get('@icon.all')
+    .then(
+      (calls) =>
+        (calls as unknown as Interception[]).filter(
+          (c) => new URL(c.request.url).pathname === `/readme-media/${file}`
+        ).length
+    )
+
+// A miss is final once the <img> is broken. One frame then lets its queued error event run.
+const waitForMiss = (selector: string): void => {
+  cy.get(selector).should(($img) => {
+    const img = $img[0] as HTMLImageElement
+    expect(img.complete && img.naturalWidth === 0, 'image failed').to.equal(true)
+  })
+  cy.window().then(
+    (win) => new Cypress.Promise<void>((done) => win.requestAnimationFrame(() => done()))
+  )
+}
+
+// Writes a new href over the first link in the doc. A new href rebuilds the mark view.
+const setFirstHref = (editor: Editor, href: string): void => {
+  editor.chain().setTextSelection(linkRange(editor)).setHyperlink({ href }).run()
+}
+
+const setTheme = (theme: 'light' | 'dark'): void => {
+  cy.document().then((doc) => {
+    doc.documentElement.dataset.theme = theme
+  })
+}
+
+describe('link icons — linkIconMap (icons=map)', () => {
+  beforeEach(() => {
+    visitIcons('icons=map')
+  })
+
+  it('shows the map icon for a listed host and none for another host', () => {
+    cy.setEditorContent(
+      '<p><a href="https://map.example/x">map</a> <a href="https://other.example">other</a></p>'
+    )
+    cy.get(iconOf('map.example')).should('be.visible')
+    cy.get(iconOf('other.example')).should('have.length', 0)
+  })
+
+  it('shows the factory element as the icon', () => {
+    cy.setEditorContent('<p><a href="https://factory.example">factory</a></p>')
+    cy.get(iconOf('factory.example'))
+      .should('be.visible')
+      .and('have.prop', 'tagName', 'SPAN')
+      .and('have.css', 'background-color', 'rgb(22, 163, 74)')
+  })
+
+  it('switches a pair with the theme, or keeps the light image where light-dark() takes no images', () => {
+    cy.setEditorContent('<p><a href="https://pair.example">pair</a></p>')
+    cy.window().then((win) => {
+      const flips = win.CSS.supports('background-image', 'light-dark(url("a"), url("b"))')
+      const image = (theme: 'light' | 'dark'): string =>
+        flips && theme === 'dark' ? '/readme-media/dark.png' : '/readme-media/light.png'
+      for (const theme of ['dark', 'light'] as const) {
+        setTheme(theme)
+        cy.get(iconOf('pair.example')).should(($el) => {
+          const value = win.getComputedStyle($el[0]).backgroundImage
+          expect(value, `${theme}, flips: ${flips}`).to.include(image(theme))
+        })
+      }
+    })
+  })
+})
+
+describe('link icons — linkIconFetcher (icons=fetcher)', () => {
+  beforeEach(() => {
+    visitIcons('icons=fetcher')
+  })
+
+  it('shows a fetched icon after load and keeps a miss hidden', () => {
+    cy.setEditorContent(
+      '<p><a href="https://a.example">hit</a> <a href="https://miss.example">miss</a></p>'
+    )
+    cy.get(iconOf('a.example'))
+      .should('be.visible')
+      .and('have.attr', 'referrerpolicy', 'no-referrer')
+    waitForMiss(iconOf('miss.example'))
+    cy.get(iconOf('miss.example')).should('have.attr', 'hidden')
+  })
+
+  it('makes one request for three links on one origin', () => {
+    cy.setEditorContent(
+      '<p><a href="https://a.example/1">1</a> <a href="https://a.example/2">2</a> <a href="https://a.example/3">3</a></p>'
+    )
+    cy.get(iconOf('a.example')).should('have.length', 3).and('be.visible')
+    requestsFor('a.example.png').should('eq', 1)
+  })
+
+  it('gives a rebuilt miss no src and requests it no more', () => {
+    cy.setEditorContent('<p><a href="https://miss.example">miss</a></p>')
+    waitForMiss(iconOf('miss.example'))
+    requestsFor('miss.example.png').should('eq', 1)
+    cy.getEditor().then((editor) => {
+      setFirstHref(editor, 'https://miss.example/other')
+    })
+    cy.get('#editor a[href="https://miss.example/other"] > .hyperlink-icon').should(($img) => {
+      expect($img).not.to.have.attr('src')
+      expect($img).to.have.attr('hidden')
+    })
+    requestsFor('miss.example.png').should('eq', 1)
+  })
+
+  it('shows a cached icon at once when the link is rebuilt', () => {
+    cy.setEditorContent('<p><a href="https://a.example">hit</a></p>')
+    cy.get(iconOf('a.example')).should('be.visible')
+    cy.getEditor().then((editor) => {
+      setFirstHref(editor, 'https://a.example/other')
+      // Read in the same task: a retrying assertion would wait for load.
+      const img = editor.view.dom.querySelector<HTMLImageElement>(
+        'a[href="https://a.example/other"] > .hyperlink-icon'
+      )
+      expect(img, 'rebuilt icon').to.not.equal(null)
+      expect(img!.hidden, 'hidden right after the rebuild').to.equal(false)
+    })
+  })
+
+  it('draws no tile without tile=on', () => {
+    cy.setEditorContent('<p><a href="https://a.example">hit</a></p>')
+    cy.get(iconOf('a.example')).should('be.visible')
+    setTheme('dark')
+    cy.get(iconOf('a.example')).should('have.css', 'background-color', 'rgba(0, 0, 0, 0)')
+  })
+})
+
+describe('link icons — fetcher tile (icons=fetcher&tile=on)', () => {
+  it('puts a white tile behind the icon on dark and none on light', () => {
+    visitIcons('icons=fetcher&tile=on')
+    cy.setEditorContent('<p><a href="https://a.example">hit</a></p>')
+    cy.get(iconOf('a.example')).should('be.visible').and('have.class', 'hyperlink-icon-tile')
+    setTheme('dark')
+    cy.get(iconOf('a.example')).should('have.css', 'background-color', 'rgb(255, 255, 255)')
+    setTheme('light')
+    cy.get(iconOf('a.example')).should('have.css', 'background-color', 'rgba(0, 0, 0, 0)')
+  })
+})
+
+describe('link icons — map then fetcher helper (icons=both)', () => {
+  it('takes the map icon and never requests a favicon for a mapped host', () => {
+    visitIcons('icons=both')
+    cy.setEditorContent(
+      '<p><a href="https://map.example">map</a> <a href="https://a.example">fetched</a></p>'
+    )
+    cy.get(iconOf('map.example')).should('be.visible')
+    cy.get(iconOf('a.example')).should('be.visible')
+    requestsFor('map.png').should('be.gte', 1)
+    requestsFor('map.example.png').should('eq', 0)
   })
 })
 

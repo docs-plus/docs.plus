@@ -96,6 +96,8 @@ You should see a paragraph with one link. Click the link to open the preview pop
 - **A host mark above `priority: 1000` splits one link into two icons.** That mark renders outside the link. When it covers part of a link, the `<a>` splits in two, and each part gets an icon.
 - **`Hyperlink.extend({ addMarkView })` replaces the icon mark view.** To keep the icon, call `this.parent?.()` and wrap its result.
 - **Legacy `link` marks get no icon.** Only the `hyperlink` mark renders through the icon mark view.
+- **A `{ light, dark }` pair has limits.** It needs `styles.css` or your own `.hyperlink-icon` size, or the span has zero width. A bad URL shows a blank 1em box. Browsers before Chrome 150, Firefox 150 and Safari 27 show the light image.
+- **A transient image failure hides that icon until reload.** The helper does not request a failed URL again.
 
 The full list, with the reason for each, is in [Caveats](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md#caveats).
 
@@ -154,6 +156,20 @@ Hyperlink.configure({
 ```
 
 The icon goes first inside each `<a>`, and the link text sits in a `<span>` after it. Only safe hrefs reach the function. `styles.css` sizes the icon to `1em`. See [Options](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md#options).
+
+Two helpers build that function for you. `linkIconMap` is an offline table from domain to icon. `linkIconFetcher` builds one `<img>` per link from the link's origin, for example through your own favicon route. Chain them with `??`, so a map hit wins and the fetcher helper never runs for it:
+
+```ts
+import { Hyperlink, linkIconFetcher, linkIconMap } from '@docs.plus/extension-hyperlink'
+
+const icons = linkIconMap({ 'example.com': '/icons/example.svg' })
+const favicons = linkIconFetcher({
+  src: (origin) => `/favicon?origin=${encodeURIComponent(origin)}`
+})
+Hyperlink.configure({ linkIcon: (ctx) => icons(ctx) ?? favicons(ctx) })
+```
+
+A map entry may also be a `{ light, dark }` pair of image URLs, or a function that returns an element. See [Link icons](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md#link-icons).
 
 ## Gallery
 

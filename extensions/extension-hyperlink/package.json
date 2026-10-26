@@ -38,7 +38,7 @@
     "build": "NODE_ENV=production bunx tsup",
     "dev": "bunx tsup --watch",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
-    "playground": "bun --hot docs-playground --entry ./test/playground/main.ts --port 5173",
+    "playground": "bun --hot docs-playground --entry ./test/playground/main.ts --port 5173 --readme-media-dir ./test/playground/icons",
     "test:unit": "bun test --isolate src",
     "test:unit:watch": "bun test --watch --isolate src",
     "pretest": "bun run build",

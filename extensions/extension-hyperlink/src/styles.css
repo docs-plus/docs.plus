@@ -17,6 +17,7 @@
   --hl-accent: light-dark(#2563eb, #60a5fa);
   --hl-accent-fg: light-dark(#ffffff, #0b1220);
   --hl-danger: light-dark(#dc2626, #f87171);
+  --hl-icon-tile: light-dark(transparent, #ffffff);
   /* Elevation matches the docs.plus floating-surface language: 10px shells with a
      two-layer overlay shadow (anchored panels), 8px inner controls. */
   --hl-shadow:
@@ -48,6 +49,9 @@
 }
 .ProseMirror .hyperlink-icon[hidden] {
   display: none;
+}
+.ProseMirror .hyperlink-icon-tile {
+  background-color: var(--hl-icon-tile);
 }
 
 /* Shared shell. Positioning is inline from createPopover (`zIndex` option). Lockstep copy in hypermultimedia media-toolbar.css. */

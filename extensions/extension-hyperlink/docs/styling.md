@@ -40,6 +40,7 @@ Every visual token is a `--hl-*` custom property. Colors use [`light-dark()`](ht
   --hl-accent: light-dark(#2563eb, #60a5fa);
   --hl-accent-fg: light-dark(#ffffff, #0b1220);
   --hl-danger: light-dark(#dc2626, #f87171);
+  --hl-icon-tile: light-dark(transparent, #ffffff);
   --hl-shadow:
     0 20px 25px -5px light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.5)),
     0 8px 10px -6px light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.4));
@@ -79,6 +80,8 @@ html[data-theme='dark'] {
 >   --hl-fg: #f3f4f6; /* … */
 > }
 > ```
+>
+> The same applies to the `linkIconFetcher` tile, whose `--hl-icon-tile` colour uses `light-dark()` in the stylesheet. A `{ light, dark }` pair is set inline, so a bundler never lowers it.
 
 ## Class names
 
@@ -94,6 +97,7 @@ Stable class names you can target:
 | `.hyperlink-preview-popover` | Preview toolbar root.                                                                                          |
 | `.hyperlink-edit-popover`    | Edit-link form root.                                                                                           |
 | `.hyperlink-icon`            | Icon from the `linkIcon` option, first inside the `<a>`. `styles.css` gives it a `1em` box and a `0.25em` gap. |
+| `.hyperlink-icon-tile`       | From `linkIconFetcher({ tile: true })`. `styles.css` paints `--hl-icon-tile` behind the icon.                  |
 | `.inputs-wrapper`            | Input group container (adds `.error` on validation).                                                           |
 | `.text-wrapper`              | Edit-form text input row (adds `.error`).                                                                      |
 | `.href-wrapper`              | Edit-form URL input row (adds `.error`).                                                                       |

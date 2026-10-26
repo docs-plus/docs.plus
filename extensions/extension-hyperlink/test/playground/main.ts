@@ -49,20 +49,44 @@ const enableClickSelection = params.get('clickSelection') === 'on'
 const exitable = params.get('exitable') === 'on'
 // `icons=element` draws a coloured box before every http(s) link, with no network.
 // `icons=throw` also throws for throw.example hrefs, for the console error spec.
+// `icons=map|fetcher|both` use the real helpers on the PNGs in ./icons; `tile=on` tiles fetched icons.
 const icons = params.get('icons')
+// One token per page load, so the HTTP cache cannot hide requests across Cypress tests.
+const RUN = Date.now()
+const media = (file: string): string => `/readme-media/${file}?run=${RUN}`
 
-const linkIcon =
+const boxIcon = ({ href }: HyperlinkModule.LinkIconContext): HTMLElement | null => {
+  window._iconCalls = (window._iconCalls ?? 0) + 1
+  if (icons === 'throw' && href.includes('throw.example')) throw new Error('icon failed')
+  if (!/^https?:/i.test(href)) return null
+  const box = document.createElement('span')
+  box.style.background = '#2563eb'
+  box.style.borderRadius = '2px'
+  return box
+}
+// Built once: each helper keeps its own failed-URL set.
+const mapIcon = HyperlinkModule.linkIconMap({
+  'foreman.example': media('map.png'),
+  'map.example': media('map.png'),
+  'pair.example': { light: media('light.png'), dark: media('dark.png') },
+  'factory.example': () =>
+    Object.assign(document.createElement('span'), { style: 'background:#16a34a' })
+})
+const fetchIcon = HyperlinkModule.linkIconFetcher({
+  src: (origin) => media(`${new URL(origin).hostname}.png`),
+  tile: params.get('tile') === 'on'
+})
+
+const linkIcon: HyperlinkModule.HyperlinkOptions['linkIcon'] =
   icons === 'element' || icons === 'throw'
-    ? ({ href }: HyperlinkModule.LinkIconContext): HTMLElement | null => {
-        window._iconCalls = (window._iconCalls ?? 0) + 1
-        if (icons === 'throw' && href.includes('throw.example')) throw new Error('icon failed')
-        if (!/^https?:/i.test(href)) return null
-        const box = document.createElement('span')
-        box.style.background = '#2563eb'
-        box.style.borderRadius = '2px'
-        return box
-      }
-    : undefined
+    ? boxIcon
+    : icons === 'map'
+      ? mapIcon
+      : icons === 'fetcher'
+        ? fetchIcon
+        : icons === 'both'
+          ? (ctx) => mapIcon(ctx) ?? fetchIcon(ctx)
+          : undefined
 if (linkIcon) window._iconCalls = 0
 
 // Stable reference for custom-popover.cy.ts; permissive so preview fixture hrefs pass.

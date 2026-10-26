@@ -30,10 +30,11 @@ const expectLinkKept = (iconed: boolean): void => {
   cy.get('#editor a > .hyperlink-icon').should('have.length', iconed ? 1 : 0)
 }
 
-// Every case runs twice: plain links, and links with an icon at the start of the <a>.
+// Every case runs three times: plain links, a span icon with no network, and a map <img> icon.
 const RUNS = [
   { query: '', label: '' },
-  { query: 'icons=element', label: ' (icons=element)' }
+  { query: 'icons=element', label: ' (icons=element)' },
+  { query: 'icons=map', label: ' (icons=map)' }
 ]
 
 RUNS.forEach(({ query, label }) => {
@@ -42,8 +43,14 @@ RUNS.forEach(({ query, label }) => {
       cy.visitPlayground({ query })
     })
 
+    // The map lists foreman.example, so its <img> icon must load before the first key.
+    const setFixture = (html: string): void => {
+      cy.setEditorContent(html)
+      if (query === 'icons=map') cy.get('#editor a .hyperlink-icon').should('be.visible')
+    }
+
     it('keeps a letter typed at the left edge plain when plain text comes before the link', () => {
-      cy.setEditorContent(`<p>question? ${LINK}</p>`)
+      setFixture(`<p>question? ${LINK}</p>`)
       typeAtLinkEdge('start', 'Q')
       expectLinkKept(query !== '')
       cy.get('#editor p').first().should('have.text', `question? Q${HREF}`)
@@ -57,7 +64,7 @@ RUNS.forEach(({ query, label }) => {
 
     blockStartFixtures.forEach(({ name, html, block }) => {
       it(`keeps a letter typed before a link that starts a ${name} plain`, () => {
-        cy.setEditorContent(html)
+        setFixture(html)
         typeAtLinkEdge('start', 'Q')
         expectLinkKept(query !== '')
         cy.get(`#editor ${block}`).first().should('have.text', `Q${HREF} after`)
@@ -65,21 +72,21 @@ RUNS.forEach(({ query, label }) => {
     })
 
     it('keeps a letter typed at the right end plain when text follows the link', () => {
-      cy.setEditorContent(`<p>${LINK} after</p>`)
+      setFixture(`<p>${LINK} after</p>`)
       typeAtLinkEdge('end', 'Q')
       expectLinkKept(query !== '')
       cy.get('#editor p').first().should('have.text', `${HREF}Q after`)
     })
 
     it('keeps a letter typed at the right end plain when the link ends its block', () => {
-      cy.setEditorContent(`<p>question? ${LINK}</p>`)
+      setFixture(`<p>question? ${LINK}</p>`)
       typeAtLinkEdge('end', 'Q')
       expectLinkKept(query !== '')
       cy.get('#editor p').first().should('have.text', `question? ${HREF}Q`)
     })
 
     it('keeps a space typed at the right end plain and the link in place', () => {
-      cy.setEditorContent(`<p>question? ${LINK}</p>`)
+      setFixture(`<p>question? ${LINK}</p>`)
       typeAtLinkEdge('end', ' ')
       expectLinkKept(query !== '')
       cy.getEditor().then((editor) => {

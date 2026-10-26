@@ -15,6 +15,10 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 - The `linkIcon` option draws an icon at the start of every link. It takes a sync function that receives `{ href }` and returns a fresh element, or `null` for a plain link. Only safe hrefs reach it ([#513](https://github.com/docs-plus/docs.plus/issues/513)).
 - The `LinkIconContext` type is a root export.
 - `styles.css` sizes `.hyperlink-icon` to a `1em` box with a `0.25em` gap.
+- `linkIconMap(entries)` builds a `linkIcon` function from an offline domain table. Subdomains match, the longest key wins, and `www.` is ignored ([#514](https://github.com/docs-plus/docs.plus/issues/514)).
+- `linkIconFetcher({ src, tile })` builds one `<img>` per link from the link's origin, for example through your own favicon route. It never requests a failed image URL again.
+- A `linkIconMap` entry may be a `{ light, dark }` pair of image URLs. The pair follows the app's `color-scheme` through `light-dark()`.
+- The `tile` option of `linkIconFetcher` adds the `.hyperlink-icon-tile` class, and the new `--hl-icon-tile` token paints a light square behind the icon on a dark scheme.
 
 ### Changed
 

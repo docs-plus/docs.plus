@@ -68,6 +68,54 @@ An iconed link has this DOM:
 - The clean-room tests run on `prosemirror-view` 1.42.6, the version `@tiptap/pm` 3.32.0 asks for.
 - With `linkIcon` unset, the package still registers a mark view, which draws the same `<a>` as `renderHTML`.
 
+#### `linkIconMap` and `linkIconFetcher`
+
+Two helpers build a `linkIcon` function. Building one creates no DOM and starts no request. Only the returned function does, when the mark view calls it.
+
+```ts
+linkIconMap(entries: Record<string, string | { light: string; dark: string } | (() => HTMLElement)>):
+  (ctx: LinkIconContext) => HTMLElement | null
+
+linkIconFetcher(options: { src: (origin: string) => string; tile?: boolean }):
+  (ctx: LinkIconContext) => HTMLElement | null
+```
+
+Chain them with `??`. The first non-null result wins, so a map hit never reaches the fetcher helper:
+
+```ts
+const icons = linkIconMap({ 'example.com': '/icons/example.svg' })
+const favicons = linkIconFetcher({
+  src: (origin) => `/favicon?origin=${encodeURIComponent(origin)}`
+})
+Hyperlink.configure({ linkIcon: (ctx) => icons(ctx) ?? favicons(ctx) })
+```
+
+`linkIconMap(entries)` is an offline table. The package ships no entries, so it holds only your own table. Each key is a bare hostname:
+
+- Only `http:` and `https:` hrefs match.
+- `www.` and a trailing dot are ignored on the key and on the href.
+- A subdomain matches its parent key, and the longest key wins. `docs.example` matches `https://a.docs.example`.
+- A host that no key names gets `null`. `docs.example` does not match `evildocs.example` or `docs.example.evil.example`.
+- IDN keys become punycode, like hrefs.
+- A key with `/`, `:`, `?`, `#`, `@`, `*`, `%` or a space throws a `TypeError`. A key holds no scheme, port, path or wildcard.
+- When two keys name one host, the later key wins. No error is thrown.
+
+Each entry gives one kind of icon:
+
+- **An image URL** gives an `<img>`. It stays hidden until it loads, so a missing image leaves the link plain.
+- **A `{ light, dark }` pair** gives an empty `<span>` with `background-image: light-dark(url(light), url(dark))`. It follows the app's `color-scheme`, with no listener. Browsers without the image form of `light-dark()` show the light image.
+- **A function** is called once per link and must return a fresh element with no text.
+
+`linkIconFetcher({ src, tile })` builds one `<img>` per link. It calls `src` with the link's origin, never the path, and returns `null` for any href that is not `http:` or `https:`.
+
+- Every link on one origin gets the same image URL, so the browser HTTP cache makes one request per origin.
+- The `<img>` stays hidden until it loads. An icon that is already in the cache shows at once when a link is drawn again.
+- `tile: true` adds the `hyperlink-icon-tile` class to every icon it returns. `styles.css` then puts a light square behind the icon on a dark `color-scheme`. The default is `false`.
+
+Each helper keeps its own set of image URLs that failed once. It never requests one of those URLs again, so a known miss costs no request.
+
+**Privacy.** `linkIconFetcher` sends the origin of every link to your `src` endpoint, from the reader's browser, when the document opens. If `src` points at a third party, that party sees the reader's IP address and every linked origin.
+
 ## Commands
 
 Every command below lands on `editor.commands` and on `editor.chain()`. On `editor.commands`, each returns `boolean`, and `false` marks a no-op.
@@ -139,16 +187,18 @@ The mark runs at `priority: 1000`, above the Tiptap default `100`. `@tiptap/exte
 - **A host mark above `priority: 1000` splits one link into two icons.** That mark renders outside the link. When it covers part of a link, the `<a>` splits in two, and each part gets an icon.
 - **`Hyperlink.extend({ addMarkView })` replaces the icon mark view.** Tiptap gives no warning. To keep the icon, call `this.parent?.()` and wrap its result.
 - **Legacy `link` marks get no icon.** Only the `hyperlink` mark renders through the icon mark view.
+- **A `{ light, dark }` pair has limits.** It needs `styles.css` or your own `.hyperlink-icon` size, or the span has zero width. A bad URL shows a blank 1em box. Browsers before Chrome 150, Firefox 150 and Safari 27 show the light image.
+- **A transient image failure hides that icon until reload.** The helper does not request a failed URL again.
 
 ## Server bundles
 
-Module scope touches no browser API, so a server bundle can import the package. [`createPopover`](./advanced.md#floating-popover-primitive), [the three openers](./popovers.md#openers), the three prebuilt popover factories, `attachTooltip`, `createHTMLElement`, and `copyToClipboard` read `document` or `navigator`, so call them in the browser only.
+Module scope touches no browser API, so a server bundle can import the package. [`createPopover`](./advanced.md#floating-popover-primitive), [the three openers](./popovers.md#openers), the three prebuilt popover factories, `attachTooltip`, `createHTMLElement`, and `copyToClipboard` read `document` or `navigator`, so call them in the browser only. Building `linkIconMap` or `linkIconFetcher` is safe on a server, but the functions they return create DOM, so call those in the browser only.
 
 ## TypeScript
 
 The package bundles the type definitions. The complete public surface, grouped by role:
 
-- **Extension** — `Hyperlink`, also the default export. Types `HyperlinkOptions`, `HyperlinkAttributes`, `HyperlinkStorage`, `HyperlinkPublicCommands`, `SetHyperlinkAttributes`, `EditHyperlinkAttributes`, `IsAllowedUriContext`, `LinkProtocolOptions`, `LinkIconContext` (the `linkIcon` argument, `{ href: string }`). `HyperlinkAttributes` is generic. `HyperlinkAttributes<{ ariaLabel: string }>` extends the built-in `href` / `target` / `rel` / `class` / `title` / `image` keys with your own typed fields. The default parameter is `Record<string, unknown>`, so the unparameterized type stays open; supplying your own `Extra` replaces it and closes the type.
+- **Extension** — `Hyperlink`, also the default export. Types `HyperlinkOptions`, `HyperlinkAttributes`, `HyperlinkStorage`, `HyperlinkPublicCommands`, `SetHyperlinkAttributes`, `EditHyperlinkAttributes`, `IsAllowedUriContext`, `LinkProtocolOptions`, `LinkIconContext` (the `linkIcon` argument, `{ href: string }`). Link-icon helpers `linkIconMap` and `linkIconFetcher`, see [`linkIconMap` and `linkIconFetcher`](#linkiconmap-and-linkiconfetcher). `HyperlinkAttributes` is generic. `HyperlinkAttributes<{ ariaLabel: string }>` extends the built-in `href` / `target` / `rel` / `class` / `title` / `image` keys with your own typed fields. The default parameter is `Record<string, unknown>`, so the unparameterized type stays open; supplying your own `Extra` replaces it and closes the type.
 - **Popover factories** — `previewHyperlinkPopover`, `createHyperlinkPopover`, `editHyperlinkPopover`. Types `PreviewHyperlinkOptions`, `CreateHyperlinkOptions`, `EditHyperlinkOptions`, documented under [Popover-factory option shapes](./popovers.md#popover-factory-option-shapes).
 - **Openers** — `openPreviewHyperlink`, `openEditHyperlink`, `openCreateHyperlink`, `buildPreviewOptionsFromAnchor`. Type `BuildPreviewOptionsFromAnchorArgs`. See [Openers](./popovers.md#openers).
 - **Floating-popover primitive** — `createPopover`, `DEFAULT_OFFSET`. Types `Popover`, `PopoverOptions`. See [Floating-popover primitive](./advanced.md#floating-popover-primitive).

@@ -9,6 +9,7 @@ const DOCUMENTED_CSS_VARS = [
   '--hl-accent',
   '--hl-accent-fg',
   '--hl-danger',
+  '--hl-icon-tile',
   '--hl-radius',
   '--hl-radius-sm',
   '--hl-shadow',
@@ -25,7 +26,8 @@ const PUBLIC_CLASS_NAMES = [
   '.hyperlink-create-popover',
   '.hyperlink-preview-popover',
   '.hyperlink-edit-popover',
-  '.hyperlink-icon'
+  '.hyperlink-icon',
+  '.hyperlink-icon-tile'
 ]
 
 const ruleExists = (doc: Document, selector: string): boolean => {
