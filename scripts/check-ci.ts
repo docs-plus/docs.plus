@@ -25,7 +25,9 @@ const SHARED_EXACT = new Set([
   'scripts/publishable-extensions.ts',
   'scripts/build-extensions.sh',
   'scripts/run-tests.sh',
-  'scripts/extension-preflight.sh'
+  'scripts/extension-preflight.sh',
+  'scripts/check-quickstart-example.ts',
+  '.github/workflows/prod.docs.plus.yml'
 ])
 const SHARED_PREFIXES = [
   'packages/floating-popover/',
@@ -34,12 +36,15 @@ const SHARED_PREFIXES = [
   'packages/release-tooling/',
   '.github/actions/build-extensions/',
   '.github/actions/setup-cypress/',
-  '.github/actions/setup-bun/'
+  '.github/actions/setup-bun/',
+  '.github/filters/'
 ]
 // The hypermultimedia suite imports hyperlink, so the filter keys it on both.
 const ALSO_WATCHES: Partial<Record<string, string[]>> = {
   'extension-hypermultimedia': ['extension-hyperlink']
 }
+// The filter's `_readme_media` excludes: no suite or preflight reads README media.
+const README_MEDIA = /^extensions\/[^/]+\/(assets\/|[^/]+\.(gif|png|jpe?g|webp|mp4)$)/
 
 const SUPABASE_STUB = {
   NEXT_PUBLIC_RESTAPI_URL: process.env.NEXT_PUBLIC_RESTAPI_URL || 'http://localhost:4000',
@@ -100,7 +105,11 @@ function extensionsFor(changed: string[]): string[] {
     return [...PUBLISHABLE_EXTENSION_DIRS]
   }
   const touched = (dir: string) =>
-    changed.some((file) => file === `extensions/${dir}` || file.startsWith(`extensions/${dir}/`))
+    changed.some(
+      (file) =>
+        !README_MEDIA.test(file) &&
+        (file === `extensions/${dir}` || file.startsWith(`extensions/${dir}/`))
+    )
   return PUBLISHABLE_EXTENSION_DIRS.filter(
     (dir) => touched(dir) || (ALSO_WATCHES[dir] ?? []).some(touched)
   )

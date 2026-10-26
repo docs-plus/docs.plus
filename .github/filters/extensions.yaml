@@ -1,7 +1,7 @@
-# Shared inputs that affect ALL extensions — appended to every key via YAML anchor.
-# Keep in sync with build-extensions cache hashFiles (.github/actions/build-extensions).
-# Test-only paths (playground, run-tests.sh, setup-cypress) trigger extension-tests
-# but do not need a cache bust — dist bytes are unchanged.
+# Shared inputs for ALL extensions, appended to every key via YAML anchor.
+# Mirrored in scripts/check-ci.ts; dist inputs also in build-extensions hashFiles.
+# Test-only entries (playground, run-tests.sh, setup-cypress, the quickstart check,
+# the workflow, this folder) run the suites but need no cache bust: dist is unchanged.
 _shared: &shared
   - 'package.json'
   - 'bun.lock'
@@ -18,26 +18,44 @@ _shared: &shared
   - 'scripts/build-extensions.sh'
   - 'scripts/run-tests.sh'
   - 'scripts/extension-preflight.sh'
+  # extension-preflight.sh runs it to compare each README Quickstart with examples/vanilla.
+  - 'scripts/check-quickstart-example.ts'
+  # The workflow that runs these suites, and this filter.
+  - '.github/workflows/prod.docs.plus.yml'
+  - '.github/filters/**'
   # Implements `release-preflight`, which every extension's prepublishOnly runs.
   - 'packages/release-tooling/**'
 
+# README media: no suite, build or preflight reads it. The step sets
+# predicate-quantifier: 'some-with-excludes', so a '!' rule is final for its key.
+# README.md, CHANGELOG.md and package.json stay in, because the preflight reads them.
+_readme_media: &readme_media
+  - '!extensions/*/assets/**'
+  - '!extensions/*/*.{gif,png,jpg,jpeg,webp,mp4}'
+
 extension-indent:
   - *shared
+  - *readme_media
   - 'extensions/extension-indent/**'
 extension-hyperlink:
   - *shared
+  - *readme_media
   - 'extensions/extension-hyperlink/**'
 extension-hypermultimedia:
   - *shared
+  - *readme_media
   - 'extensions/extension-hypermultimedia/**'
   # Its playground imports extension-hyperlink, and linked-image.cy.ts tests that pair.
   - 'extensions/extension-hyperlink/**'
 extension-inline-code:
   - *shared
+  - *readme_media
   - 'extensions/extension-inline-code/**'
 extension-placeholder:
   - *shared
+  - *readme_media
   - 'extensions/extension-placeholder/**'
 extension-mermaid:
   - *shared
+  - *readme_media
   - 'extensions/extension-mermaid/**'

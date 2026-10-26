@@ -148,6 +148,8 @@ jobs:
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         with:
           filters: .github/filters/extensions.yaml
+          # Under the default 'some', a '!' rule matches every other file and starts every suite.
+          predicate-quantifier: 'some-with-excludes'
 
       - id: assemble
         env:
