@@ -41,6 +41,11 @@ Migration section for when it goes. As the last step, run
   on Notion. `LINK_ICON_MAX_BYTES` caps one icon at 32768 bytes by default, so the LinkedIn
   and Figma icons fit. A link with no icon gets an empty `204`, so the browser console shows
   no `404` ([#515](https://github.com/docs-plus/docs.plus/issues/515)).
+- Every pad link shows a link icon before its text: the site's favicon, the docs.plus logo,
+  or a mail or phone glyph. A link with no icon stays a plain link
+  ([#516](https://github.com/docs-plus/docs.plus/issues/516)).
+- The Home Screen app now has a launch image for every current iPhone size, so no iPhone
+  opens it on a black screen ([#255](https://github.com/docs-plus/docs.plus/issues/255)).
 
 ### Changed
 
@@ -52,6 +57,13 @@ Migration section for when it goes. As the last step, run
   70 to 120 KB of Redis traffic per keystroke instead of 281 KB on a large edited document. A
   patch on `@hocuspocus/extension-redis` 3.4.4 sends the sync request at most once per 250 ms
   ([#595](https://github.com/docs-plus/docs.plus/issues/595)).
+- A large pad opens faster. The editor now mounts before the first sync, so a cold load
+  builds each block once, not twice in production. On a 2000-link pad, the link icons add
+  26 ms to the first fill frame instead of 117 ms
+  ([#516](https://github.com/docs-plus/docs.plus/issues/516)).
+- The production deploy builds the images in their own `images` job first. The deploy stops
+  before it changes production when an image is missing, or when the host env file changed
+  between the two jobs ([#565](https://github.com/docs-plus/docs.plus/issues/565)).
 
 ### Fixed
 

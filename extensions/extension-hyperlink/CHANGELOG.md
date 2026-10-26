@@ -27,10 +27,11 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 - With `linkIcon` set, an iconed `<a>` holds the icon first, then the link text in a `<span>`. No icon reaches `getHTML()`, Markdown, or the clipboard.
 - A click on a link icon puts the caret at the link start.
 - The clean-room tests run on `prosemirror-view` 1.42.6. They ran on 1.42.3.
+- `linkIconFetcher` and `linkIconMap` request each image URL once. The first `<img>` for a URL makes the request, and later ones stay hidden until it loads, then take the cached image. A failed URL keeps its images hidden with no new request ([#516](https://github.com/docs-plus/docs.plus/issues/516)).
 
 ### Fixed
 
-- Parsed and pasted `<a href>` now becomes `hyperlink` even when StarterKit's Link stays registered. The `a[href]` parse rule runs at priority 51, above the ProseMirror default of 50. Before, the mark registered first won, which was usually Link. A host that keeps Link to load stored `link` marks now gets a `hyperlink` mark, its icon and its popovers on paste.
+- Parsed and pasted `<a href>` now becomes `hyperlink` even when StarterKit's Link stays registered. The `a[href]` parse rule runs at priority 51, above the ProseMirror default of 50. Before, the mark registered first won, which was usually Link. A host that keeps Link to load stored `link` marks now gets a `hyperlink` mark, its icon and its popovers on paste ([#636](https://github.com/docs-plus/docs.plus/issues/636)).
 - The prebuilt edit popover fills Text from the document, not from `innerText`. Before, CSS such as `text-transform` could change the text that Apply wrote back ([#518](https://github.com/docs-plus/docs.plus/issues/518)).
 
 ## [2.2.0] — 2026-10-22

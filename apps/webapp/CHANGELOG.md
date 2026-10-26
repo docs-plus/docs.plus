@@ -24,12 +24,21 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   favicon from our own icon route. A link with no icon stays a plain link. Print and the chat
   composer show no link icons. This goes against Google Docs, Word and Notion on purpose
   (maintainer ruling, 2026-10-17).
+- The Home Screen app links launch images for 440x956, 402x874, 420x912, 428x926 and 375x812
+  at 3x, next to the three sizes it had. Every other iPhone, the iPhone 17 line among them,
+  used to open on a black screen ([#255](https://github.com/docs-plus/docs.plus/issues/255)).
 
 ### Changed
 
 - A plain click on a link to another pad now opens that pad in the same window, in the pad and
   in chat. Mod-click and middle-click still open a new tab
   ([#359](https://github.com/docs-plus/docs.plus/issues/359)).
+- `EditorContent` mounts the Tiptap editor hidden while `providerSyncing` is true, under the
+  skeleton or `SyncErrorCard`. Mounted after the fill, its `createNodeViews()` rebuilt every
+  block: 4 builds per cold load in dev and 2 in production. Now the fill builds once, and a
+  sync error flip keeps the editor mounted. On a 2000-link pad, anchors created per load fell
+  from 8004 to 2004, and the link-icon cost in the fill frame from +117 ms to +26 ms
+  ([#516](https://github.com/docs-plus/docs.plus/issues/516)).
 
 ### Fixed
 
