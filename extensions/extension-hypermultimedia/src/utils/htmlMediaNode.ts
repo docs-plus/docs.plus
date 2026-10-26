@@ -16,7 +16,7 @@ import {
 } from '../loading'
 import { EMBED_LAYOUT_ATTR_KEYS, embedAttrsEqual } from './embedKit'
 import { ignoreNodeViewSubtreeMutation } from './ignoreNodeViewMutation'
-import { formatMediaLayoutCss, mediaLayoutStyleProps, splitCaptionLayoutCss } from './layoutStyle'
+import { captionLayoutCss, mediaLayoutStyleProps } from './layoutStyle'
 import { omitNullishAndFalse, type StyleLayoutOptions } from './utils'
 
 export interface HtmlMediaNodeConfig {
@@ -164,8 +164,7 @@ export function renderHtmlMediaHTML(
     options
   )
   const caption = readCaption(node)
-  const split = caption ? splitCaptionLayoutCss(layoutProps) : null
-  const style = split ? split.media : formatMediaLayoutCss(layoutProps)
+  const { media: style, figure } = captionLayoutCss(layoutProps, caption != null)
 
   const htmlAttributes = pickMediaElementAttrs(node, HTMLAttributes, config.elementAttrKeys)
 
@@ -183,5 +182,5 @@ export function renderHtmlMediaHTML(
     { [`data-${config.tag}`]: '', class: mediaClass, style },
     [config.tag, mergeAttributes(htmlAttributes, layout, { class: mediaClass, style })]
   ]
-  return wrapRenderWithCaption(rendered, caption, split?.figure)
+  return wrapRenderWithCaption(rendered, caption, figure)
 }

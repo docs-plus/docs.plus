@@ -18,11 +18,12 @@ export const metadataQuerySchema = z.object({
 
 export type MetadataQuery = z.infer<typeof metadataQuerySchema>
 
-export const ICON_ORIGIN_MAX_LENGTH = 300
+const ICON_ORIGIN_MAX_LENGTH = 300
 
 export const iconQuerySchema = z.object({
   origin: z
     .string()
     .max(ICON_ORIGIN_MAX_LENGTH)
-    .refine((origin) => isIconOrigin(origin) && isSafeUrl(origin))
+    .refine(isIconOrigin, { message: 'INVALID_URL', abort: true })
+    .refine(isSafeUrl, { message: 'BLOCKED_URL' })
 })

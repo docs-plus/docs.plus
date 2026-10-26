@@ -21,7 +21,7 @@ import {
   resolveFullscreenIframeAttributes
 } from './embedKit'
 import { ignoreNodeViewSubtreeMutation } from './ignoreNodeViewMutation'
-import { formatMediaLayoutCss, mediaLayoutStyleProps, splitCaptionLayoutCss } from './layoutStyle'
+import { captionLayoutCss, mediaLayoutStyleProps } from './layoutStyle'
 import type { StyleLayoutOptions } from './utils'
 
 export type IframeAttrs = Record<string, unknown>
@@ -249,8 +249,7 @@ export function renderIframeEmbedHTML<TOptions extends IframeEmbedNodeOptions>(
     'export-embed'
   )
   const caption = readCaption(node)
-  const split = caption ? splitCaptionLayoutCss(layoutProps) : null
-  const style = split ? split.media : formatMediaLayoutCss(layoutProps)
+  const { media: style, figure } = captionLayoutCss(layoutProps, caption != null)
 
   const iframeAttrs = config.resolveIframeAttributes(node.attrs, options, width, height)
   const { allowfullscreen, ...restIframeAttrs } = iframeAttrs
@@ -270,5 +269,5 @@ export function renderIframeEmbedHTML<TOptions extends IframeEmbedNodeOptions>(
       })
     ]
   ]
-  return wrapRenderWithCaption(rendered, caption, split?.figure)
+  return wrapRenderWithCaption(rendered, caption, figure)
 }

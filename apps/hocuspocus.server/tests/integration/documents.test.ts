@@ -8,26 +8,7 @@ let serviceRoleClient: unknown = null
 // client. Do NOT mock `lib/auth` itself — that sticky mock.module poisons later
 // suites (e.g. auth.test.ts) in the same bun test process.
 mock.module('../../src/lib/supabase', () => ({
-  getAnonClient: () => ({
-    auth: {
-      getUser: async (token: string) => {
-        // Other test files map these tokens too. bun test shares one process and
-        // one token cache, so a shared token must map to the same user id in every file.
-        const users: Record<string, { id: string; email: string }> = {
-          'valid-test-token': { id: 'user-123', email: 'owner@example.com' },
-          'other-user-token': { id: 'user-456', email: 'other@example.com' }
-        }
-        const user = users[token]
-        if (user) {
-          return {
-            data: { user: { ...user, is_anonymous: false, user_metadata: {} } },
-            error: null
-          }
-        }
-        return { data: { user: null }, error: { status: 401, message: 'invalid' } }
-      }
-    }
-  }),
+  getAnonClient: () => ({ auth: { getUser: stubGetUser } }),
   getServiceRoleClient: () => serviceRoleClient
 }))
 
@@ -41,15 +22,20 @@ mock.module('../../src/api/services/documentPurge.service', () => ({
   }
 }))
 
-import { mkdtemp, readdir, rm } from 'fs/promises'
-import os from 'os'
+import { readdir } from 'fs/promises'
 import path from 'path'
 import { Hono } from 'hono'
 import * as Y from 'yjs'
 import { searchDocuments } from '../../src/api/services/documents.service'
 import documentsRouter from '../../src/api/routers/documents.router'
 import { config } from '../../src/config/env'
-import { TestServer, createMockPrisma, createMockRedis } from '../helpers/test-server'
+import {
+  TestServer,
+  createMockPrisma,
+  createMockRedis,
+  stubGetUser,
+  useTempLocalStore
+} from '../helpers/test-server'
 import {
   validDocument,
   invalidDocument,
@@ -1365,18 +1351,13 @@ describe('Documents API', () => {
 
     // A copy is public, so copying an object it may not read would serve that media again.
     test("copies only live media the owner may read, never another user's Private or a trashed one", async () => {
-      const localStore = config.storage.local as { enabled: boolean }
-      const originalEnabled = localStore.enabled
-      const originalPath = process.env.LOCAL_STORAGE_PATH
-      const storageDir = await mkdtemp(path.join(os.tmpdir(), 'dup-media-'))
+      const { dir: storageDir, restore } = await useTempLocalStore('dup-media-')
       const media = [
         ['private-doc', 'secret.png'],
         ['trashed-doc', 'gone.png'],
         ['abc123', 'own.png']
       ]
       try {
-        process.env.LOCAL_STORAGE_PATH = storageDir
-        localStore.enabled = true
         // Every source object exists, so only the filter can keep one out of the copy.
         for (const [prefix, fileName] of media) {
           await Bun.write(path.join(storageDir, prefix, fileName), `bytes of ${fileName}`)
@@ -1436,10 +1417,7 @@ describe('Documents API', () => {
         expect(stored).not.toContain('/private-doc/')
         expect(stored).not.toContain('/trashed-doc/')
       } finally {
-        localStore.enabled = originalEnabled
-        if (originalPath === undefined) delete process.env.LOCAL_STORAGE_PATH
-        else process.env.LOCAL_STORAGE_PATH = originalPath
-        await rm(storageDir, { recursive: true, force: true })
+        await restore()
       }
     })
   })

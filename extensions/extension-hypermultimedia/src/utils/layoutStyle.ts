@@ -143,9 +143,12 @@ export function formatMediaLayoutCss(props: LayoutStyleBag): string {
  * The stylesheet makes the figure inline-block, which shrinks to its content and
  * turns an inner `auto` margin into 0. Inline `display:table` keeps `margin:auto` working.
  */
-export function splitCaptionLayoutCss(props: LayoutStyleBag): { figure: string; media: string } {
-  // maxWidth is set only for a floated media node (resolvePlacement).
-  if (props.maxWidth == null) {
+export function captionLayoutCss(
+  props: LayoutStyleBag,
+  captioned: boolean
+): { figure: string; media: string } {
+  if (!captioned) return { figure: '', media: formatMediaLayoutCss(props) }
+  if (!isFloatedMedia(props.float)) {
     const { clear, margin, ...rest } = props
     return {
       figure: formatMediaLayoutCss({ ...EMPTY_BAG, display: 'table', clear, margin }),

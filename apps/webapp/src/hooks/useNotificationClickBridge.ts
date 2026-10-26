@@ -3,7 +3,7 @@ import { trackClientRead } from '@components/notificationPanel/feed/readDedupe'
 import { NOTIFICATION_STATE_CHANGED } from '@services/eventsHub'
 import { openChatFromLink } from '@services/openChatFromLink'
 import { useAuthStore, useStore } from '@stores'
-import { padSlugOf } from '@utils/filterRoute'
+import { padSlugOf, shallowPath } from '@utils/filterRoute'
 import { isPushSupported } from '@utils/push-notifications'
 import Router, { useRouter } from 'next/router'
 import PubSub from 'pubsub-js'
@@ -62,7 +62,7 @@ const handleNotificationClick = async (event: MessageEvent) => {
     } else {
       // Another pad's chatroom id would open on this pad, so load its page.
       // The path only, so an absolute action_url stays on this origin.
-      const target = urlObj.pathname + urlObj.search + urlObj.hash
+      const target = shallowPath(urlObj)
       const { pathname, search, hash } = window.location
       if (target !== pathname + search + hash) {
         window.location.assign(target)
@@ -96,9 +96,7 @@ export function useNotificationClickBridge() {
       if (pendingIdRef.current) {
         // Strip before the session wait, so Share never copies the id.
         url.searchParams.delete(NOTIFICATION_ID_PARAM)
-        void Router.replace(`${url.pathname}${url.search}${url.hash}`, undefined, {
-          shallow: true
-        })
+        void Router.replace(shallowPath(url), undefined, { shallow: true })
       }
     }
     const notificationId = pendingIdRef.current

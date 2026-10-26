@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, test, mock } from 'bun:test'
 
 import * as realUtils from '../../src/api/utils/supabase'
 import * as realSupabase from '../../src/lib/supabase'
+import { createMockPrisma, stubGetUser, TestServer } from '../helpers/test-server'
 
 const ADMIN_ID = 'admin-1'
 
@@ -10,11 +11,7 @@ const CONNECTED_APP_TOKEN = `e30.${Buffer.from(
   JSON.stringify({ sub: ADMIN_ID, client_id: 'app' })
 ).toString('base64url')}.sig`
 
-// Other test files map these tokens too. bun test shares one process and one
-// token cache, so a shared token must map to the same user id in every file.
-const USERS: Record<string, string> = {
-  'valid-test-token': 'user-123',
-  'other-user-token': 'user-456',
+const ADMIN_TOKENS: Record<string, string> = {
   'admin-token': ADMIN_ID,
   // An admin, so only the client_id check can refuse it.
   [CONNECTED_APP_TOKEN]: ADMIN_ID
@@ -44,20 +41,7 @@ const adminUsersStub = {
 const mockedSupabase = () => ({
   ...realSupabase,
   getAnonClient: () => ({
-    auth: {
-      getUser: async (token: string) => {
-        const id = USERS[token]
-        if (id) {
-          return {
-            data: {
-              user: { id, email: `${id}@example.com`, is_anonymous: false, user_metadata: {} }
-            },
-            error: null
-          }
-        }
-        return { data: { user: null }, error: { status: 401, message: 'invalid' } }
-      }
-    }
+    auth: { getUser: (token: string) => stubGetUser(token, ADMIN_TOKENS) }
   }),
   getServiceRoleClient: () => serviceRoleClient
 })
@@ -75,7 +59,6 @@ mock.module('../../src/api/utils/supabase', () => ({
 import { Hono } from 'hono'
 
 import adminRouter from '../../src/api/routers/admin.router'
-import { createMockPrisma, TestServer } from '../helpers/test-server'
 
 // A dropped `admin.use('*', adminAuthMiddleware)` lets anyone delete users.
 describe('admin guard', () => {

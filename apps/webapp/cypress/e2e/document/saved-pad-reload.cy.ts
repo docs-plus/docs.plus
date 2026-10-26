@@ -4,9 +4,15 @@
  * is the proof that an edit was saved. Local-only: no CI lane runs e2e/document/**.
  */
 
-import { pad, rand, seedPad, waitForHeadText } from '../../support/documentStack'
+import {
+  PAST_PERSIST_DEBOUNCE_MS,
+  freshSlug,
+  pad,
+  rand,
+  seedPad,
+  waitForHeadText
+} from '../../support/documentStack'
 
-const freshSlug = () => `e2e-saved-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 const PROVIDER_URL = 'ws://localhost:4001' // NEXT_PUBLIC_PROVIDER_URL under `make dev-local`
 
 // Queued through cy.then, so it runs in command order and Cypress waits for it.
@@ -38,7 +44,7 @@ describe('edits on a saved pad reach the Postgres head (full stack)', () => {
   let slug: string
 
   beforeEach(() => {
-    slug = freshSlug()
+    slug = freshSlug('saved')
     cy.viewport(1280, 800)
   })
 
@@ -79,7 +85,7 @@ describe('edits on a saved pad reach the Postgres head (full stack)', () => {
 
       // Past the debounce. A live socket would have saved the edit by now, and the
       // rest of this test would prove nothing.
-      cy.wait(13000)
+      cy.wait(PAST_PERSIST_DEBOUNCE_MS)
       cy.task<string | null>('queryDocHeadText', documentId).should('not.contain', token)
 
       setOffline(false)

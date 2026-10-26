@@ -49,13 +49,6 @@ COPY packages/playground/package.json ./packages/playground/
 # so the packages/* workspace member resolves for --frozen-lockfile.
 COPY packages/document-swarm/package.json ./packages/document-swarm/
 
-# Copy ALL workspace package.json files (required for bun lockfile resolution)
-COPY extensions/extension-hyperlink/package.json ./extensions/extension-hyperlink/
-COPY extensions/extension-hypermultimedia/package.json ./extensions/extension-hypermultimedia/
-COPY extensions/extension-indent/package.json ./extensions/extension-indent/
-COPY extensions/extension-inline-code/package.json ./extensions/extension-inline-code/
-COPY extensions/extension-placeholder/package.json ./extensions/extension-placeholder/
-COPY extensions/extension-mermaid/package.json ./extensions/extension-mermaid/
 COPY apps/webapp/package.json ./apps/webapp/
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/hocuspocus.server/package.json ./apps/hocuspocus.server/
@@ -65,13 +58,6 @@ COPY packages/email-templates ./packages/email-templates
 # external), so their source must be present and built before those extensions build.
 COPY packages/floating-popover ./packages/floating-popover
 COPY packages/floating-tooltip ./packages/floating-tooltip
-# Copy extension source so workspace deps (e.g. @tiptap/core for DTS build) are installed and resolvable
-COPY extensions/extension-hyperlink ./extensions/extension-hyperlink
-COPY extensions/extension-hypermultimedia ./extensions/extension-hypermultimedia
-COPY extensions/extension-indent ./extensions/extension-indent
-COPY extensions/extension-inline-code ./extensions/extension-inline-code
-COPY extensions/extension-placeholder ./extensions/extension-placeholder
-COPY extensions/extension-mermaid ./extensions/extension-mermaid
 
 # No install here on purpose. Nothing copies node_modules out of this stage —
 # build-extensions and builder each copy only manifests and source, then install

@@ -295,10 +295,7 @@ const statelessExtension = {
         return
       }
 
-      if (
-        (type === LIST_TYPE && listCoolingDown(connection, Date.now())) ||
-        (type === WATCH_TYPE && watchOverBudget(connection, Date.now()))
-      ) {
+      const sendRateLimited = () =>
         sendHistoryResponse(
           connection,
           type,
@@ -306,6 +303,12 @@ const statelessExtension = {
           { error: HISTORY_FAILED, reason: 'rate-limited' },
           echo
         )
+
+      if (
+        (type === LIST_TYPE && listCoolingDown(connection, Date.now())) ||
+        (type === WATCH_TYPE && watchOverBudget(connection, Date.now()))
+      ) {
+        sendRateLimited()
         return
       }
 
@@ -316,13 +319,7 @@ const statelessExtension = {
           { admitWatch: (encodedBytes) => admitWatchBytes(connection, Date.now(), encodedBytes) }
         )
         if (response === WATCH_RATE_LIMITED) {
-          sendHistoryResponse(
-            connection,
-            type,
-            null,
-            { error: HISTORY_FAILED, reason: 'rate-limited' },
-            echo
-          )
+          sendRateLimited()
           return
         }
         sendHistoryResponse(connection, type, response, undefined, echo)

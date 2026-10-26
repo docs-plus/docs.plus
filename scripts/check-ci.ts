@@ -16,35 +16,29 @@ import { PUBLISHABLE_EXTENSION_DIRS } from './publishable-extensions.ts'
 
 const ROOT = resolve(import.meta.dir, '..')
 
-// Keep in sync with `.github/filters/extensions.yaml` (`_shared` + per-package).
-const SHARED_EXACT = new Set([
-  'package.json',
-  'bun.lock',
-  'tsconfig.base.json',
-  'tsup.base.ts',
-  'scripts/publishable-extensions.ts',
-  'scripts/build-extensions.sh',
-  'scripts/run-tests.sh',
-  'scripts/extension-preflight.sh',
-  'scripts/check-quickstart-example.ts',
-  '.github/workflows/prod.docs.plus.yml'
-])
-const SHARED_PREFIXES = [
-  'packages/floating-popover/',
-  'packages/floating-tooltip/',
-  'packages/playground/',
-  'packages/release-tooling/',
-  '.github/actions/build-extensions/',
-  '.github/actions/setup-cypress/',
-  '.github/actions/setup-bun/',
-  '.github/filters/'
-]
-// The hypermultimedia suite imports hyperlink, so the filter keys it on both.
-const ALSO_WATCHES: Partial<Record<string, string[]>> = {
-  'extension-hypermultimedia': ['extension-hyperlink']
+// CI selects extension suites with this filter. Reading it here stops a hand copy from drifting.
+// Anchors parse as nested lists, so flatten. CI uses 'some-with-excludes': a '!' rule is final.
+const FILTER = Bun.YAML.parse(
+  await Bun.file(resolve(ROOT, '.github/filters/extensions.yaml')).text()
+) as Record<string, unknown[]>
+const FILTER_GLOBS = new Map<string, { include: Bun.Glob[]; exclude: Bun.Glob[] }>()
+for (const [key, rules] of Object.entries(FILTER)) {
+  if (key.startsWith('_')) continue
+  const globs = rules.flat(Infinity) as string[]
+  FILTER_GLOBS.set(key, {
+    include: globs.filter((glob) => !glob.startsWith('!')).map((glob) => new Bun.Glob(glob)),
+    exclude: globs.filter((glob) => glob.startsWith('!')).map((glob) => new Bun.Glob(glob.slice(1)))
+  })
 }
-// The filter's `_readme_media` excludes: no suite or preflight reads README media.
-const README_MEDIA = /^extensions\/[^/]+\/(assets\/|[^/]+\.(gif|png|jpe?g|webp|mp4)$)/
+
+function selects(dir: string, file: string): boolean {
+  const globs = FILTER_GLOBS.get(dir)
+  if (!globs) return false
+  return (
+    globs.include.some((glob) => glob.match(file)) &&
+    !globs.exclude.some((glob) => glob.match(file))
+  )
+}
 
 const SUPABASE_STUB = {
   NEXT_PUBLIC_RESTAPI_URL: process.env.NEXT_PUBLIC_RESTAPI_URL || 'http://localhost:4000',
@@ -95,24 +89,9 @@ async function changedPaths(): Promise<string[]> {
   return [...files]
 }
 
-function hitsShared(file: string): boolean {
-  if (SHARED_EXACT.has(file)) return true
-  return SHARED_PREFIXES.some((prefix) => file.startsWith(prefix))
-}
-
 function extensionsFor(changed: string[]): string[] {
-  if (changed.includes('FORCE_ALL') || changed.some(hitsShared)) {
-    return [...PUBLISHABLE_EXTENSION_DIRS]
-  }
-  const touched = (dir: string) =>
-    changed.some(
-      (file) =>
-        !README_MEDIA.test(file) &&
-        (file === `extensions/${dir}` || file.startsWith(`extensions/${dir}/`))
-    )
-  return PUBLISHABLE_EXTENSION_DIRS.filter(
-    (dir) => touched(dir) || (ALSO_WATCHES[dir] ?? []).some(touched)
-  )
+  if (changed.includes('FORCE_ALL')) return [...PUBLISHABLE_EXTENSION_DIRS]
+  return PUBLISHABLE_EXTENSION_DIRS.filter((dir) => changed.some((file) => selects(dir, file)))
 }
 
 function discardNextBuild(appDir: string): void {

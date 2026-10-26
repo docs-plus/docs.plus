@@ -15,6 +15,7 @@ import { prisma } from '../src/lib/prisma'
 import { closeQueues, createDocumentWorker, StoreDocumentQueue } from '../src/lib/queue'
 import { disconnectRedis } from '../src/lib/redis'
 import {
+  createTally,
   decodeText,
   deleteTestUser,
   HocuspocusProvider,
@@ -30,16 +31,7 @@ import {
 const PREFIX = `e2e-versions-${Date.now()}`
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-let failed = false
-let skipped = 0
-const check = (condition: boolean, message: string) => {
-  console.log(`  ${condition ? '✓' : '✗'} ${message}`)
-  if (!condition) failed = true
-}
-const skip = (message: string) => {
-  console.log(`  ⚠ skipped — ${message}`)
-  skipped += 1
-}
+const { check, skip, outcome } = createTally()
 
 if (!SERVICE_KEY) {
   console.error('SUPABASE_SERVICE_ROLE_KEY is required for the versions E2E')
@@ -807,7 +799,7 @@ try {
   }
 } catch (error) {
   console.error('\nE2E aborted:', error)
-  failed = true
+  check(false, 'the run completed')
 } finally {
   await StoreDocumentQueue.resume().catch(() => {})
   await deleteTestUser(actor, SERVICE_KEY)
@@ -819,6 +811,7 @@ try {
   await disconnectRedis()
 }
 
+const { failed, skipped } = outcome()
 if (skipped > 0) console.log(`\n${skipped} check group(s) skipped`)
 console.log(`\nversions E2E: ${failed ? 'FAILED' : skipped > 0 ? 'SKIPPED' : 'PASSED'}`)
 process.exit(failed ? 1 : 0)

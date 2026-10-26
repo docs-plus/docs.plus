@@ -76,6 +76,9 @@ env:
   ENV_FILE: .env.production
   COMPOSE_FILE: docker-compose.prod.yml
   DEPLOY_TAG: ${{ github.sha }}
+  # App image repos in docker-compose.prod.yml. The sweep, the rollback warning and
+  # the rollback check all read this one list. The worker reuses docsplus-hocuspocus.
+  APP_IMAGES: docsplus-webapp docsplus-rest-api docsplus-hocuspocus docsplus-admin
   # Where the prod host stashes the last successfully deployed SHA for rollback.
   DEPLOY_STATE_DIR: /opt/projects/prod.docs.plus/.deploy
   LAST_GOOD_TAG_FILE: /opt/projects/prod.docs.plus/.deploy/last-good-tag
@@ -633,7 +636,7 @@ jobs:
           fi
           if [ "${SWEEP}" -eq 1 ]; then
             echo "🔒 Keeping tags:${KEEP_TAGS}and every image a container uses"
-            for repo in docsplus-webapp docsplus-rest-api docsplus-hocuspocus docsplus-admin; do
+            for repo in ${APP_IMAGES}; do
               while read -r tag id; do
                 case "${KEEP_TAGS}" in *" ${tag} "*) continue ;; esac
                 if grep -qxF "${id}" <<< "${USED_IDS}"; then continue; fi
@@ -648,7 +651,7 @@ jobs:
           fi
           docker image prune -f || echo "::warning::Dangling image prune failed."
           if [ -n "${PREVIOUS_TAG:-}" ]; then
-            for img in docsplus-webapp docsplus-rest-api docsplus-hocuspocus docsplus-admin; do
+            for img in ${APP_IMAGES}; do
               docker image inspect "${img}:${PREVIOUS_TAG}" >/dev/null 2>&1 \
                 || echo "::warning::Rollback image ${img}:${PREVIOUS_TAG} is missing. A failed deploy cannot roll back."
             done
@@ -723,8 +726,11 @@ jobs:
           # No --parallel: it is not a `docker compose build` flag in Compose v2
           # (absent from `docker compose build --help`). Named services already
           # build concurrently.
+
           # Typecheck and Build Verification already ran tsc on this commit. An
           # emergency dispatch (skip_quality_gates) keeps the check in the image.
+          # Only the webapp image reads NEXT_SKIP_TYPECHECK. admin-dashboard
+          # ignores the arg and still runs its own type check.
           NEXT_SKIP_TYPECHECK=1
           if [ "${SKIP_QUALITY_GATES}" = "true" ]; then NEXT_SKIP_TYPECHECK=0; fi
           docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
@@ -968,7 +974,7 @@ jobs:
           # PREVIOUS_TAG images. If a person removed one by hand, we fail
           # loudly rather than partially-rollback into a mixed-version cluster.
           MISSING=()
-          for img in docsplus-webapp docsplus-rest-api docsplus-hocuspocus docsplus-admin; do
+          for img in ${APP_IMAGES}; do
             if ! docker image inspect "${img}:${PREVIOUS_TAG}" >/dev/null 2>&1; then
               MISSING+=("${img}:${PREVIOUS_TAG}")
             fi

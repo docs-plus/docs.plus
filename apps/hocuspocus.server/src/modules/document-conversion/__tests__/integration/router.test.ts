@@ -2,39 +2,17 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test'
 
 import * as realSupabase from '../../../../lib/supabase'
 
-// Other test files map these tokens too. bun test shares one process and one
-// token cache, so a shared token must map to the same user id in every file.
-const USERS: Record<string, string> = {
-  'valid-test-token': 'user-123',
-  'other-user-token': 'user-456'
-}
-
 // Do NOT mock `lib/auth`: the real requireUser must verify the token.
 mock.module('../../../../lib/supabase', () => ({
   ...realSupabase,
-  getAnonClient: () => ({
-    auth: {
-      getUser: async (token: string) => {
-        const id = USERS[token]
-        if (id) {
-          return {
-            data: {
-              user: { id, email: `${id}@example.com`, is_anonymous: false, user_metadata: {} }
-            },
-            error: null
-          }
-        }
-        return { data: { user: null }, error: { status: 401, message: 'invalid' } }
-      }
-    }
-  }),
+  getAnonClient: () => ({ auth: { getUser: stubGetUser } }),
   getServiceRoleClient: () => null
 }))
 
 import { Hono } from 'hono'
 import type { Logger } from 'pino'
 
-import { createMockPrisma, TestServer } from '../../../../../tests/helpers/test-server'
+import { createMockPrisma, stubGetUser, TestServer } from '../../../../../tests/helpers/test-server'
 import { createRouter } from '../../http/router'
 
 const DOCUMENT_ID = 'abcdefghij123456789'

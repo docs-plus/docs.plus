@@ -100,7 +100,7 @@ Three limiters cover every request except `/health`, `/health/*` and a verified 
 
 - The global limit is [`RATE_LIMIT_MAX`](../../apps/hocuspocus.server/ENV.md#security) requests per 15 minutes, and the code default is `100`. Your server may set another value, so read `X-RateLimit-Limit` rather than assume 100.
 - Public media reads have their own budget, ten times the global one. It covers every `GET` under `/api/plugins/hypermultimedia/`.
-- Favicons have their own budget, ten times the global one. It covers `GET` and `HEAD` on `/api/metadata/icon`.
+- Favicons have their own budget, ten times the global one. It covers every request to `/api/metadata/icon`.
 - Every other route spends from the global budget, and that includes the upload `POST` on the same media path.
 - An `/api/mcp` call with an accepted OAuth token spends no global budget. Its tool calls spend a per-person budget instead (see the [MCP reference](../mcp/reference.md)). A request without an accepted token still spends it. When an address has no budget left, every `/api/mcp` call from it gets a `429`, an accepted one too.
 - The media and icon multipliers are fixed in the source. No environment variable changes them.

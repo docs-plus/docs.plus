@@ -71,7 +71,7 @@ export const findVersionRow = (
   prisma.documents.findFirst({
     where: { documentId, version },
     select: { data: true, version: true }
-  }) as Promise<{ data: Uint8Array; version: number } | null>
+  })
 
 /**
  * Both sides in one transaction so a concurrent delete cannot hand back a pair

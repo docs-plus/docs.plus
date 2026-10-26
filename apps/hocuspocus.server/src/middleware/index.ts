@@ -28,7 +28,7 @@ const MEDIA_READ_PATH_PREFIX = `${HYPERMULTIMEDIA_MOUNT_PATH}/`
 
 // One cold pad spends one point per distinct link origin, so a link-heavy page
 // would eat the global budget in a few loads.
-export const LINK_ICON_BUDGET_FACTOR = 10
+const LINK_ICON_BUDGET_FACTOR = 10
 
 // Genuine internal/direct traffic carries no proxy-forwarding headers — Traefik
 // always sets them for external requests, so this signal can't be spoofed from

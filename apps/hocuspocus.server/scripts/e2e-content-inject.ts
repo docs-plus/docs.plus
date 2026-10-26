@@ -13,9 +13,15 @@ import * as Y from 'yjs'
 import { prisma } from '../src/lib/prisma'
 import { closeQueues, createDocumentWorker } from '../src/lib/queue'
 import { disconnectRedis } from '../src/lib/redis'
+import {
+  HocuspocusProvider,
+  makeRest,
+  pollFor,
+  sleep,
+  spawnServers,
+  waitForHttp
+} from './lib/e2eHarness'
 
-const PACKAGE_ROOT = new URL('..', import.meta.url).pathname
-const REPO_ROOT = new URL('../../..', import.meta.url).pathname
 const PREFIX = `e2e-inject-${Date.now()}`
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -30,95 +36,8 @@ if (!SERVICE_KEY) {
   process.exit(1)
 }
 
-const freePort = (): number => {
-  const probe = Bun.serve({ port: 0, fetch: () => new Response('') })
-  const { port } = probe
-  probe.stop(true)
-  if (port === undefined) throw new Error('Bun.serve did not assign a port')
-  return port
-}
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
-const waitForHttp = async (url: string, timeoutMs = 30_000): Promise<boolean> => {
-  const deadline = Date.now() + timeoutMs
-  while (Date.now() < deadline) {
-    try {
-      const response = await fetch(url)
-      if (response.ok) return true
-    } catch {
-      // not up yet
-    }
-    await sleep(200)
-  }
-  return false
-}
-
-const wsPort = freePort()
-const internalPort = freePort()
-const restPort = freePort()
-
-const childEnv = {
-  ...process.env,
-  NODE_ENV: 'development',
-  LOG_LEVEL: 'warn',
-  REST_LOG_LEVEL: 'warn',
-  WS_LOG_LEVEL: 'warn',
-  HOCUSPOCUS_PORT: String(wsPort),
-  HOCUSPOCUS_INTERNAL_HTTP_PORT: String(internalPort),
-  HOCUSPOCUS_INTERNAL_HTTP_HOST: '127.0.0.1',
-  HOCUSPOCUS_INTERNAL_URL: `http://127.0.0.1:${internalPort}`,
-  APP_PORT: String(restPort)
-}
-
-const wsServer = Bun.spawn(['bun', 'src/hocuspocus.server.ts'], {
-  cwd: PACKAGE_ROOT,
-  env: childEnv,
-  stdout: 'inherit',
-  stderr: 'inherit'
-})
-
-const restServer = Bun.spawn(['bun', 'src/index.ts'], {
-  cwd: PACKAGE_ROOT,
-  env: childEnv,
-  stdout: 'inherit',
-  stderr: 'inherit'
-})
-// An early process.exit or an uncaught throw must not orphan the children.
-process.once('exit', () => {
-  wsServer.kill()
-  restServer.kill()
-})
-
-const restUrl = `http://127.0.0.1:${restPort}`
-
-interface RestResponse {
-  status: number
-  body: any
-}
-
-const rest = async (
-  path: string,
-  init: RequestInit & { auth?: string | null } = {}
-): Promise<RestResponse> => {
-  const { auth = SERVICE_KEY, ...requestInit } = init
-  const response = await fetch(`${restUrl}${path}`, {
-    ...requestInit,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(auth ? { Authorization: `Bearer ${auth}` } : {}),
-      ...(requestInit.headers ?? {})
-    }
-  })
-  const text = await response.text()
-  let body: any
-  try {
-    body = JSON.parse(text)
-  } catch {
-    body = text
-  }
-  return { status: response.status, body }
-}
+const servers = spawnServers()
+const rest = makeRest(servers.restUrl, SERVICE_KEY)
 
 const titleDoc = (text: string) => ({
   type: 'doc',
@@ -162,40 +81,16 @@ const decodeRow = (data: Uint8Array) => {
   }
 }
 
-const pollFor = async <T>(
-  read: () => Promise<T | null>,
-  accept: (value: T) => boolean,
-  timeoutMs = 25_000
-): Promise<T | null> => {
-  const deadline = Date.now() + timeoutMs
-  while (Date.now() < deadline) {
-    const value = await read()
-    if (value && accept(value)) return value
-    await sleep(200)
-  }
-  return null
-}
-
 const fragmentText = (ydoc: Y.Doc): string => {
   const json = TiptapTransformer.fromYdoc(ydoc, 'default') as { content?: Record<string, any>[] }
   return JSON.stringify(json?.content ?? [])
-}
-
-// Resolved against the webapp because @hocuspocus/provider is a webapp
-// dependency, not a backend one. Hoisting the provider for a test-only client
-// would put a client library in the server's dependency graph.
-const providerModule = await import(
-  Bun.resolveSync('@hocuspocus/provider', `${REPO_ROOT}apps/webapp`)
-)
-const { HocuspocusProvider } = providerModule as {
-  HocuspocusProvider: new (config: Record<string, unknown>) => any
 }
 
 const openProvider = async (documentId: string, slug: string) => {
   const ydoc = new Y.Doc()
   let synced = false
   const provider = new HocuspocusProvider({
-    url: `ws://127.0.0.1:${wsPort}`,
+    url: `ws://127.0.0.1:${servers.wsPort}`,
     name: documentId,
     document: ydoc,
     token: JSON.stringify({ slug, deviceType: 'desktop' }),
@@ -223,16 +118,14 @@ await cleanup()
 const worker = createDocumentWorker()
 await worker.waitUntilReady()
 
-if (!(await waitForHttp(`http://127.0.0.1:${internalPort}/metrics`))) {
+if (!(await waitForHttp(`http://127.0.0.1:${servers.internalPort}/metrics`))) {
   console.error('WS process internal listener never came up')
-  wsServer.kill()
-  restServer.kill()
+  servers.kill()
   process.exit(1)
 }
-if (!(await waitForHttp(`${restUrl}/health`))) {
+if (!(await waitForHttp(`${servers.restUrl}/health`))) {
   console.error('REST process never came up')
-  wsServer.kill()
-  restServer.kill()
+  servers.kill()
   process.exit(1)
 }
 
@@ -426,8 +319,8 @@ try {
   console.log('\n[6] unreachable WS process')
   {
     const doc = await createDocument('unreachable')
-    wsServer.kill()
-    await wsServer.exited
+    servers.ws.kill()
+    await servers.ws.exited
     await sleep(500)
 
     const patch = await rest(`/api/documents/${doc.documentId}/content`, {
@@ -445,8 +338,7 @@ try {
   failed = true
 } finally {
   await cleanup()
-  wsServer.kill()
-  restServer.kill()
+  servers.kill()
   await worker.close()
   await closeQueues()
   await prisma.$disconnect()

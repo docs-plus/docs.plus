@@ -5,17 +5,21 @@
  * Local-only: no CI lane runs e2e/document/**, so run it with the stack up.
  */
 
-import { pad, rand, seedPad } from '../../support/documentStack'
-
-const freshSlug = () => `e2e-switch-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+import {
+  PAST_PERSIST_DEBOUNCE_MS,
+  freshSlug,
+  pad,
+  rand,
+  seedPad
+} from '../../support/documentStack'
 
 describe('pad switch keeps each Y.Doc in its own room (full stack)', () => {
   let slugA: string
   let slugB: string
 
   beforeEach(() => {
-    slugA = freshSlug()
-    slugB = freshSlug()
+    slugA = freshSlug('switch')
+    slugB = freshSlug('switch')
     cy.viewport(1280, 800)
   })
 
@@ -44,7 +48,7 @@ describe('pad switch keeps each Y.Doc in its own room (full stack)', () => {
       pad().should('not.contain.text', markerA)
 
       // Past the persist debounce, so a leaked sync would have reached the head.
-      cy.wait(13000)
+      cy.wait(PAST_PERSIST_DEBOUNCE_MS)
       cy.task<string | null>('queryDocHeadText', documentIdB).then((head) => {
         expect(head, 'pad B head').to.contain(markerB)
         expect(head, 'pad B head').to.not.contain(markerA)

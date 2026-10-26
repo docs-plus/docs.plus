@@ -37,7 +37,7 @@ export const findHeadRow = (
     where: { documentId },
     orderBy: { version: 'desc' },
     select: { data: true, version: true }
-  }) as Promise<{ data: Uint8Array; version: number } | null>
+  })
 
 /** Head version only, 0 when no row exists. The commit wait compares against it. */
 export const findHeadVersion = async (
@@ -62,7 +62,7 @@ export const findHeadRowAfter = (
     where: { documentId, version: { gt: version } },
     orderBy: { version: 'desc' },
     select: { data: true, version: true }
-  }) as Promise<{ data: Uint8Array; version: number } | null>
+  })
 
 export interface CreateWithContentParams {
   slug: string

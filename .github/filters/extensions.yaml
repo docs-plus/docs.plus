@@ -1,5 +1,5 @@
 # Shared inputs for ALL extensions, appended to every key via YAML anchor.
-# Mirrored in scripts/check-ci.ts; dist inputs also in build-extensions hashFiles.
+# scripts/check-ci.ts reads this file. Dist inputs are also in build-extensions hashFiles.
 # Test-only entries (playground, run-tests.sh, setup-cypress, the quickstart check,
 # the workflow, this folder) run the suites but need no cache bust: dist is unchanged.
 _shared: &shared

@@ -33,17 +33,18 @@ const prisma = {
 const supabaseConfig = config.supabase as { url: string }
 const originalUrl = supabaseConfig.url
 
-describe('bulkDeleteStale when the view-stats read fails', () => {
-  let purgeSpy: ReturnType<typeof spyOn>
+let purgeSpy: ReturnType<typeof spyOn>
 
-  beforeEach(() => {
-    purgeSpy = spyOn(documentPurgeService, 'purgeDocumentFootprint').mockResolvedValue({
-      purged: 1
-    })
+beforeEach(() => {
+  purgeSpy = spyOn(documentPurgeService, 'purgeDocumentFootprint').mockResolvedValue({
+    purged: 1
   })
+})
 
+afterEach(() => purgeSpy.mockRestore())
+
+describe('bulkDeleteStale when the view-stats read fails', () => {
   afterEach(() => {
-    purgeSpy.mockRestore()
     supabaseConfig.url = originalUrl
   })
 
@@ -84,14 +85,6 @@ describe('bulkDeleteStale over more ids than one read carries', () => {
           .map((c) => ({ slug: c.slug, title: c.title, documentId: c.document_id }))
     }
   } as unknown as PrismaClient
-
-  let purgeSpy: ReturnType<typeof spyOn>
-  beforeEach(() => {
-    purgeSpy = spyOn(documentPurgeService, 'purgeDocumentFootprint').mockResolvedValue({
-      purged: 1
-    })
-  })
-  afterEach(() => purgeSpy.mockRestore())
 
   test('reads in chunks and keeps the viewed pad from the second chunk', async () => {
     const fetchSpy = spyOn(globalThis, 'fetch').mockImplementation((async (url: string) => {

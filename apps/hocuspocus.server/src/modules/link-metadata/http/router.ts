@@ -1,15 +1,12 @@
 import { zValidator } from '@hono/zod-validator'
 import { type Context, Hono } from 'hono'
+import type { core } from 'zod'
 
-import { isIconOrigin } from '../domain/icon'
 import type { ErrorResponse } from '../domain/types'
 import type { ControllerDeps } from './controller'
 import { createController } from './controller'
 import { CLEAN_MISS_CACHE_HEADER, createIconController } from './iconController'
-import { ICON_ORIGIN_MAX_LENGTH, iconQuerySchema, metadataQuerySchema } from './schema'
-
-export const LINK_METADATA_MOUNT_PATH = '/api/metadata'
-export const LINK_ICON_PATH = `${LINK_METADATA_MOUNT_PATH}/icon`
+import { iconQuerySchema, metadataQuerySchema } from './schema'
 
 export type RouterDeps = ControllerDeps & { iconMaxBytes: number }
 
@@ -41,19 +38,19 @@ export const createRouter = (deps: RouterDeps): Hono => {
   return router
 }
 
-// On failure `result.data` is the raw query, so a repeated `origin` arrives as an array.
-// A value that is a well-formed origin failed only the SSRF check.
-const iconHook = (result: { success: boolean; data: unknown }, c: Context) => {
+// The schema tags the SSRF refine BLOCKED_URL. Every other first issue means a malformed origin.
+const iconHook = (
+  result: { success: true } | { success: false; error: core.$ZodError },
+  c: Context
+) => {
   if (result.success) return
-  const origin = (result.data as { origin?: unknown }).origin
-  const isInvalid =
-    typeof origin !== 'string' || origin.length > ICON_ORIGIN_MAX_LENGTH || !isIconOrigin(origin)
-  const body: ErrorResponse = isInvalid
-    ? {
-        success: false,
-        code: 'INVALID_URL',
-        message: 'origin query parameter must be a bare http(s) origin with no port'
-      }
-    : { success: false, code: 'BLOCKED_URL', message: 'origin is not allowed' }
+  const body: ErrorResponse =
+    result.error.issues[0]?.message === 'BLOCKED_URL'
+      ? { success: false, code: 'BLOCKED_URL', message: 'origin is not allowed' }
+      : {
+          success: false,
+          code: 'INVALID_URL',
+          message: 'origin query parameter must be a bare http(s) origin with no port'
+        }
   return c.json(body, 400, { 'Cache-Control': CLEAN_MISS_CACHE_HEADER })
 }

@@ -98,7 +98,9 @@ if $RUN_E2E; then
   if ! curl -sf --max-time 3 "$BASE_URL/api/health" > /dev/null 2>&1; then
     echo -e "${YELLOW}WARNING: Health check failed at ${BASE_URL}/api/health${NC}"
     echo -e "${YELLOW}  Start it with: make dev-local${NC}"
-    echo -e "${YELLOW}  make dev-local serves http://localhost:3000, so set BASE_URL=http://localhost:3000.${NC}"
+    if [ "$BASE_URL" != "http://localhost:3000" ]; then
+      echo -e "${YELLOW}  make dev-local serves http://localhost:3000, so set BASE_URL=http://localhost:3000.${NC}"
+    fi
     echo -e "${YELLOW}  Or set BASE_URL env var if running elsewhere.${NC}"
     echo ""
     if [ "${CI:-}" = "true" ] || [ ! -t 0 ]; then

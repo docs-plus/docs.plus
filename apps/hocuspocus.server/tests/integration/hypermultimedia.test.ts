@@ -9,33 +9,13 @@ import {
   mock,
   spyOn
 } from 'bun:test'
-import { mkdtemp, readdir, rm } from 'fs/promises'
-import os from 'os'
+import { readdir, rm } from 'fs/promises'
 import path from 'path'
 
 // Drive requireUser through the real auth module + a stubbed anon client.
 // Do NOT mock `lib/auth` itself — that sticky mock.module poisons later suites.
 mock.module('../../src/lib/supabase', () => ({
-  getAnonClient: () => ({
-    auth: {
-      getUser: async (token: string) => {
-        if (token === 'valid-test-token') {
-          return {
-            data: {
-              user: {
-                id: 'user-123',
-                email: 'owner@example.com',
-                is_anonymous: false,
-                user_metadata: {}
-              }
-            },
-            error: null
-          }
-        }
-        return { data: { user: null }, error: { status: 401, message: 'invalid' } }
-      }
-    }
-  }),
+  getAnonClient: () => ({ auth: { getUser: stubGetUser } }),
   getServiceRoleClient: () => null
 }))
 
@@ -48,7 +28,13 @@ import {
   MEDIA_SESSION_TTL_S,
   signMediaSession
 } from '../../src/lib/mediaSession'
-import { TestServer, createMockPrisma, createMockRedis } from '../helpers/test-server'
+import {
+  TestServer,
+  createMockPrisma,
+  createMockRedis,
+  stubGetUser,
+  useTempLocalStore
+} from '../helpers/test-server'
 import { createTestFile } from '../fixtures/documents'
 
 describe('Hypermultimedia API (Direct Route)', () => {
@@ -113,33 +99,18 @@ describe('Hypermultimedia API (Direct Route)', () => {
 
     // The path segment is the storage prefix, so the row decides who may write under it.
     describe('signed in', () => {
-      const localStore = config.storage.local as { enabled: boolean }
-      const originalEnabled = localStore.enabled
-      const originalPath = process.env.LOCAL_STORAGE_PATH
-      let storageDir: string
+      let store: Awaited<ReturnType<typeof useTempLocalStore>>
 
       beforeAll(async () => {
-        storageDir = await mkdtemp(path.join(os.tmpdir(), 'hm-upload-'))
-        process.env.LOCAL_STORAGE_PATH = storageDir
-        localStore.enabled = true
+        store = await useTempLocalStore('hm-upload-')
       })
 
-      afterAll(async () => {
-        localStore.enabled = originalEnabled
-        if (originalPath === undefined) delete process.env.LOCAL_STORAGE_PATH
-        else process.env.LOCAL_STORAGE_PATH = originalPath
-        await rm(storageDir, { recursive: true, force: true })
-      })
+      afterAll(() => store.restore())
 
-      const upload = (file = createTestFile('photo.jpg', 'image/jpeg', 2048)) => {
-        const formData = new FormData()
-        formData.append('mediaFile', file)
-        return testServer.app.request('http://localhost:3001/api/plugins/hypermultimedia/doc-1', {
-          method: 'POST',
-          body: formData,
-          headers: { token: 'valid-test-token' }
+      const upload = (file = createTestFile('photo.jpg', 'image/jpeg', 2048)) =>
+        testServer.upload('/api/plugins/hypermultimedia/doc-1', file, 'mediaFile', {
+          token: 'valid-test-token'
         })
-      }
       const row = (over: Record<string, unknown> = {}) => {
         mockPrisma.documentMetadata.findUnique = async () => ({
           ownerId: 'user-123',
@@ -149,8 +120,12 @@ describe('Hypermultimedia API (Direct Route)', () => {
           ...over
         })
       }
-      const storedFiles = async () => readdir(path.join(storageDir, 'doc-1')).catch(() => [])
-      const refused = async (response: Response, status: number, code: string) => {
+      const storedFiles = async () => readdir(path.join(store.dir, 'doc-1')).catch(() => [])
+      const refused = async (
+        response: { status: number; json: () => Promise<any> },
+        status: number,
+        code: string
+      ) => {
         expect(response.status).toBe(status)
         const body = (await response.json()) as { error: { code: string } }
         expect(body.error).toHaveProperty('code', code)
@@ -158,7 +133,7 @@ describe('Hypermultimedia API (Direct Route)', () => {
       }
 
       beforeEach(async () => {
-        await rm(path.join(storageDir, 'doc-1'), { recursive: true, force: true })
+        await rm(path.join(store.dir, 'doc-1'), { recursive: true, force: true })
       })
 
       test('the owner uploads an image and it lands in the store', async () => {

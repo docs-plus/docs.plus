@@ -140,7 +140,7 @@ The six `@docs.plus/extension-*` packages publish `2.2.0` together.
 
 ### Migration
 
-**If you self-host.** Read the [hocuspocus Migration](apps/hocuspocus.server/CHANGELOG.md#migration)
+**If you self-host.** Read the [hocuspocus 2.2.0 Migration](apps/hocuspocus.server/CHANGELOG.md#220--2026-10-22)
 before you deploy, and follow its order. Set `REDIS_PASSWORD` (32 characters or more) in
 `.env.production`, and in `.env.observability` if you run the observability stack. Set
 `MEDIA_COOKIE_SECRET` (32 characters or more) in `.env.production`. Edit the
@@ -241,7 +241,7 @@ lockstep family release; each package's `CHANGELOG.md` lists its changes.
 
 ### Migration
 
-**If you self-host.** Read the [hocuspocus Migration](apps/hocuspocus.server/CHANGELOG.md#migration-1)
+**If you self-host.** Read the [hocuspocus 2.1.0 Migration](apps/hocuspocus.server/CHANGELOG.md#210--2026-10-13)
 before you deploy, and follow its order. Set `EMAIL_PROVIDER` and `EMAIL_FROM`, or mail does
 not send. Set `EMAIL_UNSUBSCRIBE_SECRET` to at least 32 characters, or unsubscribe links do
 not work. Apply two Supabase migrations later than the others:

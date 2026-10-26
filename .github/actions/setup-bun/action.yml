@@ -34,17 +34,27 @@ runs:
       with:
         bun-version: ${{ inputs.bun-version }}
 
+    # One path list for restore, lookup and save. The cache version hashes it,
+    # so a drifted copy would save entries that the restore never finds.
+    - name: 🗂️ Set cache paths
+      id: paths
+      shell: bash
+      run: |
+        {
+          echo 'list<<EOF'
+          echo '~/.bun/install/cache'
+          echo 'node_modules'
+          echo 'packages/*/node_modules'
+          echo 'apps/*/node_modules'
+          echo 'extensions/*/node_modules'
+          echo 'EOF'
+        } >> "$GITHUB_OUTPUT"
+
     - name: 📦 Restore Dependencies
       id: cache
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
-        # Keep the three path lists in this file equal: the cache version hashes them.
-        path: |
-          ~/.bun/install/cache
-          node_modules
-          packages/*/node_modules
-          apps/*/node_modules
-          extensions/*/node_modules
+        path: ${{ steps.paths.outputs.list }}
         # The Bun version stays in the key: cached node_modules hold native addons
         # built for one Bun, and --frozen-lockfile relinks them without a rebuild.
         key: ${{ runner.os }}-bun-${{ inputs.cache-version }}-${{
@@ -65,12 +75,7 @@ runs:
       if: github.event_name != 'pull_request' && steps.cache.outputs.cache-hit != 'true' && inputs.ignore-scripts != 'true'
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
-        path: |
-          ~/.bun/install/cache
-          node_modules
-          packages/*/node_modules
-          apps/*/node_modules
-          extensions/*/node_modules
+        path: ${{ steps.paths.outputs.list }}
         key: ${{ steps.cache.outputs.cache-primary-key }}
         lookup-only: true
 
@@ -78,10 +83,5 @@ runs:
       if: steps.lookup.outcome == 'success' && steps.lookup.outputs.cache-hit != 'true'
       uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
-        path: |
-          ~/.bun/install/cache
-          node_modules
-          packages/*/node_modules
-          apps/*/node_modules
-          extensions/*/node_modules
+        path: ${{ steps.paths.outputs.list }}
         key: ${{ steps.cache.outputs.cache-primary-key }}

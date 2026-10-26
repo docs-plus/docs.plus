@@ -8,6 +8,7 @@
  */
 import { TiptapTransformer } from '@hocuspocus/transformer'
 import { createClient } from '@supabase/supabase-js'
+import type { Subprocess } from 'bun'
 import * as Y from 'yjs'
 
 const PACKAGE_ROOT = new URL('../..', import.meta.url).pathname
@@ -66,6 +67,8 @@ export interface Servers {
   internalPort: number
   restPort: number
   restUrl: string
+  /** The WS process, so a script can stop it alone to test an outage. */
+  ws: Subprocess
   kill: () => void
 }
 
@@ -108,6 +111,7 @@ export const spawnServers = (): Servers => {
     internalPort,
     restPort,
     restUrl: `http://127.0.0.1:${restPort}`,
+    ws,
     kill
   }
 }

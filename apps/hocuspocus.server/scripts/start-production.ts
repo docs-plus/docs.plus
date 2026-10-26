@@ -2,13 +2,16 @@
 
 import { $ } from 'bun'
 
+// The image drops devDependencies, so the CLI version is pinned here.
+const migrateDeploy = () => $`bunx prisma@7.10.1 migrate deploy`
+
 async function startProduction() {
   try {
     console.log('🚀 Starting production server...')
 
     // Run database migrations
     console.log('📦 Running database migrations...')
-    await $`bunx prisma@7.10.1 migrate deploy`
+    await migrateDeploy()
 
     console.log('✅ Migrations completed successfully')
 
@@ -29,7 +32,7 @@ async function startProduction() {
         console.log('✅ Migration fixed, retrying...')
 
         // Retry migrations
-        await $`bunx prisma@7.10.1 migrate deploy`
+        await migrateDeploy()
         console.log('✅ Migrations completed successfully')
 
         // Start the main application

@@ -1,6 +1,46 @@
+import { mkdtemp, rm } from 'fs/promises'
 import { Hono } from 'hono'
+import os from 'os'
+import path from 'path'
 
+import { config } from '../../src/config/env'
 import type { PrismaClient } from '../../src/generated/prisma/client'
+
+// bun test shares one process and one token cache, so every file that stubs
+// getUser must map a shared token to the same user. Keep the map here only.
+export const TEST_TOKEN_USERS: Record<string, string> = {
+  'valid-test-token': 'user-123',
+  'other-user-token': 'user-456'
+}
+
+/** Stand-in for `getAnonClient().auth.getUser`. `extra` adds file-only tokens. */
+export const stubGetUser = async (token: string, extra: Record<string, string> = {}) => {
+  const id = extra[token] ?? TEST_TOKEN_USERS[token]
+  if (id) {
+    return {
+      data: { user: { id, email: `${id}@example.com`, is_anonymous: false, user_metadata: {} } },
+      error: null
+    }
+  }
+  return { data: { user: null }, error: { status: 401, message: 'invalid' } }
+}
+
+/** Points the local media store at a fresh temp dir. `restore` undoes it all. */
+export const useTempLocalStore = async (prefix: string) => {
+  const localStore = config.storage.local as { enabled: boolean }
+  const originalEnabled = localStore.enabled
+  const originalPath = process.env.LOCAL_STORAGE_PATH
+  const dir = await mkdtemp(path.join(os.tmpdir(), prefix))
+  process.env.LOCAL_STORAGE_PATH = dir
+  localStore.enabled = true
+  const restore = async () => {
+    localStore.enabled = originalEnabled
+    if (originalPath === undefined) delete process.env.LOCAL_STORAGE_PATH
+    else process.env.LOCAL_STORAGE_PATH = originalPath
+    await rm(dir, { recursive: true, force: true })
+  }
+  return { dir, restore }
+}
 
 export class TestServer {
   public app: Hono
@@ -88,13 +128,19 @@ export class TestServer {
     }
   }
 
-  async upload(path: string, file: File, fieldName: string = 'mediaFile') {
+  async upload(
+    path: string,
+    file: File,
+    fieldName: string = 'mediaFile',
+    headers: Record<string, string> = {}
+  ) {
     const formData = new FormData()
     formData.append(fieldName, file)
 
     const response = await this.app.request(`${this.baseURL}${path}`, {
       method: 'POST',
-      body: formData
+      body: formData,
+      headers
     })
     return {
       status: response.status,

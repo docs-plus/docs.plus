@@ -78,7 +78,7 @@ export const runPipeline = async (input: PipelineInput): Promise<PipelineResult>
     }
   }
 
-  const fallback = runFallback(canonical, requestedUrl, publicUrl ?? null)
+  const fallback = runFallback(canonical, requestedUrl, publicUrl)
   await writeCache(cache, canonical, acceptLanguage, fallback, 'negative')
   onStage?.({ stage: 'fallback', hit: true, durationMs: 0 })
   return { kind: 'success', payload: fallback, fromCache: false }
