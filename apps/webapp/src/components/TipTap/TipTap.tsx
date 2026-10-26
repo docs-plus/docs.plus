@@ -8,7 +8,6 @@ import { Placeholder } from '@docs.plus/extension-placeholder'
 import type { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
 import { authStore } from '@stores'
-import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
 import { Collaboration, isChangeOrigin } from '@tiptap/extension-collaboration'
 import { CollaborationCaret } from '@tiptap/extension-collaboration-caret'
 import { TaskItem, TaskList } from '@tiptap/extension-list'
@@ -43,6 +42,7 @@ import * as Y from 'yjs'
 
 import { ClearFormatting } from './clearFormatting'
 import { CaretFind, foldedIdsIncludingFind } from './extensions/caret-find'
+import { CodeBlockLowlight } from './extensions/code-block-lowlight'
 import { HeadingFilter } from './extensions/heading-filter'
 import { HeadingFold, type HeadingFoldMeta, headingFoldPluginKey } from './extensions/heading-fold'
 import { HeadingScale } from './extensions/heading-scale'
@@ -75,8 +75,6 @@ lowlight.register('python', python as unknown as LowlightLanguage)
 lowlight.register('yaml', yaml)
 lowlight.register('json', json)
 lowlight.register('bash', bash as unknown as LowlightLanguage)
-// Without a stub, highlightAuto runs on every diagram source.
-lowlight.register('mermaid', () => ({ name: 'Mermaid', contains: [] }))
 
 // Slow renders, a failed renderer load and a renderer crash only. Bad diagram text is the writer's own.
 const reportDiagramState = (event: MermaidStateEvent): void => {

@@ -52,6 +52,8 @@ Migration section for when it goes. As the last step, run
   ([#335](https://github.com/docs-plus/docs.plus/issues/335)).
 - Document views keep the visit duration when the visit closes before the view queue drains
   ([#603](https://github.com/docs-plus/docs.plus/issues/603)).
+- Typing in a diagram no longer highlights every code block in the pad again
+  ([#631](https://github.com/docs-plus/docs.plus/issues/631)).
 
 ### Security
 
