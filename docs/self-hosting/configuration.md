@@ -360,7 +360,7 @@ bunx web-push generate-vapid-keys
 It prints a public key and a private key.
 
 1. In `.env.production`, set `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` to the two keys.
-2. Set `NEXT_PUBLIC_VAPID_PUBLIC_KEY` to the same public key.
+2. Set `NEXT_PUBLIC_VAPID_PUBLIC_KEY` to the same public key. The repository deploy workflow refuses to deploy when the two keys differ.
 3. Set `VAPID_SUBJECT` to a `mailto:` address that you read. The template value is a placeholder.
 4. Rebuild, because `NEXT_PUBLIC_VAPID_PUBLIC_KEY` is a build value. Run this at the repository root.
 

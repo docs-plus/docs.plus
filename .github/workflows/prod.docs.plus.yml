@@ -580,6 +580,16 @@ jobs:
             exit 1
           fi
 
+          # The webapp bakes its VAPID key at build; a mismatch silently breaks push (#609).
+          # Both empty passes. `|| true` stops pipefail from ending the step on an absent key.
+          # Compose takes the last line of a repeated key, so read the last line too.
+          vapid_public=$(grep -E '^VAPID_PUBLIC_KEY=' "${ENV_FILE}" | tail -n 1 | cut -d= -f2- | tr -d "\"'" || true)
+          next_vapid_public=$(grep -E '^NEXT_PUBLIC_VAPID_PUBLIC_KEY=' "${ENV_FILE}" | tail -n 1 | cut -d= -f2- | tr -d "\"'" || true)
+          if [ "${vapid_public}" != "${next_vapid_public}" ]; then
+            echo "::error::VAPID_PUBLIC_KEY and NEXT_PUBLIC_VAPID_PUBLIC_KEY differ in ${ENV_SOURCE}. Every push send fails with 403. Set both to the same public key, then rebuild and redeploy."
+            exit 1
+          fi
+
           # Stash the previous successful tag (if any) for the rollback step.
           mkdir -p "${DEPLOY_STATE_DIR}"
           if [ -f "${LAST_GOOD_TAG_FILE}" ]; then
