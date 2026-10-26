@@ -156,7 +156,7 @@ describe('Hyperlink Edge Cases', () => {
 
       applyLink('First', 'https://replaced.com')
 
-      cy.get(EDITOR_LINK).contains('First').should('have.attr', 'href', 'https://replaced.com')
+      cy.contains(EDITOR_LINK, 'First').should('have.attr', 'href', 'https://replaced.com')
     })
   })
 

@@ -30,3 +30,5 @@ Coverage for `@docs.plus/extension-hyperlink` in the real editor (`TipTap.tsx`: 
   - Edit popover: pick heading re-points href and replaces link text; user-edited text (`textTouched`) survives a heading pick; pick bookmark re-points href to a chatroom deep-link
 
   Bookmark coverage relies on `window._store` (exposed by `pages/editor.tsx` for the playground only) to seed `metadata.documentId` and on `cy.intercept` against the Supabase `get_user_bookmarks` RPC. Specs also seed a test profile through `window._authStore`. See `cypress/support/hyperlinkPicker.ts` for the fixture + helper.
+
+The Edit-form prefill on links with a link icon has its own full-stack spec, `cypress/e2e/document/hyperlink-icon-prefill.cy.ts`. It needs `make dev-local`.

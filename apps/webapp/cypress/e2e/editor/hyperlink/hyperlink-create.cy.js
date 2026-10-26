@@ -90,8 +90,7 @@ describe('Hyperlink Create Popover', () => {
       cy.get(SUBMIT_BTN).click()
 
       cy.get(POPOVER).should('not.exist')
-      cy.get(EDITOR_LINK)
-        .contains(TARGET_TEXT)
+      cy.contains(EDITOR_LINK, TARGET_TEXT)
         .should('have.attr', 'href')
         .and('include', 'https://example.com')
     })
@@ -159,8 +158,7 @@ describe('Hyperlink Create Popover', () => {
       cy.get(SUBMIT_BTN).click()
 
       // Picker editor canonicalizes via `normalizeHref` (https-prefix rule).
-      cy.get(EDITOR_LINK)
-        .contains(TARGET_TEXT)
+      cy.contains(EDITOR_LINK, TARGET_TEXT)
         .should('have.attr', 'href')
         .and('eq', 'https://example.com')
     })
@@ -172,8 +170,7 @@ describe('Hyperlink Create Popover', () => {
       cy.get(URL_INPUT).type('http://example.com')
       cy.get(SUBMIT_BTN).click()
 
-      cy.get(EDITOR_LINK)
-        .contains(TARGET_TEXT)
+      cy.contains(EDITOR_LINK, TARGET_TEXT)
         .should('have.attr', 'href')
         .and('eq', 'http://example.com')
     })
@@ -185,8 +182,7 @@ describe('Hyperlink Create Popover', () => {
       cy.get(URL_INPUT).type('https://example.com/path')
       cy.get(SUBMIT_BTN).click()
 
-      cy.get(EDITOR_LINK)
-        .contains(TARGET_TEXT)
+      cy.contains(EDITOR_LINK, TARGET_TEXT)
         .should('have.attr', 'href')
         .and('eq', 'https://example.com/path')
     })

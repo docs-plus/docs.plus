@@ -17,10 +17,9 @@ import { previewIconCandidates } from './linkMarkUtils'
 import type { InternalDocumentLink } from './types'
 
 /**
- * The extension ships no icon catalog (bundle size), so the webapp picks the
- * Lucide icon per `type`. `Partial` is deliberate. Domain-catalog types
- * (`meet`, web `github`/`notion`, …) are omitted because the favicon path
- * always wins for `https://` URLs and a static icon would never render.
+ * Preview popover only; pad link icons come from `padLinkIcon`. The webapp picks the Lucide icon
+ * per `type`, and `Partial` is deliberate. Web types (`meet`, `github`, …) are left out,
+ * because the popover's favicon always wins for `https://` URLs.
  */
 const TYPE_TO_ICON: Partial<Record<SpecialUrlType, IconType>> = {
   email: Icons.mail,

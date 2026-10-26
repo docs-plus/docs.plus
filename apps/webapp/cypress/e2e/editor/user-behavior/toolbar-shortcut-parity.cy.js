@@ -43,8 +43,7 @@ describe('Toolbar/Shortcut Parity', () => {
     cy.get(URL_INPUT).clear().type('https://example.com')
     cy.get(SUBMIT_BTN).click()
 
-    cy.get('.docy_editor a')
-      .contains(TARGET_TEXT)
+    cy.contains('.docy_editor a', TARGET_TEXT)
       .should('have.attr', 'href')
       .and('include', 'https://example.com')
   })
@@ -57,8 +56,7 @@ describe('Toolbar/Shortcut Parity', () => {
     cy.get(URL_INPUT).clear().type('https://example.org')
     cy.get(SUBMIT_BTN).click()
 
-    cy.get('.docy_editor a')
-      .contains(TARGET_TEXT)
+    cy.contains('.docy_editor a', TARGET_TEXT)
       .should('have.attr', 'href')
       .and('include', 'https://example.org')
   })

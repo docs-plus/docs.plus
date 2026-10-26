@@ -34,6 +34,22 @@
     color: var(--color-primary);
     opacity: 0.85;
   }
+
+  .hyperlink-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    margin-inline-end: 0.25em;
+    vertical-align: -0.125em;
+    pointer-events: none;
+    -webkit-touch-callout: none;
+  }
+
+  .hyperlink-icon > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
 }
 
 // Same frame as `contextMenuPanelClassName`, so every floating panel matches.

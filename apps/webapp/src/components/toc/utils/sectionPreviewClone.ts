@@ -11,6 +11,7 @@ const PREVIEW_STRIP_SEL = [
   '.collaboration-cursor__label',
   '.collaboration-cursor__avatar',
   '.ProseMirror-widget',
+  '.hyperlink-icon',
   '.heading-fold-crinkle',
   '.media-toolbar',
   '.hypermultimedia__resize-gripper',

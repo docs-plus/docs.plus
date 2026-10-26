@@ -16,6 +16,15 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ## [Unreleased]
 
+### Added
+
+- Every pad link now shows a link icon before its text, in the pad, history and `/editor`
+  ([#516](https://github.com/docs-plus/docs.plus/issues/516)). docs.plus links show the docs.plus
+  logo, and `mailto:` and `tel:` links show a mail or phone glyph. Other web links show the site's
+  favicon from our own icon route. A link with no icon stays a plain link. Print and the chat
+  composer show no link icons. This goes against Google Docs, Word and Notion on purpose
+  (maintainer ruling, 2026-10-17).
+
 ### Changed
 
 - A plain click on a link to another pad now opens that pad in the same window, in the pad and

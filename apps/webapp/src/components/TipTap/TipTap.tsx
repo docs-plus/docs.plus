@@ -59,6 +59,7 @@ import { getMediaToolbarFactory } from './mediaPopovers/getMediaToolbarFactory'
 import { getMediaActionsResolver } from './mediaPopovers/mediaComment'
 import { createLucideToolbarIcons } from './mediaPopovers/mediaToolbarLucide'
 import MediaUploadPlaceholder from './nodes/MediaUploadPlaceholder'
+import { padLinkIcon } from './padLinkIcon'
 import { buildBreadcrumbPlaceholder } from './placeholders'
 import { IOSCaretFix } from './plugins/iosCaretFixPlugin'
 
@@ -245,7 +246,8 @@ const Editor = ({
       // Yield media-provider URLs to hypermultimedia's paste-rules so a pasted
       // YouTube/Vimeo/SoundCloud/X/image link becomes an embed node, not a link.
       shouldAutoLink: (url: string) => !isMediaUrl(url),
-      popovers: getHyperlinkPopoverConfig(isMobile)
+      popovers: getHyperlinkPopoverConfig(isMobile),
+      linkIcon: padLinkIcon
     }),
     HyperMultimediaKit.configure({
       Image: { inline: true, allowBase64: true },

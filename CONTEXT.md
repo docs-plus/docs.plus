@@ -26,6 +26,8 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **Filter** — the heading filter (`matchSections`). It folds sections that do not match. It is not a text search.
 - **Slash menu** — `/` on an empty textblock that is not Title opens a list of block inserts. Each row runs an existing editor command.
 - **Command jump** — Mod+Shift+K opens a dialog of places and owned pads. It moves the reader; it inserts nothing. Not the Slash menu.
+- **Link icon** — the 1em element before a pad link's text, class `hyperlink-icon`, from `padLinkIcon`: the docs.plus logo, a mail or phone glyph, or the site's favicon. Not stored in the document.
+  _Avoid_: favicon (for the element), inline icon, decoration, widget
 - **Diagram** — a code block whose language is exactly `mermaid`. The pad draws it with Pele below its source (`@docs.plus/extension-mermaid`). The document stores only the source text.
   _Avoid_: mermaid block, chart
 - **Fold module** — the per-editor owner of each Diagram's folded state, head and Copy state (`createFolds`, `extensions/extension-mermaid/src/nodeView/fold.ts`). It writes `data-source` as output, and no script reads it back. Known limit: `blockAt` finds a block through `view.nodeDOM(pos)`. A host that wraps the node view DOM silently breaks caret-enter open and the arrow-key step.

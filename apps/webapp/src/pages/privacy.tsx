@@ -63,10 +63,13 @@ export default function PrivacyPage() {
 
       <LegalSection title="Link icons">
         <p>
-          When you view profile links or a link preview, your browser asks our server for the linked
-          website's icon. The request carries the site address, not the full link.
+          When you open a document, your browser asks our server for the icon of each linked
+          website. It does the same when you view profile links or a link preview. The request
+          carries the site address, not the full link.
         </p>
-        <p>Our server then fetches that icon from the site.</p>
+        <p>
+          Our server then fetches that icon from the site, so the site sees our server, not you.
+        </p>
         <p>Our logs keep your IP address and the request path, not the site address.</p>
       </LegalSection>
 

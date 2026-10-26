@@ -20,7 +20,7 @@ bun run migrate:nested-to-flat
 ```
 
 - Invoking the script path from an arbitrary cwd can break Bun resolution of `yjs` for `@hocuspocus/transformer`.
-- **Settings Markdown replace writes natural picture size in the browser.** After `setContent`, `commitImportedImageSizes` loads unsized images and stamps `keyId` plus natural width and height. Do not call `fitLayoutToEditorColumn` at apply time. A load miss leaves attrs empty. The import JSON and a `PATCH` stay unsized. The server never fetches pictures.
+- **Settings Markdown replace writes natural picture size in the browser.** After `setContent`, `commitImportedImageSizes` loads unsized images and stamps `keyId` plus natural width and height. Do not call `fitLayoutToEditorColumn` at apply time. A load miss leaves attrs empty. The import JSON and a `PATCH` stay unsized. Markdown import never makes the server fetch pictures.
 
 ### Heading Schema
 
@@ -69,6 +69,7 @@ bun run migrate:nested-to-flat
 - Use `shouldRerenderOnTransaction: false` on collaboration editors.
 - Decoration plugins should avoid full rebuilds on every keystroke. Use `transactionAffectsNodeType(tr, 'heading')` or a cheaper structural check.
 - HeadingScale gates on a heading-level fingerprint, not `transactionAffectsNodeType`. Typing inside a heading maps the set.
+- Link icons use a mark view, not a `DecorationSet`.
 - Placeholder uses `@docs.plus/extension-placeholder` with O(1) state `init/apply`. Do not replace it with Tiptap's built-in placeholder, which scans with `doc.descendants`.
 - **The pad loads its own `CodeBlockLowlight`** from `extensions/code-block-lowlight.ts` (#631). It copies the upstream lowlight plugin and skips `mermaid` blocks in the trigger and the walk. Upstream re-highlights every code block whenever the caret is in any code block, diagrams included. Diff the copy against the upstream lowlight plugin of `@tiptap/extension-code-block-lowlight` on every Tiptap bump. Do not switch back to the package import, and do not restore the `mermaid` stub language.
 - **Foreign attribute mutations inside the editor recreate node views (media embeds reload).** ProseMirror's `DOMObserver` watches every attribute on every descendant (no `attributeFilter`). It reconciles non-PM mutations by re-rendering the dirty range, destroying+recreating the affected node views. `NODE_DIRTY` is set by `docView.markDirty` over the unioned range. `CustomNodeViewDesc.update` returns `false` before consulting `spec.update`, so a node-view's own `ignoreMutation`/`update` can NOT veto a range-set dirty. Sibling mutations recreate it as collateral. Consequences and wiring:
