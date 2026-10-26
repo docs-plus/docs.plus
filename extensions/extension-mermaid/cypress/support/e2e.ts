@@ -23,15 +23,15 @@ declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Cypress {
     interface Chainable {
-      visitPlayground(query?: string): Chainable<void>
+      visitPlayground(query?: string, options?: Partial<Cypress.VisitOptions>): Chainable<void>
       getEditor(): Chainable<Editor>
       setEditorContent(html: string): Chainable<void>
     }
   }
 }
 
-Cypress.Commands.add('visitPlayground', (query = '') => {
-  cy.visit(`/${query}`)
+Cypress.Commands.add('visitPlayground', (query = '', options = {}) => {
+  cy.visit(`/${query}`, options)
   cy.window({ timeout: 10000 }).should('have.property', '_editor')
   cy.window().its('_editor').should('be.an', 'object')
 })

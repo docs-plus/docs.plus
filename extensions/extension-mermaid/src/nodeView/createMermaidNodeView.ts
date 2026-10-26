@@ -1,6 +1,6 @@
 import { type Editor, mergeAttributes } from '@tiptap/core'
 import { DOMSerializer, type Node as ProseMirrorNode } from '@tiptap/pm/model'
-import type { NodeView, NodeViewConstructor, ViewMutationRecord } from '@tiptap/pm/view'
+import type { EditorView, NodeView, NodeViewConstructor, ViewMutationRecord } from '@tiptap/pm/view'
 
 import { MERMAID_LANGUAGE } from '../constants'
 import { createRenderer } from '../renderer/createRenderer'
@@ -123,14 +123,38 @@ class MermaidNodeView implements NodeView {
   }
 }
 
+/** Builds the diagram view for a `mermaid` block, and `null` for every other block. */
+export function createMermaidView(editor: Editor, options: MermaidOptions, folds: Folds) {
+  return (node: ProseMirrorNode, getPos: () => number | undefined): NodeView | null =>
+    node.attrs.language === MERMAID_LANGUAGE
+      ? new MermaidNodeView(node, getPos, editor, options, folds)
+      : null
+}
+
 export function createMermaidNodeView(
   editor: Editor,
   options: MermaidOptions,
   folds: Folds
 ): NodeViewConstructor {
-  return (node, _view, getPos) => {
+  const build = createMermaidView(editor, options, folds)
+  const self: NodeViewConstructor = (node, view, getPos, decorations, innerDecorations) => {
+    const own = build(node, getPos)
+    if (own) return own
+    const next = nextCodeBlockView(view, self)
+    if (next) return next(node, view, getPos, decorations, innerDecorations)
     // ProseMirror renders the schema `toDOM` when this returns nothing; the type does not say so.
-    if (node.attrs.language !== MERMAID_LANGUAGE) return undefined as unknown as NodeView
-    return new MermaidNodeView(node, getPos, editor, options, folds)
+    return undefined as unknown as NodeView
   }
+  return self
+}
+
+/** ProseMirror asks only the first plugin with a `codeBlock` view, so we hand other blocks to the next one. */
+function nextCodeBlockView(
+  view: EditorView,
+  self: NodeViewConstructor
+): NodeViewConstructor | undefined {
+  const plugins = view.state.plugins
+  const at = plugins.findIndex((p) => p.props.nodeViews?.codeBlock === self)
+  if (at < 0) return undefined
+  return plugins.slice(at + 1).find((p) => p.props.nodeViews?.codeBlock)?.props.nodeViews?.codeBlock
 }

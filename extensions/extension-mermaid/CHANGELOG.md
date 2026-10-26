@@ -9,6 +9,10 @@ All notable changes to `@docs.plus/extension-mermaid` are documented here. The f
 - The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.0`. It was `^3.31.3`.
 - `pele` stays at `1.8.0`. Version `1.9.0` changes diagram labels. This package does not take that yet.
 
+### Fixed
+
+- A code block that is not `mermaid` now goes to the next plugin's `nodeViews.codeBlock`. Before, this view took every code block, so that plugin never drew one ([#627](https://github.com/docs-plus/docs.plus/issues/627)).
+
 ## [2.2.0] — 2026-10-22
 
 First npm release. The package joins the `@docs.plus/extension-*` family at `2.2.0`, in lockstep with the other five.
