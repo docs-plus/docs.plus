@@ -6,8 +6,9 @@
 #   1. Quality Gates (parallel): lint, typecheck, security
 #   2. Build Verification: extension + Next.js builds (smoke test)
 #   3. Deploy Gate: parses commit message with a strict regex (anti-footgun)
-#   4. Deploy: docker compose build on the prod host → blue-green rollout
-#   5. Report: every run writes a timing table to its summary (`report` job)
+#   4. Images: docker compose build on the prod host, beside the gates
+#   5. Deploy: verify images → blue-green rollout, after every gate passed
+#   6. Report: every run writes a timing table to its summary (`report` job)
 #
 # Triggers:
 #   - push to main: full pipeline. Deploy chain gated by triage outputs
@@ -76,8 +77,8 @@ env:
   ENV_FILE: .env.production
   COMPOSE_FILE: docker-compose.prod.yml
   DEPLOY_TAG: ${{ github.sha }}
-  # App image repos in docker-compose.prod.yml. The sweep, the rollback warning and
-  # the rollback check all read this one list. The worker reuses docsplus-hocuspocus.
+  # App image repos in docker-compose.prod.yml. Every loop over the app images reads
+  # this one list. The worker reuses docsplus-hocuspocus.
   APP_IMAGES: docsplus-webapp docsplus-rest-api docsplus-hocuspocus docsplus-admin
   # Where the prod host stashes the last successfully deployed SHA for rollback.
   DEPLOY_STATE_DIR: /opt/projects/prod.docs.plus/.deploy
@@ -385,8 +386,8 @@ jobs:
   # ===========================================================================
   # STAGE 2 — BUILD VERIFICATION (smoke test, no artifacts produced)
   # ===========================================================================
-  # Note: this job intentionally does NOT build Docker images. The deploy job
-  # rebuilds them on the prod host anyway (decided 2026-05); duplicating the
+  # Note: this job intentionally does NOT build Docker images. The `images` job
+  # builds them on the prod host (decided 2026-05); duplicating the
   # docker build here would just slow the pipeline without sharing cache. The
   # webapp/admin Next.js compile here catches type/build regressions early.
   # ===========================================================================
@@ -448,199 +449,50 @@ jobs:
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
 
   # ===========================================================================
-  # STAGE 3 — PRODUCTION DEPLOYMENT (deploy gate inlined — no cross-job output)
+  # STAGE 2b — DEPLOY IMAGES (prod host, beside the gates)
   # ===========================================================================
-  # The deploy decision lives directly on this job's `if`. `app_deploy` already
-  # encodes `app_pipeline && !no_deploy`, so `(build): back front no-deploy` →
-  # app_deploy=false → no deploy. `always()` lets the `if` evaluate even when an
-  # upstream is skipped; `needs.build.result == 'success'` is the real fail-fast
-  # gate. (Inlined from a former deploy-gate job whose constant output did not
-  # propagate reliably through `needs.deploy-gate.outputs` under `always()`.)
-  # The job-level `…-deploy` group only serializes a SECOND run's deploy behind
-  # this one. It does NOT exempt the job from the workflow-level `…-quality`
-  # group, so a later push still cancels an in-flight roll — the pre-existing,
-  # accepted blue-green exposure, same residual as `uptime-kuma-deploy`.
-  # ===========================================================================
-  deploy:
-    name: 🚀 Deploy Production
+  images:
+    name: 🧱 Build Images
     runs-on: prod.docs.plus
-    # 45, not 30: replicas are now retired serially and the worker's stop grace
-    # is 150s, so a five-service roll plus a five-service rollback no longer
-    # fits 30m. A mid-deploy SIGTERM here is worse than a slow deploy.
-    timeout-minutes: 45
-    needs: [triage, build]
+    timeout-minutes: 30
+    needs: [triage, security]
+    # Own group: in the `-deploy` group a new pending `images` job would
+    # cancel a pending `deploy`. Never share that group.
+    concurrency:
+      group: ${{ github.workflow }}-images
+      cancel-in-progress: false
+    # `!cancelled()`, not `always()`: a running `always()` job survives a newer
+    # push (run 34223310158), so a stale build would hold the live host for ~9 min.
+    if: |
+      !cancelled() &&
+      needs.triage.result == 'success' &&
+      (needs.security.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
+      ((github.event_name == 'push' && needs.triage.outputs.app_deploy == 'true') ||
+       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.force_deploy))
+    permissions:
+      contents: read
     outputs:
       free_gb_before: ${{ steps.disk_guard.outputs.free_gb_before }}
       free_gb: ${{ steps.disk_guard.outputs.free_gb }}
       load1: ${{ steps.disk_guard.outputs.load1 }}
-    concurrency:
-      group: ${{ github.workflow }}-deploy
-      cancel-in-progress: false
-    if: |
-      always() &&
-      needs.build.result == 'success' &&
-      ((github.event_name == 'push' && needs.triage.outputs.app_deploy == 'true') ||
-       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.force_deploy))
-    environment:
-      name: production
-      url: https://docs.plus
-    permissions:
-      contents: read
+      env_sha: ${{ steps.build_env.outputs.env_sha }}
 
     steps:
-      - name: 📦 Checkout Code
+      - name: 📦 Checkout (images)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
 
-      - name: 🔐 Prepare Environment
+      - name: 🔐 Prepare Build Environment
+        id: build_env
         run: |
-          # deploy_service is written to disk rather than defined inline because
-          # the rollback step runs in its own shell and must take the identical
-          # route — a second copy of this function is a drift waiting to drain
-          # the fleet. Written first so a later failure here can still source it.
-          cat > "${RUNNER_TEMP}/deploy-service.sh" <<'DEPLOY_SVC'
-          # Rolls one compose service onto the new image without ever dropping
-          # below its current backend count. Returns non-zero (and retires
-          # nothing) if the new replicas do not come up healthy.
-          deploy_service() {
-            local SERVICE="$1" TARGET="$2"
-            local -a COMPOSE=(docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}")
-            local -a OLD_IDS=() NEW_IDS=()
-            local id name
+          bash scripts/ci/prepare-deploy-env.sh
+          # The images bake build args from this copy; deploy compares the hash.
+          echo "env_sha=$(sha256sum "${ENV_FILE}" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
-            # Project-scoped on purpose: these ids are stopped and removed below,
-            # and `docker ps --filter com.docker.compose.service=` also matches an
-            # identically-named service in any other compose project on the host.
-            mapfile -t OLD_IDS < <("${COMPOSE[@]}" ps -q "${SERVICE}")
-            local SCALE_UP=$(( ${#OLD_IDS[@]} + TARGET ))
-            # Clamp to one spare generation. A rollback over a half-failed forward
-            # deploy sees TARGET stale replicas already running and would otherwise
-            # ask for 3x the footprint on a host that is already unhealthy. If the
-            # clamp bites, no new container appears and the NEW_IDS check below
-            # fails loudly instead of the host running out of memory quietly.
-            local MAX_SCALE=$(( TARGET * 2 ))
-            if [ "${SCALE_UP}" -gt "${MAX_SCALE}" ]; then
-              echo "::warning::${SERVICE} already runs ${#OLD_IDS[@]} replicas (target ${TARGET}); capping scale at ${MAX_SCALE}. Retire strays before redeploying."
-              SCALE_UP=${MAX_SCALE}
-            fi
-
-            echo ""
-            echo "📦 Deploying ${SERVICE} (running: ${#OLD_IDS[@]}, target: ${TARGET})..."
-
-            # --no-recreate is load-bearing. DEPLOY_TAG changes the service config
-            # hash, so a plain `up --scale` recreates the replicas that are
-            # currently serving and takes the fleet to zero before the new ones bind.
-            echo "⬆️  Starting ${TARGET} new replicas alongside the old (scale ${SCALE_UP})..."
-            "${COMPOSE[@]}" up -d --no-deps --no-recreate --scale "${SERVICE}=${SCALE_UP}" "${SERVICE}"
-
-            for id in $("${COMPOSE[@]}" ps -q "${SERVICE}"); do
-              case " ${OLD_IDS[*]} " in
-                *" ${id} "*) ;;
-                *) NEW_IDS+=("${id}") ;;
-              esac
-            done
-            if [ "${#NEW_IDS[@]}" -ne "${TARGET}" ]; then
-              echo "::error::Expected ${TARGET} new ${SERVICE} containers, found ${#NEW_IDS[@]}. Retiring nothing."
-              "${COMPOSE[@]}" ps "${SERVICE}"
-              return 1
-            fi
-
-            # Health is checked per new container id. A count would pass on the
-            # first tick — the old replicas are already healthy and, unlike
-            # before, they stay healthy for the whole wait.
-            echo "⏳ Waiting for ${#NEW_IDS[@]} new ${SERVICE} replicas to report healthy..."
-            local READY=0 i
-            for i in {1..60}; do
-              READY=1
-              for id in "${NEW_IDS[@]}"; do
-                [ "$(docker inspect -f '{{.State.Health.Status}}' "${id}" 2>/dev/null)" = healthy ] || READY=0
-              done
-              [ "${READY}" -eq 1 ] && break
-              [ $((i % 10)) -eq 0 ] && echo "   ... attempt ${i}/60"
-              sleep 2
-            done
-            if [ "${READY}" -ne 1 ]; then
-              echo "::error::New ${SERVICE} replicas never reported healthy after 120s. Old replicas left running — no traffic was drained."
-              "${COMPOSE[@]}" ps "${SERVICE}"
-              return 1
-            fi
-            echo "✅ ${#NEW_IDS[@]} new ${SERVICE} replicas healthy"
-
-            # One at a time, so the service never loses more than one backend.
-            # A bare `docker stop` honours the container's StopTimeout, which
-            # compose sets from stop_grace_period — 150s for the worker (its
-            # jobs need it), 30s elsewhere. A flat --time would SIGKILL the worker.
-            for id in "${OLD_IDS[@]}"; do
-              name=$(docker inspect -f '{{.Name}}' "${id}" 2>/dev/null || echo "${id}")
-              echo "🛑 Retiring ${name}..."
-              docker stop "${id}" >/dev/null || true
-              docker rm "${id}" >/dev/null || true
-              sleep 2
-            done
-          }
-          DEPLOY_SVC
-
-          # Compose `--env-file` is the single source of truth. We do NOT also
-          # `set -a; source` it elsewhere — that path was double-loading and
-          # leaking vars to subshells unintentionally.
-          cp "${ENV_SOURCE}" "${ENV_FILE}"
-          echo "DEPLOY_TAG=${DEPLOY_TAG}" >> "${ENV_FILE}"
-
-          # Error capture must never silently regress: both DSNs feed GlitchTip.
-          # Require a real first character — dotenv strips quotes, so KEY="" or
-          # whitespace-only values are empty at runtime.
-          for k in GLITCHTIP_DSN NEXT_PUBLIC_GLITCHTIP_DSN; do
-            if ! grep -Eq "^${k}=[\"']?[^\"'[:space:]]" "${ENV_FILE}"; then
-              echo "::error::${k} is missing or empty in ${ENV_SOURCE}. Set it to the GlitchTip project DSN (https://glitchtip.docs.plus) before deploying."
-              exit 1
-            fi
-          done
-
-          # Email must be an explicit choice. Without the last two, every
-          # unsubscribe link is rejected and the one-click header is dropped.
-          for k in EMAIL_PROVIDER EMAIL_FROM EMAIL_UNSUBSCRIBE_SECRET PUBLIC_RESTAPI_URL; do
-            if ! grep -Eq "^${k}=[\"']?[^\"'[:space:]]" "${ENV_FILE}"; then
-              echo "::error::${k} is missing or empty in ${ENV_SOURCE}. Email needs EMAIL_PROVIDER, EMAIL_FROM, EMAIL_UNSUBSCRIBE_SECRET and PUBLIC_RESTAPI_URL. Set it in the host env file, then redeploy."
-              exit 1
-            fi
-          done
-
-          # Private document media fails closed without it (#439). Never print the value.
-          media_secret=$(grep -E '^MEDIA_COOKIE_SECRET=' "${ENV_FILE}" | head -1 | cut -d= -f2- | tr -d "\"'" || true)
-          if [ "${#media_secret}" -lt 32 ]; then
-            echo "::error::MEDIA_COOKIE_SECRET is missing or shorter than 32 characters in ${ENV_SOURCE}. Without it, no one can load a Private document's media. Set it (openssl rand -hex 32), then redeploy."
-            exit 1
-          fi
-
-          # Redis runs with --requirepass (#438). Never print the value.
-          redis_password=$(grep -E '^REDIS_PASSWORD=' "${ENV_FILE}" | head -1 | cut -d= -f2- | tr -d "\"'" || true)
-          if [ "${#redis_password}" -lt 32 ]; then
-            echo "::error::REDIS_PASSWORD is missing or shorter than 32 characters in ${ENV_SOURCE}. Redis requires it. Set it (openssl rand -hex 32) here and in .env.observability, then redeploy."
-            exit 1
-          fi
-
-          # The webapp bakes its VAPID key at build; a mismatch silently breaks push (#609).
-          # Both empty passes. `|| true` stops pipefail from ending the step on an absent key.
-          # Compose takes the last line of a repeated key, so read the last line too.
-          vapid_public=$(grep -E '^VAPID_PUBLIC_KEY=' "${ENV_FILE}" | tail -n 1 | cut -d= -f2- | tr -d "\"'" || true)
-          next_vapid_public=$(grep -E '^NEXT_PUBLIC_VAPID_PUBLIC_KEY=' "${ENV_FILE}" | tail -n 1 | cut -d= -f2- | tr -d "\"'" || true)
-          if [ "${vapid_public}" != "${next_vapid_public}" ]; then
-            echo "::error::VAPID_PUBLIC_KEY and NEXT_PUBLIC_VAPID_PUBLIC_KEY differ in ${ENV_SOURCE}. Every push send fails with 403. Set both to the same public key, then rebuild and redeploy."
-            exit 1
-          fi
-
-          # Stash the previous successful tag (if any) for the rollback step.
-          mkdir -p "${DEPLOY_STATE_DIR}"
-          if [ -f "${LAST_GOOD_TAG_FILE}" ]; then
-            PREVIOUS_TAG=$(cat "${LAST_GOOD_TAG_FILE}")
-            echo "PREVIOUS_TAG=${PREVIOUS_TAG}" >> "$GITHUB_ENV"
-            echo "ℹ️ Previous good tag: ${PREVIOUS_TAG}"
-          else
-            echo "PREVIOUS_TAG=" >> "$GITHUB_ENV"
-            echo "ℹ️ No previous good tag stashed (first deploy or fresh state dir)"
-          fi
-          echo "✅ Environment ready"
+      # The disk guard below keeps the rollback images only through PREVIOUS_TAG.
+      - name: 📌 Read last-good tag
+        run: echo "PREVIOUS_TAG=$(cat "${LAST_GOOD_TAG_FILE}" 2>/dev/null || true)" >> "$GITHUB_ENV"
 
       - name: 💾 Pre-deploy disk guard
         id: disk_guard
@@ -762,10 +614,11 @@ jobs:
           # (absent from `docker compose build --help`). Named services already
           # build concurrently.
 
-          # Typecheck and Build Verification already ran tsc on this commit. An
-          # emergency dispatch (skip_quality_gates) keeps the check in the image.
-          # Only the webapp image reads NEXT_SKIP_TYPECHECK. admin-dashboard
-          # ignores the arg and still runs its own type check.
+          # Typecheck and Build Verification check this commit beside this build,
+          # and `deploy` waits for both. An emergency dispatch (skip_quality_gates)
+          # keeps the check in the image. Only the webapp image reads
+          # NEXT_SKIP_TYPECHECK. admin-dashboard ignores the arg and still runs its
+          # own type check.
           NEXT_SKIP_TYPECHECK=1
           if [ "${SKIP_QUALITY_GATES}" = "true" ]; then NEXT_SKIP_TYPECHECK=0; fi
           docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
@@ -773,13 +626,191 @@ jobs:
 
           echo "✅ Images built"
 
-      - name: 🔧 Ensure Infrastructure
+      - name: 📣 Notify image build failure
+        if: failure()
         run: |
-          # First step that changes live services. Earlier steps (env guard, disk
-          # guard, image build) prune and build images on the host, but leave
-          # production untouched. The failure notice keys off this marker; the
-          # rollback keys off ROLL_STARTED.
+          OBS_ENV=/opt/projects/prod.docs.plus/.env.observability
+          TEXT="⚠️ docs.plus deploy of ${DEPLOY_TAG} aborted before touching prod (env guard, disk guard or image build); production unchanged"
+          bash scripts/ci/notify-telegram.sh "${OBS_ENV}" "${TEXT}"
+
+  # ===========================================================================
+  # STAGE 3 — PRODUCTION DEPLOYMENT (deploy gate inlined — no cross-job output)
+  # ===========================================================================
+  # The deploy decision lives directly on this job's `if`. `app_deploy` already
+  # encodes `app_pipeline && !no_deploy`, so `(build): back front no-deploy` →
+  # app_deploy=false → no deploy. `always()` lets the `if` evaluate even when an
+  # upstream is skipped; `needs.build.result == 'success'` and
+  # `needs.images.result == 'success'` are the real fail-fast gate. (Inlined
+  # from a former deploy-gate job whose constant output did not
+  # propagate reliably through `needs.deploy-gate.outputs` under `always()`.)
+  # The job-level `…-deploy` group only serializes a SECOND run's deploy behind
+  # this one. The workflow-level `…-quality` group does not cancel a running
+  # `always()` job; the new run waits for it (run 34223310158 → 34224526419).
+  # A job whose if uses always() (build, deploy, images-cleanup) may still run.
+  # ===========================================================================
+  deploy:
+    name: 🚀 Deploy Production
+    runs-on: prod.docs.plus
+    # 45, not 30: replicas are now retired serially and the worker's stop grace
+    # is 150s, so a five-service roll plus a five-service rollback no longer
+    # fits 30m. A mid-deploy SIGTERM here is worse than a slow deploy.
+    timeout-minutes: 45
+    needs: [triage, build, images]
+    outputs:
+      started: ${{ steps.infra.outputs.started }}
+    concurrency:
+      group: ${{ github.workflow }}-deploy
+      cancel-in-progress: false
+    if: |
+      always() &&
+      needs.build.result == 'success' &&
+      needs.images.result == 'success' &&
+      ((github.event_name == 'push' && needs.triage.outputs.app_deploy == 'true') ||
+       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.force_deploy))
+    environment:
+      name: production
+      url: https://docs.plus
+    permissions:
+      contents: read
+
+    steps:
+      - name: 📦 Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - name: 🔐 Prepare Environment
+        run: |
+          # deploy_service is written to disk rather than defined inline because
+          # the rollback step runs in its own shell and must take the identical
+          # route — a second copy of this function is a drift waiting to drain
+          # the fleet. Written first so a later failure here can still source it.
+          cat > "${RUNNER_TEMP}/deploy-service.sh" <<'DEPLOY_SVC'
+          # Rolls one compose service onto the new image without ever dropping
+          # below its current backend count. Returns non-zero (and retires
+          # nothing) if the new replicas do not come up healthy.
+          deploy_service() {
+            local SERVICE="$1" TARGET="$2"
+            local -a COMPOSE=(docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}")
+            local -a OLD_IDS=() NEW_IDS=()
+            local id name
+
+            # Project-scoped on purpose: these ids are stopped and removed below,
+            # and `docker ps --filter com.docker.compose.service=` also matches an
+            # identically-named service in any other compose project on the host.
+            mapfile -t OLD_IDS < <("${COMPOSE[@]}" ps -q "${SERVICE}")
+            local SCALE_UP=$(( ${#OLD_IDS[@]} + TARGET ))
+            # Clamp to one spare generation. A rollback over a half-failed forward
+            # deploy sees TARGET stale replicas already running and would otherwise
+            # ask for 3x the footprint on a host that is already unhealthy. If the
+            # clamp bites, no new container appears and the NEW_IDS check below
+            # fails loudly instead of the host running out of memory quietly.
+            local MAX_SCALE=$(( TARGET * 2 ))
+            if [ "${SCALE_UP}" -gt "${MAX_SCALE}" ]; then
+              echo "::warning::${SERVICE} already runs ${#OLD_IDS[@]} replicas (target ${TARGET}); capping scale at ${MAX_SCALE}. Retire strays before redeploying."
+              SCALE_UP=${MAX_SCALE}
+            fi
+
+            echo ""
+            echo "📦 Deploying ${SERVICE} (running: ${#OLD_IDS[@]}, target: ${TARGET})..."
+
+            # --no-recreate is load-bearing. DEPLOY_TAG changes the service config
+            # hash, so a plain `up --scale` recreates the replicas that are
+            # currently serving and takes the fleet to zero before the new ones bind.
+            echo "⬆️  Starting ${TARGET} new replicas alongside the old (scale ${SCALE_UP})..."
+            "${COMPOSE[@]}" up -d --no-deps --no-recreate --scale "${SERVICE}=${SCALE_UP}" "${SERVICE}"
+
+            for id in $("${COMPOSE[@]}" ps -q "${SERVICE}"); do
+              case " ${OLD_IDS[*]} " in
+                *" ${id} "*) ;;
+                *) NEW_IDS+=("${id}") ;;
+              esac
+            done
+            if [ "${#NEW_IDS[@]}" -ne "${TARGET}" ]; then
+              echo "::error::Expected ${TARGET} new ${SERVICE} containers, found ${#NEW_IDS[@]}. Retiring nothing."
+              "${COMPOSE[@]}" ps "${SERVICE}"
+              return 1
+            fi
+
+            # Health is checked per new container id. A count would pass on the
+            # first tick — the old replicas are already healthy and, unlike
+            # before, they stay healthy for the whole wait.
+            echo "⏳ Waiting for ${#NEW_IDS[@]} new ${SERVICE} replicas to report healthy..."
+            local READY=0 i
+            for i in {1..60}; do
+              READY=1
+              for id in "${NEW_IDS[@]}"; do
+                [ "$(docker inspect -f '{{.State.Health.Status}}' "${id}" 2>/dev/null)" = healthy ] || READY=0
+              done
+              [ "${READY}" -eq 1 ] && break
+              [ $((i % 10)) -eq 0 ] && echo "   ... attempt ${i}/60"
+              sleep 2
+            done
+            if [ "${READY}" -ne 1 ]; then
+              echo "::error::New ${SERVICE} replicas never reported healthy after 120s. Old replicas left running — no traffic was drained."
+              "${COMPOSE[@]}" ps "${SERVICE}"
+              return 1
+            fi
+            echo "✅ ${#NEW_IDS[@]} new ${SERVICE} replicas healthy"
+
+            # One at a time, so the service never loses more than one backend.
+            # A bare `docker stop` honours the container's StopTimeout, which
+            # compose sets from stop_grace_period — 150s for the worker (its
+            # jobs need it), 30s elsewhere. A flat --time would SIGKILL the worker.
+            for id in "${OLD_IDS[@]}"; do
+              name=$(docker inspect -f '{{.Name}}' "${id}" 2>/dev/null || echo "${id}")
+              echo "🛑 Retiring ${name}..."
+              docker stop "${id}" >/dev/null || true
+              docker rm "${id}" >/dev/null || true
+              sleep 2
+            done
+          }
+          DEPLOY_SVC
+
+          bash scripts/ci/prepare-deploy-env.sh
+
+          # Stash the previous successful tag (if any) for the rollback step.
+          mkdir -p "${DEPLOY_STATE_DIR}"
+          if [ -f "${LAST_GOOD_TAG_FILE}" ]; then
+            PREVIOUS_TAG=$(cat "${LAST_GOOD_TAG_FILE}")
+            echo "PREVIOUS_TAG=${PREVIOUS_TAG}" >> "$GITHUB_ENV"
+            echo "ℹ️ Previous good tag: ${PREVIOUS_TAG}"
+          else
+            echo "PREVIOUS_TAG=" >> "$GITHUB_ENV"
+            echo "ℹ️ No previous good tag stashed (first deploy or fresh state dir)"
+          fi
+          echo "✅ Environment ready"
+
+      - name: 📦 Verify images present
+        # "Re-run failed jobs" skips a green `images` job, and `migrate` has no
+        # build section, so a missing image must stop here, before DEPLOY_STARTED.
+        # A host env edit after `images` would ship stale NEXT_PUBLIC_* values, so
+        # the env file must match the copy the images were built from.
+        env:
+          IMAGES_ENV_SHA: ${{ needs.images.outputs.env_sha }}
+        run: |
+          if [ "$(sha256sum "${ENV_FILE}" | cut -d' ' -f1)" != "${IMAGES_ENV_SHA}" ]; then
+            echo "::error::host env file changed after the images were built; use Re-run all jobs; production unchanged"
+            exit 1
+          fi
+          MISSING=()
+          for img in ${APP_IMAGES}; do
+            docker image inspect "${img}:${DEPLOY_TAG}" >/dev/null 2>&1 || MISSING+=("${img}:${DEPLOY_TAG}")
+          done
+          if [ "${#MISSING[@]}" -gt 0 ]; then
+            echo "::error::images missing; use Re-run all jobs; production unchanged (${MISSING[*]})"
+            exit 1
+          fi
+          echo "✅ All four images present at ${DEPLOY_TAG}"
+
+      - name: 🔧 Ensure Infrastructure
+        id: infra
+        run: |
+          # First step that changes live services. Earlier steps (env guard, image
+          # check) leave production untouched. The failure notice keys off this
+          # marker; the rollback keys off ROLL_STARTED.
           echo "DEPLOY_STARTED=true" >> "$GITHUB_ENV"
+          echo "started=true" >> "$GITHUB_OUTPUT"
           echo "🔧 Ensuring infrastructure..."
 
           docker network create docsplus-network 2>/dev/null || true
@@ -1096,7 +1127,7 @@ jobs:
           # Credentials live in the observability env file on this host. Never fatal.
           OBS_ENV=/opt/projects/prod.docs.plus/.env.observability
           if [ "${DEPLOY_STARTED:-}" != "true" ]; then
-            TEXT="⚠️ docs.plus deploy of ${DEPLOY_TAG} aborted before touching prod (env guard, disk guard or build); production unchanged"
+            TEXT="⚠️ docs.plus deploy of ${DEPLOY_TAG} aborted before touching prod (env guard or missing images); production unchanged"
           elif [ "${ROLL_STARTED:-}" != "true" ] && [ "${MIGRATE_OUTCOME}" = "failure" ]; then
             TEXT="🛑 docs.plus deploy of ${DEPLOY_TAG} stopped: migration failed; app unchanged, no rollback ran. Check the migration state before the next deploy"
           elif [ "${ROLL_STARTED:-}" != "true" ]; then
@@ -1107,6 +1138,49 @@ jobs:
             TEXT="🚨 docs.plus deploy of ${DEPLOY_TAG} FAILED and rollback FAILED — manual intervention required"
           fi
           bash scripts/ci/notify-telegram.sh "${OBS_ENV}" "${TEXT}"
+
+  images-cleanup:
+    name: 🧹 Remove Unshipped Images
+    runs-on: prod.docs.plus
+    timeout-minutes: 5
+    needs: [images, deploy]
+    if: |
+      always() &&
+      needs.images.result != 'skipped' &&
+      (needs.deploy.result == 'skipped' || needs.deploy.outputs.started != 'true')
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: 🧹 Remove this run's images
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUNS_API: ${{ github.api_url }}/repos/${{ github.repository }}/actions/workflows/prod.docs.plus.yml/runs?head_sha=${{ github.sha }}&per_page=1
+        run: |
+          set -uo pipefail
+          # A dispatch or a re-run of the same commit reuses DEPLOY_TAG.
+          # Keep the images while another run of this sha is live, or when the
+          # query fails. The next disk guard removes them later.
+          count() {
+            curl -sf --max-time 10 -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H 'Accept: application/vnd.github+json' "${RUNS_API}&status=$1" \
+              | grep -o '"total_count": *[0-9]*' | grep -o '[0-9]*$'
+          }
+          for s in queued waiting pending requested in_progress; do
+            n=$(count "${s}") || { echo "::warning::Run query failed; keeping ${DEPLOY_TAG} images"; exit 0; }
+            [ "${s}" = in_progress ] && n=$((n - 1)) # this run is in progress
+            if [ "${n}" -gt 0 ]; then echo "ℹ️ Another run of ${DEPLOY_TAG} is ${s}; keeping its images"; exit 0; fi
+          done
+
+          LAST_GOOD=$(cat "${LAST_GOOD_TAG_FILE}" 2>/dev/null || true)
+          if [ "${DEPLOY_TAG}" = "${LAST_GOOD}" ]; then
+            echo "ℹ️ ${DEPLOY_TAG} is the last-good tag; keeping it"; exit 0
+          fi
+
+          # No -f: Docker refuses to remove an image that a container uses.
+          for img in ${APP_IMAGES}; do
+            docker rmi "${img}:${DEPLOY_TAG}" || echo "ℹ️ kept or absent: ${img}:${DEPLOY_TAG}"
+          done
 
   # ===========================================================================
   # STAGE 4 — OBSERVABILITY DEPLOY (ordered after app deploy)
@@ -1192,7 +1266,9 @@ jobs:
         extension-tests,
         webapp-unit-tests,
         build,
+        images,
         deploy,
+        images-cleanup,
         observability-deploy,
         uptime-kuma-deploy
       ]
@@ -1212,8 +1288,8 @@ jobs:
       - name: 📊 Write timing table
         env:
           RUN_SUBJECT: ${{ github.event.head_commit.message || inputs.dry_run_subject || github.event.pull_request.title }}
-          FREE_GB: ${{ needs.deploy.outputs.free_gb }}
-          LOAD1: ${{ needs.deploy.outputs.load1 }}
+          FREE_GB: ${{ needs.images.outputs.free_gb }}
+          LOAD1: ${{ needs.images.outputs.load1 }}
         run: |
           run_json="${RUNNER_TEMP}/run.json"
           for _ in 1 2 3; do

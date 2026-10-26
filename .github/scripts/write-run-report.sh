@@ -40,10 +40,7 @@ def opt: if . == "" then "n/a" else . end;
 | off($verify.completedAt) as $m1
 | off($gate.completedAt) as $m2g
 | off($images.completedAt) as $m2i
-| (if $deploy == null or $m2g == null then null
-   elif $images != null and $images.job != "🚀 Deploy Production"
-     then off($deploy.startedAt) - ([$m2g, $m2i] | max)
-   else off($deploy.startedAt) - $m2g end) as $w
+| (if $deploy == null or $m2g == null then null else off($deploy.startedAt) - ([$m2g, $m2i] | max) end) as $w
 | ([$jobs[] | select(.conclusion == "success") | off(.completedAt)] | max) as $m6
 | ([$jobs[] | select(ran) | off(.startedAt)] | map(select(. != null)) | min) as $queue
 | ([$jobs[] | select((.name | startswith("🧪 Ext (")) and .conclusion == "success")] | length) as $ext
@@ -69,7 +66,6 @@ def opt: if . == "" then "n/a" else . end;
   "",
   "| Step | Job | Start (s) | Duration (s) | Result |",
   "|---|---|---:|---:|---|",
-  # "📦 Verify images present" and the other-job branch of W wait for #565. Keep them.
   (([ "💾 Pre-deploy disk guard", "🏗️ Build Docker Images", "📦 Verify images present",
      "🔧 Ensure Infrastructure", "🗄️ Migrate database (one-shot gate)",
      "🚀 Deploy Services (rolling replace)", "🩺 Verify Deployment", "🚨 Rollback on Failure"
@@ -88,7 +84,7 @@ def opt: if . == "" then "n/a" else . end;
   "| M3 image build | \(dur($images) | na) | duration of the `🏗️ Build Docker Images` step |",
   "| M4 disk guard | \(dur($guard) | na) | duration of the `💾 Pre-deploy disk guard` step |",
   "| M5 roll-out | \(dur($roll) | na) | duration of the `🚀 Deploy Services (rolling replace)` step |",
-  "| W runner wait | \($w | na) | start of the `🚀 Deploy Production` job, minus the later of M2g and M2i. M2i counts only when the image build runs in another job. |",
+  "| W runner wait | \($w | na) | start of the `🚀 Deploy Production` job, minus the later of M2g and M2i |",
   "| M6 work time | \($m6 | na) | end of the last successful job, without this report job |",
   "| queue_s | \($queue | na) | start of the first job that ran |",
   "| Ext suites | \($ext) | successful `🧪 Ext (…)` jobs |",
