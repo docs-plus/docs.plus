@@ -473,7 +473,7 @@ export const createDocumentWorker = () => {
                     triggeredBy: data.triggeredBy ?? null,
                     contributors: data.contributors ?? []
                   },
-                  // Select only version. The full row would send the snapshot back inside the lock.
+                  // The full row would send the snapshot back inside the lock.
                   select: { version: true }
                 })
 

@@ -1179,7 +1179,7 @@ The body cap is `LINK_ICON_MAX_BYTES` bytes, default `16384`. Each request holds
 
 The route has its own rate limit. See [Rate limiting](#rate-limiting).
 
-**Accepted risk.** `safeFetch` checks the DNS answer and then connects in a separate step. A host that changes its DNS answer between those two steps can reach a private address. This route returns bytes from that fetch, so the leak is limited to bytes that pass the image check, up to the cap, within 3 s.
+**Accepted risk.** `safeFetch` checks the DNS answer and then connects in a separate step. A host that changes its DNS answer between those two steps can reach a private address. This route returns bytes from that fetch. So the leak is limited to bytes that pass the image check, up to the cap, within 3 s.
 
 ## Email
 

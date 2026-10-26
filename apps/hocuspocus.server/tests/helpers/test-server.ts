@@ -97,7 +97,7 @@ export class TestServer {
   async upload(
     path: string,
     file: File,
-    fieldName: string = 'mediaFile',
+    fieldName = 'mediaFile',
     headers: Record<string, string> = {}
   ) {
     const formData = new FormData()

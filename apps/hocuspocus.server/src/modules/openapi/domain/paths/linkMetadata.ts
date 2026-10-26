@@ -47,7 +47,6 @@ export const linkMetadataPaths: OpenApiPaths = {
         'Fetches `<origin>/favicon.ico` through the SSRF guard, with a 3 s budget. The body is capped at `LINK_ICON_MAX_BYTES` (default 16384). `Content-Type` comes from the bytes only: PNG, ICO, GIF, JPEG or WebP. Every miss is an empty `404`, so an `<img>` fires `onerror`. `HEAD` runs the same handler with no body. Rate-limited by its own bucket.',
       tags: ['Link metadata'],
       security: [{}],
-      // The zod `.refine()` origin rules have no JSON Schema equivalent, so they are stated here.
       parameters: toParameters(iconQuerySchema, 'query', {
         origin:
           'Required. A bare http(s) origin, as `new URL(href).origin` gives it: no path, no trailing slash, no explicit port, a lowercase punycode host. At most 300 characters.'

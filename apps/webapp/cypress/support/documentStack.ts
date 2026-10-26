@@ -6,7 +6,7 @@ export const pad = () => cy.get('.ProseMirror[contenteditable="true"]', { timeou
 export type DocRow = { documentId: string; ownerId: string | null } | null
 export const rand = () => Math.random().toString(36).slice(2, 10)
 export const freshSlug = (prefix: string) => `e2e-${prefix}-${Date.now()}-${rand()}`
-// The 10 s server persist debounce plus slack.
+// The 10 s server persist debounce, plus a 3 s margin.
 export const PAST_PERSIST_DEBOUNCE_MS = 13000
 
 // A save lands after the 10 s debounce or at the close flush, so poll the head.

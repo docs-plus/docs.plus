@@ -10,7 +10,7 @@ import type { DocSelectionRange } from './types'
  * `data:` URIs can carry scripted SVG and are a tracking-pixel vector, so only
  * plain http(s) passes. `undefined` makes the caller try the next candidate.
  */
-export const safeImageSrc = (url: string | undefined): string | undefined => {
+const safeImageSrc = (url: string | undefined): string | undefined => {
   if (!url) return undefined
   return /^https?:\/\//i.test(url) ? url : undefined
 }

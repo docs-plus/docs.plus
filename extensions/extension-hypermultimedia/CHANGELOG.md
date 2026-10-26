@@ -14,7 +14,7 @@ historical Conventional Commits format. The project adheres to
 
 ### Fixed
 
-- A caption on `video`, `audio`, `youtube`, `vimeo`, `soundcloud`, `spotify`, `loom` or `x` now survives HTML ([#244](https://github.com/docs-plus/docs.plus/issues/244)). Before, only `image` kept it, so clipboard copy and the toolbar Copy action dropped the text. Each node now renders a captioned media node as a `<figure data-hm-figure>` with a `<figcaption>`, and parses it back. For a floated media node, the `<figure>` takes the float, clear and margin, and the media element inside keeps its size. For a media node that is not floated, the `<figure>` takes the clear and margin, so a `margin: auto` media node stays centered. X writes no layout to HTML, so its `<figure>` has no placement. A node without a caption renders the same HTML as before.
+- A caption on `video`, `audio`, `youtube`, `vimeo`, `soundcloud`, `spotify`, `loom` or `x` now survives HTML ([#244](https://github.com/docs-plus/docs.plus/issues/244)). Before, only `image` kept it, so clipboard copy and the toolbar Copy action dropped the text. A captioned node now renders as a `<figure data-hm-figure>` with a `<figcaption>`, and parses it back. For a floated media node, the `<figure>` takes the float, clear and margin, and the media element inside keeps its size. For a media node that is not floated, the `<figure>` takes the clear and margin, so a `margin: auto` media node stays centered. X writes no layout to HTML, so its `<figure>` has no placement. A node without a caption renders the same HTML as before.
 
 ### Internal
 

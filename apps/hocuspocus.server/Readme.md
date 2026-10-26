@@ -98,7 +98,7 @@ src/
 `src/modules/link-metadata` is the canonical bounded-module template — a modular monolith that can be lifted into a standalone service mechanically. Its rules:
 
 - **One public surface.** `index.ts` exports only `init`, the wire types and the two path constants. Outside files import nothing else.
-- **DI at the seam.** `init({ redis, logger, iconMaxBytes })` builds its own adapters in a closure; it never calls `getRedisClient()` or reads env directly.
+- **DI at the seam.** `init({ redis, logger, iconMaxBytes, publicUrl })` builds its own adapters in a closure; it never calls `getRedisClient()` or reads env directly.
 - **Framework-free domain.** `domain/` imports zero infra SDKs (no Hono, ioredis, metascraper). Adapters live in `infra/`; domain↔infra contracts are tiny inline port types in `domain/types.ts`.
 - **Stable wire contract.** Request (`http/schema.ts`) and response (`domain/types.ts`) are published; additive changes only within v1.
 - **No shared mutable state**, no top-level side effects, and tests live inside `__tests__/`.
@@ -109,7 +109,8 @@ The host wires it in `src/index.ts`:
 const linkMetadataModule = linkMetadata.init({
   redis: getRedisClient(),
   logger: logger.child({ module: 'link-metadata' }),
-  iconMaxBytes: config.linkMetadata.iconMaxBytes
+  iconMaxBytes: config.linkMetadata.iconMaxBytes,
+  publicUrl: config.app.publicUrl
 })
 app.route(linkMetadata.LINK_METADATA_MOUNT_PATH, linkMetadataModule.router)
 ```

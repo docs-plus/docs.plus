@@ -48,7 +48,7 @@ describe('Full Document Paste (Flat Schema)', () => {
     setThrowawayDoc()
     cy.get('@copiedHtml').then(selectAllAndPaste)
 
-    // BC-1: First node must be H1
+    // BC-1: Exactly one H1 title
     cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should('have.length', 1)
     cy.get('h1[data-toc-id]').should('contain', 'My Document Title')
 

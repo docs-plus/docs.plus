@@ -2,7 +2,7 @@
 
 import { type EditorWindow, MOD } from './commands'
 
-/** macOS → Meta+K, Linux/Windows → Control+K. Mirrors the extension's runtime keymap; keep them in sync. */
+/** Mirrors the extension's runtime keymap; keep them in sync. */
 export const ADD_LINK_KEYS: string[] = [MOD, 'k']
 
 export const PICKER_SELECTORS = {

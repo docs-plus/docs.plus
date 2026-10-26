@@ -38,11 +38,8 @@ if (UNFILTERED.length > 0) {
 }
 
 function selects(dir: string, file: string): boolean {
-  const globs = FILTER_GLOBS.get(dir)!
-  return (
-    globs.include.some((glob) => glob.match(file)) &&
-    !globs.exclude.some((glob) => glob.match(file))
-  )
+  const { include, exclude } = FILTER_GLOBS.get(dir)!
+  return include.some((glob) => glob.match(file)) && !exclude.some((glob) => glob.match(file))
 }
 
 const SUPABASE_STUB = {
