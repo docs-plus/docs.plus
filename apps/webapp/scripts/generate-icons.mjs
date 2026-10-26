@@ -42,7 +42,9 @@
  *   - icon-192x192.png          → 192×192, transparent, upload asset for connector dialogs (not linked)
  *
  * APPLE SPLASH (iOS Home Screen launch, portrait, no alpha):
- *   - apple-splash-1290x2796.png, apple-splash-1179x2556.png, apple-splash-1170x2532.png
+ *   - apple-splash-1290x2796.png, apple-splash-1179x2556.png, apple-splash-1170x2532.png,
+ *     apple-splash-1320x2868.png, apple-splash-1206x2622.png, apple-splash-1260x2736.png,
+ *     apple-splash-1284x2778.png, apple-splash-1125x2436.png
  *   - Logo centered on #ffffff; linked from src/pages/_document.tsx
  * ─────────────────────────────────────────────────────────────────
  */
@@ -135,6 +137,11 @@ async function main() {
   await generateSplash(appleTouchSvg, 1290, 2796)
   await generateSplash(appleTouchSvg, 1179, 2556)
   await generateSplash(appleTouchSvg, 1170, 2532)
+  await generateSplash(appleTouchSvg, 1320, 2868)
+  await generateSplash(appleTouchSvg, 1206, 2622)
+  await generateSplash(appleTouchSvg, 1260, 2736)
+  await generateSplash(appleTouchSvg, 1284, 2778)
+  await generateSplash(appleTouchSvg, 1125, 2436)
 
   console.log('\n✨ All icons generated successfully!')
   console.log('\n📋 Next steps:')
