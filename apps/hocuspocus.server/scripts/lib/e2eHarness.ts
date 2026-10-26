@@ -96,16 +96,19 @@ export const spawnServers = (): Servers => {
 
   const ws = spawn('src/hocuspocus.server.ts')
   const rest = spawn('src/index.ts')
+  const kill = () => {
+    ws.kill()
+    rest.kill()
+  }
+  // A guard: an early process.exit or an uncaught throw must not orphan them.
+  process.once('exit', kill)
 
   return {
     wsPort,
     internalPort,
     restPort,
     restUrl: `http://127.0.0.1:${restPort}`,
-    kill: () => {
-      ws.kill()
-      rest.kill()
-    }
+    kill
   }
 }
 
@@ -171,9 +174,21 @@ export interface TestUser {
 }
 
 /**
- * A verifiable identity needs a token the WS process can check, so it needs live
- * Supabase Auth. CI points SUPABASE_URL at a closed port on purpose, so this
- * returns null there and the caller degrades to a skip rather than a false green.
+ * CI sets E2E_REQUIRE_AUTH=1, so a failed mint throws with its reason (#586). A throw,
+ * not an exit, lets the caller's finally delete rows and close its clients.
+ * Without it the mint returns null and the caller prints a skip.
+ */
+const failMintIfRequired = (reason: unknown): null => {
+  if (process.env.E2E_REQUIRE_AUTH !== '1') return null
+  throw new Error(`E2E_REQUIRE_AUTH=1, but the test user mint failed: ${String(reason)}`, {
+    cause: reason
+  })
+}
+
+/**
+ * A verifiable identity needs a token the WS process can check. CI serves one from
+ * the Supabase stub `scripts/lib/supabaseStub.ts`; a local run uses real Supabase
+ * Auth. With no Auth this returns null, and the caller degrades to a skip.
  */
 export const mintTestUser = async (
   prefix: string,
@@ -182,10 +197,12 @@ export const mintTestUser = async (
 ): Promise<TestUser | null> => {
   const url = process.env.SUPABASE_URL
   const anonKey = process.env.SUPABASE_ANON_KEY
-  if (!url || !anonKey) return null
+  if (!url || !anonKey) return failMintIfRequired('SUPABASE_URL or SUPABASE_ANON_KEY is unset')
 
   const email = `${prefix}@docs.plus.test`
   const password = `${prefix}-Passw0rd!`
+  // The reason leaves the try first, so the catch never wraps the throw a second time.
+  let reason: unknown
   try {
     const admin = createClient(url, serviceKey, { auth: { persistSession: false } })
     const created = await admin.auth.admin.createUser({
@@ -194,16 +211,21 @@ export const mintTestUser = async (
       email_confirm: true,
       user_metadata: { full_name: fullName }
     })
-    if (created.error || !created.data.user) return null
-
-    const anon = createClient(url, anonKey, { auth: { persistSession: false } })
-    const signedIn = await anon.auth.signInWithPassword({ email, password })
-    if (signedIn.error || !signedIn.data.session) return null
-
-    return { id: created.data.user.id, email, accessToken: signedIn.data.session.access_token }
-  } catch {
-    return null
+    if (created.error || !created.data.user) {
+      reason = created.error ?? 'createUser returned no user'
+    } else {
+      const anon = createClient(url, anonKey, { auth: { persistSession: false } })
+      const signedIn = await anon.auth.signInWithPassword({ email, password })
+      if (signedIn.error || !signedIn.data.session) {
+        reason = signedIn.error ?? 'signInWithPassword returned no session'
+      } else {
+        return { id: created.data.user.id, email, accessToken: signedIn.data.session.access_token }
+      }
+    }
+  } catch (error) {
+    reason = error
   }
+  return failMintIfRequired(reason)
 }
 
 export const deleteTestUser = async (user: TestUser | null, serviceKey: string): Promise<void> => {

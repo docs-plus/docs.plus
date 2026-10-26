@@ -68,7 +68,11 @@ jobs:
       REDIS_HOST: localhost
       REDIS_PORT: '6379'
       REDIS_DB: '15'
-      SUPABASE_URL: http://127.0.0.1:9
+      # The Supabase stub started below (#586). It serves Auth and the users
+      # table, so the signed-in E2E checks run here.
+      SUPABASE_URL: http://127.0.0.1:54399
+      # A failed test user mint fails the step and prints why, instead of a skip.
+      E2E_REQUIRE_AUTH: '1'
       SUPABASE_ANON_KEY: dummy
       # The content-inject E2E boots both entrypoints and drives the
       # service-role content routes, which fail closed without a key.
@@ -95,6 +99,21 @@ jobs:
         working-directory: apps/hocuspocus.server
         run: bunx prisma migrate deploy --schema ./prisma/schema.prisma
 
+      # The signed-in E2E steps below (document versions, change attribution,
+      # document changes, first-edit owner) use this stub. It serves Auth user
+      # create, sign-in, token check and delete, and GET /rest/v1/users. Any other
+      # Supabase path answers 404.
+      - name: 🔑 Start the Supabase stub
+        working-directory: apps/hocuspocus.server
+        run: |
+          nohup bun scripts/lib/supabaseStub.ts > /tmp/supabase-stub.log 2>&1 &
+          for _ in $(seq 1 50); do
+            curl -sf "$SUPABASE_URL/rest/v1/users" > /dev/null && exit 0
+            sleep 0.2
+          done
+          cat /tmp/supabase-stub.log
+          exit 1
+
       - name: 🧪 Run real-infra E2E (service CRUD + store pipeline)
         working-directory: apps/hocuspocus.server
         run: bun run test:e2e
@@ -112,29 +131,30 @@ jobs:
         working-directory: apps/hocuspocus.server
         run: bun run test:e2e:content-inject
 
-      # SUPABASE_URL points at a closed port here, so the script's user-identity
-      # checks report as skipped rather than failing the job.
+      # The user-identity and read-only checks sign in through the stub. A
+      # failed mint fails the step, because E2E_REQUIRE_AUTH is set.
       - name: 🧪 Run real-infra E2E (document versions)
         working-directory: apps/hocuspocus.server
         run: bun --env-file=../../.env.local scripts/e2e-versions.ts
 
-      # Same closed-port caveat. The signed-out checks need no Auth and assert
-      # here. The signed-in checks skip until #586, so the script prints
-      # SKIPPED and exits 0. A local run against real Auth covers them.
+      # The signed-out checks need no Auth. The signed-in checks sign in
+      # through the stub. A failed mint fails the step, not a SKIPPED result.
       - name: 🧪 Run real-infra E2E (change attribution)
         working-directory: apps/hocuspocus.server
         run: bun run test:e2e:change-attribution
 
-      # Contributor names need a live Supabase client, and SUPABASE_URL is a
-      # closed port here, so those checks skip. Trigger counts read Postgres
-      # and still assert. A local run supplies the identity evidence.
+      # Contributor names come from the stub's users table. Trigger counts
+      # read Postgres. The timing skip ("predecessor millisecond") is not Auth.
       - name: 🧪 Run real-infra E2E (document changes)
         working-directory: apps/hocuspocus.server
         run: bun run test:e2e:document-changes
 
-      # SUPABASE_URL is a closed port here, so only the signed-out case asserts.
-      # The signed-in owner, cede and backstop cases need a local run against
-      # real Auth, and the script reports them as skipped.
+      # All four cases assert here: the signed-out case needs no Auth, and the
+      # signed-in owner, cede and backstop cases sign in through the stub.
       - name: 🧪 Run real-infra E2E (first-edit owner)
         working-directory: apps/hocuspocus.server
         run: bun --env-file=../../.env.local scripts/e2e-first-edit-owner.ts
+
+      - name: 📋 Show the Supabase stub log
+        if: always()
+        run: cat /tmp/supabase-stub.log || true

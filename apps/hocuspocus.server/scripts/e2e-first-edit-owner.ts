@@ -1,7 +1,8 @@
 /**
  * Real-infra E2E for first-edit ownership: a signed-in first edit that creates the
  * row owns it and tells the room live; a signed-out one, or a cede, owns nothing.
- * Needs Postgres and Redis. Without live Supabase Auth only the signed-out case runs.
+ * Needs Postgres, Redis and Supabase Auth (real, or the Supabase stub in scripts/lib).
+ * Without Auth only the signed-out case runs.
  * `cd apps/hocuspocus.server && bun --env-file=../../.env.local scripts/e2e-first-edit-owner.ts`
  */
 import * as Y from 'yjs'
@@ -124,7 +125,7 @@ try {
     throw new Error('REST process never came up')
   }
 
-  // Needs no Supabase, so CI runs it even where Auth is a closed port.
+  // Needs no Supabase, so it runs even when Auth is unreachable.
   console.log('\n[B] a signed-out first edit leaves the document open')
   {
     const { row, owners } = await editAndReadRow(`${PREFIX}-signed-out`, '')

@@ -4,14 +4,20 @@
  * Standalone (not `bun test`); needs `make dev-local` and root .env.local.
  */
 import { TiptapTransformer } from '@hocuspocus/transformer'
-import { createClient } from '@supabase/supabase-js'
 import * as Y from 'yjs'
 
 import { prisma } from '../src/lib/prisma'
 import { closeQueues, createDocumentWorker } from '../src/lib/queue'
 import { disconnectRedis } from '../src/lib/redis'
+import {
+  deleteTestUser,
+  mintTestUser,
+  sleep,
+  spawnServers,
+  type TestUser,
+  waitForHttp
+} from './lib/e2eHarness'
 
-const PACKAGE_ROOT = new URL('..', import.meta.url).pathname
 const REPO_ROOT = new URL('../../..', import.meta.url).pathname
 const PREFIX = `e2e-attribution-${Date.now()}`
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -46,62 +52,7 @@ if (!SERVICE_KEY) {
   process.exit(1)
 }
 
-const freePort = (): number => {
-  const probe = Bun.serve({ port: 0, fetch: () => new Response('') })
-  const { port } = probe
-  probe.stop(true)
-  if (port === undefined) throw new Error('Bun.serve did not assign a port')
-  return port
-}
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
-const waitForHttp = async (url: string, timeoutMs = 30_000): Promise<boolean> => {
-  const deadline = Date.now() + timeoutMs
-  while (Date.now() < deadline) {
-    try {
-      const response = await fetch(url)
-      if (response.ok) return true
-    } catch {
-      // not up yet
-    }
-    await sleep(200)
-  }
-  return false
-}
-
-const wsPort = freePort()
-const internalPort = freePort()
-const restPort = freePort()
-
-const childEnv = {
-  ...process.env,
-  NODE_ENV: 'development',
-  LOG_LEVEL: 'warn',
-  REST_LOG_LEVEL: 'warn',
-  WS_LOG_LEVEL: 'warn',
-  HOCUSPOCUS_PORT: String(wsPort),
-  HOCUSPOCUS_INTERNAL_HTTP_PORT: String(internalPort),
-  HOCUSPOCUS_INTERNAL_HTTP_HOST: '127.0.0.1',
-  HOCUSPOCUS_INTERNAL_URL: `http://127.0.0.1:${internalPort}`,
-  APP_PORT: String(restPort)
-}
-
-const wsServer = Bun.spawn(['bun', 'src/hocuspocus.server.ts'], {
-  cwd: PACKAGE_ROOT,
-  env: childEnv,
-  stdout: 'inherit',
-  stderr: 'inherit'
-})
-
-const restServer = Bun.spawn(['bun', 'src/index.ts'], {
-  cwd: PACKAGE_ROOT,
-  env: childEnv,
-  stdout: 'inherit',
-  stderr: 'inherit'
-})
-
-const restUrl = `http://127.0.0.1:${restPort}`
+const { wsPort, internalPort, restUrl, kill: killServers } = spawnServers()
 
 interface RestResponse {
   status: number
@@ -288,54 +239,11 @@ const openProvider = async (
   return { provider, ydoc, clientId: ydoc.clientID, synced, announced }
 }
 
-interface Actor {
-  id: string
-  accessToken: string
-  fullName: string | null
-}
+type Actor = TestUser & { fullName: string | null }
 
-// Signed-in attribution needs tokens the WS process can verify, so it needs a
-// live Supabase Auth. CI points SUPABASE_URL at a closed port on purpose, so the
-// signed-in checks skip and the run prints SKIPPED, never a false PASSED.
 const mintUser = async (suffix: string, fullName: string): Promise<Actor | null> => {
-  const url = process.env.SUPABASE_URL
-  const anonKey = process.env.SUPABASE_ANON_KEY
-  if (!url || !anonKey) return null
-
-  const email = `${PREFIX}-${suffix}@docs.plus.test`
-  const password = `${PREFIX}-Passw0rd!`
-  try {
-    const admin = createClient(url, SERVICE_KEY, { auth: { persistSession: false } })
-    const created = await admin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name: fullName }
-    })
-    if (created.error || !created.data.user) return null
-
-    const anon = createClient(url, anonKey, { auth: { persistSession: false } })
-    const signedIn = await anon.auth.signInWithPassword({ email, password })
-    if (signedIn.error || !signedIn.data.session) return null
-
-    return { id: created.data.user.id, accessToken: signedIn.data.session.access_token, fullName }
-  } catch {
-    return null
-  }
-}
-
-const deleteActors = async (actors: (Actor | null)[]): Promise<void> => {
-  const url = process.env.SUPABASE_URL
-  if (!url) return
-  const admin = createClient(url, SERVICE_KEY, { auth: { persistSession: false } })
-  for (const actor of actors) {
-    if (!actor) continue
-    try {
-      await admin.auth.admin.deleteUser(actor.id)
-    } catch {
-      // the run already reported; a leftover throwaway user is not a failure
-    }
-  }
+  const user = await mintTestUser(`${PREFIX}-${suffix}`, SERVICE_KEY, fullName)
+  return user && { ...user, fullName }
 }
 
 const cleanup = async () => {
@@ -547,21 +455,22 @@ await worker.waitUntilReady()
 
 if (!(await waitForHttp(`http://127.0.0.1:${internalPort}/metrics`))) {
   console.error('WS process internal listener never came up')
-  wsServer.kill()
-  restServer.kill()
+  killServers()
   process.exit(1)
 }
 if (!(await waitForHttp(`${restUrl}/health`))) {
   console.error('REST process never came up')
-  wsServer.kill()
-  restServer.kill()
+  killServers()
   process.exit(1)
 }
 
-const alpha = await mintUser('alpha', 'Attribution Alpha')
-const beta = await mintUser('beta', 'Attribution Beta')
-
+// Minted inside the try, so the finally deletes alpha even when beta's mint throws.
+let alpha: Actor | null = null
+let beta: Actor | null = null
 try {
+  alpha = await mintUser('alpha', 'Attribution Alpha')
+  beta = await mintUser('beta', 'Attribution Beta')
+
   await runSignedOut()
 
   if (!alpha || !beta) {
@@ -577,10 +486,9 @@ try {
   console.error('\nE2E aborted:', error)
   failed += 1
 } finally {
-  await deleteActors([alpha, beta])
+  for (const actor of [alpha, beta]) await deleteTestUser(actor, SERVICE_KEY)
   await cleanup()
-  wsServer.kill()
-  restServer.kill()
+  killServers()
   await worker.close()
   await closeQueues()
   await prisma.$disconnect()
@@ -590,8 +498,8 @@ try {
 console.log(`\n${passed} passed, ${failed} failed`)
 if (skipped > 0) console.log(`${skipped} check group(s) skipped`)
 if (uncovered > 0) console.log(`${uncovered} scenario(s) NOT COVERED`)
-// SKIPPED exits 0: CI has no Auth until #586, and a non-zero exit would fail
-// backend-e2e on every main push. NOT COVERED stays a note, not a skip.
+// SKIPPED exits 0, so a local run without Auth still passes. CI sets
+// E2E_REQUIRE_AUTH, so a failed mint fails there. NOT COVERED stays a note.
 const outcome = failed > 0 ? 'FAILED' : skipped > 0 || passed === 0 ? 'SKIPPED' : 'PASSED'
 console.log(`\nattribution E2E: ${outcome}`)
 process.exit(failed > 0 ? 1 : 0)

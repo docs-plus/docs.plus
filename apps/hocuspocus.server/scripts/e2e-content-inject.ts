@@ -382,8 +382,8 @@ try {
     })
     // This is the one content surface on requireServiceRoleOrUser, so a failed
     // service-role compare falls through to user verification. That gives 401 against
-    // a live Supabase, and 503 when Supabase is unreachable. CI points SUPABASE_URL at
-    // a closed port. Both are rejections — the write count below matters.
+    // live Auth or the Supabase stub, and 503 when Auth is unreachable. Both are
+    // rejections — the write count below matters.
     check(
       post.status === 401 || post.status === 503,
       `POST with content and a wrong bearer was rejected (got ${post.status})`

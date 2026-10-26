@@ -10,14 +10,13 @@
  */
 import { OutgoingMessage } from '@hocuspocus/server'
 import { TiptapTransformer } from '@hocuspocus/transformer'
-import { createClient } from '@supabase/supabase-js'
 import * as Y from 'yjs'
 
 import { prisma } from '../src/lib/prisma'
 import { closeQueues, createDocumentWorker, StoreDocumentQueue } from '../src/lib/queue'
 import { disconnectRedis } from '../src/lib/redis'
+import { deleteTestUser, mintTestUser, sleep, spawnServers, waitForHttp } from './lib/e2eHarness'
 
-const PACKAGE_ROOT = new URL('..', import.meta.url).pathname
 const REPO_ROOT = new URL('../../..', import.meta.url).pathname
 const PREFIX = `e2e-versions-${Date.now()}`
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -38,62 +37,7 @@ if (!SERVICE_KEY) {
   process.exit(1)
 }
 
-const freePort = (): number => {
-  const probe = Bun.serve({ port: 0, fetch: () => new Response('') })
-  const { port } = probe
-  probe.stop(true)
-  if (port === undefined) throw new Error('Bun.serve did not assign a port')
-  return port
-}
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
-const waitForHttp = async (url: string, timeoutMs = 30_000): Promise<boolean> => {
-  const deadline = Date.now() + timeoutMs
-  while (Date.now() < deadline) {
-    try {
-      const response = await fetch(url)
-      if (response.ok) return true
-    } catch {
-      // not up yet
-    }
-    await sleep(200)
-  }
-  return false
-}
-
-const wsPort = freePort()
-const internalPort = freePort()
-const restPort = freePort()
-
-const childEnv = {
-  ...process.env,
-  NODE_ENV: 'development',
-  LOG_LEVEL: 'warn',
-  REST_LOG_LEVEL: 'warn',
-  WS_LOG_LEVEL: 'warn',
-  HOCUSPOCUS_PORT: String(wsPort),
-  HOCUSPOCUS_INTERNAL_HTTP_PORT: String(internalPort),
-  HOCUSPOCUS_INTERNAL_HTTP_HOST: '127.0.0.1',
-  HOCUSPOCUS_INTERNAL_URL: `http://127.0.0.1:${internalPort}`,
-  APP_PORT: String(restPort)
-}
-
-const wsServer = Bun.spawn(['bun', 'src/hocuspocus.server.ts'], {
-  cwd: PACKAGE_ROOT,
-  env: childEnv,
-  stdout: 'inherit',
-  stderr: 'inherit'
-})
-
-const restServer = Bun.spawn(['bun', 'src/index.ts'], {
-  cwd: PACKAGE_ROOT,
-  env: childEnv,
-  stdout: 'inherit',
-  stderr: 'inherit'
-})
-
-const restUrl = `http://127.0.0.1:${restPort}`
+const { wsPort, internalPort, restUrl, kill: killServers } = spawnServers()
 
 interface RestResponse {
   status: number
@@ -282,53 +226,6 @@ const revertOverStateless = async (
   return null
 }
 
-interface TestUser {
-  id: string
-  email: string
-  accessToken: string
-}
-
-// Attribution needs a token the WS process can actually verify, which is a live
-// Supabase Auth. CI points SUPABASE_URL at a closed port on purpose, so every
-// user-identity assertion below degrades to a skip rather than a false green.
-const mintTestUser = async (): Promise<TestUser | null> => {
-  const url = process.env.SUPABASE_URL
-  const anonKey = process.env.SUPABASE_ANON_KEY
-  if (!url || !anonKey) return null
-
-  const email = `${PREFIX}@docs.plus.test`
-  const password = `${PREFIX}-Passw0rd!`
-  try {
-    const admin = createClient(url, SERVICE_KEY, { auth: { persistSession: false } })
-    const created = await admin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name: 'Versions Actor' }
-    })
-    if (created.error || !created.data.user) return null
-
-    const anon = createClient(url, anonKey, { auth: { persistSession: false } })
-    const signedIn = await anon.auth.signInWithPassword({ email, password })
-    if (signedIn.error || !signedIn.data.session) return null
-
-    return { id: created.data.user.id, email, accessToken: signedIn.data.session.access_token }
-  } catch {
-    return null
-  }
-}
-
-const deleteTestUser = async (user: TestUser | null): Promise<void> => {
-  const url = process.env.SUPABASE_URL
-  if (!user || !url) return
-  try {
-    const admin = createClient(url, SERVICE_KEY, { auth: { persistSession: false } })
-    await admin.auth.admin.deleteUser(user.id)
-  } catch {
-    // the run already reported; a leftover throwaway user is not a failure
-  }
-}
-
 const cleanup = async () => {
   await prisma.documentMetadata.deleteMany({ where: { slug: { startsWith: 'e2e-versions-' } } })
   if (createdDocumentIds.length > 0) {
@@ -344,18 +241,19 @@ await worker.waitUntilReady()
 
 if (!(await waitForHttp(`http://127.0.0.1:${internalPort}/metrics`))) {
   console.error('WS process internal listener never came up')
-  wsServer.kill()
-  restServer.kill()
+  killServers()
   process.exit(1)
 }
 if (!(await waitForHttp(`${restUrl}/health`))) {
   console.error('REST process never came up')
-  wsServer.kill()
-  restServer.kill()
+  killServers()
   process.exit(1)
 }
 
-const actor = await mintTestUser()
+// Attribution needs a token the WS process can verify. CI serves one from the
+// Supabase stub scripts/lib/supabaseStub.ts. With no Auth reachable, every
+// user-identity assertion below degrades to a skip, or fails under E2E_REQUIRE_AUTH.
+const actor = await mintTestUser(PREFIX, SERVICE_KEY, 'Versions Actor')
 
 try {
   // 1. One document, three provenances: a collaborator's edit, a service
@@ -439,7 +337,7 @@ try {
           'the editor is listed among the version contributors'
         )
       } else {
-        skip('the profile lookup returned nothing; attribution rendered as bare uids')
+        check(false, 'the profile lookup returned nothing; attribution rendered as bare uids')
       }
       const checkpointListed = versions.find((version) => version.trigger === 'checkpoint')
       check(
@@ -955,10 +853,9 @@ try {
   failed = true
 } finally {
   await StoreDocumentQueue.resume().catch(() => {})
-  await deleteTestUser(actor)
+  await deleteTestUser(actor, SERVICE_KEY)
   await cleanup()
-  wsServer.kill()
-  restServer.kill()
+  killServers()
   await worker.close()
   await closeQueues()
   await prisma.$disconnect()
