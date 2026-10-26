@@ -30,6 +30,7 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ### Fixed
 
+- Parsed and pasted `<a href>` now becomes `hyperlink` even when StarterKit's Link stays registered. The `a[href]` parse rule runs at priority 51, above the ProseMirror default of 50. Before, the mark registered first won, which was usually Link. A host that keeps Link to load stored `link` marks now gets a `hyperlink` mark, its icon and its popovers on paste.
 - The prebuilt edit popover fills Text from the document, not from `innerText`. Before, CSS such as `text-transform` could change the text that Apply wrote back ([#518](https://github.com/docs-plus/docs.plus/issues/518)).
 
 ## [2.2.0] — 2026-10-22

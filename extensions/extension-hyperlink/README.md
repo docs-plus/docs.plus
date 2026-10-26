@@ -86,7 +86,7 @@ You should see a paragraph with one link. Click the link to open the preview pop
 
 ## Caveats
 
-- **`StarterKit.configure({ link: false })` is required, not stylistic.** StarterKit v3 bundles `@tiptap/extension-link` by default. The two marks collide on the `setLink` / `unsetLink` / `toggleLink` command names and on the `a[href]` parse rule. Your `extensions` array order then decides each contest, with no warning. If the upstream mark wins, this package's `isSafeHref` gate never runs on parsed or pasted HTML, and its popovers never attach.
+- **`StarterKit.configure({ link: false })` is required, not stylistic.** StarterKit v3 bundles `@tiptap/extension-link` by default. The two marks collide on the `setLink` / `unsetLink` / `toggleLink` command names. Your `extensions` array order then decides which mark each command writes, with no warning. If you keep Link only to load stored `link` marks, parsed and pasted HTML still gives `hyperlink`. This package's `a[href]` rule runs at priority 51, above Link's default 50.
 - **A click on a link needs `popovers.previewHyperlink`.** The three openers fall back to the prebuilt factory when a slot is `null`. The click handler does not: leave `previewHyperlink` at `null` and a click on a link opens no popover.
 - **`linkOnPaste: false` does not stop every paste from linking.** The linkify paste rule stays registered, so a pasted bare URL still becomes a link. To stop that path too, set `shouldAutoLink: () => false`, which every autolink path consults.
 - **`HTMLAttributes.target` reaches the DOM.** `HTMLAttributes: { target: '_blank' }` does emit `<a target="_blank">`. A browser-driven `target="_blank"` navigation skips the click gate. Leave `target` at `null` and let the click handler open the link.

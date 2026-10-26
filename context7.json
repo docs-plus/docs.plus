@@ -29,7 +29,7 @@
     "Inside the docs.plus monorepo, use Bun for every package operation: `bun install`, `bun run`, `bunx`. Never npm, yarn, pnpm or npx there.",
     "Install a docs.plus Tiptap extension with `npm install @docs.plus/extension-<name>`; pnpm, yarn or bun add also work. The names: hyperlink, hypermultimedia, indent, inline-code, mermaid, placeholder.",
     "Read each extension's README and package.json for its version and Tiptap peer requirements. Resolve catalog references from the root package.json.",
-    "With extension-hyperlink set `StarterKit.configure({ link: false })`. StarterKit v3 bundles its own link mark claiming the same commands and the same a[href] parse rule. The clash is silent.",
+    "With extension-hyperlink set `StarterKit.configure({ link: false })`. StarterKit v3 bundles its own link mark claiming the same commands. The command clash is silent. The a[href] parse rule is not: Hyperlink parses at priority 51 and wins.",
     "With extension-hyperlink set `popovers.previewHyperlink`, for example to `previewHyperlinkPopover`. With that slot empty, a click on a link opens no popover.",
     "With extension-hyperlink and extension-hypermultimedia together, set `Hyperlink.configure({ shouldAutoLink: (url) => !isMediaUrl(url) })`, importing `isMediaUrl` from the hypermultimedia package. Otherwise a pasted media URL becomes a link.",
     "Before writing setup code or Markdown for an extension, read its README Caveats. They list every setup mistake that fails with no error, and everything that Markdown drops.",

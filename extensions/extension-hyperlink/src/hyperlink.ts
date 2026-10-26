@@ -257,6 +257,10 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
       { tag: '.hyperlink-icon', ignore: true, priority: 1000 },
       {
         tag: 'a[href]',
+        // Above the default 50, so a host that keeps StarterKit's Link for stored
+        // `link` marks still parses every new <a href> as `hyperlink`. On a tie,
+        // the mark registered first wins, and StarterKit usually comes first.
+        priority: 51,
         getAttrs: (node: HTMLElement | string) => {
           if (typeof node === 'string') return false
           const href = node.getAttribute('href') ?? ''

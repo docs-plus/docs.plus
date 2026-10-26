@@ -112,6 +112,17 @@ describe('Hyperlink Paste Behavior', () => {
       cy.get(EDITOR_LINK)
         .should('have.attr', 'href', 'https://preserved.com')
         .and('contain.text', 'preserved link')
+
+      // The pad keeps StarterKit's Link for stored marks. Pasted HTML must still become hyperlink.
+      cy.window().then((win) => {
+        const names = []
+        win._editor.state.doc.descendants((node) => {
+          if (node.isText && node.text.includes('preserved link')) {
+            names.push(...node.marks.map((mark) => mark.type.name))
+          }
+        })
+        expect(names).to.deep.equal(['hyperlink'])
+      })
     })
 
     it('pasting HTML with javascript: href strips the link', () => {
