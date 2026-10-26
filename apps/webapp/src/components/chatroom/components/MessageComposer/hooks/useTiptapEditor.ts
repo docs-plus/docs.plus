@@ -47,12 +47,12 @@ lowlight.register('css', css)
 lowlight.register('js', js)
 lowlight.register('ts', ts)
 lowlight.register('markdown', md)
-// @ts-expect-error highlight.js language modules ship loose types
-lowlight.register('python', python)
+// highlight.js language modules ship loose types; same cast as TipTap.tsx
+type LowlightLanguage = Parameters<typeof lowlight.register>[1]
+lowlight.register('python', python as unknown as LowlightLanguage)
 lowlight.register('yaml', yaml)
 lowlight.register('json', json)
-// @ts-expect-error highlight.js language modules ship loose types
-lowlight.register('bash', bash)
+lowlight.register('bash', bash as unknown as LowlightLanguage)
 
 import { presenceRoom } from '@services/presenceRoom'
 import { useChatStore } from '@stores'
