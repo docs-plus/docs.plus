@@ -52,8 +52,6 @@ jobs:
         with:
           node-version: '26.8.2'
       - uses: ./.github/actions/setup-bun
-        with:
-          bun-version: '1.4.1'
       - uses: ./.github/actions/setup-cypress
       - name: Check Cypress report parsing
         run: bun test scripts/run-tests.test.ts

@@ -21,14 +21,25 @@ description: 'Cache and install the Cypress test runner binary'
 runs:
   using: 'composite'
   steps:
-    - name: 📦 Cache Cypress binary
+    # Keyed on the installed version, not bun.lock: most lock changes keep the
+    # same binary. Needs setup-bun first, so node_modules holds the pinned cypress.
+    - name: 🏷️ Read Cypress version
+      id: version
+      shell: bash
+      working-directory: extensions/extension-hyperlink
+      run: |
+        version=$(bun -e "console.log(require('cypress/package.json').version)")
+        [ -n "$version" ] || { echo "::error::cypress is not installed; run setup-bun first"; exit 1; }
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
+    # No restore-keys: a prefix hit restores the old binary, and the save then
+    # stores both versions in one entry.
+    - name: 📦 Restore Cypress binary
       id: cypress-cache
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.cache/Cypress
-        key: ${{ runner.os }}-cypress-${{ hashFiles('**/bun.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cypress-
+        key: ${{ runner.os }}-cypress-${{ steps.version.outputs.version }}
 
     - name: 🌲 Install Cypress binary
       shell: bash
@@ -41,3 +52,21 @@ runs:
         fi
         bunx cypress install
         bunx cypress verify
+
+    # Pull requests read main's entries and never save. The lookup skips a key
+    # that another job already saved.
+    - name: 🔎 Look up saved Cypress binary
+      id: lookup
+      if: github.event_name != 'pull_request' && steps.cypress-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/Cypress
+        key: ${{ steps.cypress-cache.outputs.cache-primary-key }}
+        lookup-only: true
+
+    - name: 💾 Save Cypress binary
+      if: steps.lookup.outcome == 'success' && steps.lookup.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/Cypress
+        key: ${{ steps.cypress-cache.outputs.cache-primary-key }}

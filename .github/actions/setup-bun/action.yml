@@ -3,6 +3,7 @@
 # ============================================================================
 # Reusable Bun setup with caching. Key invalidates on bun.lock changes.
 # Increment cache-version to manually bust cache when needed.
+# Pull requests restore only. Other events save once per key, after the install.
 # ============================================================================
 
 name: 'Setup Bun Environment'
@@ -10,14 +11,14 @@ description: 'Setup Bun with cached dependencies'
 
 inputs:
   bun-version:
-    description: 'Bun version'
-    default: 'latest'
+    description: 'Bun version. Pinned on purpose; bump by hand, never below the 1.4.0 floor (AGENTS.md).'
+    default: '1.4.1'
   ignore-scripts:
     description: 'Skip postinstall scripts (for security job)'
     default: 'false'
   cache-version:
     description: 'Increment to bust cache (v1, v2, etc)'
-    default: 'v1'
+    default: 'v2'
 
 outputs:
   cache-hit:
@@ -33,23 +34,21 @@ runs:
       with:
         bun-version: ${{ inputs.bun-version }}
 
-    - name: 📦 Cache Dependencies
+    - name: 📦 Restore Dependencies
       id: cache
-      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
+        # Keep the three path lists in this file equal: the cache version hashes them.
         path: |
           ~/.bun/install/cache
           node_modules
           packages/*/node_modules
           apps/*/node_modules
           extensions/*/node_modules
-        # The resolved Bun version is part of the key because bun-version
-        # defaults to `latest`. Cached node_modules carry native addons built
-        # for one NODE_MODULE_VERSION, and --frozen-lockfile relinks rather
-        # than rebuilds them, so a Bun release would otherwise reuse an addon
-        # compiled by the previous Bun.
+        # The Bun version stays in the key: cached node_modules hold native addons
+        # built for one Bun, and --frozen-lockfile relinks them without a rebuild.
         key: ${{ runner.os }}-bun-${{ inputs.cache-version }}-${{
-          steps.setup-bun.outputs.bun-version }}-${{ hashFiles('**/bun.lock') }}
+          steps.setup-bun.outputs.bun-version }}-${{ hashFiles('bun.lock') }}
         restore-keys: |
           ${{ runner.os }}-bun-${{ inputs.cache-version }}-${{ steps.setup-bun.outputs.bun-version }}-
 
@@ -58,3 +57,31 @@ runs:
       run: |
         [ "${{ steps.cache.outputs.cache-hit }}" = "true" ] && echo "✅ Cache HIT" || echo "📦 Installing..."
         bun install --frozen-lockfile ${{ inputs.ignore-scripts == 'true' && '--ignore-scripts' || '' }}
+
+    # Pull requests read main's entries and never save. An --ignore-scripts tree
+    # must not become the shared entry. The lookup skips a key another job saved.
+    - name: 🔎 Look up saved dependencies
+      id: lookup
+      if: github.event_name != 'pull_request' && steps.cache.outputs.cache-hit != 'true' && inputs.ignore-scripts != 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.bun/install/cache
+          node_modules
+          packages/*/node_modules
+          apps/*/node_modules
+          extensions/*/node_modules
+        key: ${{ steps.cache.outputs.cache-primary-key }}
+        lookup-only: true
+
+    - name: 💾 Save Dependencies
+      if: steps.lookup.outcome == 'success' && steps.lookup.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.bun/install/cache
+          node_modules
+          packages/*/node_modules
+          apps/*/node_modules
+          extensions/*/node_modules
+        key: ${{ steps.cache.outputs.cache-primary-key }}
