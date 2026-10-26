@@ -118,9 +118,8 @@ export const X = Node.create<XOptions>({
     // src, and collaborative attrs are never re-validated — gate the read too.
     const url = normalizeXUrl(String(HTMLAttributes.src ?? node.attrs.src ?? '')) ?? ''
 
-    // Serialize the standard twitter-tweet markup, plus a figure when captioned. The
-    // per-node oEmbed and layout attrs are runtime nodeView concerns and would be
-    // invalid attributes on <blockquote>.
+    // The per-node oEmbed and layout attrs stay off the tweet markup. They are
+    // runtime nodeView concerns and would be invalid attributes on <blockquote>.
     return wrapRenderWithCaption(
       [
         'blockquote',

@@ -65,14 +65,13 @@ export async function requireServiceRoleOrUser(c: Context, next: Next) {
 // still records its owner and passes the owner check.
 const OPTIONAL_USER_AUTH_DEADLINE_MS = 2000
 
-/** Attach the user when a valid token is present; never rejects. For routes with
- *  mixed public/privileged actions that gate per-field downstream. */
 const optionalUserWithin =
   (deadlineMs?: number): MiddlewareHandler =>
   async (c, next) => {
     const token = extractToken(c)
     if (token) {
       const outcome = await verifySupabaseTokenOutcome(token, {
+        // HEAD on the same path keeps the old bound.
         deadlineMs: c.req.method === 'GET' ? deadlineMs : undefined
       })
       // Transient outage → proceed anonymous; only a verified user is attached.
@@ -89,6 +88,7 @@ const optionalUserWithin =
     await next()
   }
 
+/** Attach the user when a valid token is present; never rejects. For routes with
+ *  mixed public/privileged actions that gate per-field downstream. */
 export const optionalUser = optionalUserWithin()
-// HEAD on the same path keeps the old bound.
 export const optionalPadReader = optionalUserWithin(OPTIONAL_USER_AUTH_DEADLINE_MS)

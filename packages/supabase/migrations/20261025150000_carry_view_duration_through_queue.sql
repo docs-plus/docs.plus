@@ -57,7 +57,6 @@ begin
                 ) then
                     v_duplicates := v_duplicates + 1;
                 else
-                    -- Insert the view
                     -- duration_ms is set when the visit closed before this drain (#603).
                     insert into public.document_views (
                         id, document_slug, user_id, session_id, viewed_at, view_date,

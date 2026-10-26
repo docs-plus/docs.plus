@@ -107,7 +107,7 @@ export const spawnServers = (): Servers => {
     ws.kill()
     rest.kill()
   }
-  // A guard: an early process.exit or an uncaught throw must not orphan them.
+  // An early process.exit or an uncaught throw must not orphan the child processes.
   process.once('exit', kill)
 
   const restUrl = `http://127.0.0.1:${restPort}`

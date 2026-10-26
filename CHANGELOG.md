@@ -34,8 +34,10 @@ counts fail. `20261025150000` replaces `update_view_duration` and
 
 ### Changed
 
-- The production deploy now aborts below 20 GB free disk, up from 10 GB. It prunes Docker build cache toward a free-space target, not by age.
-- The production deploy now stops when `VAPID_PUBLIC_KEY` and `NEXT_PUBLIC_VAPID_PUBLIC_KEY` differ ([#609](https://github.com/docs-plus/docs.plus/issues/609)).
+- The production deploy now aborts below 20 GB free disk, up from 10 GB. It prunes Docker
+  build cache toward a free-space target, not by age.
+- The production deploy now stops when `VAPID_PUBLIC_KEY` and `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+  differ ([#609](https://github.com/docs-plus/docs.plus/issues/609)).
 
 ### Fixed
 

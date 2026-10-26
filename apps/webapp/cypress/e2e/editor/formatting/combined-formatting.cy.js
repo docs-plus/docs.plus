@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 
 import { heading, paragraph, section } from '../../../fixtures/docMaker'
-import { MOD, TEST_TITLE } from '../../../support/commands'
+import { TEST_TITLE, MOD } from '../../../support/commands'
 
 const SimpleDocument = {
   documentName: TEST_TITLE.HelloDocy,

@@ -118,8 +118,8 @@ jobs:
   # ===========================================================================
   # STAGE 0 — CHANGE DETECTION (cheap; gates the expensive extension suite)
   # ===========================================================================
-  # Each clean-room extension suite takes a median of 151 s (max 289 s, 2026-10-20)
-  # and is a hard deploy gate. It only needs to run when something that affects an
+  # Each clean-room extension suite is a hard deploy gate (timings at
+  # `extension-tests`). It only needs to run when something that affects an
   # extension build/test actually changed. This job emits a boolean the
   # extension-tests job keys off; lint/typecheck/security stay always-on
   # because they are fast and repo-global (typecheck still catches extension

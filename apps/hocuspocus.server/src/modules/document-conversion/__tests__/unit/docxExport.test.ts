@@ -23,23 +23,19 @@ describe('exportDocx image origin allowlist', () => {
   let media: ReturnType<typeof Bun.serve>
   let foreign: ReturnType<typeof Bun.serve>
 
+  const servePng = (onHit: () => void) =>
+    Bun.serve({
+      hostname: '127.0.0.1',
+      port: 0,
+      fetch: () => {
+        onHit()
+        return new Response(PNG, { headers: { 'content-type': 'image/png' } })
+      }
+    })
+
   beforeAll(() => {
-    media = Bun.serve({
-      hostname: '127.0.0.1',
-      port: 0,
-      fetch: () => {
-        mediaHits += 1
-        return new Response(PNG, { headers: { 'content-type': 'image/png' } })
-      }
-    })
-    foreign = Bun.serve({
-      hostname: '127.0.0.1',
-      port: 0,
-      fetch: () => {
-        foreignHits += 1
-        return new Response(PNG, { headers: { 'content-type': 'image/png' } })
-      }
-    })
+    media = servePng(() => (mediaHits += 1))
+    foreign = servePng(() => (foreignHits += 1))
   })
 
   afterAll(() => {

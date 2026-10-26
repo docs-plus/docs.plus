@@ -7,8 +7,8 @@ import { config } from '../../src/config/env'
 import type { PrismaClient } from '../../src/generated/prisma/client'
 
 // bun test shares one process and one token cache, so every file that stubs
-// getUser must map a shared token to the same user. Keep the map here only.
-export const TEST_TOKEN_USERS: Record<string, string> = {
+// getUser must map a shared token to the same user.
+const TEST_TOKEN_USERS: Record<string, string> = {
   'valid-test-token': 'user-123',
   'other-user-token': 'user-456'
 }

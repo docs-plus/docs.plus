@@ -22,8 +22,7 @@ interface LinkPreviewSheetProps {
  * External-link header: unfurled favicon/title/description. Isolated in its
  * own component so the metadata fetch hook never runs for internal links.
  */
-const ExternalLinkHeader = ({ data: payload }: LinkPreviewSheetProps) => {
-  const { href } = payload
+const ExternalLinkHeader = ({ data: { href } }: LinkPreviewSheetProps) => {
   const { status, data } = useLinkMetadata(href)
 
   const imageUrl = pickPreviewImageSrc(data, href)

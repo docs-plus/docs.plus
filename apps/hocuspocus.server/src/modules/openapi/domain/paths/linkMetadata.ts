@@ -68,7 +68,7 @@ export const linkMetadataPaths: OpenApiPaths = {
         },
         '404': {
           description:
-            'No usable icon. The body is empty. A clean miss is cached for one day; a timeout, a network or DNS error, the SSRF guard on any hop, too many redirects, or upstream 5xx, 408 or 429 for ten minutes.',
+            'No usable icon. The body is empty. A clean miss is cached for one day. These misses are cached for ten minutes: a timeout, a network or DNS error, the SSRF guard on any hop, too many redirects, or upstream 5xx, 408 or 429.',
           headers: { 'Cache-Control': { schema: { type: 'string' } } }
         },
         '429': rateLimitedRef
