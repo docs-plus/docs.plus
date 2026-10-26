@@ -16,6 +16,8 @@ RUN rm -rf /var/lib/apt/lists/* && \
 # Backend closure: root + email-templates + hocuspocus.server. Stub package.json for
 # other workspaces so lockfile resolution succeeds without copying their source.
 COPY package.json bun.lock* bunfig.toml ./
+# bun patch files: the install applies them through patchedDependencies.
+COPY patches ./patches
 # Shared library config at the monorepo root (single source of truth):
 #   - tsconfig.base.json: per-extension tsconfig.json does `extends: "../../tsconfig.base.json"`
 #   - tsup.base.ts:       per-extension tsup.config.ts does `from '../../tsup.base'`
@@ -80,6 +82,7 @@ RUN groupadd -r appuser && useradd -r -m -g appuser appuser
 # solve on the amd64 host. It costs only 1.8 s on an arm64 laptop, so judge this
 # from the production build log, never from a local one.
 COPY --from=base --chown=appuser:appuser /app/package.json /app/bun.lock* /app/bunfig.toml ./
+COPY --from=base --chown=appuser:appuser /app/patches ./patches
 COPY --from=base --chown=appuser:appuser /app/packages ./packages
 # hocus source + all workspace members (apps/* + built extensions/*) for --frozen-lockfile + prisma generate
 COPY --from=base --chown=appuser:appuser /app/apps ./apps

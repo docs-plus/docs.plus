@@ -201,5 +201,8 @@
     "start-server-and-test": "^2.1.5",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
+  },
+  "patchedDependencies": {
+    "@tiptap/y-tiptap@3.0.10": "patches/@tiptap%2Fy-tiptap@3.0.10.patch"
   }
 }

@@ -1,0 +1,54 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index d5fd6a2ed2f52041b092e75fe3380156919ca3d1..c6e23a8566545b7fb3fe64cc3f118c21d8e802cb 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -1625,7 +1625,7 @@ var ProsemirrorBinding = class {
+ 		if (this.projectionError !== null || syncState.snapshot != null || syncState.prevSnapshot != null) return;
+ 		this.doc.transact(() => {
+ 			updateYFragment(this.doc, this.type, doc, this);
+-			if ((plan === null || plan === void 0 ? void 0 : plan.doc) === doc) applyPositionMigration(this.type, plan, this, getPositionMigrationStore(this.type));
++			if ((plan === null || plan === void 0 ? void 0 : plan.doc) === doc && !plan.stale) applyPositionMigration(this.type, plan, this, getPositionMigrationStore(this.type));
+ 			this.syncedDoc = doc;
+ 			this.beforeTransactionSelection = getRelativeSelection(this, this.view.state);
+ 		}, ySyncPluginKey);
+@@ -1776,7 +1776,12 @@ const mapCharacterPosition = (position, transaction, docs, indexes) => {
+ };
+ const mapPositionMigration = (transaction, binding, previous) => {
+ 	const pending = (previous === null || previous === void 0 ? void 0 : previous.doc) === transaction.before && previous.doc !== binding.syncedDoc ? previous : null;
+-	if (!transaction.docChanged || !binding.prosemirrorView || !pending && transaction.steps.every((step, index) => isTextReplacement(step, transaction.docs[index]))) return pending;
++	if (!transaction.docChanged || !binding.prosemirrorView) return pending;
++	// docs.plus patch (tiptap#8584): after a text-only step Yjs lags transaction.before, so a later walk reads stale Yjs and throws. Mark the lag and skip migration until the next sync.
++	if ((pending === null || pending === void 0 ? void 0 : pending.stale) || !pending && transaction.steps.every((step, index) => isTextReplacement(step, transaction.docs[index]))) return {
++		doc: transaction.doc,
++		stale: true
++	};
+ 	const source = pending !== null && pending !== void 0 ? pending : getPositionContent(binding.type, transaction.before);
+ 	const docs = [...transaction.docs, transaction.doc];
+ 	const indexes = docs.map(indexNodes);
+diff --git a/dist/index.js b/dist/index.js
+index 50bcfe723ad3dd8b8c24c11d710f5607319fb8a8..9b6c8a975dcd28008926b7eb3199ca69daef4bd9 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -1592,7 +1592,7 @@ var ProsemirrorBinding = class {
+ 		if (this.projectionError !== null || syncState.snapshot != null || syncState.prevSnapshot != null) return;
+ 		this.doc.transact(() => {
+ 			updateYFragment(this.doc, this.type, doc, this);
+-			if ((plan === null || plan === void 0 ? void 0 : plan.doc) === doc) applyPositionMigration(this.type, plan, this, getPositionMigrationStore(this.type));
++			if ((plan === null || plan === void 0 ? void 0 : plan.doc) === doc && !plan.stale) applyPositionMigration(this.type, plan, this, getPositionMigrationStore(this.type));
+ 			this.syncedDoc = doc;
+ 			this.beforeTransactionSelection = getRelativeSelection(this, this.view.state);
+ 		}, ySyncPluginKey);
+@@ -1743,7 +1743,12 @@ const mapCharacterPosition = (position, transaction, docs, indexes) => {
+ };
+ const mapPositionMigration = (transaction, binding, previous) => {
+ 	const pending = (previous === null || previous === void 0 ? void 0 : previous.doc) === transaction.before && previous.doc !== binding.syncedDoc ? previous : null;
+-	if (!transaction.docChanged || !binding.prosemirrorView || !pending && transaction.steps.every((step, index) => isTextReplacement(step, transaction.docs[index]))) return pending;
++	if (!transaction.docChanged || !binding.prosemirrorView) return pending;
++	// docs.plus patch (tiptap#8584): after a text-only step Yjs lags transaction.before, so a later walk reads stale Yjs and throws. Mark the lag and skip migration until the next sync.
++	if ((pending === null || pending === void 0 ? void 0 : pending.stale) || !pending && transaction.steps.every((step, index) => isTextReplacement(step, transaction.docs[index]))) return {
++		doc: transaction.doc,
++		stale: true
++	};
+ 	const source = pending !== null && pending !== void 0 ? pending : getPositionContent(binding.type, transaction.before);
+ 	const docs = [...transaction.docs, transaction.doc];
+ 	const indexes = docs.map(indexNodes);

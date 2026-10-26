@@ -15,6 +15,8 @@ RUN rm -rf /var/lib/apt/lists/* && \
 WORKDIR /app
 
 COPY package.json bun.lock* bunfig.toml ./
+# bun patch files: the install applies them through patchedDependencies.
+COPY patches ./patches
 COPY packages/email-templates ./packages/email-templates
 COPY packages/eslint-config ./packages/eslint-config
 COPY packages/release-tooling/package.json ./packages/release-tooling/
@@ -68,6 +70,7 @@ ENV NODE_ENV=production \
 COPY --from=deps /app/package.json ./
 COPY --from=deps /app/bun.lock* ./
 COPY --from=deps /app/bunfig.toml ./
+COPY --from=deps /app/patches ./patches
 COPY --from=deps /app/packages ./packages
 # apps/* + extensions/* package.json — all workspace members must exist for --frozen-lockfile
 COPY --from=deps /app/apps ./apps

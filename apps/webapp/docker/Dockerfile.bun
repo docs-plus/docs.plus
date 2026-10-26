@@ -35,6 +35,8 @@ FROM base AS deps
 
 # Copy root package files (workspace config)
 COPY package.json bun.lock* ./
+# bun patch files: the install applies them through patchedDependencies.
+COPY patches ./patches
 # Shared library config at the monorepo root (single source of truth):
 #   - tsconfig.base.json: per-extension tsconfig.json does `extends: "../../tsconfig.base.json"`
 #   - tsup.base.ts:       per-extension tsup.config.ts does `from '../../tsup.base'`
@@ -76,6 +78,7 @@ WORKDIR /app
 
 # Copy workspace layout from deps (no node_modules)
 COPY --from=deps /app/package.json /app/bun.lock* ./
+COPY --from=deps /app/patches ./patches
 COPY --from=deps /app/tsconfig.base.json /app/tsup.base.ts ./
 COPY --from=deps /app/packages ./packages
 # apps/* package.json — their workspace members must exist or `bun install --frozen-lockfile` fails
@@ -175,6 +178,7 @@ ENV SENTRY_URL=$SENTRY_URL \
 # resolution so next.config.js cannot require('next-pwa/cache'), etc.
 COPY --from=deps /app/package.json ./package.json
 COPY --from=deps /app/bun.lock* ./
+COPY --from=deps /app/patches ./patches
 COPY --from=build-extensions /app/packages ./packages
 # Built extensions (webapp resolves @docs.plus/extension-* to their dist) + apps/* manifests for --frozen-lockfile
 COPY --from=build-extensions /app/extensions ./extensions

@@ -54,6 +54,10 @@ Migration section for when it goes. As the last step, run
   ([#603](https://github.com/docs-plus/docs.plus/issues/603)).
 - Typing in a diagram no longer highlights every code block in the pad again
   ([#631](https://github.com/docs-plus/docs.plus/issues/631)).
+- Pasting a link into an empty line no longer throws "Position tracking requires synchronized
+  editor text" and drops the paste. `@tiptap/y-tiptap` 3.0.10 carries a `bun patch` until
+  upstream ships a fix ([ueberdosis/tiptap#8584](https://github.com/ueberdosis/tiptap/issues/8584)).
+  The Docker images copy `patches/` before each install.
 
 ### Security
 
