@@ -51,11 +51,13 @@ HyperMultimediaKit.configure({
 
 ## Iframe HTML attributes
 
-| Option            | Target | Default                                                                                    |
-| ----------------- | ------ | ------------------------------------------------------------------------------------------ |
-| `frameborder`     | iframe | `0`                                                                                        |
-| `allow`           | iframe | `accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture` |
-| `allowfullscreen` | iframe | `true`                                                                                     |
+| Option            | Target  | Default                                                                                                |
+| ----------------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| `frameborder`     | iframe  | `0`                                                                                                    |
+| `allow`           | iframe  | `accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture` |
+| `allowfullscreen` | `allow` | `true`                                                                                                 |
+
+Fullscreen lives only in `allow`. `allowfullscreen: true` adds `fullscreen` to the rendered `allow` list, and `false` removes it. The iframe never gets the legacy `allowfullscreen` attribute, because Chrome warns when it sits beside `allow`. Old HTML that carries the attribute still parses.
 
 ```js
 HyperMultimediaKit.configure({

@@ -53,6 +53,8 @@ Kit defaults apply to every insert; per-node attrs override when building the em
 | `allowfullscreen` | `true`                           |
 | `scrolling`       | `no`                             |
 
+Fullscreen lives only in `allow`. `allowfullscreen: true` adds `fullscreen` to the rendered `allow` list, and `false` removes it. The iframe never gets the legacy `allowfullscreen` attribute, because Chrome warns when it sits beside `allow`. Old HTML that carries the attribute still parses.
+
 ## Paste
 
 | Option            | Default |

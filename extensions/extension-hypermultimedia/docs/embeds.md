@@ -4,6 +4,10 @@ Part of the [`@docs.plus/extension-hypermultimedia` README](../README.md).
 
 Provider embeds resolve options in two layers. Kit defaults come from `HyperMultimediaKit.configure({ Youtube: { … } })`. Node attributes come from the insert call such as `setYoutubeVideo({ … })`, and node attributes win. The option key you write and the query name the kit emits are not always the same word, so both are named below.
 
+## Fullscreen
+
+YouTube, Vimeo, Loom and Spotify grant fullscreen only through the iframe `allow` list. `allowfullscreen` defaults to `true` and adds `fullscreen` to `allow`. `allowfullscreen: false` removes it. The iframe never gets the legacy `allowfullscreen` attribute, because Chrome warns when it sits beside `allow`. Old HTML that carries the attribute still parses. A per-node `false` does not survive an HTML round trip, because the HTML no longer carries it. Set `allowfullscreen: false` in the kit options to keep it.
+
 ## YouTube
 
 YouTube maps camelCase option keys to the official iframe query names: `ccLanguage` → `cc_lang_pref`, `disableKBcontrols` → `disablekb`, `ivLoadPolicy` → `iv_load_policy`, `endTime` → `end`, `interfaceLanguage` → `hl`, `enableIFrameApi` → `enablejsapi`. Defaults: `controls: 1`, `modestbranding: 0`, `loop: 0`, `rel: 1`, `fs: 1`, `autoplay: 0`, `playsinline: 0`, `nocookie: false`, `ccLanguage: undefined`. Paste reads `start` from `?t=`, `?start=` or `#t=`. `loop: 1` auto-fills `playlist` with the video id. `nocookie: true` embeds from `youtube-nocookie.com`.

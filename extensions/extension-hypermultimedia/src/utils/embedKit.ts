@@ -103,12 +103,22 @@ export function resolveEmbedLayoutDimensions(
   return fitLayoutToEditorColumn(editor, width, height)
 }
 
-/** Chrome warns if `allow` already names fullscreen and `allowfullscreen` is also set. */
-function allowPolicyIncludesFullscreen(allow: string): boolean {
-  return allow.split(';').some((directive) => {
-    const feature = directive.trim().split(/\s+/, 1)[0]?.toLowerCase()
-    return feature === 'fullscreen'
-  })
+/**
+ * `allow` is the only fullscreen switch. Chrome warns when the legacy `allowfullscreen`
+ * attribute sits beside it, so the option adds or drops `fullscreen` in the list instead.
+ */
+function applyFullscreenPolicy(allow: string, fullscreen: boolean): string {
+  const directives = allow
+    .split(';')
+    .map((directive) => directive.trim())
+    .filter(Boolean)
+  const others = directives.filter(
+    (directive) => directive.split(/\s+/, 1)[0].toLowerCase() !== 'fullscreen'
+  )
+  if (!fullscreen) return others.join('; ')
+  return (others.length === directives.length ? [...directives, 'fullscreen'] : directives).join(
+    '; '
+  )
 }
 
 export function resolveFullscreenIframeAttributes(
@@ -116,16 +126,15 @@ export function resolveFullscreenIframeAttributes(
   options: FullscreenIframeKitOptions,
   width: number,
   height: number
-): Record<string, string | number | boolean> {
+): Record<string, string | number> {
   const allow = String(resolveEmbedOption(attrs, options, 'allow') ?? options.allow)
-  const wantFullscreen = Boolean(
-    resolveEmbedOption(attrs, options, 'allowfullscreen') ?? options.allowfullscreen
-  )
+  const allowfullscreen: unknown = resolveEmbedOption(attrs, options, 'allowfullscreen')
+  // A parsed bare `allowfullscreen` attribute is stored as '' — HTML presence means true.
+  const fullscreen = allowfullscreen === '' || Boolean(allowfullscreen ?? options.allowfullscreen)
   return {
     width,
     height,
-    allow,
-    frameborder: Number(resolveEmbedOption(attrs, options, 'frameborder') ?? options.frameborder),
-    allowfullscreen: wantFullscreen && !allowPolicyIncludesFullscreen(allow)
+    allow: applyFullscreenPolicy(allow, fullscreen),
+    frameborder: Number(resolveEmbedOption(attrs, options, 'frameborder') ?? options.frameborder)
   }
 }

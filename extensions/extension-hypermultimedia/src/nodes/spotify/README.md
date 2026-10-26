@@ -47,12 +47,14 @@ The player is fixed-height: width fills the column (responsive, capped at `width
 
 ## Embed options
 
-| Kit / attr name   | Default                                                                      | Notes                                 |
-| ----------------- | ---------------------------------------------------------------------------- | ------------------------------------- |
-| `theme`           | —                                                                            | `0` dark (Spotify default), `1` light |
-| `allow`           | `autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture` | iframe permissions                    |
-| `frameborder`     | `0`                                                                          |                                       |
-| `allowfullscreen` | `true`                                                                       |                                       |
+| Kit / attr name   | Default                                                                      | Notes                                   |
+| ----------------- | ---------------------------------------------------------------------------- | --------------------------------------- |
+| `theme`           | —                                                                            | `0` dark (Spotify default), `1` light   |
+| `allow`           | `autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture` | iframe permissions                      |
+| `frameborder`     | `0`                                                                          |                                         |
+| `allowfullscreen` | `true`                                                                       | Adds or removes `fullscreen` in `allow` |
+
+Fullscreen lives only in `allow`. `allowfullscreen: true` adds `fullscreen` to the rendered `allow` list, and `false` removes it. The iframe never gets the legacy `allowfullscreen` attribute, because Chrome warns when it sits beside `allow`. Old HTML that carries the attribute still parses.
 
 ## Paste
 

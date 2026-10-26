@@ -98,7 +98,8 @@ export const YOUTUBE_PLAYER_KIT_DEFAULTS: YoutubePlayerKitOptions = {
   rel: 1,
   list: undefined,
   listType: undefined,
-  allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
+  allow:
+    'accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture',
   frameborder: 0,
   allowfullscreen: true
 }

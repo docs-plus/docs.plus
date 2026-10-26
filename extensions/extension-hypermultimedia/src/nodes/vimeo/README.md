@@ -45,6 +45,8 @@ Query names follow [Vimeo embed options](https://developer.vimeo.com/player/sdk/
 | `allow`           | `autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media` |
 | `allowfullscreen` | `true`                                                                       |
 
+Fullscreen lives only in `allow`. `allowfullscreen: true` adds `fullscreen` to the rendered `allow` list, and `false` removes it. The iframe never gets the legacy `allowfullscreen` attribute, because Chrome warns when it sits beside `allow`. Old HTML that carries the attribute still parses.
+
 ## Player URL parameters
 
 | Kit / attr name | Vimeo query   | Default | Notes                                              |

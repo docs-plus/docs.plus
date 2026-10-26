@@ -95,11 +95,6 @@ function writeIframeAttributes(
   iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin')
 
   for (const [key, value] of Object.entries(iframeAttrs)) {
-    if (key === 'allowfullscreen') {
-      if (value) iframe.setAttribute('allowfullscreen', '')
-      else iframe.removeAttribute('allowfullscreen')
-      continue
-    }
     if (key === 'width' || key === 'height') continue
     iframe.setAttribute(key, String(value))
   }
@@ -252,20 +247,21 @@ export function renderIframeEmbedHTML<TOptions extends IframeEmbedNodeOptions>(
   const { media: style, figure } = captionLayoutCss(layoutProps, caption != null)
 
   const iframeAttrs = config.resolveIframeAttributes(node.attrs, options, width, height)
-  const { allowfullscreen, ...restIframeAttrs } = iframeAttrs
+  // The node attr is folded into `allow`; emitting it too makes Chrome warn.
+  const nodeHTMLAttributes = { ...HTMLAttributes }
+  delete nodeHTMLAttributes.allowfullscreen
 
   const rendered: DOMOutputSpec = [
     'div',
     { [config.dataVideoAttr]: '', class: config.renderWrapperClass, style },
     [
       'iframe',
-      mergeAttributes(options.HTMLAttributes, HTMLAttributes, {
+      mergeAttributes(options.HTMLAttributes, nodeHTMLAttributes, {
         // Match the live node-view: element-level policy overrides the document's
         // same-origin Referrer-Policy so YouTube/Vimeo accept the serialized embed.
         referrerpolicy: 'strict-origin-when-cross-origin',
         src: embedUrl,
-        ...restIframeAttrs,
-        ...(allowfullscreen ? { allowfullscreen: '' } : {})
+        ...iframeAttrs
       })
     ]
   ]
