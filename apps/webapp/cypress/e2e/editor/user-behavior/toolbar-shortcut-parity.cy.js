@@ -2,6 +2,7 @@
 
 import { paragraph, section } from '../../../fixtures/docMaker'
 import { TEST_TITLE, MOD } from '../../../support/commands'
+import { ADD_LINK_KEYS } from '../../../support/hyperlinkPicker'
 
 const TARGET_TEXT = 'target'
 const PARAGRAPH_TEXT = 'Apply hyperlink and comment on this target word.'
@@ -50,7 +51,7 @@ describe('Toolbar/Shortcut Parity', () => {
 
   it('applies hyperlink with Mod+K shortcut', () => {
     selectTargetText()
-    cy.get('.docy_editor').realPress([MOD, 'k'])
+    cy.get('.docy_editor').realPress(ADD_LINK_KEYS)
 
     cy.get(POPOVER).should('be.visible')
     cy.get(URL_INPUT).clear().type('https://example.org')

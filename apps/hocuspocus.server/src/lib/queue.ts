@@ -413,7 +413,7 @@ export const createDocumentWorker = () => {
         // The slug retry wraps the WHOLE transaction. A P2002 aborts the Postgres
         // transaction, so retrying inside it only ever hit 25P02, and the next
         // debounce re-enqueued into the same dead end.
-        const { savedDoc, versionData, createdSlug, isFirstCreation } = await withUniqueSlug(
+        const { version, versionData, createdSlug, isFirstCreation } = await withUniqueSlug(
           baseSlug,
           (candidateSlug) =>
             prisma.$transaction(
@@ -477,7 +477,12 @@ export const createDocumentWorker = () => {
                   select: { version: true }
                 })
 
-                return { savedDoc: doc, versionData, createdSlug: slug, isFirstCreation: isFirst }
+                return {
+                  version: doc.version,
+                  versionData,
+                  createdSlug: slug,
+                  isFirstCreation: isFirst
+                }
               },
               // Under bursts jobs queue on the pool; waiting must degrade into
               // latency, not P2028 errors that burn the retry budget.
@@ -540,7 +545,7 @@ export const createDocumentWorker = () => {
               `doc:${data.documentName}:saved`,
               JSON.stringify({
                 documentId: data.documentName,
-                version: savedDoc.version,
+                version,
                 timestamp: Date.now()
               })
             )
@@ -566,7 +571,7 @@ export const createDocumentWorker = () => {
           })
         })
 
-        return { success: true, version: savedDoc.version }
+        return { success: true, version }
       } catch (err) {
         queueLogger.error({ err, jobId: job.id }, 'Error storing data for job')
 

@@ -2,6 +2,7 @@ import { zValidator } from '@hono/zod-validator'
 import { type Context, Hono } from 'hono'
 import type { core } from 'zod'
 
+import { LINK_ICON_ROUTE } from '../domain/icon'
 import type { ErrorResponse } from '../domain/types'
 import type { ControllerDeps } from './controller'
 import { createController } from './controller'
@@ -31,7 +32,7 @@ export const createRouter = (deps: RouterDeps): Hono => {
     createController(deps)
   )
   router.get(
-    '/icon',
+    LINK_ICON_ROUTE,
     zValidator('query', iconQuerySchema, iconHook),
     createIconController({ iconMaxBytes: deps.iconMaxBytes })
   )

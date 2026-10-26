@@ -58,25 +58,25 @@ export default function previewHyperlink(options: PreviewHyperlinkOptions): HTML
       href,
       editor,
       nodePos,
-      attrs,
       isAllowedUri: options.isAllowedUri
     })
     dismissSoftKeyboard(editor)
     return null
   }
 
-  return buildAndObserveDesktopPopover(options)
+  return buildAndObserveDesktopPopover(options, href)
 }
 
 /**
  * No `onBack` re-show wiring is needed: the prebuilt edit popover's Back
  * closes over its own options and re-opens the preview itself.
  */
-const buildAndObserveDesktopPopover = (options: PreviewHyperlinkOptions): HTMLElement => {
-  const { link, editor, nodePos, attrs } = options
-  const href = attrs.href ?? link.getAttribute('href') ?? ''
+const buildAndObserveDesktopPopover = (
+  options: PreviewHyperlinkOptions,
+  href: string
+): HTMLElement => {
   const controller = new AbortController()
-  const ctx: PreviewContext = { href, editor, nodePos, signal: controller.signal }
+  const ctx: PreviewContext = { href, signal: controller.signal }
   const element = buildDesktopPopover(ctx, options)
 
   // The observer aborts the fetch on detach.
@@ -93,8 +93,8 @@ const buildDesktopPopover = (
   ctx: PreviewContext,
   options: PreviewHyperlinkOptions
 ): HTMLElement => {
-  const { href, editor, nodePos } = ctx
-  const { link, validate, isAllowedUri } = options
+  const { href } = ctx
+  const { link, editor, nodePos, validate, isAllowedUri } = options
 
   const popover = createHTMLElement('div', { className: 'hyperlink-preview-popover' })
   const copyButton = createHTMLElement('button', {

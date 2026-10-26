@@ -9,19 +9,21 @@ import { prisma } from '../src/lib/prisma'
 import { closeQueues, createDocumentWorker } from '../src/lib/queue'
 import { disconnectRedis } from '../src/lib/redis'
 import {
+  appendParagraph,
   decodeText,
   deleteTestUser,
   HocuspocusProvider,
+  makeDocumentFixtures,
   makeRest,
   mintTestUser,
   pollFor,
   sleep,
   spawnServers,
   type TestUser,
+  titleDoc,
   waitForHttp
 } from './lib/e2eHarness'
 
-const PREFIX = `e2e-attribution-${Date.now()}`
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const ALPHA_LIVE = 'alpha-live-paragraph'
@@ -57,27 +59,11 @@ if (!SERVICE_KEY) {
 const { wsPort, internalPort, restUrl, kill: killServers } = spawnServers()
 
 const rest = makeRest(restUrl, SERVICE_KEY)
-
-const titleDoc = (text: string) => ({
-  type: 'doc',
-  content: [{ type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text }] }]
-})
-
-const createdDocumentIds: string[] = []
-
-const createDocument = async (
-  suffix: string,
-  extra: Record<string, unknown> = {}
-): Promise<{ documentId: string; slug: string }> => {
-  const slug = `${PREFIX}-${suffix}`
-  const { status, body } = await rest('/api/documents', {
-    method: 'POST',
-    body: JSON.stringify({ title: `Title ${suffix}`, slug, ...extra })
-  })
-  if (status !== 200) throw new Error(`create ${suffix} failed: ${status} ${JSON.stringify(body)}`)
-  createdDocumentIds.push(body.data.documentId)
-  return { documentId: body.data.documentId, slug: body.data.slug }
-}
+const {
+  prefix: PREFIX,
+  createDocument,
+  cleanup
+} = makeDocumentFixtures(rest, prisma, 'e2e-attribution')
 
 const headRow = (documentId: string) =>
   prisma.documents.findFirst({
@@ -113,13 +99,6 @@ const awaitBinding = (documentId: string, clientId: number): Promise<Binding | n
     () => true,
     20_000
   )
-
-const appendParagraph = (ydoc: Y.Doc, text: string): void => {
-  const fragment = ydoc.getXmlFragment('default')
-  const paragraph = new Y.XmlElement('paragraph')
-  paragraph.insert(0, [new Y.XmlText(text)])
-  fragment.insert(fragment.length, [paragraph])
-}
 
 /** Everything the target lacks, which is how an offline peer hands work over. */
 const encodeMissing = (source: Y.Doc, target: Y.Doc): Uint8Array =>
@@ -190,13 +169,6 @@ type Actor = TestUser & { fullName: string | null }
 const mintUser = async (suffix: string, fullName: string): Promise<Actor | null> => {
   const user = await mintTestUser(`${PREFIX}-${suffix}`, SERVICE_KEY, fullName)
   return user && { ...user, fullName }
-}
-
-const cleanup = async () => {
-  await prisma.documentMetadata.deleteMany({ where: { slug: { startsWith: 'e2e-attribution-' } } })
-  if (createdDocumentIds.length > 0) {
-    await prisma.documents.deleteMany({ where: { documentId: { in: createdDocumentIds } } })
-  }
 }
 
 // Needs no Auth, so it asserts in CI too. A signed-out socket carries no user

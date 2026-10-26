@@ -2,7 +2,7 @@
 
 import { $ } from 'bun'
 
-// The image drops devDependencies, so the CLI version is pinned here.
+// bunx pins the CLI because a production install has no prisma devDependency.
 const migrateDeploy = () => $`bunx prisma@7.10.1 migrate deploy`
 
 async function startProduction() {

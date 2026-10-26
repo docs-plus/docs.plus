@@ -11,6 +11,8 @@ import { createClient } from '@supabase/supabase-js'
 import type { Subprocess } from 'bun'
 import * as Y from 'yjs'
 
+import type { prisma as Prisma } from '../../src/lib/prisma'
+
 const PACKAGE_ROOT = new URL('../..', import.meta.url).pathname
 const REPO_ROOT = new URL('../../../..', import.meta.url).pathname
 
@@ -149,6 +151,66 @@ export const makeRest =
     }
     return { status: response.status, body }
   }
+
+export interface DocumentFixtures {
+  prefix: string
+  createDocument: (
+    suffix: string,
+    extra?: Record<string, unknown>
+  ) => Promise<{ documentId: string; slug: string; title: string }>
+  cleanup: () => Promise<void>
+}
+
+/**
+ * Prisma is a parameter, not an import, so the scripts that never touch rows
+ * do not load it. Cleanup matches the family, so it also clears earlier runs.
+ */
+export const makeDocumentFixtures = (
+  rest: ReturnType<typeof makeRest>,
+  prisma: typeof Prisma,
+  family: string
+): DocumentFixtures => {
+  const prefix = `${family}-${Date.now()}`
+  const createdDocumentIds: string[] = []
+  return {
+    prefix,
+    createDocument: async (suffix, extra = {}) => {
+      const slug = `${prefix}-${suffix}`
+      const { status, body } = await rest('/api/documents', {
+        method: 'POST',
+        body: JSON.stringify({ title: `Title ${suffix}`, slug, ...extra })
+      })
+      if (status !== 200) {
+        throw new Error(`create ${suffix} failed: ${status} ${JSON.stringify(body)}`)
+      }
+      createdDocumentIds.push(body.data.documentId)
+      return { documentId: body.data.documentId, slug: body.data.slug, title: body.data.title }
+    },
+    cleanup: async () => {
+      await prisma.documentMetadata.deleteMany({ where: { slug: { startsWith: `${family}-` } } })
+      if (createdDocumentIds.length > 0) {
+        await prisma.documents.deleteMany({ where: { documentId: { in: createdDocumentIds } } })
+      }
+    }
+  }
+}
+
+export const titleDoc = (text: string) => ({
+  type: 'doc',
+  content: [{ type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text }] }]
+})
+
+export const paragraphDoc = (text: string) => ({
+  type: 'doc',
+  content: [{ type: 'paragraph', content: [{ type: 'text', text }] }]
+})
+
+export const appendParagraph = (ydoc: Y.Doc, text: string): void => {
+  const fragment = ydoc.getXmlFragment('default')
+  const paragraph = new Y.XmlElement('paragraph')
+  paragraph.insert(0, [new Y.XmlText(text)])
+  fragment.insert(fragment.length, [paragraph])
+}
 
 /** The worker is asynchronous, so every read of a persisted row polls for it. */
 export const pollFor = async <T>(

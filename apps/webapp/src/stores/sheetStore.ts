@@ -1,6 +1,5 @@
 import type { GalleryMenuProps } from '@components/chatroom/components/ChatMediaGallery/GalleryOverflowMenu'
 import type { DocumentRowMenuProps } from '@components/settings/components/DocumentRowMenu'
-import type { HyperlinkAttributes } from '@docs.plus/extension-hyperlink'
 import type { Editor } from '@tiptap/core'
 import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
@@ -18,15 +17,14 @@ export interface SheetDataMap {
   bookmarks: Record<string, never>
   documentSettings: Record<string, never>
   /**
-   * Mobile hyperlink preview sheet payload. `editor`, `nodePos` and
-   * `attrs` let the sheet actions edit or unset the link, and let Back
-   * reopen the preview.
+   * Mobile hyperlink preview sheet payload. `editor` and `nodePos` let
+   * the sheet actions edit or unset the link, and let Back reopen the
+   * preview.
    */
   linkPreview: {
     href: string
     editor: Editor
     nodePos: number
-    attrs: HyperlinkAttributes
     isAllowedUri?: (uri: string) => boolean
   }
   linkEditor: {

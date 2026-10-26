@@ -1,9 +1,6 @@
 import type { StoreDlqDisposition } from '../lib/storeDlqDisposition'
 import type { MachineVersionTrigger, VersionTrigger } from './versionTrigger'
 
-export { MACHINE_VERSION_TRIGGERS } from './versionTrigger'
-export type { MachineVersionTrigger, VersionTrigger }
-
 export interface StoreDocumentContext {
   slug?: string
   user?: {

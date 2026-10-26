@@ -67,17 +67,13 @@ describe('Document conversion routes — a non-owner on a Private document', () 
   }
 
   test('import gets 403', async () => {
-    const form = new FormData()
-    form.append(
+    const response = await server.upload(
+      `/api/documents/${DOCUMENT_ID}/import`,
+      new File(['# Garden\n\nText'], 'garden.md', { type: 'text/markdown' }),
       'documentFile',
-      new File(['# Garden\n\nText'], 'garden.md', { type: 'text/markdown' })
+      NON_OWNER
     )
-    const response = await server.app.request(`/api/documents/${DOCUMENT_ID}/import`, {
-      method: 'POST',
-      headers: NON_OWNER,
-      body: form
-    })
     expect(response.status).toBe(403)
-    expect(((await response.json()) as any).error).toHaveProperty('code', 'FORBIDDEN')
+    expect((await response.json()).error).toHaveProperty('code', 'FORBIDDEN')
   })
 })

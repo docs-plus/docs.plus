@@ -10,6 +10,16 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 
 ## [Unreleased]
 
+### Breaking
+
+- Pull `traefik:v3.6` at 3.6.18 or later, or Traefik does not start.
+- Set `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`, or the production worker reports
+  unhealthy and the deploy rolls back
+  ([#608](https://github.com/docs-plus/docs.plus/issues/608)).
+- `get_document_member_previews`, `get_document_members` and
+  `admin_get_document_member_counts` take new parameter names
+  ([#574](https://github.com/docs-plus/docs.plus/issues/574)).
+
 ### Migration
 
 **If you self-host.** Read the [hocuspocus Migration](apps/hocuspocus.server/CHANGELOG.md#migration)

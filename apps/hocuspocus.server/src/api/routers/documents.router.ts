@@ -17,12 +17,19 @@ import {
   defaultDocumentsController,
   type DocumentsHandlers
 } from '../controllers/documents.controller'
-import { optionalUser, requireServiceRoleOrUser, requireUser } from '../middleware/auth'
+import {
+  optionalPadReader,
+  optionalUser,
+  requireServiceRoleOrUser,
+  requireUser
+} from '../middleware/auth'
 
 export interface DocumentsRouterDeps {
   controller: DocumentsHandlers
   /** Auth binds statically to Supabase over the network, so a test hands its own. */
   optionalUser: MiddlewareHandler
+  /** optionalUser with the #596 Auth deadline, for the GET pad read only. */
+  optionalPadReader: MiddlewareHandler
   requireUser: MiddlewareHandler
   requireServiceRoleOrUser: MiddlewareHandler
 }
@@ -31,11 +38,11 @@ export const createDocumentsRouter = (deps: DocumentsRouterDeps): Hono => {
   const documents = new Hono()
   const { controller } = deps
 
-  // Get single document by slug — optionalUser attaches the caller so the controller
+  // Get single document by slug — optionalPadReader attaches the caller so the controller
   // can owner-gate private docs (public stays open; anon/non-owner get a 403 hint).
   documents.get(
     '/:docName',
-    deps.optionalUser,
+    deps.optionalPadReader,
     zValidator('query', userIdQuerySchema, houseEnvelopeHook),
     controller.getDocumentBySlug
   )
@@ -107,6 +114,7 @@ export const createDocumentsRouter = (deps: DocumentsRouterDeps): Hono => {
 export default createDocumentsRouter({
   controller: defaultDocumentsController,
   optionalUser,
+  optionalPadReader,
   requireUser,
   requireServiceRoleOrUser
 })

@@ -31,9 +31,14 @@ for (const [key, rules] of Object.entries(FILTER)) {
   })
 }
 
+// A publishable extension with no filter key would never run its suite, and nothing would say so.
+const UNFILTERED = PUBLISHABLE_EXTENSION_DIRS.filter((dir) => !FILTER_GLOBS.has(dir))
+if (UNFILTERED.length > 0) {
+  throw new Error(`.github/filters/extensions.yaml has no key for: ${UNFILTERED.join(', ')}`)
+}
+
 function selects(dir: string, file: string): boolean {
-  const globs = FILTER_GLOBS.get(dir)
-  if (!globs) return false
+  const globs = FILTER_GLOBS.get(dir)!
   return (
     globs.include.some((glob) => glob.match(file)) &&
     !globs.exclude.some((glob) => glob.match(file))

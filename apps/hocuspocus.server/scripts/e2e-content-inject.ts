@@ -14,22 +14,21 @@ import { prisma } from '../src/lib/prisma'
 import { closeQueues, createDocumentWorker } from '../src/lib/queue'
 import { disconnectRedis } from '../src/lib/redis'
 import {
-  HocuspocusProvider,
+  createTally,
+  makeDocumentFixtures,
+  makeOpenProvider,
   makeRest,
+  paragraphDoc,
   pollFor,
   sleep,
   spawnServers,
+  titleDoc,
   waitForHttp
 } from './lib/e2eHarness'
 
-const PREFIX = `e2e-inject-${Date.now()}`
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-let failed = false
-const check = (condition: boolean, message: string) => {
-  console.log(`  ${condition ? '✓' : '✗'} ${message}`)
-  if (!condition) failed = true
-}
+const { check, outcome } = createTally()
 
 if (!SERVICE_KEY) {
   console.error('SUPABASE_SERVICE_ROLE_KEY is required for the content-inject E2E')
@@ -38,32 +37,8 @@ if (!SERVICE_KEY) {
 
 const servers = spawnServers()
 const rest = makeRest(servers.restUrl, SERVICE_KEY)
-
-const titleDoc = (text: string) => ({
-  type: 'doc',
-  content: [{ type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text }] }]
-})
-
-const paragraphDoc = (text: string) => ({
-  type: 'doc',
-  content: [{ type: 'paragraph', content: [{ type: 'text', text }] }]
-})
-
-const createdDocumentIds: string[] = []
-
-const createDocument = async (
-  suffix: string,
-  extra: Record<string, unknown> = {}
-): Promise<{ documentId: string; slug: string; title: string }> => {
-  const slug = `${PREFIX}-${suffix}`
-  const { status, body } = await rest('/api/documents', {
-    method: 'POST',
-    body: JSON.stringify({ title: `Title ${suffix}`, slug, ...extra })
-  })
-  if (status !== 200) throw new Error(`create ${suffix} failed: ${status} ${JSON.stringify(body)}`)
-  createdDocumentIds.push(body.data.documentId)
-  return { documentId: body.data.documentId, slug: body.data.slug, title: body.data.title }
-}
+const { prefix: PREFIX, createDocument, cleanup } = makeDocumentFixtures(rest, prisma, 'e2e-inject')
+const openProvider = makeOpenProvider(servers.wsPort)
 
 const headRow = (documentId: string) =>
   prisma.documents.findFirst({
@@ -84,32 +59,6 @@ const decodeRow = (data: Uint8Array) => {
 const fragmentText = (ydoc: Y.Doc): string => {
   const json = TiptapTransformer.fromYdoc(ydoc, 'default') as { content?: Record<string, any>[] }
   return JSON.stringify(json?.content ?? [])
-}
-
-const openProvider = async (documentId: string, slug: string) => {
-  const ydoc = new Y.Doc()
-  let synced = false
-  const provider = new HocuspocusProvider({
-    url: `ws://127.0.0.1:${servers.wsPort}`,
-    name: documentId,
-    document: ydoc,
-    token: JSON.stringify({ slug, deviceType: 'desktop' }),
-    WebSocketPolyfill: WebSocket,
-    onSynced: () => {
-      synced = true
-    }
-  })
-
-  const deadline = Date.now() + 15_000
-  while (!synced && Date.now() < deadline) await sleep(100)
-  return { provider, ydoc, synced }
-}
-
-const cleanup = async () => {
-  await prisma.documentMetadata.deleteMany({ where: { slug: { startsWith: 'e2e-inject-' } } })
-  if (createdDocumentIds.length > 0) {
-    await prisma.documents.deleteMany({ where: { documentId: { in: createdDocumentIds } } })
-  }
 }
 
 console.log('E2E: document content injection (real REST + WS + Redis + Postgres)')
@@ -134,7 +83,7 @@ try {
   console.log('\n[1] live append with a connected collaborator')
   {
     const doc = await createDocument('live', { content: titleDoc('Live doc') })
-    const { provider, ydoc, synced } = await openProvider(doc.documentId, doc.slug)
+    const { provider, ydoc, synced } = await openProvider(doc.documentId, doc.slug, '')
     check(synced, 'collaboration provider synced against the real WS server')
 
     const patch = await rest(`/api/documents/${doc.documentId}/content?mode=append`, {
@@ -157,7 +106,7 @@ try {
     check(!!row, 'the append persisted through the normal store pipeline')
     provider.destroy()
 
-    const fresh = await openProvider(doc.documentId, doc.slug)
+    const fresh = await openProvider(doc.documentId, doc.slug, '')
     check(
       fragmentText(fresh.ydoc).includes('appended-live'),
       'a fresh collaborator loads the appended paragraph'
@@ -217,7 +166,7 @@ try {
   console.log('\n[3] draft trap — injection into a live, never-persisted document')
   {
     const doc = await createDocument('draft')
-    const { provider, ydoc, synced } = await openProvider(doc.documentId, doc.slug)
+    const { provider, ydoc, synced } = await openProvider(doc.documentId, doc.slug, '')
     check(synced, 'collaborator synced against the draft document')
 
     const patch = await rest(`/api/documents/${doc.documentId}/content?mode=replace`, {
@@ -245,7 +194,7 @@ try {
     check(metaCount === 1, 'the first-edit anchor did not duplicate the metadata row')
 
     provider.destroy()
-    const fresh = await openProvider(doc.documentId, doc.slug)
+    const fresh = await openProvider(doc.documentId, doc.slug, '')
     check(
       fragmentText(fresh.ydoc).includes('Draft rescue'),
       'a fresh collaborator loads the injected title'
@@ -335,7 +284,7 @@ try {
   }
 } catch (error) {
   console.error('\nE2E aborted:', error)
-  failed = true
+  check(false, 'the run completed')
 } finally {
   await cleanup()
   servers.kill()
@@ -345,5 +294,6 @@ try {
   await disconnectRedis()
 }
 
+const { failed } = outcome()
 console.log(failed ? '\ncontent inject E2E: FAILED' : '\ncontent inject E2E: PASSED')
 process.exit(failed ? 1 : 0)

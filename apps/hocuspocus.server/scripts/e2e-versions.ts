@@ -15,20 +15,23 @@ import { prisma } from '../src/lib/prisma'
 import { closeQueues, createDocumentWorker, StoreDocumentQueue } from '../src/lib/queue'
 import { disconnectRedis } from '../src/lib/redis'
 import {
+  appendParagraph,
   createTally,
   decodeText,
   deleteTestUser,
   HocuspocusProvider,
+  makeDocumentFixtures,
   makeRest,
   mintTestUser,
+  paragraphDoc,
   pollFor,
   sleep,
   spawnServers,
   type TestUser,
+  titleDoc,
   waitForHttp
 } from './lib/e2eHarness'
 
-const PREFIX = `e2e-versions-${Date.now()}`
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const { check, skip, outcome } = createTally()
@@ -41,32 +44,11 @@ if (!SERVICE_KEY) {
 const { wsPort, internalPort, restUrl, kill: killServers } = spawnServers()
 
 const rest = makeRest(restUrl, SERVICE_KEY)
-
-const titleDoc = (text: string) => ({
-  type: 'doc',
-  content: [{ type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text }] }]
-})
-
-const paragraphDoc = (text: string) => ({
-  type: 'doc',
-  content: [{ type: 'paragraph', content: [{ type: 'text', text }] }]
-})
-
-const createdDocumentIds: string[] = []
-
-const createDocument = async (
-  suffix: string,
-  extra: Record<string, unknown> = {}
-): Promise<{ documentId: string; slug: string; title: string }> => {
-  const slug = `${PREFIX}-${suffix}`
-  const { status, body } = await rest('/api/documents', {
-    method: 'POST',
-    body: JSON.stringify({ title: `Title ${suffix}`, slug, ...extra })
-  })
-  if (status !== 200) throw new Error(`create ${suffix} failed: ${status} ${JSON.stringify(body)}`)
-  createdDocumentIds.push(body.data.documentId)
-  return { documentId: body.data.documentId, slug: body.data.slug, title: body.data.title }
-}
+const {
+  prefix: PREFIX,
+  createDocument,
+  cleanup
+} = makeDocumentFixtures(rest, prisma, 'e2e-versions')
 
 const rowCount = (documentId: string) => prisma.documents.count({ where: { documentId } })
 
@@ -94,13 +76,6 @@ const storeJobIds = async (documentId: string): Promise<string[]> => {
     .filter((job) => job?.data?.documentName === documentId)
     .map((job) => String(job.id))
     .sort()
-}
-
-const appendParagraph = (ydoc: Y.Doc, text: string): void => {
-  const fragment = ydoc.getXmlFragment('default')
-  const paragraph = new Y.XmlElement('paragraph')
-  paragraph.insert(0, [new Y.XmlText(text)])
-  fragment.insert(fragment.length, [paragraph])
 }
 
 interface Session {
@@ -169,13 +144,6 @@ const revertOverStateless = async (
     await sleep(50)
   }
   return null
-}
-
-const cleanup = async () => {
-  await prisma.documentMetadata.deleteMany({ where: { slug: { startsWith: 'e2e-versions-' } } })
-  if (createdDocumentIds.length > 0) {
-    await prisma.documents.deleteMany({ where: { documentId: { in: createdDocumentIds } } })
-  }
 }
 
 console.log('E2E: document versions (real REST + WS + Redis + Postgres)')

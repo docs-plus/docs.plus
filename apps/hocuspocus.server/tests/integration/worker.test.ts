@@ -93,142 +93,118 @@ describe('Worker Server - Integration Tests', () => {
     )
   })
 
-  describe('Health check endpoints', () => {
-    test.skipIf(!hasRedis)(
-      'GET /health should return worker status',
-      async () => {
-        expect(workerProcess).not.toBeNull()
+  describe.skipIf(!hasRedis)('Health check endpoints', () => {
+    test('GET /health should return worker status', async () => {
+      expect(workerProcess).not.toBeNull()
 
-        const response = await fetch(`http://localhost:${WORKER_HEALTH_PORT}/health`)
+      const response = await fetch(`http://localhost:${WORKER_HEALTH_PORT}/health`)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data).toHaveProperty('status')
+      expect(data).toHaveProperty('timestamp')
+      // Recovered source reports all BullMQ workers under a plural `workers`
+      // object (document/email/push), not a single `worker`.
+      expect(data).toHaveProperty('workers')
+      expect(data.workers).toHaveProperty('document')
+      expect(data.workers.document).toHaveProperty('running')
+      expect(data.workers.document).toHaveProperty('paused')
+      expect(data.workers.document).toHaveProperty('name')
+      expect(data.workers).toHaveProperty('email')
+      expect(data.workers).toHaveProperty('push')
+      expect(data).toHaveProperty('pgmq_consumers')
+      expect(data.pgmq_consumers).toHaveProperty('push')
+      expect(data.pgmq_consumers).toHaveProperty('email')
+      expect(data).toHaveProperty('services')
+      expect(data.services).toHaveProperty('redis')
+      expect(data.services).toHaveProperty('database')
+    }, 10000)
+
+    test('GET /health/ready should return 200 when worker is ready', async () => {
+      expect(workerProcess).not.toBeNull()
+
+      const response = await fetch(`http://localhost:${WORKER_HEALTH_PORT}/health/ready`)
+
+      expect([200, 503]).toContain(response.status)
+
+      if (response.status === 200) {
         const data = await response.json()
-
-        expect(response.status).toBe(200)
         expect(data).toHaveProperty('status')
-        expect(data).toHaveProperty('timestamp')
-        // Recovered source reports all BullMQ workers under a plural `workers`
-        // object (document/email/push), not a single `worker`.
-        expect(data).toHaveProperty('workers')
-        expect(data.workers).toHaveProperty('document')
-        expect(data.workers.document).toHaveProperty('running')
-        expect(data.workers.document).toHaveProperty('paused')
-        expect(data.workers.document).toHaveProperty('name')
-        expect(data.workers).toHaveProperty('email')
-        expect(data.workers).toHaveProperty('push')
-        expect(data).toHaveProperty('pgmq_consumers')
-        expect(data.pgmq_consumers).toHaveProperty('push')
-        expect(data.pgmq_consumers).toHaveProperty('email')
-        expect(data).toHaveProperty('services')
-        expect(data.services).toHaveProperty('redis')
-        expect(data.services).toHaveProperty('database')
-      },
-      10000
-    )
+        expect(data.status).toBe('ready')
+      }
+    }, 10000)
 
-    test.skipIf(!hasRedis)(
-      'GET /health/ready should return 200 when worker is ready',
-      async () => {
-        expect(workerProcess).not.toBeNull()
+    test('should handle non-existent endpoints with 404', async () => {
+      expect(workerProcess).not.toBeNull()
 
-        const response = await fetch(`http://localhost:${WORKER_HEALTH_PORT}/health/ready`)
+      const response = await fetch(`http://localhost:${WORKER_HEALTH_PORT}/nonexistent`)
 
-        expect([200, 503]).toContain(response.status)
-
-        if (response.status === 200) {
-          const data = await response.json()
-          expect(data).toHaveProperty('status')
-          expect(data.status).toBe('ready')
-        }
-      },
-      10000
-    )
-
-    test.skipIf(!hasRedis)(
-      'should handle non-existent endpoints with 404',
-      async () => {
-        expect(workerProcess).not.toBeNull()
-
-        const response = await fetch(`http://localhost:${WORKER_HEALTH_PORT}/nonexistent`)
-
-        expect(response.status).toBe(404)
-      },
-      10000
-    )
+      expect(response.status).toBe(404)
+    }, 10000)
   })
 
-  describe('Worker metrics and monitoring', () => {
-    test.skipIf(!hasRedis)(
-      'health endpoint should show worker is running',
-      async () => {
-        expect(workerProcess).not.toBeNull()
+  describe.skipIf(!hasRedis)('Worker metrics and monitoring', () => {
+    test('health endpoint should show worker is running', async () => {
+      expect(workerProcess).not.toBeNull()
 
-        const response = await fetch(`http://localhost:${WORKER_HEALTH_PORT}/health`)
-        const data = await response.json()
+      const response = await fetch(`http://localhost:${WORKER_HEALTH_PORT}/health`)
+      const data = await response.json()
 
-        expect(data.workers.document.running).toBe(true)
-        expect(data.workers.document.paused).toBe(false)
-        expect(data.workers.document.name).toBe('store-documents')
-        // Worker only boots once Redis is ready, so redis is always connected here.
-        expect(data.services.redis).toBe('connected')
-        // Database reachability is independent of the worker process; assert the
-        // recovered source emits a valid status string rather than forcing 'connected'.
-        expect(['connected', 'disconnected']).toContain(data.services.database)
-      },
-      10000
-    )
+      expect(data.workers.document.running).toBe(true)
+      expect(data.workers.document.paused).toBe(false)
+      expect(data.workers.document.name).toBe('store-documents')
+      // Worker only boots once Redis is ready, so redis is always connected here.
+      expect(data.services.redis).toBe('connected')
+      // Database reachability is independent of the worker process; assert the
+      // recovered source emits a valid status string rather than forcing 'connected'.
+      expect(['connected', 'disconnected']).toContain(data.services.database)
+    }, 10000)
 
-    test.skipIf(!hasRedis)(
-      'health endpoint should include timestamp',
-      async () => {
-        expect(workerProcess).not.toBeNull()
+    test('health endpoint should include timestamp', async () => {
+      expect(workerProcess).not.toBeNull()
 
-        const response = await fetch(`http://localhost:${WORKER_HEALTH_PORT}/health`)
-        const data = await response.json()
+      const response = await fetch(`http://localhost:${WORKER_HEALTH_PORT}/health`)
+      const data = await response.json()
 
-        expect(data.timestamp).toBeDefined()
+      expect(data.timestamp).toBeDefined()
 
-        const timestamp = new Date(data.timestamp)
-        expect(timestamp.toString()).not.toBe('Invalid Date')
+      const timestamp = new Date(data.timestamp)
+      expect(timestamp.toString()).not.toBe('Invalid Date')
 
-        const now = Date.now()
-        const timestampAge = now - timestamp.getTime()
-        expect(timestampAge).toBeLessThan(5000)
-      },
-      10000
-    )
+      const now = Date.now()
+      const timestampAge = now - timestamp.getTime()
+      expect(timestampAge).toBeLessThan(5000)
+    }, 10000)
   })
 
-  describe('Worker graceful shutdown', () => {
-    test.skipIf(!hasRedis)(
-      'should handle SIGTERM gracefully',
-      async () => {
-        // Start a fresh worker for shutdown test
-        const shutdownProc = spawn({
-          cmd: ['bun', 'src/hocuspocus.worker.ts'],
-          env: {
-            ...process.env,
-            WORKER_HEALTH_PORT: '3004', // Different port
-            NODE_ENV: 'test'
-          },
-          stdout: 'pipe',
-          stderr: 'pipe',
-          cwd: process.cwd()
-        })
+  describe.skipIf(!hasRedis)('Worker graceful shutdown', () => {
+    test('should handle SIGTERM gracefully', async () => {
+      // Start a fresh worker for shutdown test
+      const shutdownProc = spawn({
+        cmd: ['bun', 'src/hocuspocus.worker.ts'],
+        env: {
+          ...process.env,
+          WORKER_HEALTH_PORT: '3004', // Different port
+          NODE_ENV: 'test'
+        },
+        stdout: 'pipe',
+        stderr: 'pipe',
+        cwd: process.cwd()
+      })
 
-        // Poll for readiness instead of guessing. A fixed wait is both slower than
-        // the boot and, if the boot is slower than the guess, a false failure.
-        const ready = await checkWorkerHealth(20, 3004)
-        expect(ready).toBe(true)
+      // Poll for readiness instead of guessing. A fixed wait is both slower than
+      // the boot and, if the boot is slower than the guess, a false failure.
+      const ready = await checkWorkerHealth(20, 3004)
+      expect(ready).toBe(true)
 
-        shutdownProc.kill('SIGTERM')
+      shutdownProc.kill('SIGTERM')
 
-        // Await the real exit. The old fixed 2s wait failed a correct process whose
-        // drain simply took longer. The test timeout below is the real bound.
-        const exitCode = await shutdownProc.exited
+      // Await the real exit. The old fixed 2s wait failed a correct process whose
+      // drain simply took longer. The test timeout below is the real bound.
+      const exitCode = await shutdownProc.exited
 
-        expect(exitCode).not.toBe(null)
-        expect(exitCode).toBe(0)
-      },
-      15000
-    )
+      expect(exitCode).not.toBe(null)
+      expect(exitCode).toBe(0)
+    }, 15000)
   })
 })

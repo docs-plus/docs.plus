@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+import { createChunks, stringToBase64URL } from '@supabase/ssr'
+
 /**
  * A real local Supabase session for signed-in specs. It creates the user with the
  * service-role key, signs in with a password, and writes the session cookie the way
@@ -12,9 +14,6 @@ const LOCAL_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
 const LOCAL_SERVICE_ROLE_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
-
-// @supabase/ssr chunks a cookie value longer than this (utils/chunker.ts).
-const MAX_CHUNK_SIZE = 3180
 
 const supabaseUrl = (): string => {
   const url = new URL(Cypress.expose('SUPABASE_URL') ?? 'http://localhost:54321')
@@ -30,12 +29,6 @@ const authCookieName = (): string =>
 
 /** Matches the session cookie and its chunks, for any project ref. */
 export const AUTH_COOKIE_PATTERN = /^sb-.+-auth-token(\.\d+)?$/
-
-const base64Url = (text: string): string => {
-  let binary = ''
-  for (const byte of new TextEncoder().encode(text)) binary += String.fromCharCode(byte)
-  return btoa(binary).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_')
-}
 
 /** Creates the user once; a later run finds it already there. */
 export const ensureLocalUser = (email: string, password: string) =>
@@ -74,17 +67,9 @@ export const signInLocalUser = (email: string, password: string) =>
         ...body,
         expires_at: body.expires_at ?? Math.floor(Date.now() / 1000) + body.expires_in
       }
-      const value = `base64-${base64Url(JSON.stringify(session))}`
-      const name = authCookieName()
+      const value = `base64-${stringToBase64URL(JSON.stringify(session))}`
       const domain = new URL(Cypress.config('baseUrl')!).hostname
-      // base64url needs no URI escaping, so a plain slice matches the ssr chunker.
-      const chunks =
-        value.length <= MAX_CHUNK_SIZE
-          ? [{ name, value }]
-          : Array.from({ length: Math.ceil(value.length / MAX_CHUNK_SIZE) }, (_, i) => ({
-              name: `${name}.${i}`,
-              value: value.slice(i * MAX_CHUNK_SIZE, (i + 1) * MAX_CHUNK_SIZE)
-            }))
+      const chunks = createChunks(authCookieName(), value)
       // Host-only, like the cookie @supabase/ssr writes, so its sign-out delete matches it.
       for (const chunk of chunks) {
         cy.setCookie(chunk.name, chunk.value, {

@@ -226,15 +226,16 @@ function editHyperlink(options: EditHyperlinkOptions): HTMLElement {
   const { editor, link, validate, isAllowedUri, onBack, markName = 'hyperlink' } = options
   const form = document.createElement('form')
 
+  // Read the raw `href` attribute, not `link.href`. That property resolves a
+  // relative href against `document.baseURI`, so an untouched Apply would
+  // rewrite it. The prebuilt form reads both values the same way.
+  const href = link.getAttribute('href') ?? ''
+
   // Read Text from the document, not `link.innerText`. CSS such as
   // `text-transform` changes `innerText`, so Apply would write that text back.
   const { doc } = editor.state
   const pos = editor.view.posAtDOM(link, 0)
   const type = editor.schema.marks[markName]
-  // Read the raw `href` attribute, not `link.href`. That property resolves a
-  // relative href against `document.baseURI`, so an untouched Apply would
-  // rewrite it. The prebuilt form reads both values the same way.
-  const href = link.getAttribute('href') ?? ''
   // The href picks the mark. Its full attrs then give the range that Apply edits.
   const $pos = pos >= 0 ? doc.resolve(pos) : undefined
   const mark = [$pos?.nodeAfter, $pos?.nodeBefore]

@@ -149,16 +149,22 @@ export function captionLayoutCss(
 ): { figure: string; media: string } {
   if (!captioned) return { figure: '', media: formatMediaLayoutCss(props) }
   if (!isFloatedMedia(props.float)) {
-    const { clear, margin, ...rest } = props
+    const { clear, margin } = props
     return {
       figure: formatMediaLayoutCss({ ...EMPTY_BAG, display: 'table', clear, margin }),
-      media: formatMediaLayoutCss({ ...rest, clear: null, margin: null })
+      media: formatMediaLayoutCss({ ...props, clear: null, margin: null })
     }
   }
-  const { float, clear, margin, maxWidth, ...size } = props
+  const { float, clear, margin, maxWidth } = props
   return {
     figure: formatMediaLayoutCss({ ...EMPTY_BAG, float, clear, margin, maxWidth }),
-    media: formatMediaLayoutCss({ ...EMPTY_BAG, ...size, maxWidth: '100%' })
+    media: formatMediaLayoutCss({
+      ...props,
+      float: null,
+      clear: null,
+      margin: null,
+      maxWidth: '100%'
+    })
   }
 }
 

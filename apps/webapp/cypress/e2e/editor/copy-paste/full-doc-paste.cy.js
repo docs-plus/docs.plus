@@ -30,7 +30,7 @@ describe('Full Document Paste (Flat Schema)', () => {
     cy.visitEditor({ docName: `full-doc-paste-${Date.now()}`, persist: true })
   })
 
-  it('should handle full-doc paste (⌘A→⌘V) correctly', () => {
+  it('should rebuild the doc when its HTML is pasted over select-all', () => {
     const doc = {
       sections: [
         section('My Document Title', [

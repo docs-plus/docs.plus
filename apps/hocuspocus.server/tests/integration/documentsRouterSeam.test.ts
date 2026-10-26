@@ -81,6 +81,7 @@ const harness = (options: HarnessOptions = {}) => {
     createDocumentsRouter({
       controller,
       optionalUser: auth,
+      optionalPadReader: auth,
       requireUser: auth,
       requireServiceRoleOrUser: auth
     })

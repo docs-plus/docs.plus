@@ -35,7 +35,7 @@ export function buildLinkPreviewActions({
   switchSheet,
   onCopySuccess
 }: BuildLinkPreviewActionsArgs): LinkPreviewAction[] {
-  const { href, editor, nodePos, attrs, isAllowedUri } = payload
+  const { href, editor, nodePos, isAllowedUri } = payload
   const internalLink = classifyInternalDocumentLink(href, window.location.pathname)
 
   const openAction: LinkPreviewAction = {
@@ -77,7 +77,7 @@ export function buildLinkPreviewActions({
       label: 'Edit link',
       icon: <Icons.pencil size={ICON_SIZE} />,
       onClick: () => {
-        // attrs.title is metadata, not the visible anchor label — seed from the mark range.
+        // The mark title is metadata, not the visible label. Seed from the mark range.
         const initialText = getHyperlinkDisplayText(editor, { nodePos, href })
 
         switchSheet('linkEditor', {
@@ -86,7 +86,7 @@ export function buildLinkPreviewActions({
           initialHref: href,
           initialText,
           onSubmit: (result) => applyEdit({ editor, nodePos }, result),
-          onBack: () => switchSheet('linkPreview', { href, editor, nodePos, attrs, isAllowedUri })
+          onBack: () => switchSheet('linkPreview', { href, editor, nodePos, isAllowedUri })
         })
       }
     },

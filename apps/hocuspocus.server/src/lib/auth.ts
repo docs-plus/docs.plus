@@ -7,6 +7,7 @@ import { config } from '../config/env'
 import { jwtLogger } from './logger'
 import { authTokenCacheLookupsTotal, register } from './metrics'
 import { getAnonClient } from './supabase'
+import { TIMED_OUT, withinTimeout } from './withinTimeout'
 
 export interface SupabaseUser {
   sub: string
@@ -129,22 +130,14 @@ export const verifySupabaseTokenOutcome = async (
   const deadlineMs = opts?.deadlineMs
   if (deadlineMs == null) return shared
 
-  let deadlineTimer: ReturnType<typeof setTimeout> | undefined
-  try {
-    // The timeout caches nothing and leaves the shared call running (#596).
-    return await Promise.race([
-      shared,
-      new Promise<TokenVerifyOutcome>((resolve) => {
-        deadlineTimer = setTimeout(() => {
-          const error = new Error(`Token verification exceeded ${deadlineMs} ms`)
-          jwtLogger.error({ err: error }, 'Error verifying token')
-          resolve({ kind: 'unavailable', cause: error })
-        }, deadlineMs)
-      })
-    ])
-  } finally {
-    clearTimeout(deadlineTimer)
+  // The timeout caches nothing and leaves the shared call running (#596).
+  const raced = await withinTimeout(shared, deadlineMs)
+  if (raced === TIMED_OUT) {
+    const error = new Error(`Token verification exceeded ${deadlineMs} ms`)
+    jwtLogger.error({ err: error }, 'Error verifying token')
+    return { kind: 'unavailable', cause: error }
   }
+  return raced
 }
 
 async function fetchTokenOutcome(token: string, getUser: AuthGetUser): Promise<TokenVerifyOutcome> {

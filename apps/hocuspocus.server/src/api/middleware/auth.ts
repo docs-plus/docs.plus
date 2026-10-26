@@ -1,4 +1,4 @@
-import type { Context, Next } from 'hono'
+import type { Context, MiddlewareHandler, Next } from 'hono'
 
 import { fail } from '../../http/envelope'
 import { verifyServiceRole, verifySupabaseTokenOutcome } from '../../lib/auth'
@@ -67,25 +67,28 @@ const OPTIONAL_USER_AUTH_DEADLINE_MS = 2000
 
 /** Attach the user when a valid token is present; never rejects. For routes with
  *  mixed public/privileged actions that gate per-field downstream. */
-export async function optionalUser(c: Context, next: Next) {
-  const token = extractToken(c)
-  if (token) {
-    const outcome = await verifySupabaseTokenOutcome(token, {
-      deadlineMs:
-        c.req.method === 'GET' && c.req.param('docName') !== undefined
-          ? OPTIONAL_USER_AUTH_DEADLINE_MS
-          : undefined
-    })
-    // Transient outage → proceed anonymous; only a verified user is attached.
-    // A connected app's token proceeds anonymous too: it belongs to /api/mcp.
-    if (outcome.kind === 'user' && !isConnectedAppToken(token)) {
-      c.set('user', outcome.user)
-      c.set('userId', outcome.user.sub)
-    } else if (outcome.kind === 'unavailable') {
-      // An owner degraded to anonymous reads as sign-in-required on their own
-      // private document. Record it so the private gate can answer 503 instead.
-      c.set('authUnavailable', true)
+const optionalUserWithin =
+  (deadlineMs?: number): MiddlewareHandler =>
+  async (c, next) => {
+    const token = extractToken(c)
+    if (token) {
+      const outcome = await verifySupabaseTokenOutcome(token, {
+        deadlineMs: c.req.method === 'GET' ? deadlineMs : undefined
+      })
+      // Transient outage → proceed anonymous; only a verified user is attached.
+      // A connected app's token proceeds anonymous too: it belongs to /api/mcp.
+      if (outcome.kind === 'user' && !isConnectedAppToken(token)) {
+        c.set('user', outcome.user)
+        c.set('userId', outcome.user.sub)
+      } else if (outcome.kind === 'unavailable') {
+        // An owner degraded to anonymous reads as sign-in-required on their own
+        // private document. Record it so the private gate can answer 503 instead.
+        c.set('authUnavailable', true)
+      }
     }
+    await next()
   }
-  await next()
-}
+
+export const optionalUser = optionalUserWithin()
+// Only the GET pad read takes the #596 deadline. HEAD on the same path keeps the old bound.
+export const optionalPadReader = optionalUserWithin(OPTIONAL_USER_AUTH_DEADLINE_MS)

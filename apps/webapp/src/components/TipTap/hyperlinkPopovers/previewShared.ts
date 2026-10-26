@@ -70,8 +70,6 @@ const TYPE_TO_ICON: Partial<Record<SpecialUrlType, IconType>> = {
 
 export interface PreviewContext {
   href: string
-  editor: Editor
-  nodePos: number
   signal: AbortSignal
 }
 

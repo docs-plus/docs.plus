@@ -2,6 +2,7 @@
 
 import { section } from '../../../fixtures/docMaker'
 import { TEST_TITLE, MOD } from '../../../support/commands'
+import { ADD_LINK_KEYS } from '../../../support/hyperlinkPicker'
 
 const DocumentStructure = {
   documentName: TEST_TITLE.HelloDocy,
@@ -147,7 +148,7 @@ const applyFormattingAndHyperlink = (itemText, shortcuts, href) => {
 
   // Use the real hyperlink command path so tests validate the same behavior users trigger.
   selectItemRange(itemText)
-  cy.get('.docy_editor').realPress([MOD, 'k'])
+  cy.get('.docy_editor').realPress(ADD_LINK_KEYS)
   cy.get(POPOVER).should('be.visible')
   cy.get(URL_INPUT).clear().type(href)
   cy.get(SUBMIT_BTN).click()

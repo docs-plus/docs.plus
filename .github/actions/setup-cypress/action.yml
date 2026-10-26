@@ -28,7 +28,7 @@ runs:
       shell: bash
       working-directory: extensions/extension-hyperlink
       run: |
-        version=$(bun -e "console.log(require('cypress/package.json').version)")
+        version=$(bun -e "console.log(require('cypress/package.json').version)" || true)
         [ -n "$version" ] || { echo "::error::cypress is not installed; run setup-bun first"; exit 1; }
         echo "version=$version" >> "$GITHUB_OUTPUT"
 
