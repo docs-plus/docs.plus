@@ -206,7 +206,7 @@ const smallSave = (incoming: Uint8Array) =>
     await tx.documents.create({ data: { documentId: SMALL_ID, version: head.version + 1, data } })
   })
 
-const readPeakBytes = async () => {
+const readPeakBytes = () => {
   // Not Bun.file: after exists() it trusts the stat size, sysfs reports 0, and text() reads ''.
   if (existsSync(CGROUP_PEAK)) {
     return { bytes: Number(readFileSync(CGROUP_PEAK, 'utf8').trim()), source: 'cgroup' }
@@ -219,12 +219,12 @@ const readPeakBytes = async () => {
 const fetchPeakOnce = async () => {
   const ids = await pairIds()
   if (ids.length !== 2) throw new Error('pair fixture missing: run without --fetch-peak-once')
-  const before = await readPeakBytes()
+  const before = readPeakBytes()
   const rows = await prisma.documents.findMany({
     where: { id: { in: ids } },
     select: { id: true, data: true }
   })
-  const after = await readPeakBytes()
+  const after = readPeakBytes()
   const fetchedBytes = rows.reduce((sum, row) => sum + row.data.length, 0)
   console.log(
     JSON.stringify({

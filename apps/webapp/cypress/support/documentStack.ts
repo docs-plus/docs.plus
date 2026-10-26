@@ -10,7 +10,6 @@ export const freshSlug = (prefix: string) => `e2e-${prefix}-${Date.now()}-${rand
 export const PAST_PERSIST_DEBOUNCE_MS = 13000
 
 // A save lands after the 10 s debounce or at the close flush, so poll the head.
-// Each spec passes its own tries, so no shared default can drift.
 export const waitForHeadText = (
   documentId: string,
   marker: string,

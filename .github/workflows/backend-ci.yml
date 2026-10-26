@@ -110,7 +110,6 @@ jobs:
             curl -sf "$SUPABASE_URL/rest/v1/users" > /dev/null && exit 0
             sleep 0.2
           done
-          cat /tmp/supabase-stub.log
           exit 1
 
       - name: 🧪 Run real-infra E2E (service CRUD + store pipeline)

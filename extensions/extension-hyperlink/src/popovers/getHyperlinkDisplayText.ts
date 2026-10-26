@@ -1,5 +1,4 @@
-import type { Editor } from '@tiptap/core'
-import { getMarkRange } from '@tiptap/core'
+import { type Editor, getMarkRange } from '@tiptap/core'
 
 import { HYPERLINK_MARK_NAME } from '../constants'
 

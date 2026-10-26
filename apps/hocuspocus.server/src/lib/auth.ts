@@ -40,7 +40,10 @@ type AuthGetUser = (token: string) => Promise<{
 export type VerifyTokenOptions = {
   /** Test seam — production always uses the anon Supabase client. */
   getUser?: AuthGetUser
-  /** auth-js `getUser` takes no signal, so a timer race bounds it. A timeout reads as unavailable. */
+  /**
+   * auth-js `getUser` takes no signal, so a timer race bounds it.
+   * A timeout reads as unavailable.
+   */
   deadlineMs?: number
 }
 

@@ -90,5 +90,5 @@ const optionalUserWithin =
   }
 
 export const optionalUser = optionalUserWithin()
-// Only the GET pad read takes the #596 deadline. HEAD on the same path keeps the old bound.
+// HEAD on the same path keeps the old bound.
 export const optionalPadReader = optionalUserWithin(OPTIONAL_USER_AUTH_DEADLINE_MS)

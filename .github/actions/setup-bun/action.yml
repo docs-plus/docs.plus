@@ -3,7 +3,6 @@
 # ============================================================================
 # Reusable Bun setup with caching. Key invalidates on bun.lock changes.
 # Increment cache-version to manually bust cache when needed.
-# Pull requests restore only. Other events save once per key, after the install.
 # ============================================================================
 
 name: 'Setup Bun Environment'

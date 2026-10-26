@@ -45,11 +45,11 @@ describe('Document Content Clearing with Keyboard Shortcuts', { testIsolation: f
   })
 
   const clearScenarios = [
-    { label: 'Select All (⌘A) followed by Backspace', keys: [[MOD, 'a'], ['Backspace']] },
-    { label: 'Select All (⌘A) followed by Delete', keys: [[MOD, 'a'], ['Delete']] },
-    { label: 'Select All and Delete simultaneously (⌘A+Delete)', keys: [[MOD, 'a', 'Delete']] },
+    { label: 'Select All (Mod+A) followed by Backspace', keys: [[MOD, 'a'], ['Backspace']] },
+    { label: 'Select All (Mod+A) followed by Delete', keys: [[MOD, 'a'], ['Delete']] },
+    { label: 'Select All and Delete simultaneously (Mod+A+Delete)', keys: [[MOD, 'a', 'Delete']] },
     {
-      label: 'Select All and Backspace simultaneously (⌘A+Backspace)',
+      label: 'Select All and Backspace simultaneously (Mod+A+Backspace)',
       keys: [[MOD, 'a', 'Backspace']]
     }
   ]

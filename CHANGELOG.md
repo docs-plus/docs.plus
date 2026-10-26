@@ -44,7 +44,7 @@ counts fail. `20261025150000` replaces `update_view_duration` and
   member count. The lookup now uses the document's id, never its slug
   ([#574](https://github.com/docs-plus/docs.plus/issues/574)).
 - **Imported links now open in the link preview.** Markdown import and connected-app (MCP)
-  writes now store links on the hyperlink mark, so the pad can preview and edit them
+  writes store links on the hyperlink mark, so the pad can preview and edit them
   ([#335](https://github.com/docs-plus/docs.plus/issues/335)).
 - Document views keep the visit duration when the visit closes before the view queue drains
   ([#603](https://github.com/docs-plus/docs.plus/issues/603)).

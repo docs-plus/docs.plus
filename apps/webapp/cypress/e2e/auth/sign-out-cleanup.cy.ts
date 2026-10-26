@@ -89,7 +89,7 @@ describe('sign-out cleanup (full stack)', () => {
     const order: string[] = []
     let draftsAtLogout: number | undefined
     cy.window().then((win) => {
-      ;(win as unknown as Record<string, unknown>).__beforeSignOut = true
+      ;(win as Window & { __beforeSignOut?: boolean }).__beforeSignOut = true
       cy.intercept({ method: 'POST', url: /\/auth\/v1\/logout/ }, (req) =>
         runInDrafts(win, 'readonly', (store) => store.count()).then((count) => {
           draftsAtLogout = count

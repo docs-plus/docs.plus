@@ -46,7 +46,7 @@ const MediaUploadPlaceholderNode = Node.create({
 
 // Mirrors every attribute the webapp Hyperlink mark declares: ProseMirror drops
 // unknown attrs on re-encode, so an absent stub silently strips stored values.
-// `title`/`image` are preview metadata older clients stored; keep them so re-encode does not strip them.
+// `title`/`image` are preview metadata that older clients stored.
 const Hyperlink = Mark.create({
   name: 'hyperlink',
   addAttributes() {

@@ -37,8 +37,9 @@ export const createIconController = ({ iconMaxBytes }: { iconMaxBytes: number })
       if (!response.ok) return miss(CLEAN_MISS_CACHE_HEADER)
 
       const bytes = await readCappedBody(response, controller, iconMaxBytes)
-      const type = bytes ? sniffIconType(bytes) : null
-      if (!bytes || !type) return miss(CLEAN_MISS_CACHE_HEADER)
+      if (!bytes) return miss(CLEAN_MISS_CACHE_HEADER)
+      const type = sniffIconType(bytes)
+      if (!type) return miss(CLEAN_MISS_CACHE_HEADER)
 
       return c.body(new Uint8Array(bytes), 200, {
         'Content-Type': type,

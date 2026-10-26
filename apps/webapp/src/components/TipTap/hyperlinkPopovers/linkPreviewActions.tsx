@@ -77,14 +77,11 @@ export function buildLinkPreviewActions({
       label: 'Edit link',
       icon: <Icons.pencil size={ICON_SIZE} />,
       onClick: () => {
-        // The mark title is metadata, not the visible label. Seed from the mark range.
-        const initialText = getHyperlinkDisplayText(editor, { nodePos, href })
-
         switchSheet('linkEditor', {
           mode: 'edit',
           editor,
           initialHref: href,
-          initialText,
+          initialText: getHyperlinkDisplayText(editor, { nodePos, href }),
           onSubmit: (result) => applyEdit({ editor, nodePos }, result),
           onBack: () => switchSheet('linkPreview', { href, editor, nodePos, isAllowedUri })
         })

@@ -97,7 +97,7 @@ The shared media toolbar mounts in the image's top-right corner — inline: alig
 
 Add a caption from the toolbar; the text is stored in the node `caption` attribute
 and persists via collaboration and JSON. HTML carries the caption as
-`<figure>/<figcaption>`, on every media node, so copy and paste keep it. Image, video,
+`<figure>/<figcaption>` on every media node, so copy and paste keep it. Image, video,
 and audio also expose a Download action.
 
 ## Paste behavior

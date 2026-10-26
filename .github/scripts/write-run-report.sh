@@ -37,9 +37,9 @@ def opt: if . == "" then "n/a" else . end;
 | step("🚀 Deploy Services (rolling replace)") as $roll
 | job("🏗️ Build Verification") as $gate
 | job("🚀 Deploy Production") as $deploy
-| (if $verify then off($verify.completedAt) else null end) as $m1
-| (if $gate then off($gate.completedAt) else null end) as $m2g
-| (if $images then off($images.completedAt) else null end) as $m2i
+| off($verify.completedAt) as $m1
+| off($gate.completedAt) as $m2g
+| off($images.completedAt) as $m2i
 | (if $deploy == null or $m2g == null then null
    elif $images != null and $images.job != "🚀 Deploy Production"
      then off($deploy.startedAt) - ([$m2g, $m2i] | max)
@@ -85,9 +85,9 @@ def opt: if . == "" then "n/a" else . end;
   "| M1 time to live | \($m1 | na) | end of the `🩺 Verify Deployment` step, when it succeeded |",
   "| M2g gate end | \($m2g | na) | end of the `🏗️ Build Verification` job |",
   "| M2i images end | \($m2i | na) | end of the `🏗️ Build Docker Images` step, in any job |",
-  "| M3 image build | \(if $images then dur($images) else null end | na) | duration of the `🏗️ Build Docker Images` step |",
-  "| M4 disk guard | \(if $guard then dur($guard) else null end | na) | duration of the `💾 Pre-deploy disk guard` step |",
-  "| M5 roll-out | \(if $roll then dur($roll) else null end | na) | duration of the `🚀 Deploy Services (rolling replace)` step |",
+  "| M3 image build | \(dur($images) | na) | duration of the `🏗️ Build Docker Images` step |",
+  "| M4 disk guard | \(dur($guard) | na) | duration of the `💾 Pre-deploy disk guard` step |",
+  "| M5 roll-out | \(dur($roll) | na) | duration of the `🚀 Deploy Services (rolling replace)` step |",
   "| W runner wait | \($w | na) | start of the `🚀 Deploy Production` job, minus the later of M2g and M2i. M2i counts only when the image build runs in another job. |",
   "| M6 work time | \($m6 | na) | end of the last successful job, without this report job |",
   "| queue_s | \($queue | na) | start of the first job that ran |",

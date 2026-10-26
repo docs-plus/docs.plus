@@ -120,7 +120,7 @@ describe('Hypermultimedia API (Direct Route)', () => {
           ...over
         })
       }
-      const storedFiles = async () => readdir(path.join(store.dir, 'doc-1')).catch(() => [])
+      const storedFiles = () => readdir(path.join(store.dir, 'doc-1')).catch(() => [])
       const refused = async (
         response: { status: number; json: () => Promise<any> },
         status: number,
