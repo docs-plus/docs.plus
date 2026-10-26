@@ -7,6 +7,7 @@ All notable changes to `@docs.plus/extension-mermaid` are documented here. The f
 ### Added
 
 - `mermaidNodeView(editor)` draws diagrams inside your own `codeBlock` node view. The guide has a recipe for `CodeBlockLowlight.extend({ addNodeView })` ([#628](https://github.com/docs-plus/docs.plus/issues/628)).
+- In development, a warning appears once per editor when another node view owns `codeBlock`. In that case, no diagram can draw ([#629](https://github.com/docs-plus/docs.plus/issues/629)).
 
 ### Changed
 

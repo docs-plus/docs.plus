@@ -1,5 +1,6 @@
 import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
+import type { EditorView } from '@tiptap/pm/view'
 
 import { DEFAULT_LIMITS, MERMAID_LANGUAGE } from './constants'
 import { createMermaidNodeView } from './nodeView/createMermaidNodeView'
@@ -7,6 +8,16 @@ import { createFolds } from './nodeView/fold'
 import type { MermaidOptions, MermaidStorage } from './types'
 
 const MERMAID_PLUGIN_KEY = new PluginKey('mermaid')
+
+// The package build has no Node types. The app's bundler replaces `process.env.NODE_ENV`.
+declare const process: { env: { NODE_ENV?: string } } | undefined
+
+// The same check as Tiptap's internal `isDev`, so an app bundler drops the warning in production.
+const isDev = typeof process !== 'undefined' && process.env.NODE_ENV !== 'production'
+
+const OWNER_WARNING =
+  '[extension-mermaid] Another node view owns codeBlock, so diagrams do not draw. Use mermaidNodeView in that view: ' +
+  'https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/guide.md#keep-your-own-code-block-view'
 
 const STARTER = [
   'flowchart TD',
@@ -45,10 +56,26 @@ export const Mermaid = Extension.create<MermaidOptions, MermaidStorage>({
     const storage = this.storage
     const folds = (storage.folds ??= createFolds(this.options))
     const codeBlock = createMermaidNodeView(this.editor, this.options, folds)
+    // Storage outlives the plugin view, which is built again whenever the plugin set changes.
+    const checkOwner = (view: EditorView): void => {
+      if (!isDev || storage.warned || storage.factoryUsed) return
+      if (view.someProp('nodeViews', (views) => views.codeBlock) === codeBlock) return
+      storage.warned = true
+      console.warn(OWNER_WARNING)
+    }
     return [
       new Plugin({
         key: MERMAID_PLUGIN_KEY,
-        view: folds.view,
+        view: (view) => {
+          const inner = folds.view()
+          checkOwner(view)
+          return {
+            update(next, prev) {
+              checkOwner(next)
+              inner.update?.(next, prev)
+            }
+          }
+        },
         props: {
           nodeViews: { codeBlock },
           handleKeyDown: folds.handleKeyDown

@@ -85,4 +85,27 @@ describe('node view owner', () => {
     cy.realPress('ArrowDown')
     cy.get('.mermaid-diagram').should('have.attr', 'data-source', 'open')
   })
+
+  it('warns once when the app view hides every diagram (#629)', () => {
+    visitWithWarnSpy('?host=app')
+    mermaidBlock().should('have.attr', 'data-testid', 'app-view')
+    mermaidBlock().find('svg').should('not.exist')
+    ownerWarnings().should('eq', 1)
+    cy.getEditor().then((editor) => {
+      editor.commands.insertContent('<p>more</p>')
+    })
+    ownerWarnings().should('eq', 1)
+  })
+
+  it('warns once when another plugin view ranks first (#629)', () => {
+    visitWithWarnSpy('?lower=plugin-first')
+    mermaidBlock().should('have.attr', 'data-testid', 'lower-view')
+    ownerWarnings().should('eq', 1)
+  })
+
+  it('does not warn on the default setup (#629)', () => {
+    visitWithWarnSpy('')
+    mermaidBlock().should('have.class', 'mermaid-diagram').find('svg').should('exist')
+    ownerWarnings().should('eq', 0)
+  })
 })
