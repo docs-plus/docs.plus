@@ -3,7 +3,7 @@ import {
   isSafeHref,
   SAFE_WINDOW_FEATURES
 } from '@docs.plus/extension-hyperlink'
-import { padSlugOf } from '@utils/filterRoute'
+import { padSlugOf, shallowPath } from '@utils/filterRoute'
 import { isReservedSlug } from '@utils/reservedSlugs'
 import Router from 'next/router'
 
@@ -51,7 +51,7 @@ export const navigateHref = (
       ) {
         // Close the preview popover, as an in-document link does; the route stays in this window.
         getDefaultController().close()
-        void Router.push(url.pathname + url.search + url.hash)
+        void Router.push(shallowPath(url))
         return
       }
     } catch {

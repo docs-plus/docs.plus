@@ -84,6 +84,11 @@ const restServer = Bun.spawn(['bun', 'src/index.ts'], {
   stdout: 'inherit',
   stderr: 'inherit'
 })
+// An early process.exit or an uncaught throw must not orphan the children.
+process.once('exit', () => {
+  wsServer.kill()
+  restServer.kill()
+})
 
 const restUrl = `http://127.0.0.1:${restPort}`
 

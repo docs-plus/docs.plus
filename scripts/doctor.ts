@@ -5,6 +5,8 @@ import { existsSync, readFileSync } from 'fs'
 import { createConnection } from 'net'
 import { resolve } from 'path'
 
+import { prismaClientGenerated } from './dev-local-preflight'
+
 const ROOT_DIR = resolve(import.meta.dir, '..')
 
 const engines = (
@@ -279,10 +281,7 @@ async function checkNodeModules(): Promise<CheckResult> {
 }
 
 async function checkPrismaClient(): Promise<CheckResult> {
-  // The generator writes into the package source (gitignored), not node_modules.
-  const generated = existsSync(
-    resolve(ROOT_DIR, 'apps/hocuspocus.server/src/generated/prisma/client.ts')
-  )
+  const generated = prismaClientGenerated()
 
   if (generated) {
     return {

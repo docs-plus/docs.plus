@@ -256,7 +256,7 @@ export const revertCooldownTotal = new Counter({
 // auth.ts, and a constant 0 dilutes any average across scrape jobs.
 export const authTokenCacheLookupsTotal = new Counter({
   name: 'auth_token_cache_lookups_total',
-  help: 'Supabase token verifications served from cache or sent to Auth, by result',
+  help: 'Supabase token lookups by result: hit is served from cache, miss is not. Concurrent misses of one token share one Auth call.',
   labelNames: ['result'] as const,
   registers: [register]
 })

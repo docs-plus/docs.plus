@@ -4,23 +4,10 @@
  * is the proof that an edit was saved. Local-only: no CI lane runs e2e/document/**.
  */
 
-// `--config baseUrl=http://localhost:3000` points the spec at another webapp port.
-const BASE = Cypress.config('baseUrl') ?? 'http://localhost:3001'
-const pad = () => cy.get('.ProseMirror[contenteditable="true"]', { timeout: 40000 })
-type DocRow = { documentId: string; ownerId: string | null } | null
-const freshSlug = () => `e2e-saved-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-const rand = () => Math.random().toString(36).slice(2, 10)
-const PROVIDER_URL = 'ws://localhost:4001' // NEXT_PUBLIC_PROVIDER_URL under `make dev-local`
+import { pad, rand, seedPad, waitForHeadText } from '../../support/documentStack'
 
-// A save lands after the 10 s debounce or at the close flush, so poll the head.
-const waitForHeadText = (documentId: string, marker: string, tries = 30): Cypress.Chainable => {
-  return cy.task<string | null>('queryDocHeadText', documentId).then((text) => {
-    if (text?.includes(marker)) return
-    if (tries <= 0) throw new Error(`head of ${documentId} never held "${marker}"`)
-    cy.wait(1000)
-    waitForHeadText(documentId, marker, tries - 1)
-  })
-}
+const freshSlug = () => `e2e-saved-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+const PROVIDER_URL = 'ws://localhost:4001' // NEXT_PUBLIC_PROVIDER_URL under `make dev-local`
 
 // Queued through cy.then, so it runs in command order and Cypress waits for it.
 // CDP needs all four fields; -1 turns throttling off.
@@ -47,23 +34,6 @@ const recordSockets = (win: Cypress.AUTWindow) => {
   }
 }
 
-// A pad with a stored head, so the edits under test merge onto saved versions.
-// The head check proves a stored version exists: it reads text only from a Documents row.
-const seedSavedPad = (
-  slug: string,
-  onBeforeLoad?: (win: Cypress.AUTWindow) => void
-): Cypress.Chainable<string> => {
-  const seed = `seed-${rand()}`
-  cy.visit(`${BASE}/${slug}`, { onBeforeLoad })
-  pad().should('be.visible').click().realType(seed)
-  return cy.task<DocRow>('waitForDocBySlug', slug).then((row) => {
-    expect(row, `anchor row for ${slug}`).to.not.be.null
-    const documentId = row!.documentId
-    waitForHeadText(documentId, seed)
-    return cy.wrap(documentId)
-  })
-}
-
 describe('edits on a saved pad reach the Postgres head (full stack)', () => {
   let slug: string
 
@@ -79,20 +49,22 @@ describe('edits on a saved pad reach the Postgres head (full stack)', () => {
   })
 
   it('keeps an edit made just before a reload', () => {
-    seedSavedPad(slug).then((documentId) => {
+    // A pad with a stored head, so the edits under test merge onto saved versions.
+    // The head check proves a stored version exists: it reads text only from a Documents row.
+    seedPad(slug, `seed-${rand()}`, 30).then((documentId) => {
       const token = `reload-${rand()}`
       pad().click().realType(token)
       cy.reload() // well inside the 10 s debounce
 
       pad().should('contain.text', token)
-      waitForHeadText(documentId, token)
+      waitForHeadText(documentId, token, 30)
     })
   })
 
   it('saves an offline edit once the browser is back online', function () {
     if (!Cypress.isBrowser({ family: 'chromium' })) this.skip() // CDP only
 
-    seedSavedPad(slug, recordSockets).then((documentId) => {
+    seedPad(slug, `seed-${rand()}`, 30, recordSockets).then((documentId) => {
       const token = `offline-${rand()}`
       setOffline(true)
       // Never the Next HMR socket: dropping it can reload the page.
@@ -111,7 +83,7 @@ describe('edits on a saved pad reach the Postgres head (full stack)', () => {
       cy.task<string | null>('queryDocHeadText', documentId).should('not.contain', token)
 
       setOffline(false)
-      waitForHeadText(documentId, token)
+      waitForHeadText(documentId, token, 30)
       cy.reload()
       pad().should('contain.text', token)
     })

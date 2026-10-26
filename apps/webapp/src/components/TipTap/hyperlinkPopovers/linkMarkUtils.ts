@@ -1,5 +1,6 @@
 import type { Editor } from '@tiptap/core'
 import { getMarkRange } from '@tiptap/core'
+import { getSiteIconUrl } from '@utils/link-helpers'
 
 import type { DocSelectionRange } from './types'
 
@@ -12,6 +13,25 @@ export const safeImageSrc = (url: string | undefined): string | undefined => {
   if (!url) return undefined
   return /^https?:\/\//i.test(url) ? url : undefined
 }
+
+type PreviewImageData = {
+  icon?: string
+  favicon?: string
+  publisher?: { logo?: string }
+  image?: { url: string }
+  oembed?: { thumbnail?: string }
+} | null
+
+/**
+ * Preview image order: icon, publisher logo, image, site icon, oEmbed thumbnail.
+ * `favicon` is only a fallback marker; we build our own URL from the href.
+ */
+export const pickPreviewImageSrc = (data: PreviewImageData, href: string): string | undefined =>
+  safeImageSrc(data?.icon) ||
+  safeImageSrc(data?.publisher?.logo) ||
+  safeImageSrc(data?.image?.url) ||
+  (data?.favicon ? getSiteIconUrl(href) : undefined) ||
+  safeImageSrc(data?.oembed?.thumbnail)
 
 /**
  * Link text from the document. The live <a> wins over a stale nodePos; the href match stops a neighbour's text.

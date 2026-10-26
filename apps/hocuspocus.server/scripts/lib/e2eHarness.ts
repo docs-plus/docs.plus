@@ -245,7 +245,7 @@ export const deleteTestUser = async (user: TestUser | null, serviceKey: string):
 const providerModule = await import(
   Bun.resolveSync('@hocuspocus/provider', `${REPO_ROOT}apps/webapp`)
 )
-const { HocuspocusProvider } = providerModule as {
+export const { HocuspocusProvider } = providerModule as {
   HocuspocusProvider: new (config: Record<string, unknown>) => any
 }
 

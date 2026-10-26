@@ -4,27 +4,19 @@ import { ContextMenuRowButton } from '@components/ui/ContextMenuRowButton'
 import { useCloseAfterHold } from '@hooks/useCloseAfterHold'
 import { Icons } from '@icons'
 import { type SheetDataMap, useSheetStore } from '@stores'
-import { getSiteIconUrl } from '@utils/link-helpers'
 import { sheetBodyPadClassName } from '@utils/sheetBodyPadding'
 import { twMerge } from '@utils/twMerge'
 import { Fragment, useMemo, useState } from 'react'
 
 import { InternalLinkChip } from './components/InternalLinkChip'
 import { classifyInternalDocumentLink } from './internalDocumentLink'
-import { safeImageSrc } from './linkMarkUtils'
+import { pickPreviewImageSrc } from './linkMarkUtils'
 import { buildLinkPreviewActions } from './linkPreviewActions'
-import { type LinkMetadata, useLinkMetadata } from './useLinkMetadata'
+import { useLinkMetadata } from './useLinkMetadata'
 
 interface LinkPreviewSheetProps {
   data: SheetDataMap['linkPreview']
 }
-
-const pickImageSrc = (data: LinkMetadata | null, href: string): string | undefined =>
-  safeImageSrc(data?.icon) ||
-  safeImageSrc(data?.publisher?.logo) ||
-  safeImageSrc(data?.image?.url) ||
-  (data?.favicon ? getSiteIconUrl(href) : undefined) ||
-  safeImageSrc(data?.oembed?.thumbnail)
 
 /**
  * External-link header: unfurled favicon/title/description. Isolated in its
@@ -34,7 +26,7 @@ const ExternalLinkHeader = ({ data: payload }: LinkPreviewSheetProps) => {
   const { href } = payload
   const { status, data } = useLinkMetadata(href)
 
-  const imageUrl = pickImageSrc(data, href)
+  const imageUrl = pickPreviewImageSrc(data, href)
   const title = data?.title || href
   const description = data?.description
   const showHrefLine = Boolean(data?.title && data.title !== href)

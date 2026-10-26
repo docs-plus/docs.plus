@@ -3,22 +3,24 @@
  * reconnect that replays offline bytes, and the diff that names each block's author.
  * Standalone (not `bun test`); needs `make dev-local` and root .env.local.
  */
-import { TiptapTransformer } from '@hocuspocus/transformer'
 import * as Y from 'yjs'
 
 import { prisma } from '../src/lib/prisma'
 import { closeQueues, createDocumentWorker } from '../src/lib/queue'
 import { disconnectRedis } from '../src/lib/redis'
 import {
+  decodeText,
   deleteTestUser,
+  HocuspocusProvider,
+  makeRest,
   mintTestUser,
+  pollFor,
   sleep,
   spawnServers,
   type TestUser,
   waitForHttp
 } from './lib/e2eHarness'
 
-const REPO_ROOT = new URL('../../..', import.meta.url).pathname
 const PREFIX = `e2e-attribution-${Date.now()}`
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -54,33 +56,7 @@ if (!SERVICE_KEY) {
 
 const { wsPort, internalPort, restUrl, kill: killServers } = spawnServers()
 
-interface RestResponse {
-  status: number
-  body: any
-}
-
-const rest = async (
-  path: string,
-  init: RequestInit & { auth?: string | null } = {}
-): Promise<RestResponse> => {
-  const { auth = SERVICE_KEY, ...requestInit } = init
-  const response = await fetch(`${restUrl}${path}`, {
-    ...requestInit,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(auth ? { Authorization: `Bearer ${auth}` } : {}),
-      ...(requestInit.headers ?? {})
-    }
-  })
-  const text = await response.text()
-  let body: any
-  try {
-    body = JSON.parse(text)
-  } catch {
-    body = text
-  }
-  return { status: response.status, body }
-}
+const rest = makeRest(restUrl, SERVICE_KEY)
 
 const titleDoc = (text: string) => ({
   type: 'doc',
@@ -109,26 +85,6 @@ const headRow = (documentId: string) =>
     orderBy: { version: 'desc' },
     select: { version: true, data: true }
   })
-
-const decodeText = (data: Uint8Array): string => {
-  const ydoc = new Y.Doc()
-  Y.applyUpdate(ydoc, new Uint8Array(data))
-  return JSON.stringify(TiptapTransformer.fromYdoc(ydoc, 'default'))
-}
-
-const pollFor = async <T>(
-  read: () => Promise<T | null>,
-  accept: (value: T) => boolean,
-  timeoutMs = 25_000
-): Promise<T | null> => {
-  const deadline = Date.now() + timeoutMs
-  while (Date.now() < deadline) {
-    const value = await read()
-    if (value && accept(value)) return value
-    await sleep(200)
-  }
-  return null
-}
 
 /** Head content carrying every marker, which is what proves the bytes travelled. */
 const headCarrying = (documentId: string, markers: string[]) =>
@@ -168,16 +124,6 @@ const appendParagraph = (ydoc: Y.Doc, text: string): void => {
 /** Everything the target lacks, which is how an offline peer hands work over. */
 const encodeMissing = (source: Y.Doc, target: Y.Doc): Uint8Array =>
   Y.encodeStateAsUpdate(source, Y.encodeStateVector(target))
-
-// Resolved against the webapp because @hocuspocus/provider is a webapp
-// dependency, not a backend one. Hoisting the provider for a test-only client
-// would put a client library in the server's dependency graph.
-const providerModule = await import(
-  Bun.resolveSync('@hocuspocus/provider', `${REPO_ROOT}apps/webapp`)
-)
-const { HocuspocusProvider } = providerModule as {
-  HocuspocusProvider: new (config: Record<string, unknown>) => any
-}
 
 interface Session {
   provider: any

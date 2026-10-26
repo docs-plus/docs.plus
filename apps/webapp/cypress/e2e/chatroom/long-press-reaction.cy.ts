@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { stubChatroom } from '../../support/chatroomFixtures'
+import { holdMessageTouch, stubChatroom } from '../../support/chatroomFixtures'
 
 beforeEach(stubChatroom)
 
@@ -13,11 +13,7 @@ describe('chatroom long-press reaction', () => {
     }).as('addReaction')
     cy.visit('/c/test-channel?variant=mobile')
     cy.waitForMessage('message-40')
-    // realTouch sends touchEnd immediately; keep this touch down past the 500ms threshold.
-    cy.get('[data-msg-id="message-40"] .chat-bubble').trigger('touchstart', {
-      touches: [{ identifier: 1, clientX: 150, clientY: 400 }],
-      changedTouches: [{ identifier: 1, clientX: 150, clientY: 400 }]
-    })
+    holdMessageTouch('message-40')
     cy.get('[role="toolbar"][aria-label="Quick reactions"]').should('be.visible')
     cy.get('[data-msg-id="message-40"][data-mode="inline"] .chat-bubble').trigger('touchend', {
       touches: [],

@@ -5,7 +5,6 @@ import {
   type SpecialUrlType
 } from '@docs.plus/extension-hyperlink'
 import type { Editor } from '@tiptap/core'
-import { getSiteIconUrl } from '@utils/link-helpers'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { IconType } from 'react-icons'
@@ -14,7 +13,7 @@ import { fetchMetadata, type MetadataResponse } from './fetchMetadata'
 import { hrefEventHandler } from './hrefEventHandler'
 import { describeInternalDocumentLink } from './internalDocumentLink'
 import { runInternalDocumentLink } from './internalDocumentLinkActions'
-import { safeImageSrc } from './linkMarkUtils'
+import { pickPreviewImageSrc } from './linkMarkUtils'
 import type { InternalDocumentLink } from './types'
 
 /**
@@ -105,15 +104,8 @@ export const createMetadataContent = (data: MetadataResponse | null, href: strin
   titleLink.addEventListener('click', hrefEventHandler(href))
   container.append(titleLink)
 
-  // Prefer the high-res icon → publisher logo → image thumbnail → special-icon SVG.
-  // Each third-party candidate runs through `safeImageSrc` so a hostile data:/javascript:
-  // URL can never reach `<img src>`. `favicon` is only a fallback marker; we build our own URL.
-  const imageUrl =
-    safeImageSrc(data?.icon) ||
-    safeImageSrc(data?.publisher?.logo) ||
-    safeImageSrc(data?.image?.url) ||
-    (data?.favicon ? getSiteIconUrl(href) : undefined) ||
-    safeImageSrc(data?.oembed?.thumbnail)
+  // Prefer the metadata image; with none, fall back to the special-icon SVG below.
+  const imageUrl = pickPreviewImageSrc(data, href)
   if (imageUrl) {
     const img = createHTMLElement('img', {
       src: imageUrl,

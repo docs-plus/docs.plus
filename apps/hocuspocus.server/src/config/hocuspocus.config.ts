@@ -75,7 +75,8 @@ async function persistMigratedSnapshot(
           trigger: 'schema-migration' satisfies MachineVersionTrigger,
           version: (head?.version ?? 0) + 1,
           data: migrated
-        }
+        },
+        select: { version: true }
       })
       return migrated
     })

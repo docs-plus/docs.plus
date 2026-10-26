@@ -57,9 +57,9 @@ Before you deploy this commit, check that `.env.production` holds both `VAPID_PU
   ([#608](https://github.com/docs-plus/docs.plus/issues/608)).** Before, the status ignored
   `workers.push.vapid_configured`, so a missing or bad key never paged. A dev stack with empty
   keys stays `healthy`. Set `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` before you deploy.
-- Concurrent verifies of one Supabase access token now share one Auth call, so a reconnect
-  burst no longer calls Supabase Auth once per connection
-  ([#599](https://github.com/docs-plus/docs.plus/issues/599)).
+- **Concurrent verifies of one Supabase access token share one Auth call
+  ([#599](https://github.com/docs-plus/docs.plus/issues/599)).** A reconnect burst no longer
+  calls Supabase Auth once per connection.
 
 ### Fixed
 
@@ -104,6 +104,7 @@ Before you deploy this commit, check that `.env.production` holds both `VAPID_PU
 ### Internal
 
 - `@sentry/bun` is `11.9.0`. The init uses the same `dataCollection` baseline as the webapp.
+- Prisma is `7.10.1` ([#198](https://github.com/docs-plus/docs.plus/issues/198)). `prisma.config.ts` holds the schema path and the database URL. The client generates into `src/generated/prisma`, which is gitignored.
 - The root overrides pin `prosemirror-model` `1.25.12`, `prosemirror-transform` `1.12.2`, and `prosemirror-view` `1.42.6`.
 - `prosemirror-changeset` stays `2.4.1`. `@tiptap/pm` 3.32.0 asks for `^2.4.4`. Later versions halve `MAX_DIFF_SIZE`.
 

@@ -9,15 +9,24 @@
  * Needs the `make dev-local` docker services (Postgres + Redis) and root .env.local.
  */
 import { OutgoingMessage } from '@hocuspocus/server'
-import { TiptapTransformer } from '@hocuspocus/transformer'
 import * as Y from 'yjs'
 
 import { prisma } from '../src/lib/prisma'
 import { closeQueues, createDocumentWorker, StoreDocumentQueue } from '../src/lib/queue'
 import { disconnectRedis } from '../src/lib/redis'
-import { deleteTestUser, mintTestUser, sleep, spawnServers, waitForHttp } from './lib/e2eHarness'
+import {
+  decodeText,
+  deleteTestUser,
+  HocuspocusProvider,
+  makeRest,
+  mintTestUser,
+  pollFor,
+  sleep,
+  spawnServers,
+  type TestUser,
+  waitForHttp
+} from './lib/e2eHarness'
 
-const REPO_ROOT = new URL('../../..', import.meta.url).pathname
 const PREFIX = `e2e-versions-${Date.now()}`
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -39,33 +48,7 @@ if (!SERVICE_KEY) {
 
 const { wsPort, internalPort, restUrl, kill: killServers } = spawnServers()
 
-interface RestResponse {
-  status: number
-  body: any
-}
-
-const rest = async (
-  path: string,
-  init: RequestInit & { auth?: string | null } = {}
-): Promise<RestResponse> => {
-  const { auth = SERVICE_KEY, ...requestInit } = init
-  const response = await fetch(`${restUrl}${path}`, {
-    ...requestInit,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(auth ? { Authorization: `Bearer ${auth}` } : {}),
-      ...(requestInit.headers ?? {})
-    }
-  })
-  const text = await response.text()
-  let body: any
-  try {
-    body = JSON.parse(text)
-  } catch {
-    body = text
-  }
-  return { status: response.status, body }
-}
+const rest = makeRest(restUrl, SERVICE_KEY)
 
 const titleDoc = (text: string) => ({
   type: 'doc',
@@ -108,26 +91,6 @@ const versionRow = (documentId: string, version: number) =>
     select: { version: true, data: true, commitMessage: true, trigger: true, triggeredBy: true }
   })
 
-const decodeText = (data: Uint8Array): string => {
-  const ydoc = new Y.Doc()
-  Y.applyUpdate(ydoc, new Uint8Array(data))
-  return JSON.stringify(TiptapTransformer.fromYdoc(ydoc, 'default'))
-}
-
-const pollFor = async <T>(
-  read: () => Promise<T | null>,
-  accept: (value: T) => boolean,
-  timeoutMs = 25_000
-): Promise<T | null> => {
-  const deadline = Date.now() + timeoutMs
-  while (Date.now() < deadline) {
-    const value = await read()
-    if (value && accept(value)) return value
-    await sleep(200)
-  }
-  return null
-}
-
 /** Store job ids for one document, newest last. The suffix is what the pins read. */
 const storeJobIds = async (documentId: string): Promise<string[]> => {
   const jobs = await StoreDocumentQueue.getJobs(
@@ -146,16 +109,6 @@ const appendParagraph = (ydoc: Y.Doc, text: string): void => {
   const paragraph = new Y.XmlElement('paragraph')
   paragraph.insert(0, [new Y.XmlText(text)])
   fragment.insert(fragment.length, [paragraph])
-}
-
-// Resolved against the webapp because @hocuspocus/provider is a webapp
-// dependency, not a backend one. Hoisting the provider for a test-only client
-// would put a client library in the server's dependency graph.
-const providerModule = await import(
-  Bun.resolveSync('@hocuspocus/provider', `${REPO_ROOT}apps/webapp`)
-)
-const { HocuspocusProvider } = providerModule as {
-  HocuspocusProvider: new (config: Record<string, unknown>) => any
 }
 
 interface Session {
@@ -253,9 +206,11 @@ if (!(await waitForHttp(`${restUrl}/health`))) {
 // Attribution needs a token the WS process can verify. CI serves one from the
 // Supabase stub scripts/lib/supabaseStub.ts. With no Auth reachable, every
 // user-identity assertion below degrades to a skip, or fails under E2E_REQUIRE_AUTH.
-const actor = await mintTestUser(PREFIX, SERVICE_KEY, 'Versions Actor')
+let actor: TestUser | null = null
 
 try {
+  actor = await mintTestUser(PREFIX, SERVICE_KEY, 'Versions Actor')
+
   // 1. One document, three provenances: a collaborator's edit, a service
   //    injection and a named checkpoint.
   console.log('\n[1] three-trigger attribution through the REST list')
@@ -326,14 +281,16 @@ try {
       )
       const wsListed = versions.find((version) => version.trigger === 'websocket')
       const profile = wsListed?.triggeredBy
+      // A let loses its narrowing inside the callback below, so a const carries the id.
+      const actorId = actor.id
       if (profile) {
-        check(profile.id === actor.id, 'the websocket row embeds the editor profile')
+        check(profile.id === actorId, 'the websocket row embeds the editor profile')
         check(
           profile.full_name === 'Versions Actor',
           'the embedded profile carries the public.users columns'
         )
         check(
-          (wsListed.contributors ?? []).some((entry: any) => entry.id === actor.id),
+          (wsListed.contributors ?? []).some((entry: any) => entry.id === actorId),
           'the editor is listed among the version contributors'
         )
       } else {
@@ -863,5 +820,5 @@ try {
 }
 
 if (skipped > 0) console.log(`\n${skipped} check group(s) skipped`)
-console.log(failed ? '\nversions E2E: FAILED' : '\nversions E2E: PASSED')
+console.log(`\nversions E2E: ${failed ? 'FAILED' : skipped > 0 ? 'SKIPPED' : 'PASSED'}`)
 process.exit(failed ? 1 : 0)

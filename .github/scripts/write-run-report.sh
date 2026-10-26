@@ -69,6 +69,7 @@ def opt: if . == "" then "n/a" else . end;
   "",
   "| Step | Job | Start (s) | Duration (s) | Result |",
   "|---|---|---:|---:|---|",
+  # "📦 Verify images present" and the other-job branch of W wait for #565. Keep them.
   (([ "💾 Pre-deploy disk guard", "🏗️ Build Docker Images", "📦 Verify images present",
      "🔧 Ensure Infrastructure", "🗄️ Migrate database (one-shot gate)",
      "🚀 Deploy Services (rolling replace)", "🩺 Verify Deployment", "🚨 Rollback on Failure"

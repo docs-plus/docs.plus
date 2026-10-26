@@ -5,7 +5,7 @@ import type * as Y from 'yjs'
 
 import type { DocumentMetadata, PrismaClient } from '../../generated/prisma/client'
 import type { VerifyServiceRole } from '../../http/serviceRole'
-import type { VersionTrigger as StoredVersionTrigger } from '../../types'
+import type { StoreDocumentContext } from '../../types'
 
 export type { VerifyServiceRole }
 
@@ -125,9 +125,6 @@ export interface ApplyRequest {
   payloadBytes?: number
 }
 
-/** Why a version row exists. Projected onto the row, never a read predicate. */
-export type VersionTrigger = Extract<StoredVersionTrigger, 'api' | 'mcp' | 'checkpoint' | 'revert'>
-
 /**
  * Attribution for the version row a live write mints. `forceKey` only widens the
  * store job id, so a named row cannot dedupe onto an unnamed one for the same
@@ -135,7 +132,7 @@ export type VersionTrigger = Extract<StoredVersionTrigger, 'api' | 'mcp' | 'chec
  */
 export interface VersionStamp {
   name?: string
-  trigger: VersionTrigger
+  trigger: NonNullable<StoreDocumentContext['versionTrigger']>
   triggeredBy: string | null
   forceKey?: string
 }

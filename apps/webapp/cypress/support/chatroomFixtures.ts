@@ -124,3 +124,11 @@ export function stubChatroom() {
     req.reply({ statusCode: 201, body: [{ ...req.body, seq: 41 }] })
   })
 }
+
+export function holdMessageTouch(msgId: string) {
+  // realTouch sends touchEnd immediately; keep this touch down past the 500ms threshold.
+  return cy.get(`[data-msg-id="${msgId}"] .chat-bubble`).trigger('touchstart', {
+    touches: [{ identifier: 1, clientX: 150, clientY: 400 }],
+    changedTouches: [{ identifier: 1, clientX: 150, clientY: 400 }]
+  })
+}

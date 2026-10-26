@@ -569,14 +569,14 @@ jobs:
           done
 
           # Private document media fails closed without it (#439). Never print the value.
-          media_secret=$(grep -E '^MEDIA_COOKIE_SECRET=' "${ENV_FILE}" | head -1 | cut -d= -f2- | tr -d "\"'")
+          media_secret=$(grep -E '^MEDIA_COOKIE_SECRET=' "${ENV_FILE}" | head -1 | cut -d= -f2- | tr -d "\"'" || true)
           if [ "${#media_secret}" -lt 32 ]; then
             echo "::error::MEDIA_COOKIE_SECRET is missing or shorter than 32 characters in ${ENV_SOURCE}. Without it, no one can load a Private document's media. Set it (openssl rand -hex 32), then redeploy."
             exit 1
           fi
 
           # Redis runs with --requirepass (#438). Never print the value.
-          redis_password=$(grep -E '^REDIS_PASSWORD=' "${ENV_FILE}" | head -1 | cut -d= -f2- | tr -d "\"'")
+          redis_password=$(grep -E '^REDIS_PASSWORD=' "${ENV_FILE}" | head -1 | cut -d= -f2- | tr -d "\"'" || true)
           if [ "${#redis_password}" -lt 32 ]; then
             echo "::error::REDIS_PASSWORD is missing or shorter than 32 characters in ${ENV_SOURCE}. Redis requires it. Set it (openssl rand -hex 32) here and in .env.observability, then redeploy."
             exit 1

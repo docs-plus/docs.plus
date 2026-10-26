@@ -255,7 +255,7 @@ async function ensureSupabase(): Promise<void> {
 
 // Package presence is not generation: postinstall's `|| true` can mask a failed
 // generate, so check the emitted client (the gitignored generator output).
-function prismaClientGenerated(): boolean {
+export function prismaClientGenerated(): boolean {
   return existsSync(resolve(ROOT, 'apps/hocuspocus.server/src/generated/prisma/client.ts'))
 }
 

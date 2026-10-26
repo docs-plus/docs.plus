@@ -380,16 +380,4 @@ COMMIT;
 --   WHERE n.nspname='public' AND p.prosecdef = true
 --     AND has_function_privilege('anon', p.oid, 'EXECUTE');
 --
--- (e) §9 default privileges (expect no anon in any public row, no authenticated
---     in the public f row, no anon or authenticated in any pgmq or storage row,
---     and no PUBLIC in the <all schemas> f row)
---   SELECT CASE WHEN d.defaclnamespace = 0 THEN '<all schemas>'
---               ELSE d.defaclnamespace::regnamespace::text END AS schema,
---          d.defaclobjtype AS objtype,
---          CASE WHEN a.grantee = 0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END AS grantee,
---          a.privilege_type
---   FROM pg_default_acl d, aclexplode(d.defaclacl) a
---   WHERE d.defaclrole = 'postgres'::regrole
---     AND (d.defaclnamespace = 0
---          OR d.defaclnamespace::regnamespace::text IN ('public', 'pgmq', 'storage'))
---   ORDER BY 1, 2, 3, 4;
+-- (e) §9 default privileges: run scripts/check-grants.sql (expect no default_acl_* rows).

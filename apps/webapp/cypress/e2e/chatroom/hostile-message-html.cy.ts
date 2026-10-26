@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { chatroomRows, stubChatroom } from '../../support/chatroomFixtures'
+import { chatroomRows, holdMessageTouch, stubChatroom } from '../../support/chatroomFixtures'
 
 // Messages 39 and 40 put style and onerror on tags in ALLOWED_TAGS
 // (src/utils/sanitizeContent.ts), so a looser ALLOWED_ATTR fails this spec.
@@ -80,11 +80,7 @@ describe('chatroom hostile message HTML', () => {
     cy.viewport('iphone-x')
     cy.visit('/c/test-channel?variant=mobile')
     cy.waitForMessage('message-40')
-    // realTouch sends touchEnd immediately; keep this touch down past the 500ms threshold.
-    cy.get('[data-msg-id="message-40"] .chat-bubble').trigger('touchstart', {
-      touches: [{ identifier: 1, clientX: 150, clientY: 400 }],
-      changedTouches: [{ identifier: 1, clientX: 150, clientY: 400 }]
-    })
+    holdMessageTouch('message-40')
     cy.get('[role="toolbar"][aria-label="Quick reactions"]').should('be.visible')
 
     // The clone's own bubble carries inline style, so check only the cloned body.

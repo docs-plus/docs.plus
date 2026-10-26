@@ -21,7 +21,7 @@ Tiptap extension for embedding media in the editor: images, audio, video, and pr
 
 - **One kit adds nine media nodes.** One `HyperMultimediaKit.configure` call adds image, audio, video, YouTube, Vimeo, SoundCloud, Spotify, X and Loom. Set a node to `false` to leave it out.
 - **Editing controls on every node.** Each node gets a media toolbar in its top-right corner, an editable caption, and a loading shell. Eight of the nine also get drag-to-resize.
-- **A pasted provider URL becomes a player.** Paste a YouTube, SoundCloud or Spotify URL on its own, or a Loom, Vimeo or X URL anywhere, and it becomes an embed node. With `@tiptap/markdown`, every node round-trips through typed `![alt](src)` syntax.
+- **A pasted provider URL becomes a player.** Paste a YouTube, SoundCloud or Spotify URL on its own, or a Loom, Vimeo or X URL anywhere, and it becomes an embed node. With `@tiptap/markdown`, every node imports and exports through typed `![alt](src)` syntax. See [Caveats](#caveats) for what Markdown drops.
 - **The UI follows `color-scheme`.** Every visual token is a `--hm-*` CSS custom property, declared with `light-dark()`. The toolbar, loading shell, gripper and caption follow the nearest ancestor's `color-scheme`.
 
 ## Install
@@ -74,7 +74,7 @@ You should see the image in the editor. Hover it with a mouse: the media toolbar
 - **`resizeGripper: false` removes the whole media toolbar for that node.** To remove the drag handles alone, replace the media toolbar with [`mediaToolbar`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/media-toolbar.md#bring-your-own-toolbar).
 - **A link extension can claim a media URL before the kit sees it.** See [Keep media URLs out of a link extension](#keep-media-urls-out-of-a-link-extension).
 - **The paste handler drops pasted image files silently without a listener.** Add an `editorFileUpload` listener, as [Image file paste](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/paste-and-import.md#image-file-paste-editorfileupload) shows.
-- **Markdown keeps only `src`, the image `alt`, and the `width` and `height` of `audio` and `video`.** Only whole-number sizes survive. Any other size turns the whole line into plain text on import. Export and import drop every other attribute. That covers the caption, the image `title`, `float`, `margin`, `display`, `clear`, `justifyContent`, the size of every other node, and every player option. An image alt that holds a `[` loses the whole image on import. [#244](https://github.com/docs-plus/docs.plus/issues/244) tracks the fix, in slices 2 to 6.
+- **Markdown keeps only `src`, the image `alt`, and the `width` and `height` of `audio` and `video`.** Only whole-number sizes survive. Write `width` before `height`. Any other size or order turns the whole line into plain text on import. Export and import drop every other attribute. That covers the caption, the image `title`, `float`, `margin`, `display`, `clear`, `justifyContent`, the size of every other node, and every player option. An image alt that holds a `[` loses the whole image on import. [#244](https://github.com/docs-plus/docs.plus/issues/244) tracks the fix, in slices 2 to 6.
 
 The full list, with the reason for each, is in [Caveats](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/api.md#caveats).
 

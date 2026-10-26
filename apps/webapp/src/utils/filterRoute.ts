@@ -11,7 +11,7 @@ function parseAsPath(asPath: string): URL {
   return new URL(asPath, 'http://localhost')
 }
 
-function shallowPath(url: URL): string {
+export function shallowPath(url: URL): string {
   return `${url.pathname}${url.search}${url.hash}`
 }
 

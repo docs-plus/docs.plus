@@ -5,7 +5,7 @@ describe('Worker Server - Integration Tests', () => {
   let workerProcess: Subprocess | null = null
   const WORKER_HEALTH_PORT = 3003
   // Without Redis these cases skip, so they never count as passes (#585).
-  const hasRedis = Boolean(process.env.REDIS_HOST)
+  const hasRedis = Boolean(process.env.REDIS_HOST && process.env.REDIS_PORT)
 
   const checkWorkerHealth = async (
     retries = 10,
