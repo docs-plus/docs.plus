@@ -16,6 +16,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ## [Unreleased]
 
+### Changed
+
+- A plain click on a link to another pad now opens that pad in the same window, in the pad and
+  in chat. Mod-click and middle-click still open a new tab
+  ([#359](https://github.com/docs-plus/docs.plus/issues/359)).
+
 ### Fixed
 
 - **The Documents list shows member faces and the roster on older documents
@@ -37,6 +43,14 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - **A push notification click marks the notification read when it opens a new window
   ([#312](https://github.com/docs-plus/docs.plus/issues/312)).** The bell and the app icon
   badge used to keep the old count.
+
+### Security
+
+- **Site icons no longer come from Google
+  ([#517](https://github.com/docs-plus/docs.plus/issues/517)).** Profile links, Settings links and
+  link previews load site icons from the docs.plus server. Before, each icon sent the reader's IP
+  address and the site's origin to Google. A new Settings link no longer stores a fallback favicon
+  URL. The privacy page now has a "Link icons" section.
 
 ## [2.2.0] — 2026-10-22
 

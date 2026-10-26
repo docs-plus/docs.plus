@@ -19,6 +19,10 @@ before you deploy, and follow its order. Push Supabase migrations `2026102312000
 land, the member faces, the roster and the admin member counts fail. Then run
 `packages/supabase/scripts/check-grants.sql`. It should return no rows.
 
+Push `20261025150000_carry_view_duration_through_queue.sql`. It replaces `update_view_duration`
+and `process_document_views_queue`, and keeps both service-role only
+([#603](https://github.com/docs-plus/docs.plus/issues/603)).
+
 ### Changed
 
 - The production deploy now aborts below 20 GB free disk, up from 10 GB. It prunes Docker build cache toward a free-space target, not by age.
@@ -32,6 +36,8 @@ land, the member faces, the roster and the admin member counts fail. Then run
 - **Imported links now open in the link preview.** Markdown import and connected-app (MCP)
   writes now store links on the hyperlink mark, so the pad can preview and edit them
   ([#335](https://github.com/docs-plus/docs.plus/issues/335)).
+- Document views keep the visit duration when the visit closes before the view queue drains
+  ([#603](https://github.com/docs-plus/docs.plus/issues/603)).
 
 ### Security
 

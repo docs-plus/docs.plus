@@ -32,6 +32,9 @@ this commit, run `docker pull traefik:v3.6` on the production host. Check that
 into the live config folder, so any Traefik restart after it reads the new key. A 3.6.17 or
 older image then does not start.
 
+Before you deploy this commit, check that `.env.production` holds both `VAPID_PUBLIC_KEY` and
+`VAPID_PRIVATE_KEY`. Without them, the worker healthcheck fails and the deploy rolls back.
+
 ### Added
 
 - **`GET /api/metadata/icon?origin=<origin>` returns a favicon
@@ -41,6 +44,22 @@ older image then does not start.
   has its own rate limit at ten times `RATE_LIMIT_MAX`. One risk is accepted: a host that
   changes its DNS answer during the fetch can return private bytes. The leak is limited
   to sniffed image bytes, up to the cap, within 3 s.
+- **`push_subscriptions_deactivated_total{reason}` counts the push subscriptions the server
+  switches off ([#607](https://github.com/docs-plus/docs.plus/issues/607)).** `gone` is a
+  `404` or `410` reply from the push service. `failed-count` is a row that reaches 5 failures,
+  the value the cleanup job switches off on. The worker seeds both at 0 at start. The Grafana
+  rule `worker-push-deactivations` warns at 3 or more in 1 hour. The FCM outage of 2026-08-09
+  switched devices off, and nobody saw it for two months.
+
+### Changed
+
+- **The worker `/health` reports `unhealthy` in production when push has no VAPID keys
+  ([#608](https://github.com/docs-plus/docs.plus/issues/608)).** Before, the status ignored
+  `workers.push.vapid_configured`, so a missing or bad key never paged. A dev stack with empty
+  keys stays `healthy`. Set `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` before you deploy.
+- Concurrent verifies of one Supabase access token now share one Auth call, so a reconnect
+  burst no longer calls Supabase Auth once per connection
+  ([#599](https://github.com/docs-plus/docs.plus/issues/599)).
 
 ### Fixed
 
@@ -58,6 +77,29 @@ older image then does not start.
   ([#335](https://github.com/docs-plus/docs.plus/issues/335)).**
   `POST /api/documents/:documentId/import` with Markdown, and MCP writes, store links on
   the `hyperlink` mark, not `link`.
+- **A slow Supabase read no longer sends a pad render to `/500`
+  ([#596](https://github.com/docs-plus/docs.plus/issues/596)).** `GET /api/documents/:docName`
+  now gives the owner-profile read and the optional Auth read their own 2 s deadlines. A late
+  profile read renders the pad with a `null` owner profile. A late Auth read counts as
+  `unavailable` and writes no token cache entry. Before, both waited for the shared 10 s
+  Supabase bound, which ends at the same time as the webapp abort.
+- **A first-edit slug cede no longer logs an error
+  ([#593](https://github.com/docs-plus/docs.plus/issues/593)).** The draft anchor now inserts
+  with `createMany({ skipDuplicates: true })`. A cede writes no row and logs nothing at level
+  50, so it no longer feeds the error-surge alert. The winner still creates the row and can
+  still claim the owner.
+
+### Security
+
+- **The metadata fallback no longer returns a Google favicon URL
+  ([#517](https://github.com/docs-plus/docs.plus/issues/517)).** When `PUBLIC_RESTAPI_URL` is set,
+  the fallback's `favicon` is this server's `/api/metadata/icon` URL for the site's origin. When it
+  is unset, `favicon` is absent. The field keeps its type; only its value changes.
+- **`history.watch` has a per-connection byte budget
+  ([#214](https://github.com/docs-plus/docs.plus/issues/214)).** Each connection may receive
+  about 20 MB of watch replies per 10 s. A watch past the budget gets `history_failed` with
+  reason `rate-limited`, the same reply as the count cap. The budget is provisional, and
+  [#602](https://github.com/docs-plus/docs.plus/issues/602) may change it.
 
 ### Internal
 
