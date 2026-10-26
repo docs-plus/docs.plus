@@ -50,8 +50,6 @@ type TCloseChatData = {
 }
 
 export const eventsHub = (router: NextRouter) => {
-  console.info('eventsHub initialized')
-
   const tokens = [
     PubSub.subscribe(CHAT_COMMENT, (_msg, data: TChatCommentData) => {
       ensureEmojiData(true)
