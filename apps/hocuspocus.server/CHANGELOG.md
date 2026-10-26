@@ -12,7 +12,7 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Migration
 
-Push three Supabase migrations with this deploy, in this order:
+Push four Supabase migrations with this deploy, in this order:
 
 1. `20261023120000` drops and re-creates `get_document_member_previews`,
    `get_document_members` and `admin_get_document_member_counts` with new parameter names
@@ -22,8 +22,16 @@ Push three Supabase migrations with this deploy, in this order:
    ([#579](https://github.com/docs-plus/docs.plus/issues/579)).
 3. `20261025120000` drops `get_bookmark_count` and `admin_get_user_notification_subs`
    ([#605](https://github.com/docs-plus/docs.plus/issues/605)).
+4. `20261025150000` replaces `update_view_duration` and `process_document_views_queue`, so a
+   visit that closes before the view queue drains keeps its duration
+   ([#603](https://github.com/docs-plus/docs.plus/issues/603)).
 
-Run `packages/supabase/scripts/check-grants.sql` once, after all three.
+Run `packages/supabase/scripts/check-grants.sql` once, after all four.
+
+Do not push `20261026120000` ([#570](https://github.com/docs-plus/docs.plus/issues/570)) with
+this deploy. It closes default privileges in `pgmq` and `storage`. Push it only after the
+production row-5 read on 2026-10-28 and the #553 phase 2 run on or after 2026-11-01. Then run
+`check-grants.sql` again.
 
 The bundled `scripts/traefik/traefik.yml` now drops query strings from the access log. That key
 needs Traefik v3.6.18 or later, and older builds refuse it and do not start. Before you deploy

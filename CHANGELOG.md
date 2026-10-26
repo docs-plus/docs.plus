@@ -24,12 +24,14 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 
 **If you self-host.** Read the [hocuspocus Migration](apps/hocuspocus.server/CHANGELOG.md#migration)
 before you deploy, and follow its order. Push Supabase migrations `20261023120000`,
-`20261024120000`, `20261025120000`, `20261025150000` and `20261026120000` together with
-the backend and frontend deploy. `20261023120000` renames the parameters of three member
+`20261024120000`, `20261025120000` and `20261025150000` together with the backend and
+frontend deploy. `20261023120000` renames the parameters of three member
 functions, so until both sides land, the member faces, the roster and the admin member
 counts fail. `20261025150000` replaces `update_view_duration` and
 `process_document_views_queue`, and keeps both service-role only
-([#603](https://github.com/docs-plus/docs.plus/issues/603)). As the last step, run
+([#603](https://github.com/docs-plus/docs.plus/issues/603)). Do not push `20261026120000`
+([#570](https://github.com/docs-plus/docs.plus/issues/570)) with this deploy; see the hocuspocus
+Migration section for when it goes. As the last step, run
 `packages/supabase/scripts/check-grants.sql`. It should return no rows.
 
 ### Changed
