@@ -1,8 +1,8 @@
 import type { Editor } from '@tiptap/core'
 import { type LinkItem, type LinkMetadata, LinkType } from '@types'
 
-import { apiBaseUrl } from './apiBaseUrl'
 import { headingSlugTrail } from './headingSlugTrail'
+import { iconRouteUrl } from './iconRouteUrl'
 
 export const getFormattedHref = (link: LinkItem): string => {
   switch (link.type) {
@@ -24,7 +24,7 @@ export const getSiteIconUrl = (url: string): string | undefined => {
     const u = new URL(/^[a-z][a-z\d+.-]*:\/\//i.test(url) ? url : `https://${url}`)
     if ((u.protocol !== 'http:' && u.protocol !== 'https:') || u.username || u.password)
       return undefined
-    return `${apiBaseUrl()}/metadata/icon?origin=${encodeURIComponent(u.origin)}`
+    return iconRouteUrl(u.origin)
   } catch {
     return undefined // also covers apiBaseUrl() throwing when the variable is unset
   }
