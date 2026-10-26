@@ -21,7 +21,9 @@ describe('linkIconMap', () => {
     const icons = linkIconMap({ 'www.w.example': '/i/w.png', 'w2.example': '/i/w2.png' })
     expect(srcOf(icons({ href: 'https://w.example/' }))).toBe('/i/w.png')
     expect(srcOf(icons({ href: 'https://www.w2.example/' }))).toBe('/i/w2.png')
-    expect(srcOf(icons({ href: 'https://w2.example./' }))).toBe('/i/w2.png')
+    // a fresh map: a second img for a URL waits for the first request
+    const fresh = linkIconMap({ 'w2.example': '/i/w2.png' })
+    expect(srcOf(fresh({ href: 'https://w2.example./' }))).toBe('/i/w2.png')
   })
 
   it('matches subdomains, and the longest entry wins', () => {

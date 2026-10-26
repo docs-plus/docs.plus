@@ -29,6 +29,17 @@ describe('linkIconFetcher', () => {
     expect(plain.classList.contains('hyperlink-icon-tile')).toBe(false)
   })
 
+  it('makes one request per URL; later imgs get src after the first loads', () => {
+    const icons = linkIconFetcher({ src: (o) => `/i/${new URL(o).hostname}.png` })
+    const first = icons({ href: 'https://a.example/1' })!
+    const second = icons({ href: 'https://a.example/2' })!
+    expect(first.getAttribute('src')).toBe('/i/a.example.png')
+    expect(second.hasAttribute('src')).toBe(false)
+    first.dispatchEvent(new Event('load'))
+    expect(second.getAttribute('src')).toBe('/i/a.example.png')
+    expect(icons({ href: 'https://a.example/3' })!.getAttribute('src')).toBe('/i/a.example.png')
+  })
+
   it('does not request a URL again after it failed once', () => {
     const icons = linkIconFetcher({ src: (o) => `/i/${new URL(o).hostname}.png` })
     const first = icons({ href: 'https://miss.example/1' })!

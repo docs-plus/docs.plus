@@ -26,7 +26,10 @@ const TEL = glyph(() => lucideSvgString(Icons.phone, 16))
 const appScheme = ({ href }: LinkIconContext) =>
   /^mailto:/i.test(href) ? MAIL() : /^tel:/i.test(href) ? TEL() : null
 
-const fetchIcon = linkIconFetcher({ src: iconRouteUrl })
+const routes = new Map<string, string>() // one route string per origin, not per link
+const fetchIcon = linkIconFetcher({
+  src: (origin) => routes.get(origin) ?? routes.set(origin, iconRouteUrl(origin)).get(origin)!
+})
 
 /** Pad resolver: docs.plus logo, then mail and phone glyphs, then the favicon. */
 export const padLinkIcon = (ctx: LinkIconContext): HTMLElement | null =>
