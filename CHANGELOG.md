@@ -85,6 +85,8 @@ Migration section for when it goes. As the last step, run
   editor text" and drops the paste. `@tiptap/y-tiptap` 3.0.10 carries a `bun patch` until
   upstream ships a fix ([ueberdosis/tiptap#8584](https://github.com/ueberdosis/tiptap/issues/8584)).
   The Docker images copy `patches/` before each install.
+- On iPhone Safari, the chat icon in the phone TOC drawer opens the chat again. The chat used to
+  close as soon as it opened ([#639](https://github.com/docs-plus/docs.plus/issues/639)).
 - The offline copy of a pad no longer grows on every load. It used to keep one more full copy
   of the document per reload, and every load decoded all of them. On a 2000-link pad, 20
   reloads left 42 copies (22.6 MB) and a 202 ms frame. It now stays at one copy (0.55 MB)

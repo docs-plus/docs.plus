@@ -38,6 +38,15 @@ export function consumeHistoryDismissEntry(): Promise<void> {
 }
 
 /**
+ * Resolves once a pop that a closing surface started has landed. The close queues its pop in
+ * a microtask, so read it one turn later. A push before the landing is taken by that pop:
+ * Safari lands it about 90 ms after the tap (#639).
+ */
+export function whenHistoryDismissSettles(): Promise<void> {
+  return Promise.resolve().then(() => pendingPop ?? undefined)
+}
+
+/**
  * One marked history entry while any surface is open on mobile, so hardware
  * back closes the surface instead of leaving the document. Same boolean
  * marker as `useSettingsModal`. Pop only while our own marker is on top.

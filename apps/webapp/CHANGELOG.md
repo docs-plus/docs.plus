@@ -42,6 +42,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- **The chat icon in the phone TOC drawer opens the chat on iPhone Safari again
+  ([#639](https://github.com/docs-plus/docs.plus/issues/639)).** The tap closes the drawer, and
+  the drawer pops its history entry. Safari lands that pop about 90 ms later, after the chat pane
+  had pushed its own entry, so the pop closed the chat. `useChatPaneHistory` now waits for that
+  pop (`whenHistoryDismissSettles`) before it pushes.
 - **The offline mirror stays at one row
   ([#638](https://github.com/docs-plus/docs.plus/issues/638)).** y-indexeddb stores a full doc
   copy on each load and trims only past 500 rows. `useYdocAndProvider` now merges the store to

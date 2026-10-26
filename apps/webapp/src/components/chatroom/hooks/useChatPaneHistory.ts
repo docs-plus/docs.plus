@@ -1,3 +1,4 @@
+import { whenHistoryDismissSettles } from '@hooks/useHistoryDismiss'
 import { useChatStore } from '@stores'
 import Router from 'next/router'
 import { useEffect } from 'react'
@@ -36,10 +37,6 @@ export function useChatPaneHistory(isOpen: boolean): void {
   useEffect(() => {
     if (!isOpen) return
 
-    if (!(window.history.state as PaneStackState | null)?.chatPane) {
-      window.history.pushState({ chatPane: true } satisfies { chatPane: true }, '')
-    }
-
     const onPopState = () => {
       if (isPaneStackMarker(window.history.state)) return
       useChatStore.getState().destroyChatRoom()
@@ -62,9 +59,22 @@ export function useChatPaneHistory(isOpen: boolean): void {
       queueMicrotask(restore)
     }
 
-    window.addEventListener('popstate', onPopState)
-    Router.events.on('beforeHistoryChange', onBeforeHistoryChange)
+    // A drawer closed in the same tap may still be popping its entry. Push and listen only
+    // after that pop lands, or it takes the pane's entry and closes the room (#639).
+    let active = true
+    let attached = false
+    void whenHistoryDismissSettles().then(() => {
+      if (!active) return
+      if (!(window.history.state as PaneStackState | null)?.chatPane) {
+        window.history.pushState({ chatPane: true } satisfies { chatPane: true }, '')
+      }
+      window.addEventListener('popstate', onPopState)
+      Router.events.on('beforeHistoryChange', onBeforeHistoryChange)
+      attached = true
+    })
     return () => {
+      active = false
+      if (!attached) return
       window.removeEventListener('popstate', onPopState)
       Router.events.off('beforeHistoryChange', onBeforeHistoryChange)
       consumePaneStack()
