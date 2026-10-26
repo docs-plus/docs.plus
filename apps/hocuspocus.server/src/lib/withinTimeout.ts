@@ -1,7 +1,7 @@
 export const TIMED_OUT = Symbol('within-timeout-timed-out')
 
-// Promise.race attaches its own handler to both inputs, so a late store-fault
-// rejection is already handled. Measured. Only the timer needs clearing.
+// Promise.race attaches its own handler to both inputs, so a late rejection of
+// `work` is already handled. Measured. Only the timer needs clearing.
 export const withinTimeout = async <T>(
   work: Promise<T>,
   ms: number

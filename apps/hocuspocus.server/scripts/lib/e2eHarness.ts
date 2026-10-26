@@ -72,6 +72,8 @@ export interface Servers {
   /** The WS process, so a script can stop it alone to test an outage. */
   ws: Subprocess
   kill: () => void
+  /** Throws, so each caller keeps its own exit or finally path. */
+  waitUntilUp: () => Promise<void>
 }
 
 /**
@@ -108,14 +110,17 @@ export const spawnServers = (): Servers => {
   // A guard: an early process.exit or an uncaught throw must not orphan them.
   process.once('exit', kill)
 
-  return {
-    wsPort,
-    internalPort,
-    restPort,
-    restUrl: `http://127.0.0.1:${restPort}`,
-    ws,
-    kill
+  const restUrl = `http://127.0.0.1:${restPort}`
+  const waitUntilUp = async () => {
+    if (!(await waitForHttp(`http://127.0.0.1:${internalPort}/metrics`))) {
+      throw new Error('WS process internal listener never came up')
+    }
+    if (!(await waitForHttp(`${restUrl}/health`))) {
+      throw new Error('REST process never came up')
+    }
   }
+
+  return { wsPort, internalPort, restPort, restUrl, ws, kill, waitUntilUp }
 }
 
 export interface RestResponse {
@@ -221,7 +226,7 @@ export const pollFor = async <T>(
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
     const value = await read()
-    if (value && accept(value)) return value
+    if (value !== null && accept(value)) return value
     await sleep(200)
   }
   return null

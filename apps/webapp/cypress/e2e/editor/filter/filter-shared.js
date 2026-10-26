@@ -8,6 +8,9 @@
 export const IPHONE_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
 
+// Skipped in the editor-only job: the filter mounts only on the pad route, which needs REST and WS. https://github.com/docs-plus/docs.plus/issues/477
+export const describeOnPad = Cypress.expose('EDITOR_ONLY_STACK') ? describe.skip : describe
+
 export const freshSlug = (name) =>
   `e2e-${name}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 

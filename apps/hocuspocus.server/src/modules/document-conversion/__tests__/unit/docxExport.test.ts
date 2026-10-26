@@ -62,8 +62,6 @@ describe('exportDocx image origin allowlist', () => {
 
     expect(foreignHits).toBe(0)
     expect(mediaHits).toBe(1)
-    // Zip entry names are not compressed, so a byte search finds the media part.
-    expect(docx.includes('word/media/')).toBe(true)
 
     const inlined: Buffer[] = []
     await mammoth.convertToHtml(

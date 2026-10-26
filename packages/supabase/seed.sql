@@ -3569,13 +3569,6 @@ comment on table public.document_views_daily is
 
 
 -- -----------------------------------------------------------------------------
--- 4. Record Document View (Main RPC Function)
--- -----------------------------------------------------------------------------
--- This is the ONLY function the frontend needs to call.
--- Handles all deduplication, validation, and recording.
--- Returns immediately after INSERT (non-blocking).
-
--- -----------------------------------------------------------------------------
 -- 4. Create pgmq Queue for Document Views
 -- -----------------------------------------------------------------------------
 
@@ -3835,7 +3828,7 @@ grant execute on function public.update_view_duration(uuid, integer)
 
 
 -- -----------------------------------------------------------------------------
--- 6. Aggregate Stats Worker (pg_cron job)
+-- 8. Aggregate Stats Worker (pg_cron job)
 -- -----------------------------------------------------------------------------
 -- Batch processes raw views into pre-computed stats.
 -- Runs every 5 minutes for near-real-time dashboard updates.
@@ -3986,7 +3979,7 @@ comment on function public.aggregate_document_view_stats() is
 
 
 -- -----------------------------------------------------------------------------
--- 7. Cleanup Old Data (pg_cron job)
+-- 9. Cleanup Old Data (pg_cron job)
 -- -----------------------------------------------------------------------------
 -- Drops old partitions and cleans up daily stats older than 1 year.
 
@@ -4034,7 +4027,7 @@ comment on function public.cleanup_old_document_views() is
 
 
 -- -----------------------------------------------------------------------------
--- 8. Admin Query Functions (for Dashboard)
+-- 10. Admin Query Functions (for Dashboard)
 -- -----------------------------------------------------------------------------
 
 -- Get overall view statistics
@@ -4190,7 +4183,7 @@ comment on function public.get_document_view_stats(text) is
 
 
 -- -----------------------------------------------------------------------------
--- 9. RLS Policies
+-- 11. RLS Policies
 -- -----------------------------------------------------------------------------
 
 alter table public.document_views enable row level security;
@@ -4212,7 +4205,7 @@ create policy "Admins can read document_views_daily"
 
 
 -- -----------------------------------------------------------------------------
--- 10. pg_cron Scheduling
+-- 12. pg_cron Scheduling
 -- -----------------------------------------------------------------------------
 
 -- Process document views queue every 10 minutes. Explicit 5-field schedule:
@@ -4271,7 +4264,7 @@ $$;
 
 
 -- -----------------------------------------------------------------------------
--- 11. Grant Permissions for Admin Functions
+-- 13. Grant Permissions for Admin Functions
 -- -----------------------------------------------------------------------------
 
 -- Only the service_role admin API calls these. Mirrors migration 20260609092031.

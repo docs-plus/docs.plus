@@ -19,8 +19,7 @@ import {
   pollFor,
   sleep,
   spawnServers,
-  type TestUser,
-  waitForHttp
+  type TestUser
 } from './lib/e2eHarness'
 
 const PREFIX = `e2e-owner-${Date.now()}`
@@ -118,12 +117,7 @@ await worker.waitUntilReady()
 
 let user: TestUser | null = null
 try {
-  if (!(await waitForHttp(`http://127.0.0.1:${servers.internalPort}/metrics`))) {
-    throw new Error('WS process internal listener never came up')
-  }
-  if (!(await waitForHttp(`${servers.restUrl}/health`))) {
-    throw new Error('REST process never came up')
-  }
+  await servers.waitUntilUp()
 
   // Needs no Supabase, so it runs even when Auth is unreachable.
   console.log('\n[B] a signed-out first edit leaves the document open')

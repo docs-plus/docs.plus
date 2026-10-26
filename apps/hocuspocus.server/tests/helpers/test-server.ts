@@ -51,81 +51,47 @@ export class TestServer {
     this.baseURL = `http://localhost:${port}`
   }
 
-  async get(path: string, headers: Record<string, string> = {}) {
-    const response = await this.app.request(`${this.baseURL}${path}`, {
-      method: 'GET',
-      headers
-    })
+  private async send(
+    method: string,
+    path: string,
+    init: { body?: RequestInit['body']; headers?: Record<string, string> } = {}
+  ) {
+    const response = await this.app.request(`${this.baseURL}${path}`, { method, ...init })
     return {
       status: response.status,
       headers: response.headers,
       json: async (): Promise<any> => response.json(),
       text: async () => response.text()
     }
+  }
+
+  async get(path: string, headers: Record<string, string> = {}) {
+    return this.send('GET', path, { headers })
   }
 
   async post(path: string, body: any, headers: Record<string, string> = {}) {
-    const response = await this.app.request(`${this.baseURL}${path}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers
-      },
-      body: JSON.stringify(body)
+    return this.send('POST', path, {
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json', ...headers }
     })
-    return {
-      status: response.status,
-      headers: response.headers,
-      json: async (): Promise<any> => response.json(),
-      text: async () => response.text()
-    }
   }
 
   async put(path: string, body: any, headers: Record<string, string> = {}) {
-    const response = await this.app.request(`${this.baseURL}${path}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers
-      },
-      body: JSON.stringify(body)
+    return this.send('PUT', path, {
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json', ...headers }
     })
-    return {
-      status: response.status,
-      headers: response.headers,
-      json: async (): Promise<any> => response.json(),
-      text: async () => response.text()
-    }
   }
 
   async patch(path: string, body: any, headers: Record<string, string> = {}) {
-    const response = await this.app.request(`${this.baseURL}${path}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers
-      },
-      body: JSON.stringify(body)
+    return this.send('PATCH', path, {
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json', ...headers }
     })
-    return {
-      status: response.status,
-      headers: response.headers,
-      json: async (): Promise<any> => response.json(),
-      text: async () => response.text()
-    }
   }
 
   async delete(path: string, headers: Record<string, string> = {}) {
-    const response = await this.app.request(`${this.baseURL}${path}`, {
-      method: 'DELETE',
-      headers
-    })
-    return {
-      status: response.status,
-      headers: response.headers,
-      json: async (): Promise<any> => response.json(),
-      text: async () => response.text()
-    }
+    return this.send('DELETE', path, { headers })
   }
 
   async upload(
@@ -136,18 +102,7 @@ export class TestServer {
   ) {
     const formData = new FormData()
     formData.append(fieldName, file)
-
-    const response = await this.app.request(`${this.baseURL}${path}`, {
-      method: 'POST',
-      body: formData,
-      headers
-    })
-    return {
-      status: response.status,
-      headers: response.headers,
-      json: async (): Promise<any> => response.json(),
-      text: async () => response.text()
-    }
+    return this.send('POST', path, { body: formData, headers })
   }
 }
 

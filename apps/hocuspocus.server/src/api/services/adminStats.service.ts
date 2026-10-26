@@ -137,30 +137,28 @@ export async function listDocuments(prisma: PrismaClient, params: ListDocumentsP
   const documentIds = documents.map((d) => d.documentId)
   const viewStatsKeys = documentIds.map((id) => id.toLowerCase())
 
-  if (ownerIds.length > 0) {
-    try {
-      const rows = await fetchByIds(
-        'users',
-        'id',
-        ownerIds as string[],
-        'id,username,email,avatar_url,avatar_updated_at'
-      )
-      const users = parseSupabaseArray(supabaseUsersArraySchema, rows)
-      if (users) {
-        const userMap = new Map(users.map((u) => [u.id, u]))
-        docsWithDefaults.forEach((doc) => {
-          if (!doc.ownerId) return
-          const user = userMap.get(doc.ownerId)
-          if (user) {
-            doc.ownerName = user.username || user.email?.split('@')[0] || null
-            doc.ownerAvatarUrl = user.avatar_url || null
-            doc.ownerAvatarUpdatedAt = user.avatar_updated_at || null
-          }
-        })
-      }
-    } catch (err) {
-      adminLogger.error({ err }, 'Failed to fetch owners')
+  try {
+    const rows = await fetchByIds(
+      'users',
+      'id',
+      ownerIds as string[],
+      'id,username,email,avatar_url,avatar_updated_at'
+    )
+    const users = parseSupabaseArray(supabaseUsersArraySchema, rows)
+    if (users) {
+      const userMap = new Map(users.map((u) => [u.id, u]))
+      docsWithDefaults.forEach((doc) => {
+        if (!doc.ownerId) return
+        const user = userMap.get(doc.ownerId)
+        if (user) {
+          doc.ownerName = user.username || user.email?.split('@')[0] || null
+          doc.ownerAvatarUrl = user.avatar_url || null
+          doc.ownerAvatarUpdatedAt = user.avatar_updated_at || null
+        }
+      })
     }
+  } catch (err) {
+    adminLogger.error({ err }, 'Failed to fetch owners')
   }
 
   if (documentIds.length > 0) {
@@ -191,29 +189,27 @@ export async function listDocuments(prisma: PrismaClient, params: ListDocumentsP
     }
   }
 
-  if (viewStatsKeys.length > 0) {
-    try {
-      const viewStats = await fetchByIds(
-        'document_view_stats',
-        'document_slug',
-        viewStatsKeys,
-        'document_slug,views_7d,unique_users_7d'
+  try {
+    const viewStats = await fetchByIds(
+      'document_view_stats',
+      'document_slug',
+      viewStatsKeys,
+      'document_slug,views_7d,unique_users_7d'
+    )
+    const statsMap = new Map(
+      (viewStats as { document_slug: string; views_7d: number; unique_users_7d: number }[]).map(
+        (s) => [s.document_slug, { views7d: s.views_7d, uniqueUsers7d: s.unique_users_7d }]
       )
-      const statsMap = new Map(
-        (viewStats as { document_slug: string; views_7d: number; unique_users_7d: number }[]).map(
-          (s) => [s.document_slug, { views7d: s.views_7d, uniqueUsers7d: s.unique_users_7d }]
-        )
-      )
-      docsWithDefaults.forEach((doc) => {
-        const stats = statsMap.get(doc.documentId.toLowerCase())
-        if (stats) {
-          doc.views7d = stats.views7d
-          doc.uniqueUsers7d = stats.uniqueUsers7d
-        }
-      })
-    } catch (err) {
-      adminLogger.error({ err }, 'Failed to fetch view stats')
-    }
+    )
+    docsWithDefaults.forEach((doc) => {
+      const stats = statsMap.get(doc.documentId.toLowerCase())
+      if (stats) {
+        doc.views7d = stats.views7d
+        doc.uniqueUsers7d = stats.uniqueUsers7d
+      }
+    })
+  } catch (err) {
+    adminLogger.error({ err }, 'Failed to fetch view stats')
   }
 
   return {

@@ -21,18 +21,14 @@ import {
   StoreDocumentQueue
 } from '../src/lib/queue'
 import { createRedisConnection, disconnectRedis } from '../src/lib/redis'
+import { createTally, pollFor } from './lib/e2eHarness'
 
 const PREFIX = `e2e-store-${Date.now()}`
-let failed = false
+const { check, outcome } = createTally()
 
 // queue.ts keeps its state client private, so the claim-check keys are read here.
 const stateRedis = createRedisConnection()
 if (!stateRedis) throw new Error('store pipeline E2E needs REDIS_HOST/REDIS_PORT')
-
-function check(cond: boolean, msg: string) {
-  console.log(`  ${cond ? '✓' : '✗'} ${msg}`)
-  if (!cond) failed = true
-}
 
 function yjsStateBase64(text: string): string {
   const doc = new Y.Doc()
@@ -40,28 +36,11 @@ function yjsStateBase64(text: string): string {
   return Buffer.from(Y.encodeStateAsUpdate(doc)).toString('base64')
 }
 
-async function waitForVersion(documentId: string, version: number, timeoutMs = 25000) {
-  const deadline = Date.now() + timeoutMs
-  while (Date.now() < deadline) {
-    const row = await prisma.documents.findFirst({
-      where: { documentId },
-      orderBy: { version: 'desc' }
-    })
-    if (row && row.version >= version) return row
-    await new Promise((r) => setTimeout(r, 200))
-  }
-  return null
-}
-
-async function poll<T>(read: () => Promise<T>, done: (value: T) => boolean, timeoutMs = 15000) {
-  const deadline = Date.now() + timeoutMs
-  let value = await read()
-  while (!done(value) && Date.now() < deadline) {
-    await new Promise((r) => setTimeout(r, 200))
-    value = await read()
-  }
-  return value
-}
+const waitForVersion = (documentId: string, version: number) =>
+  pollFor(
+    () => prisma.documents.findFirst({ where: { documentId }, orderBy: { version: 'desc' } }),
+    (row) => row.version >= version
+  )
 
 async function cleanup() {
   await prisma.documents.deleteMany({ where: { documentId: { startsWith: PREFIX } } })
@@ -228,19 +207,20 @@ const readEntries5 = async () =>
     (job) => job.data.documentName === doc5
   )
 // This poll only proves an entry appeared. The count waits for the job to fail.
-const firstEntries5 = await poll(readEntries5, (entries) => entries.length > 0)
-check(firstEntries5.length > 0, 'exhausted job writes a DLQ entry')
+const firstEntries5 = await pollFor(readEntries5, (entries) => entries.length > 0, 15_000)
+check((firstEntries5?.length ?? 0) > 0, 'exhausted job writes a DLQ entry')
 // The worker's DEL is fire-and-forget, so give it a moment to land.
-const keyCount5 = await poll(
+const keyCount5 = await pollFor(
   () => stateRedis.exists(stateKey5),
   (n) => n === 0,
   5000
 )
 check(keyCount5 === 0, 'dead-letter deletes the claim-check key')
 // The DLQ add runs before the re-throw, so the job is still locked at first sight.
-const jobState5 = await poll(
+const jobState5 = await pollFor(
   async () => (await StoreDocumentQueue.getJob(jobId5))?.getState(),
-  (state) => state === 'failed'
+  (state) => state === 'failed',
+  15_000
 )
 check(jobState5 === 'failed', 'main-queue job ends failed after its two attempts')
 // Count only now: a broken guard that dead-letters attempt 1 adds a second,
@@ -268,7 +248,7 @@ await worker.close()
 // so the section skips and fails the run then. CLIENT LIST spans every DB, so count
 // this DB only. Poll, because Redis can still list the closed worker for a moment.
 const ownDb = String(stateRedis.options.db ?? 0)
-const workersLeft = await poll(
+const workersLeft = await pollFor(
   async () => (await StoreDocumentQueue.getWorkers()).filter((w) => w.db === ownDb).length,
   (n) => n === 0,
   3000
@@ -319,5 +299,6 @@ await prisma.$disconnect()
 await stateRedis.quit()
 await disconnectRedis()
 
+const { failed } = outcome()
 console.log(failed ? '\nstore pipeline E2E: FAILED' : '\nstore pipeline E2E: PASSED')
 process.exit(failed ? 1 : 0)

@@ -88,8 +88,6 @@ interface ViewStat {
 
 async function fetchViewStatsMap(slugs: string[]): Promise<Map<string, ViewStat>> {
   const map = new Map<string, ViewStat>()
-  if (slugs.length === 0) return map
-
   // No catch: a failed read must fail the list and the purge. An empty map would
   // score every document as unviewed (#578).
   const viewStats = await fetchByIds(
@@ -116,8 +114,6 @@ interface OwnerInfo {
 
 async function fetchOwnerMap(ownerIds: string[]): Promise<Map<string, OwnerInfo>> {
   const map = new Map<string, OwnerInfo>()
-  if (ownerIds.length === 0) return map
-
   try {
     const users = await fetchByIds('users', 'id', ownerIds, 'id,username,email,avatar_url')
     ;(users as ({ id: string } & OwnerInfo)[]).forEach((u) => {

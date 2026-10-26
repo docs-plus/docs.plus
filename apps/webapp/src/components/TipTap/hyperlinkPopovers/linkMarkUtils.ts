@@ -2,6 +2,7 @@ import type { Editor } from '@tiptap/core'
 import { getMarkRange } from '@tiptap/core'
 import { getSiteIconUrl } from '@utils/link-helpers'
 
+import type { MetadataResponse } from './fetchMetadata'
 import type { DocSelectionRange } from './types'
 
 /**
@@ -14,13 +15,10 @@ export const safeImageSrc = (url: string | undefined): string | undefined => {
   return /^https?:\/\//i.test(url) ? url : undefined
 }
 
-type PreviewImageData = {
-  icon?: string
-  favicon?: string
-  publisher?: { logo?: string }
-  image?: { url: string }
-  oembed?: { thumbnail?: string }
-} | null
+type PreviewImageData = Pick<
+  MetadataResponse,
+  'icon' | 'favicon' | 'publisher' | 'image' | 'oembed'
+> | null
 
 /**
  * Preview image order: icon, publisher logo, image, site icon, oEmbed thumbnail.
@@ -49,7 +47,7 @@ export const getHyperlinkDisplayText = (
   try {
     if (link?.isConnected) live = editor.view.posAtDOM(link, 0)
   } catch {
-    // The <a> is in another editor; use nodePos.
+    // An <a> outside this view gives -1, and live >= 0 handles that. This catch is only a guard.
   }
   const pos = live >= 0 ? live : at.nodePos
   if (!type || typeof pos !== 'number' || pos < 0 || pos > doc.content.size) return fallback()

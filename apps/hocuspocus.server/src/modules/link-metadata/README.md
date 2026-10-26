@@ -4,7 +4,7 @@ Self-contained link-unfurling service. Designed as a modular monolith so it can 
 
 ## Boundary rules (do not violate)
 
-1. **Single bounded folder.** Code, tests, types, infra adapters all live here. Files outside this folder may only import from `./index.ts`.
+1. **Single bounded folder.** Code, tests, types, infra adapters all live here. Files outside this folder may only import from `./index.ts`. One exception: the openapi module reads `http/schema.ts` directly to build the spec. The lint rule does not catch that relative path.
 2. **One public surface.** `index.ts` exports `{ init, LINK_METADATA_MOUNT_PATH, LINK_ICON_PATH, type MetadataResponse, type ErrorResponse }`. The host mounts the router at the first path constant, and the rate limiter matches the second. Nothing else is consumable from outside.
 3. **DI at the seam.** Module exports `init({ redis, logger, iconMaxBytes, publicUrl })`. `iconMaxBytes` is optional and defaults to `16384`. `publicUrl` is optional and defaults to `null`; the fallback stage builds its `favicon` URL from it. The module does not call `getRedisClient()` or read env vars for infra clients.
 4. **Framework-free domain.** Files under `domain/` import zero infra SDKs (no `hono`, no `ioredis`, no `metascraper`). `infra/` is the only place SDKs live. Domain↔infra contracts use tiny inline port types declared in `domain/types.ts`.

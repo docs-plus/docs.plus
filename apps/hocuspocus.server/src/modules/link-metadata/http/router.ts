@@ -1,6 +1,5 @@
 import { zValidator } from '@hono/zod-validator'
-import { type Context, Hono } from 'hono'
-import type { core } from 'zod'
+import { Hono } from 'hono'
 
 import { LINK_ICON_ROUTE } from '../domain/icon'
 import type { ErrorResponse } from '../domain/types'
@@ -33,25 +32,20 @@ export const createRouter = (deps: RouterDeps): Hono => {
   )
   router.get(
     LINK_ICON_ROUTE,
-    zValidator('query', iconQuerySchema, iconHook),
+    // The schema tags the SSRF refine BLOCKED_URL. Every other first issue means a malformed origin.
+    zValidator('query', iconQuerySchema, (result, c) => {
+      if (result.success) return
+      const body: ErrorResponse =
+        result.error.issues[0]?.message === 'BLOCKED_URL'
+          ? { success: false, code: 'BLOCKED_URL', message: 'origin is not allowed' }
+          : {
+              success: false,
+              code: 'INVALID_URL',
+              message: 'origin query parameter must be a bare http(s) origin with no port'
+            }
+      return c.json(body, 400, { 'Cache-Control': CLEAN_MISS_CACHE_HEADER })
+    }),
     createIconController({ iconMaxBytes: deps.iconMaxBytes })
   )
   return router
-}
-
-// The schema tags the SSRF refine BLOCKED_URL. Every other first issue means a malformed origin.
-const iconHook = (
-  result: { success: true } | { success: false; error: core.$ZodError },
-  c: Context
-) => {
-  if (result.success) return
-  const body: ErrorResponse =
-    result.error.issues[0]?.message === 'BLOCKED_URL'
-      ? { success: false, code: 'BLOCKED_URL', message: 'origin is not allowed' }
-      : {
-          success: false,
-          code: 'INVALID_URL',
-          message: 'origin query parameter must be a bare http(s) origin with no port'
-        }
-  return c.json(body, 400, { 'Cache-Control': CLEAN_MISS_CACHE_HEADER })
 }

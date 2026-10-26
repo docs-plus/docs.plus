@@ -22,8 +22,7 @@ import {
   pollFor,
   sleep,
   spawnServers,
-  titleDoc,
-  waitForHttp
+  titleDoc
 } from './lib/e2eHarness'
 
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -67,16 +66,11 @@ await cleanup()
 const worker = createDocumentWorker()
 await worker.waitUntilReady()
 
-if (!(await waitForHttp(`http://127.0.0.1:${servers.internalPort}/metrics`))) {
-  console.error('WS process internal listener never came up')
+await servers.waitUntilUp().catch((error: Error) => {
+  console.error(error.message)
   servers.kill()
   process.exit(1)
-}
-if (!(await waitForHttp(`${servers.restUrl}/health`))) {
-  console.error('REST process never came up')
-  servers.kill()
-  process.exit(1)
-}
+})
 
 try {
   // 1. Live append reaches an open collaborator and then the database.

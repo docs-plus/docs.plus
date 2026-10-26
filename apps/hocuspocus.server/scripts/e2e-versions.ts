@@ -28,8 +28,7 @@ import {
   sleep,
   spawnServers,
   type TestUser,
-  titleDoc,
-  waitForHttp
+  titleDoc
 } from './lib/e2eHarness'
 
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -41,7 +40,7 @@ if (!SERVICE_KEY) {
   process.exit(1)
 }
 
-const { wsPort, internalPort, restUrl, kill: killServers } = spawnServers()
+const { wsPort, internalPort, restUrl, kill: killServers, waitUntilUp } = spawnServers()
 
 const rest = makeRest(restUrl, SERVICE_KEY)
 const {
@@ -152,16 +151,11 @@ await cleanup()
 let worker = createDocumentWorker()
 await worker.waitUntilReady()
 
-if (!(await waitForHttp(`http://127.0.0.1:${internalPort}/metrics`))) {
-  console.error('WS process internal listener never came up')
+await waitUntilUp().catch((error: Error) => {
+  console.error(error.message)
   killServers()
   process.exit(1)
-}
-if (!(await waitForHttp(`${restUrl}/health`))) {
-  console.error('REST process never came up')
-  killServers()
-  process.exit(1)
-}
+})
 
 // Attribution needs a token the WS process can verify. CI serves one from the
 // Supabase stub scripts/lib/supabaseStub.ts. With no Auth reachable, every

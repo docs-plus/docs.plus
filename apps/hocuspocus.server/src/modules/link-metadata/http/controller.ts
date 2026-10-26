@@ -9,7 +9,7 @@ export interface ControllerDeps {
   scraper: Scraper
   stages: PipelineStages
   logger: Logger
-  publicUrl?: string | null
+  publicUrl: string | null
 }
 
 const POSITIVE_CACHE_HEADER = 'public, max-age=3600, stale-while-revalidate=86400'

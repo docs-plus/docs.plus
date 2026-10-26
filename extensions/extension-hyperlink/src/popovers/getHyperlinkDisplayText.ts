@@ -19,7 +19,7 @@ export const getHyperlinkDisplayText = (
   try {
     if (link?.isConnected) live = editor.view.posAtDOM(link, 0)
   } catch {
-    // The <a> is in another editor; use nodePos.
+    // An <a> outside this view gives -1, and live >= 0 handles that. This catch is only a guard.
   }
   const pos = live >= 0 ? live : at.nodePos
   if (!type || typeof pos !== 'number' || pos < 0 || pos > doc.content.size) return fallback()

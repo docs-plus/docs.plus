@@ -1,10 +1,9 @@
 /* eslint-disable no-undef */
 
-import type { EditorWindow } from './commands'
+import { type EditorWindow, MOD } from './commands'
 
 /** macOS → Meta+K, Linux/Windows → Control+K. Mirrors the extension's runtime keymap; keep them in sync. */
-export const ADD_LINK_KEYS: string[] =
-  Cypress.platform === 'darwin' ? ['Meta', 'k'] : ['Control', 'k']
+export const ADD_LINK_KEYS: string[] = [MOD, 'k']
 
 export const PICKER_SELECTORS = {
   pm: '.docy_editor > .tiptap.ProseMirror',

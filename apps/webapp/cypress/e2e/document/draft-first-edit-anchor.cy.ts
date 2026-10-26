@@ -5,18 +5,15 @@
  * CI lane runs e2e/document/**, so run it deliberately with the stack up.
  */
 
-// `--config baseUrl=http://localhost:3000` points the spec at another webapp port.
-const BASE = Cypress.config('baseUrl') ?? 'http://localhost:3001'
+import { BASE, type DocRow, freshSlug, pad } from '../../support/documentStack'
+
 const REST = 'http://localhost:4000/api' // hocuspocus REST under `make dev-local`
-const pad = () => cy.get('.ProseMirror[contenteditable="true"]', { timeout: 40000 })
-type DocRow = { documentId: string; ownerId: string | null } | null
-const freshSlug = () => `e2e-draft-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 
 describe('draft first-edit anchor (full stack)', () => {
   let slug: string
 
   beforeEach(() => {
-    slug = freshSlug()
+    slug = freshSlug('draft')
     cy.viewport(1280, 800) // desktop: no autoFocus, so an un-touched doc stays isDraft
   })
 

@@ -4,10 +4,11 @@
  * Run it with `--config baseUrl=http://localhost:3000` (or wherever the webapp is).
  */
 
+import { MOD } from '../../support/commands'
+import { freshSlug } from '../../support/documentStack'
+
 const toggle = () => cy.get('[data-testid="toolbar-qr"]', { timeout: 40000 })
 const card = () => cy.get('[data-testid="pad-qr-code"]')
-const freshSlug = () => `e2e-qr-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-const modKey = Cypress.platform === 'darwin' ? 'Meta' : 'Control'
 const VIEWPORT = { width: 1680, height: 1050 }
 
 const intersects = (a: DOMRect, b: DOMRect) =>
@@ -19,7 +20,7 @@ describe('pad QR toggle (full stack)', () => {
   let slug: string
 
   beforeEach(() => {
-    slug = freshSlug()
+    slug = freshSlug('qr')
     cy.viewport(VIEWPORT.width, VIEWPORT.height)
   })
 
@@ -65,7 +66,7 @@ describe('pad QR toggle (full stack)', () => {
     })
 
     cy.get('.ProseMirror').click()
-    cy.realPress([modKey, 'f'])
+    cy.realPress([MOD, 'f'])
     cy.get('[data-testid="caret-find-bar"]').should('be.visible')
     card().then(($card) => {
       rectOf('[data-testid="caret-find-bar"]').then((find) => {

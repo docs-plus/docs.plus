@@ -106,5 +106,5 @@ Legend: **Back-val** = backend-ci + typecheck + security · **App deploy** = sma
 - Cache rule for `setup-bun` and `setup-cypress`: pull requests restore only. Other events save once per key. The `--ignore-scripts` install never saves.
 - `setup-bun` pins the Bun version for CI. Bump it by hand. The Docker images stay on `oven/bun:1-slim`.
 - Trigger tokenizer: `.github/scripts/parse-build-trigger.sh`
-- Telegram notifier: `scripts/ci/notify-telegram.sh` (shared by prod deploy, observability, runner-watchdog, and chatroom-e2e failure steps; never fails the caller)
+- Telegram notifier: `scripts/ci/notify-telegram.sh` (shared by prod deploy, observability, runner-watchdog, chatroom-e2e, and editor-e2e failure steps; never fails the caller)
 - Run report: `.github/scripts/write-run-report.sh` (reads `gh run view --json jobs` output; prints Markdown)
