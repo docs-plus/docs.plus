@@ -18,6 +18,11 @@ All notable changes to `@docs.plus/extension-mermaid` are documented here. The f
 
 - A code block that is not `mermaid` now goes to the next plugin's `nodeViews.codeBlock`. Before, this view took every code block, so that plugin never drew one ([#627](https://github.com/docs-plus/docs.plus/issues/627)).
 
+### Documentation
+
+- The caveats give the node view order in Tiptap terms: `addNodeView` first, then priority, then the extension listed last. They also say that `can().insertMermaid()` does not check drawing ([#630](https://github.com/docs-plus/docs.plus/issues/630)).
+- The guide shows how a host can skip lowlight work for `mermaid` blocks ([#631](https://github.com/docs-plus/docs.plus/issues/631)).
+
 ## [2.2.0] — 2026-10-22
 
 First npm release. The package joins the `@docs.plus/extension-*` family at `2.2.0`, in lockstep with the other five.

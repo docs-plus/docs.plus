@@ -76,7 +76,7 @@ You should see the source with a two-box flowchart under it. Edit the source, an
 
 - **Only the exact language `mermaid` draws.** A fence tagged `Mermaid` with a capital M stays plain code in Markdown. An HTML round trip keeps only the first word, so ` ```mermaid title ` becomes a diagram there.
 - **The editor needs a `codeBlock` node.** Without one, nothing draws and `insertMermaid` returns false.
-- **Another `codeBlock` node view wins.** A host `addNodeView`, or an earlier plugin's `nodeViews.codeBlock`, replaces this one silently. A later plugin's `nodeViews.codeBlock` never runs.
+- **A host `addNodeView` on `codeBlock` wins.** It replaces the diagram view, for example `CodeBlockLowlight.extend({ addNodeView })`. Call [`mermaidNodeView`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/guide.md#keep-your-own-code-block-view) in that view to keep diagrams. In development, the console warns once.
 - **Without `styles.css`, the fold control, the head and the actions render unstyled, and Pele's own error box shows.** Add the stylesheet. Or set `fold: false`, `helpLink: false` and `copy: false`, and copy the three rules from [Without `styles.css`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/guide.md#without-stylescss).
 - **The default colours need `color-scheme`.** They use `light-dark()`. Set `color-scheme: light dark` on your page, or the light colours always show.
 - **Pele has no time limit.** Keep `limits` on. `edges` counts flowchart and agentflow only. See [Security](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/security.md).
@@ -92,7 +92,7 @@ The full list, with the reason for each, is in [Caveats](https://github.com/docs
 editor.chain().focus().insertMermaid().run()
 ```
 
-The command inserts a four-line example and puts the caret at the end of the source. Gate the button with `editor.can().insertMermaid()`. Read the active state with `editor.isActive('codeBlock', { language: 'mermaid' })`. See [Commands](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/api.md#commands).
+The command inserts a four-line example and puts the caret at the end of the source. Gate the button with `editor.can().insertMermaid()`. It does not check that a diagram can draw. Read the active state with `editor.isActive('codeBlock', { language: 'mermaid' })`. See [Commands](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/api.md#commands).
 
 ### Sanitize the SVG
 

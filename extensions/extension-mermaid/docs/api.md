@@ -50,7 +50,7 @@ flowchart TD
 - An empty string `''` inserts an empty block, and the state is `empty`.
 - The caret lands at the end of the new source.
 - It returns `false` in three cases. The caret is inside a code parent, the schema has no `codeBlock`, or the block cannot fit at the selection.
-- `editor.can().insertMermaid()` tests the first two cases only. It does not test whether the block fits.
+- `editor.can().insertMermaid()` tests the first two cases only. It does not test whether the block fits. It does not check that a diagram can draw either, for example under a host `addNodeView`.
 - It builds the block from JSON. It never uses `setCodeBlock`, so other content stays as it is.
 
 ```ts
@@ -144,7 +144,7 @@ Tokens: `--mermaid-diagram-border` and `--mermaid-diagram-radius`. Colour and fo
 ## TypeScript
 
 ```ts
-import { Mermaid } from '@docs.plus/extension-mermaid'
+import { Mermaid, mermaidNodeView } from '@docs.plus/extension-mermaid'
 import type {
   MermaidError,
   MermaidFold,
@@ -159,15 +159,18 @@ import type {
 } from '@docs.plus/extension-mermaid'
 ```
 
-`Mermaid` is a named export. There is no default export. The `Commands` augmentation adds `insertMermaid` to `editor.commands`. No Pele type appears in the public types, so a Pele release cannot break your build.
+`Mermaid` and `mermaidNodeView` are named exports. There is no default export. The `Commands` augmentation adds `insertMermaid` to `editor.commands`. No Pele type appears in the public types, so a Pele release cannot break your build.
 
-`MermaidFold.initial` is read once, when the block's node view is built. A later change of `editor.isEditable` does not refold the block.
+`mermaidNodeView(editor)` returns a renderer for your own `codeBlock` `addNodeView`. It draws `mermaid` blocks and returns `null` for every other block. See [Keep your own code block view](./guide.md#keep-your-own-code-block-view).
+
+`MermaidFold.initial` is read once, when the block's node view is built. A later change of `editor.isEditable` does not refold the block. One exception: when the app passes `editorProps.nodeViews`, `setEditable` and `setOptions` rebuild the blocks, so the start state is read again.
 
 ## Caveats
 
 - **Only the exact language `mermaid` draws.** A fence tagged `Mermaid` with a capital M stays plain code in Markdown. An HTML round trip keeps only the first word, so ` ```mermaid title ` becomes a diagram there.
 - **The editor needs a `codeBlock` node.** Without one, nothing draws and `insertMermaid` returns false.
-- **Another `codeBlock` node view wins.** A host `addNodeView`, or an earlier plugin's `nodeViews.codeBlock`, replaces this one silently. This view claims every code block, so a later plugin's `nodeViews.codeBlock` never runs.
+- **A host `addNodeView` on `codeBlock` wins.** It replaces the diagram view, for example `CodeBlockLowlight.extend({ addNodeView })`. Call [`mermaidNodeView`](./guide.md#keep-your-own-code-block-view) in that view to keep diagrams. In development, the console warns once. A hidden diagram never changes the saved document.
+- **Among plugin views on `codeBlock`, the first one wins.** A higher extension `priority` comes first. At equal priority, the extension listed last comes first. This view hands every block that is not `mermaid` to the next plugin view.
 - **The head row cannot be replaced.** `view` replaces only the preview, which sits below the source. The head's text and labels are English. To remove the head, set all three of `fold: false`, `helpLink: false` and `copy: false`.
 - **Without `styles.css`, the fold control, the head and the actions render unstyled, and Pele's own error box shows.** Add the stylesheet. Or set `fold: false`, `helpLink: false` and `copy: false`, and copy the three rules from [Without `styles.css`](./guide.md#without-stylescss).
 - **The default colours need `color-scheme`.** They use `light-dark()`. Set `color-scheme: light dark` on your page, or the light colours always show.

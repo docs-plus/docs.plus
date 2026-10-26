@@ -156,3 +156,42 @@ With `@tiptap/extension-code-block-lowlight`, register a `mermaid` language that
 ```ts
 lowlight.register('mermaid', () => ({ name: 'Mermaid', contains: [] }))
 ```
+
+The lowlight plugin also highlights every code block again whenever the caret is in any code block, diagrams included. So in a document with many code blocks, each keystroke in a diagram redoes that work. A host can copy the plugin and skip `mermaid` blocks. docs.plus does that in [`code-block-lowlight.ts`](https://github.com/docs-plus/docs.plus/blob/main/apps/webapp/src/components/TipTap/extensions/code-block-lowlight.ts). The one changed rule:
+
+```ts
+const isHighlighted = (name: string) => (node: ProseMirrorNode) =>
+  node.type.name === name && node.attrs.language !== 'mermaid'
+```
+
+## Keep your own code block view
+
+An `addNodeView` on `codeBlock` always wins over this extension's view, so no diagram draws. Call `mermaidNodeView` inside it. It draws `mermaid` blocks and returns `null` for every other block, so your view takes the rest.
+
+```ts
+import { mermaidNodeView } from '@docs.plus/extension-mermaid'
+import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
+import { ReactNodeViewRenderer } from '@tiptap/react'
+
+const isMermaid = (node) => node.attrs.language === 'mermaid'
+
+export const CodeBlock = CodeBlockLowlight.extend({
+  addNodeView() {
+    const mermaid = mermaidNodeView(this.editor)
+    const own = ReactNodeViewRenderer(CodeBlockComponent, {
+      // Rebuild when a block enters or leaves mermaid, so the right view takes it.
+      update: ({ oldNode, newNode, updateProps }) => {
+        if (isMermaid(oldNode) !== isMermaid(newNode)) return false
+        updateProps()
+        return true
+      }
+    })
+    return (props) => mermaid(props) ?? own(props)
+  }
+})
+```
+
+- Keep `Mermaid` in the same editor. `mermaidNodeView` throws without it.
+- Your view must rebuild when a block's language changes to or from `mermaid`, as the `update` above does. Otherwise the block keeps the wrong view.
+- A diagram block shows this extension's head, not your view. So a language picker in your view does not appear on diagram blocks.
+- The same `update` rule applies to a plugin view that ranks below this extension: it receives every block that is not `mermaid`.
