@@ -10,6 +10,7 @@
     "types": "dotenv -e ../../.env.local -- bunx supabase gen types typescript --local > .tmp-supabase-types.ts && bunx prettier --write --ignore-path /dev/null .tmp-supabase-types.ts && mv .tmp-supabase-types.ts ../../apps/webapp/src/types/supabase.ts",
     "seed": "bun generate-seed.ts",
     "check": "bun check-functions-parity.ts && bun check-grant-allowlists.ts",
+    "test": "dotenv -e ../../.env.local -- supabase test db",
     "generate:functions-parity-migration": "bun generate-functions-parity-migration.ts"
   },
   "devDependencies": {

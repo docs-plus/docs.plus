@@ -49,6 +49,10 @@ This file is intentionally not named `README.md` so the repository root `README.
   - A failed `push` run sends a Telegram alert like `chatroom-e2e.yml`. It is not a deploy gate
 - `workflows/lockstep-guard.yml`
   - Fails a PR that changes an extension `package.json` when the publishable extension versions differ. The `lockstep-bypass` label skips it
+- `workflows/supabase-policies.yml`
+  - Runs the pgTAP files in `packages/supabase/tests/` against a fresh local Supabase stack ([#583](https://github.com/docs-plus/docs.plus/issues/583))
+  - Triggers: a PR to `main` that touches `packages/supabase/**` or this workflow, the weekly cron (Sunday 00:00 UTC), and `workflow_dispatch`
+  - Uses no secrets, so fork pull requests run it. Realtime stays on, because the seed writes policies on `realtime.messages`. It is not a deploy gate
 - `workflows/discord-release.yml`
   - Posts a published release or prerelease to Discord
 

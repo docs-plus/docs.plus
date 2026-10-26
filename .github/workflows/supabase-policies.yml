@@ -1,0 +1,57 @@
+name: Supabase Policy Tests
+
+# Runs the pgTAP files in packages/supabase/tests against a fresh local stack (#583).
+# No secrets, so fork pull requests run it too. Triggers follow the #583 ruling.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/supabase/**'
+      - '.github/workflows/supabase-policies.yml'
+  schedule:
+    - cron: '0 0 * * 0'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-policies-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  policies:
+    name: Supabase policy tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CYPRESS_INSTALL_BINARY: '0'
+      # config.toml reads these through env(). No test uses them.
+      GOOGLE_CLIENT_ID: ci-placeholder
+      GOOGLE_SECRET: ci-placeholder
+      OPENAI_API_KEY: ci-placeholder
+      SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN: ci-placeholder
+      SUPABASE_AUTH_EXTERNAL_APPLE_SECRET: ci-placeholder
+      VAPID_PUBLIC_KEY: ci-placeholder
+      VAPID_PRIVATE_KEY: ci-placeholder
+      VAPID_SUBJECT: mailto:ci@example.test
+      S3_HOST: ci-placeholder
+      S3_REGION: ci-placeholder
+      S3_ACCESS_KEY: ci-placeholder
+      S3_SECRET_KEY: ci-placeholder
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Also runs bun install --frozen-lockfile.
+      - uses: ./.github/actions/setup-bun
+      # supabase start seeds from the committed seed.sql, so a stale one would test old policies.
+      - name: Check seed.sql matches scripts/
+        working-directory: packages/supabase
+        run: bun generate-seed.ts && git diff --exit-code -- seed.sql
+      # Auth and storage-api create the auth and storage schemas. Realtime stays
+      # on, because the seed writes policies on realtime.messages.
+      - name: Start Supabase
+        working-directory: packages/supabase
+        run: bunx supabase start -x studio,imgproxy,edge-runtime,logflare,vector,mailpit,supavisor
+      - name: Run the pgTAP tests
+        working-directory: packages/supabase
+        run: bunx supabase test db
