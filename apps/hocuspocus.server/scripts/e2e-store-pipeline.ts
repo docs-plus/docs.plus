@@ -17,12 +17,17 @@ import {
   DeadLetterQueue,
   drainStoreDeadLetterQueue,
   enqueueStoreDocument,
+  refreshPendingStateKeyTtls,
   StoreDocumentQueue
 } from '../src/lib/queue'
-import { disconnectRedis } from '../src/lib/redis'
+import { createRedisConnection, disconnectRedis } from '../src/lib/redis'
 
 const PREFIX = `e2e-store-${Date.now()}`
 let failed = false
+
+// queue.ts keeps its state client private, so the claim-check keys are read here.
+const stateRedis = createRedisConnection()
+if (!stateRedis) throw new Error('store pipeline E2E needs REDIS_HOST/REDIS_PORT')
 
 function check(cond: boolean, msg: string) {
   console.log(`  ${cond ? '✓' : '✗'} ${msg}`)
@@ -46,6 +51,16 @@ async function waitForVersion(documentId: string, version: number, timeoutMs = 2
     await new Promise((r) => setTimeout(r, 200))
   }
   return null
+}
+
+async function poll<T>(read: () => Promise<T>, done: (value: T) => boolean, timeoutMs = 15000) {
+  const deadline = Date.now() + timeoutMs
+  let value = await read()
+  while (!done(value) && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 200))
+    value = await read()
+  }
+  return value
 }
 
 async function cleanup() {
@@ -195,10 +210,113 @@ if (row4) {
 const after = await drainStoreDeadLetterQueue({ apply: false, documentId: doc4 })
 check(after.entries.length === 0, 'drained entry is removed from the DLQ')
 
-await cleanup()
+// 5. Worker exhaust: the final attempt dead-letters the inline payload and drops
+// the claim-check key. 0x80 is a cut-off varint, so the strip always throws.
+// Random bytes can decode cleanly and save instead.
+const doc5 = `${PREFIX}-doc5`
+const poison = Buffer.from([0x80])
+const jobId5 = buildStoreJobId(doc5, poison)
+const stateKey5 = `store-doc-state:${jobId5}`
+await stateRedis.set(stateKey5, poison, 'EX', 3600)
+await StoreDocumentQueue.add(
+  'store-document',
+  { documentName: doc5, stateKey: stateKey5, context: { slug: doc5 } },
+  { jobId: jobId5, attempts: 2, backoff: { type: 'fixed', delay: 100 } }
+)
+const readEntries5 = async () =>
+  (await DeadLetterQueue.getJobs(['waiting', 'delayed', 'prioritized'])).filter(
+    (job) => job.data.documentName === doc5
+  )
+// This poll only proves an entry appeared. The count waits for the job to fail.
+const firstEntries5 = await poll(readEntries5, (entries) => entries.length > 0)
+check(firstEntries5.length > 0, 'exhausted job writes a DLQ entry')
+// The worker's DEL is fire-and-forget, so give it a moment to land.
+const keyCount5 = await poll(
+  () => stateRedis.exists(stateKey5),
+  (n) => n === 0,
+  5000
+)
+check(keyCount5 === 0, 'dead-letter deletes the claim-check key')
+// The DLQ add runs before the re-throw, so the job is still locked at first sight.
+const jobState5 = await poll(
+  async () => (await StoreDocumentQueue.getJob(jobId5))?.getState(),
+  (state) => state === 'failed'
+)
+check(jobState5 === 'failed', 'main-queue job ends failed after its two attempts')
+// Count only now: a broken guard that dead-letters attempt 1 adds a second,
+// payload-less entry on attempt 2, and every DLQ add lands before 'failed'.
+const entries5 = await readEntries5()
+check(entries5.length === 1, 'exhausted job writes exactly one DLQ entry')
+const entry5 = entries5[0]
+if (entry5) {
+  check(
+    !!entry5.data.state && Buffer.from(entry5.data.state, 'base64').equals(poison),
+    'DLQ entry embeds the claim-check state inline as base64'
+  )
+  check(entry5.data.originalJobId === jobId5, 'DLQ entry names the original job id')
+}
+await Promise.all(entries5.map((job) => job.remove()))
+if (jobState5 === 'failed') await (await StoreDocumentQueue.getJob(jobId5))?.remove()
+await stateRedis.del(stateKey5)
+
 await worker.close()
+
+// 6. TTL re-arm, with no worker left to take the jobs off `wait`. BullMQ 6.x keeps
+// paused jobs on `wait` too. The hand-pushed id covers the legacy `paused` list.
+
+// A `make dev-local` worker on this Redis DB would eat these jobs and their keys,
+// so the section skips and fails the run then. CLIENT LIST spans every DB, so count
+// this DB only. Poll, because Redis can still list the closed worker for a moment.
+const ownDb = String(stateRedis.options.db ?? 0)
+const workersLeft = await poll(
+  async () => (await StoreDocumentQueue.getWorkers()).filter((w) => w.db === ownDb).length,
+  (n) => n === 0,
+  3000
+)
+const noWorker = workersLeft === 0
+check(noWorker, 'no other worker consumes the queue (section 6 needs none)')
+if (noWorker) {
+  const pendingJobIds: string[] = []
+  const pausedList = StoreDocumentQueue.toKey('paused')
+  const pausedJobId = buildStoreJobId(`${PREFIX}-doc6c`, poison)
+  const pausedKey = `store-doc-state:${pausedJobId}`
+  try {
+    for (const name of ['doc6a', 'doc6b']) {
+      const documentName = `${PREFIX}-${name}`
+      const state = Buffer.from(yjsStateBase64(name), 'base64')
+      const jobId = buildStoreJobId(documentName, state)
+      await enqueueStoreDocument({
+        jobId,
+        documentName,
+        state,
+        context: { slug: documentName },
+        commitMessage: 'e2e-6'
+      })
+      pendingJobIds.push(jobId)
+      await stateRedis.expire(`store-doc-state:${jobId}`, 30)
+    }
+    await stateRedis.set(pausedKey, poison, 'EX', 30)
+    await stateRedis.lpush(pausedList, pausedJobId)
+
+    const refreshed = await refreshPendingStateKeyTtls()
+    check(refreshed >= 3, `re-arm reports at least 3 keys (got ${refreshed})`)
+    for (const jobId of pendingJobIds) {
+      const key = `store-doc-state:${jobId}`
+      check((await stateRedis.ttl(key)) > 3500, `wait job key re-armed (${key})`)
+    }
+    check((await stateRedis.ttl(pausedKey)) > 3500, 'paused-list job key re-armed')
+  } finally {
+    // A later worker must never pick these jobs up, even after a throw above.
+    for (const jobId of pendingJobIds) await (await StoreDocumentQueue.getJob(jobId))?.remove()
+    await stateRedis.lrem(pausedList, 0, pausedJobId)
+    await stateRedis.del(...pendingJobIds.map((jobId) => `store-doc-state:${jobId}`), pausedKey)
+  }
+}
+
+await cleanup()
 await closeQueues()
 await prisma.$disconnect()
+await stateRedis.quit()
 await disconnectRedis()
 
 console.log(failed ? '\nstore pipeline E2E: FAILED' : '\nstore pipeline E2E: PASSED')

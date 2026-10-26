@@ -342,8 +342,8 @@ const TTL_REFRESH_CHUNK = 1000
 export async function refreshPendingStateKeyTtls(): Promise<number> {
   // Ids off the list, never getJobs. Hydrating every job hash just to read a key
   // that enqueueStoreDocument derives from the job id cost +428 MB of WS heap at
-  // a 50k backlog. Queue.pause() RENAMEs wait→paused, so the backlog this covers
-  // answers to either name and only one of the two lists exists at a time.
+  // a 50k backlog. BullMQ 6.x keeps paused jobs on `wait`. `paused` is read because
+  // an older BullMQ pause RENAMEd wait into it, and resume drains it in batches.
   const [waiting, paused] = await Promise.all([
     stateRedis.lrange(StoreDocumentQueue.toKey('wait'), 0, -1),
     stateRedis.lrange(StoreDocumentQueue.toKey('paused'), 0, -1)
