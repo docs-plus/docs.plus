@@ -16,7 +16,8 @@
 #     app → observability → uptime-kuma (fail-fast).
 #   - pull_request to main: quality gates + build verification only.
 #   - schedule (Sunday 00:00 UTC): security audit + every extension suite.
-#   - workflow_dispatch: manual run with `force_deploy` / `skip_quality_gates`.
+#   - workflow_dispatch: manual run with `force_deploy` / `skip_quality_gates`
+#     (and the temporary `backend_no_cache` A/B input).
 #
 # Architectural notes (decided 2026-05, see commit history):
 #   - Images are built on the prod self-hosted runner (`prod.docs.plus`).
@@ -55,6 +56,11 @@ on:
         required: false
         default: ''
         type: string
+      backend_no_cache:
+        description: 'TEMPORARY (backend cache A/B, remove after): pass --no-cache to the backend image build'
+        required: false
+        default: true
+        type: boolean
 
 # Two concurrency groups:
 #   - quality-gates can be cancelled freely (cheap to redo)
@@ -590,6 +596,8 @@ jobs:
           DOCKER_BUILDKIT: '1'
           COMPOSE_DOCKER_CLI_BUILD: '1'
           SKIP_QUALITY_GATES: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates }}
+          # Empty on push, so push deploys keep --no-cache. Remove with the backend_no_cache input.
+          BACKEND_NO_CACHE: ${{ inputs.backend_no_cache }}
         run: |
           echo "🔨 Building images with tag: ${DEPLOY_TAG}"
 
@@ -607,8 +615,14 @@ jobs:
           # docker-entrypoint.sh, and the entrypoint already sits inside an early
           # COPY. Whether the flag can be dropped is UNMEASURED — compare two
           # deploys of the same commit, with and without it, before removing it.
+          backend_flags=(--no-cache)
+          if [ "${BACKEND_NO_CACHE}" = "false" ]; then backend_flags=(); fi
+          backend_start=$(date +%s)
           docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
-            build --no-cache rest-api hocuspocus-server
+            build "${backend_flags[@]}" rest-api hocuspocus-server
+          backend_s=$(( $(date +%s) - backend_start ))
+          echo "backend cache A/B: flags='${backend_flags[*]:-cache on}', ${backend_s} s"
+          echo "backend cache A/B: \`${backend_flags[*]:-cache on}\`, ${backend_s} s" >> "$GITHUB_STEP_SUMMARY"
 
           # No --parallel: it is not a `docker compose build` flag in Compose v2
           # (absent from `docker compose build --help`). Named services already

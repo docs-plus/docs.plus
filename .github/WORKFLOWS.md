@@ -106,6 +106,8 @@ Legend: **Back-val** = backend-ci + typecheck + security · **App deploy** = sma
 
 `workflow_dispatch` with `force_deploy=true` bypasses the commit-message gate and deploys the app; `skip_quality_gates` skips quality gates only.
 
+`backend_no_cache` is a temporary input for one A/B test ([#566](https://github.com/docs-plus/docs.plus/issues/566)). Push deploys always build the backend with `--no-cache`.
+
 ## Change scopes (PRs and pushes without `(build):`)
 
 `🔎 Detect Changes` runs `.github/scripts/detect-change-scopes.sh` on the changed files. It emits `webapp`, `admin`, `backend` and `docs_only`. Lint and security always run.
