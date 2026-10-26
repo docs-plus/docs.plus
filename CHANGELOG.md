@@ -40,6 +40,10 @@ Migration section for when it goes. As the last step, run
   build cache toward a free-space target, not by age.
 - The production deploy now stops when `VAPID_PUBLIC_KEY` and `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
   differ ([#609](https://github.com/docs-plus/docs.plus/issues/609)).
+- When several people edit one document on two collaboration replicas, typing now costs about
+  70 to 120 KB of Redis traffic per keystroke instead of 281 KB on a large edited document. A
+  patch on `@hocuspocus/extension-redis` 3.4.4 sends the sync request at most once per 250 ms
+  ([#595](https://github.com/docs-plus/docs.plus/issues/595)).
 
 ### Fixed
 

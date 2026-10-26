@@ -530,6 +530,7 @@
   },
   "patchedDependencies": {
     "@tiptap/y-tiptap@3.0.10": "patches/@tiptap%2Fy-tiptap@3.0.10.patch",
+    "@hocuspocus/extension-redis@3.4.4": "patches/@hocuspocus%2Fextension-redis@3.4.4.patch",
   },
   "overrides": {
     "@babel/core": "^7.29.7",
@@ -581,7 +582,7 @@
     "@eslint/js": "^9.39.5",
     "@hocuspocus/extension-database": "^3.4.4",
     "@hocuspocus/extension-logger": "^3.4.4",
-    "@hocuspocus/extension-redis": "^3.4.4",
+    "@hocuspocus/extension-redis": "3.4.4",
     "@hocuspocus/extension-throttle": "^3.4.4",
     "@hocuspocus/provider": "^3.4.4",
     "@hocuspocus/server": "^3.4.4",

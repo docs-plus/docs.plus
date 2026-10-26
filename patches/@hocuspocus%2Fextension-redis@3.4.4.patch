@@ -1,0 +1,134 @@
+diff --git a/dist/hocuspocus-redis.cjs b/dist/hocuspocus-redis.cjs
+index 4abde02ff9032a561dcbb850f2f0ca9a1b2451b0..016f2bec77476fdf73ead5b80e526a9a7904628c 100644
+--- a/dist/hocuspocus-redis.cjs
++++ b/dist/hocuspocus-redis.cjs
+@@ -24,6 +24,8 @@ class Redis {
+         this.redisTransactionOrigin = "__hocuspocus__redis__origin__";
+         this.locks = new Map();
+         this.pendingAfterStoreDocumentResolves = new Map();
++        // docs.plus patch (#595): per-document SyncStep1 throttle state.
++        this.syncStep1Throttle = new Map();
+         /**
+          * Handle incoming messages published on subscribed document channels.
+          * Note that this will also include messages from ourselves as it is not possible
+@@ -226,9 +228,30 @@ class Redis {
+      * if the ydoc changed, we'll need to inform other Hocuspocus servers about it.
+      */
+     async onChange(data) {
+-        if (data.transactionOrigin !== this.redisTransactionOrigin) {
+-            return this.publishFirstSyncStep(data.documentName, data.document);
++        if (data.transactionOrigin === this.redisTransactionOrigin)
++            return;
++        // docs.plus patch (#595): lossless SyncStep1 throttle. Publish at once, then at most
++        // once per 250 ms window, and always once more after the last change in a window.
++        const documentName = data.documentName;
++        const pending = this.syncStep1Throttle.get(documentName);
++        if (pending) {
++            pending.document = data.document;
++            pending.dirty = true;
++            return;
+         }
++        const entry = { document: data.document, dirty: false, timer: undefined };
++        const tick = () => {
++            if (!entry.dirty) {
++                this.syncStep1Throttle.delete(documentName);
++                return;
++            }
++            entry.dirty = false;
++            entry.timer = setTimeout(tick, 250);
++            this.publishFirstSyncStep(documentName, entry.document).catch((error) => console.error(error));
++        };
++        entry.timer = setTimeout(tick, 250);
++        this.syncStep1Throttle.set(documentName, entry);
++        return this.publishFirstSyncStep(documentName, data.document);
+     }
+     /**
+      * Delay unloading to allow syncs to finish
+@@ -241,6 +264,9 @@ class Redis {
+         });
+     }
+     async afterUnloadDocument(data) {
++        // docs.plus patch (#595): beforeUnloadDocument waits disconnectDelay (1000 ms), so the trailing publish already ran.
++        clearTimeout(this.syncStep1Throttle.get(data.documentName)?.timer);
++        this.syncStep1Throttle.delete(data.documentName);
+         if (data.instance.documents.has(data.documentName))
+             return; // skip unsubscribe if the document is already loaded again (maybe fast reconnect)
+         this.sub.unsubscribe(this.subKey(data.documentName), (error) => {
+@@ -257,6 +283,10 @@ class Redis {
+      * Kill the Redlock connection immediately.
+      */
+     async onDestroy() {
++        // docs.plus patch (#595): stop pending SyncStep1 timers.
++        for (const entry of this.syncStep1Throttle.values())
++            clearTimeout(entry.timer);
++        this.syncStep1Throttle.clear();
+         await this.redlock.quit();
+         this.pub.disconnect(false);
+         this.sub.disconnect(false);
+diff --git a/dist/hocuspocus-redis.esm.js b/dist/hocuspocus-redis.esm.js
+index 2ed1999cf4befe8d4a1c77160829c025de1dae96..00582ca7cfe3b61d4564578a04e35b44b6936eda 100644
+--- a/dist/hocuspocus-redis.esm.js
++++ b/dist/hocuspocus-redis.esm.js
+@@ -22,6 +22,8 @@ class Redis {
+         this.redisTransactionOrigin = "__hocuspocus__redis__origin__";
+         this.locks = new Map();
+         this.pendingAfterStoreDocumentResolves = new Map();
++        // docs.plus patch (#595): per-document SyncStep1 throttle state.
++        this.syncStep1Throttle = new Map();
+         /**
+          * Handle incoming messages published on subscribed document channels.
+          * Note that this will also include messages from ourselves as it is not possible
+@@ -224,9 +226,30 @@ class Redis {
+      * if the ydoc changed, we'll need to inform other Hocuspocus servers about it.
+      */
+     async onChange(data) {
+-        if (data.transactionOrigin !== this.redisTransactionOrigin) {
+-            return this.publishFirstSyncStep(data.documentName, data.document);
++        if (data.transactionOrigin === this.redisTransactionOrigin)
++            return;
++        // docs.plus patch (#595): lossless SyncStep1 throttle. Publish at once, then at most
++        // once per 250 ms window, and always once more after the last change in a window.
++        const documentName = data.documentName;
++        const pending = this.syncStep1Throttle.get(documentName);
++        if (pending) {
++            pending.document = data.document;
++            pending.dirty = true;
++            return;
+         }
++        const entry = { document: data.document, dirty: false, timer: undefined };
++        const tick = () => {
++            if (!entry.dirty) {
++                this.syncStep1Throttle.delete(documentName);
++                return;
++            }
++            entry.dirty = false;
++            entry.timer = setTimeout(tick, 250);
++            this.publishFirstSyncStep(documentName, entry.document).catch((error) => console.error(error));
++        };
++        entry.timer = setTimeout(tick, 250);
++        this.syncStep1Throttle.set(documentName, entry);
++        return this.publishFirstSyncStep(documentName, data.document);
+     }
+     /**
+      * Delay unloading to allow syncs to finish
+@@ -239,6 +262,9 @@ class Redis {
+         });
+     }
+     async afterUnloadDocument(data) {
++        // docs.plus patch (#595): beforeUnloadDocument waits disconnectDelay (1000 ms), so the trailing publish already ran.
++        clearTimeout(this.syncStep1Throttle.get(data.documentName)?.timer);
++        this.syncStep1Throttle.delete(data.documentName);
+         if (data.instance.documents.has(data.documentName))
+             return; // skip unsubscribe if the document is already loaded again (maybe fast reconnect)
+         this.sub.unsubscribe(this.subKey(data.documentName), (error) => {
+@@ -255,6 +281,10 @@ class Redis {
+      * Kill the Redlock connection immediately.
+      */
+     async onDestroy() {
++        // docs.plus patch (#595): stop pending SyncStep1 timers.
++        for (const entry of this.syncStep1Throttle.values())
++            clearTimeout(entry.timer);
++        this.syncStep1Throttle.clear();
+         await this.redlock.quit();
+         this.pub.disconnect(false);
+         this.sub.disconnect(false);
