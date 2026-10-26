@@ -6,7 +6,7 @@
  * Covers heading creation, level changes, text formatting, and navigation.
  */
 
-import { TEST_TITLE, TEST_CONTENT } from '../../../support/commands'
+import { TEST_TITLE, TEST_CONTENT, MOD } from '../../../support/commands'
 import { section, paragraph, heading } from '../../../fixtures/docMaker'
 
 describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
@@ -35,7 +35,7 @@ describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
       cy.putPosCaretInHeading(2, 'Test Heading', 'start')
 
       levels.forEach((level) => {
-        cy.realPress(['Alt', 'Meta', String(level)]).wait(200)
+        cy.realPress(['Alt', MOD, String(level)]).wait(200)
         cy.get(`:is(h1, h2, h3, h4, h5, h6)[data-toc-id]`)
           .contains('Test Heading')
           .should('match', `h${level}`)
@@ -51,7 +51,7 @@ describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
       cy.createDocument(doc)
 
       cy.putPosCaretInHeading(3, 'Convert Me', 'start')
-      cy.realPress(['Alt', 'Meta', '0'])
+      cy.realPress(['Alt', MOD, '0'])
       cy.wait(100)
 
       // Should be converted to paragraph
@@ -72,7 +72,7 @@ describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
       cy.wait(100)
 
       // Convert to heading level 2
-      cy.realPress(['Alt', 'Meta', '2'])
+      cy.realPress(['Alt', MOD, '2'])
       cy.wait(100)
 
       // Should now be a heading
@@ -198,7 +198,7 @@ describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
       cy.get('.docy_editor .tiptap').click()
 
       // Select all
-      cy.realPress(['Meta', 'a'])
+      cy.realPress([MOD, 'a'])
       cy.wait(100)
 
       // Check selection exists (window selection should have content)
@@ -263,7 +263,7 @@ describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
         }
       })
 
-      cy.realPress(['Meta', 'b'])
+      cy.realPress([MOD, 'b'])
       cy.wait(100)
 
       // Check for bold styling
@@ -293,7 +293,7 @@ describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
         }
       })
 
-      cy.realPress(['Meta', 'i'])
+      cy.realPress([MOD, 'i'])
       cy.wait(100)
 
       // Check for italic styling
@@ -323,7 +323,7 @@ describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
         }
       })
 
-      cy.realPress(['Meta', 'u'])
+      cy.realPress([MOD, 'u'])
       cy.wait(100)
 
       // Check for underline styling
@@ -350,7 +350,7 @@ describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
       cy.get('p').contains('Original text added text').should('exist')
 
       // Undo
-      cy.realPress(['Meta', 'z'])
+      cy.realPress([MOD, 'z'])
       cy.wait(100)
 
       // Text should be removed (or partially)
@@ -373,11 +373,11 @@ describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
       cy.wait(100)
 
       // Undo
-      cy.realPress(['Meta', 'z'])
+      cy.realPress([MOD, 'z'])
       cy.wait(100)
 
       // Redo
-      cy.realPress(['Meta', 'Shift', 'z'])
+      cy.realPress([MOD, 'Shift', 'z'])
       cy.wait(100)
 
       // Change should be back

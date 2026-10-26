@@ -43,6 +43,10 @@ This file is intentionally not named `README.md` so the repository root `README.
 - `workflows/chatroom-e2e.yml`
   - Chatroom browser tests on a PR or push to `main` when webapp, extension or package code changes, plus `workflow_dispatch`
   - A failed `push` run sends a Telegram alert through `scripts/ci/notify-telegram.sh`, with the `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` repo secrets. It is not a deploy gate
+- `workflows/editor-e2e.yml`
+  - Editor browser tests on the `/editor` playground, on a push to `main` with the `chatroom-e2e.yml` paths list, plus `workflow_dispatch`. No pull request trigger ([#477](https://github.com/docs-plus/docs.plus/issues/477))
+  - `scripts/test-editor.sh` sets `EDITOR_ONLY_STACK` through `CYPRESS_EXPOSE`, so the three `filter/*` specs, which need REST and WS, report as pending
+  - A failed `push` run sends a Telegram alert like `chatroom-e2e.yml`. It is not a deploy gate
 - `workflows/lockstep-guard.yml`
   - Fails a PR that changes an extension `package.json` when the publishable extension versions differ. The `lockstep-bypass` label skips it
 - `workflows/discord-release.yml`

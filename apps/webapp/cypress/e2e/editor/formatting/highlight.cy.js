@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 
 import { section } from '../../../fixtures/docMaker'
-import { TEST_TITLE } from '../../../support/commands'
+import { TEST_TITLE, MOD } from '../../../support/commands'
 
 const DocumentStructure = {
   documentName: TEST_TITLE.HelloDocy,
@@ -46,7 +46,7 @@ describe('Highlight Formatting', () => {
     cy.get('@paragraph').realType(text)
 
     selectTarget(text, 7, 13)
-    cy.get('.docy_editor').realPress(['Meta', 'b'])
+    cy.get('.docy_editor').realPress([MOD, 'b'])
     cy.get('[data-testid="toolbar-highlight"]').click()
 
     cy.get('@paragraph').find('strong').should('contain', 'target')
@@ -60,7 +60,7 @@ describe('Highlight Formatting', () => {
     cy.get('@paragraph').realType(text)
 
     selectTarget(text, 7, 22)
-    cy.get('.docy_editor').realPress(['Meta', 'Shift', 'h'])
+    cy.get('.docy_editor').realPress([MOD, 'Shift', 'h'])
     cy.get('@paragraph').find('mark').should('contain', 'shortcut-target')
   })
 })

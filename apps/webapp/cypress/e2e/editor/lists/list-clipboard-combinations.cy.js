@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 
 import { section } from '../../../fixtures/docMaker'
-import { TEST_TITLE } from '../../../support/commands'
+import { TEST_TITLE, MOD } from '../../../support/commands'
 
 const DocumentStructure = {
   documentName: TEST_TITLE.HelloDocy,
@@ -147,7 +147,7 @@ const applyFormattingAndHyperlink = (itemText, shortcuts, href) => {
 
   // Use the real hyperlink command path so tests validate the same behavior users trigger.
   selectItemRange(itemText)
-  cy.get('.docy_editor').realPress(['Meta', 'k'])
+  cy.get('.docy_editor').realPress([MOD, 'k'])
   cy.get(POPOVER).should('be.visible')
   cy.get(URL_INPUT).clear().type(href)
   cy.get(SUBMIT_BTN).click()
@@ -208,14 +208,14 @@ describe('List Clipboard Combinations', () => {
       'TAIL destination item'
     ]
 
-    createListItems(['Meta', 'Shift', '8'], BULLET_ITEMS, items)
+    createListItems([MOD, 'Shift', '8'], BULLET_ITEMS, items)
 
-    applyFormattingAndHyperlink(items[0], [['Meta', 'b']], 'https://alpha.example')
+    applyFormattingAndHyperlink(items[0], [[MOD, 'b']], 'https://alpha.example')
     applyFormattingAndHyperlink(
       items[1],
       [
-        ['Meta', 'i'],
-        ['Meta', 'u']
+        [MOD, 'i'],
+        [MOD, 'u']
       ],
       'https://beta.example'
     )
@@ -224,8 +224,8 @@ describe('List Clipboard Combinations', () => {
     applyFormattingAndHyperlink(
       items[2],
       [
-        ['Meta', 'Shift', 's'],
-        ['Meta', 'Shift', 'h']
+        [MOD, 'Shift', 's'],
+        [MOD, 'Shift', 'h']
       ],
       'https://gamma.example'
     )
@@ -259,22 +259,22 @@ describe('List Clipboard Combinations', () => {
       'KEEP-TWO ordered item'
     ]
 
-    createListItems(['Meta', 'Shift', '7'], ORDERED_ITEMS, items)
+    createListItems([MOD, 'Shift', '7'], ORDERED_ITEMS, items)
 
-    applyFormattingAndHyperlink(items[1], [['Meta', 'b']], 'https://cut-alpha.example')
+    applyFormattingAndHyperlink(items[1], [[MOD, 'b']], 'https://cut-alpha.example')
     applyFormattingAndHyperlink(
       items[2],
       [
-        ['Meta', 'i'],
-        ['Meta', 'u']
+        [MOD, 'i'],
+        [MOD, 'u']
       ],
       'https://cut-beta.example'
     )
     applyFormattingAndHyperlink(
       items[3],
       [
-        ['Meta', 'Shift', 's'],
-        ['Meta', 'Shift', 'h']
+        [MOD, 'Shift', 's'],
+        [MOD, 'Shift', 'h']
       ],
       'https://cut-gamma.example'
     )
@@ -315,20 +315,20 @@ describe('List Clipboard Combinations', () => {
 
     createTaskListItemsWithDepth(items)
 
-    applyFormattingAndHyperlink(items[0].text, [['Meta', 'b']], 'https://task-alpha.example')
+    applyFormattingAndHyperlink(items[0].text, [[MOD, 'b']], 'https://task-alpha.example')
     applyFormattingAndHyperlink(
       items[1].text,
       [
-        ['Meta', 'i'],
-        ['Meta', 'u']
+        [MOD, 'i'],
+        [MOD, 'u']
       ],
       'https://task-beta.example'
     )
     applyFormattingAndHyperlink(
       items[2].text,
       [
-        ['Meta', 'Shift', 's'],
-        ['Meta', 'Shift', 'h']
+        [MOD, 'Shift', 's'],
+        [MOD, 'Shift', 'h']
       ],
       'https://task-gamma.example'
     )
@@ -365,20 +365,20 @@ describe('List Clipboard Combinations', () => {
 
     createTaskListItemsWithDepth(items)
 
-    applyFormattingAndHyperlink(items[1].text, [['Meta', 'b']], 'https://task-cut-alpha.example')
+    applyFormattingAndHyperlink(items[1].text, [[MOD, 'b']], 'https://task-cut-alpha.example')
     applyFormattingAndHyperlink(
       items[2].text,
       [
-        ['Meta', 'i'],
-        ['Meta', 'u']
+        [MOD, 'i'],
+        [MOD, 'u']
       ],
       'https://task-cut-beta.example'
     )
     applyFormattingAndHyperlink(
       items[3].text,
       [
-        ['Meta', 'Shift', 's'],
-        ['Meta', 'Shift', 'h']
+        [MOD, 'Shift', 's'],
+        [MOD, 'Shift', 'h']
       ],
       'https://task-cut-gamma.example'
     )

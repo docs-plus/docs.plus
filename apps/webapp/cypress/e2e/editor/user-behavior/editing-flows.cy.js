@@ -6,7 +6,7 @@
  * These simulate how users actually interact with the editor.
  */
 
-import { TEST_TITLE, TEST_CONTENT } from '../../../support/commands'
+import { TEST_TITLE, TEST_CONTENT, MOD } from '../../../support/commands'
 import { section, paragraph, heading } from '../../../fixtures/docMaker'
 
 describe('User Editing Flows', { testIsolation: false }, () => {
@@ -35,7 +35,7 @@ describe('User Editing Flows', { testIsolation: false }, () => {
 
       // Create a subsection (H2)
       cy.realPress('Enter')
-      cy.realPress(['Alt', 'Meta', '2'])
+      cy.realPress(['Alt', MOD, '2'])
       cy.realType('Getting Started')
       cy.wait(100)
 
@@ -58,21 +58,21 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       cy.realPress('Enter')
 
       // Create H2
-      cy.realPress(['Alt', 'Meta', '2'])
+      cy.realPress(['Alt', MOD, '2'])
       cy.realType('Level 2 Heading')
       cy.realPress('Enter')
       cy.realType('Level 2 content')
       cy.realPress('Enter')
 
       // Create H3
-      cy.realPress(['Alt', 'Meta', '3'])
+      cy.realPress(['Alt', MOD, '3'])
       cy.realType('Level 3 Heading')
       cy.realPress('Enter')
       cy.realType('Level 3 content')
       cy.realPress('Enter')
 
       // Create H4
-      cy.realPress(['Alt', 'Meta', '4'])
+      cy.realPress(['Alt', MOD, '4'])
       cy.realType('Level 4 Heading')
       cy.realPress('Enter')
       cy.realType('Level 4 content')
@@ -108,7 +108,7 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       // User wants to make "Should be nested" a child of "Introduction"
       // Change it to H3
       cy.putPosCaretInHeading(2, 'Should be nested', 'start')
-      cy.realPress(['Alt', 'Meta', '3'])
+      cy.realPress(['Alt', MOD, '3'])
       cy.wait(100)
 
       cy.get('h2[data-toc-id]').contains('Introduction').should('exist')
@@ -137,7 +137,7 @@ describe('User Editing Flows', { testIsolation: false }, () => {
 
       // Promote H3 to H1 (new section)
       cy.putPosCaretInHeading(3, 'Should become new section', 'start')
-      cy.realPress(['Alt', 'Meta', '1'])
+      cy.realPress(['Alt', MOD, '1'])
       cy.wait(100)
 
       // Should now be a separate H1 section
@@ -236,7 +236,7 @@ describe('User Editing Flows', { testIsolation: false }, () => {
 
       // Create second section (new H1)
       cy.realPress('Enter')
-      cy.realPress(['Alt', 'Meta', '1'])
+      cy.realPress(['Alt', MOD, '1'])
       cy.realType('Section Two')
       cy.realPress('Enter')
       cy.realType('Content for section two')
@@ -244,7 +244,7 @@ describe('User Editing Flows', { testIsolation: false }, () => {
 
       // Create third section
       cy.realPress('Enter')
-      cy.realPress(['Alt', 'Meta', '1'])
+      cy.realPress(['Alt', MOD, '1'])
       cy.realType('Section Three')
       cy.realPress('Enter')
       cy.realType('Content for section three')
@@ -337,7 +337,7 @@ describe('User Editing Flows', { testIsolation: false }, () => {
 
       // Select all and delete
       cy.get('.docy_editor .tiptap').click()
-      cy.realPress(['Meta', 'a'])
+      cy.realPress([MOD, 'a'])
       cy.realPress('Backspace')
       cy.wait(100)
 

@@ -1,5 +1,5 @@
 /* eslint-disable no-undef */
-import { TEST_TITLE } from '../../../support/commands'
+import { TEST_TITLE, MOD } from '../../../support/commands'
 import { section, paragraph, heading, bulletList, listItem } from '../../../fixtures/docMaker'
 
 export const TAB = '\t'
@@ -155,7 +155,7 @@ export function seedEmptySection() {
 
 export function startBulletListFromEmptyParagraph() {
   cy.get(`${PM} > p`).first().click()
-  cy.get(EDITOR).realPress(['Meta', 'Shift', '8'])
+  cy.get(EDITOR).realPress([MOD, 'Shift', '8'])
 }
 
 export function insertTable2x2() {

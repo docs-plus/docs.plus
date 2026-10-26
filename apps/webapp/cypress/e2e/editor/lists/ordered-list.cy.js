@@ -1,4 +1,4 @@
-import { TEST_TITLE } from '../../../support/commands'
+import { TEST_TITLE, MOD } from '../../../support/commands'
 import { section } from '../../../fixtures/docMaker'
 
 const DocumentStructure = {
@@ -25,7 +25,7 @@ describe('Ordered List', { testIsolation: false }, () => {
       cy.get('@paragraph').click()
 
       // Create an ordered list using keyboard shortcut
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '7'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '7'])
 
       // Type the first list item
       cy.get('.docy_editor ol > li').realType('First item in ordered list')
@@ -97,7 +97,7 @@ describe('Ordered List', { testIsolation: false }, () => {
       cy.get('@paragraph').click()
 
       // Create an ordered list using keyboard shortcut
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '7'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '7'])
 
       // Type the first list item
       cy.get('.docy_editor ol > li').realType('First main item')
@@ -150,7 +150,7 @@ describe('Ordered List', { testIsolation: false }, () => {
       cy.get('@paragraph').click()
 
       // Create an ordered list using keyboard shortcut
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '7'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '7'])
 
       // Type the first list item
       cy.get('.docy_editor ol > li').realType('This will be a bullet list item')
@@ -168,7 +168,7 @@ describe('Ordered List', { testIsolation: false }, () => {
       })
 
       // Convert to bullet list
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '8'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '8'])
 
       // Verify conversion worked
       cy.get('.docy_editor ul').should('exist')
@@ -191,7 +191,7 @@ describe('Ordered List', { testIsolation: false }, () => {
       cy.get('@paragraph').click()
 
       // Create an ordered list using keyboard shortcut
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '7'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '7'])
 
       // Type the first list item
       cy.get('.docy_editor ol > li').realType('First item')

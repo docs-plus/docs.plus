@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 
 import { paragraph, section } from '../../../fixtures/docMaker'
-import { TEST_TITLE } from '../../../support/commands'
+import { TEST_TITLE, MOD } from '../../../support/commands'
 
 const TARGET_TEXT = 'target'
 const PARAGRAPH_TEXT = 'Apply hyperlink and comment on this target word.'
@@ -50,7 +50,7 @@ describe('Toolbar/Shortcut Parity', () => {
 
   it('applies hyperlink with Mod+K shortcut', () => {
     selectTargetText()
-    cy.get('.docy_editor').realPress(['Meta', 'k'])
+    cy.get('.docy_editor').realPress([MOD, 'k'])
 
     cy.get(POPOVER).should('be.visible')
     cy.get(URL_INPUT).clear().type('https://example.org')
@@ -64,7 +64,7 @@ describe('Toolbar/Shortcut Parity', () => {
 
   it('applies highlight with Mod+Shift+H shortcut', () => {
     selectTargetText()
-    cy.get('.docy_editor').realPress(['Meta', 'Shift', 'h'])
+    cy.get('.docy_editor').realPress([MOD, 'Shift', 'h'])
 
     cy.get('.docy_editor mark').contains(TARGET_TEXT).should('exist')
   })
@@ -87,7 +87,7 @@ describe('Toolbar/Shortcut Parity', () => {
       expect(win._editor.state.selection.empty).to.equal(false)
     })
 
-    cy.get('.docy_editor').realPress(['Meta', 'Alt', 'm'])
+    cy.get('.docy_editor').realPress([MOD, 'Alt', 'm'])
     cy.window().then((win) => {
       expect(win._editor.state.selection.empty).to.equal(true)
     })

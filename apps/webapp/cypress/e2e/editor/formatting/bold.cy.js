@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 
 import { section } from '../../../fixtures/docMaker'
-import { TEST_TITLE } from '../../../support/commands'
+import { TEST_TITLE, MOD } from '../../../support/commands'
 
 const DocumentStructure = {
   documentName: TEST_TITLE.HelloDocy,
@@ -30,9 +30,9 @@ describe('Bold Formatting', () => {
   it('applies and stops bold with keyboard shortcut', () => {
     getParagraph().click()
     cy.get('@paragraph').realType('Prefix ')
-    cy.get('.docy_editor').realPress(['Meta', 'b'])
+    cy.get('.docy_editor').realPress([MOD, 'b'])
     cy.get('@paragraph').realType('bold-target')
-    cy.get('.docy_editor').realPress(['Meta', 'b'])
+    cy.get('.docy_editor').realPress([MOD, 'b'])
     cy.get('@paragraph').realType(' suffix')
 
     cy.get('@paragraph').find('strong').should('contain', 'bold-target')
@@ -58,7 +58,7 @@ describe('Bold Formatting', () => {
     cy.get('@paragraph').realType(text)
 
     selectTarget(text, 7, 13)
-    cy.get('.docy_editor').realPress(['Meta', 'b'])
+    cy.get('.docy_editor').realPress([MOD, 'b'])
     cy.get('@paragraph').find('strong').should('contain', 'target')
     cy.get('@paragraph').should('contain', text)
   })

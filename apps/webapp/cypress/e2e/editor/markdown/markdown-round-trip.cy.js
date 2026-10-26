@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 
 import { section } from '../../../fixtures/docMaker'
-import { TEST_TITLE } from '../../../support/commands'
+import { TEST_TITLE, MOD } from '../../../support/commands'
 
 const EDITOR_SEL = '.docy_editor > .tiptap.ProseMirror'
 
@@ -27,19 +27,19 @@ describe('Markdown Round-Trip Fidelity', () => {
     it('round-trips bold, italic, and inline code via getMarkdown()', () => {
       focusEndOfFirstParagraph()
 
-      cy.get('.docy_editor').realPress(['Meta', 'b'])
+      cy.get('.docy_editor').realPress([MOD, 'b'])
       cy.get(EDITOR_SEL).realType('bold')
-      cy.get('.docy_editor').realPress(['Meta', 'b'])
+      cy.get('.docy_editor').realPress([MOD, 'b'])
       cy.get(EDITOR_SEL).realType(' ')
 
-      cy.get('.docy_editor').realPress(['Meta', 'i'])
+      cy.get('.docy_editor').realPress([MOD, 'i'])
       cy.get(EDITOR_SEL).realType('italic')
-      cy.get('.docy_editor').realPress(['Meta', 'i'])
+      cy.get('.docy_editor').realPress([MOD, 'i'])
       cy.get(EDITOR_SEL).realType(' ')
 
-      cy.get('.docy_editor').realPress(['Meta', 'e'])
+      cy.get('.docy_editor').realPress([MOD, 'e'])
       cy.get(EDITOR_SEL).realType('code')
-      cy.get('.docy_editor').realPress(['Meta', 'e'])
+      cy.get('.docy_editor').realPress([MOD, 'e'])
 
       cy.window().then((win) => {
         const md = win._getMarkdown?.()
@@ -52,11 +52,11 @@ describe('Markdown Round-Trip Fidelity', () => {
     it('round-trips nested bold+italic (***text***)', () => {
       focusEndOfFirstParagraph()
 
-      cy.get('.docy_editor').realPress(['Meta', 'b'])
-      cy.get('.docy_editor').realPress(['Meta', 'i'])
+      cy.get('.docy_editor').realPress([MOD, 'b'])
+      cy.get('.docy_editor').realPress([MOD, 'i'])
       cy.get(EDITOR_SEL).realType('bold and italic')
-      cy.get('.docy_editor').realPress(['Meta', 'i'])
-      cy.get('.docy_editor').realPress(['Meta', 'b'])
+      cy.get('.docy_editor').realPress([MOD, 'i'])
+      cy.get('.docy_editor').realPress([MOD, 'b'])
 
       cy.window().then((win) => {
         const md = win._getMarkdown?.()
@@ -67,9 +67,9 @@ describe('Markdown Round-Trip Fidelity', () => {
     it('silently drops underline from Markdown output (lossy construct)', () => {
       focusEndOfFirstParagraph()
 
-      cy.get('.docy_editor').realPress(['Meta', 'u'])
+      cy.get('.docy_editor').realPress([MOD, 'u'])
       cy.get(EDITOR_SEL).realType('underlined')
-      cy.get('.docy_editor').realPress(['Meta', 'u'])
+      cy.get('.docy_editor').realPress([MOD, 'u'])
 
       cy.get('.docy_editor u').should('contain.text', 'underlined')
 

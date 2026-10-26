@@ -1,8 +1,33 @@
 import { section, heading, paragraph } from '../../../fixtures/docMaker'
 
+const EDITOR = '.docy_editor > .tiptap.ProseMirror'
+
+// A paste that never lands must not pass, so each case pastes over this doc.
+const setThrowawayDoc = () => {
+  cy.window().then((win) => {
+    win._editor.commands.setContent('<h1>Throwaway Title</h1><p>Throwaway body</p>')
+  })
+}
+
+// Meta+a/c/v never reach the clipboard under headless Electron, and Meta+a is
+// select-all only on macOS. So select through the command, paste a DataTransfer.
+const selectAllAndPaste = (html) => {
+  cy.get(EDITOR).click()
+  cy.window().then((win) => {
+    win._editor.commands.selectAll()
+  })
+  cy.pasteWithMimeTypes({ 'text/html': html })
+  cy.wait(500)
+}
+
+const copyDocHtml = () => {
+  cy.window().then((win) => cy.wrap(win._editor.getHTML()).as('copiedHtml'))
+}
+
 describe('Full Document Paste (Flat Schema)', () => {
   beforeEach(() => {
-    cy.visitEditor({ docName: 'full-doc-paste-test', persist: true })
+    // A fresh docName per test, so no test opens on the last test's IndexedDB doc.
+    cy.visitEditor({ docName: `full-doc-paste-${Date.now()}`, persist: true })
   })
 
   it('should handle full-doc paste (⌘A→⌘V) correctly', () => {
@@ -19,51 +44,58 @@ describe('Full Document Paste (Flat Schema)', () => {
     cy.createDocument(doc)
     cy.wait(500)
 
-    // Select all
-    cy.get('.docy_editor > .tiptap.ProseMirror').click()
-    cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Meta', 'a'])
-    cy.wait(100)
+    copyDocHtml()
+    setThrowawayDoc()
+    cy.get('@copiedHtml').then(selectAllAndPaste)
 
-    // Copy
-    cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Meta', 'c'])
-    cy.wait(200)
-
-    // Select all again and paste over
-    cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Meta', 'a'])
-    cy.wait(100)
-    cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Meta', 'v'])
-    cy.wait(500)
-
-    // Verify document reconstructed correctly
     // BC-1: First node must be H1
-    cy.get('.docy_editor > .tiptap > h1[data-toc-id]').first().should('exist')
+    cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should('have.length', 1)
+    cy.get('h1[data-toc-id]').should('contain', 'My Document Title')
 
-    // Heading structure preserved
+    // Heading structure preserved; a paste that missed select-all would add to it
     cy.get('h2[data-toc-id]').should('have.length', 2)
     cy.get('h3[data-toc-id]').should('have.length', 1)
 
-    // Content preserved
-    cy.get('.docy_editor .tiptap.ProseMirror').should('contain', 'Intro content')
-    cy.get('.docy_editor .tiptap.ProseMirror').should('contain', 'Detail content')
-    cy.get('.docy_editor .tiptap.ProseMirror').should('contain', 'Sub detail content')
+    // Content preserved, and the replaced doc is gone
+    cy.get(EDITOR).should('contain', 'Intro content')
+    cy.get(EDITOR).should('contain', 'Detail content')
+    cy.get(EDITOR).should('contain', 'Sub detail content')
+    cy.get(EDITOR).should('not.contain', 'Throwaway')
   })
 
   it('should maintain H1 as title after full-doc paste', () => {
-    cy.clearEditor()
-    cy.get('.docy_editor > .tiptap.ProseMirror').type('Original Title{enter}')
-    cy.get('.docy_editor > .tiptap.ProseMirror').type('Some body text')
-    cy.wait(300)
+    // Seed through the command, as createDocument does, so the setup does not hang on typing.
+    cy.window().then((win) => {
+      win._editor.commands.setContent('<h1>Original Title</h1><p>Some body text</p>')
+    })
+    cy.get('h1[data-toc-id]').should('contain', 'Original Title')
 
-    // Select all, copy, select all, paste
-    cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Meta', 'a'])
-    cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Meta', 'c'])
-    cy.wait(100)
-    cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Meta', 'a'])
-    cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Meta', 'v'])
-    cy.wait(500)
+    copyDocHtml()
+    setThrowawayDoc()
+    cy.get('@copiedHtml').then(selectAllAndPaste)
 
     // BC-1: Title must remain H1
     cy.get('h1[data-toc-id]').should('have.length', 1)
     cy.get('h1[data-toc-id]').should('contain', 'Original Title')
+    cy.get(EDITOR).should('contain', 'Some body text')
+    cy.get(EDITOR).should('not.contain', 'Throwaway')
+  })
+
+  it('should promote a paragraph-first paste over select-all to the H1 title', () => {
+    setThrowawayDoc()
+
+    // data-pm-slice "0 0 []" marks a closed slice, as an in-editor copy does.
+    // Without it ProseMirror opens the slice, and titlePasteHandler steps aside.
+    selectAllAndPaste(
+      '<p data-pm-slice="0 0 []">Pasted Title</p><h2>Pasted Section</h2><p>Pasted body</p>'
+    )
+
+    cy.get('.docy_editor > .tiptap > :first-child').should('match', 'h1')
+    cy.get('h1[data-toc-id]').should('have.length', 1)
+    cy.get('h1[data-toc-id]').should('contain', 'Pasted Title')
+    cy.contains(`${EDITOR} p`, 'Pasted Title').should('not.exist')
+    cy.contains('h2[data-toc-id]', 'Pasted Section').should('exist')
+    cy.get(EDITOR).should('contain', 'Pasted body')
+    cy.get(EDITOR).should('not.contain', 'Throwaway')
   })
 })

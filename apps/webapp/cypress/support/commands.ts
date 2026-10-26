@@ -45,6 +45,9 @@ interface TestContent {
   empty: string
 }
 
+// prosemirror-keymap maps Mod to Ctrl off macOS, so a literal Meta chord misses on Linux CI.
+export const MOD = Cypress.platform === 'darwin' ? 'Meta' : 'Control'
+
 export const TEST_CONTENT: TestContent = {
   short: `This is a brief test content for basic testing scenarios.`,
   medium: `This is a medium-length test content. It contains multiple sentences that can be used for more detailed testing. This content helps validate multi-line scenarios.`,
@@ -160,7 +163,7 @@ Cypress.Commands.add(
 
     cy.get('.docy_editor > .tiptap.ProseMirror')
       .type(items[0].text)
-      .realPress(['Shift', 'Meta', '7']) // Create ordered list
+      .realPress(['Shift', MOD, '7']) // Create ordered list
       .realPress(['Enter'])
 
     let currentIndent = 0
@@ -211,7 +214,7 @@ Cypress.Commands.add(
 
     cy.get('.docy_editor > .tiptap.ProseMirror')
       .type(items[0].text)
-      .realPress(['Shift', 'Meta', '8']) // Create bullet list
+      .realPress(['Shift', MOD, '8']) // Create bullet list
       .realPress(['Enter'])
 
     let currentIndent = 0
@@ -263,7 +266,7 @@ Cypress.Commands.add('createHeadingWithContent', (content: any) => {
   editor
     .type(title)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .realPress(['Alt', 'Meta', String(level)] as any)
+    .realPress(['Alt', MOD, String(level)] as any)
     .realPress('Enter')
 
   if (!contents || contents.length === 0) return
@@ -308,7 +311,7 @@ Cypress.Commands.add('createDocument', (doc: any) => {
 
       cy.get('.docy_editor > .tiptap.ProseMirror')
         .click({ force: true })
-        .realPress(['Meta', 'a', 'Backspace'])
+        .realPress([MOD, 'a', 'Backspace'])
 
       for (const [index, section] of sections.entries()) {
         cy.createSection({
@@ -332,7 +335,7 @@ Cypress.Commands.add('createSection', (section: any) => {
   if (isFirst) {
     editor.type(title).realPress('Enter')
   } else {
-    editor.type(title).realPress(['Alt', 'Meta', '1']).realPress('Enter')
+    editor.type(title).realPress(['Alt', MOD, '1']).realPress('Enter')
   }
 
   for (const content of contents) {
@@ -373,13 +376,13 @@ Cypress.Commands.add('createParagraph', (content) => {
         Object.entries(item.style).forEach(([style, value]) => {
           switch (style) {
             case 'bold':
-              if (value) editor.realPress(['Meta', 'b'])
+              if (value) editor.realPress([MOD, 'b'])
               break
             case 'italic':
-              if (value) editor.realPress(['Meta', 'i'])
+              if (value) editor.realPress([MOD, 'i'])
               break
             case 'underline':
-              if (value) editor.realPress(['Meta', 'u'])
+              if (value) editor.realPress([MOD, 'u'])
               break
           }
         })
@@ -409,7 +412,7 @@ Cypress.Commands.add(
       .get('.docy_editor > .tiptap.ProseMirror')
       .type(`${title}`)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .realPress(['Alt', 'Meta', String(headingLevel)] as any)
+      .realPress(['Alt', MOD, String(headingLevel)] as any)
     if (sentencesCount) {
       editor.type(generatePredictableText(sentencesCount))
     }
@@ -465,7 +468,7 @@ Cypress.Commands.add('clearEditor', () => {
   cy.get('.docy_editor > .tiptap.ProseMirror').scrollIntoView()
   cy.get('.docy_editor > .tiptap.ProseMirror').click({ force: true })
   cy.get('.docy_editor > .tiptap.ProseMirror').should('have.focus')
-  cy.realPress(['Meta', 'a'])
+  cy.realPress([MOD, 'a'])
   cy.realPress('Backspace')
 })
 
@@ -833,7 +836,7 @@ Cypress.Commands.add(
                 )
                   .putPosCaretInHeading(currentLevel, headingText, 'start')
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  .realPress(['Alt', 'Meta', `${newLevel}`] as any)
+                  .realPress(['Alt', MOD, `${newLevel}`] as any)
               )
             })
 

@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 
 import { section } from '../../../fixtures/docMaker'
-import { TEST_TITLE } from '../../../support/commands'
+import { TEST_TITLE, MOD } from '../../../support/commands'
 
 const DocumentStructure = {
   documentName: TEST_TITLE.HelloDocy,
@@ -37,7 +37,7 @@ describe('Task List Alignment', () => {
     cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
     cy.get('@paragraph').click()
 
-    cy.get('.docy_editor').realPress(['Meta', 'Shift', '9'])
+    cy.get('.docy_editor').realPress([MOD, 'Shift', '9'])
     cy.get('.docy_editor ul[data-type="taskList"] > li').first().realType('first task item')
     cy.get('.docy_editor ul[data-type="taskList"] > li').first().realPress('Enter')
     cy.get('.docy_editor ul[data-type="taskList"] > li').eq(1).realType('second task item')
@@ -58,7 +58,7 @@ describe('Task List Alignment', () => {
     cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
     cy.get('@paragraph').click()
 
-    cy.get('.docy_editor').realPress(['Meta', 'Shift', '9'])
+    cy.get('.docy_editor').realPress([MOD, 'Shift', '9'])
     cy.get('.docy_editor ul[data-type="taskList"] > li').first().realType('anchored task')
     cy.get('.docy_editor ul[data-type="taskList"] > li').first().realPress('Enter')
     cy.get('.docy_editor ul[data-type="taskList"] > li').eq(1).click()

@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 
 import { heading, paragraph, section } from '../../../fixtures/docMaker'
-import { TEST_TITLE } from '../../../support/commands'
+import { MOD, TEST_TITLE } from '../../../support/commands'
 
 const SimpleDocument = {
   documentName: TEST_TITLE.HelloDocy,
@@ -22,7 +22,6 @@ const ComplexHierarchyDocument = {
 }
 
 const EDITOR = '.docy_editor .tiptap.ProseMirror'
-const MOD = Cypress.platform === 'darwin' ? 'Meta' : 'Control'
 
 const getParagraph = () => cy.get(`${EDITOR} > p`).first().as('paragraph')
 
@@ -51,10 +50,10 @@ describe('Combined Formatting', () => {
     cy.get('@paragraph').realType(text)
 
     selectTarget(text, 6, 11)
-    cy.get('.docy_editor').realPress(['Meta', 'b'])
-    cy.get('.docy_editor').realPress(['Meta', 'i'])
-    cy.get('.docy_editor').realPress(['Meta', 'u'])
-    cy.get('.docy_editor').realPress(['Meta', 'Shift', 's'])
+    cy.get('.docy_editor').realPress([MOD, 'b'])
+    cy.get('.docy_editor').realPress([MOD, 'i'])
+    cy.get('.docy_editor').realPress([MOD, 'u'])
+    cy.get('.docy_editor').realPress([MOD, 'Shift', 's'])
 
     cy.get('@paragraph').find('strong').should('contain', 'combo')
     cy.get('@paragraph').find('em').should('contain', 'combo')
@@ -261,13 +260,13 @@ describe('Combined Formatting', () => {
     cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should('have.length', 7)
 
     cy.putPosCaretInHeading(4, 'S4-H4', 'end')
-    cy.get('.docy_editor').realPress(['Meta', 'b'])
-    cy.get('.docy_editor').realPress(['Meta', 'i'])
+    cy.get('.docy_editor').realPress([MOD, 'b'])
+    cy.get('.docy_editor').realPress([MOD, 'i'])
     cy.get('[data-testid="toolbar-highlight"]').click()
     cy.get('.docy_editor > .tiptap.ProseMirror').realType(' formatted')
     cy.get('[data-testid="toolbar-highlight"]').click()
-    cy.get('.docy_editor').realPress(['Meta', 'i'])
-    cy.get('.docy_editor').realPress(['Meta', 'b'])
+    cy.get('.docy_editor').realPress([MOD, 'i'])
+    cy.get('.docy_editor').realPress([MOD, 'b'])
 
     cy.contains('h4[data-toc-id]', 'S4-H4').within(() => {
       cy.get('strong').should('exist')

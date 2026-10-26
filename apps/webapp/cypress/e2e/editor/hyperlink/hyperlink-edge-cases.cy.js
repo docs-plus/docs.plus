@@ -37,7 +37,7 @@ const selectTextInEditor = (text) => {
 
 const applyLink = (text, url) => {
   selectTextInEditor(text)
-  cy.get('.docy_editor').realPress(['Meta', 'k'])
+  cy.get('.docy_editor').realPress(ADD_LINK_KEYS)
   cy.get(URL_INPUT).type(url)
   cy.get(SUBMIT_BTN).click()
   cy.get(POPOVER).should('not.exist')
@@ -87,7 +87,7 @@ describe('Hyperlink Edge Cases', () => {
 
     it('Tab traps focus within create popover', () => {
       selectTextInEditor('First')
-      cy.get('.docy_editor').realPress(['Meta', 'k'])
+      cy.get('.docy_editor').realPress(ADD_LINK_KEYS)
       cy.get(POPOVER).should('be.visible')
 
       cy.get(URL_INPUT).should('exist')
@@ -166,7 +166,7 @@ describe('Hyperlink Edge Cases', () => {
       const longUrl = `https://example.com/${longPath}`
 
       selectTextInEditor('First')
-      cy.get('.docy_editor').realPress(['Meta', 'k'])
+      cy.get('.docy_editor').realPress(ADD_LINK_KEYS)
 
       cy.get(URL_INPUT).type(longUrl, { delay: 0 })
       cy.get(SUBMIT_BTN).should('not.be.disabled')

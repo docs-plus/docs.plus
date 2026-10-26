@@ -1,4 +1,4 @@
-import { TEST_CONTENT, TEST_TITLE } from '../../../support/commands'
+import { TEST_CONTENT, TEST_TITLE, MOD } from '../../../support/commands'
 
 /**
  * Create a test document with multiple sections and headings
@@ -11,7 +11,7 @@ const createDocument = () => {
     .realType(TEST_CONTENT.short)
     .realPress('Enter')
     .realType(TEST_TITLE.short)
-    .realPress(['Alt', 'Meta', '1'])
+    .realPress(['Alt', MOD, '1'])
     .realPress('Enter')
     .realType(TEST_CONTENT.short)
     .realPress('Enter')
@@ -45,12 +45,12 @@ describe('Document Content Clearing with Keyboard Shortcuts', { testIsolation: f
   })
 
   const clearScenarios = [
-    { label: 'Select All (⌘A) followed by Backspace', keys: [['Meta', 'a'], ['Backspace']] },
-    { label: 'Select All (⌘A) followed by Delete', keys: [['Meta', 'a'], ['Delete']] },
-    { label: 'Select All and Delete simultaneously (⌘A+Delete)', keys: [['Meta', 'a', 'Delete']] },
+    { label: 'Select All (⌘A) followed by Backspace', keys: [[MOD, 'a'], ['Backspace']] },
+    { label: 'Select All (⌘A) followed by Delete', keys: [[MOD, 'a'], ['Delete']] },
+    { label: 'Select All and Delete simultaneously (⌘A+Delete)', keys: [[MOD, 'a', 'Delete']] },
     {
       label: 'Select All and Backspace simultaneously (⌘A+Backspace)',
-      keys: [['Meta', 'a', 'Backspace']]
+      keys: [[MOD, 'a', 'Backspace']]
     }
   ]
 

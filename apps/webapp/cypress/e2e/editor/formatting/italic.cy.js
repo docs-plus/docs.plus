@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 
 import { section } from '../../../fixtures/docMaker'
-import { TEST_TITLE } from '../../../support/commands'
+import { TEST_TITLE, MOD } from '../../../support/commands'
 
 const DocumentStructure = {
   documentName: TEST_TITLE.HelloDocy,
@@ -30,9 +30,9 @@ describe('Italic Formatting', () => {
   it('applies and stops italic with keyboard shortcut', () => {
     getParagraph().click()
     cy.get('@paragraph').realType('Prefix ')
-    cy.get('.docy_editor').realPress(['Meta', 'i'])
+    cy.get('.docy_editor').realPress([MOD, 'i'])
     cy.get('@paragraph').realType('italic-target')
-    cy.get('.docy_editor').realPress(['Meta', 'i'])
+    cy.get('.docy_editor').realPress([MOD, 'i'])
     cy.get('@paragraph').realType(' suffix')
 
     cy.get('@paragraph').find('em').should('contain', 'italic-target')
@@ -58,7 +58,7 @@ describe('Italic Formatting', () => {
     cy.get('@paragraph').realType(text)
 
     selectTarget(text, 7, 13)
-    cy.get('.docy_editor').realPress(['Meta', 'i'])
+    cy.get('.docy_editor').realPress([MOD, 'i'])
     cy.get('@paragraph').find('em').should('contain', 'target')
     cy.get('@paragraph').should('contain', text)
   })

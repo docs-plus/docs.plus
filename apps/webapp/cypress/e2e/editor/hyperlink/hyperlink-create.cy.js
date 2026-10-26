@@ -2,6 +2,7 @@
 
 import { paragraph, section } from '../../../fixtures/docMaker'
 import { TEST_TITLE } from '../../../support/commands'
+import { ADD_LINK_KEYS } from '../../../support/hyperlinkPicker'
 
 const PARAGRAPH_TEXT = 'Select this target word to apply a hyperlink.'
 const TARGET_TEXT = 'target'
@@ -45,7 +46,7 @@ describe('Hyperlink Create Popover', () => {
   describe('popover trigger', () => {
     it('opens create popover via Mod+K shortcut', () => {
       selectTarget()
-      cy.get('.docy_editor').realPress(['Meta', 'k'])
+      cy.get('.docy_editor').realPress(ADD_LINK_KEYS)
 
       cy.get(POPOVER).should('be.visible')
       cy.get(URL_INPUT).should('be.visible')
@@ -66,14 +67,14 @@ describe('Hyperlink Create Popover', () => {
   describe('Apply button state', () => {
     it('Apply button is disabled when URL input is empty', () => {
       selectTarget()
-      cy.get('.docy_editor').realPress(['Meta', 'k'])
+      cy.get('.docy_editor').realPress(ADD_LINK_KEYS)
 
       cy.get(SUBMIT_BTN).should('be.disabled')
     })
 
     it('Apply button enables when URL is entered', () => {
       selectTarget()
-      cy.get('.docy_editor').realPress(['Meta', 'k'])
+      cy.get('.docy_editor').realPress(ADD_LINK_KEYS)
 
       cy.get(URL_INPUT).type('https://example.com')
       cy.get(SUBMIT_BTN).should('not.be.disabled')
@@ -83,7 +84,7 @@ describe('Hyperlink Create Popover', () => {
   describe('URL submission', () => {
     it('submitting a valid URL creates a hyperlink', () => {
       selectTarget()
-      cy.get('.docy_editor').realPress(['Meta', 'k'])
+      cy.get('.docy_editor').realPress(ADD_LINK_KEYS)
 
       cy.get(URL_INPUT).type('https://example.com')
       cy.get(SUBMIT_BTN).click()
@@ -97,7 +98,7 @@ describe('Hyperlink Create Popover', () => {
 
     it('submitting an invalid URL shows error message', () => {
       selectTarget()
-      cy.get('.docy_editor').realPress(['Meta', 'k'])
+      cy.get('.docy_editor').realPress(ADD_LINK_KEYS)
 
       cy.get(URL_INPUT).type('not a valid url')
       cy.get(SUBMIT_BTN).click()
@@ -108,7 +109,7 @@ describe('Hyperlink Create Popover', () => {
 
     it('error clears when user types after failed validation', () => {
       selectTarget()
-      cy.get('.docy_editor').realPress(['Meta', 'k'])
+      cy.get('.docy_editor').realPress(ADD_LINK_KEYS)
 
       cy.get(URL_INPUT).type('bad')
       cy.get(SUBMIT_BTN).click()
@@ -122,7 +123,7 @@ describe('Hyperlink Create Popover', () => {
   describe('popover dismiss', () => {
     it('Escape on input dismisses popover without applying', () => {
       selectTarget()
-      cy.get('.docy_editor').realPress(['Meta', 'k'])
+      cy.get('.docy_editor').realPress(ADD_LINK_KEYS)
 
       cy.get(URL_INPUT).type('https://partial.com')
       cy.get(URL_INPUT).realPress('Escape')
@@ -133,7 +134,7 @@ describe('Hyperlink Create Popover', () => {
 
     it('clicking outside popover dismisses it', () => {
       selectTarget()
-      cy.get('.docy_editor').realPress(['Meta', 'k'])
+      cy.get('.docy_editor').realPress(ADD_LINK_KEYS)
       cy.get(POPOVER).should('be.visible')
 
       // Wait for the outside-click listener to be registered (50ms defer + rAF)
@@ -152,7 +153,7 @@ describe('Hyperlink Create Popover', () => {
   describe('URL normalization', () => {
     it('normalizes bare domain URLs by prepending https://', () => {
       selectTarget()
-      cy.get('.docy_editor').realPress(['Meta', 'k'])
+      cy.get('.docy_editor').realPress(ADD_LINK_KEYS)
 
       cy.get(URL_INPUT).type('example.com')
       cy.get(SUBMIT_BTN).click()
@@ -166,7 +167,7 @@ describe('Hyperlink Create Popover', () => {
 
     it('preserves explicit http://', () => {
       selectTarget()
-      cy.get('.docy_editor').realPress(['Meta', 'k'])
+      cy.get('.docy_editor').realPress(ADD_LINK_KEYS)
 
       cy.get(URL_INPUT).type('http://example.com')
       cy.get(SUBMIT_BTN).click()
@@ -179,7 +180,7 @@ describe('Hyperlink Create Popover', () => {
 
     it('preserves explicit https://', () => {
       selectTarget()
-      cy.get('.docy_editor').realPress(['Meta', 'k'])
+      cy.get('.docy_editor').realPress(ADD_LINK_KEYS)
 
       cy.get(URL_INPUT).type('https://example.com/path')
       cy.get(SUBMIT_BTN).click()

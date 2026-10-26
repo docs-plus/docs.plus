@@ -1,4 +1,4 @@
-import { TEST_TITLE } from '../../../support/commands'
+import { TEST_TITLE, MOD } from '../../../support/commands'
 import { section } from '../../../fixtures/docMaker'
 
 const DocumentStructure = {
@@ -25,7 +25,7 @@ describe('Task List', { testIsolation: false }, () => {
       cy.get('@paragraph').click()
 
       // Create a task list using keyboard shortcut
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '9'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '9'])
 
       // Type the first list item
       cy.get('.docy_editor ul > li').realType('First task in list')
@@ -99,7 +99,7 @@ describe('Task List', { testIsolation: false }, () => {
       cy.get('@paragraph').click()
 
       // Create a task list using keyboard shortcut
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '9'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '9'])
 
       // Type the first list item
       cy.get('.docy_editor ul > li').realType('Main task')
@@ -154,7 +154,7 @@ describe('Task List', { testIsolation: false }, () => {
       cy.get('@paragraph').click()
 
       // Create a task list using keyboard shortcut
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '9'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '9'])
 
       // Type the first list item
       cy.get('.docy_editor ul > li').realType('Task to complete')
@@ -206,7 +206,7 @@ describe('Task List', { testIsolation: false }, () => {
       cy.get('@paragraph').click()
 
       // Create a task list using keyboard shortcut
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '9'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '9'])
 
       // Type the first list item
       cy.get('.docy_editor ul > li').type('This will be a bullet list item')
@@ -217,7 +217,7 @@ describe('Task List', { testIsolation: false }, () => {
       cy.get('.docy_editor').realPress(['Shift', 'End'])
 
       // Convert to bullet list
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '8'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '8'])
 
       // Verify conversion worked - should now be a regular bullet list without checkboxes
       cy.get('.docy_editor ul').should('exist')
@@ -234,7 +234,7 @@ describe('Task List', { testIsolation: false }, () => {
       cy.get('@paragraph').click()
 
       // Create a task list using keyboard shortcut
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '9'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '9'])
 
       // Type the first list item
       cy.get('.docy_editor ul > li').type('This will be an ordered list item')
@@ -245,7 +245,7 @@ describe('Task List', { testIsolation: false }, () => {
       cy.get('.docy_editor').realPress(['Shift', 'End'])
 
       // Convert to ordered list
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '7'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '7'])
 
       // Verify conversion worked
       cy.get('.docy_editor ol').should('exist')

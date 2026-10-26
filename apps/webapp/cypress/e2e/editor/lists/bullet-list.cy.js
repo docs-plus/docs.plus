@@ -1,4 +1,4 @@
-import { TEST_TITLE } from '../../../support/commands'
+import { TEST_TITLE, MOD } from '../../../support/commands'
 import { section } from '../../../fixtures/docMaker'
 
 const DocumentStructure = {
@@ -25,7 +25,7 @@ describe('Bullet List', { testIsolation: false }, () => {
       cy.get('@paragraph').click()
 
       // Create a bullet list using keyboard shortcut
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '8'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '8'])
 
       // Type the first list item
       cy.get('.docy_editor ul > li').realType('First item in bullet list')
@@ -97,7 +97,7 @@ describe('Bullet List', { testIsolation: false }, () => {
       cy.get('@paragraph').click()
 
       // Create a bullet list using keyboard shortcut
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '8'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '8'])
 
       // Type the first list item
       cy.get('.docy_editor ul > li').realType('Initial point')
@@ -170,7 +170,7 @@ describe('Bullet List', { testIsolation: false }, () => {
       cy.get('@paragraph').click()
 
       // Create a bullet list using keyboard shortcut
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '8'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '8'])
 
       // Type the first list item
       cy.get('.docy_editor ul > li').realType('This will be an ordered list item')
@@ -181,7 +181,7 @@ describe('Bullet List', { testIsolation: false }, () => {
       cy.get('.docy_editor').realPress(['Shift', 'End'])
 
       // Convert to ordered list
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '7'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '7'])
 
       // Verify conversion worked
       cy.get('.docy_editor ol').should('exist')
@@ -198,7 +198,7 @@ describe('Bullet List', { testIsolation: false }, () => {
       cy.get('@paragraph').click()
 
       // Create a bullet list using keyboard shortcut
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '8'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '8'])
 
       // Type the first list item
       cy.get('.docy_editor ul > li').realType('This will be a task list item')
@@ -209,7 +209,7 @@ describe('Bullet List', { testIsolation: false }, () => {
       cy.get('.docy_editor').realPress(['Shift', 'End'])
 
       // Convert to task list
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', '9'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', '9'])
 
       // Verify conversion worked - should now be a task list item with checkbox
       cy.get('.docy_editor input[type="checkbox"]').should('exist')

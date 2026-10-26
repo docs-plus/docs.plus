@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 
 import { section } from '../../../fixtures/docMaker'
-import { TEST_TITLE } from '../../../support/commands'
+import { TEST_TITLE, MOD } from '../../../support/commands'
 
 const DocumentStructure = {
   documentName: TEST_TITLE.HelloDocy,
@@ -47,7 +47,7 @@ describe('Extended Formatting Marks', () => {
     cy.get('@paragraph').realType('prefix inline-token suffix')
 
     setSelectionBySubstring('inline-token')
-    cy.get('.docy_editor').realPress(['Meta', 'e'])
+    cy.get('.docy_editor').realPress([MOD, 'e'])
 
     cy.get('@paragraph').find('code').should('contain', 'inline-token')
   })
@@ -57,7 +57,7 @@ describe('Extended Formatting Marks', () => {
     cy.get('@paragraph').realType('E = mc2 and H2O')
 
     setSelectionBySubstring('2')
-    cy.get('.docy_editor').realPress(['Meta', '.'])
+    cy.get('.docy_editor').realPress([MOD, '.'])
 
     // Select the second "2" inside H2O (the first one is now in <sup>2</sup>)
     setSelectionBySubstring('2O')
@@ -66,7 +66,7 @@ describe('Extended Formatting Marks', () => {
       const { from } = editor.state.selection
       editor.commands.setTextSelection({ from, to: from + 1 })
     })
-    cy.get('.docy_editor').realPress(['Meta', ','])
+    cy.get('.docy_editor').realPress([MOD, ','])
 
     cy.get('@paragraph').find('sup').should('contain', '2')
     cy.get('@paragraph').find('sub').should('contain', '2')

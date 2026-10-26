@@ -1,7 +1,10 @@
 /* eslint-disable no-undef */
 import { freshSlug, IPHONE_UA, sectionsDoc, visitSeededPad } from './filter-shared'
 
-describe('Document filter (mobile sheet)', () => {
+// Skipped in the editor-only job: the filter mounts only on the pad route, which needs REST and WS. https://github.com/docs-plus/docs.plus/issues/477
+const describeOnPad = Cypress.expose('EDITOR_ONLY_STACK') ? describe.skip : describe
+
+describeOnPad('Document filter (mobile sheet)', () => {
   let slug
 
   beforeEach(() => {

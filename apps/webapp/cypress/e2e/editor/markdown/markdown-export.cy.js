@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 
 import { section } from '../../../fixtures/docMaker'
-import { TEST_TITLE } from '../../../support/commands'
+import { TEST_TITLE, MOD } from '../../../support/commands'
 
 const EDITOR_SEL = '.docy_editor > .tiptap.ProseMirror'
 
@@ -44,9 +44,9 @@ describe('Markdown Export', () => {
       focusEndOfFirstParagraph()
 
       cy.get(EDITOR_SEL).realType('Some ')
-      cy.get('.docy_editor').realPress(['Meta', 'b'])
+      cy.get('.docy_editor').realPress([MOD, 'b'])
       cy.get(EDITOR_SEL).realType('bold')
-      cy.get('.docy_editor').realPress(['Meta', 'b'])
+      cy.get('.docy_editor').realPress([MOD, 'b'])
       cy.get(EDITOR_SEL).realType(' text')
 
       cy.window().then((win) => {
@@ -58,9 +58,9 @@ describe('Markdown Export', () => {
     it('serializes italic marks as *text*', () => {
       focusEndOfFirstParagraph()
 
-      cy.get('.docy_editor').realPress(['Meta', 'i'])
+      cy.get('.docy_editor').realPress([MOD, 'i'])
       cy.get(EDITOR_SEL).realType('italic')
-      cy.get('.docy_editor').realPress(['Meta', 'i'])
+      cy.get('.docy_editor').realPress([MOD, 'i'])
 
       cy.window().then((win) => {
         const md = win._getMarkdown?.()
@@ -71,9 +71,9 @@ describe('Markdown Export', () => {
     it('serializes inline code as `code`', () => {
       focusEndOfFirstParagraph()
 
-      cy.get('.docy_editor').realPress(['Meta', 'e'])
+      cy.get('.docy_editor').realPress([MOD, 'e'])
       cy.get(EDITOR_SEL).realType('myVar')
-      cy.get('.docy_editor').realPress(['Meta', 'e'])
+      cy.get('.docy_editor').realPress([MOD, 'e'])
 
       cy.window().then((win) => {
         const md = win._getMarkdown?.()
@@ -84,9 +84,9 @@ describe('Markdown Export', () => {
     it('serializes strikethrough as ~~text~~', () => {
       focusEndOfFirstParagraph()
 
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', 's'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', 's'])
       cy.get(EDITOR_SEL).realType('deleted')
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', 's'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', 's'])
 
       cy.window().then((win) => {
         const md = win._getMarkdown?.()
@@ -147,9 +147,9 @@ describe('Markdown Export', () => {
     it('serializes highlight as ==text==', () => {
       focusEndOfFirstParagraph()
 
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', 'h'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', 'h'])
       cy.get(EDITOR_SEL).realType('highlighted')
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', 'h'])
+      cy.get('.docy_editor').realPress([MOD, 'Shift', 'h'])
 
       cy.window().then((win) => {
         const md = win._getMarkdown?.()

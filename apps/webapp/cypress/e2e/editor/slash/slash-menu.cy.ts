@@ -18,9 +18,13 @@ type PadEditor = {
       childCount: number
     }
   }
+  view: {
+    hasFocus(): boolean
+    posAtDOM(node: Node, offset: number): number
+  }
   commands: {
     setContent(html: string): boolean
-    focus(): boolean
+    focus(pos?: number): boolean
     setTextSelection(pos: number): boolean
   }
 }
@@ -43,9 +47,9 @@ const withEditor = (fn: (editor: PadEditor) => void) => withWindow((win) => fn(w
 
 /** Replace the pad and put the caret in the first empty block of that type after Title. */
 const startIn = (html: string, blockType = 'paragraph') => {
+  let target = -1
   withEditor((editor) => {
     editor.commands.setContent(html)
-    let target = -1
     editor.state.doc.descendants((node, pos) => {
       if (target >= 0) return false
       if (pos > 0 && node.isTextblock && node.type.name === blockType && !node.content.size) {
@@ -53,10 +57,21 @@ const startIn = (html: string, blockType = 'paragraph') => {
       }
     })
     expect(target, `empty ${blockType}`).to.be.greaterThan(0)
-    editor.commands.focus()
-    editor.commands.setTextSelection(target)
   })
+  // A DOM focus can put the caret at the Title start, so place it after the focus.
   cy.get(EDITOR).focus()
+  cy.get(EDITOR).should('have.focus')
+  withEditor((editor) => {
+    editor.commands.focus(target)
+  })
+  // realType types at the DOM caret, so wait until that caret, not only PM state, is in place.
+  cy.window().should((win) => {
+    const view = (win as unknown as PlaygroundWindow)._editor.view
+    const sel = win.getSelection()
+    expect(view.hasFocus(), 'editor focus').to.eq(true)
+    expect(sel?.anchorNode, 'DOM caret').to.exist
+    expect(view.posAtDOM(sel!.anchorNode!, sel!.anchorOffset), 'DOM caret pos').to.eq(target)
+  })
 }
 
 const caretBlock = (fn: (block: PadNode) => void) =>

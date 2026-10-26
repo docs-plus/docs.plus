@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 
 import { section } from '../../../fixtures/docMaker'
-import { TEST_TITLE } from '../../../support/commands'
+import { TEST_TITLE, MOD } from '../../../support/commands'
 
 const DocumentStructure = {
   documentName: TEST_TITLE.HelloDocy,
@@ -30,9 +30,9 @@ describe('Underline Formatting', () => {
   it('applies and stops underline with keyboard shortcut', () => {
     getParagraph().click()
     cy.get('@paragraph').realType('Prefix ')
-    cy.get('.docy_editor').realPress(['Meta', 'u'])
+    cy.get('.docy_editor').realPress([MOD, 'u'])
     cy.get('@paragraph').realType('underline-target')
-    cy.get('.docy_editor').realPress(['Meta', 'u'])
+    cy.get('.docy_editor').realPress([MOD, 'u'])
     cy.get('@paragraph').realType(' suffix')
 
     cy.get('@paragraph').find('u').should('contain', 'underline-target')
@@ -58,7 +58,7 @@ describe('Underline Formatting', () => {
     cy.get('@paragraph').realType(text)
 
     selectTarget(text, 7, 13)
-    cy.get('.docy_editor').realPress(['Meta', 'u'])
+    cy.get('.docy_editor').realPress([MOD, 'u'])
     cy.get('@paragraph').find('u').should('contain', 'target')
     cy.get('@paragraph').should('contain', text)
   })
