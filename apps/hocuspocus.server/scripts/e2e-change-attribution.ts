@@ -163,7 +163,7 @@ const openProvider = async (
   return { provider, ydoc, clientId: ydoc.clientID, synced, announced }
 }
 
-type Actor = TestUser & { fullName: string | null }
+type Actor = TestUser & { fullName: string }
 
 const mintUser = async (suffix: string, fullName: string): Promise<Actor | null> => {
   const user = await mintTestUser(`${PREFIX}-${suffix}`, SERVICE_KEY, fullName)

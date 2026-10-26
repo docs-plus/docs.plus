@@ -15,14 +15,13 @@ export const waitForHeadText = (
   documentId: string,
   marker: string,
   tries: number
-): Cypress.Chainable => {
-  return cy.task<string | null>('queryDocHeadText', documentId).then((text) => {
+): Cypress.Chainable =>
+  cy.task<string | null>('queryDocHeadText', documentId).then((text) => {
     if (text?.includes(marker)) return
     if (tries <= 0) throw new Error(`head of ${documentId} never held "${marker}"`)
     cy.wait(1000)
     waitForHeadText(documentId, marker, tries - 1)
   })
-}
 
 // Types a marker into a fresh pad and waits until the server head holds it.
 export const seedPad = (

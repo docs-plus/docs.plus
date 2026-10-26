@@ -1,4 +1,3 @@
-import { Prisma } from '../generated/prisma/client'
 import type { Extension } from '@hocuspocus/server'
 import { TiptapTransformer } from '@hocuspocus/transformer'
 import * as Y from 'yjs'
@@ -6,6 +5,8 @@ import { Database } from '@hocuspocus/extension-database'
 import { Throttle } from '@hocuspocus/extension-throttle'
 import { Redis as RedisExtension } from '@hocuspocus/extension-redis'
 import { Logger } from '@hocuspocus/extension-logger'
+
+import { Prisma } from '../generated/prisma/client'
 import { checkEnvBoolean, generateRandomId } from '../utils'
 import { config } from './env'
 import { isRoomSealed } from '../lib/accessRealtime'

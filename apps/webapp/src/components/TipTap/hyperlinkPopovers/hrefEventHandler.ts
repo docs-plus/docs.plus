@@ -55,7 +55,7 @@ export const navigateHref = (
         return
       }
     } catch {
-      // An href that does not parse opens in a new tab, as before.
+      // An href that does not parse falls through to a new tab.
     }
   }
 

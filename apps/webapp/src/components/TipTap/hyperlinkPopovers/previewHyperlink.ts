@@ -79,7 +79,6 @@ const buildAndObserveDesktopPopover = (
   const ctx: PreviewContext = { href, signal: controller.signal }
   const element = buildDesktopPopover(ctx, options)
 
-  // The observer aborts the fetch on detach.
   observeDetachment(element, () => controller.abort())
 
   return element

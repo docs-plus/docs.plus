@@ -69,9 +69,8 @@ export const signInLocalUser = (email: string, password: string) =>
       }
       const value = `base64-${stringToBase64URL(JSON.stringify(session))}`
       const domain = new URL(Cypress.config('baseUrl')!).hostname
-      const chunks = createChunks(authCookieName(), value)
       // Host-only, like the cookie @supabase/ssr writes, so its sign-out delete matches it.
-      for (const chunk of chunks) {
+      for (const chunk of createChunks(authCookieName(), value)) {
         cy.setCookie(chunk.name, chunk.value, {
           domain,
           hostOnly: true,

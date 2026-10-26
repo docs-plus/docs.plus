@@ -103,7 +103,7 @@ Three limiters cover every request except `/health`, `/health/*` and a verified 
 - Favicons have their own budget, ten times the global one. It covers every request to `/api/metadata/icon`.
 - Every other route spends from the global budget, and that includes the upload `POST` on the same media path.
 - An `/api/mcp` call with an accepted OAuth token spends no global budget. Its tool calls spend a per-person budget instead (see the [MCP reference](../mcp/reference.md)). A request without an accepted token still spends it. When an address has no budget left, every `/api/mcp` call from it gets a `429`, an accepted one too.
-- The media and icon multipliers are fixed in the source. No environment variable changes them.
+- The media and favicon multipliers are fixed in the source. No environment variable changes them.
 - All three limiters key on the client address alone. The user agent is not part of it.
 - There is no separate allowance for a service-role caller.
 

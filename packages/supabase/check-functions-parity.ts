@@ -183,10 +183,12 @@ function privateClauseDrift(scripts: Tree): string[] {
   let expected: string | undefined
   for (const [key, doc, user] of PRIVATE_COPIES) {
     const def = scripts.get(key)
-    const blocks = def ? privateClauses(def.sql, doc, user) : []
-    if (!def) failures.push(`${key} is missing from scripts/`)
-    else if (blocks.length !== 1)
-      failures.push(`${key} has ${blocks.length} Private clauses, not 1`)
+    if (!def) {
+      failures.push(`${key} is missing from scripts/`)
+      continue
+    }
+    const blocks = privateClauses(def.sql, doc, user)
+    if (blocks.length !== 1) failures.push(`${key} has ${blocks.length} Private clauses, not 1`)
     else if (key === reference) expected = blocks[0]
     else if (expected !== undefined && blocks[0] !== expected)
       failures.push(`${key} differs from ${reference}`)

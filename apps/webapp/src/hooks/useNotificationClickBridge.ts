@@ -18,8 +18,8 @@ const markPushNotificationRead = async (notificationId: string) => {
     trackClientRead(notificationId)
     await markNotificationAsRead(notificationId)
 
-    const store = useStore.getState()
-    const { notifications, updateNotifications, setNotificationTab, notificationTabs } = store
+    const { notifications, updateNotifications, setNotificationTab, notificationTabs } =
+      useStore.getState()
 
     ;(['Unread', 'Mentions'] as const).forEach((tab) => {
       const tabNotifications = notifications.get(tab)

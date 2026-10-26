@@ -179,7 +179,6 @@ describe('embed caption', () => {
       editor.commands.setContent(editor.getJSON())
     })
     cy.nodeAttr('youtube', 'caption').should('eq', 'Embed caption')
-    // #244: the embed serializes its caption as a <figure>.
     cy.getEditor().then((editor) => {
       expect(editor.getHTML()).to.contain('data-hm-figure')
     })

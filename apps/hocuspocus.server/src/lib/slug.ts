@@ -28,12 +28,10 @@ export async function withUniqueSlug<T>(
       if (
         err instanceof Prisma.PrismaClientKnownRequestError &&
         err.code === 'P2002' &&
-        attempt < maxRetries
+        attempt < maxRetries &&
+        uniqueViolationFields(err).some((f) => f === 'slug' || f === 'DocumentMetadata_slug_key')
       ) {
-        const fields = uniqueViolationFields(err)
-        if (fields.includes('slug') || fields.includes('DocumentMetadata_slug_key')) {
-          continue
-        }
+        continue
       }
       throw err
     }

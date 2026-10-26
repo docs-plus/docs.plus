@@ -281,9 +281,7 @@ async function checkNodeModules(): Promise<CheckResult> {
 }
 
 async function checkPrismaClient(): Promise<CheckResult> {
-  const generated = prismaClientGenerated()
-
-  if (generated) {
+  if (prismaClientGenerated()) {
     return {
       name: 'Prisma Client',
       status: 'pass',

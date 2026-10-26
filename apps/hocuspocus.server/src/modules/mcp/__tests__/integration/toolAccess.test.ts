@@ -3,7 +3,6 @@ import { createMcpHandler } from '@modelcontextprotocol/server'
 import type { Logger } from 'pino'
 
 import { createMockPrisma } from '../../../../../tests/helpers/test-server'
-import type { PrismaClient } from '../../../../generated/prisma/client'
 import { createServerFactory } from '../../http/serverFactory'
 import type { ChatStore, DocumentRecord } from '../../types'
 
@@ -56,7 +55,7 @@ interface Harness {
 const harness = (doc: DocumentRecord): Harness => {
   const prisma = createMockPrisma() as any
   prisma.documentMetadata.findUnique = async () => doc
-  const state: Harness = { call: undefined as never, reads: [], writes: 0 }
+  const state = { reads: [] as string[], writes: 0 }
   const chat: ChatStore = {
     listRooms: async () => [],
     findRoom: async () => 'channel-1',
@@ -68,7 +67,7 @@ const harness = (doc: DocumentRecord): Harness => {
   }
   const handler = createMcpHandler(
     createServerFactory({
-      prisma: prisma as PrismaClient,
+      prisma,
       logger: silentLogger,
       content: {
         read: async (documentId) => {
@@ -89,7 +88,7 @@ const harness = (doc: DocumentRecord): Harness => {
   )
 
   let id = 0
-  state.call = async (name, args) => {
+  const call: Harness['call'] = async (name, args) => {
     const response = await handler.fetch(
       new Request('http://localhost/api/mcp', {
         method: 'POST',
@@ -122,7 +121,7 @@ const harness = (doc: DocumentRecord): Harness => {
     if (!message.result) throw new Error(`tools/call ${name} failed: ${json}`)
     return { isError: message.result.isError, text: message.result.content[0].text }
   }
-  return state
+  return Object.assign(state, { call })
 }
 
 // A wrong `read`/`own` choice or a broken owner check lets an agent read or write

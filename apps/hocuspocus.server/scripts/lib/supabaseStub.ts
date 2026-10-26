@@ -103,7 +103,7 @@ const userRows = (url: URL): Response => {
   return json(rows)
 }
 
-export const handleStubRequest = async (request: Request): Promise<Response> => {
+const handleStubRequest = async (request: Request): Promise<Response> => {
   const url = new URL(request.url)
   const route = `${request.method} ${url.pathname}`
   if (route === 'POST /auth/v1/admin/users') return createUser(request)
@@ -129,11 +129,9 @@ export const handleStubRequest = async (request: Request): Promise<Response> => 
   )
 }
 
-if (import.meta.main) {
-  const server = Bun.serve({
-    hostname: '127.0.0.1',
-    port: Number(new URL(process.env.SUPABASE_URL ?? 'http://127.0.0.1:54399').port),
-    fetch: handleStubRequest
-  })
-  console.log(`supabase stub listening on ${server.url}`)
-}
+const server = Bun.serve({
+  hostname: '127.0.0.1',
+  port: Number(new URL(process.env.SUPABASE_URL ?? 'http://127.0.0.1:54399').port),
+  fetch: handleStubRequest
+})
+console.log(`supabase stub listening on ${server.url}`)

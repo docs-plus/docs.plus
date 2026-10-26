@@ -21,10 +21,10 @@ export const getFormattedHref = (link: LinkItem): string => {
  */
 export const getSiteIconUrl = (url: string): string | undefined => {
   try {
-    const u = new URL(/^[a-z][a-z\d+.-]*:\/\//i.test(url) ? url : `https://${url}`)
-    if ((u.protocol !== 'http:' && u.protocol !== 'https:') || u.username || u.password)
-      return undefined
-    return iconRouteUrl(u.origin)
+    const parsed = new URL(/^[a-z][a-z\d+.-]*:\/\//i.test(url) ? url : `https://${url}`)
+    const isHttp = parsed.protocol === 'http:' || parsed.protocol === 'https:'
+    if (!isHttp || parsed.username || parsed.password) return undefined
+    return iconRouteUrl(parsed.origin)
   } catch {
     return undefined // also covers apiBaseUrl() throwing when the variable is unset
   }

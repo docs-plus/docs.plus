@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import type { PrismaClient } from '../../../../generated/prisma/client'
 import type { Logger } from 'pino'
 
+import type { PrismaClient } from '../../../../generated/prisma/client'
 import { createComputeDocumentChanges } from '../../domain/computeDocumentChanges'
 
 const silentLogger = { info: () => {}, warn: () => {}, debug: () => {} } as unknown as Logger

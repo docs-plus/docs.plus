@@ -58,10 +58,10 @@ function anonTableGrants(label: string, sql: string): Set<string> {
  */
 function usersColumns(label: string, sql: string, role: string): Set<string> {
   const re = /grant\s+([^;]*?)\s+on\s+(?:table\s+)?([^;]*?)\s+to\s+([^;]+);/gi
+  const usersTarget =
+    /(?<![\w."])(?:"?public"?\.)?"?users"?(?![\w"])|all\s+tables\s+in\s+schema\s+"?public"?\b/i
   const out = new Set<string>()
   for (const [stmt, privileges, targets, roles] of sql.matchAll(re)) {
-    const usersTarget =
-      /(?<![\w."])(?:"?public"?\.)?"?users"?(?![\w"])|all\s+tables\s+in\s+schema\s+"?public"?\b/i
     if (!usersTarget.test(targets)) continue
     const grantees = roles.split(/[\s,]+/).map((r) => r.replaceAll('"', '').toLowerCase())
     if (!grantees.some((r) => [role, 'public'].includes(r))) continue

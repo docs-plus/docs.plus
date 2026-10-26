@@ -68,8 +68,7 @@ jobs:
       REDIS_HOST: localhost
       REDIS_PORT: '6379'
       REDIS_DB: '15'
-      # The Supabase stub started below (#586). It serves Auth and the users
-      # table, so the signed-in E2E checks run here.
+      # The Supabase stub started below (#586).
       SUPABASE_URL: http://127.0.0.1:54399
       # A failed test user mint fails the step and prints why, instead of a skip.
       E2E_REQUIRE_AUTH: '1'
@@ -131,14 +130,13 @@ jobs:
         working-directory: apps/hocuspocus.server
         run: bun run test:e2e:content-inject
 
-      # The user-identity and read-only checks sign in through the stub. A
-      # failed mint fails the step, because E2E_REQUIRE_AUTH is set.
+      # The user-identity and read-only checks sign in through the stub.
       - name: 🧪 Run real-infra E2E (document versions)
         working-directory: apps/hocuspocus.server
         run: bun --env-file=../../.env.local scripts/e2e-versions.ts
 
       # The signed-out checks need no Auth. The signed-in checks sign in
-      # through the stub. A failed mint fails the step, not a SKIPPED result.
+      # through the stub.
       - name: 🧪 Run real-infra E2E (change attribution)
         working-directory: apps/hocuspocus.server
         run: bun run test:e2e:change-attribution

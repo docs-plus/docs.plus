@@ -1,7 +1,7 @@
-import type { PrismaClient } from '../../generated/prisma/client'
 import { beforeEach, describe, expect, test } from 'bun:test'
 import * as Y from 'yjs'
 
+import type { PrismaClient } from '../../generated/prisma/client'
 import { recordClientAuthors } from '../client-authors'
 
 interface WrittenRow {
