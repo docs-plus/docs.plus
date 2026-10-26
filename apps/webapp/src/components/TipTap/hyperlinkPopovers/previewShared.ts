@@ -13,7 +13,7 @@ import { fetchMetadata, type MetadataResponse } from './fetchMetadata'
 import { hrefEventHandler } from './hrefEventHandler'
 import { describeInternalDocumentLink } from './internalDocumentLink'
 import { runInternalDocumentLink } from './internalDocumentLinkActions'
-import { pickPreviewImageSrc } from './linkMarkUtils'
+import { previewIconCandidates } from './linkMarkUtils'
 import type { InternalDocumentLink } from './types'
 
 /**
@@ -102,15 +102,17 @@ export const createMetadataContent = (data: MetadataResponse | null, href: strin
   titleLink.addEventListener('click', hrefEventHandler(href))
   container.append(titleLink)
 
-  // Prefer the metadata image; with none, fall back to the special-icon SVG below.
-  const imageUrl = pickPreviewImageSrc(data, href)
-  if (imageUrl) {
+  // A site icon when one loads; with no http(s) origin, the special-icon SVG below.
+  const candidates = previewIconCandidates(data, href)
+  if (candidates.length > 0) {
+    let next = 1
     const img = createHTMLElement('img', {
-      src: imageUrl,
-      alt: data?.image?.alt || data?.title || '',
+      src: candidates[0],
+      alt: '',
       className: 'metadata-image',
       onerror: function (this: HTMLImageElement) {
-        this.style.display = 'none'
+        if (next < candidates.length) this.src = candidates[next++]
+        else this.style.display = 'none'
       }
     })
     container.prepend(img)

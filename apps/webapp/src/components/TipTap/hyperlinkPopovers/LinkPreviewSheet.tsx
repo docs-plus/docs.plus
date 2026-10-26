@@ -10,7 +10,7 @@ import { Fragment, useMemo, useState } from 'react'
 
 import { InternalLinkChip } from './components/InternalLinkChip'
 import { classifyInternalDocumentLink } from './internalDocumentLink'
-import { pickPreviewImageSrc } from './linkMarkUtils'
+import { previewIconCandidates } from './linkMarkUtils'
 import { buildLinkPreviewActions } from './linkPreviewActions'
 import { useLinkMetadata } from './useLinkMetadata'
 
@@ -25,7 +25,10 @@ interface LinkPreviewSheetProps {
 const ExternalLinkHeader = ({ data: { href } }: LinkPreviewSheetProps) => {
   const { status, data } = useLinkMetadata(href)
 
-  const imageUrl = pickPreviewImageSrc(data, href)
+  const candidates = previewIconCandidates(data, href)
+  // Index of the candidate on screen; a failed load moves on to the next one.
+  const [iconAt, setIconAt] = useState(0)
+  const imageUrl = candidates[iconAt]
   const title = data?.title || href
   const description = data?.description
   const showHrefLine = Boolean(data?.title && data.title !== href)
@@ -50,12 +53,11 @@ const ExternalLinkHeader = ({ data: { href } }: LinkPreviewSheetProps) => {
       <span className="inline-flex size-6 shrink-0 items-center justify-center">
         {imageUrl ? (
           <img
+            key={imageUrl}
             src={imageUrl}
-            alt={data?.image?.alt || title}
+            alt=""
             className="size-5 rounded"
-            onError={(event) => {
-              event.currentTarget.style.display = 'none'
-            }}
+            onError={() => setIconAt((at) => at + 1)}
           />
         ) : (
           <span className="bg-base-300 size-5 rounded" aria-hidden />

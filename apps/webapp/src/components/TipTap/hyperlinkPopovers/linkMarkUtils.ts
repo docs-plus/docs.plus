@@ -15,21 +15,20 @@ const safeImageSrc = (url: string | undefined): string | undefined => {
   return /^https?:\/\//i.test(url) ? url : undefined
 }
 
-type PreviewImageData = Pick<
-  MetadataResponse,
-  'icon' | 'favicon' | 'publisher' | 'image' | 'oembed'
-> | null
+type PreviewIconData = Pick<MetadataResponse, 'icon' | 'publisher'> | null
 
 /**
- * Preview image order: icon, publisher logo, image, site icon, oEmbed thumbnail.
- * `favicon` is only a fallback marker; we build our own URL from the href.
+ * Icon slot candidates, tried in order until one loads: our icon route (the pad's own link
+ * icon), the page icon, the publisher logo. `image` and the oEmbed thumbnail are content
+ * pictures such as share cards, so they never fill the icon slot (#633).
  */
-export const pickPreviewImageSrc = (data: PreviewImageData, href: string): string | undefined =>
-  safeImageSrc(data?.icon) ||
-  safeImageSrc(data?.publisher?.logo) ||
-  safeImageSrc(data?.image?.url) ||
-  (data?.favicon ? getSiteIconUrl(href) : undefined) ||
-  safeImageSrc(data?.oembed?.thumbnail)
+export const previewIconCandidates = (data: PreviewIconData, href: string): string[] => [
+  ...new Set(
+    [getSiteIconUrl(href), safeImageSrc(data?.icon), safeImageSrc(data?.publisher?.logo)].filter(
+      (src): src is string => !!src
+    )
+  )
+]
 
 /**
  * Link text from the document. The live <a> wins over a stale nodePos; the href match stops a neighbour's text.
