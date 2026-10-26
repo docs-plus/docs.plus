@@ -22,6 +22,14 @@ Moved verbatim out of the repo-root [AGENTS.md](../AGENTS.md) so it loads only w
 - If an extension playground is running via `bun run playground` (`bun --hot docs-playground`), restart it after `bun run build`. The tsup `clean: true` setting can wipe `dist/` and leave the hot server serving 500 for `dist/styles.css`.
 - Import/export for hyperlink and every hypermultimedia kit node is not complete until clean-room Cypress covers both markdown **and** HTML round-trips (`getHTML()` → `setContent()`). The kit has nine nodes, including Spotify. The shared spec `cypress/e2e/serialization/html-round-trip.cy.ts` covers all kit nodes; when fixing one node's copy/paste, extend it for all kit nodes, not only the broken one. The HTML leg matters because `renderHTML` emits iframe widget URLs that each node must unwrap back to canonical page URLs (see §Hypermultimedia Extension).
 
+### Mermaid Extension
+
+- **One node view per node name.** ProseMirror asks only the first `codeBlock` source. An app `addNodeView` always beats plugin views. Among plugin views, a higher priority comes first, then the extension listed last. Proven on Tiptap 3.31.3 and 3.32.0 (`Notes/release-2.2.0/tiptap-nodeview-opus/investigation/REPORT.md`).
+- Our plugin view hands every non-mermaid block to the next plugin view (#627). It finds itself by constructor identity, never by the `mermaid$` plugin key.
+- `mermaidNodeView(editor)` (#628) is the only supported way to draw diagrams under an app's own `addNodeView`. It returns `null` for non-mermaid blocks and shares the fold state with the plugin through extension storage.
+- The owner warning (#629) is development-only and fires once per editor. It stays silent when the app uses the factory. The flag lives in storage, because the plugin view is rebuilt when the plugin set changes.
+- Settled 2026-10-26: keep `codeBlock` with this node view. Decorations failed the parity red line, and a dedicated `mermaidDiagram` node failed 6 HARD tests (`Notes/release-2.2.0/tiptap-nodeview-opus/DECISION.md`). Bring new evidence before re-proposing either.
+
 ### Hyperlink Extension
 
 Extension-internal rules (schema, commands, click handling, safety/normalization, metadata/preview, the `specialUrls` catalog, public API surface, popover engine, clean-room Cypress harness) live in [`extensions/extension-hyperlink/AGENTS.md`](extension-hyperlink/AGENTS.md). Read that file before touching anything under `extensions/extension-hyperlink/src/`. The webapp-side popover integration is below.
