@@ -4,7 +4,7 @@ import Button from '@components/ui/Button'
 import { DialogActions } from '@components/ui/Dialog'
 import { FieldHelp, fieldLabelClassName } from '@components/ui/FieldHelp'
 import TextInput from '@components/ui/TextInput'
-import { normalizeHref, validateURL } from '@docs.plus/extension-hyperlink'
+import { normalizeHref, wholeLink } from '@docs.plus/extension-hyperlink'
 import { type FormEvent, useId, useLayoutEffect, useRef, useState } from 'react'
 
 import { ComposerLinkModalShell } from './ComposerLinkModalShell'
@@ -43,12 +43,12 @@ export function ComposerLinkEditorDialog({
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
-    const raw = href.trim()
-    if (!validateURL(raw, { customValidator: validate })) {
+    const link = wholeLink(href, { customValidator: validate })
+    if (!link) {
       setShowError(true)
       return
     }
-    const ok = onSave({ href: normalizeHref(raw), text: text.trim() || undefined })
+    const ok = onSave({ href: normalizeHref(link), text: text.trim() || undefined })
     if (ok === false) setShowError(true)
   }
 

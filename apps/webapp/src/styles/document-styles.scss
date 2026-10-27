@@ -63,15 +63,16 @@
   box-shadow: var(--shadow-overlay);
 }
 
-// Text comes from Tailwind classes in `linkHovercard.ts`. The page image is a flush
-// well at the 1.91:1 share-card ratio, so the card never jumps when the image loads.
+// Text comes from Tailwind classes in `linkHovercard.ts`. The page image is a flush well
+// at the 1.91:1 share-card ratio. A late image fades in; a late failure folds the well away.
 .hyperlink-hovercard {
-  width: 20rem;
+  width: 24rem;
   max-width: calc(100vw - 1rem);
   overflow: hidden;
 
   .hovercard-image {
     aspect-ratio: 1.91 / 1;
+    overflow: hidden;
     background-color: var(--color-base-200);
     border-bottom: 1px solid var(--color-base-300);
 
@@ -80,6 +81,21 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+    }
+
+    &:not([data-state='ready']) img,
+    &[data-state='failed'] {
+      opacity: 0;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      transition:
+        height var(--motion-panel) var(--motion-ease-exit),
+        opacity var(--motion-panel) var(--motion-ease-exit);
+
+      img {
+        transition: opacity var(--motion-panel) var(--motion-ease-enter);
+      }
     }
   }
 }

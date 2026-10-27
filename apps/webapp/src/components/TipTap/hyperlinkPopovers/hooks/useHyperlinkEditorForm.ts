@@ -1,4 +1,4 @@
-import { normalizeHref, validateURL } from '@docs.plus/extension-hyperlink'
+import { normalizeHref, wholeLink } from '@docs.plus/extension-hyperlink'
 import { buildBookmarkHref, buildHeadingHref } from '@utils/link-helpers'
 import {
   type FormEvent,
@@ -96,12 +96,12 @@ export function useHyperlinkEditorForm({
   }, [variant, mode, initialHref])
 
   const applyTyped = useCallback(() => {
-    const raw = href.trim()
-    if (!validateURL(raw, { customValidator: validate })) {
+    const link = wholeLink(href, { customValidator: validate })
+    if (!link) {
       setShowError(true)
       return
     }
-    const normalized = normalizeHref(raw)
+    const normalized = normalizeHref(link)
     let applied: boolean | void
     if (mode === 'edit') {
       applied = onApply({ href: normalized, text: editText })

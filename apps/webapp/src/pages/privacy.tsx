@@ -121,7 +121,8 @@ export default function PrivacyPage() {
         </p>
         <p>
           Our logs keep your IP address, your browser's user agent and the request path. For a
-          preview, our server also logs the host of the linked site, never the full link.
+          preview, our server also logs the host of the linked site, never the full link. Our error
+          reports follow the same rule: they keep only the host of a linked site.
         </p>
         <p>Some things load straight from other sites, so those sites see you:</p>
         <ul className="list-disc space-y-2 pl-5">

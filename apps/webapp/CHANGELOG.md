@@ -51,6 +51,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- **The link hovercard is wider, and its picture no longer pops.** The card is 24rem wide, and the
+  picture keeps its 1.91:1 ratio. The card waits up to 300 ms for the picture. A later picture
+  fades in, and a later failure folds the picture well away instead of removing it at once
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- **The link forms store the whole link without trailing punctuation.** The pad form and the
+  chat link dialog store `wholeLink(value)`, so `google.com,` becomes `https://google.com`.
 - **The link form refuses a sentence.** `validateURL` from the hyperlink extension now accepts
   only one whole link. Before, `hello google.com` passed the pad and chat link forms.
 - **Editing a link's URL no longer reverts a co-editor's link text.** When you leave the Text
