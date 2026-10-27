@@ -62,7 +62,7 @@ describe('previewHyperlinkPopover + editHyperlinkPopover — prebuilt preview / 
       cy.get(PREVIEW).should('not.exist')
     })
 
-    it('dismisses on Escape when focus is inside the toolbar', () => {
+    it('dismisses on Escape when focus is inside the preview', () => {
       // The Escape handler is attached to the floating-popover element, so focus
       // must live inside that element for the key to reach the listener. The
       // create popover behaves the same way, where the input is auto-focused.
@@ -71,6 +71,34 @@ describe('previewHyperlinkPopover + editHyperlinkPopover — prebuilt preview / 
       cy.get(`${PREVIEW} .edit`).focus()
       cy.focused().realPress('Escape')
       cy.get(PREVIEW).should('not.exist')
+    })
+
+    it('Tab reaches a control that renders after open, skips unfocusable ones, and wraps', () => {
+      cy.get('#editor a').click()
+      cy.get(PREVIEW).should('be.visible')
+      // These buttons stand in for controls that render after open. Tab must
+      // skip the disabled one and the tabindex="-1" one.
+      cy.get(PREVIEW).then(($preview) => {
+        const doc = $preview[0].ownerDocument
+        const button = (className: string): HTMLButtonElement => {
+          const el = doc.createElement('button')
+          el.className = className
+          el.textContent = className
+          return el
+        }
+        const disabled = button('late-disabled')
+        disabled.disabled = true
+        const skipped = button('late-skipped')
+        skipped.tabIndex = -1
+        $preview[0].append(disabled, skipped, button('late-control'))
+      })
+      cy.get(`${PREVIEW} .remove`).focus()
+      cy.focused().realPress('Tab')
+      cy.focused().should('have.class', 'late-control')
+      cy.focused().realPress('Tab')
+      cy.focused().should('match', `${PREVIEW} > a`)
+      cy.focused().realPress(['Shift', 'Tab'])
+      cy.focused().should('have.class', 'late-control')
     })
   })
 
@@ -211,7 +239,9 @@ describe('previewHyperlinkPopover + editHyperlinkPopover — prebuilt preview / 
 
     it('popover shells carry per-surface roles and accessible names', () => {
       cy.get('#editor a').click()
-      cy.get('.floating-popover').should('have.attr', 'role', 'toolbar')
+      cy.get('.floating-popover')
+        .should('have.attr', 'role', 'dialog')
+        .and('have.attr', 'aria-label', 'Link preview')
       cy.get(`${PREVIEW} .edit`).click()
       cy.get('.floating-popover')
         .should('have.attr', 'role', 'dialog')

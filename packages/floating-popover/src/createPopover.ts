@@ -94,28 +94,31 @@ function createVirtualReference(coords: VirtualCoordinates): VirtualElement {
   }
 }
 
-// Wraps focusables in a Tab cycle. Returns removers so each `setContent`
-// can drop the prior batch before re-binding — without it the per-focusable
-// `keydown` listeners leaked across content swaps and on destroy.
-function setupKeyboardNav(container: HTMLElement): Array<() => void> {
-  const focusable = container.querySelectorAll<HTMLElement>(
-    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-  )
-  if (!focusable.length) return []
-  const removers: Array<() => void> = []
-  focusable.forEach((el, i) => {
-    const onKeydown = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return
-      e.preventDefault()
-      const next = e.shiftKey
-        ? (i - 1 + focusable.length) % focusable.length
-        : (i + 1) % focusable.length
-      focusable[next].focus()
-    }
-    el.addEventListener('keydown', onKeydown)
-    removers.push(() => el.removeEventListener('keydown', onKeydown))
-  })
-  return removers
+const FOCUSABLE_SELECTOR = ['button', '[href]', 'input', 'select', 'textarea', '[tabindex]']
+  .map((part) => `${part}:not([tabindex="-1"])`)
+  .join(', ')
+
+// Skips controls that cannot take focus. Without this, Tab onto a disabled
+// Apply button is a dead end: the key is cancelled and focus() does nothing.
+const canTakeFocus = (el: HTMLElement): boolean =>
+  !el.matches(':disabled') && !el.closest('[inert]') && el.getClientRects().length > 0
+
+// Wraps Tab inside the popover. The cycle is read on each Tab, so a control
+// that renders after open joins it.
+function setupKeyboardNav(root: HTMLElement): () => void {
+  const onKeydown = (e: KeyboardEvent) => {
+    if (e.key !== 'Tab') return
+    const focusable = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+      canTakeFocus
+    )
+    const i = focusable.indexOf(e.target as HTMLElement)
+    if (i === -1) return
+    e.preventDefault()
+    const n = focusable.length
+    focusable[e.shiftKey ? (i - 1 + n) % n : (i + 1) % n].focus()
+  }
+  root.addEventListener('keydown', onKeydown)
+  return () => root.removeEventListener('keydown', onKeydown)
 }
 
 export function createPopover(options: PopoverOptions): Popover {
@@ -184,16 +187,9 @@ export function createPopover(options: PopoverOptions): Popover {
   contentContainer.className = 'floating-popover-content'
   root.appendChild(contentContainer)
 
-  const navListeners: Array<() => void> = []
-  const clearNavListeners = (): void => {
-    while (navListeners.length) navListeners.pop()!()
-  }
-
   const setContent = (el: HTMLElement): void => {
-    clearNavListeners()
     contentContainer.innerHTML = ''
     contentContainer.appendChild(el)
-    navListeners.push(...setupKeyboardNav(root))
   }
 
   setContent(content)
@@ -266,7 +262,6 @@ export function createPopover(options: PopoverOptions): Popover {
     terminated = true
     autoUpdateCleanup?.()
     autoUpdateCleanup = null
-    clearNavListeners()
     cleanups.forEach((fn) => fn())
     cleanups.length = 0
     unregister?.()
@@ -315,7 +310,7 @@ export function createPopover(options: PopoverOptions): Popover {
       }
     }
     root.addEventListener('keydown', onKeyDown)
-    cleanups.push(() => root.removeEventListener('keydown', onKeyDown))
+    cleanups.push(() => root.removeEventListener('keydown', onKeyDown), setupKeyboardNav(root))
     onShow?.()
   }
 

@@ -23,7 +23,8 @@ export function openPreviewHyperlink(opts: PreviewHyperlinkOptions): boolean {
     content,
     placement: 'bottom',
     showArrow: true,
-    role: 'toolbar',
+    role: 'dialog',
+    ariaLabel: 'Link preview',
     // Outside-click teardown removes the icon buttons without a mouseleave —
     // the shared tooltip must die with the surface or it lingers on screen.
     onHide: hideTooltip
