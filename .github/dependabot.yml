@@ -45,11 +45,6 @@ updates:
       # pele: bump by hand; rerun the render measure, the security probe rows,
       # and check that Pele made no breaking change.
       - dependency-name: 'pele'
-      # The metascraper family is pinned to 5.50.6 because 5.51.1 crashes REST
-      # startup on Bun. AGENTS.md holds the exit condition.
-      - dependency-name: 'metascraper'
-      - dependency-name: 'metascraper-*'
-      - dependency-name: '@metascraper/*'
       # Parked majors. eslint-config-next 16.3 is issue #172. TypeScript 7,
       # Prisma 7, and Babel 8 each need their own migration.
       - dependency-name: 'eslint-config-next'

@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/bun'
 
 import { AppError } from './errors'
-import { sentryDataCollection } from './sentryDataCollection'
+import { originOnlyBreadcrumb, sentryDataCollection } from './sentryDataCollection'
 
 // DSN-gated: a no-op until GLITCHTIP_DSN is set, so the SDK ships dark and is
 // switched on by env without another deploy. serverName separates the 3 roles.
@@ -13,7 +13,8 @@ if (dsn) {
     release: process.env.GIT_HASH || undefined,
     serverName: process.env.SENTRY_ROLE || 'hocuspocus',
     tracesSampleRate: 0,
-    dataCollection: sentryDataCollection
+    dataCollection: sentryDataCollection,
+    beforeBreadcrumb: originOnlyBreadcrumb
   })
 } else if (process.env.NODE_ENV === 'production') {
   // Pre-pino boot warning — instrument loads before logger.ts on every entrypoint.

@@ -1,0 +1,175 @@
+# Link-metadata benchmark
+
+These are the numbers behind the switch from metascraper to `infra/headScraper.ts` (#242), and the
+steps to measure them again. All numbers below come from one laptop on 2026-10-27. After a deploy,
+use [After a deploy: check production](#after-a-deploy-check-production) to compare.
+
+## Results (2026-10-27)
+
+### Parse speed
+
+Each number is the median of 30 timed rounds per parser on one saved page head. The two parsers
+ran in turn after 3 warm-ups. This is the parse step only. Most of a real preview request waits
+on the remote site.
+
+| Set     | Pages | metascraper p50 | headScraper p50 | metascraper p95 | headScraper p95 | Speed-up per page, median (range) | Speed-up, total time |
+| ------- | ----- | --------------- | --------------- | --------------- | --------------- | --------------------------------- | -------------------- |
+| dev     | 49    | 0.947 ms        | 0.108 ms        | 9.639 ms        | 0.500 ms        | 7.6x (3.5x–32.2x)                 | 13x                  |
+| holdout | 46    | 0.713 ms        | 0.107 ms        | 7.444 ms        | 0.400 ms        | 7.1x (3.3x–36.7x)                 | 9.3x                 |
+
+A page is in the holdout set when the first hex digit of its sha256 is `8` to `f`. Fixes could look
+at dev pages only. The holdout set was judged once, at the end.
+
+### Field quality, old against new
+
+On the 46 holdout pages, headScraper lost no title, description or image that metascraper found.
+
+| Field       | Same | Same after folding | Differ | metascraper only | Neither |
+| ----------- | ---- | ------------------ | ------ | ---------------- | ------- |
+| title       | 42   | 1                  | 0      | 0                | 3       |
+| description | 34   | 1                  | 2      | 0                | 9       |
+| image       | 39   | 0                  | 0      | 0                | 7       |
+| author      | 7    | 0                  | 0      | 2                | 37      |
+| date        | 6    | 0                  | 0      | 2                | 38      |
+
+"Same after folding" means only quote marks, spaces or an ellipsis differ. The 2 description
+differences are the cut style: metascraper ends a cut with `…`, headScraper with `...`. The
+author and date rows are body-text rules, such as bylines, that headScraper does not read on
+purpose. These comparisons ran before the `name="og:*"` fix, which only adds values.
+
+### Crafted pages
+
+A crafted page is a head built to be slow, for example deep nesting or a huge `@graph`. There are
+28 crafted inputs. metascraper stops at the next size once one input takes more than 10 s.
+
+| Input                         | Size      | metascraper | headScraper |
+| ----------------------------- | --------- | ----------- | ----------- |
+| deep tag nesting              | 262,139 B | 27.9 s      | under 1 ms  |
+| `@graph` outer keys x items   | 58,745 B  | 19.8 s      | under 1 ms  |
+| `<title>` dashes              | 262,122 B | 10.3 s      | under 1 ms  |
+| valid JSON-LD block under cap | 510,101 B | 14.297 ms   | 0.156 ms    |
+
+headScraper's slowest input at 1 MiB was a flood of `<article>` tags. It took 46.5, 46.7, 53.2,
+46.9 and 49.7 ms in five runs, so "about 50 ms at worst". The spread is machine noise. An A/B run
+showed the `name="og:*"` fix adds no time. The icon picker, `pickIconHref`, took 20.67 ms on a
+crafted 65,517 B head.
+
+### Match with the page's own tags
+
+The `reference` mode reads each saved head's `og:`, `twitter:` and `<title>` tags with plain
+regexes, then compares headScraper's value.
+
+| Saved heads | Field       | Agree | Differ | Reference only | headScraper only |
+| ----------- | ----------- | ----- | ------ | -------------- | ---------------- |
+| 95          | title       | 92    | 0      | 0              | 0                |
+| 95          | description | 77    | 0      | 0              | 1                |
+| 95          | image       | 72    | 0      | 0              | 7                |
+| 206         | title       | 195   | 0      | 0              | 0                |
+| 206         | description | 168   | 2      | 0              | 1                |
+| 206         | image       | 154   | 0      | 0              | 17               |
+
+"headScraper only" means the page has no such tag, and a fallback rule found a value. The 2
+description differences come from the dateline rule kept from metascraper. It strips a leading
+"NASA - " or "DER STANDARD – ".
+
+### Live coverage
+
+A local REST server answered all 249 URLs in `scripts/bench-link-extractor.urls.txt`, with an empty
+cache. The run then loaded each image and site icon through our own routes, as the card does.
+
+| Grade      | URLs | Meaning                                                     |
+| ---------- | ---- | ----------------------------------------------------------- |
+| full       | 157  | title, description and an image that loads                  |
+| partial    | 30   | title plus a description or an image                        |
+| title-only | 9    | title only                                                  |
+| fallback   | 52   | every stage missed; the card shows the host                 |
+| wall       | 1    | the page was a bot check (Khan Academy, "Client Challenge") |
+
+Why the 52 fell back:
+
+- 35 sites answered 4xx to our honest User-Agent, for example AP, Reuters, NYT, WSJ, Bloomberg,
+  Reddit, Stack Overflow, eBay and Etsy.
+- 11 sent a page with no title. Amazon and IMDb sent a 2 KB challenge page. YouTube channel pages
+  and Pinterest build the title in the browser.
+- 6 timed out.
+
+Of the cards that named an image, 7 failed to load. Three were over the 2 MiB relay cap (Figma,
+Shopify, Corriere). Three were SVG, which the relay refuses (Hacker News twice, Onet). One named a
+file the site no longer has (TechCrunch). 29 site icons failed.
+
+| Region          | URLs | full | fallback |
+| --------------- | ---- | ---- | -------- |
+| US              | 16   | 9    | 7        |
+| Europe          | 48   | 35   | 7        |
+| US and Europe   | 39   | 17   | 13       |
+| Worldwide mixed | 146  | 96   | 25       |
+
+### Run conditions
+
+- Apple M5 Max, 18 cores, 48 GB, macOS (`darwin 27.0.0`), Bun 1.4.4.
+- metascraper 5.50.6 with cheerio 1.2.0; `entities` 7.0.1.
+- Code: commit `f96bb6766` plus the uncommitted parser change. Every result file records the
+  sha256 prefix of `headScraper.ts`, the script and `bun.lock`.
+- Page heads were fetched once on 2026-10-27 with the honest `DocsplusBot` User-Agent and frozen.
+
+## Measure it again
+
+Run every command from `apps/hocuspocus.server`. `<dir>` is any empty folder outside the repo.
+
+1. Freeze the page heads: `bun scripts/bench-link-extractor.ts fetch <dir>`. Expect about 206 of
+   249 heads; the rest are refused or time out.
+2. Compare the parsers: `bun scripts/bench-link-extractor.ts run <dir> 30 holdout`, then `dev`. This
+   needs metascraper, so check out `f96bb6766` first. On later commits it times headScraper alone.
+3. Time the crafted inputs: `bun scripts/bench-link-extractor.ts attack <dir>`. Any input above
+   60 ms at 1 MiB needs a look.
+4. Check the page tags: `bun scripts/bench-link-extractor.ts reference <dir>`.
+5. Grade live cards against a local REST server. Clear the local cache first, or `cached` rows
+   grade an older answer:
+
+   ```bash
+   redis-cli -h 127.0.0.1 --scan --pattern 'meta:*' | xargs -r redis-cli -h 127.0.0.1 del
+   bun scripts/bench-link-extractor.ts coverage <dir> http://localhost:4000
+   ```
+
+Each mode writes a JSON file into `<dir>` with the machine, the commit and the code hashes. The
+2026-10-27 files live in the maintainer's local notes, under
+`Notes/local-docs/2026-10-26-242-hovercard/bench/`.
+
+## After a deploy: check production
+
+Production cannot repeat the parse speed. The rule against heavy scripts in production containers
+forbids `run` and `attack` there. The `stages` log durations include network time, so they are
+not parse times. Parse speed stays a laptop measurement.
+
+Production can show whether cards still arrive. Check that with `coverage`:
+
+1. Wait 24 hours after the deploy. A cached answer lives that long (`CACHE_TTL_POSITIVE_SECONDS`),
+   so earlier answers still come from metascraper. If you cannot wait, count only rows with
+   `cached: false`.
+2. Read the production `RATE_LIMIT_MAX` with `printenv RATE_LIMIT_MAX` in the REST container. One
+   run sends 249 metadata requests and up to 249 image requests on the `link-metadata` bucket, and
+   249 icon requests on the `metadata-icon` bucket. Each bucket allows `RATE_LIMIT_MAX` x 10 per
+   15 minutes per address. The code default is 100 (`env.schema.ts`), so each bucket then allows
+   1000, and `.env.example` sets 1000. One run fits under either value.
+3. Get the maintainer's approval. A run writes about 249 entries into the shared production Redis,
+   and the production server fetches every listed site.
+4. Run it from a laptop, never inside a container:
+
+   ```bash
+   bun scripts/bench-link-extractor.ts coverage <dir> https://prodback.docs.plus
+   ```
+
+5. Compare each URL's `grade` with the 2026-10-27 file. A data-center address meets more bot walls
+   than a home laptop, so some extra fallbacks are expected.
+6. Read the reason for each new fallback in the REST log. Search for `metadata request completed`;
+   each entry has the host, `pipeline_stage` and the `stages` list with a `reason` such as
+   `status:4xx`, `timeout` or `no-title`. The log keeps the host only, never the path.
+
+A URL is a regression when it moves from full or partial to fallback with the reason `no-title`, or
+to wall. That points at the parser: freeze that head with `fetch`, then run `reference` on it. A
+move to fallback with `status:4xx` or `timeout` is the site, not the parser. No action is needed.
+
+Never run `attack` against production, and never clear the production Redis.
+
+If production parse times are needed later, the html stage could log its parse duration beside
+`durationMs`. That is a proposal; it is not built.

@@ -68,6 +68,9 @@ Migration section for when it goes. As the last step, run
 - The production deploy builds the images in their own `images` job first. The deploy stops
   before it changes production when an image is missing, or when the host env file changed
   between the two jobs ([#565](https://github.com/docs-plus/docs.plus/issues/565)).
+- Link previews are read by our own page parser, not metascraper. On a snapshot of 95 page
+  heads, it parsed the median page in about one seventh of the time. It also finds pictures and
+  descriptions that some sites tag in a non-standard way ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - Link previews work on more sites and arrive sooner. The server reads only the page head, up
   to 1 MiB, and names itself as `DocsplusBot`, never as another crawler. We fetched the same 30
   links once before this change and once after. Cards with a title, a description and a real
@@ -100,6 +103,8 @@ Migration section for when it goes. As the last step, run
 - The pad and chat link forms refuse text that is not one whole link. Before, `hello google.com`
   passed and was stored as `https://hello google.com`
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- The link forms store `google.com,` as `https://google.com`, and `user@example.com.` as an
+  email link. Before, the trailing punctuation stayed in the stored link ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - Changing only a link's URL no longer undoes a co-editor's change to the link text
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - A typed link that ends in a closing parenthesis, such as a Wikipedia `Foo_(bar)` link, keeps
@@ -126,9 +131,12 @@ Migration section for when it goes. As the last step, run
 - **New pgmq and storage objects no longer start open to anon and authenticated.**
   Needs Supabase migration `20261026120000`
   ([#570](https://github.com/docs-plus/docs.plus/issues/570)).
+- **A crafted page can no longer block the server.** Our old page parser took 28 s on one
+  crafted page. The new one took about 50 ms at worst on every crafted input we tried, up to 1 MiB ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - **Error reports no longer carry the `url` query value of a link preview request.** The webapp
   and the server filter it from `GET /api/metadata` and `GET /api/metadata/image` before they send
-  a report ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+  a report. Server reports of the preview fetch keep only the host of the linked site, and the
+  privacy page says so ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 
 ### Removed
 

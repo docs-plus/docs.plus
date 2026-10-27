@@ -21,8 +21,8 @@ export default [
               message: 'domain/ must not import ioredis; use the Cache port'
             },
             {
-              group: ['metascraper', 'metascraper-*', 'metascraper-*/**'],
-              message: 'domain/ must not import metascraper; use the Scraper port'
+              group: ['entities', 'entities/**'],
+              message: 'domain/ must not decode HTML; the Scraper adapter in infra/ does'
             }
           ]
         }

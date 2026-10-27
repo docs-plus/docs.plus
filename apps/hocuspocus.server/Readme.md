@@ -99,7 +99,7 @@ src/
 
 - **One public surface.** `index.ts` exports only `init`, the wire types and the two path constants. Outside files import nothing else.
 - **DI at the seam.** `init({ redis, logger, iconMaxBytes, publicUrl })` builds its own adapters in a closure; it never calls `getRedisClient()` or reads env directly.
-- **Framework-free domain.** `domain/` imports zero infra SDKs (no Hono, ioredis, metascraper). Adapters live in `infra/`; domain↔infra contracts are tiny inline port types in `domain/types.ts`.
+- **Framework-free domain.** `domain/` imports zero infra SDKs (no Hono, ioredis, entities). Adapters live in `infra/`; domain↔infra contracts are tiny inline port types in `domain/types.ts`.
 - **Stable wire contract.** Request (`http/schema.ts`) and response (`domain/types.ts`) are published; additive changes only within v1.
 - **No shared mutable state**, no top-level side effects, and tests live inside `__tests__/`.
 

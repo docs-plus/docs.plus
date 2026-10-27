@@ -10,8 +10,7 @@ import {
 import { primaryLangSubtag } from './cache'
 
 // Bounds the bytes read and parsed; a 5 MiB parse cost about 850 ms and 116 MiB of heap.
-// It does not bound parse CPU: metascraper is quadratic on a crafted title. A 120 KB title
-// measured 1.6 s, so a 1 MiB head can block the event loop far longer.
+// The head scraper's slowest crafted 1 MiB input measured 46 to 53 ms (scripts/bench-link-extractor.ts).
 const MAX_HEAD_BYTES = 1024 * 1024
 
 const META_CHARSET_RE = /<meta[^>]+charset\s*=\s*["']?([\w-]+)/i

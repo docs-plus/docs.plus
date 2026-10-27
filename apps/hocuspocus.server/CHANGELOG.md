@@ -72,6 +72,14 @@ Before you deploy this commit, check that `.env.production` holds both `VAPID_PU
 
 ### Changed
 
+- **The html stage parses page heads with our own scraper, not metascraper
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).** `infra/headScraper.ts` reads the same head, JSON-LD and title rules in one
+  `HTMLRewriter` pass. The benchmark used a snapshot of 95 page heads fetched on 2026-10-27,
+  on one Apple M5 Max laptop with Bun 1.4.4. The median page parsed in about one seventh of
+  metascraper's time, and pages ranged from 3 to 37 times faster. On 46 pages held out from tuning, no title, description or picture
+  was lost. It also reads `name="og:*"` tags and meta names in any case, which metascraper missed.
+  MDN, go.dev and Dropbox now get a picture, and 163.com and Ryanair a description. It keeps the page's own quote marks, and it no longer reads author or date from body
+  text such as bylines. `src/modules/link-metadata/BENCHMARK.md` holds the numbers and the method.
 - **Link-metadata fetches name docs.plus and read less
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).**
   - Every outbound link-metadata request names docs.plus truthfully. The html stage no longer
@@ -89,6 +97,13 @@ Before you deploy this commit, check that `.env.production` holds both `VAPID_PU
 - **Concurrent verifies of one Supabase access token share one Auth call
   ([#599](https://github.com/docs-plus/docs.plus/issues/599)).** A reconnect burst no longer
   calls Supabase Auth once per connection.
+
+### Removed
+
+- `metascraper`, its nine plugins, `@metascraper/helpers` and the root `overrides` pin ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+  Their `jsdom`, `re2`, `chrono-node` and `mime@4` copies leave the server tree with them. The
+  pin existed because those helpers crashed REST at boot on Bun. `entities` 7.0.1 now decodes
+  HTML.
 
 ### Fixed
 
@@ -128,6 +143,9 @@ Before you deploy this commit, check that `.env.production` holds both `VAPID_PU
 
 ### Security
 
+- **A crafted page can no longer block the REST server ([#242](https://github.com/docs-plus/docs.plus/issues/242)).** metascraper took 28 s
+  on one crafted 262 KB page. On all 28 crafted inputs up to 1 MiB,
+  the new scraper's worst case was 46 to 53 ms across five runs on the same laptop.
 - **Link-metadata values and logs are bounded
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).**
   - Every stored and returned string has a cap. Title, description and image alt keep 300
@@ -141,6 +159,8 @@ Before you deploy this commit, check that `.env.production` holds both `VAPID_PU
   - Error reports filter the `url` query value of a metadata request. `url` is on the Sentry
     `urlQueryParams` deny list. The deny is a substring match, so keys such as `redirect_url`
     are filtered too.
+  - Outgoing-request breadcrumbs keep only the origin (`originOnlyBreadcrumb`), so an error
+    report never holds the path of a page the server fetched.
 - **The metadata fallback no longer returns a Google favicon URL
   ([#517](https://github.com/docs-plus/docs.plus/issues/517)).** When `PUBLIC_RESTAPI_URL` is set,
   the fallback's `favicon` is this server's `/api/metadata/icon` URL for the site's origin. When it

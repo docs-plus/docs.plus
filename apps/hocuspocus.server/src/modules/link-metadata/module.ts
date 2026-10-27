@@ -7,7 +7,7 @@ import { runSpecialHandler } from './domain/stages/handlers'
 import { runHtmlScrape } from './domain/stages/htmlScrape'
 import { runOembed } from './domain/stages/oembed'
 import { createRouter } from './http/router'
-import { createMetascraper } from './infra/metascraper'
+import { createHeadScraper } from './infra/headScraper'
 import { createRedisCache } from './infra/redisCache'
 
 export interface InitDeps {
@@ -23,7 +23,7 @@ export interface InitResult {
 
 export const init = (deps: InitDeps): InitResult => {
   const cache = createRedisCache(deps.redis)
-  const scraper = createMetascraper()
+  const scraper = createHeadScraper()
 
   const stages = {
     oembed: runOembed,
