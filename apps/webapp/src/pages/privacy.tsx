@@ -17,7 +17,7 @@ export default function PrivacyPage() {
       title="Privacy"
       path={PRIVACY_PATH}
       updated={LEGAL_UPDATED}
-      description="How docs.plus uses account data, including Google email, name, and profile photo.">
+      description="How docs.plus uses account data, including the email address, name and profile photo from Google sign-in.">
       <LegalSection title="Who we are">
         <p>
           docs.plus is a free, open-source service for shared documents and chat.{' '}
@@ -27,38 +27,79 @@ export default function PrivacyPage() {
 
       <LegalSection title="What we collect">
         <ul className="list-disc space-y-2 pl-5">
-          <li>Google sign-in sends your email, name, and profile photo after you agree.</li>
           <li>
-            Email sign-in stores the address you type. We send a sign-in link to that address.
+            Google sign-in sends your email address, name, profile photo and Google account ID after
+            you agree.
+          </li>
+          <li>
+            Email sign-in stores the email address you type. We send a sign-in link to that address.
           </li>
           <li>Document and chat text you write, plus your name when you are signed in.</li>
           <li>Files you upload, and the account that uploaded them.</li>
-          <li>Notification choices, if you turn email notices on.</li>
+          <li>Notification choices, if you turn on notification mail.</li>
           <li>A session cookie so you stay signed in.</li>
-          <li>Your theme choice in the browser, under docsplus-theme.</li>
-          <li>Page views on the home page and on documents, if Google Analytics is set.</li>
+          <li>Your theme choice, saved in your browser as docsplus-theme.</li>
+          <li>
+            Your first name, email address and profile photo, saved in your browser as
+            docsplus:last-signed-in-account. The sign-in form uses it to suggest your last account.
+          </li>
+          <li>
+            Page views on the home page and on documents, through Google Analytics. Google Analytics
+            sets its own _ga cookies to count visits.
+          </li>
         </ul>
       </LegalSection>
 
       <LegalSection title="How we use Google data">
         <p>
-          When you choose Continue with Google or the One Tap prompt, Google sends us your email,
-          name, and profile photo.
+          When you choose Continue with Google or the One Tap prompt, Google sends us your email
+          address, name, profile photo and Google account ID. We ask Google for nothing else. We
+          cannot read your Gmail, Drive, Calendar or contacts.
         </p>
         <p>
-          We store those on your account. People who share a document or chat with you can see your
-          name and photo.
+          We use this data to create your account and sign you in. Your name and profile photo are
+          public: anyone on docs.plus can see them, signed in or not.
         </p>
-        <p>We do not sell this data. We do not use it for ads.</p>
+        <p>
+          We use your email address to send sign-in links and the mail you turn on. When you create
+          a document, we email our team its link with your name, email address and profile photo.
+        </p>
+        <p>
+          Supabase stores this data. Our document database at DigitalOcean also keeps the email
+          address of each document owner. Both encrypt stored data, and we send it over HTTPS.
+        </p>
+        <p>
+          Resend receives your email address to send our mail. An AI app that you connect receives
+          your name, profile photo and email address, as Connected AI apps explains.
+        </p>
+        <p>We do not sell any personal data. We do not use this data for ads.</p>
+        <p>
+          We keep this data until you close your account. To close it, email{' '}
+          <TextLink href={CONTACT_MAILTO}>{LEGAL_CONTACT_EMAIL}</TextLink>. We then remove your name
+          and profile photo and stop all mail. We keep your email address and Google account ID to
+          block the account. You can also remove docs.plus from your Google account at{' '}
+          <TextLink href="https://myaccount.google.com/permissions">
+            myaccount.google.com/permissions
+          </TextLink>
+          .
+        </p>
+        <p>
+          docs.plus's use and transfer of information received from Google APIs adheres to the{' '}
+          <TextLink href="https://developers.google.com/terms/api-services-user-data-policy">
+            Google API Services User Data Policy
+          </TextLink>
+          , including the Limited Use requirements.
+        </p>
       </LegalSection>
 
       <LegalSection title="Who we share with">
         <ul className="list-disc space-y-2 pl-5">
           <li>Supabase runs sign-in and stores accounts.</li>
-          <li>Google runs sign-in and, when configured, Analytics.</li>
+          <li>DigitalOcean hosts our servers and the document database.</li>
+          <li>Google runs sign-in and Analytics.</li>
           <li>Resend sends sign-in, notification and digest mail.</li>
+          <li>AI apps that you connect, as Connected AI apps explains.</li>
         </ul>
-        <p>We do not sell personal data.</p>
       </LegalSection>
 
       <LegalSection title="Link icons and previews">
@@ -96,8 +137,8 @@ export default function PrivacyPage() {
 
       <LegalSection title="Where mail data goes">
         <p>
-          Resend sends sign-in, notification and digest mail from Ireland. It stores your email
-          address, each mail, and the mail logs in the United States.
+          Resend sends our mail from Ireland. It stores your email address, each mail, and the mail
+          logs in the United States.
         </p>
         <p>
           Notification and digest mail include short extracts of document and chat text. Resend
@@ -122,32 +163,31 @@ export default function PrivacyPage() {
             It can read the documents you can open. It can edit documents and post in chat only in
             documents you own.
           </li>
-          <li>
-            It receives your name, profile picture and email address through the sign-in. It never
-            receives a phone number.
-          </li>
+          <li>It receives your name, profile photo and email address through the sign-in.</li>
           <li>
             Text the app reads goes to the company that runs the app. Their terms and privacy policy
             apply to that text.
           </li>
           <li>
-            For each tool call, we record the tool name, your account id, the app, and the result.
-            We also keep daily counts for about 35 days. We do not log document text.
+            For each tool call, we record the tool name, your account ID, the app, and whether the
+            call succeeded. We keep daily counts of tool calls for 35 days. We do not log document
+            text.
           </li>
         </ul>
         <p>
-          To stop an app, open Settings › Connected apps and choose Disconnect. The app may keep
-          what it already read.
+          To stop an app, open Settings › Connected apps and choose Disconnect. Disconnect does not
+          delete what the app already read.
         </p>
       </LegalSection>
 
       <LegalSection title="How long we keep data">
-        <p>We keep account and document data while you use the service.</p>
-        <p>A deleted document stays for 30 days. A purge then removes it.</p>
+        <p>We keep account data until you close your account.</p>
+        <p>A deleted document stays for 30 days. We then delete it permanently.</p>
         <p>Resend keeps sent mail and the mail logs for 30 days.</p>
         <p>
           If mail to your address bounces, or you mark it as spam, Resend keeps your address on its
-          suppression list until we remove it.
+          suppression list until we remove it. Email{' '}
+          <TextLink href={CONTACT_MAILTO}>{LEGAL_CONTACT_EMAIL}</TextLink> to ask us to remove it.
         </p>
       </LegalSection>
 
@@ -159,8 +199,8 @@ export default function PrivacyPage() {
             link.
           </li>
           <li>
-            Email <TextLink href={CONTACT_MAILTO}>{LEGAL_CONTACT_EMAIL}</TextLink> if you want us to
-            delete your account.
+            Email <TextLink href={CONTACT_MAILTO}>{LEGAL_CONTACT_EMAIL}</TextLink> to close your
+            account.
           </li>
         </ul>
       </LegalSection>
