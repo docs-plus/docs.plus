@@ -1,6 +1,8 @@
 /// <reference types="jest" />
 
-import { classifyInternalDocumentLink } from './internalDocumentLink'
+import type { Editor } from '@tiptap/core'
+
+import { classifyInternalDocumentLink, describeInternalDocumentLink } from './internalDocumentLink'
 
 const origin = window.location.origin
 const here = '/test'
@@ -98,5 +100,59 @@ describe('classifyInternalDocumentLink', () => {
 
   it('returns null for an unparseable href', () => {
     expect(classifyInternalDocumentLink('http://', here)).toBeNull()
+  })
+})
+
+// Only `editor.state.doc.content` is read, so a plain object stands in for a real editor.
+const editorWithHeadings = (headings: Array<{ id: string; text: string }>): Editor => {
+  const children = headings.map(({ id, text }) => ({
+    type: { name: 'heading' },
+    attrs: { 'toc-id': id },
+    textContent: text
+  }))
+  const content = { childCount: children.length, child: (i: number) => children[i] }
+  return { state: { doc: { content } } } as unknown as Editor
+}
+
+describe('describeInternalDocumentLink', () => {
+  it('names a filter by its kind, lists every term in the spoken name, and carries the mode', () => {
+    const d = describeInternalDocumentLink(
+      { kind: 'filter', terms: ['design', 'launch', 'mobile'], mode: 'and', href: '' },
+      null
+    )
+    expect(d).toMatchObject({
+      label: 'Filtered view',
+      sublabel: 'In this document',
+      modeLabel: 'Match all',
+      accessibleName: 'Go to filtered view: design, launch, mobile. Match all.'
+    })
+    const any = describeInternalDocumentLink(
+      { kind: 'filter', terms: ['a'], mode: 'or', href: '' },
+      null
+    )
+    expect(any.modeLabel).toBe('Match any')
+  })
+
+  it('leads a chat link with the quoted heading name and says Chat or Message below', () => {
+    const editor = editorWithHeadings([{ id: 'c1', text: 'Launch plan' }])
+    expect(describeInternalDocumentLink({ kind: 'chat', channelId: 'c1' }, editor)).toMatchObject({
+      label: '\u201CLaunch plan\u201D',
+      sublabel: 'In this document \u00B7 Chat'
+    })
+    expect(
+      describeInternalDocumentLink({ kind: 'chat', channelId: 'c1', messageId: 'm1' }, editor)
+    ).toMatchObject({ sublabel: 'In this document \u00B7 Message' })
+  })
+
+  it('falls back to Chat when the heading cannot be resolved', () => {
+    const editor = editorWithHeadings([{ id: 'other', text: 'Other' }])
+    expect(describeInternalDocumentLink({ kind: 'chat', channelId: 'c1' }, editor)).toMatchObject({
+      label: 'Chat',
+      sublabel: 'In this document'
+    })
+    expect(describeInternalDocumentLink({ kind: 'chat', channelId: 'c1' }, null)).toMatchObject({
+      label: 'Chat',
+      sublabel: 'In this document'
+    })
   })
 })

@@ -109,44 +109,55 @@ const resolveHeadingTitle = (editor: Editor | null, tocId: string): string | und
 const HERE = 'In this document'
 const quoted = (title: string): string => `\u201C${title}\u201D`
 
-/** Human label + icon for an in-document destination. Resolves heading/channel titles from the pad editor. */
+/** Human label, icon and spoken name for an in-document destination. Resolves heading/channel titles from the pad editor. */
 export function describeInternalDocumentLink(
   link: InternalDocumentLink,
   editor: Editor | null
 ): InternalLinkDescriptor {
   switch (link.kind) {
     case 'document':
-      return { label: 'This document', sublabel: 'Go to top', icon: INTERNAL_KIND_ICON.document }
+      return {
+        label: 'This document',
+        sublabel: 'Go to top',
+        icon: INTERNAL_KIND_ICON.document,
+        accessibleName: 'Go to top of this document.'
+      }
     case 'heading': {
       const title = resolveHeadingTitle(editor, link.headingId)
       return {
         label: title ? quoted(title) : 'Heading',
         sublabel: `${HERE} \u00B7 Heading`,
-        icon: INTERNAL_KIND_ICON.heading
+        icon: INTERNAL_KIND_ICON.heading,
+        accessibleName: title ? `Go to heading: ${title}.` : 'Go to heading.'
       }
     }
     case 'chat': {
       const title = resolveHeadingTitle(editor, link.channelId)
-      const lead = link.messageId ? 'Message in chat' : 'Chat'
+      const noun = link.messageId ? 'Message' : 'Chat'
       return {
-        label: title ? `${lead} \u00B7 ${quoted(title)}` : lead,
-        sublabel: HERE,
-        icon: INTERNAL_KIND_ICON.chat
+        label: title ? quoted(title) : 'Chat',
+        sublabel: title ? `${HERE} \u00B7 ${noun}` : HERE,
+        icon: INTERNAL_KIND_ICON.chat,
+        accessibleName: `Go to ${noun.toLowerCase()}${title ? `: ${title}` : ''}.`
       }
     }
     case 'filter': {
-      const n = link.terms.length
+      const modeLabel = link.mode === 'and' ? 'Match all' : 'Match any'
       return {
-        label: `Filtered view \u00B7 ${n} term${n === 1 ? '' : 's'}`,
-        sublabel: `${HERE} \u00B7 Match ${link.mode === 'and' ? 'all' : 'any'}`,
-        icon: INTERNAL_KIND_ICON.filter
+        label: INTERNAL_KIND_NAME.filter,
+        sublabel: HERE,
+        icon: INTERNAL_KIND_ICON.filter,
+        accessibleName: `Go to filtered view: ${link.terms.join(', ')}. ${modeLabel}.`,
+        modeLabel
       }
     }
     case 'history':
       return {
         label: link.version == null ? 'History' : `Version ${link.version}`,
         sublabel: `${HERE} \u00B7 History`,
-        icon: INTERNAL_KIND_ICON.history
+        icon: INTERNAL_KIND_ICON.history,
+        accessibleName:
+          link.version == null ? 'Go to version history.' : `Go to version ${link.version}.`
       }
     default: {
       const exhaustive: never = link

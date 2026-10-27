@@ -165,6 +165,10 @@ export interface InternalLinkDescriptor {
   label: string
   sublabel: string
   icon: IconType
+  /** Name for the Go button; the visible label alone is too short to tell links apart. */
+  accessibleName: string
+  /** Filter links only. */
+  modeLabel?: 'Match all' | 'Match any'
 }
 
 export interface InternalLinkChipProps {
