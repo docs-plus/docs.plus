@@ -155,5 +155,79 @@ describe('Navigation guards — read-only click fallback (no preview popover)', 
   })
 })
 
+interface NavigateCall {
+  href: string
+  newTab: boolean
+}
+
+// `?navigate=spy` makes the playground record each host `navigate` call here.
+const navigateCalls = (): Cypress.Chainable<NavigateCall[]> =>
+  cy.window().its('_navigateCalls') as Cypress.Chainable<NavigateCall[]>
+
+const appendTaintedAnchor = (href: string): void => {
+  cy.get('#editor p').then(($p) => {
+    const a = document.createElement('a')
+    a.setAttribute('href', href)
+    a.textContent = 'tainted'
+    $p[0].appendChild(a)
+  })
+}
+
+describe('Navigation guards — host navigate option (?navigate=spy)', () => {
+  beforeEach(() => {
+    cy.visitPlayground({ query: 'navigate=spy' })
+  })
+
+  it('routes a middle click through navigate with newTab: true', () => {
+    cy.setEditorContent(`<p><a href="${SAFE_HREF}">link</a></p>`)
+    stubWindowOpen()
+    dispatchAuxClick('#editor a')
+    navigateCalls().should('deep.equal', [{ href: SAFE_HREF, newTab: true }])
+    cy.get('@windowOpen').should('not.have.been.called')
+  })
+
+  it('never calls navigate for an injected javascript: anchor', () => {
+    cy.setEditorContent('<p>x</p>')
+    appendTaintedAnchor('javascript:window.__nav_pwned = true')
+    stubWindowOpen()
+    dispatchAuxClick('#editor a')
+    navigateCalls().should('deep.equal', [])
+    cy.get('@windowOpen').should('not.have.been.called')
+  })
+
+  it('routes the prebuilt preview Open through navigate with newTab: true', () => {
+    cy.setEditorContent(`<p><a href="${SAFE_HREF}">link</a></p>`)
+    cy.get('#editor a').click()
+    stubWindowOpen()
+    cy.get('.hyperlink-preview-popover a').click()
+    navigateCalls().should('deep.equal', [{ href: SAFE_HREF, newTab: true }])
+    cy.get('@windowOpen').should('not.have.been.called')
+  })
+})
+
+describe('Navigation guards — read-only click with host navigate', () => {
+  beforeEach(() => {
+    cy.visit('/?readonly=on&popover=none&navigate=spy')
+    cy.window({ timeout: 10000 }).should('have.property', '_editor')
+  })
+
+  it('routes a primary click through navigate with newTab: true', () => {
+    cy.setEditorContent(`<p><a href="${SAFE_HREF}">link</a></p>`)
+    stubWindowOpen()
+    dispatchPrimaryClick('#editor a')
+    navigateCalls().should('deep.equal', [{ href: SAFE_HREF, newTab: true }])
+    cy.get('@windowOpen').should('not.have.been.called')
+  })
+
+  it('never calls navigate for an injected javascript: anchor', () => {
+    cy.setEditorContent('<p>x</p>')
+    appendTaintedAnchor('javascript:window.__nav_ro_pwned = true')
+    stubWindowOpen()
+    dispatchPrimaryClick('#editor a')
+    navigateCalls().should('deep.equal', [])
+    cy.get('@windowOpen').should('not.have.been.called')
+  })
+})
+
 // Module scope: keeps top-level consts out of the shared-global TS project.
 export {}

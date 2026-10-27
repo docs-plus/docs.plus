@@ -2,10 +2,10 @@ import { getMarkRange } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import type { EditorView } from '@tiptap/pm/view'
 
-import { SAFE_WINDOW_FEATURES } from '../constants'
 import { getDefaultController } from '../floating-popover'
 import { buildPreviewOptionsFromAnchor } from '../openers/buildPreviewOptionsFromAnchor'
 import { openPreviewHyperlink } from '../openers/openPreviewHyperlink'
+import { openLink } from './openLink'
 import type { LinkContext } from './types'
 
 function findLinkFromEvent(
@@ -35,13 +35,9 @@ function isOnLinkIcon(
   return r.width > 0 && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom
 }
 
-function isNavigable(href: string | null | undefined, ctx: LinkContext): href is string {
-  return ctx.urls.forRead(href).navigable
-}
-
 // `null` from the popover slot is the host opt-out signal (mobile bottom
 // sheet). With no slot configured at all, a read-only editor falls back to
-// a gated `window.open`.
+// the gated `openLink`.
 function openPreviewPopoverFromClick(
   view: EditorView,
   link: HTMLAnchorElement,
@@ -57,13 +53,9 @@ function openPreviewPopoverFromClick(
   })
   // Use the stored attr; `link.href` resolves against `document.baseURI` and would leak the host origin.
   const href = opts.attrs.href ?? link.getAttribute('href')
-  // `||` not `??` — `link.target` is `''` when unset, and we want `_blank` (matches auxclick + intent).
-  const targetAttr = link.target || opts.attrs.target || '_blank'
 
   if (!ctx.previewPopover) {
-    if (!view.editable && isNavigable(href, ctx)) {
-      window.open(href, targetAttr, SAFE_WINDOW_FEATURES)
-    }
+    if (!view.editable && href) openLink(ctx, href, { newTab: true })
     return !view.editable
   }
 
@@ -142,9 +134,7 @@ export function createClickHandlerInteraction(ctx: LinkContext): Plugin {
         event.stopPropagation()
         const { attrs } = buildPreviewOptionsFromAnchor({ editor: ctx.editor, link })
         const href = attrs.href ?? link.getAttribute('href')
-        if (isNavigable(href, ctx)) {
-          window.open(href, '_blank', SAFE_WINDOW_FEATURES)
-        }
+        if (href) openLink(ctx, href, { newTab: true })
       }
 
       editorView.dom.addEventListener('mousedown', preventMouseDown, true)

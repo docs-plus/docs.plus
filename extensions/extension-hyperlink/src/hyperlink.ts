@@ -109,6 +109,11 @@ export interface HyperlinkOptions {
   exitable: boolean
   /** Sync. A fresh element with no text, or null for a plain link. A throw counts as null and logs once. */
   linkIcon?: LinkIconResolver
+  /**
+   * Opens a link after the read gate passes: middle click, the read-only click and the preview Open.
+   * Default: `window.open(href, '_blank', 'noopener,noreferrer')`.
+   */
+  navigate?: (href: string, ctx: { newTab: boolean }) => void
 }
 
 /** Extension storage; one slot per editor instance. */
@@ -210,7 +215,8 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
       shouldAutoLink: undefined,
       enableClickSelection: false,
       exitable: false,
-      linkIcon: undefined
+      linkIcon: undefined,
+      navigate: undefined
     }
   },
 

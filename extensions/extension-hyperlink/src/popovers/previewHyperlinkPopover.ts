@@ -1,8 +1,8 @@
 import { attachTooltip } from '@docs.plus/floating-tooltip'
 
-import { SAFE_WINDOW_FEATURES } from '../constants'
 import { getDefaultController } from '../floating-popover'
 import type { PreviewHyperlinkOptions } from '../hyperlink'
+import { getLinkContext, openLink } from '../interactions/openLink'
 import { openEditHyperlink } from '../openers/openEditHyperlink'
 import { Copy, copyToClipboard, createHTMLElement, isSafeHref, LinkOff, Pencil } from '../utils'
 
@@ -52,9 +52,9 @@ export default function previewHyperlinkPopover(options: PreviewHyperlinkOptions
 
   hrefAnchor.addEventListener('click', (event) => {
     event.preventDefault()
-    if (safeHref && isOpenable(safeHref)) {
-      window.open(safeHref, '_blank', SAFE_WINDOW_FEATURES)
-    }
+    // `openLink` adds the editor's own gate and the host `navigate`.
+    const linkCtx = getLinkContext(editor)
+    if (linkCtx && safeHref && isOpenable(safeHref)) openLink(linkCtx, safeHref, { newTab: true })
   })
 
   removeButton.addEventListener('click', () => {

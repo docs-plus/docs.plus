@@ -47,6 +47,9 @@ const readOnly = params.get('readonly') === 'on'
 const blockAutoLink = params.get('shouldAutoLink') === 'block'
 const enableClickSelection = params.get('clickSelection') === 'on'
 const exitable = params.get('exitable') === 'on'
+// `navigate=spy` records each host `navigate` call on `window._navigateCalls` and opens nothing.
+const navigateSpy = params.get('navigate') === 'spy'
+if (navigateSpy) window._navigateCalls = []
 // `icons=element` draws a coloured box before every http(s) link, with no network.
 // `icons=throw` also throws for throw.example hrefs, for the console error spec.
 // `icons=map|fetcher|both` use the real helpers on the PNGs in ./icons; `tile=on` tiles fetched icons.
@@ -188,6 +191,11 @@ const editor = new Editor({
       ...(enableClickSelection && { enableClickSelection: true }),
       ...(exitable && { exitable: true }),
       ...(linkIcon && { linkIcon }),
+      ...(navigateSpy && {
+        navigate: (href: string, { newTab }: { newTab: boolean }) => {
+          window._navigateCalls?.push({ href, newTab })
+        }
+      }),
       popovers
     })
   ],
@@ -203,6 +211,7 @@ declare global {
     _hyperlink: typeof HyperlinkModule
     _byo?: ByoState
     _iconCalls?: number
+    _navigateCalls?: Array<{ href: string; newTab: boolean }>
     _getMarkdown?: () => string
     _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
   }
