@@ -1,23 +1,22 @@
 import { Icons } from '@components/icons/registry'
-import { HOME_SITE_URL } from '@components/pages/home/homeMetadata'
 import { type LinkIconContext, linkIconFetcher, linkIconMap } from '@docs.plus/extension-hyperlink'
 import { iconRouteUrl } from '@utils/iconRouteUrl'
 import { lucideSvgString } from '@utils/lucideSvgString'
 
-const LOGO = '/icons/logo.svg' // same origin: CSP img-src 'self', Workbox same-origin rule
+import { isAnotherPad } from './hyperlinkPopovers/hrefEventHandler'
+import {
+  classifyInternalDocumentLink,
+  INTERNAL_KIND_ICON,
+  INTERNAL_KIND_NAME
+} from './hyperlinkPopovers/internalDocumentLink'
+import type { InternalDocumentLink } from './hyperlinkPopovers/types'
 
-// linkIconMap throws on a key with ':' (an IPv6 host); a bad URL here would break every pad.
-const siteHost = (() => {
-  try {
-    const host = new URL(HOME_SITE_URL).hostname
-    return host.includes(':') ? null : host
-  } catch {
-    return null
-  }
-})()
-const docsplusMap = linkIconMap(
-  siteHost ? { 'docs.plus': LOGO, [siteHost]: LOGO } : { 'docs.plus': LOGO }
-)
+type Kind = InternalDocumentLink['kind']
+
+// isAnotherPad already checked the origin, so any host works here. A fixed key keeps
+// linkIconMap's one-request-per-URL image cache (#516), on any origin the app runs on.
+const logoMap = linkIconMap({ 'docs.plus': '/icons/logo.svg' }) // same origin: CSP img-src 'self'
+const LOGO_HREF = 'https://docs.plus/'
 
 const glyph = (svg: () => string) => () =>
   Object.assign(document.createElement('span'), { innerHTML: svg() })
@@ -31,6 +30,32 @@ const fetchIcon = linkIconFetcher({
   src: (origin) => routes.get(origin) ?? routes.set(origin, iconRouteUrl(origin)).get(origin)!
 })
 
-/** Pad resolver: docs.plus logo, then mail and phone glyphs, then the favicon. */
-export const padLinkIcon = (ctx: LinkIconContext): HTMLElement | null =>
-  docsplusMap(ctx) ?? appScheme(ctx) ?? fetchIcon(ctx)
+// Each link classifies once per page. A new pathname changes which pad is "this" pad.
+const kinds = new Map<string, Kind | null>()
+let kindsPath = ''
+const kindOf = (href: string): Kind | null => {
+  const path = window.location.pathname
+  if (path !== kindsPath) {
+    kinds.clear()
+    kindsPath = path
+  }
+  if (!kinds.has(href)) kinds.set(href, classifyInternalDocumentLink(href, path)?.kind ?? null)
+  return kinds.get(href)!
+}
+
+const kindIcon = (kind: Kind): HTMLElement => {
+  const el = Object.assign(document.createElement('span'), {
+    innerHTML: lucideSvgString(INTERNAL_KIND_ICON[kind], 16)
+  })
+  el.dataset.linkKind = kind
+  el.setAttribute('aria-label', INTERNAL_KIND_NAME[kind])
+  return el
+}
+
+/** Pad resolver: same-pad kind glyph, the logo for another pad, mail and phone, then the favicon. */
+export const padLinkIcon = (ctx: LinkIconContext): HTMLElement | null => {
+  const kind = kindOf(ctx.href)
+  if (kind) return kindIcon(kind)
+  if (isAnotherPad(ctx.href)) return logoMap({ href: LOGO_HREF })
+  return appScheme(ctx) ?? fetchIcon(ctx)
+}

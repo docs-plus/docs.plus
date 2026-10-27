@@ -97,6 +97,12 @@
     border-radius: 0 !important;
   }
 
+  // A same-pad chip prints as plain link text. document-styles loads later, so !important.
+  .ProseMirror a:has(> .hyperlink-icon[data-link-kind]) {
+    background: none !important;
+    padding: 0 !important;
+  }
+
   :is(table, pre, img, blockquote, figure) {
     break-inside: avoid;
   }

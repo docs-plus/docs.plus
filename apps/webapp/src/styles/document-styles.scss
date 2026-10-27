@@ -30,9 +30,30 @@
     text-decoration: inherit;
   }
 
-  a:hover {
+  a:not(:has(> .hyperlink-icon[data-link-kind])):hover {
     color: var(--color-primary);
     opacity: 0.85;
+  }
+
+  // A same-pad link is a chip (#174). Inline padding leaves the line height alone.
+  a:has(> .hyperlink-icon[data-link-kind]) {
+    background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
+    color: var(--primary-ink);
+    border-radius: var(--radius-selector);
+    padding: 0.2em 0.35em;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    text-decoration: none;
+
+    &:hover {
+      background-color: color-mix(in oklch, var(--color-primary) 16%, transparent);
+    }
+  }
+
+  // Headings set line-height 1.15, so block padding would tint the next line of a wrapped chip.
+  :is(h1, h2, h3, h4, h5, h6, p[data-paragraph-style='subtitle'])
+    a:has(> .hyperlink-icon[data-link-kind]) {
+    padding-block: 0;
   }
 
   .hyperlink-icon {

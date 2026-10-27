@@ -22,6 +22,9 @@ Coverage for `@docs.plus/extension-hyperlink` in the real editor (`TipTap.tsx`: 
 - **hyperlink-edge-cases.cy.js** — Boundary conditions + keyboard + misc
   - Escape dismiss, Tab focus trap, undo, multiple links, link at paragraph start/end, URL replacement, long URLs
 
+- **hyperlink-internal-chip.cy.js** — Same-pad link chips in the pad (#174)
+  - A heading link shows its kind icon, named "Heading"; an external link has no kind; another pad shows the logo; a wrapped chip keeps the paragraph height
+
 - **hyperlink-picker.cy.js** — Suggestion picker (in-doc headings + workspace bookmarks) on the create + edit popovers
   - Create / pick heading: expand → click row inserts heading deep-link (`?h=…&id=…`) with the picked title as anchor text
   - Create / keyboard: ArrowDown opens the panel, Enter picks the highlighted row
