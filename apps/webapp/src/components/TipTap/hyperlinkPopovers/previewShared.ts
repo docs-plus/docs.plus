@@ -10,6 +10,7 @@ import { lucideSvgString } from '@utils/lucideSvgString'
 import type { IconType } from 'react-icons'
 
 import { fetchMetadata, type MetadataResponse } from './fetchMetadata'
+import { FILTER_MODE_LABEL_CLASS, FILTER_TERM_PILL_CLASS } from './filterTermPill'
 import { hrefEventHandler } from './hrefEventHandler'
 import { describeInternalDocumentLink } from './internalDocumentLink'
 import { runInternalDocumentLink } from './internalDocumentLinkActions'
@@ -169,25 +170,48 @@ export const observeDetachment = (element: HTMLElement, onDetach: () => void): v
 /**
  * Imperative DOM (not React) so it slots into the existing
  * `.hyperlink-preview-popover` without a mount, like `createMetadataContent`.
+ * A filter shows every term (C4): the button stays one control, so only spans go inside it.
  */
 export const createInternalLinkChip = (link: InternalDocumentLink, editor: Editor): HTMLElement => {
-  const { label, sublabel, icon } = describeInternalDocumentLink(link, editor)
+  const { label, sublabel, icon, accessibleName, modeLabel } = describeInternalDocumentLink(
+    link,
+    editor
+  )
 
   const chip = createHTMLElement('button', {
     className: 'internal-link-chip',
-    title: label,
-    ariaLabel: label
+    ariaLabel: accessibleName
   })
   const iconEl = createHTMLElement('span', {
     className: 'chip-icon',
     innerHTML: lucideSvgString(icon, 18)
   })
-  const text = createHTMLElement('span', { className: 'chip-text' })
-  text.append(
-    createHTMLElement('span', { className: 'chip-title', innerText: label }),
-    createHTMLElement('span', { className: 'chip-sub', innerText: sublabel })
-  )
-  chip.append(iconEl, text)
+  const title = createHTMLElement('span', { className: 'chip-title', textContent: label })
   chip.addEventListener('click', () => runInternalDocumentLink(link))
+
+  if (link.kind === 'filter') {
+    chip.classList.add('internal-link-chip--filter')
+    const header = createHTMLElement('span', { className: 'chip-header' })
+    header.append(iconEl, title)
+    if (modeLabel) {
+      header.append(
+        createHTMLElement('span', { className: FILTER_MODE_LABEL_CLASS, textContent: modeLabel })
+      )
+    }
+    const terms = createHTMLElement('span', { className: 'chip-terms' })
+    terms.append(
+      ...link.terms.map((term) =>
+        createHTMLElement('span', { className: FILTER_TERM_PILL_CLASS, textContent: term })
+      )
+    )
+    chip.append(header, terms)
+    return chip
+  }
+
+  // A long heading or chat name is cut with an ellipsis; the tooltip shows it whole.
+  title.title = label
+  const text = createHTMLElement('span', { className: 'chip-text' })
+  text.append(title, createHTMLElement('span', { className: 'chip-sub', textContent: sublabel }))
+  chip.append(iconEl, text)
   return chip
 }

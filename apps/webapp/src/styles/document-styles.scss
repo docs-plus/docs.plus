@@ -215,6 +215,54 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
+    // C6: header row, then every term. Pill and mode-label looks come from `filterTermPill.ts`;
+    // this file is unlayered, so a rule on those spans here would beat the utilities.
+    &.internal-link-chip--filter {
+      flex: none;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.375rem;
+      padding: 0.375rem 0.5rem 0.5rem 0.25rem;
+
+      .chip-header {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        min-width: 0;
+      }
+
+      .chip-title {
+        line-height: 1.25rem;
+      }
+
+      // 40px = the 30px tile plus the header gap, so pills start under the title.
+      .chip-terms {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        padding-left: 2.5rem;
+      }
+    }
+  }
+
+  &--column {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hyperlink-preview-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0 0 0.25rem;
+    border-top: 1px solid var(--color-base-300);
+
+    .footer-label {
+      font-size: var(--text-meta);
+      line-height: var(--text-meta--line-height);
+      color: color-mix(in oklch, var(--color-base-content) 60%, transparent);
+    }
   }
 
   .copy {

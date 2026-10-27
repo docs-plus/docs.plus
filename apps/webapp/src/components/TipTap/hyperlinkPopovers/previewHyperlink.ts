@@ -12,7 +12,7 @@ import type { Editor } from '@tiptap/core'
 import { lucideSvgString } from '@utils/lucideSvgString'
 import { COPY_FADE_HOLD_MS, prefersReducedMotion } from '@utils/motion'
 
-import { classifyInternalDocumentLink } from './internalDocumentLink'
+import { classifyInternalDocumentLink, describeInternalDocumentLink } from './internalDocumentLink'
 import {
   createInternalLinkChip,
   observeDetachment,
@@ -153,6 +153,21 @@ const buildDesktopPopover = (
   // Internal (same-document) links render a named destination chip and run
   // in place; no external metadata fetch. Copy still yields the canonical URL.
   const internalLink = classifyInternalDocumentLink(href, window.location.pathname)
+  if (internalLink?.kind === 'filter') {
+    // The pills take the full width, so the actions move to a footer row (C6).
+    popover.classList.add('hyperlink-preview-popover--column')
+    const footer = createHTMLElement('div', { className: 'hyperlink-preview-footer' })
+    footer.append(
+      createHTMLElement('span', {
+        className: 'footer-label',
+        textContent: describeInternalDocumentLink(internalLink, editor).sublabel
+      }),
+      copyButton,
+      ...editControls
+    )
+    popover.append(createInternalLinkChip(internalLink, editor), footer)
+    return popover
+  }
   if (internalLink) {
     popover.append(createInternalLinkChip(internalLink, editor), copyButton, ...editControls)
     return popover
