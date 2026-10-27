@@ -79,7 +79,9 @@ export function linkIconMarkView(linkIcon?: LinkIconResolver): MarkViewRenderer 
       hole = spec.contentDOM ?? dom,
       contentDOM = document.createElement('span')
     icon.classList.add('hyperlink-icon')
-    icon.setAttribute('aria-hidden', 'true')
+    // An icon that names itself stays spoken; any other is decoration.
+    if (icon.getAttribute('aria-label')) icon.setAttribute('role', 'img')
+    else icon.setAttribute('aria-hidden', 'true')
     icon.contentEditable = 'false' // ProseMirror sets this on widgets only
     if (icon instanceof HTMLImageElement) icon.draggable = false
     hole.append(icon, contentDOM)

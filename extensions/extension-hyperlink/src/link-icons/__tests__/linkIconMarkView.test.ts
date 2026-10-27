@@ -332,6 +332,25 @@ describe('linkIconMarkView', () => {
     }
   })
 
+  it('keeps an icon with its own aria-label exposed as an image', () => {
+    const labelled = makeEditor(MID, () => {
+      const span = document.createElement('span')
+      span.setAttribute('aria-label', 'Heading')
+      return span
+    })
+    const icon = iconOf(links(labelled)[0])!
+    expect(icon.getAttribute('role')).toBe('img')
+    expect(icon.getAttribute('aria-label')).toBe('Heading')
+    expect(icon.hasAttribute('aria-hidden')).toBe(false)
+  })
+
+  it('hides an icon with no aria-label from screen readers', () => {
+    const plain = makeEditor(MID, () => document.createElement('span'))
+    const icon = iconOf(links(plain)[0])!
+    expect(icon.getAttribute('aria-hidden')).toBe('true')
+    expect(icon.hasAttribute('role')).toBe(false)
+  })
+
   it('puts the caret at the link start on an icon click', () => {
     const editor = makeEditor(MID)
     editor.commands.setTextSelection(editor.state.doc.content.size - 1)
