@@ -55,4 +55,17 @@ describe('navigateHref', () => {
     expect(Router.push).toHaveBeenCalledTimes(1)
     expect(open).toHaveBeenCalledTimes(3)
   })
+
+  it('isAnotherPad accepts a same-origin pad and refuses reserved, file and foreign hrefs', () => {
+    history.pushState({}, '', '/pad-a')
+    const { isAnotherPad } = require('./hrefEventHandler') as typeof import('./hrefEventHandler')
+
+    expect(isAnotherPad('https://docs.plus/other-pad')).toBe(false)
+    expect(isAnotherPad(`${window.location.origin}/other-pad`)).toBe(true)
+    expect(isAnotherPad('/other-pad')).toBe(true)
+    expect(isAnotherPad('/')).toBe(false)
+    expect(isAnotherPad('/privacy')).toBe(false)
+    expect(isAnotherPad('/badges/x.svg')).toBe(false)
+    expect(isAnotherPad('http://[bad')).toBe(false)
+  })
 })

@@ -55,6 +55,18 @@ describe('classifyInternalDocumentLink', () => {
     })
   })
 
+  it('keeps a filter segment raw when it is not valid percent-encoding', () => {
+    expect(classifyInternalDocumentLink(`${origin}/test/%E0`, here)).toEqual({
+      kind: 'filter',
+      terms: ['%E0'],
+      mode: 'or',
+      href: `${origin}/test/%E0`
+    })
+    expect(classifyInternalDocumentLink(`${origin}/test/%E0/apple%20pie`, here)).toMatchObject({
+      terms: ['%E0', 'apple pie']
+    })
+  })
+
   it('classifies history hashes, tolerating a missing or invalid version', () => {
     expect(classifyInternalDocumentLink(`${origin}/test#history?version=194`, here)).toEqual({
       kind: 'history',

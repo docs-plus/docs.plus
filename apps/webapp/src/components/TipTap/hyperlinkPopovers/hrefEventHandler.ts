@@ -16,6 +16,25 @@ import { runInternalDocumentLink } from './internalDocumentLinkActions'
 // exported `SAFE_WINDOW_FEATURES` so both stacks pass `'noopener,noreferrer'`.
 
 /**
+ * True for a same-origin pad link. A path with a file extension is a public
+ * file, not a pad, and an href that does not parse is not a pad.
+ */
+export const isAnotherPad = (href: string): boolean => {
+  try {
+    const url = new URL(href, window.location.origin)
+    const slug = padSlugOf(url.pathname)
+    return (
+      url.origin === window.location.origin &&
+      !!slug &&
+      !isReservedSlug(slug) &&
+      !/\.[a-z0-9]+$/i.test(url.pathname)
+    )
+  } catch {
+    return false
+  }
+}
+
+/**
  * Destinations inside the current document run in place. A same-origin link to
  * another pad routes in place with `Router.push`, unless Mod is held (#359).
  * Everything else opens in a new tab. The optional event fits React and DOM clicks.
@@ -38,25 +57,11 @@ export const navigateHref = (
   }
 
   // Another pad: route like a Documents row Open, so the app keeps one window.
-  // A path with a file extension is a public file, not a pad, so it opens a tab.
-  if (!(event?.metaKey || event?.ctrlKey)) {
-    try {
-      const url = new URL(href, window.location.origin)
-      const slug = padSlugOf(url.pathname)
-      if (
-        url.origin === window.location.origin &&
-        slug &&
-        !isReservedSlug(slug) &&
-        !/\.[a-z0-9]+$/i.test(url.pathname)
-      ) {
-        // Close the preview popover, as an in-document link does; the route stays in this window.
-        getDefaultController().close()
-        void Router.push(shallowPath(url))
-        return
-      }
-    } catch {
-      // An href that does not parse falls through to a new tab.
-    }
+  if (!(event?.metaKey || event?.ctrlKey) && isAnotherPad(href)) {
+    // Close the preview popover, as an in-document link does; the route stays in this window.
+    getDefaultController().close()
+    void Router.push(shallowPath(new URL(href, window.location.origin)))
+    return
   }
 
   window.open(href, '_blank', SAFE_WINDOW_FEATURES)

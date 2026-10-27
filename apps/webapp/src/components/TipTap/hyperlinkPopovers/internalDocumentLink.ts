@@ -3,12 +3,38 @@ import { parseHistoryHash } from '@components/pages/history/historyShareUrl'
 import type { Editor } from '@tiptap/core'
 import { TIPTAP_NODES } from '@types'
 import { padSlugOf } from '@utils/filterRoute'
+import type { IconType } from 'react-icons'
 
 import type { InternalDocumentLink, InternalLinkDescriptor } from './types'
 
 // Side-effectful execution lives in `internalDocumentLinkActions.ts`; this
 // module stays import-light so `classify` is testable without the app's
 // store/Supabase graph.
+
+export const INTERNAL_KIND_ICON: Record<InternalDocumentLink['kind'], IconType> = {
+  document: Icons.fileText,
+  heading: Icons.heading,
+  chat: Icons.chatroom,
+  filter: Icons.filter,
+  history: Icons.history
+}
+
+export const INTERNAL_KIND_NAME: Record<InternalDocumentLink['kind'], string> = {
+  document: 'This document',
+  heading: 'Heading',
+  chat: 'Chat',
+  filter: 'Filtered view',
+  history: 'Version history'
+}
+
+// A malformed escape such as `%E0` makes decodeURIComponent throw; keep the raw segment.
+const safeDecode = (segment: string): string => {
+  try {
+    return decodeURIComponent(segment)
+  } catch {
+    return segment
+  }
+}
 
 /**
  * Resolves to an in-document destination, or `null` for external. Precedence
@@ -38,7 +64,7 @@ export function classifyInternalDocumentLink(
   if (segments.length > 1) {
     return {
       kind: 'filter',
-      terms: segments.slice(1).map(decodeURIComponent),
+      terms: segments.slice(1).map(safeDecode),
       mode: url.searchParams.get('mode') === 'and' ? 'and' : 'or',
       href
     }
@@ -90,13 +116,13 @@ export function describeInternalDocumentLink(
 ): InternalLinkDescriptor {
   switch (link.kind) {
     case 'document':
-      return { label: 'This document', sublabel: 'Go to top', icon: Icons.fileText }
+      return { label: 'This document', sublabel: 'Go to top', icon: INTERNAL_KIND_ICON.document }
     case 'heading': {
       const title = resolveHeadingTitle(editor, link.headingId)
       return {
         label: title ? quoted(title) : 'Heading',
         sublabel: `${HERE} \u00B7 Heading`,
-        icon: Icons.heading
+        icon: INTERNAL_KIND_ICON.heading
       }
     }
     case 'chat': {
@@ -105,7 +131,7 @@ export function describeInternalDocumentLink(
       return {
         label: title ? `${lead} \u00B7 ${quoted(title)}` : lead,
         sublabel: HERE,
-        icon: Icons.chatroom
+        icon: INTERNAL_KIND_ICON.chat
       }
     }
     case 'filter': {
@@ -113,14 +139,14 @@ export function describeInternalDocumentLink(
       return {
         label: `Filtered view \u00B7 ${n} term${n === 1 ? '' : 's'}`,
         sublabel: `${HERE} \u00B7 Match ${link.mode === 'and' ? 'all' : 'any'}`,
-        icon: Icons.filter
+        icon: INTERNAL_KIND_ICON.filter
       }
     }
     case 'history':
       return {
         label: link.version == null ? 'History' : `Version ${link.version}`,
         sublabel: `${HERE} \u00B7 History`,
-        icon: Icons.history
+        icon: INTERNAL_KIND_ICON.history
       }
     default: {
       const exhaustive: never = link
