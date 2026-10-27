@@ -1,4 +1,5 @@
 import '@docs.plus/extension-hyperlink/styles.css'
+import '@docs.plus/extension-hyperlink/hovercard.css'
 
 import * as HyperlinkModule from '@docs.plus/extension-hyperlink'
 import { setupPlayground } from '@docs.plus/playground/setup'
@@ -49,6 +50,8 @@ const enableClickSelection = params.get('clickSelection') === 'on'
 const exitable = params.get('exitable') === 'on'
 // `navigate=spy` records each host `navigate` call on `window._navigateCalls` and opens nothing.
 const navigateSpy = params.get('navigate') === 'spy'
+// `gate=strict` adds a host isAllowedUri that refuses blocked.example on top of the safety floor.
+const strictGate = params.get('gate') === 'strict'
 if (navigateSpy) window._navigateCalls = []
 // `icons=element` draws a coloured box before every http(s) link, with no network.
 // `icons=throw` also throws for throw.example hrefs, for the console error spec.
@@ -91,6 +94,46 @@ const linkIcon: HyperlinkModule.HyperlinkOptions['linkIcon'] =
           ? (ctx) => mapIcon(ctx) ?? fetchIcon(ctx)
           : undefined
 if (linkIcon) window._iconCalls = 0
+
+// `hovercard=cover|adaptive` turns the hovercard on. The stub counts calls on `window._hovercard`
+// and answers after `delayMs` on the page clock, so `cy.tick` drives it. Pictures are served by
+// each spec's `cy.intercept`; with no intercept they 404, which the card treats as no picture.
+const hovercardLayout = params.get('hovercard')
+const picture = (name: string): string => `/readme-media/hovercard/${name}.svg?run=${RUN}`
+const HOVERCARD_PAGES: Record<string, HyperlinkModule.HovercardData> = {
+  'https://wide.example/': {
+    title: 'Wide page',
+    description: 'A page with a wide share picture.',
+    image: { url: picture('wide'), width: 1200, height: 630 }
+  },
+  'https://square.example/': { title: 'Square page', image: { url: picture('square') } },
+  'https://thumb.example/': {
+    title: 'Thumb page',
+    description: 'A square picture with its size sent.',
+    image: { url: picture('thumb'), width: 460, height: 460 }
+  },
+  'https://slow.example/': { title: 'Slow page', image: { url: picture('slow') } },
+  'https://xss.example/': { title: '<img src=x onerror=alert(1)>' }
+}
+const hovercardState = { calls: [] as string[], delayMs: 100 }
+const hovercard: HyperlinkModule.HovercardOptions | undefined =
+  hovercardLayout === 'cover' || hovercardLayout === 'adaptive'
+    ? {
+        imageLayout: hovercardLayout,
+        fetchMetadata: ({ href }) => {
+          hovercardState.calls.push(href)
+          const data = HOVERCARD_PAGES[href] ?? { title: href }
+          // `window.` reads the timer at call time, so the clock that `cy.clock` installs drives it.
+          return new Promise((resolve) =>
+            window.setTimeout(() => resolve(data), hovercardState.delayMs)
+          )
+        },
+        siteIcon: () =>
+          Object.assign(document.createElement('span'), { style: 'background:#16a34a' }),
+        shouldShow: ({ href }) => !href.includes('noshow.example')
+      }
+    : undefined
+if (hovercard) window._hovercard = hovercardState
 
 // Stable reference for custom-popover.cy.ts; permissive so preview fixture hrefs pass.
 const configuredValidate = (url: string): boolean => /^https?:/i.test(url)
@@ -191,6 +234,11 @@ const editor = new Editor({
       ...(enableClickSelection && { enableClickSelection: true }),
       ...(exitable && { exitable: true }),
       ...(linkIcon && { linkIcon }),
+      ...(hovercard && { hovercard }),
+      ...(strictGate && {
+        isAllowedUri: (uri: string, { defaultValidate }: HyperlinkModule.IsAllowedUriContext) =>
+          defaultValidate(uri) && !uri.includes('blocked.example')
+      }),
       ...(navigateSpy && {
         navigate: (href: string, { newTab }: { newTab: boolean }) => {
           window._navigateCalls?.push({ href, newTab })
@@ -212,6 +260,7 @@ declare global {
     _byo?: ByoState
     _iconCalls?: number
     _navigateCalls?: Array<{ href: string; newTab: boolean }>
+    _hovercard?: { calls: string[]; delayMs: number }
     _getMarkdown?: () => string
     _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
   }

@@ -33,6 +33,9 @@ export { linkIconFetcher } from './link-icons/linkIconFetcher'
 export { linkIconMap } from './link-icons/linkIconMap'
 export type { LinkIconContext } from './link-icons/types'
 
+// Hovercard: the shapes behind HyperlinkOptions.hovercard.
+export type { HovercardData, HovercardImageLayout, HovercardOptions } from './hovercard/types'
+
 // Utilities (validateURL, isSafeHref, …) re-exported for BYO popovers.
 export * from './utils'
 

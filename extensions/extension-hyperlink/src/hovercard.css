@@ -1,0 +1,153 @@
+/**
+ * Link hovercard skin, for the `hovercard` option. Class names are public.
+ * Each colour reads a `--hl-*` token; the fallback is the `styles.css` default.
+ */
+
+.hyperlink-hovercard {
+  box-sizing: border-box;
+  width: var(--hl-hovercard-width, 24rem);
+  max-width: calc(100vw - 1rem);
+  overflow: hidden;
+  background: var(--hl-bg, light-dark(#ffffff, #1f2937));
+  color: var(--hl-fg, light-dark(#111827, #f3f4f6));
+  border: 1px solid var(--hl-border, light-dark(#e5e7eb, #374151));
+  border-radius: var(--hl-radius, 10px);
+  box-shadow: var(
+    --hl-shadow,
+    0 20px 25px -5px light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.5)),
+    0 8px 10px -6px light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.4))
+  );
+  font-family: var(
+    --hl-font,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif
+  );
+}
+
+/* The page picture: a flush well at the 1.91:1 share-card ratio. */
+.hyperlink-hovercard__image {
+  aspect-ratio: 1.91 / 1;
+  overflow: hidden;
+  background-color: var(--hl-well, light-dark(#f3f4f6, #374151));
+  border-bottom: 1px solid var(--hl-border, light-dark(#e5e7eb, #374151));
+  /* A failed cover folds; a failed thumb fades in place. */
+  transition:
+    height 200ms ease-in,
+    opacity 200ms ease-in;
+}
+
+.hyperlink-hovercard__image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 200ms ease-out;
+}
+
+.hyperlink-hovercard__image:not([data-state='ready']) img,
+.hyperlink-hovercard__image[data-state='failed'] {
+  opacity: 0;
+}
+
+/* Thumb: a 64px tile beside the text. The text column never depends on the tile. */
+.hyperlink-hovercard--thumb {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.hyperlink-hovercard--thumb .hyperlink-hovercard__body {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.hyperlink-hovercard--thumb .hyperlink-hovercard__image {
+  box-sizing: border-box;
+  grid-column: 2;
+  grid-row: 1;
+  width: var(--hl-hovercard-thumb, 4rem);
+  height: var(--hl-hovercard-thumb, 4rem);
+  aspect-ratio: auto;
+  margin: 12px 12px 0 0;
+  border: 1px solid var(--hl-border, light-dark(#e5e7eb, #374151));
+  border-radius: var(--hl-radius-sm, 8px);
+}
+
+.hyperlink-hovercard--thumb .hyperlink-hovercard__image img {
+  object-position: center top;
+}
+
+.hyperlink-hovercard__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.hyperlink-hovercard__site {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--hl-muted, light-dark(#6b7280, #9ca3af));
+}
+
+.hyperlink-hovercard__site > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hyperlink-hovercard__site-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+}
+
+.hyperlink-hovercard__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--hl-fg, light-dark(#111827, #f3f4f6));
+  text-decoration: none;
+}
+
+.hyperlink-hovercard__title:hover {
+  text-decoration: underline;
+}
+
+.hyperlink-hovercard__description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--hl-muted, light-dark(#6b7280, #9ca3af));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hyperlink-hovercard__image,
+  .hyperlink-hovercard__image img {
+    transition: none;
+  }
+}

@@ -1,6 +1,6 @@
 // Single-popover lifecycle: `adopt` destroys the previous owner; `close` hides + idles.
 
-export type PopoverKind = 'preview' | 'edit' | 'create' | (string & {})
+export type PopoverKind = 'preview' | 'edit' | 'create' | 'hovercard' | (string & {})
 
 export type VirtualCoordinates = {
   getBoundingClientRect: () => { x: number; y: number; width: number; height: number }

@@ -9,6 +9,7 @@ export default defineConfig(
     external: ['@tiptap/core', '@tiptap/pm'],
     async onSuccess() {
       copyFileSync(resolve('src/styles.css'), resolve('dist/styles.css'))
+      copyFileSync(resolve('src/hovercard.css'), resolve('dist/hovercard.css'))
     }
   })
 )

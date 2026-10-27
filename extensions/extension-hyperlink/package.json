@@ -17,6 +17,7 @@
       }
     },
     "./styles.css": "./dist/styles.css",
+    "./hovercard.css": "./dist/hovercard.css",
     "./package.json": "./package.json"
   },
   "sideEffects": [

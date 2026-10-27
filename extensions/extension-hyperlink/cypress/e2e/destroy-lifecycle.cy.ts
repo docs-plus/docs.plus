@@ -131,4 +131,69 @@ describe('popover one-shot contract', () => {
   })
 })
 
+describe('destroy lifecycle — hovercard', () => {
+  type HovercardWindow = Cypress.AUTWindow & { _hovercard: { calls: string[] } }
+
+  beforeEach(() => {
+    cy.visitPlayground({ query: 'hovercard=cover' })
+    cy.setEditorContent(DOC)
+  })
+
+  // The dwell has fired and the stub has not answered yet when the editor goes.
+  const hoverUntilFetch = (): void => {
+    // Timers and Date only: Cypress 16 also fakes rAF, which the engine needs.
+    cy.clock(Date.now(), ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'])
+    cy.get('#editor a').realHover()
+    cy.tick(150)
+    cy.window().its('_hovercard.calls').should('have.length', 1)
+  }
+
+  it('destroying the editor during the fetch leaves no card in the body', () => {
+    hoverUntilFetch()
+    cy.window().then((win) => win._editor.destroy())
+    cy.tick(100)
+    // The stub's answer lands at the next real task; then the open time passes.
+    cy.wait(0)
+    cy.tick(2000)
+    cy.get('.hyperlink-hovercard').should('not.exist')
+  })
+
+  it('unmounting the editor during the fetch leaves no card in the body', () => {
+    hoverUntilFetch()
+    cy.window().then((win) => win._editor.unmount())
+    cy.tick(100)
+    // The stub's answer lands at the next real task; then the open time passes.
+    cy.wait(0)
+    cy.tick(2000)
+    cy.get('.hyperlink-hovercard').should('not.exist')
+  })
+
+  it('destroying editor B keeps the preview that editor A opened', () => {
+    cy.get('#editor a').click()
+    cy.get(PREVIEW).should('be.visible')
+
+    // B copies A's extensions, so it runs its own hovercard plugin and tears it down.
+    cy.window().then((win) => {
+      expect((win as HovercardWindow)._hovercard, 'hovercard is on').to.be.an('object')
+      const host = win.document.createElement('div')
+      win.document.body.appendChild(host)
+      const EditorCtor = win._editor.constructor as unknown as new (options: {
+        element: HTMLElement
+        extensions: unknown
+        content: string
+      }) => { destroy: () => void }
+      const scratch = new EditorCtor({
+        element: host,
+        extensions: win._editor.options.extensions,
+        content: '<p>scratch <a href="https://b.example/">B</a></p>'
+      })
+      scratch.destroy()
+      host.remove()
+    })
+
+    cy.get(PREVIEW).should('be.visible')
+    cy.get('.floating-popover').should('have.class', 'visible')
+  })
+})
+
 export {}

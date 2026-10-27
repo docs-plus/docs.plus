@@ -13,6 +13,8 @@ import { registerCustomProtocol } from 'linkifyjs'
 
 import { buildHyperlinkCommands } from './commands'
 import { HYPERLINK_MARK_NAME } from './constants'
+import { createHovercardPlugin } from './hovercard/hovercardPlugin'
+import type { HovercardOptions } from './hovercard/types'
 import { createInteractions, createLinkContext, type LinkContext } from './interactions'
 import { linkIconCompositionSweep, linkIconMarkView } from './link-icons/linkIconMarkView'
 import type { LinkIconResolver } from './link-icons/types'
@@ -114,6 +116,8 @@ export interface HyperlinkOptions {
    * Default: `window.open(href, '_blank', 'noopener,noreferrer')`.
    */
   navigate?: (href: string, ctx: { newTab: boolean }) => void
+  /** Desktop link hovercard. Off when unset. Ship `hovercard.css` with it. */
+  hovercard?: HovercardOptions
 }
 
 /** Extension storage; one slot per editor instance. */
@@ -216,7 +220,8 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
       enableClickSelection: false,
       exitable: false,
       linkIcon: undefined,
-      navigate: undefined
+      navigate: undefined,
+      hovercard: undefined
     }
   },
 
@@ -321,8 +326,11 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
   },
 
   addProseMirrorPlugins() {
-    const { plugins } = createInteractions(getContext(this))
-    return this.options.linkIcon ? [...plugins, linkIconCompositionSweep] : plugins
+    const ctx = getContext(this)
+    const plugins = [...createInteractions(ctx).plugins]
+    if (this.options.linkIcon) plugins.push(linkIconCompositionSweep)
+    if (this.options.hovercard) plugins.push(createHovercardPlugin(ctx, this.options.hovercard))
+    return plugins
   }
 })
 
