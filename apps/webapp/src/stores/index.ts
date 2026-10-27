@@ -4,6 +4,7 @@ export { selectInProgressBookmarkCount, withInProgressBookmarks } from './chat/b
 export { type IStore as IChatStore, useChatStore } from './chat/useChatStore'
 export * from './dialogStore'
 export * from './focusedHeadingStore'
+export * from './linkPreviewStore'
 export * from './sheetStore'
 export * from './themeConfig'
 export * from './themeStore'

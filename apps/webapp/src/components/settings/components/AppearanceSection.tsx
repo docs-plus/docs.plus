@@ -1,7 +1,13 @@
 import { ListGroupLabel } from '@components/ui/ListGroupLabel'
-import { PREFERENCE_TO_THEME, type ThemePreference, useThemeStore } from '@stores'
+import { ToggleRow } from '@components/ui/ToggleRow'
+import {
+  PREFERENCE_TO_THEME,
+  type ThemePreference,
+  useLinkPreviewStore,
+  useThemeStore
+} from '@stores'
 import { useRef } from 'react'
-import { LuCheck, LuPalette } from 'react-icons/lu'
+import { LuCheck, LuLink, LuPalette } from 'react-icons/lu'
 
 import { DARK_THEMES, LIGHT_THEMES, type PickerTheme, type ThemeChoice } from '../constants'
 import SettingsCard, { SettingsCardHeader } from './SettingsCard'
@@ -79,6 +85,8 @@ const ThemeCard = ({ value, label, group, premium, selected, onSelect, onKeyDown
 const AppearanceSection = () => {
   const preference = useThemeStore((s) => s.preference)
   const setPreference = useThemeStore((s) => s.setPreference)
+  const showOnHover = useLinkPreviewStore((s) => s.showOnHover)
+  const setShowOnHover = useLinkPreviewStore((s) => s.setShowOnHover)
   const groupRef = useRef<HTMLDivElement>(null)
 
   // Roving tabindex: arrows move selection + focus through the flat order.
@@ -162,6 +170,19 @@ const AppearanceSection = () => {
               </div>
             </div>
           ))}
+        </div>
+      </SettingsCard>
+
+      <SettingsCard>
+        <SettingsCardHeader icon={LuLink} title="Link previews" />
+        <div className="divide-base-300 divide-y">
+          <ToggleRow
+            id="link-previews-hover"
+            label="Show link previews on hover"
+            description="A card with the page title and picture opens when the pointer rests on a link."
+            checked={showOnHover}
+            onChange={setShowOnHover}
+          />
         </div>
       </SettingsCard>
     </div>

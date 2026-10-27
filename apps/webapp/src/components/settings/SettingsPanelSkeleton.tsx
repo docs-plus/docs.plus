@@ -324,6 +324,15 @@ export const AppearanceSkeleton = () => {
           </div>
         ))}
       </SettingsCard>
+      <SettingsCard>
+        <CardHeaderSkeleton icon={LuLink} titleWidth="w-24" />
+        <div className="divide-base-300 divide-y">
+          <ToggleRowSkeleton
+            label="Show link previews on hover"
+            description="A card with the page title and picture opens when the pointer rests on a link."
+          />
+        </div>
+      </SettingsCard>
     </div>
   )
 }
