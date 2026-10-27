@@ -1,5 +1,5 @@
 import { safeFetch } from '../../ssrf'
-import { type StageResult } from '../../types'
+import { LINK_PREVIEW_USER_AGENT, type StageResult } from '../../types'
 
 const REPO_PATH = /^\/([^/]+)\/([^/]+)\/?$/
 
@@ -29,7 +29,7 @@ export const runGithub = async (
 ): Promise<StageResult> => {
   const response = await safeFetch(`https://api.github.com/repos/${owner}/${repo}`, {
     signal,
-    headers: { Accept: 'application/vnd.github+json' }
+    headers: { Accept: 'application/vnd.github+json', 'User-Agent': LINK_PREVIEW_USER_AGENT }
   })
   if (!response.ok) return null
   const data = (await response.json()) as RepoJson

@@ -1,9 +1,18 @@
-import { readCappedBody } from '../../../../lib/readCappedBody'
+import { readHead } from '../readHead'
 import { safeFetch } from '../ssrf'
-import { BOT_USER_AGENT, type Scraper, STAGE_TIMEOUT_MS, type StageResult } from '../types'
+import {
+  type HtmlMiss,
+  LINK_PREVIEW_USER_AGENT,
+  type Scraper,
+  STAGE_TIMEOUT_MS,
+  type StageResult
+} from '../types'
+import { primaryLangSubtag } from './cache'
 
-const USER_AGENT = `Mozilla/5.0 (compatible; ${BOT_USER_AGENT}; +https://docs.plus) facebookexternalhit/1.1`
-const MAX_BODY_BYTES = 5 * 1024 * 1024
+// Bounds the bytes read and parsed; a 5 MiB parse cost about 850 ms and 116 MiB of heap.
+// It does not bound parse CPU: metascraper is quadratic on a crafted title. A 120 KB title
+// measured 1.6 s, so a 1 MiB head can block the event loop far longer.
+const MAX_HEAD_BYTES = 1024 * 1024
 
 const META_CHARSET_RE = /<meta[^>]+charset\s*=\s*["']?([\w-]+)/i
 const META_HTTP_EQUIV_RE =
@@ -55,35 +64,39 @@ const decodeBody = (bytes: Uint8Array, contentType: string | null): string => {
 
 /**
  * `safeFetch` re-runs the SSRF host check on every redirect hop, so a public URL
- * cannot bounce to an internal host. The compound UA is deliberate: sites that
- * allowlist facebookexternalhit serve this bot while it stays transparent.
+ * cannot bounce to an internal host. A miss returns its reason for the log only.
  * `response.url` is the base, so OG image and favicon paths survive a redirect.
  */
 export const runHtmlScrape = async (
   canonicalUrl: string,
   scraper: Scraper,
   acceptLanguage: string | undefined
-): Promise<StageResult> => {
+): Promise<NonNullable<StageResult> | HtmlMiss> => {
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), STAGE_TIMEOUT_MS.html)
+  let timedOut = false
+  const timer = setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, STAGE_TIMEOUT_MS.html)
+  const lang = primaryLangSubtag(acceptLanguage)
 
   try {
     const response = await safeFetch(canonicalUrl, {
       signal: controller.signal,
       headers: {
-        'User-Agent': USER_AGENT,
+        'User-Agent': LINK_PREVIEW_USER_AGENT,
         Accept: 'text/html, application/xhtml+xml',
         'Accept-Encoding': 'gzip, deflate, br',
-        ...(acceptLanguage ? { 'Accept-Language': acceptLanguage } : {})
+        ...(lang ? { 'Accept-Language': lang } : {})
       }
     })
 
-    if (!response.ok) return null
+    if (!response.ok) {
+      if (response.status >= 500) return 'status:5xx'
+      return response.status >= 400 ? 'status:4xx' : 'error'
+    }
 
     const contentType = response.headers.get('content-type')
-    const declaredLength = Number.parseInt(response.headers.get('content-length') ?? '', 10)
-    if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) return null
-
     const baseUrl = response.url || canonicalUrl
 
     if (!isHtml(contentType)) {
@@ -96,13 +109,10 @@ export const runHtmlScrape = async (
       }
     }
 
-    const buf = await readCappedBody(response, controller, MAX_BODY_BYTES)
-    if (!buf) return null
-
-    const html = decodeBody(buf, contentType)
+    const html = decodeBody(await readHead(response, controller, MAX_HEAD_BYTES), contentType)
     const meta = await scraper.scrape({ html, url: baseUrl })
 
-    if (!meta.title) return null
+    if (!meta.title) return 'no-title'
 
     return {
       success: true,
@@ -118,11 +128,11 @@ export const runHtmlScrape = async (
       published_at: meta.date
     }
   } catch {
-    return null
+    return timedOut ? 'timeout' : 'error'
   } finally {
     clearTimeout(timer)
-    // Release the socket on early returns (non-ok / non-HTML / oversized) that
-    // never drained the body. A no-op once the body was fully read.
+    // Release the socket on early returns (non-ok / non-HTML) that never
+    // drained the body. A no-op once the body was fully read.
     controller.abort()
   }
 }

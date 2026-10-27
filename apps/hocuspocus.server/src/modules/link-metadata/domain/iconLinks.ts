@@ -3,43 +3,10 @@ export const ICON_HTML_MAX_BYTES = 64 * 1024
 const MAX_LINK_TAGS = 64
 const TARGET_SIZE = 32
 const APPLE_TOUCH_SIZE = 180
-const HEAD_END = '</head>'
 
 const LINK_TAG_RE = /<link\b[^>]*>/gi
 const ATTR_RE = /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g
 const SIZE_RE = /^(\d{1,4})x\d{1,4}$/i
-
-/**
- * Reads at most `cap` bytes and stops at `</head>`. A cut head is still
- * scanned, unlike `readCappedBody`, which drops the whole body over its cap.
- */
-export const readHtmlHead = async (
-  response: Response,
-  hop: AbortController,
-  cap = ICON_HTML_MAX_BYTES
-): Promise<string> => {
-  if (!response.body) return ''
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder('utf-8', { fatal: false })
-  let text = ''
-  let total = 0
-  try {
-    while (total < cap) {
-      const { done, value } = await reader.read()
-      if (done) break
-      const chunk = value.subarray(0, cap - total)
-      total += chunk.byteLength
-      const searchFrom = Math.max(0, text.length - HEAD_END.length)
-      text += decoder.decode(chunk, { stream: true })
-      const end = text.slice(searchFrom).toLowerCase().indexOf(HEAD_END)
-      if (end !== -1) return text.slice(0, searchFrom + end)
-    }
-    return text
-  } finally {
-    hop.abort()
-    reader.releaseLock()
-  }
-}
 
 interface Candidate {
   href: string
@@ -91,10 +58,13 @@ const scoreLink = (attrs: Map<string, string>, url: URL, isTouch: boolean): numb
 }
 
 /**
- * Picks one icon href from the page head, or null. SVG and `data:` are skipped:
- * the byte sniff refuses SVG, and only an http(s) URL can go through `safeFetch`.
+ * Picks one icon href from the page head, or null. `readHead` keeps a whole last chunk,
+ * so the scan cuts at `</head` itself. SVG and `data:` are skipped: the byte sniff refuses
+ * SVG, and only an http(s) URL can go through `safeFetch`.
  */
-export const pickIconHref = (head: string, base: string): string | null => {
+export const pickIconHref = (html: string, base: string): string | null => {
+  const end = html.search(/<\/head/i)
+  const head = end === -1 ? html : html.slice(0, end)
   let best: Candidate | null = null
   let seen = 0
   for (const [tag] of head.matchAll(LINK_TAG_RE)) {

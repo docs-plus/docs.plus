@@ -32,7 +32,7 @@ Three schemes apply, by route group:
 
 | Scheme                                | Used by                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Header                                                                    |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| None                                  | `/`, `/health/*`, `/openapi.json`, `/docs`, `GET /api/plugins/hypermultimedia/:documentId/:mediaId`, `DELETE /api/plugins/hypermultimedia/session`, `/api/metadata`, `GET /api/metadata/icon`, `GET`/`POST /api/email/unsubscribe`, `GET /api/email/health`, `GET /api/email/status`, `POST /api/email/validate`                                                                                                                                                                                                                 | —                                                                         |
+| None                                  | `/`, `/health/*`, `/openapi.json`, `/docs`, `GET /api/plugins/hypermultimedia/:documentId/:mediaId`, `DELETE /api/plugins/hypermultimedia/session`, `/api/metadata`, `GET /api/metadata/icon`, `GET /api/metadata/image`, `GET`/`POST /api/email/unsubscribe`, `GET /api/email/health`, `GET /api/email/status`, `POST /api/email/validate`                                                                                                                                                                                      | —                                                                         |
 | Optional Supabase user JWT            | `GET /api/documents` (list without `ownerId`), `GET /api/documents/:slug`, `PUT /api/documents/:docId`                                                                                                                                                                                                                                                                                                                                                                                                                           | `Authorization: Bearer <jwt>` or `token: <jwt>`                           |
 | Required Supabase user JWT            | `GET /api/documents?ownerId=…` / `?deleted=true`, `POST /api/documents`, document lifecycle (`DELETE /:id`, `/:id/restore`, `/:id/duplicate`, `/:id/favorite`, `/:id/opened`, `/:id/permanent`, `POST /trash/purge`, `/trash/restore`), `GET /api/connected-apps/redirects`, `POST /api/plugins/hypermultimedia/session` (the Private media cookie), `POST /api/plugins/hypermultimedia/:documentId` (media upload; the service-role key is refused there — it is not a user token, so `requireUser` can resolve nobody from it) | `Authorization: Bearer <jwt>` or `token: <jwt>`                           |
 | Either of the two above               | `GET /api/documents/:documentId/export`, `POST /api/documents/:documentId/import` — the key passes every document, a user token is checked against the document's privacy and lock                                                                                                                                                                                                                                                                                                                                               | `Authorization: Bearer <jwt>`, `token: <jwt>`, or the service-role bearer |
@@ -1139,13 +1139,13 @@ Expires the cookie and returns `204`. It takes no auth, because a signed-out pag
 
 ## Link metadata
 
-Base path `/api/metadata` (self-contained module at `src/modules/link-metadata`). Unfurls a URL through a cache → oEmbed → special-handler → HTML-scrape pipeline with SSRF protection.
+Base path `/api/metadata` (self-contained module at `src/modules/link-metadata`). Unfurls a URL through a cache → oEmbed → special → HTML-scrape pipeline with SSRF protection.
 
 ### GET /api/metadata?url=<http(s) url>
 
 `url` is required, must be http(s), and ≤ 2048 chars. Honors `Accept-Language`.
 
-Success (`200`) returns the `MetadataResponse` contract from `src/modules/link-metadata/domain/types.ts` — `success: true`, `url`, `requested_url`, `title`, optional `description`/`image`/`author`/`publisher`/`oembed`/etc., plus `cached` and `fetched_at`. Responses set `Cache-Control` (positive cache for hits, short negative cache for fallbacks) and `Vary: Accept-Language`.
+Success (`200`) returns the `MetadataResponse` contract from `src/modules/link-metadata/domain/types.ts` — `success: true`, `url`, `requested_url`, `title`, optional `description`/`image`/`author`/`publisher`/`oembed`/etc., plus `cached` and `fetched_at`. Each `200` answer sets `Cache-Control` (positive cache for hits, short negative cache for fallbacks) and `Vary: Accept-Language`.
 
 A fallback result's `favicon`, when present, is this server's `GET /api/metadata/icon` URL for the site's origin.
 
@@ -1186,6 +1186,22 @@ The body cap is `LINK_ICON_MAX_BYTES` bytes, default `32768`. Each request holds
 The route has its own rate limit. See [Rate limiting](#rate-limiting).
 
 **Accepted risk.** `safeFetch` checks the DNS answer and then connects in a separate step. A host that changes its DNS answer between those two steps can reach a private address. This route returns bytes from that fetch. So the leak is limited to bytes that pass the image check, up to the cap, within 3 s. The HTML step lets a site's own page name any public image URL for the server to fetch. That URL gets the same guard, cap, sniff and timer.
+
+### GET /api/metadata/image?url=\<http(s) url\>
+
+Takes a page URL and relays its page image (PNG, ICO, GIF, JPEG or WebP, up to 2 MiB) through the SSRF guard. SVG never passes. A miss is an empty `204`. The reader's browser never contacts the linked site. `url` is the page URL, with the same rules as `GET /api/metadata`.
+
+The server runs the same pipeline as `GET /api/metadata`, usually a cache hit, and takes the page image (`image.url`) from that result. That is an `og:image`, or an oEmbed or site thumbnail. A fallback result has no image. It fetches that one URL through the SSRF guard, with `User-Agent: DocsplusBot/1.0` and `Accept: image/*`, a 5 s timer and a 2 MiB cap. The timer covers only that fetch; on a cache miss the pipeline runs first. The `200` and `204` answers set `Vary: Accept-Language`, because the pipeline reads that header.
+
+| Status | Body                                       | `Cache-Control`         | When                                                                                                                             |
+| ------ | ------------------------------------------ | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `200`  | The image bytes                            | `public, max-age=86400` | The bytes are PNG, ICO, GIF, JPEG or WebP. `Content-Type` comes from the bytes, never from the upstream site.                    |
+| `400`  | `{ success, code, message }`, module shape | none                    | `INVALID_URL`: `url` is missing or not a valid http(s) URL.                                                                      |
+| `204`  | Empty                                      | `public, max-age=600`   | No image: a fallback page, no page image, the SSRF guard, a timeout, a non-2xx answer, SVG or other bytes, or an oversized body. |
+
+It shares the `/api/metadata` rate-limit bucket. See [Rate limiting](#rate-limiting).
+
+**Accepted risk.** The same DNS rebinding risk as the icon route is accepted here, limited to sniffed image bytes up to 2 MiB within 5 s.
 
 ## Email
 
@@ -1392,7 +1408,7 @@ Admins read the gateway status on `GET /api/admin/push/gateway`: `vapid_configur
 
 ## Rate limiting
 
-Three Redis-backed limiters (`src/middleware/index.ts`) cover every non-`OPTIONS` request except `/health`, `/health/*` and a verified `/api/mcp` call. All three are keyed on client IP alone, and **when Redis is unavailable, rate limiting is disabled** (requests pass). User-Agent is not part of the key: a client that varied that header earned a fresh budget on every request. Requests with no `x-forwarded-for` and no `x-real-ip` (direct/internal traffic) skip all three.
+Four Redis-backed limiters (`src/middleware/index.ts`) cover every non-`OPTIONS` request except `/health`, `/health/*` and a verified `/api/mcp` call. All four are keyed on client IP alone, and **when Redis is unavailable, rate limiting is disabled** (requests pass). User-Agent is not part of the key: a client that varied that header earned a fresh budget on every request. Requests with no `x-forwarded-for` and no `x-real-ip` (direct/internal traffic) skip all four.
 
 The global limit is `RATE_LIMIT_MAX` requests (default `100`) per 15-minute window. Production runs `500`. There is no separate per-role tier in the REST middleware, so a service-role caller shares the same per-IP budget as a browser. Issue #166 tracks whether that should change.
 
@@ -1400,9 +1416,11 @@ The global limit is `RATE_LIMIT_MAX` requests (default `100`) per 15-minute wind
 
 **Favicons have their own budget too.** `GET` and `HEAD` on `/api/metadata/icon` are charged to a third limiter. It holds ten times the global points over its own 15-minute window. A cold pad spends one point for each distinct link origin, so a page full of links does not spend the global budget. Like the media multiplier, this one is a constant in the middleware.
 
+**Link previews have their own budget** (maintainer ruling, 2026-10-26). `GET /api/metadata` and `GET /api/metadata/image` share a fourth limiter, with ten times the global points over its own 15-minute window. A hovercard spends one point on its metadata and one on its page image. So hovering many links never spends the budget that pad saves and chat calls need. This multiplier is a constant in the middleware too.
+
 **A verified `/api/mcp` call skips the global limiter** (#551). It must be a `POST`, `GET` or `DELETE` on `/api/mcp` whose bearer token the MCP transport accepts. Supabase Auth must verify the token. It must carry a `client_id` claim and no past `exp`. It spends two per-person buckets instead: 300 requests a minute for every call, and 60 tool calls a minute for its tool calls. A missing, fake, invalid or browser-session token, an Auth outage, and the MCP resource-metadata routes (`.well-known/oauth-protected-resource`) still spend the global budget. A hosted AI app sends many people from one address, so the person is the fair unit. The server checks the token only while the address has global budget left. So a call from a spent address gets a `429` before its token is checked, even a token that would pass. That keeps a spent address from making Supabase Auth calls. A token with no `client_id` claim or a past `exp` is refused before the Auth call.
 
-A response that a limiter charges carries `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` (ISO timestamp). A verified `/api/mcp` call carries none of them. A media read and an icon read report their own limiter's numbers in those headers. On `429`, the body is the house envelope with code `RATE_LIMIT_EXCEEDED`, and a `Retry-After` header carries the seconds until the window resets.
+A response that a limiter charges carries `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` (ISO timestamp). A verified `/api/mcp` call carries none of them. A media read, an icon read and a link-preview read report their own limiter's numbers in those headers. On `429`, the body is the house envelope with code `RATE_LIMIT_EXCEEDED`, and a `Retry-After` header carries the seconds until the window resets.
 
 ## WebSocket API
 

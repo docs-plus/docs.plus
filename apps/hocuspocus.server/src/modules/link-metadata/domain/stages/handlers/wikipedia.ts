@@ -1,5 +1,5 @@
 import { safeFetch } from '../../ssrf'
-import { type StageResult } from '../../types'
+import { LINK_PREVIEW_USER_AGENT, type StageResult } from '../../types'
 
 const WIKI_HOST = /^([a-z-]+)\.wikipedia\.org$/
 const WIKI_PATH = /^\/wiki\/([^/]+)\/?$/
@@ -31,7 +31,7 @@ export const runWikipedia = async (
     `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${slug}`,
     {
       signal,
-      headers: { Accept: 'application/json' }
+      headers: { Accept: 'application/json', 'User-Agent': LINK_PREVIEW_USER_AGENT }
     }
   )
   if (!response.ok) return null

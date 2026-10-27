@@ -45,6 +45,14 @@ Before you deploy this commit, check that `.env.production` holds both `VAPID_PU
 
 ### Added
 
+- **The link hovercard gets its own server support
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).**
+  - `GET /api/metadata/image?url=<page>` takes a page URL and relays its page image
+    (`image.url`), through the SSRF guard. It passes PNG, ICO, GIF, JPEG or WebP, up to 2 MiB.
+    SVG never passes, and a miss is an empty `204`.
+  - `GET /api/metadata` and the image route share their own rate-limit bucket, at ten times
+    `RATE_LIMIT_MAX` per 15 minutes. So hovercards do not spend the global budget.
+  - The `metadata request completed` log records why the html stage missed.
 - **`GET /api/metadata/icon?origin=<origin>` returns a favicon
   ([#515](https://github.com/docs-plus/docs.plus/issues/515)).** The route fetches
   `<origin>/favicon.ico` through the SSRF guard and checks the bytes. When that file misses,
@@ -64,6 +72,16 @@ Before you deploy this commit, check that `.env.production` holds both `VAPID_PU
 
 ### Changed
 
+- **Link-metadata fetches name docs.plus and read less
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).**
+  - Every outbound link-metadata request names docs.plus truthfully. The html stage no longer
+    sends the `facebookexternalhit` token.
+  - The html stage reads at most 1 MiB of the page head, not 5 MiB of the page.
+  - Spotify and SoundCloud links skip oEmbed and use the html stage, so their previews gain a
+    description. Reddit oEmbed runs only on comment paths.
+  - The cache key drops the URL fragment.
+  - The cache key prefix is now `meta:v2`. Old keys expire within 24 h, and no operator step is
+    needed.
 - **The worker `/health` reports `unhealthy` in production when push has no VAPID keys
   ([#608](https://github.com/docs-plus/docs.plus/issues/608)).** Before, the status ignored
   `workers.push.vapid_configured`, so a missing or bad key never paged. A dev stack with empty
@@ -74,6 +92,14 @@ Before you deploy this commit, check that `.env.production` holds both `VAPID_PU
 
 ### Fixed
 
+- **Three link-metadata answers were wrong
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).**
+  - An oEmbed reply with no title is a miss, so the next stage runs. Before, the host name
+    became the title and was cached for 24 h.
+  - The upstream `Accept-Language` is the primary language subtag only, the same value the cache
+    key uses. Before, `en;q=0.1, fa` could cache a Farsi page under the English key.
+  - A cached fallback keeps the short fallback `Cache-Control` on a cache hit. Before, a hit got
+    the positive header.
 - **The admin dashboard counts members on older documents
   ([#574](https://github.com/docs-plus/docs.plus/issues/574)).** `adminStats.service.ts`
   sends the exact `documentId` and maps rows by `document_id`. The old lowercased key
@@ -102,6 +128,19 @@ Before you deploy this commit, check that `.env.production` holds both `VAPID_PU
 
 ### Security
 
+- **Link-metadata values and logs are bounded
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).**
+  - Every stored and returned string has a cap. Title, description and image alt keep 300
+    characters, and names keep 128. A URL that is not http(s) or is over 2048 characters is
+    dropped, and the page `url` then falls back to the canonical URL. A short field such as
+    `lang` is dropped when it is over 64 characters.
+  - `oembed.type` is one of `video`, `rich`, `photo` or `link`. Any other provider value becomes
+    `rich`. A width or height that is not a positive whole number is dropped.
+  - Both metadata log lines keep the link's host, never its path. Before, they also logged the
+    path, which can carry a secret from a pasted link.
+  - Error reports filter the `url` query value of a metadata request. `url` is on the Sentry
+    `urlQueryParams` deny list. The deny is a substring match, so keys such as `redirect_url`
+    are filtered too.
 - **The metadata fallback no longer returns a Google favicon URL
   ([#517](https://github.com/docs-plus/docs.plus/issues/517)).** When `PUBLIC_RESTAPI_URL` is set,
   the fallback's `favicon` is this server's `/api/metadata/icon` URL for the site's origin. When it

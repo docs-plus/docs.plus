@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { pickIconHref, readHtmlHead } from '../../domain/iconLinks'
+import { pickIconHref } from '../../domain/iconLinks'
 
 const BASE = 'https://example.com/'
 
@@ -45,6 +45,12 @@ describe('pickIconHref', () => {
     expect(pickIconHref(head, BASE)).toBe('https://example.com/i32.png')
   })
 
+  test('ignores an icon link after </head>', () => {
+    const html =
+      '<link rel="apple-touch-icon" href="/touch.png"></HEAD><body><link rel="icon" href="/b.png">'
+    expect(pickIconHref(html, BASE)).toBe('https://example.com/touch.png')
+  })
+
   test.each([
     ['an SVG by type', '<link rel="icon" type="image/svg+xml" href="/a">'],
     ['an SVG by path', '<link rel="icon" href="/a.SVG?v=2">'],
@@ -55,34 +61,5 @@ describe('pickIconHref', () => {
     ['no link at all', '<meta name="x" content="icon"><title>icon</title>']
   ])('skips %s', (_name, head) => {
     expect(pickIconHref(head, BASE)).toBeNull()
-  })
-})
-
-describe('readHtmlHead', () => {
-  const streamOf = (...chunks: string[]): Response =>
-    new Response(
-      new ReadableStream({
-        start(controller) {
-          for (const chunk of chunks) controller.enqueue(new TextEncoder().encode(chunk))
-          controller.close()
-        }
-      })
-    )
-
-  test('stops at </head>, even when the tag spans two chunks', async () => {
-    const head = await readHtmlHead(
-      streamOf('<head><link rel=icon href=/a.png></HE', 'AD><body><link rel=icon href=/b.png>'),
-      new AbortController()
-    )
-    expect(head).toBe('<head><link rel=icon href=/a.png>')
-  })
-
-  test('keeps the first cap bytes of a head with no end', async () => {
-    const head = await readHtmlHead(
-      streamOf('a'.repeat(10), 'b'.repeat(10)),
-      new AbortController(),
-      15
-    )
-    expect(head).toBe('a'.repeat(10) + 'b'.repeat(5))
   })
 })

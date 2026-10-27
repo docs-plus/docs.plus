@@ -28,7 +28,7 @@ describe('runHtmlScrape', () => {
     dnsSpy.mockRestore()
   })
 
-  test('passes Accept-Language and compound User-Agent', async () => {
+  test('sends the cache-key language subtag and the honest User-Agent', async () => {
     fetchSpy.mockResolvedValue(
       new Response(html('utf-8', 'ok'), {
         status: 200,
@@ -36,13 +36,14 @@ describe('runHtmlScrape', () => {
       })
     )
 
-    await runHtmlScrape('https://example.com', noopScraper, 'fr-FR')
+    // The cache key reads `en` here, so a Farsi page must not come back under it.
+    await runHtmlScrape('https://example.com', noopScraper, 'en;q=0.1, fa')
 
     const init = fetchSpy.mock.calls[0]![1] as RequestInit
     const headers = new Headers(init.headers)
-    expect(headers.get('accept-language')).toBe('fr-FR')
+    expect(headers.get('accept-language')).toBe('en')
     expect(headers.get('user-agent')).toContain('DocsplusBot')
-    expect(headers.get('user-agent')).toContain('facebookexternalhit')
+    expect(headers.get('user-agent')).not.toContain('facebookexternalhit')
   })
 
   test('uses Content-Type charset to decode body', async () => {
@@ -99,8 +100,7 @@ describe('runHtmlScrape', () => {
     )
 
     const result = await runHtmlScrape('https://example.com/file.pdf', noopScraper, undefined)
-    expect(result?.title).toBe('file.pdf')
-    expect(result?.media_type).toBe('document')
+    expect(result).toMatchObject({ title: 'file.pdf', media_type: 'document' })
   })
 
   test('uses response.url (post-redirect) as scraper base', async () => {
@@ -110,7 +110,7 @@ describe('runHtmlScrape', () => {
       status: 200,
       url: 'https://final.example.com/x',
       headers: new Headers({ 'content-type': 'text/html; charset=utf-8' }),
-      // readCappedBody reads the stream, so the stub needs a real one.
+      // readHead reads the stream, so the stub needs a real one.
       body: new Response(body).body
     }
     fetchSpy.mockResolvedValue(fakeResponse as unknown as Response)
@@ -127,26 +127,56 @@ describe('runHtmlScrape', () => {
     expect(receivedUrl).toBe('https://final.example.com/x')
   })
 
-  test('returns null on non-2xx', async () => {
+  test('returns the status class on non-2xx', async () => {
     fetchSpy.mockResolvedValue(new Response('', { status: 503 }))
     const result = await runHtmlScrape('https://example.com', noopScraper, undefined)
-    expect(result).toBeNull()
+    expect(result).toBe('status:5xx')
   })
 
-  test('aborts when body exceeds 5MB cap', async () => {
+  test('cuts a chunk that crosses the 1 MiB cap', async () => {
     const big = new Uint8Array(6 * 1024 * 1024)
     fetchSpy.mockResolvedValue(
-      new Response(big, {
-        status: 200,
-        headers: { 'content-type': 'text/html', 'content-length': String(big.byteLength) }
-      })
+      new Response(big, { status: 200, headers: { 'content-type': 'text/html' } })
     )
-    const result = await runHtmlScrape('https://example.com', noopScraper, undefined)
-    expect(result).toBeNull()
+    let receivedLength = 0
+    const scraper: Scraper = {
+      scrape: async ({ html: h }) => {
+        receivedLength = h.length
+        return { title: 'scraped' }
+      }
+    }
+    const result = await runHtmlScrape('https://example.com', scraper, undefined)
+    expect(result).toMatchObject({ title: 'scraped' })
+    expect(receivedLength).toBe(1024 * 1024)
   })
 
-  test('aborts mid-stream when body exceeds 5MB cap even with lying content-length', async () => {
-    // 6MB streamed body, but content-length lies and says 1 byte.
+  test('stops reading at a mixed-case </head> split across chunks', async () => {
+    const encoder = new TextEncoder()
+    let pulls = 0
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls++
+        if (pulls === 1) controller.enqueue(encoder.encode('<html><head><title>x</title></He'))
+        else if (pulls === 2) controller.enqueue(encoder.encode('Ad><body>'))
+        else controller.enqueue(new Uint8Array(64 * 1024))
+      }
+    })
+    fetchSpy.mockResolvedValue(
+      new Response(stream, { status: 200, headers: { 'content-type': 'text/html' } })
+    )
+
+    let receivedHtml = ''
+    const scraper: Scraper = {
+      scrape: async ({ html: h }) => {
+        receivedHtml = h
+        return { title: 'x' }
+      }
+    }
+    await runHtmlScrape('https://example.com', scraper, undefined)
+    expect(receivedHtml).toBe('<html><head><title>x</title></HeAd><body>')
+  })
+
+  test('stops pulling the stream at the 1 MiB cap', async () => {
     const sixMegs = new Uint8Array(6 * 1024 * 1024)
     let pulls = 0
     const stream = new ReadableStream<Uint8Array>({
@@ -164,22 +194,24 @@ describe('runHtmlScrape', () => {
     })
 
     fetchSpy.mockResolvedValue(
-      new Response(stream, {
-        status: 200,
-        headers: { 'content-type': 'text/html', 'content-length': '1' }
-      })
+      new Response(stream, { status: 200, headers: { 'content-type': 'text/html' } })
     )
 
-    const result = await runHtmlScrape('https://example.com', noopScraper, undefined)
-    expect(result).toBeNull()
-    // Cap is 5MB, chunks are 64KB. The reader must abort no later than
-    // ~81 chunks (5MB/64KB = 80, +1 for the chunk that crosses). If the
-    // impl regresses to "buffer everything then check", `pulls` will hit
-    // ~96 (the full 6MB worth of chunks). 85 is a comfortable upper bound.
-    expect(pulls).toBeLessThan(85)
+    let receivedLength = 0
+    const scraper: Scraper = {
+      scrape: async ({ html: h }) => {
+        receivedLength = h.length
+        return { title: 'scraped' }
+      }
+    }
+    const result = await runHtmlScrape('https://example.com', scraper, undefined)
+    expect(result).toMatchObject({ title: 'scraped' })
+    expect(receivedLength).toBe(1024 * 1024)
+    // The cap is 16 chunks of 64 KB. Reading all 6 MB would pull about 96.
+    expect(pulls).toBeLessThan(20)
   })
 
-  test('returns null when scraper produces no title', async () => {
+  test('returns no-title when scraper produces no title', async () => {
     fetchSpy.mockResolvedValue(
       new Response(html('utf-8', 'ok'), {
         status: 200,
@@ -189,6 +221,6 @@ describe('runHtmlScrape', () => {
 
     const noTitleScraper: Scraper = { scrape: async () => ({ description: 'no title here' }) }
     const result = await runHtmlScrape('https://example.com', noTitleScraper, undefined)
-    expect(result).toBeNull()
+    expect(result).toBe('no-title')
   })
 })

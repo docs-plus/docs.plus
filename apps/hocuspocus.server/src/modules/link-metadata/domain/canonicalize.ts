@@ -20,9 +20,9 @@ const isTrackingParam = (name: string): boolean => {
 }
 
 /**
- * Strip known tracking params and normalize cosmetic differences (hostname
- * case, default ports). Returns the input unchanged on parse failure — the
- * SSRF stage immediately after will reject malformed input on its own.
+ * Strip known tracking params and the fragment, and normalize cosmetic differences
+ * (hostname case, default ports). No stage reads the fragment, and the client key
+ * drops it too. Returns the input unchanged on parse failure; the SSRF check refuses it.
  */
 export const canonicalize = (rawUrl: string): string => {
   let parsed: URL
@@ -38,6 +38,7 @@ export const canonicalize = (rawUrl: string): string => {
   }
 
   parsed.hostname = parsed.hostname.toLowerCase()
+  parsed.hash = ''
 
   if (
     (parsed.protocol === 'https:' && parsed.port === '443') ||
@@ -48,7 +49,5 @@ export const canonicalize = (rawUrl: string): string => {
 
   // WHATWG URL preserves a dangling "?" when searchParams is empty.
   // Strip it so canonical output is collision-free for cache keys.
-  return parsed.searchParams.size === 0
-    ? parsed.toString().replace(/\?(?=#|$)/, '')
-    : parsed.toString()
+  return parsed.searchParams.size === 0 ? parsed.toString().replace(/\?$/, '') : parsed.toString()
 }

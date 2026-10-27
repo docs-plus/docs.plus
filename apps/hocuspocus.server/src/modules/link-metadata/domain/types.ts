@@ -40,9 +40,23 @@ export interface ErrorResponse {
 
 export type StageResult = Omit<MetadataResponse, 'cached' | 'fetched_at'> | null
 
+/** Why the html stage missed. It goes to the `stages` log field only, never to the response. */
+export type HtmlMiss = 'status:4xx' | 'status:5xx' | 'no-title' | 'timeout' | 'error'
+
+/** A Redis entry. `fallback` marks a negative write, so a hit keeps the short header. */
+export type CacheEntry = NonNullable<StageResult> & { fallback?: true }
+
+/**
+ * Relayed bytes, an icon or a page image. `type` comes from the sniffed bytes, never the
+ * upstream header.
+ */
+export type RelayedImage = { bytes: Uint8Array<ArrayBuffer>; type: string }
+
+export type Miss = 'clean' | 'error'
+
 export interface Cache {
-  get(key: string): Promise<StageResult | null>
-  set(key: string, value: StageResult, ttlSeconds: number): Promise<void>
+  get(key: string): Promise<CacheEntry | null>
+  set(key: string, value: CacheEntry, ttlSeconds: number): Promise<void>
 }
 
 export interface Scraper {
@@ -55,11 +69,10 @@ export interface Scraper {
     author?: string
     date?: string
     lang?: string
-    url?: string
   }>
 }
 
-/** Per-stage timeouts. Centralized so tests and pipeline agree. */
+/** Per-stage timeouts. One home so the stages and their tests agree. */
 export const STAGE_TIMEOUT_MS = {
   oembed: 3_000,
   special: 3_000,
@@ -67,8 +80,10 @@ export const STAGE_TIMEOUT_MS = {
 } as const
 
 /**
- * Stages compose their own User-Agent around this rather than sharing one
- * string. `htmlScrape.ts` needs a compound UA for anti-bot allowlists, and
- * `handlers/reddit.ts` needs a plain identifier per Reddit's API guidelines.
+ * Every outbound call names docs.plus and nothing else. Never add another crawler's
+ * token or a browser string to get past a bot wall. Reddit's API guidelines ask for the
+ * plain identifier, so `handlers/reddit.ts` sends it alone. `openHop` sends it too, for
+ * the icon and image routes.
  */
 export const BOT_USER_AGENT = 'DocsplusBot/1.0' as const
+export const LINK_PREVIEW_USER_AGENT = `Mozilla/5.0 (compatible; ${BOT_USER_AGENT}; +https://docs.plus)`

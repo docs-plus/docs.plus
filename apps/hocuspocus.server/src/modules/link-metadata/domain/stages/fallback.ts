@@ -7,7 +7,6 @@ import type { StageResult } from '../types'
  */
 export const runFallback = (
   canonicalUrl: string,
-  requestedUrl: string = canonicalUrl,
   publicUrl: string | null = null
 ): NonNullable<StageResult> => {
   let parsed: URL | null
@@ -20,7 +19,7 @@ export const runFallback = (
   return {
     success: true,
     url: canonicalUrl,
-    requested_url: requestedUrl,
+    requested_url: canonicalUrl,
     title: parsed?.hostname || canonicalUrl,
     favicon:
       parsed && publicUrl

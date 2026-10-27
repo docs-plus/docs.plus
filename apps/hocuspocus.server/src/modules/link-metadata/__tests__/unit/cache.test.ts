@@ -7,15 +7,15 @@ import {
   readCache,
   writeCache
 } from '../../domain/stages/cache'
-import type { Cache, StageResult } from '../../domain/types'
+import type { Cache, CacheEntry, StageResult } from '../../domain/types'
 
 interface FakeCache extends Cache {
-  store: Map<string, StageResult>
+  store: Map<string, CacheEntry>
   lastTtl: number
 }
 
 const makeFakeCache = (): FakeCache => {
-  const store = new Map<string, StageResult>()
+  const store = new Map<string, CacheEntry>()
   const fake: FakeCache = {
     store,
     lastTtl: -1,
@@ -36,9 +36,9 @@ const sample: NonNullable<StageResult> = {
 }
 
 describe('cacheKey', () => {
-  test('uses meta:v1: prefix, sha1 of the canonical url, and the primary lang subtag', () => {
+  test('uses meta:v2: prefix, sha1 of the canonical url, and the primary lang subtag', () => {
     const key = cacheKey('https://example.com/x', 'en-US')
-    expect(key).toMatch(/^meta:v1:[a-f0-9]{40}:en$/)
+    expect(key).toMatch(/^meta:v2:[a-f0-9]{40}:en$/)
   })
 
   test('collapses a full Accept-Language header to its primary subtag', () => {

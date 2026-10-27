@@ -11,7 +11,7 @@ import { CONSUME_TIMEOUT_MS, consumeWithin, readWithin } from '../lib/consumeWit
 import { httpLogger } from '../lib/logger'
 import { rateLimitFailOpenTotal } from '../lib/metrics'
 import { getRedisClient } from '../lib/redis'
-import { LINK_ICON_PATH } from '../modules/link-metadata'
+import { LINK_ICON_PATH, LINK_IMAGE_PATH, LINK_METADATA_MOUNT_PATH } from '../modules/link-metadata'
 
 const redisClient = getRedisClient()
 
@@ -29,6 +29,11 @@ const MEDIA_READ_PATH_PREFIX = `${HYPERMULTIMEDIA_MOUNT_PATH}/`
 // One cold pad spends one point per distinct link origin, so a link-heavy page
 // would eat the global budget in a few loads.
 const LINK_ICON_BUDGET_FACTOR = 10
+
+// The metadata and image routes share this bucket, so a hovercard spends up to two
+// points per link. On the global bucket a 429 there would also break pad and chat REST
+// calls from the same address.
+const LINK_METADATA_BUDGET_FACTOR = 10
 
 // Genuine internal/direct traffic carries no proxy-forwarding headers — Traefik
 // always sets them for external requests, so this signal can't be spoofed from
@@ -275,6 +280,11 @@ export const setupMiddleware = (app: Hono, opts: MiddlewareOptions) => {
     duration: 15 * 60,
     keyPrefix: 'metadata-icon'
   })
+  const linkMetadataRateLimiter = rateLimiter({
+    points: config.security.rateLimitMax * LINK_METADATA_BUDGET_FACTOR,
+    duration: 15 * 60,
+    keyPrefix: 'link-metadata'
+  })
   app.use('*', async (c, next) => {
     if (c.req.method === 'OPTIONS') {
       return next()
@@ -289,6 +299,9 @@ export const setupMiddleware = (app: Hono, opts: MiddlewareOptions) => {
     // No method check: Hono runs a HEAD through the GET route, so HEAD spends this budget too.
     if (path === LINK_ICON_PATH) {
       return linkIconRateLimiter(c, next)
+    }
+    if (path === LINK_METADATA_MOUNT_PATH || path === LINK_IMAGE_PATH) {
+      return linkMetadataRateLimiter(c, next)
     }
 
     // The public read only. The POST on this same prefix is an upload, and it

@@ -21,10 +21,8 @@ describe('canonicalize', () => {
     )
   })
 
-  test('preserves hash fragment', () => {
-    expect(canonicalize('https://example.com/x?utm_source=x#section')).toBe(
-      'https://example.com/x#section'
-    )
+  test('drops the hash fragment', () => {
+    expect(canonicalize('https://example.com/x?utm_source=x#section')).toBe('https://example.com/x')
   })
 
   test('lowercases hostname but preserves path case', () => {
@@ -65,7 +63,7 @@ describe('canonicalize', () => {
     expect(canonicalize(url)).toBe('https://example.com/x?keep=1')
   })
 
-  test('strips an empty query before a fragment', () => {
-    expect(canonicalize('https://example.com/?#section')).toBe('https://example.com/#section')
+  test('strips an empty query and the fragment after it', () => {
+    expect(canonicalize('https://example.com/?#section')).toBe('https://example.com/')
   })
 })

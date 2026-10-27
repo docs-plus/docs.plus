@@ -1,13 +1,15 @@
 import { safeFetch } from '../ssrf'
-import { STAGE_TIMEOUT_MS, type StageResult } from '../types'
+import { LINK_PREVIEW_USER_AGENT, STAGE_TIMEOUT_MS, type StageResult } from '../types'
 
 interface ProviderEntry {
   match: (host: string) => boolean
+  /** Only these paths have an oEmbed answer. Other paths go straight to the next stage. */
+  path?: RegExp
   endpoint: (url: string) => string
 }
 
 /** Endpoints come from each provider's published oEmbed docs (the oembed.com
- *  registry); matching is hostname-based, so entry order does not matter. */
+ *  registry). No two entries match the same URL, so entry order does not matter. */
 const PROVIDERS: ProviderEntry[] = [
   {
     match: (h) => /(^|\.)youtube\.com$|(^|\.)youtu\.be$/.test(h),
@@ -22,15 +24,8 @@ const PROVIDERS: ProviderEntry[] = [
     endpoint: (u) => `https://publish.x.com/oembed?format=json&url=${encodeURIComponent(u)}`
   },
   {
-    match: (h) => /(^|\.)open\.spotify\.com$|(^|\.)spotify\.com$/.test(h),
-    endpoint: (u) => `https://open.spotify.com/oembed?url=${encodeURIComponent(u)}`
-  },
-  {
-    match: (h) => /(^|\.)soundcloud\.com$/.test(h),
-    endpoint: (u) => `https://soundcloud.com/oembed?format=json&url=${encodeURIComponent(u)}`
-  },
-  {
     match: (h) => /(^|\.)reddit\.com$/.test(h),
+    path: /^\/r\/[^/]+\/comments\//,
     endpoint: (u) => `https://www.reddit.com/oembed?url=${encodeURIComponent(u)}`
   },
   {
@@ -69,13 +64,14 @@ interface OembedJson {
 }
 
 const findProvider = (url: string): ProviderEntry | null => {
-  let host: string
+  let parsed: URL
   try {
-    host = new URL(url).hostname.toLowerCase()
+    parsed = new URL(url)
   } catch {
     return null
   }
-  return PROVIDERS.find((p) => p.match(host)) ?? null
+  const host = parsed.hostname.toLowerCase()
+  return PROVIDERS.find((p) => p.match(host) && (p.path?.test(parsed.pathname) ?? true)) ?? null
 }
 
 const oembedTypeToMediaType = (
@@ -97,17 +93,19 @@ export const runOembed = async (canonicalUrl: string): Promise<StageResult> => {
   try {
     const response = await safeFetch(provider.endpoint(canonicalUrl), {
       signal: controller.signal,
-      headers: { Accept: 'application/json' }
+      headers: { Accept: 'application/json', 'User-Agent': LINK_PREVIEW_USER_AGENT }
     })
     if (!response.ok) return null
 
     const data = (await response.json()) as OembedJson
+    // A reply with no title is a miss. The hostname as title was cached as a 24 h positive.
+    if (!data.title) return null
 
     return {
       success: true,
       url: canonicalUrl,
       requested_url: canonicalUrl,
-      title: data.title || new URL(canonicalUrl).hostname,
+      title: data.title,
       media_type: oembedTypeToMediaType(data.type),
       author:
         data.author_name || data.author_url

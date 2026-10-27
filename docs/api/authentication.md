@@ -28,7 +28,7 @@ Never ship it to a browser, a mobile application, or any client you do not contr
 
 ## What each credential can call
 
-**No credential needed.** The health paths, `GET /api/metadata`, `GET /api/metadata/icon`, reading one media file, the email unsubscribe pages, `GET /api/email/health`, `GET /api/email/status`, and `POST /api/email/validate`.
+**No credential needed.** The health paths, `GET /api/metadata`, `GET /api/metadata/icon`, `GET /api/metadata/image`, reading one media file, the email unsubscribe pages, `GET /api/email/health`, `GET /api/email/status`, and `POST /api/email/validate`.
 
 The unsubscribe link carries its own `token`, and that token is its only credential. A `GET` of the link checks the token and shows a confirm page. It changes nothing, so a mail link scanner cannot unsubscribe a reader. The page's button posts `confirm=yes` and gets an HTML result. Any other `POST` body is the RFC 8058 one-click post from a mail client, and it gets JSON.
 

@@ -9,7 +9,7 @@ export const linkMetadataPaths: OpenApiPaths = {
       operationId: 'getLinkMetadata',
       summary: 'Unfurl a URL',
       description:
-        "Runs a cache → oEmbed → host-handler → HTML-scrape pipeline with SSRF protection. Honors `Accept-Language`. Responses set `Cache-Control` (positive for hits, short negative for fallbacks) and `Vary: Accept-Language`. Errors use this module's own top-level `code` / `message` shape, not the house envelope.",
+        "Runs a cache → oEmbed → special → HTML-scrape pipeline with SSRF protection. Honors `Accept-Language`. Each `200` answer sets `Cache-Control` (positive for hits, short negative for fallbacks) and `Vary: Accept-Language`. Errors use this module's own top-level `code` / `message` shape, not the house envelope.",
       tags: ['Link metadata'],
       security: [{}],
       // The zod `.refine()` scheme guard has no JSON Schema equivalent, so it is
@@ -33,6 +33,44 @@ export const linkMetadataPaths: OpenApiPaths = {
             'Malformed URL (`INVALID_URL`) or blocked by the SSRF guard (`BLOCKED_URL`).',
           content: {
             'application/json': { schema: { $ref: '#/components/schemas/LinkMetadataError' } }
+          }
+        },
+        '429': rateLimitedRef
+      }
+    }
+  },
+  '/api/metadata/image': {
+    get: {
+      operationId: 'getLinkImage',
+      summary: 'Fetch a page image',
+      description:
+        'Takes a page URL and relays its page image (PNG, ICO, GIF, JPEG or WebP, up to 2 MiB) through the SSRF guard. It runs the `/api/metadata` pipeline for the page, usually a cache hit. Then it fetches the page image that result names (`image.url`): an `og:image`, or an oEmbed or site thumbnail. The 5 s timer covers only that image fetch; on a cache miss the pipeline runs first. `Content-Type` comes from the bytes only, and SVG never passes. A miss is an empty `204`. The `200` and `204` answers set `Vary: Accept-Language`. Shares the `/api/metadata` rate-limit bucket.',
+      tags: ['Link metadata'],
+      security: [{}],
+      parameters: toParameters(metadataQuerySchema, 'query', {
+        url: 'Required. The page URL. Must use the http(s) scheme and be at most 2048 characters.'
+      }),
+      responses: {
+        '200': {
+          description: 'The image bytes. Cached for one day.',
+          content: { 'image/*': { schema: { type: 'string', format: 'binary' } } },
+          headers: {
+            'Cache-Control': { schema: { type: 'string' } },
+            Vary: { schema: { type: 'string' } }
+          }
+        },
+        '400': {
+          description: 'Malformed URL (`INVALID_URL`).',
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/LinkMetadataError' } }
+          }
+        },
+        '204': {
+          description:
+            'No usable image: a fallback page, no page image, the SSRF guard, a timeout, a non-2xx answer, bytes that are not an allowed image, or a body over the cap. Cached for ten minutes.',
+          headers: {
+            'Cache-Control': { schema: { type: 'string' } },
+            Vary: { schema: { type: 'string' } }
           }
         },
         '429': rateLimitedRef

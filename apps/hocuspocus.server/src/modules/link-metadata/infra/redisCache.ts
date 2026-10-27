@@ -1,5 +1,5 @@
 import type { RedisClient } from '../../../types/redis.types'
-import type { Cache, StageResult } from '../domain/types'
+import type { Cache, CacheEntry } from '../domain/types'
 
 /**
  * Implements the `Cache` port using ioredis. Cache failures are logged
@@ -21,7 +21,7 @@ export const createRedisCache = (redis: RedisClient | null): Cache => {
       try {
         const raw = await redis.get(key)
         if (!raw) return null
-        return JSON.parse(raw) as StageResult
+        return JSON.parse(raw) as CacheEntry
       } catch {
         return null
       }

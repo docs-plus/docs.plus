@@ -8,23 +8,8 @@ describe('runFallback', () => {
     expect(result.title).toBe('example.com')
   })
 
-  test('returns canonical url and requested url separately', () => {
-    const result = runFallback('https://example.com/x', 'https://example.com/x?utm_source=foo')
-    expect(result.url).toBe('https://example.com/x')
-    expect(result.requested_url).toBe('https://example.com/x?utm_source=foo')
-  })
-
-  test('defaults requested_url to canonical when not provided', () => {
-    const result = runFallback('https://example.com/x')
-    expect(result.requested_url).toBe('https://example.com/x')
-  })
-
   test('emits the icon route URL when publicUrl is set', () => {
-    const result = runFallback(
-      'https://example.com/x',
-      'https://example.com/x',
-      'http://localhost:4000'
-    )
+    const result = runFallback('https://example.com/x', 'http://localhost:4000')
     expect(result.favicon).toBe(
       'http://localhost:4000/api/metadata/icon?origin=https%3A%2F%2Fexample.com'
     )
