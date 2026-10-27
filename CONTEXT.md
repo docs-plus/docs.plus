@@ -28,6 +28,10 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **Command jump** — Mod+Shift+K opens a dialog of places and owned pads. It moves the reader; it inserts nothing. Not the Slash menu.
 - **Link icon** — the 1em element before a pad link's text, class `hyperlink-icon`, from `padLinkIcon`: the docs.plus logo, a mail or phone glyph, or the site's favicon. Not stored in the document.
   _Avoid_: favicon (for the element), inline icon, decoration, widget
+- **Hovercard** — the desktop pad card that opens when the pointer rests on an external link. It shows the page's picture, site, title and description, all of it fetched by our server, never straight from the linked site. Read-only; a click opens the link preview instead. Not on the phone or in chat.
+  _Avoid_: hover card, link tooltip, preview (the click popover)
+- **Page image** — the one picture `GET /api/metadata` names for a page, as `image.url`. It can come from `og:image`, an oEmbed `thumbnail_url`, or a site handler such as the GitHub avatar or the Reddit or Wikipedia thumbnail. `GET /api/metadata/image` relays it. User-facing text says "the page's picture".
+  _Avoid_: social image, share card, og:image (for the value), hovercard picture
 - **Diagram** — a code block whose language is exactly `mermaid`. The pad draws it with Pele below its source (`@docs.plus/extension-mermaid`). The document stores only the source text.
   _Avoid_: mermaid block, chart
 - **Fold module** — the per-editor owner of each Diagram's folded state, head and Copy state (`createFolds`, `extensions/extension-mermaid/src/nodeView/fold.ts`). It writes `data-source` as output, and no script reads it back. Known limit: `blockAt` finds a block through `view.nodeDOM(pos)`. A host that wraps the node view DOM silently breaks caret-enter open and the arrow-key step.

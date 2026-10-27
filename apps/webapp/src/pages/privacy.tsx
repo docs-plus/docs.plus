@@ -61,16 +61,37 @@ export default function PrivacyPage() {
         <p>We do not sell personal data.</p>
       </LegalSection>
 
-      <LegalSection title="Link icons">
+      <LegalSection title="Link icons and previews">
         <p>
           When you open a document, your browser asks our server for the icon of each linked
-          website. It does the same when you view profile links or a link preview. The request
-          carries the site address, not the full link.
+          website. It does the same for profile links, link previews and the hovercard. The request
+          carries the site address only, not the full link. Our server fetches the icon, so the site
+          sees our server, not you.
         </p>
         <p>
-          Our server then fetches that icon from the site, so the site sees our server, not you.
+          A link preview, the hovercard and an embed thumbnail in chat or in Insert media work
+          another way. Adding a web link to your profile works this way too. Your browser sends the
+          full link to our server. Our server fetches the page. For the hovercard and embed
+          thumbnails, it also fetches the page's picture. So the site sees our server, not you. Our
+          server may pass on your browser's first language, such as en, so the page can answer in
+          it. Our server keeps the preview for up to a day, and the stored preview can hold the
+          link. A web link on your profile keeps its title and description with your profile until
+          you remove it.
         </p>
-        <p>Our logs keep your IP address and the request path, not the site address.</p>
+        <p>
+          Our logs keep your IP address, your browser's user agent and the request path. For a
+          preview, our server also logs the host of the linked site, never the full link.
+        </p>
+        <p>Some things load straight from other sites, so those sites see you:</p>
+        <ul className="list-disc space-y-2 pl-5">
+          <li>Embedded players, such as YouTube, Vimeo, SoundCloud, Spotify, Loom and X.</li>
+          <li>Pictures, videos and audio from other sites, in a document or in chat.</li>
+          <li>
+            The GIF picker in chat, when it is on: your searches, the results and the GIF you choose
+            load from GIPHY. Readers see our copy.
+          </li>
+          <li>YouTube thumbnails.</li>
+        </ul>
       </LegalSection>
 
       <LegalSection title="Where mail data goes">

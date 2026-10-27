@@ -13,7 +13,7 @@ type FieldProps = { form: HyperlinkEditorForm }
 const fieldLabelClassName = (isDesktop: boolean) => (isDesktop ? 'sr-only' : uiFieldLabelClassName)
 
 export function HyperlinkEditorTextField({ form }: FieldProps): ReactNode {
-  const { isCreate, isDesktop, text, textInputId, setText, setTextTouched } = form
+  const { isCreate, isDesktop, text, textInputId, setText } = form
   if (isCreate) return null
 
   return (
@@ -27,10 +27,7 @@ export function HyperlinkEditorTextField({ form }: FieldProps): ReactNode {
       startIcon={Icons.textFormat}
       iconSize={18}
       data-testid="hyperlink-editor-text"
-      onChange={(event) => {
-        setText(event.target.value)
-        setTextTouched(true)
-      }}
+      onChange={(event) => setText(event.target.value)}
     />
   )
 }

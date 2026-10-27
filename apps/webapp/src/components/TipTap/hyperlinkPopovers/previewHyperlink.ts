@@ -9,6 +9,7 @@ import {
 } from '@docs.plus/extension-hyperlink'
 import { useSheetStore, useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
+import { lucideSvgString } from '@utils/lucideSvgString'
 import { COPY_FADE_HOLD_MS, prefersReducedMotion } from '@utils/motion'
 
 import { classifyInternalDocumentLink } from './internalDocumentLink'
@@ -16,7 +17,6 @@ import {
   createInternalLinkChip,
   observeDetachment,
   type PreviewContext,
-  renderIconMarkup,
   renderMetadataInto
 } from './previewShared'
 
@@ -68,8 +68,8 @@ export default function previewHyperlink(options: PreviewHyperlinkOptions): HTML
 }
 
 /**
- * No `onBack` re-show wiring is needed: the prebuilt edit popover's Back
- * closes over its own options and re-opens the preview itself.
+ * No `onBack` is passed to the edit form: its Back runs `handleEditBack`, which rebuilds
+ * this preview from the live `<a>`.
  */
 const buildAndObserveDesktopPopover = (
   options: PreviewHyperlinkOptions,
@@ -100,19 +100,19 @@ const buildDesktopPopover = (
     className: 'copy',
     title: 'Copy link',
     ariaLabel: 'Copy link',
-    innerHTML: `<span class="swap" aria-hidden><span class="swap-on">${renderIconMarkup(Icons.check, 18, 'text-success')}</span><span class="swap-off">${renderIconMarkup(Icons.copy, 18)}</span></span>`
+    innerHTML: `<span class="swap" aria-hidden><span class="swap-on text-success">${lucideSvgString(Icons.check, 18)}</span><span class="swap-off">${lucideSvgString(Icons.copy, 18)}</span></span>`
   })
   const editButton = createHTMLElement('button', {
     className: 'edit',
     title: 'Edit link',
     ariaLabel: 'Edit link',
-    innerHTML: renderIconMarkup(Icons.pencil, 18)
+    innerHTML: lucideSvgString(Icons.pencil, 18)
   })
   const removeButton = createHTMLElement('button', {
     className: 'remove',
     title: 'Remove link',
     ariaLabel: 'Remove link',
-    innerHTML: renderIconMarkup(Icons.unlink, 18)
+    innerHTML: lucideSvgString(Icons.unlink, 18)
   })
 
   copyButton.addEventListener('click', () => {

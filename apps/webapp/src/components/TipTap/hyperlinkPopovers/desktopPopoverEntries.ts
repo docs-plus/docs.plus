@@ -1,38 +1,21 @@
 import {
-  buildPreviewOptionsFromAnchor,
   type CreateHyperlinkOptions,
   type EditHyperlinkOptions,
-  getDefaultController,
-  openPreviewHyperlink
+  getDefaultController
 } from '@docs.plus/extension-hyperlink'
 import type { Editor } from '@tiptap/core'
 
 import { applyCreate } from './commands/applyCreate'
 import { applyEdit } from './commands/applyEdit'
+import { handleEditBack } from './handleEditBack'
 import { setActivePopover } from './hyperlinkPopoverStore'
-import { getHyperlinkDisplayText } from './linkMarkUtils'
+import { getHyperlinkDisplayText, storedHrefOf } from './linkMarkUtils'
 import type { ActivePopover } from './types'
 
-/** Ask the extension's controller to hide; close() detaches the host and emits `idle`, the store subscriber clears `active`, the portal unmounts. */
+/** Ask the controller to hide. close() emits `idle`, the store subscriber clears `active`, and the portal unmounts. */
 const dismiss = (editor: Editor) => {
   getDefaultController().close()
   if (!editor.isDestroyed) editor.commands.focus()
-}
-
-/** Caller `onBack` wins; otherwise rebuild the preview popover from the live `<a>` and hand back. */
-const handleEditBack = (opts: EditHyperlinkOptions): void => {
-  if (opts.onBack) {
-    opts.onBack()
-    return
-  }
-  openPreviewHyperlink(
-    buildPreviewOptionsFromAnchor({
-      editor: opts.editor,
-      link: opts.link,
-      validate: opts.validate,
-      isAllowedUri: opts.isAllowedUri
-    })
-  )
 }
 
 const buildHost = (testId: string): HTMLElement => {
@@ -55,34 +38,37 @@ const buildCreateProps = (opts: CreateHyperlinkOptions): ActivePopover['props'] 
   onClose: () => dismiss(opts.editor)
 })
 
-const buildEditProps = (opts: EditHyperlinkOptions): ActivePopover['props'] => ({
-  mode: 'edit',
-  editor: opts.editor,
-  initialHref: opts.link.getAttribute('href') ?? '',
-  initialText: getHyperlinkDisplayText(opts.editor, {
-    nodePos: opts.nodePos,
-    link: opts.link,
-    markName: opts.markName
-  }),
-  validate: opts.validate,
-  defaultSuggestionsState: 'collapsed',
-  onApply: ({ href, text }) => {
-    const applied = applyEdit(opts, { href, text })
-    if (applied) dismiss(opts.editor)
-    return applied
-  },
-  onBack: () => handleEditBack(opts),
-  onClose: () => dismiss(opts.editor)
-})
+const buildEditProps = (opts: EditHyperlinkOptions): ActivePopover['props'] => {
+  const expectedHref = storedHrefOf(opts)
+  return {
+    mode: 'edit',
+    editor: opts.editor,
+    initialHref: opts.link.getAttribute('href') ?? '',
+    initialText: getHyperlinkDisplayText(opts.editor, {
+      nodePos: opts.nodePos,
+      link: opts.link,
+      markName: opts.markName
+    }),
+    validate: opts.validate,
+    defaultSuggestionsState: 'collapsed',
+    onApply: ({ href, text }) => {
+      const applied = applyEdit({ ...opts, expectedHref }, { href, text })
+      if (applied) dismiss(opts.editor)
+      return applied
+    },
+    onBack: () => handleEditBack(opts),
+    onClose: () => dismiss(opts.editor)
+  }
+}
 
 export function createHyperlinkDesktop(opts: CreateHyperlinkOptions): HTMLElement {
   const host = buildHost('hyperlink-create-popover')
-  setActivePopover({ kind: 'create', host, props: buildCreateProps(opts) })
+  setActivePopover({ host, props: buildCreateProps(opts) })
   return host
 }
 
 export function editHyperlinkDesktop(opts: EditHyperlinkOptions): HTMLElement {
   const host = buildHost('hyperlink-edit-popover')
-  setActivePopover({ kind: 'edit', host, props: buildEditProps(opts) })
+  setActivePopover({ host, props: buildEditProps(opts) })
   return host
 }

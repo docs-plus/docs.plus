@@ -16,7 +16,7 @@ export const getFormattedHref = (link: LinkItem): string => {
 }
 
 /**
- * Our REST icon route. A miss is an empty 404, so each <img> needs onError.
+ * Our REST icon route. A miss is an empty 204, so each <img> needs onError.
  * Credentials are refused because `mailto:a@b.com` parses as user `mailto` at `b.com`.
  */
 export const getSiteIconUrl = (url: string): string | undefined => {
@@ -30,30 +30,13 @@ export const getSiteIconUrl = (url: string): string | undefined => {
   }
 }
 
-/**
- * Image URLs are gated to http(s) only. A hostile metadata source could otherwise
- * smuggle a `data:` or `javascript:` URL into the icon slot. That slot is rendered
- * into an `<img src>` downstream.
- */
 export const sanitizeMetadata = (raw: Record<string, unknown>): LinkMetadata => {
   const str = (val: unknown): string | undefined =>
     typeof val === 'string' && val.trim() !== '' ? val.trim() : undefined
 
-  const httpStr = (val: unknown): string | undefined => {
-    const s = str(val)
-    return s && /^https?:\/\//i.test(s) ? s : undefined
-  }
-
-  const publisher =
-    raw.publisher && typeof raw.publisher === 'object'
-      ? (raw.publisher as Record<string, unknown>)
-      : undefined
-
   return {
     title: str(raw.title),
-    description: str(raw.description),
-    icon: httpStr(raw.icon),
-    themeColor: str(publisher?.theme_color) || str(raw.themeColor)
+    description: str(raw.description)
   }
 }
 

@@ -10,8 +10,6 @@ export enum LinkType {
 export interface LinkMetadata {
   title?: string
   description?: string
-  icon?: string
-  themeColor?: string
 }
 
 export interface LinkItem {

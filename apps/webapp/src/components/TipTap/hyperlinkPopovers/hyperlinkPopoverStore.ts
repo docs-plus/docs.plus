@@ -31,14 +31,16 @@ export const useActivePopover = (): ActivePopover | null =>
     () => null
   )
 
-// One-time subscription at module load. Idle = Apply / click-outside /
-// Esc / scroll-stickiness loss / route change. Flag on `globalThis`
-// prevents duplicate listeners under HMR / Jest module-cache replays.
+// One-time subscription at module load. Idle = Apply / click-outside / Esc / scroll-stickiness
+// loss / route change. A popover that does not hold our host (the preview after Back, another
+// link's click) also clears it, so no stale form waits. Flag on `globalThis` prevents duplicate
+// listeners under HMR / Jest module-cache replays.
 const SUBSCRIPTION_FLAG = '__hyperlinkControllerSubscribed'
 const g = globalThis as Record<string, unknown>
 if (!g[SUBSCRIPTION_FLAG]) {
   g[SUBSCRIPTION_FLAG] = true
   getDefaultController().subscribe((state) => {
-    if (state.kind === 'idle') setActivePopover(null)
+    if (!active) return
+    if (state.kind === 'idle' || !state.element.contains(active.host)) setActivePopover(null)
   })
 }

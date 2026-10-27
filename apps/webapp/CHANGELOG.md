@@ -27,6 +27,15 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - The Home Screen app links launch images for 440x956, 402x874, 420x912, 428x926 and 375x812
   at 3x, next to the three sizes it had. Every other iPhone, the iPhone 17 line among them,
   used to open on a black screen ([#255](https://github.com/docs-plus/docs.plus/issues/255)).
+- On a desktop pad, resting the pointer on an external link for 400 ms opens the hovercard
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)). It shows the page's picture,
+  site icon, host, title and description, and all of it comes through our server. It is
+  read-only, and a press or a key closes it. The phone and chat do not get it. The site icon and
+  host come from the link itself. Only the title, description and picture come from the page.
+- One link-metadata cache, `fetchMetadata.ts`, serves the click preview, the phone sheet, the
+  hovercard and media unfurls ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+  Callers of one link share one request, and a hover that leaves still fills the cache for the
+  click that follows.
 
 ### Changed
 
@@ -42,6 +51,20 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- **The link form refuses a sentence.** `validateURL` from the hyperlink extension now accepts
+  only one whole link. Before, `hello google.com` passed the pad and chat link forms.
+- **Editing a link's URL no longer reverts a co-editor's link text.** When you leave the Text
+  field untouched, Apply sends only the new `href`. Before, it sent the text from when the form
+  opened.
+- **Edit then Back no longer leaves a stale edit form.** The popover store now also clears the
+  form when the open popover does not hold its host. Two examples are the preview after Back and
+  a click on another link.
+- **In the pad, Edit and Remove act only on the link they opened on.** The desktop and phone Edit
+  forms and the phone sheet's Remove take the raw `href` the link had when they opened. They pass
+  it to `getMarkRange`. If a co-editor's change moved another link under the stored position, the
+  action does nothing. Before, Edit or Remove could hit that other link.
+- **Chat embed thumbnails load through our server.** Vimeo, SoundCloud, Spotify and
+  Loom thumbnails in chat and in Insert media now come from `GET /api/metadata/image`.
 - **The chat icon in the phone TOC drawer opens the chat on iPhone Safari again
   ([#639](https://github.com/docs-plus/docs.plus/issues/639)).** The tap closes the drawer, and
   the drawer pops its history entry. Safari lands that pop about 90 ms later, after the chat pane
@@ -80,6 +103,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   link previews load site icons from the docs.plus server. Before, each icon sent the reader's IP
   address and the site's origin to Google. A new Settings link no longer stores a fallback favicon
   URL. The privacy page now has a "Link icons" section.
+- **A new Settings link stores only the page's title and description
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).** `sanitizeMetadata` no longer
+  keeps the site's own icon address or theme color, which nothing read. Links saved before keep
+  them, unread.
 
 ## [2.2.0] — 2026-10-22
 

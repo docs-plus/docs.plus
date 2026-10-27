@@ -10,15 +10,15 @@ export interface UseLinkMetadataResult {
 }
 
 /**
- * Session cache, then REST, aborting on unmount. Stored mark attrs are
- * never read. `href` is read once on mount; the bottom sheet remounts per
- * link, so no consumer needs a reactive update.
+ * Session cache, then REST. On unmount the late result is dropped; the shared request
+ * still fills the cache. Stored mark attrs are never read. `href` is read once on mount;
+ * the bottom sheet remounts per link, so no consumer needs a reactive update.
  */
 export const useLinkMetadata = (href: string): UseLinkMetadataResult => {
   const [state, setState] = useState<UseLinkMetadataResult>(() => {
     // `getCachedMetadata` returns a tri-state:
     //   `undefined` → no entry (need to fetch)
-    //   `null`      → previously cached failure (treat as error, don't refetch)
+    //   `null`      → no card for this href (non-http(s), a 400, or success:false)
     //   `MetadataResponse` → cache hit
     const cached = getCachedMetadata(href)
     if (cached) return { status: 'loaded', data: cached }
@@ -29,14 +29,12 @@ export const useLinkMetadata = (href: string): UseLinkMetadataResult => {
   useEffect(() => {
     if (state.status !== 'loading') return
     const controller = new AbortController()
-    fetchMetadata(href, { signal: controller.signal }).then((data) => {
+    fetchMetadata(href).then((data) => {
       if (controller.signal.aborted) return
       setState(data ? { status: 'loaded', data } : { status: 'error', data: null })
     })
     return () => controller.abort()
-    // We intentionally only re-run when href changes. A status flip from
-    // 'loading' is driven by this effect itself. Refiring on every state
-    // change would cancel the in-flight fetch we just started.
+    // Re-run only when href changes. The status flip comes from this effect itself.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [href])
 

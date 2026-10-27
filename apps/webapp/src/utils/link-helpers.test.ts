@@ -5,7 +5,7 @@
 
 import { TIPTAP_NODES } from '@types'
 
-import { buildHeadingHref } from './link-helpers'
+import { buildHeadingHref, getSiteIconUrl } from './link-helpers'
 
 const makeEditor = (
   children: Array<{ type: string; text: string; tocId?: string; level?: number }>
@@ -93,5 +93,26 @@ describe('buildHeadingHref', () => {
     const url = new URL(buildHeadingHref(editor, 'h-empty'))
     expect(url.searchParams.get('h')).toBe('')
     expect(url.searchParams.get('id')).toBe('h-empty')
+  })
+})
+
+describe('getSiteIconUrl', () => {
+  const API = 'https://api.example/api'
+  const saved = process.env.NEXT_PUBLIC_RESTAPI_URL
+  beforeAll(() => {
+    process.env.NEXT_PUBLIC_RESTAPI_URL = API
+  })
+  afterAll(() => {
+    process.env.NEXT_PUBLIC_RESTAPI_URL = saved
+  })
+
+  it('asks the icon route with the origin only', () => {
+    expect(getSiteIconUrl('https://github.com/docs-plus/docs.plus/pull/1?x=1#y')).toBe(
+      `${API}/metadata/icon?origin=${encodeURIComponent('https://github.com')}`
+    )
+  })
+
+  it('gives a mailto: link no icon URL, though it parses as user mailto at a host', () => {
+    expect(getSiteIconUrl('mailto:a@b.c')).toBeUndefined()
   })
 })

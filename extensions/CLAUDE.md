@@ -38,36 +38,46 @@ Extension-internal rules (schema, commands, click handling, safety/normalization
 
 - The extension stays host-agnostic. `popovers.createHyperlink` / `popovers.editHyperlink` are callbacks returning `HTMLElement | null`.
 - Desktop create/edit entries create an empty host and set only `host.dataset.testid`. Never set `host.className`.
-- Register `{ kind, host, props }` via `setActivePopover` in `hyperlinkPopoverStore.ts`.
+- Register `{ host, props }` via `setActivePopover` in `hyperlinkPopoverStore.ts`.
 - Webapp Edit forms fill Text through `getHyperlinkDisplayText` in `linkMarkUtils.ts`, never from `innerText` directly.
 - The webapp never writes preview metadata into mark attrs. Previews read the session cache and REST.
 - Return the host so the extension's floating controller positions it.
 - A control that opens the create popover must not chain `.focus()` before `openCreateHyperlinkPopover()`. TipTap's `focus()` calls `view.focus()` in a rAF when the pad is blurred, so it takes the caret back from the URL field. Use `.scrollIntoView()` when the selection must scroll. `Mod-k` and the slash item keep the pad focused, so they do not race.
 - A single React `<HyperlinkPopoverPortal>` reads the active popover via `useActivePopover` and portals `<HyperlinkEditor>` with `<HyperlinkSuggestions>` into the host. `DesktopEditor.tsx` mounts it; `pages/editor.tsx` mounts it for the standalone playground. Never mount a second `HyperlinkPopoverPortal` inside `MessageComposer` when `DesktopEditor` already mounts the page-level one.
 - Tests select by `data-testid` only. Do not restore legacy class selectors.
-- `hyperlinkPopoverStore.ts` subscribes once at module load to `getDefaultController().subscribe((state) => state.kind === 'idle')`.
+- `hyperlinkPopoverStore.ts` subscribes once at module load to `getDefaultController().subscribe(…)`. It clears `active` on `idle`, or when the mounted `state.element` does not contain `active.host`. The second case is the preview after Edit then Back, or a click on another link, so no stale edit form stays mounted.
 - The idle discriminator is `idle`, not `closed`.
 - The subscription is guarded by `globalThis.__hyperlinkControllerSubscribed` (`SUBSCRIPTION_FLAG`) so HMR/Jest module-cache replays do not stack listeners.
-- Legacy `.hyperlink-create-popover` and `.hyperlink-edit-popover` SCSS blocks were removed from `styles/styles.scss`.
-- Only `.hyperlink-preview-popover` keeps SCSS because preview is still rendered by imperative DOM.
+- Legacy `.hyperlink-create-popover` and `.hyperlink-edit-popover` SCSS blocks were removed from `apps/webapp/src/styles/document-styles.scss`.
+- `.hyperlink-preview-popover` and `.hyperlink-hovercard` keep SCSS because both are imperative DOM. `.hyperlink-link-popover-shell` keeps the shared frame and the input focus-ring fix.
+- **Hovercard (#242).** `attachLinkHovercard` (`apps/webapp/src/components/TipTap/hyperlinkPopovers/linkHovercard.ts`) is desktop pad only. `DesktopEditor` mounts it on the pad editor instance, so the composer never gets it.
+  - It opens after a 400 ms dwell on an external `http(s)` link, and adopts the controller as kind `'link-hovercard'`. It never calls `openPreviewHyperlink` or `getDefaultController().close()`.
+  - It builds nothing while another popover kind is mounted, because `adopt()` destroys the current owner. Without that gate, a hover destroyed an open edit form.
+  - A press or a key ends the hover, so the click preview, create and edit always win. The leave timer hides only its own popover.
+  - The page image (`image.url`) loads through `metadataImageUrl` (`GET /api/metadata/image`, which takes the page URL), never straight from the linked site. The privacy page promises that.
+  - The site icon in the hovercard, the click preview and the phone sheet comes from our icon route only (`getSiteIconUrl`). A miss hides the img; the sheet keeps its grey box. Never load the scraped `icon` straight from the linked site.
+- **One metadata cache.** `fetchMetadata.ts` is the only client cache, and every preview and the hovercard read it. Do not read stored mark `title` or `image` (#519).
+  - One string is both the cache key and the `?url=` value. Non-`http(s)` hrefs resolve to `null` with no request.
+  - Callers of one URL share one request. No caller can abort it, so a hover that leaves still fills the cache for the next click. Each caller drops its own late result.
+  - Only a 400 or a `success: false` body is cached as `null`. A 429, a 5xx, a timeout or a network error is not cached.
 - Create popover UX is minimal: one inline `[URL input] [Add]` row plus suggestions; no header and no Cancel.
 - Edit popover keeps back arrow, URL/Text labels, and Update.
 - Mobile `LinkEditorSheet` dismisses through drag/backdrop and also has no Cancel.
 - Controls use DaisyUI: `input input-sm`, `input-error`, `btn btn-primary btn-sm`, `btn btn-ghost btn-sm btn-square`.
 - Suggestions data:
-  - headings from top-level `doc.content` children, same source as `useTocActions.copyLink`;
+  - headings from `doc.descendants` (`collectHeadings.ts`), so a heading inside a blockquote or a table cell counts too;
   - current-workspace bookmarks, both active and archived via parallel `getUserBookmarks` calls;
   - active bookmarks sort before archived.
 - Suggestion URLs are absolute and reuse `useTocActions.copyLink` and `BookmarkItem.handleCopyUrl` shapes:
   - headings: `?h=...&id=<headingId>`;
   - bookmarks: `?msg_id=...&chatroom=...`.
-- Picker command contract: choosing a heading/bookmark during create applies only `href` when text is selected. Choosing a suggestion during edit updates only URL unless the user explicitly edited the Text field.
+- Picker command contract: choosing a heading/bookmark during create applies only `href` when text is selected. During edit, a typed URL and a picked suggestion both change only `href`, unless the user edited the Text field.
 - Suggestion states are collapsed -> browsing -> searching.
 - Desktop default state is `collapsed`; mobile default state is `browsing`.
 - Webapp icon catalog (preview popover only; pad link icons follow `padLinkIcon`, whose glyphs are Lucide and whose one image file is the docs.plus logo):
   - `hyperlinkPopovers/iconList.ts` was deleted.
   - `previewShared.ts::TYPE_TO_ICON` maps `SpecialUrlType` to Lucide icons from `Icons` (`@components/icons/registry`), typed `Partial<Record<SpecialUrlType, IconType>>` (`IconType` from `react-icons`).
-  - It is intentionally partial so domain-catalog types such as `meet` or web `github` can be absent; favicon wins for `https://` URLs.
+  - It is intentionally partial. An http(s) URL always gets the route icon img, and a miss hides it, so web entries such as `github` never show their glyph. Only app schemes such as `github:` do.
   - Use Lucide React components only.
   - Do not reintroduce per-platform `Fa*` / `Si*` icons or hard-coded SVG strings.
 

@@ -4,33 +4,13 @@ import { apiBaseUrl } from '@utils/apiBaseUrl'
 export interface MetadataResponse {
   success: true
   url: string
-  requested_url: string
   title: string
   description?: string
-  lang?: string
-  media_type?: 'website' | 'article' | 'video' | 'audio' | 'image' | 'profile' | 'document'
-  author?: { name?: string; url?: string; avatar?: string }
-  publisher?: { name?: string; url?: string; logo?: string; theme_color?: string }
-  image?: { url: string; width?: number; height?: number; alt?: string }
-  icon?: string
-  favicon?: string
-  oembed?: {
-    type: 'video' | 'rich' | 'photo' | 'link'
-    provider: string
-    width?: number
-    height?: number
-    thumbnail?: string
-  }
-  published_at?: string
-  modified_at?: string
-  cached: boolean
-  fetched_at: string
+  image?: { url: string }
 }
 
 interface ErrorResponse {
   success: false
-  message: string
-  code: 'INVALID_URL' | 'BLOCKED_URL'
 }
 
 type ApiResponse = MetadataResponse | ErrorResponse
@@ -41,65 +21,93 @@ interface CacheEntry {
 }
 
 const CACHE_TTL_MS = 5 * 60 * 1000
+const REQUEST_TIMEOUT_MS = 15_000
 const sessionCache = new Map<string, CacheEntry>()
+const inFlight = new Map<string, Promise<MetadataResponse | null>>()
 
-const cacheKey = (href: string): string => normalizeHref(href)
+/**
+ * One string is both the cache key and the `?url=` value. The fragment never changes the
+ * page, so it is dropped. `null` means the server cannot fetch it (mailto:, tel:, app schemes).
+ */
+const metadataKey = (href: string): string | null => {
+  try {
+    const url = new URL(normalizeHref(href))
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null
+    url.hash = ''
+    return url.href
+  } catch {
+    return null
+  }
+}
 
-export const getCachedMetadata = (href: string): MetadataResponse | null | undefined => {
-  const entry = sessionCache.get(cacheKey(href))
+const readEntry = (key: string): MetadataResponse | null | undefined => {
+  const entry = sessionCache.get(key)
   if (!entry) return undefined
   if (Date.now() > entry.expiresAt) {
-    sessionCache.delete(cacheKey(href))
+    sessionCache.delete(key)
     return undefined
   }
   return entry.data
 }
 
-const setCachedMetadata = (href: string, data: MetadataResponse | null): void => {
-  sessionCache.set(cacheKey(href), { data, expiresAt: Date.now() + CACHE_TTL_MS })
+const remember = (key: string, data: MetadataResponse | null): MetadataResponse | null => {
+  sessionCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS })
+  return data
 }
 
-export interface FetchMetadataOptions {
-  signal?: AbortSignal
+/** `undefined` = not loaded yet, `null` = no card for this href, data = hit. Never fetches. */
+export const getCachedMetadata = (href: string): MetadataResponse | null | undefined => {
+  const key = metadataKey(href)
+  return key === null ? null : readEntry(key)
 }
 
 /**
- * Backend never returns 5xx for upstream failures — it falls back to
- * hostname, with a `favicon` marker. Non-ok here is validation (400) or rate-limit (429).
- * Both are cached as null to avoid hammering.
+ * The page image through our server, so the linked site never sees the reader. The server
+ * keeps only http(s) image URLs. `undefined` when the card has no image.
  */
-export const fetchMetadata = async (
-  href: string,
-  { signal }: FetchMetadataOptions = {}
-): Promise<MetadataResponse | null> => {
-  const cached = getCachedMetadata(href)
-  if (cached !== undefined) return cached
+export const metadataImageUrl = (href: string, data: MetadataResponse): string | undefined => {
+  const key = metadataKey(href)
+  if (!data.image?.url || key === null) return undefined
+  return `${apiBaseUrl()}/metadata/image?url=${encodeURIComponent(key)}`
+}
 
+/**
+ * Only a 400 or a `success: false` body is cached as null: those answers will not change.
+ * A 429, a 5xx (Traefik can send 502/503), a timeout or a network error is not cached,
+ * so the next open asks again.
+ */
+const request = async (key: string): Promise<MetadataResponse | null> => {
   try {
-    const response = await fetch(`${apiBaseUrl()}/metadata?url=${encodeURIComponent(href)}`, {
-      method: 'GET',
-      signal
+    const response = await fetch(`${apiBaseUrl()}/metadata?url=${encodeURIComponent(key)}`, {
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
     })
-
+    if (response.status === 400) return remember(key, null)
     if (!response.ok) {
       console.error('Metadata API error:', response.status, response.statusText)
-      setCachedMetadata(href, null)
       return null
     }
-
     const data: ApiResponse = await response.json()
-    if (data.success) {
-      setCachedMetadata(href, data)
-      return data
-    }
-
-    console.error('Metadata API error:', data.message)
-    setCachedMetadata(href, null)
-    return null
+    return remember(key, data.success ? data : null)
   } catch (error) {
-    if (signal?.aborted) return null
     console.error('Error fetching metadata:', error)
-    setCachedMetadata(href, null)
     return null
   }
+}
+
+/**
+ * Callers of one URL share one request, and none of them can abort it. So a hover that
+ * leaves still fills the cache for the click that follows. Each caller drops its own late result.
+ */
+export const fetchMetadata = (href: string): Promise<MetadataResponse | null> => {
+  const key = metadataKey(href)
+  if (key === null) return Promise.resolve(null)
+  const cached = readEntry(key)
+  if (cached !== undefined) return Promise.resolve(cached)
+
+  let pending = inFlight.get(key)
+  if (!pending) {
+    pending = request(key).finally(() => inFlight.delete(key))
+    inFlight.set(key, pending)
+  }
+  return pending
 }

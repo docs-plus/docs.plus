@@ -134,10 +134,7 @@ export interface HyperlinkSuggestionsProps {
   variant?: HyperlinkVariant
 }
 
-export type ActivePopoverKind = 'create' | 'edit'
-
 export interface ActivePopover {
-  kind: ActivePopoverKind
   host: HTMLElement
   props: Omit<HyperlinkEditorProps, 'variant'>
 }

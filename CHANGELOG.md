@@ -46,6 +46,10 @@ Migration section for when it goes. As the last step, run
   ([#516](https://github.com/docs-plus/docs.plus/issues/516)).
 - The Home Screen app now has a launch image for every current iPhone size, so no iPhone
   opens it on a black screen ([#255](https://github.com/docs-plus/docs.plus/issues/255)).
+- On a desktop pad, rest the pointer on an external link for 400 ms and a hovercard opens. It
+  shows the page's picture, site, title and description. Our server fetches all of it, so your
+  browser sends nothing to the linked site. A click still opens the link preview
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 
 ### Changed
 
@@ -64,6 +68,18 @@ Migration section for when it goes. As the last step, run
 - The production deploy builds the images in their own `images` job first. The deploy stops
   before it changes production when an image is missing, or when the host env file changed
   between the two jobs ([#565](https://github.com/docs-plus/docs.plus/issues/565)).
+- Link previews work on more sites and arrive sooner. The server reads only the page head, up
+  to 1 MiB, and names itself as `DocsplusBot`, never as another crawler. We fetched the same 30
+  links once before this change and once after. Cards with a title, a description and a real
+  picture rose from 16 to 19. The p50 fetch fell from 669 ms to 532 ms
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- The page's picture in the hovercard, and the Vimeo, SoundCloud, Spotify and Loom thumbnails
+  in chat and Insert media, now load through our server (`GET /api/metadata/image`). Link icons
+  come only from our icon route. The privacy page lists what still loads straight from other sites
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- Link metadata and its image route spend their own rate-limit bucket, at ten times
+  `RATE_LIMIT_MAX` per 15 minutes. So hovering does not use up the main API budget
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 
 ### Fixed
 
@@ -78,9 +94,17 @@ Migration section for when it goes. As the last step, run
   ([#603](https://github.com/docs-plus/docs.plus/issues/603)).
 - Typing in a diagram no longer highlights every code block in the pad again
   ([#631](https://github.com/docs-plus/docs.plus/issues/631)).
-- The link preview shows the site's icon again, not a tiny copy of the page's share card. It
-  tries our icon route first, then the page icon and the publisher logo, and never a share card
-  or a video thumbnail ([#633](https://github.com/docs-plus/docs.plus/issues/633)).
+- The link preview shows the site's icon again, not a tiny copy of the page's picture. It asks
+  only our icon route, and never shows the page's picture or a video thumbnail
+  ([#633](https://github.com/docs-plus/docs.plus/issues/633)).
+- The pad and chat link forms refuse text that is not one whole link. Before, `hello google.com`
+  passed and was stored as `https://hello google.com`
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- Changing only a link's URL no longer undoes a co-editor's change to the link text
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- A typed link that ends in a closing parenthesis, such as a Wikipedia `Foo_(bar)` link, keeps
+  it. Before, autolink cut the `)` off the stored link, in the pad and in chat
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - Pasting a link into an empty line no longer throws "Position tracking requires synchronized
   editor text" and drops the paste. `@tiptap/y-tiptap` 3.0.10 carries a `bun patch` until
   upstream ships a fix ([ueberdosis/tiptap#8584](https://github.com/ueberdosis/tiptap/issues/8584)).
@@ -102,6 +126,9 @@ Migration section for when it goes. As the last step, run
 - **New pgmq and storage objects no longer start open to anon and authenticated.**
   Needs Supabase migration `20261026120000`
   ([#570](https://github.com/docs-plus/docs.plus/issues/570)).
+- **Error reports no longer carry the `url` query value of a link preview request.** The webapp
+  and the server filter it from `GET /api/metadata` and `GET /api/metadata/image` before they send
+  a report ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 
 ### Removed
 

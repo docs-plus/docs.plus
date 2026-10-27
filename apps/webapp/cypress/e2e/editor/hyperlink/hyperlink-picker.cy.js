@@ -284,7 +284,7 @@ describe('Hyperlink suggestion picker', () => {
         .and('match', /\?h=[^&]*setup&id=/)
     })
 
-    it('preserves a user-edited link text (textTouched) when picking a heading', () => {
+    it('preserves a changed link text when picking a heading', () => {
       openEditPopover()
       cy.get(S.editPopover).find(S.textInput).clear().type('Custom Anchor')
       cy.get(S.editPopover).find(S.expand).click()

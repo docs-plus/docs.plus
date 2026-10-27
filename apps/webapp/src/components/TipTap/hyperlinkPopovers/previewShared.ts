@@ -5,21 +5,20 @@ import {
   type SpecialUrlType
 } from '@docs.plus/extension-hyperlink'
 import type { Editor } from '@tiptap/core'
-import { createElement } from 'react'
-import { renderToStaticMarkup } from 'react-dom/server'
+import { getSiteIconUrl } from '@utils/link-helpers'
+import { lucideSvgString } from '@utils/lucideSvgString'
 import type { IconType } from 'react-icons'
 
 import { fetchMetadata, type MetadataResponse } from './fetchMetadata'
 import { hrefEventHandler } from './hrefEventHandler'
 import { describeInternalDocumentLink } from './internalDocumentLink'
 import { runInternalDocumentLink } from './internalDocumentLinkActions'
-import { previewIconCandidates } from './linkMarkUtils'
 import type { InternalDocumentLink } from './types'
 
 /**
- * Preview popover only; pad link icons come from `padLinkIcon`. The webapp picks the Lucide icon
- * per `type`, and `Partial` is deliberate. Web types (`meet`, `github`, …) are left out,
- * because the popover's favicon always wins for `https://` URLs.
+ * Preview popover only; pad link icons come from `padLinkIcon`. `Partial` is deliberate. For
+ * https URLs the route icon wins, so a web entry such as `github` shows its glyph only for app
+ * schemes or when no route icon builds.
  */
 const TYPE_TO_ICON: Partial<Record<SpecialUrlType, IconType>> = {
   email: Icons.mail,
@@ -72,54 +71,52 @@ export interface PreviewContext {
   signal: AbortSignal
 }
 
-export const renderIconMarkup = (Icon: IconType, size = 20, className?: string): string =>
-  renderToStaticMarkup(createElement(Icon, { size, className, 'aria-hidden': true }))
-
 // Render a Lucide React icon into the imperative-DOM popover container.
 // `aria-hidden` because the metadata title link alongside is the
 // screen-reader-readable surface; the icon is decoration.
-const createSvgIcon = (Icon: IconType, className = ''): HTMLElement => {
-  return createHTMLElement('div', {
-    className: `svg-icon-container ${className}`,
-    innerHTML: renderIconMarkup(Icon)
+const createSvgIcon = (Icon: IconType): HTMLElement => {
+  return createHTMLElement('div', { innerHTML: lucideSvgString(Icon, 20) })
+}
+
+/**
+ * Our icon route only, so the linked site never sees the reader. A miss hides the img.
+ * `null` when the href has no http(s) origin.
+ */
+export const createSiteIcon = (href: string, className: string): HTMLImageElement | null => {
+  const src = getSiteIconUrl(href)
+  if (!src) return null
+  return createHTMLElement('img', {
+    src,
+    alt: '',
+    className,
+    onerror: function (this: HTMLImageElement) {
+      this.style.display = 'none'
+    }
   })
 }
 
 export const createMetadataContent = (data: MetadataResponse | null, href: string): HTMLElement => {
   const specialInfo = getSpecialUrlInfo(href)
-  const container = createHTMLElement('div', {
-    className: `metadata-content ${specialInfo ? 'metadata-content-special' : ''}`
-  })
+  const container = createHTMLElement('div', { className: 'metadata-content' })
 
   const titleLink = createHTMLElement('a', {
     target: '_blank',
     rel: 'noreferrer',
     href,
-    innerText: data?.title || href,
-    className: 'metadata-title'
+    innerText: data?.title || href
   })
   titleLink.addEventListener('click', hrefEventHandler(href))
   container.append(titleLink)
 
   // A site icon when one loads; with no http(s) origin, the special-icon SVG below.
-  const candidates = previewIconCandidates(data, href)
-  if (candidates.length > 0) {
-    let next = 1
-    const img = createHTMLElement('img', {
-      src: candidates[0],
-      alt: '',
-      className: 'metadata-image',
-      onerror: function (this: HTMLImageElement) {
-        if (next < candidates.length) this.src = candidates[next++]
-        else this.style.display = 'none'
-      }
-    })
-    container.prepend(img)
+  const icon = createSiteIcon(href, 'metadata-image')
+  if (icon) {
+    container.prepend(icon)
   } else if (specialInfo) {
     // Nothing to fetch a favicon from (mailto:, tel:, custom-scheme apps).
     const Icon = TYPE_TO_ICON[specialInfo.type]
     if (Icon) {
-      container.prepend(createSvgIcon(Icon, `metadata-icon-special icon-${specialInfo.category}`))
+      container.prepend(createSvgIcon(Icon))
     }
   }
 
@@ -148,7 +145,7 @@ export const renderMetadataInto = (container: HTMLElement, ctx: PreviewContext):
 
   container.replaceChildren(createLoadingSkeleton())
 
-  fetchMetadata(href, { signal }).then((data) => {
+  fetchMetadata(href).then((data) => {
     if (signal.aborted || !container.isConnected) return
     container.replaceChildren(createMetadataContent(data, href))
   })
@@ -183,7 +180,7 @@ export const createInternalLinkChip = (link: InternalDocumentLink, editor: Edito
   })
   const iconEl = createHTMLElement('span', {
     className: 'chip-icon',
-    innerHTML: renderIconMarkup(icon, 18)
+    innerHTML: lucideSvgString(icon, 18)
   })
   const text = createHTMLElement('span', { className: 'chip-text' })
   text.append(

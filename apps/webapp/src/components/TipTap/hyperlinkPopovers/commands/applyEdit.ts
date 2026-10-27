@@ -9,6 +9,8 @@ interface ApplyEditDeps {
   markName?: string
   /** For surfaces that do not move selection before opening. */
   nodePos?: number
+  /** Raw stored href read at open time. A stale `nodePos` on another link then edits nothing. */
+  expectedHref?: string
 }
 
 /** No text → `editHyperlinkHref` so the rendered link text is not rewritten. */
@@ -24,7 +26,8 @@ export function applyEdit(
   if (typeof deps.nodePos === 'number') {
     const markType = deps.editor.schema.marks[markName]
     if (!markType) return false
-    const range = getMarkRange(deps.editor.state.doc.resolve(deps.nodePos), markType)
+    const attrs = deps.expectedHref === undefined ? undefined : { href: deps.expectedHref }
+    const range = getMarkRange(deps.editor.state.doc.resolve(deps.nodePos), markType, attrs)
     if (!range) return false
     chain.setTextSelection(range)
   }

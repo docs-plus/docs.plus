@@ -30,8 +30,9 @@ export function useHyperlinkEditorForm({
 }: HyperlinkEditorProps) {
   const [href, setHref] = useState(initialHref)
   const [text, setText] = useState(initialText ?? '')
-  const [textTouched, setTextTouched] = useState(false)
   const [showError, setShowError] = useState(false)
+  // An unchanged Text field sends nothing, so a co-editor's new link text survives.
+  const editText = text !== (initialText ?? '') ? text : undefined
 
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const textInputId = useId()
@@ -103,16 +104,12 @@ export function useHyperlinkEditorForm({
     const normalized = normalizeHref(raw)
     let applied: boolean | void
     if (mode === 'edit') {
-      const nextText = textTouched ? text : initialText
-      applied = onApply({
-        href: normalized,
-        text: typeof nextText === 'string' && nextText.length > 0 ? nextText : undefined
-      })
+      applied = onApply({ href: normalized, text: editText })
     } else {
       applied = onApply({ href: normalized })
     }
     if (applied === false) setShowError(true)
-  }, [href, validate, mode, text, textTouched, initialText, onApply])
+  }, [href, validate, mode, editText, onApply])
 
   const applyPicked = useCallback(
     (s: Suggestion) => {
@@ -121,7 +118,7 @@ export function useHyperlinkEditorForm({
       const pickedText = s.title
       let applied: boolean | void
       if (mode === 'edit') {
-        applied = onApply({ href: pickedHref, text: textTouched ? text : undefined })
+        applied = onApply({ href: pickedHref, text: editText })
         if (applied === false) setShowError(true)
         return
       }
@@ -129,7 +126,7 @@ export function useHyperlinkEditorForm({
       applied = onApply({ href: pickedHref, text: hasSelection ? undefined : pickedText })
       if (applied === false) setShowError(true)
     },
-    [editor, mode, onApply, text, textTouched]
+    [editor, mode, onApply, editText]
   )
 
   const handleSubmit = (event: FormEvent) => {
@@ -217,7 +214,6 @@ export function useHyperlinkEditorForm({
     handleSubmit,
     handleKeyDown,
     setText,
-    setTextTouched,
     expand,
     back,
     setHighlight,

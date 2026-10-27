@@ -4,13 +4,13 @@ import { ContextMenuRowButton } from '@components/ui/ContextMenuRowButton'
 import { useCloseAfterHold } from '@hooks/useCloseAfterHold'
 import { Icons } from '@icons'
 import { type SheetDataMap, useSheetStore } from '@stores'
+import { getSiteIconUrl } from '@utils/link-helpers'
 import { sheetBodyPadClassName } from '@utils/sheetBodyPadding'
 import { twMerge } from '@utils/twMerge'
 import { Fragment, useMemo, useState } from 'react'
 
 import { InternalLinkChip } from './components/InternalLinkChip'
 import { classifyInternalDocumentLink } from './internalDocumentLink'
-import { previewIconCandidates } from './linkMarkUtils'
 import { buildLinkPreviewActions } from './linkPreviewActions'
 import { useLinkMetadata } from './useLinkMetadata'
 
@@ -25,10 +25,9 @@ interface LinkPreviewSheetProps {
 const ExternalLinkHeader = ({ data: { href } }: LinkPreviewSheetProps) => {
   const { status, data } = useLinkMetadata(href)
 
-  const candidates = previewIconCandidates(data, href)
-  // Index of the candidate on screen; a failed load moves on to the next one.
-  const [iconAt, setIconAt] = useState(0)
-  const imageUrl = candidates[iconAt]
+  // Our icon route only. A miss, or no http(s) origin, keeps the grey box.
+  const [iconFailed, setIconFailed] = useState(false)
+  const imageUrl = iconFailed ? undefined : getSiteIconUrl(href)
   const title = data?.title || href
   const description = data?.description
   const showHrefLine = Boolean(data?.title && data.title !== href)
@@ -53,11 +52,10 @@ const ExternalLinkHeader = ({ data: { href } }: LinkPreviewSheetProps) => {
       <span className="inline-flex size-6 shrink-0 items-center justify-center">
         {imageUrl ? (
           <img
-            key={imageUrl}
             src={imageUrl}
             alt=""
             className="size-5 rounded"
-            onError={() => setIconAt((at) => at + 1)}
+            onError={() => setIconFailed(true)}
           />
         ) : (
           <span className="bg-base-300 size-5 rounded" aria-hidden />

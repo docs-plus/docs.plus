@@ -7,6 +7,7 @@ import { useSheetStore } from '@stores'
 import type { ReactNode } from 'react'
 
 import { applyEdit } from './commands/applyEdit'
+import { removeHyperlinkAtPos } from './commands/removeHyperlinkAtPos'
 import { navigateHref } from './hrefEventHandler'
 import { classifyInternalDocumentLink } from './internalDocumentLink'
 import { runInternalDocumentLink } from './internalDocumentLinkActions'
@@ -82,7 +83,7 @@ export function buildLinkPreviewActions({
           editor,
           initialHref: href,
           initialText: getHyperlinkDisplayText(editor, { nodePos, href }),
-          onSubmit: (result) => applyEdit({ editor, nodePos }, result),
+          onSubmit: (result) => applyEdit({ editor, nodePos, expectedHref: href }, result),
           onBack: () => switchSheet('linkPreview', { href, editor, nodePos, isAllowedUri })
         })
       }
@@ -93,7 +94,7 @@ export function buildLinkPreviewActions({
       icon: <Icons.unlink size={ICON_SIZE} />,
       danger: true,
       onClick: () => {
-        editor.chain().focus().unsetHyperlink().run()
+        removeHyperlinkAtPos({ editor, nodePos, expectedHref: href })
         closeSheet()
       }
     }

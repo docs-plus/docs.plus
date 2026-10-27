@@ -1,3 +1,4 @@
+import { normalizeHref } from '@docs.plus/extension-hyperlink'
 import type { LinkMetadata } from '@types'
 import { apiBaseUrl } from '@utils/apiBaseUrl'
 import { sanitizeMetadata } from '@utils/link-helpers'
@@ -9,12 +10,12 @@ import { sanitizeMetadata } from '@utils/link-helpers'
  * Falls back to `{ title: url }` on any failure — never throws.
  */
 export const fetchLinkMetadata = async (url: string): Promise<LinkMetadata> => {
-  const formattedUrl = url.startsWith('http') ? url : `https://${url}`
+  const formattedUrl = normalizeHref(url)
 
   try {
     const response = await fetch(
       `${apiBaseUrl()}/metadata?url=${encodeURIComponent(formattedUrl)}`,
-      { method: 'GET' }
+      { method: 'GET', signal: AbortSignal.timeout(15_000) }
     )
 
     if (!response.ok) {

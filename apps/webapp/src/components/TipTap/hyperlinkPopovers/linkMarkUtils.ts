@@ -1,34 +1,32 @@
+import {
+  buildPreviewOptionsFromAnchor,
+  type EditHyperlinkOptions
+} from '@docs.plus/extension-hyperlink'
 import type { Editor } from '@tiptap/core'
 import { getMarkRange } from '@tiptap/core'
-import { getSiteIconUrl } from '@utils/link-helpers'
 
-import type { MetadataResponse } from './fetchMetadata'
 import type { DocSelectionRange } from './types'
 
-/**
- * Defense-in-depth over third-party JSON (oEmbed thumbnails, scraped meta):
- * `data:` URIs can carry scripted SVG and are a tracking-pixel vector, so only
- * plain http(s) passes. `undefined` makes the caller try the next candidate.
- */
-const safeImageSrc = (url: string | undefined): string | undefined => {
-  if (!url) return undefined
-  return /^https?:\/\//i.test(url) ? url : undefined
+/** Display host without `www.`; `''` when the URL does not parse. */
+export const hostnameOf = (url: string): string => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return ''
+  }
 }
 
-type PreviewIconData = Pick<MetadataResponse, 'icon' | 'publisher'> | null
-
 /**
- * Icon slot candidates, tried in order until one loads: our icon route (the pad's own link
- * icon), the page icon, the publisher logo. `image` and the oEmbed thumbnail are content
- * pictures such as share cards, so they never fill the icon slot (#633).
+ * The raw `mark.attrs.href` of the live link, read when the edit form opens. Never a
+ * normalized or rendered form: `renderHTML` blanks an unsafe href, and `google.com` stays as typed.
  */
-export const previewIconCandidates = (data: PreviewIconData, href: string): string[] => [
-  ...new Set(
-    [getSiteIconUrl(href), safeImageSrc(data?.icon), safeImageSrc(data?.publisher?.logo)].filter(
-      (src): src is string => !!src
-    )
-  )
-]
+export const storedHrefOf = (opts: EditHyperlinkOptions): string | undefined =>
+  buildPreviewOptionsFromAnchor({
+    editor: opts.editor,
+    link: opts.link,
+    nodePos: opts.nodePos,
+    markName: opts.markName
+  }).attrs.href ?? undefined
 
 /**
  * Link text from the document. The live <a> wins over a stale nodePos; the href match stops a neighbour's text.
