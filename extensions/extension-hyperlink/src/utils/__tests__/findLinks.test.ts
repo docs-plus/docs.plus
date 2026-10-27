@@ -42,6 +42,12 @@ describe('findLinks', () => {
       expect(result.some((l) => l.href === 'whatsapp://send?text=hi')).toBe(true)
     })
 
+    it('links only the host in a word:host.tld token', () => {
+      const result = findLinks('Re:google.com')
+      expect(result).toHaveLength(1)
+      expect(result[0].value).toBe('google.com')
+    })
+
     it('does not double-emit when linkifyjs already covers the range', () => {
       // linkifyjs accepts `mailto:` natively. The special-scheme pass
       // would also match `mailto:user@example.com` syntactically, so
@@ -68,7 +74,7 @@ describe('findLinks', () => {
   })
 
   describe('trailing punctuation', () => {
-    it('strips trailing punctuation from URL matches', () => {
+    it('linkify leaves a trailing dot out of a URL match', () => {
       const result = findLinks('example.com.')
       const url = result.find((l) => l.value === 'example.com')
       expect(url).toBeDefined()
@@ -82,9 +88,13 @@ describe('findLinks', () => {
       expect(url?.href).toBe('whatsapp://send')
     })
 
-    it('leaves the href untouched when only the value carries the trailing char', () => {
-      // `value` and `href` both end with the dot here, so both lose it —
-      // the strip only touches `href` when it shares the trailing chars.
+    it('keeps a closing parenthesis that belongs to the link', () => {
+      const result = findLinks('https://en.wikipedia.org/wiki/Foo_(bar)')
+      expect(result).toHaveLength(1)
+      expect(result[0].value).toBe('https://en.wikipedia.org/wiki/Foo_(bar)')
+    })
+
+    it('linkify leaves a trailing dot out of an email match', () => {
       const result = findLinks('user@example.com.')
       const email = result.find((l) => l.type === 'email')
       expect(email?.value).toBe('user@example.com')

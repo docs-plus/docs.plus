@@ -14,6 +14,7 @@ export {
   type Popover,
   type PopoverOptions
 } from './floating-popover'
+export * from './hyperlink'
 export {
   buildPreviewOptionsFromAnchor,
   type BuildPreviewOptionsFromAnchorArgs,
@@ -21,12 +22,10 @@ export {
   openEditHyperlink,
   openPreviewHyperlink
 } from './openers'
-
+export { createHyperlinkPopover, editHyperlinkPopover, previewHyperlinkPopover } from './popovers'
 // Tooltip primitive — the same hover/focus bubble the prebuilt popovers
 // put on their icon buttons, re-exported for BYO popover parity.
 // The bubble is per-bundle: pair attach and hide from the same package.
-export * from './hyperlink'
-export { createHyperlinkPopover, editHyperlinkPopover, previewHyperlinkPopover } from './popovers'
 export { attachTooltip, hideTooltip } from '@docs.plus/floating-tooltip'
 
 // Link icons: the argument type of HyperlinkOptions.linkIcon, and two resolver helpers.

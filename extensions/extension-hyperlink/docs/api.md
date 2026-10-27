@@ -45,7 +45,7 @@ Pick one. Setting both works, because they compose and a URL must pass both, but
 
 `isSafeHref` plus your `validate` and `isAllowedUri` hooks form the composed gate. The package docs use that name.
 
-`validateURL(url, { customValidator })` is a different tool. It is the form-level shape check the prebuilt popovers run before they call a command. It runs `isSafeHref` first, then the shape check, then your `customValidator`.
+`validateURL(url, { customValidator })` is a different tool. It is the form-level shape check the prebuilt popovers run before they call a command. It runs `isSafeHref` first, then the shape check, then your `customValidator`. The value must be one whole link: a sentence or a raw space is refused, and trailing punctuation such as `google.com.` still passes the check.
 
 ### Link icons
 

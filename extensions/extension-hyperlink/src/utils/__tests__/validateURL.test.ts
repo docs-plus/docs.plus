@@ -139,6 +139,32 @@ describe('validateURL', () => {
     }
   })
 
+  describe('the input must be one whole link', () => {
+    // Before, any input that held a link passed, so "hello google.com"
+    // stored as `https://hello google.com`. Trailing punctuation such as
+    // `google.com.` still passes the check.
+    const cases: [string, boolean][] = [
+      ['hello google.com', false],
+      ['see https://a.com now', false],
+      ['https://example.com/a b', false],
+      ['https://github.com/a/b see this', false],
+      ['mailto:a@b.c see you', false],
+      ["google.com's", false],
+      ['google.com', true],
+      ['google.com.', true],
+      ['https://en.wikipedia.org/wiki/Foo_(bar)', true],
+      ['https://en.wikipedia.org/wiki/Foo_(bar).', true],
+      ['https://example.com/foo)', true],
+      ['//example.com/x', true],
+      ['+1 (555) 123-4567', true]
+    ]
+    for (const [input, expected] of cases) {
+      it(`${expected ? 'accepts' : 'rejects'} ${JSON.stringify(input)}`, () => {
+        expect(validateURL(input)).toBe(expected)
+      })
+    }
+  })
+
   describe('rejects dangerous XSS schemes (linkify never matches them)', () => {
     // `validateURL` is the gate that powers `<a href>` storage — any `true`
     // here would mean the editor accepts an XSS vector. `file:` / `blob:` are
@@ -175,7 +201,7 @@ describe('validateURL', () => {
       expect(validateURL('https://example.com', { customValidator: httpsOnly })).toBe(true)
     })
 
-    it('runs as a filter in the linkify match list for standard URLs', () => {
+    it('runs on the whole-input link for standard URLs', () => {
       const blockExample = (url: string): boolean => !url.includes('example.com')
       expect(validateURL('https://example.com', { customValidator: blockExample })).toBe(false)
       expect(validateURL('https://acme.com', { customValidator: blockExample })).toBe(true)

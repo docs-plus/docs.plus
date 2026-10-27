@@ -2,7 +2,7 @@ import type { Editor } from '@tiptap/core'
 
 import { getDefaultController, type Popover } from '../floating-popover'
 
-// The popover controller is a process-wide singleton, so it can't tell which
+// The popover controller is a per-bundle singleton, so it can't tell which
 // editor owns the popover it holds. Track the `{ editor, popover }` pair so
 // the mark's `onDestroy` closes only the popover this editor opened. Never a
 // sibling's, never one a host adopted by hand after ours closed.

@@ -30,6 +30,9 @@ const STANDARD_WEB_SCHEMES = new Set(['http', 'https', 'ftp', 'ftps'])
 /** IPv4 dotted quad. Deliberately loose on octet range — we only need a shape check. */
 const IPV4_RE = /^\d{1,3}(\.\d{1,3}){3}$/
 
+/** Module-internal; `findLinks` imports it. Not in the public barrel. */
+export const TRAILING_PUNCTUATION_RE = /[.,;:!?)\]}]+$/
+
 export type ValidateURLOptions = {
   customValidator?: (url: string) => boolean
 }
@@ -67,8 +70,8 @@ const hasPlausibleHost = (url: string): boolean => {
 
 /**
  * Shape-validate a URL: web schemes with a plausible host, app schemes from
- * the `getSpecialUrlInfo` catalog, and bare E.164 phones. Rejects schemes
- * matched by {@link DANGEROUS_SCHEME_RE}. See docs/url-handling.md.
+ * the `getSpecialUrlInfo` catalog, and bare E.164 phones. The value must be
+ * one whole link. Rejects {@link DANGEROUS_SCHEME_RE}. See docs/url-handling.md.
  */
 export const validateURL = (url: string, options?: ValidateURLOptions): boolean => {
   const trimmed = url.trim()
@@ -88,16 +91,25 @@ export const validateURL = (url: string, options?: ValidateURLOptions): boolean 
       return true
     }
 
+    // new URL() encodes a raw space, so the catalog check alone would pass a sentence.
+    if (/\s/.test(trimmed)) return false
+
     if (isRecognizedSpecialScheme(url)) {
       if (options?.customValidator) return options.customValidator(url)
       return true
     }
 
-    const validURL = find(url).find(
+    // The found link must start the input and only trailing punctuation may
+    // follow; linkify drops a leading `//`.
+    const lead = trimmed.startsWith('//') ? 2 : 0
+    const validURL = find(trimmed).find(
       (link) =>
-        link.isLink && (options?.customValidator ? options.customValidator(link.value) : true)
+        link.isLink &&
+        link.start === lead &&
+        trimmed.slice(link.end).replace(TRAILING_PUNCTUATION_RE, '') === ''
     )
     if (!validURL?.href) return false
+    if (options?.customValidator && !options.customValidator(validURL.value)) return false
 
     // linkifyjs waves through anything scheme-shaped — require a plausible
     // host for web schemes so typos like `https://googlecom` are rejected.
@@ -121,7 +133,7 @@ export const getURLScheme = (url: string): string | null => {
   return url.substring(0, colonIndex).toLowerCase()
 }
 
-/** One http/https/ftp/ftps predicate so `validateURL` and `url-decisions` share a policy. */
+/** http, https, ftp and ftps: the web schemes that must name a plausible host. */
 const isStandardWebScheme = (url: string): boolean => {
   const scheme = getURLScheme(url)
   return scheme !== null && STANDARD_WEB_SCHEMES.has(scheme)
