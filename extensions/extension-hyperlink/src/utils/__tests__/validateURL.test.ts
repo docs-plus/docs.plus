@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'bun:test'
 
-import { DANGEROUS_SCHEME_RE, getURLScheme, isSafeHref, validateURL } from '../validateURL'
+import {
+  DANGEROUS_SCHEME_RE,
+  getURLScheme,
+  isSafeHref,
+  validateURL,
+  wholeLink
+} from '../validateURL'
 
 /**
  * Pins `validateURL`, the gate every write boundary calls. `linkifyjs` alone
@@ -207,6 +213,28 @@ describe('validateURL', () => {
       expect(validateURL('https://acme.com', { customValidator: blockExample })).toBe(true)
     })
   })
+})
+
+describe('wholeLink', () => {
+  // The forms store this value, so trailing punctuation never reaches the stored href.
+  const cases: [string, string | null][] = [
+    ['google.com,', 'google.com'],
+    ['google.com.', 'google.com'],
+    ['user@example.com.', 'user@example.com'],
+    ['https://en.wikipedia.org/wiki/Foo_(bar).', 'https://en.wikipedia.org/wiki/Foo_(bar)'],
+    ['https://github.com/a/b_(c).', 'https://github.com/a/b_(c)'],
+    ['//example.com/x.', '//example.com/x'],
+    ['mailto:a@b.com.', 'mailto:a@b.com'],
+    ['  https://example.com/path?q=1  ', 'https://example.com/path?q=1'],
+    ['+1 (555) 123-4567', '+1 (555) 123-4567'],
+    ['hello google.com', null],
+    ["google.com's", null]
+  ]
+  for (const [input, expected] of cases) {
+    it(`${JSON.stringify(input)} -> ${JSON.stringify(expected)}`, () => {
+      expect(wholeLink(input)).toBe(expected)
+    })
+  }
 })
 
 describe('getURLScheme', () => {

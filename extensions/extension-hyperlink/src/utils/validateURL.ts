@@ -69,59 +69,72 @@ const hasPlausibleHost = (url: string): boolean => {
 }
 
 /**
- * Shape-validate a URL: web schemes with a plausible host, app schemes from
- * the `getSpecialUrlInfo` catalog, and bare E.164 phones. The value must be
- * one whole link. Rejects {@link DANGEROUS_SCHEME_RE}. See docs/url-handling.md.
+ * The linkify match that starts the input and is followed only by trailing
+ * punctuation, plus that link's text with the punctuation left out. Linkify
+ * drops a leading `//` from the match, so the text keeps it.
  */
-export const validateURL = (url: string, options?: ValidateURLOptions): boolean => {
+const linkifyWhole = (trimmed: string) => {
+  const lead = trimmed.startsWith('//') ? 2 : 0
+  const link = find(trimmed).find(
+    (found) =>
+      found.isLink &&
+      found.start === lead &&
+      trimmed.slice(found.end).replace(TRAILING_PUNCTUATION_RE, '') === ''
+  )
+  return link ? { link, text: trimmed.slice(0, link.end) } : null
+}
+
+/**
+ * The link a form should store: the value when it is one whole link, without
+ * the trailing punctuation that linkify leaves out (`google.com,` gives
+ * `google.com`), or `null` when {@link validateURL} would refuse it.
+ */
+export const wholeLink = (url: string, options?: ValidateURLOptions): string | null => {
   const trimmed = url.trim()
-  if (!trimmed) return false
+  if (!trimmed) return null
 
   // Security floor: dangerous schemes must NEVER pass shape validation,
   // however linkifyjs evolves or whichever custom protocols a host registers.
   // `composeGate` re-checks at the write boundary, but pinning it here makes
   // the create form reject a newly-banned scheme immediately.
-  if (!isSafeHref(trimmed)) return false
+  if (!isSafeHref(trimmed)) return null
 
   try {
     // E.164 phones have no scheme prefix and would otherwise fall
     // through to linkifyjs, which has no phone matcher.
     if (isBarePhone(trimmed).ok) {
-      if (options?.customValidator) return options.customValidator(url)
-      return true
+      return !options?.customValidator || options.customValidator(url) ? trimmed : null
     }
 
     // new URL() encodes a raw space, so the catalog check alone would pass a sentence.
-    if (/\s/.test(trimmed)) return false
+    if (/\s/.test(trimmed)) return null
 
     if (isRecognizedSpecialScheme(url)) {
-      if (options?.customValidator) return options.customValidator(url)
-      return true
+      if (options?.customValidator && !options.customValidator(url)) return null
+      return linkifyWhole(trimmed)?.text ?? trimmed.replace(TRAILING_PUNCTUATION_RE, '')
     }
 
-    // The found link must start the input and only trailing punctuation may
-    // follow; linkify drops a leading `//`.
-    const lead = trimmed.startsWith('//') ? 2 : 0
-    const validURL = find(trimmed).find(
-      (link) =>
-        link.isLink &&
-        link.start === lead &&
-        trimmed.slice(link.end).replace(TRAILING_PUNCTUATION_RE, '') === ''
-    )
-    if (!validURL?.href) return false
-    if (options?.customValidator && !options.customValidator(validURL.value)) return false
+    const found = linkifyWhole(trimmed)
+    if (!found?.link.href) return null
+    if (options?.customValidator && !options.customValidator(found.link.value)) return null
 
     // linkifyjs waves through anything scheme-shaped — require a plausible
     // host for web schemes so typos like `https://googlecom` are rejected.
-    if (isStandardWebScheme(validURL.href)) {
-      return hasPlausibleHost(validURL.href)
-    }
-    return true
+    if (isStandardWebScheme(found.link.href) && !hasPlausibleHost(found.link.href)) return null
+    return found.text
   } catch (error) {
-    logger.error('validateURL threw', error)
-    return false
+    logger.error('wholeLink threw', error)
+    return null
   }
 }
+
+/**
+ * Shape-validate a URL: web schemes with a plausible host, app schemes from
+ * the `getSpecialUrlInfo` catalog, and bare E.164 phones. The value must be
+ * one whole link. Rejects {@link DANGEROUS_SCHEME_RE}. See docs/url-handling.md.
+ */
+export const validateURL = (url: string, options?: ValidateURLOptions): boolean =>
+  wholeLink(url, options) !== null
 
 /** Module-internal; exported for unit tests only. */
 export const getURLScheme = (url: string): string | null => {

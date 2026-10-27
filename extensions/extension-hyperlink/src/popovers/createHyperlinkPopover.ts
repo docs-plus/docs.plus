@@ -1,6 +1,6 @@
 import { getDefaultController } from '../floating-popover'
 import type { CreateHyperlinkOptions } from '../hyperlink'
-import { createHTMLElement, validateURL } from '../utils'
+import { createHTMLElement, wholeLink } from '../utils'
 import { Link } from '../utils/icons'
 
 type HyperlinkElements = {
@@ -88,11 +88,11 @@ const setupEventListeners = (elements: HyperlinkElements, options: CreateHyperli
     event.preventDefault()
     if (button.disabled) return
 
-    const url = input.value.trim()
-    // Pre-submit UX gate: shape + user `validate` only. The full XSS +
-    // `isAllowedUri` policy runs inside `setHyperlink`; on rejection the
-    // command returns `false` and the popover stays open for correction.
-    if (!validateURL(url, { customValidator: options.validate })) {
+    // Pre-submit UX gate: shape + user `validate` only, and the stored value
+    // drops trailing punctuation. The full XSS + `isAllowedUri` policy runs
+    // inside `setHyperlink`; on rejection the popover stays open for correction.
+    const url = wholeLink(input.value, { customValidator: options.validate })
+    if (!url) {
       showError()
       return
     }

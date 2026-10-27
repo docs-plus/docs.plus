@@ -13,5 +13,6 @@ export {
   DANGEROUS_SCHEME_RE,
   isSafeHref,
   validateURL,
-  type ValidateURLOptions
+  type ValidateURLOptions,
+  wholeLink
 } from './validateURL'

@@ -9,11 +9,11 @@ Every write boundary canonicalizes the href before storing it:
 - **Protocol-relative URLs** stay as they are: `//example.com`.
 - **Bare E.164 phones** become `tel:`, and bare emails become `mailto:`.
 
-For any URL linkifyjs detects, the create form, the [markdown input rule](#markdown), autolink, and paste all produce the same `href`, with one exception. The forms and the markdown input rule store the value as typed, so `google.com,` keeps its comma. Autolink and paste leave trailing punctuation out. Paste detection is linkifyjs-only. A catalog app scheme such as `whatsapp://…` therefore autolinks as you type, but stays plain text when pasted. Register the scheme through `protocols` and paste detects it too.
+For any URL linkifyjs detects, the create form, the [markdown input rule](#markdown), autolink, and paste all produce the same `href`, with one exception. The markdown input rule stores the value as typed, so `[x](google.com,)` keeps its comma. The forms, autolink and paste leave trailing punctuation out. Paste detection is linkifyjs-only. A catalog app scheme such as `whatsapp://…` therefore autolinks as you type, but stays plain text when pasted. Register the scheme through `protocols` and paste detects it too.
 
 Validation rejects a scheme-prefixed typo with no real host: `https://googlecom` fails. `http://localhost`, `https://127.0.0.1`, and any registered custom scheme pass.
 
-A link form value must be one whole link, so a sentence such as `hello google.com` is refused. A raw space is refused for every scheme, including `mailto:`. Encode it as `%20`. Trailing punctuation such as `google.com.` still passes the check.
+A link form value must be one whole link, so a sentence such as `hello google.com` is refused. A raw space is refused for every scheme, including `mailto:`. Encode it as `%20`. Trailing punctuation such as `google.com.` still passes the check, and the forms store the link without it. `wholeLink(value)` returns that stored value, or `null` when the check fails.
 
 `normalizeHref(raw, defaultProtocol?)` returns the canonical href the editor would store. Call it in your own popover to mirror the same canonicalization.
 

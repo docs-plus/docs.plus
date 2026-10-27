@@ -45,7 +45,7 @@ Pick one. Setting both works, because they compose and a URL must pass both, but
 
 `isSafeHref` plus your `validate` and `isAllowedUri` hooks form the composed gate. The package docs use that name.
 
-`validateURL(url, { customValidator })` is a different tool. It is the form-level shape check the prebuilt popovers run before they call a command. It runs `isSafeHref` first, then the shape check, then your `customValidator`. The value must be one whole link: a sentence or a raw space is refused, and trailing punctuation such as `google.com.` still passes the check.
+`validateURL(url, { customValidator })` is a different tool. It is the form-level shape check the prebuilt popovers run before they call a command. It runs `isSafeHref` first, then the shape check, then your `customValidator`. The value must be one whole link: a sentence or a raw space is refused, and trailing punctuation such as `google.com.` still passes the check. `wholeLink(url, { customValidator })` runs the same check and returns the link to store, without that punctuation, or `null`. A custom popover stores `normalizeHref(wholeLink(value))`, as the prebuilt ones do.
 
 ### Link icons
 
@@ -204,6 +204,6 @@ The package bundles the type definitions. The complete public surface, grouped b
 - **Floating-popover primitive** — `createPopover`, `DEFAULT_OFFSET`. Types `Popover`, `PopoverOptions`. See [Floating-popover primitive](./advanced.md#floating-popover-primitive).
 - **UI controller** — `getDefaultController`. Types `PopoverController`, `PopoverKind`, `ControllerState`, `AdoptMetadata`, `VirtualCoordinates`. See [UI controller](./advanced.md#ui-controller).
 - **Tooltip primitive** — `attachTooltip`, `hideTooltip`, re-exported from the bundled `@docs.plus/floating-tooltip`. See [Tooltip primitive](./advanced.md#tooltip-primitive).
-- **URL utilities** — `normalizeHref`, `getSpecialUrlInfo`, `validateURL`, `isSafeHref`, `DANGEROUS_SCHEME_RE`, `SAFE_WINDOW_FEATURES`. Types `SpecialUrlInfo`, `SpecialUrlType`, `LinkifyMatchLike`, `ValidateURLOptions`.
+- **URL utilities** — `normalizeHref`, `getSpecialUrlInfo`, `validateURL`, `wholeLink`, `isSafeHref`, `DANGEROUS_SCHEME_RE`, `SAFE_WINDOW_FEATURES`. Types `SpecialUrlInfo`, `SpecialUrlType`, `LinkifyMatchLike`, `ValidateURLOptions`.
 - **DOM helpers** — `copyToClipboard(text, callback?)` writes `text` to the clipboard and reports success through `callback`. `createHTMLElement(tag, props?)` builds one element and assigns `props` onto it. The SVG icon factories `Copy`, `LinkOff`, `Pencil` take `IconProps`. The prebuilt preview toolbar renders those three icons; reuse them for visual parity.
 - **Linkify re-export** — `registerCustomProtocol`, passed through from [linkifyjs](https://linkify.js.org).

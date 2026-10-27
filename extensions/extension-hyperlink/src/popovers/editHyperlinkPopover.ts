@@ -3,7 +3,7 @@ import { getDefaultController } from '../floating-popover'
 import type { EditHyperlinkOptions } from '../hyperlink'
 import { buildPreviewOptionsFromAnchor } from '../openers/buildPreviewOptionsFromAnchor'
 import { openPreviewHyperlink } from '../openers/openPreviewHyperlink'
-import { createHTMLElement, validateURL } from '../utils'
+import { createHTMLElement, wholeLink } from '../utils'
 import { Link, Title } from '../utils/icons'
 import { getHyperlinkDisplayText } from './getHyperlinkDisplayText'
 
@@ -105,17 +105,17 @@ export default function editHyperlinkPopover(options: EditHyperlinkOptions): HTM
   form.addEventListener('submit', (e) => {
     e.preventDefault()
     const newText = linkTextInput.value.trim()
-    const newHref = hrefInput.value.trim()
+    const newHref = wholeLink(hrefInput.value, { customValidator: validate })
     let hasErrors = false
     if (!newText) {
       showError(textWrapper, textError)
       hasErrors = true
     }
-    if (!validateURL(newHref, { customValidator: validate })) {
+    if (!newHref) {
       showError(hrefWrapper, hrefError)
       hasErrors = true
     }
-    if (hasErrors) return
+    if (hasErrors || !newHref) return
 
     // `editHyperlink` returns `false` on two paths. First, the URL fails the
     // composed XSS + `isAllowedUri` gate (inline error, popover stays open).
