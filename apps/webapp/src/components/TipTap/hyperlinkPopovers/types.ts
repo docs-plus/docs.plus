@@ -174,4 +174,6 @@ export interface InternalLinkDescriptor {
 export interface InternalLinkChipProps {
   link: InternalDocumentLink
   editor: Editor | null
+  /** Filter links only: the composer dialog leaves out "In this document". */
+  hideFilterSublabel?: boolean
 }

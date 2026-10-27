@@ -40,7 +40,7 @@ export function ComposerLinkPreviewDialog({ href, onEdit, onRemove, onClose }: P
     <ComposerLinkModalShell title="Link options" onClose={onClose}>
       <div data-testid="composer-link-preview" className="flex flex-col gap-4">
         {internalLink ? (
-          <InternalLinkChip link={internalLink} editor={padEditor ?? null} />
+          <InternalLinkChip link={internalLink} editor={padEditor ?? null} hideFilterSublabel />
         ) : (
           <p className="truncate text-sm" title={href}>
             {href}
