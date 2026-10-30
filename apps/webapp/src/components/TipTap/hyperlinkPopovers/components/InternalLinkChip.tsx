@@ -4,11 +4,9 @@ import type { InternalLinkChipProps } from '../types'
 import { FilterTermPills } from './FilterTermPills'
 
 /**
- * Named destination header for the mobile preview sheet and composer link
- * dialog: icon tile + primary label + sub-label. A filter also shows its mode
- * label and every term. Display-only — the "Go"
- * action lives in the surrounding sheet/dialog so each surface keeps its own
- * dismiss + keyboard cadence.
+ * Named destination header for the mobile preview sheet and composer link dialog.
+ * A filter also shows its mode label and every term. Display-only: the "Go" action
+ * lives in the surrounding sheet or dialog, so each surface keeps its own dismiss and keys.
  */
 export function InternalLinkChip({ link, editor, hideFilterSublabel }: InternalLinkChipProps) {
   const { label, sublabel, icon: Icon, modeLabel } = describeInternalDocumentLink(link, editor)

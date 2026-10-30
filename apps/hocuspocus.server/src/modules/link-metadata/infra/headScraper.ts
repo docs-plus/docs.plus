@@ -218,7 +218,7 @@ const isEmptyValue = (value: Json) =>
   value === null ||
   value === '' ||
   (Array.isArray(value) && value.length === 0) ||
-  (typeof value === 'object' && !Array.isArray(value) && Object.keys(value as object).length === 0)
+  (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0)
 
 /** The schema search metascraper falls back to, bounded in depth and by one budget per scrape. */
 const searchSchema = (
@@ -260,7 +260,7 @@ const jsonLdValue = (items: Json[], path: string, budget: Budget): Json => {
   let fallback: Json
   for (const item of items) {
     value = getPath(item, props)
-    if (!isEmptyValue(value) || typeof value === 'number' || typeof value === 'boolean') break
+    if (!isEmptyValue(value)) break
     if (value !== null && value !== undefined) continue
     if (fallback !== undefined || budget.nodes <= 0) continue
     const exact = searchSchema(item, props, true, budget)
@@ -374,9 +374,6 @@ export const createHeadScraper = (): Scraper => ({
     const metaLike = (attr: string, part: string) =>
       elements.find((el) => el.tag === 'meta' && el.attrs[attr]?.toLowerCase().includes(part))
         ?.attrs.content
-    const metaCi = (attr: string, value: string) =>
-      elements.find((el) => el.tag === 'meta' && el.attrs[attr]?.toLowerCase() === value)?.attrs
-        .content
     const itemprop = (part: string, read: string, exact = false) =>
       elements.find((el) => {
         const name = el.attrs.itemprop?.toLowerCase()
@@ -478,7 +475,7 @@ export const createHeadScraper = (): Scraper => ({
       () => toTitle(metaLike('name', 'application-name')),
       () => toTitle(metaLike('name', 'app-title')),
       () => toTitle(metaLike('property', 'app_name')),
-      () => toTitle(metaCi('name', 'publisher')),
+      () => toTitle(meta('name', 'publisher')),
       () => toTitle(both('twitter:app:name:iphone')),
       () => toTitle(both('twitter:app:name:ipad')),
       () => toTitle(both('twitter:app:name:googleplay')),
@@ -499,7 +496,7 @@ export const createHeadScraper = (): Scraper => ({
       () => toDate(metaLike('property', 'published_time')),
       () => toDate(itemprop('datepublished', 'content', true)),
       () => toDate(itemprop('datepublished', 'title', true)),
-      () => toDate(metaCi('name', 'date')),
+      () => toDate(meta('name', 'date')),
       () => toDate(itemprop('date', 'content')),
       () => toDate(itemprop('date', 'title')),
       () => toDate(elements.find((el) => el.tag === 'time')?.attrs.datetime)

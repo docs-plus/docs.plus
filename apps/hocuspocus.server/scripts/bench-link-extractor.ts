@@ -531,19 +531,15 @@ const coverOne = async (base: string, entry: { section: string; url: string }) =
   const image =
     imageProbe === 'none' || imageProbe === 'ok' ? imageProbe : (`failed:${imageProbe}` as const)
   const title = body.success ? body.title : undefined
-  const grade: Grade = !title
-    ? 'miss'
-    : [new URL(body.url ?? entry.url).hostname, new URL(entry.url).hostname].includes(title) &&
-        !body.description &&
-        image === 'none'
-      ? 'fallback'
-      : WALL_RE.test(title) || WALL_RE.test(body.description ?? '')
-        ? 'wall'
-        : image === 'ok' && body.description
-          ? 'full'
-          : body.description || image === 'ok'
-            ? 'partial'
-            : 'title-only'
+  const gradeOf = (): Grade => {
+    if (!title) return 'miss'
+    const hosts = [new URL(body.url ?? entry.url).hostname, new URL(entry.url).hostname]
+    if (hosts.includes(title) && !body.description && image === 'none') return 'fallback'
+    if (WALL_RE.test(title) || WALL_RE.test(body.description ?? '')) return 'wall'
+    if (image === 'ok' && body.description) return 'full'
+    return body.description || image === 'ok' ? 'partial' : 'title-only'
+  }
+  const grade = gradeOf()
   const row: CoverageRow = {
     section: entry.section,
     requested: entry.url,

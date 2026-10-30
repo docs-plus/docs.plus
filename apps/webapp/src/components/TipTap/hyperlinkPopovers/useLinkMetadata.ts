@@ -16,10 +16,6 @@ export interface UseLinkMetadataResult {
  */
 export const useLinkMetadata = (href: string): UseLinkMetadataResult => {
   const [state, setState] = useState<UseLinkMetadataResult>(() => {
-    // `getCachedMetadata` returns a tri-state:
-    //   `undefined` → no entry (need to fetch)
-    //   `null`      → no card for this href (non-http(s), a 400, or success:false)
-    //   `MetadataResponse` → cache hit
     const cached = getCachedMetadata(href)
     if (cached) return { status: 'loaded', data: cached }
     if (cached === null) return { status: 'error', data: null }

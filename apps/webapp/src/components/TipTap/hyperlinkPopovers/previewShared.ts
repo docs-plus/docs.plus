@@ -9,7 +9,7 @@ import { getSiteIconUrl, isWebHref } from '@utils/link-helpers'
 import { lucideSvgString } from '@utils/lucideSvgString'
 import type { IconType } from 'react-icons'
 
-import { fetchMetadata, type MetadataResponse } from './fetchMetadata'
+import { fetchMetadata } from './fetchMetadata'
 import { FILTER_MODE_LABEL_CLASS, FILTER_TERM_PILL_CLASS } from './filterTermPill'
 import { hrefEventHandler, isAnotherPad } from './hrefEventHandler'
 import { describeInternalDocumentLink } from './internalDocumentLink'
@@ -72,12 +72,9 @@ export interface PreviewContext {
   signal: AbortSignal
 }
 
-// Render a Lucide React icon into the imperative-DOM popover container.
-// `aria-hidden` because the metadata title link alongside is the
-// screen-reader-readable surface; the icon is decoration.
-const createSvgIcon = (Icon: IconType): HTMLElement => {
-  return createHTMLElement('div', { innerHTML: lucideSvgString(Icon, 20) })
-}
+// Decoration only: the title link beside it is what a screen reader reads.
+const createSvgIcon = (Icon: IconType): HTMLElement =>
+  createHTMLElement('div', { innerHTML: lucideSvgString(Icon, 20) })
 
 /**
  * Our icon route only, so the linked site never sees the reader. A miss hides the img.
@@ -147,7 +144,7 @@ export const renderMetadataInto = (container: HTMLElement, ctx: PreviewContext):
 
   container.replaceChildren(content.container)
 
-  fetchMetadata(href).then((data: MetadataResponse | null) => {
+  fetchMetadata(href).then((data) => {
     if (signal.aborted || !content.titleLink.isConnected) return
     if (data?.title) content.titleLink.textContent = data.title
   })

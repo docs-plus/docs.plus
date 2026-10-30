@@ -107,10 +107,9 @@
   align-items: center;
   gap: 0.25rem;
 
-  // Compact desktop preview metadata row.
-  // Flex children default to `min-width: auto`, which beats the nested `max-width: 200px`
-  // caps. `min-width: 0` down the chain lets the anchor shrink and ellipsize, so the
-  // popover keeps one width whatever the href length.
+  // Compact metadata row. Flex children default to `min-width: auto`, which beats the
+  // `max-width: 200px` caps. `min-width: 0` down the chain lets the anchor ellipsize,
+  // so the popover keeps one width whatever the href length.
   .metadata {
     width: 200px;
     display: flex;

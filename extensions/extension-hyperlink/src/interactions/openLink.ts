@@ -21,7 +21,7 @@ export function openLink(linkCtx: LinkContext, href: string, opts: { newTab: boo
 
 /** For surfaces that hold only the editor, such as the prebuilt preview popover. */
 export function getLinkContext(editor: Editor): LinkContext | null {
-  const storage = (editor.storage as unknown as Record<string, HyperlinkStorage | undefined>)[
+  const storage = (editor.storage as Record<string, HyperlinkStorage | undefined>)[
     HYPERLINK_MARK_NAME
   ]
   return storage?.context ?? null
