@@ -1,7 +1,6 @@
 import { Chatroom } from '@components/chatroom'
 import FindBar from '@components/TipTap/find/FindBar'
 import { HyperlinkPopoverPortal } from '@components/TipTap/hyperlinkPopovers/HyperlinkPopoverPortal'
-import { attachLinkHovercard } from '@components/TipTap/hyperlinkPopovers/linkHovercard'
 import EditorToolbar from '@components/TipTap/toolbar/desktop/EditorToolbar'
 import { useHeadingScrollSpy } from '@components/toc/hooks/useHeadingScrollSpy'
 import { TocTickRail } from '@components/toc/TocTickRail'
@@ -9,7 +8,7 @@ import ResizeHandle from '@components/ui/ResizeHandle'
 import { useUnreadSync } from '@hooks/useUnreadSync'
 import { useStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
-import { memo, type RefObject, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, type RefObject, useMemo, useRef, useState } from 'react'
 
 import { useSyncChatPanelHeight, useTocResize } from '../hooks'
 import EditorContent from './EditorContent'
@@ -68,11 +67,7 @@ const DesktopPadFind = memo(function DesktopPadFind() {
 
 const DesktopEditor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)
-  const editor = useStore((state) => state.settings.editor.instance)
   const documentId = useStore((state) => state.settings.metadata?.documentId)
-
-  // Pad only: the composer has its own editor, and the hovercard must not reach it (#242).
-  useEffect(() => (editor ? attachLinkHovercard(editor) : undefined), [editor])
   const isPrivate = useStore((state) => Boolean(state.settings.metadata?.isPrivate))
   // Session-only, like the tick rail. A pad switch keeps this layout mounted, so the
   // shown state names its pad and a switch reads it as hidden. A Private pad shows no QR.

@@ -53,6 +53,8 @@ import { ParagraphStyle } from './extensions/paragraph-style'
 import { SlashMenu } from './extensions/slash-menu'
 import { TitleDocument } from './extensions/title-document'
 import { getHyperlinkPopoverConfig } from './hyperlinkPopovers/getHyperlinkPopoverConfig'
+import { padNavigate } from './hyperlinkPopovers/hrefEventHandler'
+import { padHovercard } from './hyperlinkPopovers/padHovercard'
 import { ListGapJoin } from './listGapJoin'
 import { ListKeymapWithoutTab } from './listKeymapWithoutTab'
 import { getMediaToolbarFactory } from './mediaPopovers/getMediaToolbarFactory'
@@ -247,7 +249,10 @@ const Editor = ({
       // YouTube/Vimeo/SoundCloud/X/image link becomes an embed node, not a link.
       shouldAutoLink: (url: string) => !isMediaUrl(url),
       popovers: getHyperlinkPopoverConfig(isMobile),
-      linkIcon: padLinkIcon
+      linkIcon: padLinkIcon,
+      navigate: padNavigate,
+      // Live pad on desktop only: history and the /editor playground have no provider (A10).
+      hovercard: provider && !isMobile ? padHovercard : undefined
     }),
     HyperMultimediaKit.configure({
       Image: { inline: true, allowBase64: true },

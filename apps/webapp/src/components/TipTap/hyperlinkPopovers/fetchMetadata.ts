@@ -65,7 +65,10 @@ export const getCachedMetadata = (href: string): MetadataResponse | null | undef
  * The page image through our server, so the linked site never sees the reader. The server
  * keeps only http(s) image URLs. `undefined` when the card has no image.
  */
-export const metadataImageUrl = (href: string, data: MetadataResponse): string | undefined => {
+export const metadataImageUrl = (
+  href: string,
+  data: { image?: { url: string } }
+): string | undefined => {
   const key = metadataKey(href)
   if (!data.image?.url || key === null) return undefined
   return `${apiBaseUrl()}/metadata/image?url=${encodeURIComponent(key)}`

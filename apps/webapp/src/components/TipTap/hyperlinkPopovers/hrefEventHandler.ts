@@ -1,5 +1,6 @@
 import {
   getDefaultController,
+  type HyperlinkOptions,
   isSafeHref,
   SAFE_WINDOW_FEATURES
 } from '@docs.plus/extension-hyperlink'
@@ -73,3 +74,12 @@ export const hrefEventHandler =
     event.preventDefault()
     navigateHref(href, isAllowedUri, event)
   }
+
+/** Every extension link open (#242). A new tab skips the in-place routes, as the extension asks. */
+export const padNavigate: NonNullable<HyperlinkOptions['navigate']> = (href, { newTab }) => {
+  if (!newTab) {
+    navigateHref(href)
+    return
+  }
+  if (isSafeHref(href)) window.open(href, '_blank', SAFE_WINDOW_FEATURES)
+}

@@ -77,8 +77,7 @@
 
 // Same frame as `contextMenuPanelClassName`, so every floating panel matches.
 .hyperlink-preview-popover,
-.hyperlink-link-popover-shell,
-.hyperlink-hovercard {
+.hyperlink-link-popover-shell {
   background-color: var(--color-base-100);
   color: var(--color-base-content);
   border: 1px solid var(--color-base-300);
@@ -86,41 +85,17 @@
   box-shadow: var(--shadow-overlay);
 }
 
-// Text comes from Tailwind classes in `linkHovercard.ts`. The page image is a flush well
-// at the 1.91:1 share-card ratio. A late image fades in; a late failure folds the well away.
+// The layout lives in the extension's `hovercard.css`; the pad maps its tokens to the same frame.
 .hyperlink-hovercard {
-  width: 24rem;
-  max-width: calc(100vw - 1rem);
-  overflow: hidden;
-
-  .hovercard-image {
-    aspect-ratio: 1.91 / 1;
-    overflow: hidden;
-    background-color: var(--color-base-200);
-    border-bottom: 1px solid var(--color-base-300);
-
-    img {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    &:not([data-state='ready']) img,
-    &[data-state='failed'] {
-      opacity: 0;
-    }
-
-    @media (prefers-reduced-motion: no-preference) {
-      transition:
-        height var(--motion-panel) var(--motion-ease-exit),
-        opacity var(--motion-panel) var(--motion-ease-exit);
-
-      img {
-        transition: opacity var(--motion-panel) var(--motion-ease-enter);
-      }
-    }
-  }
+  --hl-bg: var(--color-base-100);
+  --hl-border: var(--color-base-300);
+  --hl-radius: var(--radius-box);
+  --hl-radius-sm: var(--radius-field);
+  --hl-shadow: var(--shadow-overlay);
+  --hl-well: var(--color-base-200);
+  --hl-fg: var(--color-base-content);
+  --hl-muted: color-mix(in oklch, var(--color-base-content) 70%, transparent);
+  --hl-font: var(--font-sans);
 }
 
 .hyperlink-preview-popover {
