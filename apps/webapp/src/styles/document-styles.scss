@@ -32,7 +32,9 @@
 
   a:not(:has(> .hyperlink-icon[data-link-kind])):hover {
     color: var(--color-primary);
-    opacity: 0.85;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
   }
 
   // A same-pad link is a chip (#174). Inline padding leaves the line height alone.
