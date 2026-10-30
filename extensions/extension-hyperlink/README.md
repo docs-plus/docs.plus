@@ -98,6 +98,8 @@ You should see a paragraph with one link. Click the link to open the preview pop
 - **Legacy `link` marks get no icon.** Only the `hyperlink` mark renders through the icon mark view.
 - **A `{ light, dark }` pair has limits.** It needs `styles.css` or your own `.hyperlink-icon` size, or the span has zero width. A bad URL shows a blank 1em box. Browsers before Chrome 150, Firefox 150 and Safari 27 show the light image.
 - **A transient image failure hides that icon until reload.** The helper does not request a failed URL again.
+- **A pointer already resting on a link gets no hovercard.** The card starts only on `pointerover`. When a link renders under a still pointer, no card shows until the pointer leaves the link and comes back.
+- **The hovercard sees only this bundle's popovers.** It opens no card while a preview, create or edit popover of this package is mounted. A popover from another bundle, such as `@docs.plus/extension-hypermultimedia`, does not stop it.
 
 The full list, with the reason for each, is in [Caveats](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md#caveats).
 
@@ -170,6 +172,26 @@ Hyperlink.configure({ linkIcon: (ctx) => icons(ctx) ?? favicons(ctx) })
 ```
 
 A map entry may also be a `{ light, dark }` pair of image URLs, or a function that returns an element. See [Link icons](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md#link-icons).
+
+### Show a card on hover
+
+The `hovercard` option shows a read-only card when a mouse pointer rests on a link. Your `fetchMetadata` returns the title, description and picture. The package makes no request of its own:
+
+```ts
+import { Hyperlink } from '@docs.plus/extension-hyperlink'
+import '@docs.plus/extension-hyperlink/hovercard.css'
+
+Hyperlink.configure({
+  hovercard: {
+    fetchMetadata: async ({ href }) => {
+      const res = await fetch(`/metadata?url=${encodeURIComponent(href)}`)
+      return res.ok ? res.json() : null
+    }
+  }
+})
+```
+
+The request starts after a 150 ms rest on the link, and the card opens at 500 ms at the earliest. See [Hovercard](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md#hovercard) for the options, the timing and the keys that close it.
 
 ## Gallery
 

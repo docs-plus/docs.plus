@@ -20,6 +20,14 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 - `linkIconFetcher({ src, tile })` builds one `<img>` per link from the link's origin, for example through your own favicon route. It never requests a failed image URL again.
 - A `linkIconMap` entry may be a `{ light, dark }` pair of image URLs. The pair follows the app's `color-scheme` through `light-dark()`.
 - The `tile` option of `linkIconFetcher` adds the `.hyperlink-icon-tile` class, and the new `--hl-icon-tile` token paints a light square behind the icon on a dark scheme.
+- A link icon with its own non-empty `aria-label` gets `role="img"` and stays exposed to screen readers, so a host can speak a link's kind. Any other icon stays `aria-hidden="true"` ([#174](https://github.com/docs-plus/docs.plus/issues/174)).
+- The `navigate` option, `(href, { newTab }) => void`, opens every link the package opens. The package calls it only after the composed gate passes. Unset, it opens a new tab with `noopener,noreferrer` ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- The `hovercard` option shows a read-only card when a mouse pointer rests on a link ([#242](https://github.com/docs-plus/docs.plus/issues/242)). The host's `fetchMetadata` returns the title, description and picture. `siteIcon`, `shouldShow` and `imageLayout` (`'cover'` or `'adaptive'`) are optional.
+- The request starts after a 150 ms rest on the link. The card opens at 500 ms at the earliest, and closes 300 ms after the pointer leaves the link and the card. Modifier keys, the arrows, Home, End, PageUp, PageDown, F1 to F12 and Mod-C keep it open. Every other key closes it.
+- The card shows only for a mouse on a fine pointer, and only for a link the composed gate allows. It never opens while another popover of this package is mounted.
+- `@docs.plus/extension-hyperlink/hovercard.css` styles the card through `--hl-*` tokens. Three are new: `--hl-well`, `--hl-hovercard-width` and `--hl-hovercard-thumb`.
+- The `HovercardOptions`, `HovercardData` and `HovercardImageLayout` types are root exports.
+- `PopoverKind` gains the `'hovercard'` literal.
 
 ### Changed
 
@@ -29,9 +37,15 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 - A click on a link icon puts the caret at the link start.
 - The clean-room tests run on `prosemirror-view` 1.42.6. They ran on 1.42.3.
 - `linkIconFetcher` and `linkIconMap` request each image URL once. The first `<img>` for a URL makes the request, and later ones stay hidden until it loads, then take the cached image. A failed URL keeps its images hidden with no new request ([#516](https://github.com/docs-plus/docs.plus/issues/516)).
+- The middle click, the read-only click with no preview slot and the prebuilt preview's Open now go through `navigate` ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- A read-only click with no preview slot now always opens a new tab. Before, the link's `target` decided, with `_blank` as the fallback.
+- The prebuilt preview's Open now also applies the editor's own `isAllowedUri`. Before, a preview opened without `isAllowedUri`, for example through `openPreviewHyperlink`, checked only `isSafeHref`.
+- The preview popover is now `role="dialog"`, named "Link preview". It was `role="toolbar"`. If you select the prebuilt preview by role, use `[role="dialog"][aria-label="Link preview"]`.
+- The popover reads its Tab cycle on each Tab, so a control that renders after it opens joins the cycle.
 
 ### Fixed
 
+- Tab and Shift-Tab in a popover skip a control that cannot take focus: one that is disabled, inside `[inert]`, not rendered, or at `tabindex="-1"`. Before, Tab onto a disabled Apply button left focus where it was.
 - Parsed and pasted `<a href>` now becomes `hyperlink` even when StarterKit's Link stays registered. The `a[href]` parse rule runs at priority 51, above the ProseMirror default of 50. Before, the mark registered first won, which was usually Link. A host that keeps Link to load stored `link` marks now gets a `hyperlink` mark, its icon and its popovers on paste ([#636](https://github.com/docs-plus/docs.plus/issues/636)).
 - `validateURL` and the link forms now accept only one whole link. Before, `hello google.com` passed and was stored as `https://hello google.com`. A raw space is refused for every scheme: `mailto:`, `tel:`, app links and catalog sites such as `github.com`. Trailing punctuation such as `google.com.` still passes the check, and the forms store the link without it: `google.com,` stores `https://google.com`, and `user@example.com.` stores `mailto:user@example.com`. A typed `Re:google.com` now links only `google.com`.
 - Autolink keeps a closing parenthesis that belongs to the link, as paste already did. Before, a typed `https://en.wikipedia.org/wiki/Foo_(bar)` stored an href without the `)`.

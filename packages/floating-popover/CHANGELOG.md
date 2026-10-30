@@ -10,8 +10,17 @@ Versioning follows [Semantic Versioning](https://semver.org/) and commits follow
 
 ## [Unreleased]
 
+### Added
+
+- `PopoverKind` gains the `'hovercard'` literal, for the extension-hyperlink link hovercard.
+
+### Changed
+
+- `createPopover` reads its Tab cycle on each Tab, so a control that renders after `show()` joins the cycle. One `keydown` listener on the root, bound in `show()`, replaces one listener per control.
+
 ### Fixed
 
+- The Tab cycle skips a control that cannot take focus: one that is disabled, inside `[inert]`, not rendered, or at `tabindex="-1"`. Before, Tab onto a disabled Apply button left focus where it was.
 - `createPopover` no longer light-dismisses when the pointer is on the toggle
   trigger (`referenceElement`, or `ignoreOutsideClickOn` when the position
   reference is a larger surface). Re-clicking the trigger can toggle closed.

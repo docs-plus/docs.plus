@@ -19,19 +19,38 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 ### Added
 
 - Every pad link now shows a link icon before its text, in the pad, history and `/editor`
-  ([#516](https://github.com/docs-plus/docs.plus/issues/516)). docs.plus links show the docs.plus
-  logo, and `mailto:` and `tel:` links show a mail or phone glyph. Other web links show the site's
+  ([#516](https://github.com/docs-plus/docs.plus/issues/516)). A link to another pad shows the
+  docs.plus logo, and `mailto:` and `tel:` links show a mail or phone glyph. Other web links show the site's
   favicon from our own icon route. A link with no icon stays a plain link. Print and the chat
   composer show no link icons. This goes against Google Docs, Word and Notion on purpose
   (maintainer ruling, 2026-10-17).
 - The Home Screen app links launch images for 440x956, 402x874, 420x912, 428x926 and 375x812
   at 3x, next to the three sizes it had. Every other iPhone, the iPhone 17 line among them,
   used to open on a black screen ([#255](https://github.com/docs-plus/docs.plus/issues/255)).
-- On a desktop pad, resting the pointer on an external link for 400 ms opens the hovercard
-  ([#242](https://github.com/docs-plus/docs.plus/issues/242)). It shows the page's picture,
-  site icon, host, title and description, and all of it comes through our server. It is
-  read-only, and a press or a key closes it. The phone and chat do not get it. The site icon and
-  host come from the link itself. Only the title, description and picture come from the page.
+- On a desktop pad, resting the pointer on a link opens the hovercard
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)). The request starts after 150 ms,
+  and the card opens at 500 ms at the earliest. It shows the page's picture, site icon, host,
+  title and description, and all of it comes through our server. It is read-only. A press or most
+  keys close it. Its title opens the page in a new tab. A link to a part of this pad gets no
+  card. The phone, chat, history and `/editor` do not get it. The site icon and host come from
+  the link itself. Only the title, description and picture come from the page.
+- The card comes from the hyperlink extension's `hovercard` option. The pad passes its data and its
+  gates, and maps the card's `--hl-*` tokens to the house tokens
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- Settings → Appearance has a "Link previews" card with one switch, "Show link previews on
+  hover" ([#242](https://github.com/docs-plus/docs.plus/issues/242)). It is stored per browser
+  and is on by default. It applies only while you are signed in.
+- A link to a part of this pad shows its kind icon: heading, chat, filter, version or top
+  ([#174](https://github.com/docs-plus/docs.plus/issues/174)). A screen reader speaks the kind,
+  such as "Heading". The link renders as a chip with a light primary tint. In headings and the
+  Subtitle the chip has no block padding. In print it is plain link text.
+- A filter link's preview names the filtered view, its match mode and every term, as wrapping
+  pills ([#174](https://github.com/docs-plus/docs.plus/issues/174)). This holds in the desktop
+  preview, the phone sheet and the chat link dialog. On desktop, Copy, Edit and Remove move to a
+  row under the chip, next to "In this document".
+- Every internal-link chip in the desktop preview has a spoken name, such as "Go to heading: Setup."
+  ([#174](https://github.com/docs-plus/docs.plus/issues/174)). A chat chip's label leads with the
+  quoted heading name.
 - One link-metadata cache, `fetchMetadata.ts`, serves the click preview, the phone sheet, the
   hovercard and media unfurls ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
   Callers of one link share one request, and a hover that leaves still fills the cache for the

@@ -97,7 +97,7 @@ Each opener reads its slot from `Hyperlink.configure({ popovers })`. Each opener
 
 ## Bring your own popover
 
-Three minimal factories that match the option shapes above. A factory supplies content only. The shell keeps its per-popover ARIA semantics: `role="toolbar"` for preview, and `role="dialog"` named "Add link" or "Edit link" for create and edit. Your popovers therefore stay accessible with no extra wiring. The shell also owns dismissal and focus — see [Floating-popover primitive](./advanced.md#floating-popover-primitive). The create and edit examples call `validateURL(url, { customValidator: validate })` for the form-level shape check — see [`validate` vs `isAllowedUri`](./api.md#validate-vs-isalloweduri).
+Three minimal factories that match the option shapes above. A factory supplies content only. The shell keeps its per-popover ARIA semantics: `role="dialog"` named "Link preview" for preview, and `role="dialog"` named "Add link" or "Edit link" for create and edit. Your popovers therefore stay accessible with no extra wiring. If you select the prebuilt preview by role, use `[role="dialog"][aria-label="Link preview"]`. The shell also owns dismissal and focus — see [Floating-popover primitive](./advanced.md#floating-popover-primitive). The create and edit examples call `validateURL(url, { customValidator: validate })` for the form-level shape check — see [`validate` vs `isAllowedUri`](./api.md#validate-vs-isalloweduri).
 
 <details>
 <summary><b>Custom <code>previewHyperlink</code></b></summary>

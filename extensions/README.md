@@ -83,7 +83,7 @@ The docs are also indexed on [Context7](https://context7.com/docs-plus/docs.plus
 The packages that open a popover use these words and no synonym. Two axes, never one word for both jobs:
 
 - **Popover** — the positioning container: anchored, floating, light-dismiss. Owned by the shared `floating-popover` engine; shells are role-less by default (ARIA has no popover role — the surface carries its content's role).
-- **Toolbar / form / menu** — the content inside a surface, named by what it is and carrying the matching ARIA role. In hypermultimedia, the media toolbar is a persistent in-node action bar (`role="toolbar"`). In hyperlink, the preview is a toolbar _in_ a popover, and create/edit are forms (`role="dialog"`) _in_ popovers.
+- **Toolbar / form / menu** — the content inside a surface, named by what it is and carrying the matching ARIA role. In hypermultimedia, the media toolbar is a persistent in-node action bar (`role="toolbar"`). In hyperlink, the preview ("Link preview"), create and edit are dialogs (`role="dialog"`) _in_ popovers.
 - **Composed names** follow the industry shape (CKEditor "balloon toolbar", Fluent `MenuPopover`): `openToolbarPopover` opens a popover anchored to the media toolbar.
 
 ### Surface names

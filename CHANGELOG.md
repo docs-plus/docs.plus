@@ -46,7 +46,7 @@ Migration section for when it goes. As the last step, run
   ([#516](https://github.com/docs-plus/docs.plus/issues/516)).
 - The Home Screen app now has a launch image for every current iPhone size, so no iPhone
   opens it on a black screen ([#255](https://github.com/docs-plus/docs.plus/issues/255)).
-- On a desktop pad, rest the pointer on an external link for 400 ms and a hovercard opens. It
+- On a desktop pad, rest the pointer on an external link and a hovercard opens. The request starts after 150 ms, and the card opens at 500 ms at the earliest. It
   shows the page's picture, site, title and description. Our server fetches all of it, so your
   browser sends nothing to the linked site. A click still opens the link preview
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).

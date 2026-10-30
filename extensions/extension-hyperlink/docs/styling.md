@@ -94,7 +94,7 @@ Stable class names you can target:
 | `.floating-popover-content`  | Content wrapper inside the popover.                                                                            |
 | `.floating-tooltip`          | Tooltip on popover icon buttons (adds `.visible`).                                                             |
 | `.hyperlink-create-popover`  | Create-link form root.                                                                                         |
-| `.hyperlink-preview-popover` | Preview toolbar root.                                                                                          |
+| `.hyperlink-preview-popover` | Preview popover root.                                                                                          |
 | `.hyperlink-edit-popover`    | Edit-link form root.                                                                                           |
 | `.hyperlink-icon`            | Icon from the `linkIcon` option, first inside the `<a>`. `styles.css` gives it a `1em` box and a `0.25em` gap. |
 | `.hyperlink-icon-tile`       | From `linkIconFetcher({ tile: true })`. `styles.css` paints `--hl-icon-tile` behind the icon.                  |
@@ -104,10 +104,43 @@ Stable class names you can target:
 | `.buttons-wrapper`           | Button group container.                                                                                        |
 | `.back-button`               | Edit-form back action.                                                                                         |
 | `.apply-button`              | Edit-form apply action.                                                                                        |
-| `.copy`                      | Preview-toolbar copy icon button.                                                                              |
-| `.edit`                      | Preview-toolbar edit icon button.                                                                              |
-| `.remove`                    | Preview-toolbar remove icon button.                                                                            |
+| `.copy`                      | Preview-popover copy icon button.                                                                              |
+| `.edit`                      | Preview-popover edit icon button.                                                                              |
+| `.remove`                    | Preview-popover remove icon button.                                                                            |
 | `.search-icon`               | Leading icon inside an input group.                                                                            |
 | `.error-message`             | Validation error text (shown with `.show`).                                                                    |
 
 The bundled `@docs.plus/floating-tooltip` ships the tooltips on the prebuilt popovers' icon buttons. It appends one bubble per bundle to the body, and shows it on hover and on keyboard focus. `styles.css` skins that bubble with a fixed literal block, and the block stays in lockstep with extension-hypermultimedia. See [Tooltip primitive](./advanced.md#tooltip-primitive) to attach the same labels to your own buttons.
+
+## Hovercard
+
+The [hovercard](./api.md#hovercard) has its own stylesheet. Import it with the `hovercard` option:
+
+```ts
+import '@docs.plus/extension-hyperlink/hovercard.css'
+```
+
+`styles.css` does not include it, and the package's JavaScript never imports it. Without it, the card renders unstyled.
+
+The card reads these `--hl-*` tokens. `hovercard.css` carries a fallback for each, so it needs no `styles.css`:
+
+- `--hl-bg`, `--hl-fg`, `--hl-muted`, `--hl-border`, `--hl-shadow`, `--hl-radius`, `--hl-radius-sm` and `--hl-font`. The fallbacks equal the defaults above.
+
+Three tokens are for the card only:
+
+- `--hl-well` is the fill behind a picture that is still loading. Default `light-dark(#f3f4f6, #374151)`.
+- `--hl-hovercard-width` is the card width. Default `24rem`, and never wider than `calc(100vw - 1rem)`.
+- `--hl-hovercard-thumb` is the thumbnail size. Default `4rem`.
+
+The picture fades in over 200 ms, and a failed cover well folds over 200 ms. Both transitions turn off under `prefers-reduced-motion: reduce`.
+
+| Class                               | Element                                                       |
+| ----------------------------------- | ------------------------------------------------------------- |
+| `.hyperlink-hovercard`              | Card root, inside `.floating-popover`.                        |
+| `.hyperlink-hovercard--thumb`       | Added to the root when the picture shows as a thumbnail.      |
+| `.hyperlink-hovercard__image`       | Picture well. `data-state` is `loading`, `ready` or `failed`. |
+| `.hyperlink-hovercard__body`        | Text column.                                                  |
+| `.hyperlink-hovercard__site`        | Site row: the `siteIcon` element, then the host name.         |
+| `.hyperlink-hovercard__site-icon`   | Added to the `siteIcon` element, a 16px circle.               |
+| `.hyperlink-hovercard__title`       | Title link, two lines at most.                                |
+| `.hyperlink-hovercard__description` | Description, three lines at most.                             |

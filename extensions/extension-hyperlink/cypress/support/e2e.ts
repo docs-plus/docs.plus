@@ -35,6 +35,7 @@ declare global {
     _hyperlink: typeof HyperlinkModule
     _byo?: PlaygroundByoState
     _iconCalls?: number
+    _navigateCalls?: Array<{ href: string; newTab: boolean }>
     _getMarkdown?: () => string
     _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
   }

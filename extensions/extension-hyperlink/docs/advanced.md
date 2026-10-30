@@ -8,7 +8,7 @@ Cross-popover primitives and lifecycle APIs live here. Use them to build a popov
 
 `createPopover(options)` is the primitive every opener calls: Floating-UI placement, scroll-stickiness, outside-click dismissal, keyboard navigation, and registration with the [UI controller](#ui-controller). Call it directly for a popover that joins the same lifecycle without a hyperlink anchor.
 
-The shell owns dismissal and focus. Escape hides the popover, and the shell binds it on the popover root, so focus must sit inside. An outside `mousedown` or `touchstart` hides it too. The listeners arm 50 ms after `show()`, so a click inside that 50 ms window does not dismiss the popover. Tab and Shift-Tab cycle focus across the controls inside the popover.
+The shell owns dismissal and focus. Escape hides the popover, and the shell binds it on the popover root, so focus must sit inside. An outside `mousedown` or `touchstart` hides it too. The listeners arm 50 ms after `show()`, so a click inside that 50 ms window does not dismiss the popover. Tab and Shift-Tab cycle focus across the controls inside the popover. The shell reads that cycle on each Tab, so a control that renders after `show()` joins it. The cycle skips a control that is disabled, inside `[inert]`, not rendered, or at `tabindex="-1"`.
 
 `PopoverOptions` is a discriminated union — exactly one of `referenceElement` or `coordinates` is required, and the compiler enforces it.
 
@@ -50,7 +50,7 @@ Returns a `Popover`:
 `ControllerState` is a discriminated union:
 
 ```ts
-type PopoverKind = 'preview' | 'edit' | 'create' | (string & {})
+type PopoverKind = 'preview' | 'edit' | 'create' | 'hovercard' | (string & {})
 
 type ControllerState =
   | { kind: 'idle' }
@@ -62,7 +62,7 @@ type ControllerState =
     }
 ```
 
-`referenceElement` holds the anchor node for the preview popover only. Create and edit both anchor to virtual coordinates, so both report `null`.
+`referenceElement` holds the anchor node for the preview popover and the [hovercard](./api.md#hovercard). Create and edit both anchor to virtual coordinates, so both report `null`.
 
 `PopoverController`:
 
