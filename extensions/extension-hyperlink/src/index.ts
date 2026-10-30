@@ -22,6 +22,8 @@ export {
   openEditHyperlink,
   openPreviewHyperlink
 } from './openers'
+// The caret-inside-a-link test that Mod-K and Alt+Enter use, for host keymaps such as a composer.
+export { linkAtSelection } from './openers/linkAtSelection'
 export { createHyperlinkPopover, editHyperlinkPopover, previewHyperlinkPopover } from './popovers'
 // Tooltip primitive — the same hover/focus bubble the prebuilt popovers
 // put on their icon buttons, re-exported for BYO popover parity.

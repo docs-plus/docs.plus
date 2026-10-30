@@ -16,8 +16,11 @@ import { HYPERLINK_MARK_NAME } from './constants'
 import { createHovercardPlugin } from './hovercard/hovercardPlugin'
 import type { HovercardOptions } from './hovercard/types'
 import { createInteractions, createLinkContext, type LinkContext } from './interactions'
+import { openLink } from './interactions/openLink'
 import { linkIconCompositionSweep, linkIconMarkView } from './link-icons/linkIconMarkView'
 import type { LinkIconResolver } from './link-icons/types'
+import { linkAtSelection } from './openers/linkAtSelection'
+import { openPreviewAtSelection } from './openers/openPreviewAtSelection'
 import { closeOwnedPopover } from './openers/popoverOwnership'
 import { isSafeHref } from './url-decisions'
 import { DEFAULT_PROTOCOL, normalizeHref } from './utils/normalizeHref'
@@ -301,9 +304,16 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
   },
 
   addKeyboardShortcuts() {
-    // Mod-k routes to `openCreateHyperlinkPopover` (was overloaded `setHyperlink()`).
+    // Mod-k previews the link around the caret; elsewhere it opens the create form.
     const shortcuts: Record<string, () => boolean> = {
-      'Mod-k': () => this.editor.commands.openCreateHyperlinkPopover()
+      'Mod-k': () =>
+        openPreviewAtSelection(this.editor) || this.editor.commands.openCreateHyperlinkPopover(),
+      'Alt-Enter': () => {
+        const link = linkAtSelection(this.editor.state, this.type)
+        if (!link) return false
+        openLink(getContext(this), link.href, { newTab: true })
+        return true
+      }
     }
 
     if (this.options.exitable) {

@@ -257,6 +257,124 @@ describe('previewHyperlinkPopover + editHyperlinkPopover — prebuilt preview / 
   })
 })
 
+const PREVIEW_DIALOG = '[role=dialog][aria-label="Link preview"]'
+// In DOC_WITH_LINK, "Example" spans positions 7-14.
+const CARET_IN_LINK = 10
+
+const caretPos = (): Cypress.Chainable<number> =>
+  cy.getEditor().then((editor) => editor.state.selection.from)
+
+const navigateCalls = (): Cypress.Chainable<Array<{ href: string; newTab: boolean }>> =>
+  cy.window().its('_navigateCalls') as Cypress.Chainable<Array<{ href: string; newTab: boolean }>>
+
+describe('preview popover — keyboard open (Mod-K and Alt+Enter)', () => {
+  it('Mod-K inside a link opens its preview with focus inside', () => {
+    cy.visitPlayground()
+    cy.setEditorContent(DOC_WITH_LINK)
+    cy.focusEditor(CARET_IN_LINK)
+    cy.pressModK()
+    cy.get(PREVIEW_DIALOG).should('be.visible')
+    cy.get('.hyperlink-create-popover').should('not.exist')
+    cy.focused().should('match', `${PREVIEW} > a`)
+  })
+
+  it('Escape returns focus to the editor at the same caret', () => {
+    cy.visitPlayground()
+    cy.setEditorContent(DOC_WITH_LINK)
+    cy.focusEditor(CARET_IN_LINK)
+    cy.pressModK()
+    cy.focused().should('match', `${PREVIEW} > a`)
+    cy.focused().realPress('Escape')
+    cy.get(PREVIEW).should('not.exist')
+    cy.get('#editor .ProseMirror').should('have.focus')
+    caretPos().should('eq', CARET_IN_LINK)
+  })
+
+  it('an outside click keeps focus where the user clicked', () => {
+    cy.visitPlayground()
+    cy.setEditorContent(DOC_WITH_LINK)
+    cy.document().then((doc) => {
+      const button = doc.createElement('button')
+      button.className = 'outside-target'
+      button.textContent = 'Outside'
+      doc.body.prepend(button)
+    })
+    cy.focusEditor(CARET_IN_LINK)
+    cy.pressModK()
+    cy.focused().should('match', `${PREVIEW} > a`)
+    // The engine arms outside-click dismissal 50 ms after open.
+    cy.wait(100)
+    cy.get('.outside-target').realClick()
+    cy.get(PREVIEW).should('not.exist')
+    cy.get('.outside-target').should('have.focus')
+  })
+
+  it('a close after focus moved away leaves focus where the user put it', () => {
+    cy.visitPlayground()
+    cy.setEditorContent(DOC_WITH_LINK)
+    cy.document().then((doc) => {
+      const button = doc.createElement('button')
+      button.className = 'outside-target'
+      button.textContent = 'Outside'
+      doc.body.prepend(button)
+    })
+    cy.focusEditor(CARET_IN_LINK)
+    cy.pressModK()
+    cy.focused().should('match', `${PREVIEW} > a`)
+    cy.get('.outside-target').focus()
+    cy.window().then((win) => win._hyperlink.getDefaultController().close())
+    cy.get(PREVIEW).should('not.exist')
+    cy.get('.outside-target').should('have.focus')
+  })
+
+  it('a host opt-out opens neither the preview nor the create form', () => {
+    cy.visitPlayground({ query: 'popover=none' })
+    cy.setEditorContent(DOC_WITH_LINK)
+    cy.focusEditor(CARET_IN_LINK)
+    cy.pressModK()
+    // Both openers mount at once, so one frame is enough to see a wrong one.
+    cy.window().then(
+      (win) => new Cypress.Promise<void>((done) => win.requestAnimationFrame(() => done()))
+    )
+    cy.get('.floating-popover').should('not.exist')
+    cy.get('#editor .ProseMirror').should('have.focus')
+  })
+
+  it('Alt+Enter inside a link opens it once and leaves the text alone', () => {
+    cy.visitPlayground({ query: 'navigate=spy' })
+    cy.setEditorContent(DOC_WITH_LINK)
+    cy.focusEditor(CARET_IN_LINK)
+    cy.realPress(['Alt', 'Enter'])
+    navigateCalls().should('deep.equal', [{ href: 'https://example.com', newTab: true }])
+    cy.get('#editor p').should('have.length', 1)
+  })
+})
+
+describe('preview popover — keyboard click in read-only mode (?readonly=on)', () => {
+  beforeEach(() => {
+    cy.visitPlayground({ query: 'readonly=on' })
+    cy.setEditorContent(DOC_WITH_LINK)
+  })
+
+  it('Enter on a focused link opens the preview with focus inside', () => {
+    cy.get('#editor a').focus()
+    cy.get('#editor a').should('have.focus')
+    cy.realPress('Enter')
+    cy.get(PREVIEW_DIALOG).should('be.visible')
+    cy.focused().should('match', `${PREVIEW} > a`)
+  })
+
+  it('Escape returns focus to the link', () => {
+    cy.get('#editor a').focus()
+    cy.get('#editor a').should('have.focus')
+    cy.realPress('Enter')
+    cy.focused().should('match', `${PREVIEW} > a`)
+    cy.focused().realPress('Escape')
+    cy.get(PREVIEW).should('not.exist')
+    cy.get('#editor a').should('have.focus')
+  })
+})
+
 // Module scope: keeps top-level consts (PREVIEW/EDIT/DOC_WITH_LINK/…) from
 // colliding with sibling specs under Cypress's shared TS project.
 export {}

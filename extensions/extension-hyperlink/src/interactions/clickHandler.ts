@@ -4,6 +4,7 @@ import type { EditorView } from '@tiptap/pm/view'
 
 import { getDefaultController } from '../floating-popover'
 import { buildPreviewOptionsFromAnchor } from '../openers/buildPreviewOptionsFromAnchor'
+import { focusPreviewFromKeyboard } from '../openers/openPreviewAtSelection'
 import { openPreviewHyperlink } from '../openers/openPreviewHyperlink'
 import { openLink } from './openLink'
 import type { LinkContext } from './types'
@@ -42,7 +43,8 @@ function openPreviewPopoverFromClick(
   view: EditorView,
   link: HTMLAnchorElement,
   ctx: LinkContext,
-  clickPos: number | undefined
+  clickPos: number | undefined,
+  fromKeyboard = false
 ): boolean {
   const opts = buildPreviewOptionsFromAnchor({
     editor: ctx.editor,
@@ -69,6 +71,14 @@ function openPreviewPopoverFromClick(
   const mounted = openPreviewHyperlink(opts)
 
   if (!mounted) return true
+
+  // Enter on a focused link in read-only mode: focus goes into the preview, and back to the link.
+  if (fromKeyboard) {
+    focusPreviewFromKeyboard(() => {
+      if (link.isConnected) link.focus({ preventScroll: true })
+    })
+    return true
+  }
 
   if (clickPos !== undefined) {
     const { from, to } = view.state.selection
@@ -170,6 +180,11 @@ export function createClickHandlerInteraction(ctx: LinkContext): Plugin {
           if (!link) return false
 
           event.preventDefault()
+          // A keyboard click has `detail` 0 and no real point. Edit mode keeps the mouse path,
+          // because a scripted click there also has `detail` 0 and must still move the caret.
+          if (!view.editable && event.detail === 0) {
+            return openPreviewPopoverFromClick(view, link, ctx, undefined, true)
+          }
           const { clientX, clientY } = event
           const pos = isOnLinkIcon(link, event.target, clientX, clientY)
             ? view.posAtDOM(link, 0)

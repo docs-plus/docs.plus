@@ -211,6 +211,29 @@ describe('createHyperlinkPopover — collapsed caret', () => {
   })
 })
 
+// Mod-K inside a link opens its preview, so these pin the create form outside one.
+// "Visit " is positions 1-7 and "Example" is 7-14.
+describe('createHyperlinkPopover — collapsed caret near a link', () => {
+  beforeEach(() => {
+    cy.visitPlayground()
+    cy.setEditorContent('<p>Visit <a href="https://example.com">Example</a> for more info.</p>')
+  })
+
+  it('opens the create form for a caret in plain text', () => {
+    cy.focusEditor(3)
+    cy.pressModK()
+    cy.get(POPOVER).should('be.visible')
+    cy.get('.hyperlink-preview-popover').should('not.exist')
+  })
+
+  it('opens the create form for a caret at the left edge of a link', () => {
+    cy.focusEditor(7)
+    cy.pressModK()
+    cy.get(POPOVER).should('be.visible')
+    cy.get('.hyperlink-preview-popover').should('not.exist')
+  })
+})
+
 // Module scope: keeps top-level selector consts (POPOVER/INPUT/…) from
 // colliding with special-schemes.cy.ts under Cypress's shared TS project.
 export {}
