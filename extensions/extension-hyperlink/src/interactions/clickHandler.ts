@@ -6,6 +6,7 @@ import { getDefaultController } from '../floating-popover'
 import { buildPreviewOptionsFromAnchor } from '../openers/buildPreviewOptionsFromAnchor'
 import { focusPreviewFromKeyboard } from '../openers/openPreviewAtSelection'
 import { openPreviewHyperlink } from '../openers/openPreviewHyperlink'
+import { attachModCursor, hasMod } from './modCursor'
 import { openLink } from './openLink'
 import type { LinkContext } from './types'
 
@@ -150,16 +151,20 @@ export function createClickHandlerInteraction(ctx: LinkContext): Plugin {
       editorView.dom.addEventListener('mousedown', preventMouseDown, true)
       editorView.dom.addEventListener('click', preventClick, true)
       editorView.dom.addEventListener('auxclick', handleAuxClick, true)
+      const detachModCursor = attachModCursor(editorView.dom.ownerDocument)
       return {
         destroy() {
           editorView.dom.removeEventListener('mousedown', preventMouseDown, true)
           editorView.dom.removeEventListener('click', preventClick, true)
           editorView.dom.removeEventListener('auxclick', handleAuxClick, true)
+          detachModCursor()
         }
       }
     },
 
     props: {
+      // Scopes the Mod-held hand cursor in `styles.css` to editors that handle link clicks.
+      attributes: { class: 'hyperlink-click-scope' },
       handleDOMEvents: {
         touchend: (view: EditorView, event: TouchEvent) => {
           const link = findLinkFromEvent(event, view.dom)
@@ -180,6 +185,14 @@ export function createClickHandlerInteraction(ctx: LinkContext): Plugin {
           if (!link) return false
 
           event.preventDefault()
+          // Mod-click opens a new tab, as in a browser; Shift or Alt with Mod still counts.
+          // A refused href swallows the click on purpose, like the silent auxclick no-op.
+          if (hasMod(event)) {
+            const { attrs } = buildPreviewOptionsFromAnchor({ editor: ctx.editor, link })
+            const href = attrs.href ?? link.getAttribute('href')
+            if (href) openLink(ctx, href, { newTab: true })
+            return true
+          }
           // A keyboard click has `detail` 0 and no real point. Edit mode keeps the mouse path,
           // because a scripted click there also has `detail` 0 and must still move the caret.
           if (!view.editable && event.detail === 0) {

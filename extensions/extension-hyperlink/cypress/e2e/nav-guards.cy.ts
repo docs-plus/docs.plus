@@ -11,7 +11,7 @@ const stubWindowOpen = (alias = 'windowOpen'): void => {
 
 // Native event, not cy.click(): ProseMirror's handleDOMEvents.click needs a
 // real bubbling MouseEvent with coordinates for posAtCoords.
-const dispatchPrimaryClick = (selector: string): void => {
+const dispatchPrimaryClick = (selector: string, init: MouseEventInit = {}): void => {
   cy.get(selector).then(($el) => {
     const target = $el[0]
     const rect = target.getBoundingClientRect()
@@ -21,9 +21,21 @@ const dispatchPrimaryClick = (selector: string): void => {
         cancelable: true,
         button: 0,
         clientX: rect.left + rect.width / 2,
-        clientY: rect.top + rect.height / 2
+        clientY: rect.top + rect.height / 2,
+        ...init
       })
     )
+  })
+}
+
+// Mod is Meta on macOS and Ctrl elsewhere, as `isMacOS()` decides in the extension.
+const IS_MAC = Cypress.platform === 'darwin'
+const MOD_KEY = IS_MAC ? 'Meta' : 'Control'
+const MOD_FLAGS = { metaKey: IS_MAC, ctrlKey: !IS_MAC }
+
+const dispatchKey = (type: 'keydown' | 'keyup', init: KeyboardEventInit): void => {
+  cy.document().then((doc) => {
+    doc.dispatchEvent(new KeyboardEvent(type, { bubbles: true, cancelable: true, ...init }))
   })
 }
 
@@ -226,6 +238,101 @@ describe('Navigation guards — read-only click with host navigate', () => {
     dispatchPrimaryClick('#editor a')
     navigateCalls().should('deep.equal', [])
     cy.get('@windowOpen').should('not.have.been.called')
+  })
+
+  it('routes a Mod-click through navigate exactly once', () => {
+    cy.setEditorContent(`<p><a href="${SAFE_HREF}">link</a></p>`)
+    stubWindowOpen()
+    dispatchPrimaryClick('#editor a', MOD_FLAGS)
+    navigateCalls().should('deep.equal', [{ href: SAFE_HREF, newTab: true }])
+    cy.get('@windowOpen').should('not.have.been.called')
+  })
+})
+
+describe('Navigation guards — Mod-click (?navigate=spy)', () => {
+  beforeEach(() => {
+    cy.visitPlayground({ query: 'navigate=spy' })
+    cy.setEditorContent(`<p><a href="${SAFE_HREF}">link</a></p>`)
+  })
+
+  it('opens a Mod-click in a new tab with no preview', () => {
+    stubWindowOpen()
+    dispatchPrimaryClick('#editor a', MOD_FLAGS)
+    navigateCalls().should('deep.equal', [{ href: SAFE_HREF, newTab: true }])
+    cy.get('.hyperlink-preview-popover').should('not.exist')
+    cy.get('@windowOpen').should('not.have.been.called')
+  })
+
+  it('opens the preview on a plain click, not a new tab', () => {
+    dispatchPrimaryClick('#editor a')
+    cy.get('.hyperlink-preview-popover').should('be.visible')
+    navigateCalls().should('deep.equal', [])
+  })
+})
+
+describe('Navigation guards — Mod-click in read-only mode with the preview', () => {
+  beforeEach(() => {
+    cy.visit('/?readonly=on&navigate=spy')
+    cy.window({ timeout: 10000 }).should('have.property', '_editor')
+  })
+
+  it('routes a Mod-click through navigate exactly once, with no preview', () => {
+    cy.setEditorContent(`<p><a href="${SAFE_HREF}">link</a></p>`)
+    dispatchPrimaryClick('#editor a', MOD_FLAGS)
+    navigateCalls().should('deep.equal', [{ href: SAFE_HREF, newTab: true }])
+    cy.get('.hyperlink-preview-popover').should('not.exist')
+  })
+})
+
+describe('Mod cursor — links show the hand only while Mod is held', () => {
+  beforeEach(() => {
+    cy.visitPlayground()
+    cy.setEditorContent(`<p><a href="${SAFE_HREF}">link</a></p>`)
+    cy.get('#editor a').should('have.css', 'cursor', 'text')
+  })
+
+  it('shows the hand on Mod keydown and drops it on keyup', () => {
+    dispatchKey('keydown', { key: MOD_KEY, ...MOD_FLAGS })
+    cy.get('#editor a').should('have.css', 'cursor', 'pointer')
+    dispatchKey('keyup', { key: MOD_KEY })
+    cy.get('#editor a').should('have.css', 'cursor', 'text')
+  })
+
+  it('drops the hand on window blur', () => {
+    dispatchKey('keydown', { key: MOD_KEY, ...MOD_FLAGS })
+    cy.get('#editor a').should('have.css', 'cursor', 'pointer')
+    cy.window().then((w) => w.dispatchEvent(new Event('blur')))
+    cy.get('#editor a').should('have.css', 'cursor', 'text')
+  })
+
+  it('drops the hand on visibilitychange', () => {
+    dispatchKey('keydown', { key: MOD_KEY, ...MOD_FLAGS })
+    cy.get('#editor a').should('have.css', 'cursor', 'pointer')
+    cy.document().then((doc) => doc.dispatchEvent(new Event('visibilitychange')))
+    cy.get('#editor a').should('have.css', 'cursor', 'text')
+  })
+
+  it('drops the hand on a non-modifier key, such as Mod+K', () => {
+    dispatchKey('keydown', { key: MOD_KEY, ...MOD_FLAGS })
+    cy.get('#editor a').should('have.css', 'cursor', 'pointer')
+    dispatchKey('keydown', { key: 'k', ...MOD_FLAGS })
+    cy.get('#editor a').should('have.css', 'cursor', 'text')
+  })
+
+  it('ignores a repeated Mod keydown', () => {
+    dispatchKey('keydown', { key: MOD_KEY, ...MOD_FLAGS, repeat: true })
+    cy.get('#editor a').should('have.css', 'cursor', 'text')
+  })
+
+  it('syncs from the pointer when it enters a link', () => {
+    cy.get('#editor a').then(($a) => {
+      $a[0].dispatchEvent(new PointerEvent('pointerover', { bubbles: true, ...MOD_FLAGS }))
+    })
+    cy.get('#editor a').should('have.css', 'cursor', 'pointer')
+    cy.get('#editor a').then(($a) => {
+      $a[0].dispatchEvent(new PointerEvent('pointerover', { bubbles: true }))
+    })
+    cy.get('#editor a').should('have.css', 'cursor', 'text')
   })
 })
 

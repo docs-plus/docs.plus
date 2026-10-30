@@ -54,6 +54,11 @@
   background-color: var(--hl-icon-tile);
 }
 
+/* Links keep the text I-beam. While Mod is held, `attachModCursor` sets the flag and they show the hand. */
+:root[data-hyperlink-mod] .hyperlink-click-scope a[href] {
+  cursor: pointer;
+}
+
 /* Shared shell. Positioning is inline from createPopover (`zIndex` option). Lockstep copy in hypermultimedia media-toolbar.css. */
 .floating-popover {
   opacity: 0;
