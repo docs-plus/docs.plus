@@ -51,6 +51,19 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - Every internal-link chip in the desktop preview has a spoken name, such as "Go to heading: Setup."
   ([#174](https://github.com/docs-plus/docs.plus/issues/174)). A chat chip's label leads with the
   quoted heading name.
+- With the caret inside a link, Mod+K opens that link's preview. Focus goes to its title, or to
+  the chip for a link into this pad. Escape returns focus to the editor at the same caret.
+  Outside a link, Mod+K still opens the create form.
+- Alt+Enter with the caret inside a link opens the link in a new tab, in the pad and the chat
+  composer. Outside a link, the composer still treats Alt+Enter as Enter.
+- Links in the pad and the chat composer keep the text cursor at rest. They show the hand only
+  while Cmd (macOS) or Ctrl is held.
+- In the desktop preview, the title of a web link carries the hint "Open in a new tab. Tip:
+  ⌘-click the link." On other systems it says Ctrl-click. A link to another pad has no hint.
+- The title, the chip and the buttons in the desktop preview show the house focus ring.
+- The phone chat link dialog has an "Open link" first row for every web link except a link to
+  a part of this pad. An external link opens in a new tab, and a link to another pad opens in
+  place. `mailto:` and `tel:` links get no Open row.
 - One link-metadata cache, `fetchMetadata.ts`, serves the click preview, the phone sheet, the
   hovercard and media unfurls ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
   Callers of one link share one request, and a hover that leaves still fills the cache for the
@@ -67,6 +80,14 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   sync error flip keeps the editor mounted. On a 2000-link pad, anchors created per load fell
   from 8004 to 2004, and the link-icon cost in the fill frame from +117 ms to +26 ms
   ([#516](https://github.com/docs-plus/docs.plus/issues/516)).
+- A plain link in the pad and the chat composer underlines on hover, 1px thick with a 2px
+  offset. Before, it faded to 85% opacity. A link chip never underlines.
+- The desktop preview shows the link as its title at once, with no loading skeleton. The page
+  title replaces it when it arrives.
+- The chat link dialog's Edit row now reads "Edit link".
+- Mod-click on a link in the text of the pad or the chat composer opens it in a new tab, with no
+  preview.
+  Before, it opened the preview, like a plain click.
 
 ### Fixed
 

@@ -267,6 +267,16 @@
     margin-left: auto;
   }
 
+  // C8: the house focus ring on the title, the chip and the icon buttons.
+  .metadata a,
+  .internal-link-chip,
+  button {
+    &:focus-visible {
+      outline: var(--focus-ring-soft);
+      outline-offset: 1px;
+    }
+  }
+
   button {
     display: flex;
     align-items: center;
@@ -296,6 +306,12 @@
       height: 18px;
     }
   }
+}
+
+// C2: a held Mod shows the hand on links in click-handling editors. Lockstep with the same
+// rule in `extensions/extension-hyperlink/src/styles.css`; the webapp does not import that file.
+:root[data-hyperlink-mod] .hyperlink-click-scope a[href] {
+  cursor: pointer;
 }
 
 // React create and edit popovers.

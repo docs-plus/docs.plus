@@ -28,6 +28,13 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 - `@docs.plus/extension-hyperlink/hovercard.css` styles the card through `--hl-*` tokens. Three are new: `--hl-well`, `--hl-hovercard-width` and `--hl-hovercard-thumb`.
 - The `HovercardOptions`, `HovercardData` and `HovercardImageLayout` types are root exports.
 - `PopoverKind` gains the `'hovercard'` literal.
+- `linkAtSelection(state, markType)` is a new root export. It returns `{ from, to, href }` when a collapsed caret sits strictly inside one link, and `null` otherwise. A host keymap can use it, for example a chat composer that must not send on `Alt-Enter` over a link.
+- `Mod-k` with a collapsed caret strictly inside a link opens that link's preview, with focus inside it. Escape returns focus to the editor at the same caret. At a link edge, or outside a link, `Mod-k` still opens the create form.
+- A preview opened from the keyboard focuses the element with `data-popover-autofocus`, else its first focusable control. When it closes and focus would be lost, focus goes back to the editor. Focus that the user moved elsewhere stays there.
+- `Alt-Enter` with the caret inside a link opens the link in a new tab through `navigate`. A refused link still uses up the key, so Enter never splits the link.
+- In a read-only editor, Enter on a focused link opens its preview with focus inside it. Escape returns focus to the link.
+- Mod-click on a link (Cmd on macOS, Ctrl elsewhere) opens it in a new tab through `navigate`, with no preview.
+- Links keep the text I-beam at rest. While Mod is held, the `<html>` element gets `data-hyperlink-mod`. `styles.css` then shows the hand over links in editors with the new `hyperlink-click-scope` class. The click plugin adds that class, so `openOnClick: false` turns all of this off.
 
 ### Changed
 
@@ -42,6 +49,8 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 - The prebuilt preview's Open now also applies the editor's own `isAllowedUri`. Before, a preview opened without `isAllowedUri`, for example through `openPreviewHyperlink`, checked only `isSafeHref`.
 - The preview popover is now `role="dialog"`, named "Link preview". It was `role="toolbar"`. If you select the prebuilt preview by role, use `[role="dialog"][aria-label="Link preview"]`.
 - The popover reads its Tab cycle on each Tab, so a control that renders after it opens joins the cycle.
+- `Mod-k` inside a link now opens the preview, not the create form. With `popovers.previewHyperlink` unset (the default), or a factory that returns `null`, it does nothing there. Before, `Mod-k` always opened the create form.
+- Mod-click on a link now opens a new tab. Before, it opened the preview, like a plain click.
 
 ### Fixed
 

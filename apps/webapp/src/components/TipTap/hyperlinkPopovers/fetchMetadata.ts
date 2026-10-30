@@ -1,5 +1,6 @@
 import { normalizeHref } from '@docs.plus/extension-hyperlink'
 import { apiBaseUrl } from '@utils/apiBaseUrl'
+import { isWebHref } from '@utils/link-helpers'
 
 export interface MetadataResponse {
   success: true
@@ -32,7 +33,7 @@ const inFlight = new Map<string, Promise<MetadataResponse | null>>()
 const metadataKey = (href: string): string | null => {
   try {
     const url = new URL(normalizeHref(href))
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null
+    if (!isWebHref(url)) return null
     url.hash = ''
     return url.href
   } catch {

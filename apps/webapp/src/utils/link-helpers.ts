@@ -15,6 +15,16 @@ export const getFormattedHref = (link: LinkItem): string => {
   }
 }
 
+/** True for an absolute http(s) URL. `mailto:`, `tel:`, app schemes and relative paths are not. */
+export const isWebHref = (href: string | URL): boolean => {
+  try {
+    const { protocol } = new URL(href)
+    return protocol === 'http:' || protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 /**
  * Our REST icon route. A miss is an empty 204, so each <img> needs onError.
  * Credentials are refused because `mailto:a@b.com` parses as user `mailto` at `b.com`.
@@ -22,8 +32,7 @@ export const getFormattedHref = (link: LinkItem): string => {
 export const getSiteIconUrl = (url: string): string | undefined => {
   try {
     const parsed = new URL(/^[a-z][a-z\d+.-]*:\/\//i.test(url) ? url : `https://${url}`)
-    const isHttp = parsed.protocol === 'http:' || parsed.protocol === 'https:'
-    if (!isHttp || parsed.username || parsed.password) return undefined
+    if (!isWebHref(parsed) || parsed.username || parsed.password) return undefined
     return iconRouteUrl(parsed.origin)
   } catch {
     return undefined // also covers apiBaseUrl() throwing when the variable is unset

@@ -4,14 +4,14 @@ import {
   getSpecialUrlInfo,
   type SpecialUrlType
 } from '@docs.plus/extension-hyperlink'
-import type { Editor } from '@tiptap/core'
-import { getSiteIconUrl } from '@utils/link-helpers'
+import { type Editor, isMacOS } from '@tiptap/core'
+import { getSiteIconUrl, isWebHref } from '@utils/link-helpers'
 import { lucideSvgString } from '@utils/lucideSvgString'
 import type { IconType } from 'react-icons'
 
 import { fetchMetadata, type MetadataResponse } from './fetchMetadata'
 import { FILTER_MODE_LABEL_CLASS, FILTER_TERM_PILL_CLASS } from './filterTermPill'
-import { hrefEventHandler } from './hrefEventHandler'
+import { hrefEventHandler, isAnotherPad } from './hrefEventHandler'
 import { describeInternalDocumentLink } from './internalDocumentLink'
 import { runInternalDocumentLink } from './internalDocumentLinkActions'
 import type { InternalDocumentLink } from './types'
@@ -96,7 +96,17 @@ export const createSiteIcon = (href: string, className: string): HTMLImageElemen
   })
 }
 
-export const createMetadataContent = (data: MetadataResponse | null, href: string): HTMLElement => {
+/** C5: the title link of a web page opens a new tab, and Mod-click on the link itself skips the preview. */
+const newTabHint = (): string =>
+  `Open in a new tab. Tip: ${isMacOS() ? '⌘' : 'Ctrl'}-click the link.`
+
+/**
+ * Built before the fetch with the href as its text, so Mod-K can focus the title at once.
+ * `renderMetadataInto` then sets the fetched title on this same `<a>`.
+ */
+const createMetadataContent = (
+  href: string
+): { container: HTMLElement; titleLink: HTMLElement } => {
   const specialInfo = getSpecialUrlInfo(href)
   const container = createHTMLElement('div', { className: 'metadata-content' })
 
@@ -104,8 +114,10 @@ export const createMetadataContent = (data: MetadataResponse | null, href: strin
     target: '_blank',
     rel: 'noreferrer',
     href,
-    innerText: data?.title || href
+    textContent: href
   })
+  titleLink.dataset.popoverAutofocus = ''
+  if (isWebHref(href) && !isAnotherPad(href)) titleLink.title = newTabHint()
   titleLink.addEventListener('click', hrefEventHandler(href))
   container.append(titleLink)
 
@@ -121,34 +133,23 @@ export const createMetadataContent = (data: MetadataResponse | null, href: strin
     }
   }
 
-  return container
-}
-
-const createLoadingSkeleton = (): HTMLElement => {
-  const skeleton = createHTMLElement('div', { className: 'metadata-content' })
-  // `.metadata img` paints the loaded icon at 18px, round, with an 8px end margin.
-  const favicon = createHTMLElement('div', {
-    className: 'skeleton me-2 size-4.5 shrink-0 rounded-full'
-  })
-  // The 200px `.metadata` row does not grow, so an empty flex-1 bar needs its own floor.
-  const bar = createHTMLElement('div', { className: 'skeleton h-3.5 min-w-20 flex-1' })
-  skeleton.append(favicon, bar)
-  return skeleton
+  return { container, titleLink }
 }
 
 /**
  * Read-only: data comes from the session cache, then REST. Stored mark
  * `title`/`image` are not read, and nothing is written to the document.
- * A failed fetch degrades to href-as-title; error styling would be noise.
+ * A failed fetch keeps href-as-title; error styling would be noise.
  */
 export const renderMetadataInto = (container: HTMLElement, ctx: PreviewContext): void => {
   const { href, signal } = ctx
+  const content = createMetadataContent(href)
 
-  container.replaceChildren(createLoadingSkeleton())
+  container.replaceChildren(content.container)
 
-  fetchMetadata(href).then((data) => {
-    if (signal.aborted || !container.isConnected) return
-    container.replaceChildren(createMetadataContent(data, href))
+  fetchMetadata(href).then((data: MetadataResponse | null) => {
+    if (signal.aborted || !content.titleLink.isConnected) return
+    if (data?.title) content.titleLink.textContent = data.title
   })
 }
 

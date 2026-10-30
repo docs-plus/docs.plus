@@ -45,12 +45,12 @@ For metadata cards, supply a custom preview factory and fetch metadata through y
 
 Every factory takes one `options` argument. The shape depends on the slot.
 
-**`PreviewHyperlinkOptions`** — passed to `popovers.previewHyperlink` on every link click.
+**`PreviewHyperlinkOptions`** — passed to `popovers.previewHyperlink` on a plain click or tap on a link. `Mod-k` with the caret inside a link passes it too, and so does read-only `Enter` on a focused link. A Mod-click opens the link in a new tab and builds no preview.
 
 | Field           | Type                       | Description                                                                                                                                                             |
 | --------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `editor`        | `Editor`                   | The Tiptap editor instance. Reach the `EditorView` through `editor.view` when you need it.                                                                              |
-| `link`          | `HTMLAnchorElement`        | The clicked `<a>` node. It anchors the popover, so the popover follows the link on scroll.                                                                              |
+| `link`          | `HTMLAnchorElement`        | The link's `<a>` node: the clicked one, or the one around the caret for `Mod-k`. It anchors the popover, so the popover follows the link on scroll.                     |
 | `nodePos`       | `number`                   | Document position of the link mark. Pair it with `editor.state.doc.nodeAt(nodePos)` to read the mark.                                                                   |
 | `attrs`         | `HyperlinkAttributes`      | **Required.** The mark's stored attributes. Prefer `attrs.href` over `link.href` (the DOM property resolves against `document.baseURI` and would leak the host origin). |
 | `validate?`     | `(url: string) => boolean` | The configured `validate` option, forwarded.                                                                                                                            |

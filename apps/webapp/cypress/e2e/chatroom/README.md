@@ -1,7 +1,7 @@
 # Chatroom browser tests
 
 These specs render the real chatroom UI against intercepted Supabase HTTP responses.
-They cover navigation, pagination, message submission and retry, attachments, gallery behavior, mobile quick reactions, and hostile stored HTML.
+They cover navigation, pagination, message submission and retry, attachments, gallery behavior, mobile quick reactions, composer link keys, and hostile stored HTML.
 The hostile HTML spec checks both render sinks: the feed body and the long-press clone card.
 
 ## Run locally

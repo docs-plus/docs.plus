@@ -5,6 +5,7 @@ import {
 } from '@components/chatroom/stores/composerAttachmentsStore'
 import { ClearFormatting } from '@components/TipTap/clearFormatting'
 import { getHyperlinkPopoverConfigAtInvoke } from '@components/TipTap/hyperlinkPopovers/getHyperlinkPopoverConfig'
+import { padNavigate } from '@components/TipTap/hyperlinkPopovers/hrefEventHandler'
 import { ListGapJoin } from '@components/TipTap/listGapJoin'
 import { ListKeymapWithoutTab } from '@components/TipTap/listKeymapWithoutTab'
 import {
@@ -13,7 +14,7 @@ import {
   getComposerState,
   syncComposerDraft
 } from '@db/messageComposerDB'
-import { Hyperlink } from '@docs.plus/extension-hyperlink'
+import { Hyperlink, linkAtSelection } from '@docs.plus/extension-hyperlink'
 import { Indent } from '@docs.plus/extension-indent'
 import { InlineCode } from '@docs.plus/extension-inline-code'
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
@@ -181,6 +182,7 @@ export const useTiptapEditor = ({
           linkOnPaste: true,
           openOnClick: true,
           autolink: true,
+          navigate: padNavigate,
           popovers: getHyperlinkPopoverConfigAtInvoke(
             () => isComposerMobileRef.current,
             () => 'composer'
@@ -233,6 +235,12 @@ export const useTiptapEditor = ({
         handleKeyDown: (view, event) => {
           if (event.key === 'Enter' && event.metaKey) return false
           if (event.key !== 'Enter') return false
+
+          // C4: Alt+Enter inside a link falls through to the extension's keymap, which opens it.
+          // Only a bare Alt matches that `Alt-Enter` binding; other chords would reach the browser.
+          const linkMark = view.state.schema.marks.hyperlink
+          const bareAlt = event.altKey && !event.shiftKey && !event.ctrlKey && !event.metaKey
+          if (bareAlt && linkMark && linkAtSelection(view.state, linkMark)) return false
 
           if (isMentionSuggestionPopupVisible()) {
             event.preventDefault()
