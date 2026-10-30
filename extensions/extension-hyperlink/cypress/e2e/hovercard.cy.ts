@@ -262,6 +262,42 @@ describe('hovercard — keys and other popovers', () => {
   })
 })
 
+describe('hovercard — the title opens through navigate (?navigate=spy)', () => {
+  const IS_MAC = Cypress.platform === 'darwin'
+  const TITLE = `${CARD} .hyperlink-hovercard__title`
+
+  // A dispatched event, so no pointerdown runs first. The card's own capture listeners stay out.
+  const fire = (type: 'click' | 'auxclick', init: MouseEventInit): void => {
+    cy.get(TITLE).then(($a) => {
+      $a[0].dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, ...init }))
+    })
+  }
+
+  const calls = (): Cypress.Chainable<Array<{ href: string; newTab: boolean }>> =>
+    cy.window().its('_navigateCalls') as Cypress.Chainable<Array<{ href: string; newTab: boolean }>>
+
+  beforeEach(() => {
+    cy.intercept(pictureRoute('wide'), { body: svg(1200, 630), headers: SVG_HEADERS })
+    visitHovercard('cover', '&navigate=spy')
+    openWideCard()
+  })
+
+  it('passes newTab: false for a plain click', () => {
+    fire('click', { button: 0 })
+    calls().should('deep.equal', [{ href: 'https://wide.example/', newTab: false }])
+  })
+
+  it('passes newTab: true for a Mod-click', () => {
+    fire('click', { button: 0, metaKey: IS_MAC, ctrlKey: !IS_MAC })
+    calls().should('deep.equal', [{ href: 'https://wide.example/', newTab: true }])
+  })
+
+  it('passes newTab: true for a middle click', () => {
+    fire('auxclick', { button: 1 })
+    calls().should('deep.equal', [{ href: 'https://wide.example/', newTab: true }])
+  })
+})
+
 describe('hovercard — adaptive layout', () => {
   beforeEach(() => {
     visitHovercard('adaptive')

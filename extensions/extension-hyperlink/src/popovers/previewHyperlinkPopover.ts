@@ -2,6 +2,7 @@ import { attachTooltip } from '@docs.plus/floating-tooltip'
 
 import { getDefaultController } from '../floating-popover'
 import type { PreviewHyperlinkOptions } from '../hyperlink'
+import { hasMod } from '../interactions/modCursor'
 import { getLinkContext, openLink } from '../interactions/openLink'
 import { openEditHyperlink } from '../openers/openEditHyperlink'
 import { Copy, copyToClipboard, createHTMLElement, isSafeHref, LinkOff, Pencil } from '../utils'
@@ -43,18 +44,28 @@ export default function previewHyperlinkPopover(options: PreviewHyperlinkOptions
   // the belt to the click-handler's braces. If JS ever fails to attach
   // (CSP, host strips listeners, factory throws), the browser's default
   // `target="_blank"` navigation still cannot reach `window.opener`.
+  // The anchor carries only an href the composed gate allows, so a native open can skip nothing.
+  const openable = safeHref && isOpenable(safeHref) ? safeHref : ''
   const hrefAnchor = createHTMLElement('a', {
     target: '_blank',
     rel: 'noopener noreferrer',
-    href: safeHref,
+    href: openable,
     innerText: href
   })
 
+  // `openLink` adds the editor's own gate and the host `navigate`.
+  const open = (newTab: boolean): void => {
+    const linkCtx = getLinkContext(editor)
+    if (linkCtx && openable) openLink(linkCtx, openable, { newTab })
+  }
   hrefAnchor.addEventListener('click', (event) => {
     event.preventDefault()
-    // `openLink` adds the editor's own gate and the host `navigate`.
-    const linkCtx = getLinkContext(editor)
-    if (linkCtx && safeHref && isOpenable(safeHref)) openLink(linkCtx, safeHref, { newTab: true })
+    open(hasMod(event))
+  })
+  hrefAnchor.addEventListener('auxclick', (event) => {
+    if (event.button !== 1) return
+    event.preventDefault()
+    open(true)
   })
 
   removeButton.addEventListener('click', () => {

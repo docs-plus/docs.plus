@@ -207,12 +207,42 @@ describe('Navigation guards — host navigate option (?navigate=spy)', () => {
     cy.get('@windowOpen').should('not.have.been.called')
   })
 
-  it('routes the prebuilt preview Open through navigate with newTab: true', () => {
+  it('routes the prebuilt preview Open through navigate with newTab: false', () => {
     cy.setEditorContent(`<p><a href="${SAFE_HREF}">link</a></p>`)
     cy.get('#editor a').click()
     stubWindowOpen()
     cy.get('.hyperlink-preview-popover a').click()
+    navigateCalls().should('deep.equal', [{ href: SAFE_HREF, newTab: false }])
+    cy.get('@windowOpen').should('not.have.been.called')
+  })
+
+  it('routes a middle click on the preview Open through navigate with newTab: true', () => {
+    cy.setEditorContent(`<p><a href="${SAFE_HREF}">link</a></p>`)
+    cy.get('#editor a').click()
+    stubWindowOpen()
+    dispatchAuxClick('.hyperlink-preview-popover a')
     navigateCalls().should('deep.equal', [{ href: SAFE_HREF, newTab: true }])
+    cy.get('@windowOpen').should('not.have.been.called')
+  })
+})
+
+describe('Navigation guards — preview Open with a strict host gate (?gate=strict)', () => {
+  const BLOCKED_HREF = 'https://blocked.example/'
+
+  beforeEach(() => {
+    cy.visitPlayground({ query: 'navigate=spy&gate=strict' })
+  })
+
+  // A real middle click follows the anchor's own href, so a refused link must not carry one.
+  it('gives a refused link no Open href and makes no navigate call on a middle click', () => {
+    cy.setEditorContent(`<p><a href="${BLOCKED_HREF}">blocked</a></p>`)
+    cy.get('#editor a').click()
+    cy.get('.hyperlink-preview-popover a').should('have.text', BLOCKED_HREF)
+    cy.get('.hyperlink-preview-popover a').should('not.have.attr', 'href', BLOCKED_HREF)
+    stubWindowOpen()
+    dispatchAuxClick('.hyperlink-preview-popover a')
+    cy.get('.hyperlink-preview-popover a').click()
+    navigateCalls().should('deep.equal', [])
     cy.get('@windowOpen').should('not.have.been.called')
   })
 })
@@ -223,11 +253,11 @@ describe('Navigation guards — read-only click with host navigate', () => {
     cy.window({ timeout: 10000 }).should('have.property', '_editor')
   })
 
-  it('routes a primary click through navigate with newTab: true', () => {
+  it('routes a primary click through navigate with newTab: false', () => {
     cy.setEditorContent(`<p><a href="${SAFE_HREF}">link</a></p>`)
     stubWindowOpen()
     dispatchPrimaryClick('#editor a')
-    navigateCalls().should('deep.equal', [{ href: SAFE_HREF, newTab: true }])
+    navigateCalls().should('deep.equal', [{ href: SAFE_HREF, newTab: false }])
     cy.get('@windowOpen').should('not.have.been.called')
   })
 
@@ -312,14 +342,28 @@ describe('Mod cursor — links show the hand only while Mod is held', () => {
     cy.get('#editor a').should('have.css', 'cursor', 'text')
   })
 
-  it('drops the hand on a non-modifier key, such as Mod+K', () => {
+  it('drops the hand on a non-modifier key, such as Mod+K, and keeps it off on its keyup', () => {
     dispatchKey('keydown', { key: MOD_KEY, ...MOD_FLAGS })
     cy.get('#editor a').should('have.css', 'cursor', 'pointer')
     dispatchKey('keydown', { key: 'k', ...MOD_FLAGS })
     cy.get('#editor a').should('have.css', 'cursor', 'text')
+    dispatchKey('keyup', { key: 'k', ...MOD_FLAGS })
+    cy.get('#editor a').should('have.css', 'cursor', 'text')
   })
 
-  it('ignores a repeated Mod keydown', () => {
+  it('keeps the hand when Shift is released while Mod is still held', () => {
+    dispatchKey('keydown', { key: MOD_KEY, ...MOD_FLAGS })
+    dispatchKey('keydown', { key: 'Shift', shiftKey: true, ...MOD_FLAGS })
+    cy.get('#editor a').should('have.css', 'cursor', 'pointer')
+    dispatchKey('keyup', { key: 'Shift', ...MOD_FLAGS })
+    cy.get('#editor a').should('have.css', 'cursor', 'pointer')
+  })
+
+  it('ignores a repeated Mod keydown after Mod+K dropped the hand', () => {
+    dispatchKey('keydown', { key: MOD_KEY, ...MOD_FLAGS })
+    cy.get('#editor a').should('have.css', 'cursor', 'pointer')
+    dispatchKey('keydown', { key: 'k', ...MOD_FLAGS })
+    cy.get('#editor a').should('have.css', 'cursor', 'text')
     dispatchKey('keydown', { key: MOD_KEY, ...MOD_FLAGS, repeat: true })
     cy.get('#editor a').should('have.css', 'cursor', 'text')
   })

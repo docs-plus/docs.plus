@@ -115,8 +115,9 @@ export interface HyperlinkOptions {
   /** Sync. A fresh element with no text, or null for a plain link. A throw counts as null and logs once. */
   linkIcon?: LinkIconResolver
   /**
-   * Opens a link after the read gate passes: middle click, the read-only click and the preview Open.
-   * Default: `window.open(href, '_blank', 'noopener,noreferrer')`.
+   * Opens every link the package opens, after the read gate passes. `newTab` is true only when the
+   * gesture asked for one: Mod held, or the middle button. A plain open passes false.
+   * Default: `window.open(href, '_blank', 'noopener,noreferrer')`, whatever `newTab` says.
    */
   navigate?: (href: string, ctx: { newTab: boolean }) => void
   /** Desktop link hovercard. Off when unset. Ship `hovercard.css` with it. */
@@ -311,7 +312,7 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
       'Alt-Enter': () => {
         const link = linkAtSelection(this.editor.state, this.type)
         if (!link) return false
-        openLink(getContext(this), link.href, { newTab: true })
+        openLink(getContext(this), link.href, { newTab: false })
         return true
       }
     }

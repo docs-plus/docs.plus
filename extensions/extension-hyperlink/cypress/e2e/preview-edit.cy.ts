@@ -340,12 +340,13 @@ describe('preview popover — keyboard open (Mod-K and Alt+Enter)', () => {
     cy.get('#editor .ProseMirror').should('have.focus')
   })
 
-  it('Alt+Enter inside a link opens it once and leaves the text alone', () => {
+  // Alt+Enter is a plain open, so the host chooses the tab: `newTab` is false.
+  it('Alt+Enter inside a link opens it once with newTab: false and leaves the text alone', () => {
     cy.visitPlayground({ query: 'navigate=spy' })
     cy.setEditorContent(DOC_WITH_LINK)
     cy.focusEditor(CARET_IN_LINK)
     cy.realPress(['Alt', 'Enter'])
-    navigateCalls().should('deep.equal', [{ href: 'https://example.com', newTab: true }])
+    navigateCalls().should('deep.equal', [{ href: 'https://example.com', newTab: false }])
     cy.get('#editor p').should('have.length', 1)
   })
 })

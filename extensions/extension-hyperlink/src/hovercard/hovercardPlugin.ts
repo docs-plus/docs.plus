@@ -124,9 +124,9 @@ function createHovercardView(
     const shape = chooseShape(data, picture)
     const content = createHovercardContent(data, href, picture ?? null, shape, {
       siteIcon: options.siteIcon,
-      open: (target) => {
+      open: (target, newTab) => {
         hideCard()
-        openLink(linkCtx, target, { newTab: true })
+        openLink(linkCtx, target, { newTab })
       }
     })
     const popover = createPopover({

@@ -75,7 +75,10 @@ export const hrefEventHandler =
     navigateHref(href, isAllowedUri, event)
   }
 
-/** Every extension link open (#242). A new tab skips the in-place routes, as the extension asks. */
+/**
+ * Every extension link open (#242). `newTab` is true when the user asked for a new tab (Mod or
+ * the middle button). A plain open routes like `navigateHref`.
+ */
 export const padNavigate: NonNullable<HyperlinkOptions['navigate']> = (href, { newTab }) => {
   if (!newTab) {
     navigateHref(href)

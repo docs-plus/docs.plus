@@ -26,14 +26,14 @@ const openRow = (href: string, calls: string[] = []) => {
   return { row: view.queryByTestId('composer-link-preview-open'), calls }
 }
 
-// C6 with #359: an external page opens a new tab, another pad routes in place.
+// C6 with #359: Open is a plain open. `navigateHref` then picks a new tab or an in-place route.
 describe('ComposerLinkPreviewDialog Open link', () => {
   beforeEach(() => navigate.mockReset())
 
-  it('closes, then opens an external page in a new tab', () => {
+  it('closes, then passes an external page as a plain open', () => {
     const { row, calls } = openRow('https://example.com/page')
     fireEvent.click(row!)
-    expect(calls).toEqual(['close', 'navigate https://example.com/page newTab=true'])
+    expect(calls).toEqual(['close', 'navigate https://example.com/page newTab=false'])
   })
 
   it('closes, then routes to another pad in this window', () => {

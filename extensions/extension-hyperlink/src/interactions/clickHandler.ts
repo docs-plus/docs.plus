@@ -58,7 +58,8 @@ function openPreviewPopoverFromClick(
   const href = opts.attrs.href ?? link.getAttribute('href')
 
   if (!ctx.previewPopover) {
-    if (!view.editable && href) openLink(ctx, href, { newTab: true })
+    // A plain open: the host decides the tab.
+    if (!view.editable && href) openLink(ctx, href, { newTab: false })
     return !view.editable
   }
 
@@ -113,6 +114,13 @@ function openPreviewPopoverFromClick(
   return true
 }
 
+// Mod-click and the middle button ask for a new tab, so `newTab` is true.
+function openAnchorInNewTab(ctx: LinkContext, link: HTMLAnchorElement): void {
+  const { attrs } = buildPreviewOptionsFromAnchor({ editor: ctx.editor, link })
+  const href = attrs.href ?? link.getAttribute('href')
+  if (href) openLink(ctx, href, { newTab: true })
+}
+
 export function createClickHandlerInteraction(ctx: LinkContext): Plugin {
   return new Plugin({
     key: new PluginKey('hyperlinkClickHandler'),
@@ -143,9 +151,7 @@ export function createClickHandlerInteraction(ctx: LinkContext): Plugin {
         if (!link) return
         event.preventDefault()
         event.stopPropagation()
-        const { attrs } = buildPreviewOptionsFromAnchor({ editor: ctx.editor, link })
-        const href = attrs.href ?? link.getAttribute('href')
-        if (href) openLink(ctx, href, { newTab: true })
+        openAnchorInNewTab(ctx, link)
       }
 
       editorView.dom.addEventListener('mousedown', preventMouseDown, true)
@@ -188,9 +194,7 @@ export function createClickHandlerInteraction(ctx: LinkContext): Plugin {
           // Mod-click opens a new tab, as in a browser; Shift or Alt with Mod still counts.
           // A refused href swallows the click on purpose, like the silent auxclick no-op.
           if (hasMod(event)) {
-            const { attrs } = buildPreviewOptionsFromAnchor({ editor: ctx.editor, link })
-            const href = attrs.href ?? link.getAttribute('href')
-            if (href) openLink(ctx, href, { newTab: true })
+            openAnchorInNewTab(ctx, link)
             return true
           }
           // A keyboard click has `detail` 0 and no real point. Edit mode keeps the mouse path,

@@ -31,9 +31,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)). The request starts after 150 ms,
   and the card opens at 500 ms at the earliest. It shows the page's picture, site icon, host,
   title and description, and all of it comes through our server. It is read-only. A press or most
-  keys close it. Its title opens the page in a new tab. A link to a part of this pad gets no
-  card. The phone, chat, history and `/editor` do not get it. The site icon and host come from
-  the link itself. Only the title, description and picture come from the page.
+  keys close it. Its title opens an external page in a new tab, and another pad in the same
+  window. Mod-click and middle-click on the title open a new tab. A link to a part of this pad
+  gets no card. The phone, chat, history and `/editor` do not get it. The site icon and host come
+  from the link itself. Only the title, description and picture come from the page.
 - The card comes from the hyperlink extension's `hovercard` option. The pad passes its data and its
   gates, and maps the card's `--hl-*` tokens to the house tokens
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
@@ -54,8 +55,9 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - With the caret inside a link, Mod+K opens that link's preview. Focus goes to its title, or to
   the chip for a link into this pad. Escape returns focus to the editor at the same caret.
   Outside a link, Mod+K still opens the create form.
-- Alt+Enter with the caret inside a link opens the link in a new tab, in the pad and the chat
-  composer. Outside a link, the composer still treats Alt+Enter as Enter.
+- Alt+Enter with the caret inside a link opens the link, in the pad and the chat composer. An
+  external page opens in a new tab. Another pad opens in the same window, and a link to a part of
+  this pad runs in place. Outside a link, the composer still treats Alt+Enter as Enter.
 - Links in the pad and the chat composer keep the text cursor at rest. They show the hand only
   while Cmd (macOS) or Ctrl is held.
 - In the desktop preview, the title of a web link carries the hint "Open in a new tab. Tip:

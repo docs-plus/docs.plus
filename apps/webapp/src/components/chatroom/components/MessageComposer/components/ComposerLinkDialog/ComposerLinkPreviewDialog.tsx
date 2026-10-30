@@ -1,6 +1,6 @@
 import { Icons } from '@components/icons/registry'
 import { InternalLinkChip } from '@components/TipTap/hyperlinkPopovers/components/InternalLinkChip'
-import { isAnotherPad, padNavigate } from '@components/TipTap/hyperlinkPopovers/hrefEventHandler'
+import { padNavigate } from '@components/TipTap/hyperlinkPopovers/hrefEventHandler'
 import { classifyInternalDocumentLink } from '@components/TipTap/hyperlinkPopovers/internalDocumentLink'
 import { runInternalDocumentLink } from '@components/TipTap/hyperlinkPopovers/internalDocumentLinkActions'
 import { ContextMenuDivider } from '@components/ui/ContextMenu'
@@ -38,12 +38,12 @@ export function ComposerLinkPreviewDialog({ href, onEdit, onRemove, onClose }: P
     runInternalDocumentLink(internalLink)
   }
 
-  // C6: an external page opens in a new tab; another pad routes in place (#359, PWA guard).
-  // Close first: the dialog close pops history, which would undo a later route.
+  // C6: a plain open, so `navigateHref` routes another pad in place and opens an external
+  // page in a new tab (#359, PWA guard). Close first: the close pops history, which would undo a route.
   const canOpen = !internalLink && isWebHref(href)
   const handleOpen = () => {
     onClose()
-    padNavigate(href, { newTab: !isAnotherPad(href) })
+    padNavigate(href, { newTab: false })
   }
 
   return (

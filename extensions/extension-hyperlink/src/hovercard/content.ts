@@ -1,3 +1,4 @@
+import { hasMod } from '../interactions/modCursor'
 import type { LinkIconResolver } from '../link-icons/types'
 import { createHTMLElement } from '../utils/createHTMLElement'
 import { logger } from '../utils/logger'
@@ -106,7 +107,7 @@ export const createHovercardContent = (
   shape: 'cover' | 'thumb',
   deps: {
     siteIcon?: LinkIconResolver
-    open: (href: string) => void
+    open: (href: string, newTab: boolean) => void
   }
 ): HTMLElement => {
   const card = createHTMLElement('div', { className: 'hyperlink-hovercard' })
@@ -136,7 +137,12 @@ export const createHovercardContent = (
   })
   title.addEventListener('click', (e) => {
     e.preventDefault()
-    deps.open(href)
+    deps.open(href, hasMod(e))
+  })
+  title.addEventListener('auxclick', (e) => {
+    if (e.button !== 1) return
+    e.preventDefault()
+    deps.open(href, true)
   })
   body.append(site, title)
 

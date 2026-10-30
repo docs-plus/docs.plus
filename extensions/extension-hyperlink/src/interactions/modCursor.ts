@@ -35,6 +35,12 @@ function clearFlag(event: Event): void {
   setFlag(docOf(event), false)
 }
 
+// Releasing Shift while Mod is held keeps the hand. Only a keyup with Mod up clears it,
+// so the key up after Mod+K does not bring the hand back.
+function onKeyUp(event: KeyboardEvent): void {
+  if (!hasMod(event)) setFlag(docOf(event), false)
+}
+
 // A keyup can be lost, for example in another window. Entering a link reads the real state.
 function onPointerOver(event: PointerEvent): void {
   const target = event.target as Element | null
@@ -52,7 +58,7 @@ export function attachModCursor(doc: Document): () => void {
   refCounts.set(doc, count + 1)
   if (count === 0) {
     doc.addEventListener('keydown', onKeyDown, true)
-    doc.addEventListener('keyup', clearFlag, true)
+    doc.addEventListener('keyup', onKeyUp, true)
     doc.addEventListener('visibilitychange', clearFlag)
     doc.addEventListener('pointerover', onPointerOver, true)
     win?.addEventListener('blur', clearFlag)
@@ -69,7 +75,7 @@ export function attachModCursor(doc: Document): () => void {
     }
     refCounts.delete(doc)
     doc.removeEventListener('keydown', onKeyDown, true)
-    doc.removeEventListener('keyup', clearFlag, true)
+    doc.removeEventListener('keyup', onKeyUp, true)
     doc.removeEventListener('visibilitychange', clearFlag)
     doc.removeEventListener('pointerover', onPointerOver, true)
     win?.removeEventListener('blur', clearFlag)
