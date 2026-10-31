@@ -4,9 +4,9 @@ import {
   isSafeHref,
   SAFE_WINDOW_FEATURES
 } from '@docs.plus/extension-hyperlink'
+import { isReservedSlug } from '@docs.plus/pad-url'
 import { padUrl } from '@services/padUrl'
 import type { PadFacets } from '@types'
-import { isReservedSlug } from '@utils/reservedSlugs'
 import Router from 'next/router'
 
 import { classifyInternalDocumentLink } from './internalDocumentLink'

@@ -1,8 +1,8 @@
 import { Icons } from '@components/icons/registry'
 import { parseHistoryHash } from '@components/pages/history/historyShareUrl'
+import { padUrlCore } from '@docs.plus/pad-url'
 import type { Editor } from '@tiptap/core'
 import { TIPTAP_NODES } from '@types'
-import { padUrlCore } from '@utils/padUrlCore'
 import type { IconType } from 'react-icons'
 
 import type { InternalDocumentLink, InternalLinkDescriptor } from './types'

@@ -56,6 +56,7 @@ COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/hocuspocus.server/package.json ./apps/hocuspocus.server/
 COPY packages/supabase/package.json ./packages/supabase/
 COPY packages/email-templates ./packages/email-templates
+COPY packages/pad-url ./packages/pad-url
 # floating-popover/floating-tooltip are bundled into hyperlink/hypermultimedia dist (not
 # external), so their source must be present and built before those extensions build.
 COPY packages/floating-popover ./packages/floating-popover

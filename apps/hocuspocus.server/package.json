@@ -46,6 +46,7 @@
     "@docs.plus/extension-hyperlink": "workspace:*",
     "@docs.plus/extension-hypermultimedia": "workspace:*",
     "@docs.plus/extension-inline-code": "workspace:*",
+    "@docs.plus/pad-url": "workspace:*",
     "@hocuspocus/extension-database": "catalog:",
     "@hocuspocus/extension-logger": "catalog:",
     "@hocuspocus/extension-redis": "catalog:",

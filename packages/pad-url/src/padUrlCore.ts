@@ -1,11 +1,4 @@
-import type {
-  FilterMode,
-  PadChange,
-  PadFacets,
-  PadTarget,
-  PadUrlContext,
-  PadWrite
-} from '../types/padUrl'
+import type { FilterMode, PadChange, PadFacets, PadTarget, PadUrlContext, PadWrite } from './types'
 
 const slugOf = (pathname: string): string => pathname.split('/').filter(Boolean)[0] ?? ''
 

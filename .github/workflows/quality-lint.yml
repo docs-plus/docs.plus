@@ -36,3 +36,7 @@ jobs:
       # regression reached a commit while no workflow ran it.
       - name: 🧪 Email templates unit tests
         run: bun run --filter @docs.plus/email-templates test
+
+      # The pad link format the webapp and the server both build from.
+      - name: 🧪 Pad URL unit tests
+        run: bun run --filter @docs.plus/pad-url test

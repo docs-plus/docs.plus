@@ -1,6 +1,5 @@
+import { isReservedSlug } from '@docs.plus/pad-url'
 import slugify from 'slugify'
-
-import { isReservedSlug } from './reservedSlugs'
 
 const MIN_SLUG_LENGTH = 3
 const MAX_SLUG_LENGTH = 30

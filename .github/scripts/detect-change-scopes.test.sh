@@ -32,6 +32,7 @@ run 'apps/hocuspocus.server/src/index.ts';                   expect false false 
 run 'packages/supabase/scripts/12-buckets.sql';              expect true false true false supabase
 run 'packages/floating-popover/src/index.ts';                expect true false true false floating
 run 'packages/email-templates/src/index.ts';                 expect false false true false email-templates
+run 'packages/pad-url/src/padUrlCore.ts';                    expect true false true false pad-url
 run '.github/workflows/prod.docs.plus.yml';                  expect true true true false workflow-file
 run 'tsconfig.base.json';                                    expect true true true false root-tsconfig
 run 'apps/webapp/tsconfig.json';                             expect true false false false app-tsconfig

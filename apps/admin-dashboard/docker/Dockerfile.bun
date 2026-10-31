@@ -18,6 +18,7 @@ COPY package.json bun.lock* bunfig.toml ./
 # bun patch files: the install applies them through patchedDependencies.
 COPY patches ./patches
 COPY packages/email-templates ./packages/email-templates
+COPY packages/pad-url ./packages/pad-url
 COPY packages/eslint-config ./packages/eslint-config
 COPY packages/release-tooling/package.json ./packages/release-tooling/
 # Dev/test-only playground harness (workspace:* devDep of the extensions);

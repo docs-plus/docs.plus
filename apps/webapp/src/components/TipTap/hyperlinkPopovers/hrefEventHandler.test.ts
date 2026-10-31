@@ -5,7 +5,7 @@ jest.mock('../../../services/padUrl', () => ({
   padUrl: {
     go: jest.fn(),
     read: (href: string) =>
-      jest.requireActual('../../../utils/padUrlCore').padUrlCore.parse(href, window.location.origin)
+      jest.requireActual('@docs.plus/pad-url').padUrlCore.parse(href, window.location.origin)
   }
 }))
 // The chat-link opener loads the Supabase client, which needs env this test does not set.

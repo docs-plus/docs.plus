@@ -1,5 +1,6 @@
+import { padUrlCore } from '@docs.plus/pad-url'
+
 import { logger } from './logger'
-import { padUrlCore } from './padUrlCore'
 
 /**
  * The single source of truth for clipboard writes. React components should use

@@ -13,13 +13,13 @@ import {
   PanelFeedRowAction
 } from '@components/PanelFeedItem'
 import { Avatar } from '@components/ui/Avatar'
+import { padUrlCore } from '@docs.plus/pad-url'
 import { useDismissPanelBeforeNavigate } from '@hooks/useDismissPanel'
 import { openOverlayHash } from '@hooks/useHashOverlay'
 import { Icons } from '@icons'
 import { padUrl } from '@services/padUrl'
 import { useAuthStore, useStore } from '@stores'
 import { type PanelSurfaceVariant, type TNotification } from '@types'
-import { padUrlCore } from '@utils/padUrlCore'
 import { useRouter } from 'next/router'
 import { LuTriangleAlert } from 'react-icons/lu'
 

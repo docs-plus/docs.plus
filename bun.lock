@@ -86,6 +86,7 @@
         "@docs.plus/extension-hyperlink": "workspace:*",
         "@docs.plus/extension-hypermultimedia": "workspace:*",
         "@docs.plus/extension-inline-code": "workspace:*",
+        "@docs.plus/pad-url": "workspace:*",
         "@hocuspocus/extension-database": "catalog:",
         "@hocuspocus/extension-logger": "catalog:",
         "@hocuspocus/extension-redis": "catalog:",
@@ -150,6 +151,7 @@
         "@docs.plus/extension-mermaid": "workspace:*",
         "@docs.plus/extension-placeholder": "workspace:*",
         "@docs.plus/floating-popover": "workspace:*",
+        "@docs.plus/pad-url": "workspace:*",
         "@emoji-mart/data": "^1.2.1",
         "@emoji-mart/react": "^1.1.1",
         "@floating-ui/dom": "^1.8.0",
@@ -479,6 +481,13 @@
         "globals": "catalog:",
         "tsup": "catalog:",
         "typescript": "catalog:",
+      },
+    },
+    "packages/pad-url": {
+      "name": "@docs.plus/pad-url",
+      "version": "1.0.0",
+      "devDependencies": {
+        "bun-types": "catalog:",
       },
     },
     "packages/playground": {
@@ -940,6 +949,8 @@
     "@docs.plus/floating-tooltip": ["@docs.plus/floating-tooltip@workspace:packages/floating-tooltip"],
 
     "@docs.plus/hocuspocus": ["@docs.plus/hocuspocus@workspace:apps/hocuspocus.server"],
+
+    "@docs.plus/pad-url": ["@docs.plus/pad-url@workspace:packages/pad-url"],
 
     "@docs.plus/playground": ["@docs.plus/playground@workspace:packages/playground"],
 

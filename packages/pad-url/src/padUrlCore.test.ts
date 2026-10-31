@@ -1,4 +1,6 @@
-import type { PadUrlContext } from '../types/padUrl'
+import { describe, expect, it } from 'bun:test'
+
+import type { PadUrlContext } from './types'
 import { padUrlCore } from './padUrlCore'
 
 const ORIGIN = 'https://app.test'

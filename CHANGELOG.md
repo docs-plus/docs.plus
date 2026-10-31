@@ -83,6 +83,10 @@ Migration section for when it goes. As the last step, run
 - Link metadata and its image route spend their own rate-limit bucket, at ten times
   `RATE_LIMIT_MAX` per 15 minutes. So hovering does not use up the main API budget
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- Copied and shared pad links are easier to read. A heading link reads like a breadcrumb,
+  `…/demo?h=docs.plus-demo>whats-new>docs.plus-2.2.0&id=…`, and a filter link like
+  `/demo/draw-a-diagram`. A link you copy no longer carries your open filter or chat
+  ([#646](https://github.com/docs-plus/docs.plus/issues/646)).
 
 ### Fixed
 

@@ -1,10 +1,10 @@
+import type { PadUrlContext, PadWrite } from '@docs.plus/pad-url'
+import { padUrlCore } from '@docs.plus/pad-url'
 import { useStore } from '@stores'
 import type { PadChange, PadFacets, PadTarget } from '@types'
 import { headingSlug, headingSlugTrail } from '@utils/headingSlugTrail'
-import { padUrlCore } from '@utils/padUrlCore'
 import Router from 'next/router'
 
-import type { PadUrlContext, PadWrite } from '../types/padUrl'
 import { whenHistoryDismissSettles } from './historyDismiss'
 
 /** The workspace chat id stands for the whole document, so its trail is the Pad title. */

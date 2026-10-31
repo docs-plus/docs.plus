@@ -1,5 +1,5 @@
+import { padUrlCore } from '@docs.plus/pad-url'
 import type { Node as PMNode } from '@tiptap/pm/model'
-import { padUrlCore } from '@utils/padUrlCore'
 
 interface TextMatch {
   from: number

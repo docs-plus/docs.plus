@@ -42,10 +42,10 @@ while IFS= read -r f; do
   esac
 
   hit=false
-  case "${f}" in apps/webapp/*|extensions/*|packages/floating-*|packages/supabase/*) webapp=true; hit=true ;; esac
+  case "${f}" in apps/webapp/*|extensions/*|packages/floating-*|packages/supabase/*|packages/pad-url/*) webapp=true; hit=true ;; esac
   case "${f}" in apps/admin-dashboard/*) admin=true; hit=true ;; esac
   case "${f}" in
-    apps/hocuspocus.server/*|packages/email-templates/*|packages/supabase/*|packages/floating-*|extensions/extension-hyperlink/*|extensions/extension-hypermultimedia/*|extensions/extension-inline-code/*)
+    apps/hocuspocus.server/*|packages/email-templates/*|packages/pad-url/*|packages/supabase/*|packages/floating-*|extensions/extension-hyperlink/*|extensions/extension-hypermultimedia/*|extensions/extension-inline-code/*)
       backend=true; hit=true ;;
   esac
   if [ "${hit}" = true ]; then

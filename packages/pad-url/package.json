@@ -1,0 +1,14 @@
+{
+  "name": "@docs.plus/pad-url",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The one format for docs.plus pad addresses, shared by the webapp and the server",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "bun-types": "catalog:"
+  }
+}

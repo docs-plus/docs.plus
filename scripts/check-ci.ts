@@ -256,6 +256,11 @@ if (
   failed = true
 }
 
+// The pad link format the webapp and the server both build from.
+if (!(await runGate('pad url', ['bun', 'run', '--filter', '@docs.plus/pad-url', 'test']))) {
+  failed = true
+}
+
 if (
   !(await runGate('webapp Jest', ['bun', 'run', '--filter', '@docs.plus/webapp', 'test'], {
     env: SUPABASE_STUB

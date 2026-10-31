@@ -1,3 +1,5 @@
+import { isReservedSlug } from '@docs.plus/pad-url'
+
 import type { PrismaClient } from '../../../generated/prisma/client'
 import { sendNewDocumentNotification } from '../../../lib/email/document-notification'
 import { emailLogger } from '../../../lib/logger'
@@ -53,27 +55,10 @@ export const listDocuments = (
 
 // slugify spells most scripts in Latin letters, but a Japanese title becomes ''.
 const FALLBACK_SLUG = 'untitled'
-// A document on one of these slugs would have no working link. Keep in step with
-// `apps/webapp/src/utils/reservedSlugs.ts`, which refuses them in the document GSSP.
-const ROUTE_SLUGS = new Set([
-  'new',
-  'editor',
-  'receive',
-  'privacy',
-  'terms',
-  'mcp',
-  'auth',
-  'c',
-  'oauth',
-  'unsubscribe',
-  '404',
-  '500',
-  'api'
-])
-
+// A document on a reserved slug would have no working link; the webapp refuses it too.
 const baseSlug = (title: string): string => {
   const slug = normalizeSlug(title) || FALLBACK_SLUG
-  return ROUTE_SLUGS.has(slug) ? `${slug}-document` : slug
+  return isReservedSlug(slug) ? `${slug}-document` : slug
 }
 
 /** Not `documentsService.createDocument`: slugs are global, so its 409 would fail a common title. */

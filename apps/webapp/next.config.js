@@ -125,6 +125,9 @@ module.exports = withPWA({
     }
   },
 
+  // Workspace packages that ship raw TypeScript source.
+  transpilePackages: ['@docs.plus/pad-url'],
+
   // Server external packages (moved from experimental in Next.js 15)
   serverExternalPackages: ['@tiptap/pm'],
 

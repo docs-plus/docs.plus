@@ -184,7 +184,7 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Internal
 
-- One module, Pad URL (`services/padUrl.ts`, with its pure core in `utils/padUrlCore.ts`), builds,
+- One module, Pad URL (`services/padUrl.ts`, over the shared package `@docs.plus/pad-url`), builds,
   writes and reads every pad address. `link` builds from the pad's own address, `go` changes the
   address bar and picks the history writer, and `read` also parses old link forms. It replaces
   `utils/filterRoute.ts`, `utils/stripChatDeepLinkFromUrl.ts`, `hooks/usePadShareUrl.ts` and the
