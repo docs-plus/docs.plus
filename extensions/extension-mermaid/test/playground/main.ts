@@ -4,7 +4,8 @@ import {
   Mermaid,
   mermaidNodeView,
   type MermaidOptions,
-  type MermaidView} from '@docs.plus/extension-mermaid'
+  type MermaidView
+} from '@docs.plus/extension-mermaid'
 import { setupPlayground } from '@docs.plus/playground/setup'
 import { Editor, Extension, type Extensions } from '@tiptap/core'
 import { CodeBlock } from '@tiptap/extension-code-block'
