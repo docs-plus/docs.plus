@@ -9,7 +9,7 @@ import { describe, expect, it } from 'bun:test'
 
 import { resolveContentChangeAudience } from '../../src/lib/contentChangeFanout'
 import { enrichDigestDocuments, resolveDigestSince } from '../../src/lib/email/digestContentChanges'
-import { filterDigestDocuments, groupDigestDocuments } from '../../src/lib/email/digestDocuments'
+import { buildDigestDocuments, groupDigestDocuments } from '../../src/lib/email/digestDocuments'
 import type { ComputeOutcome, SectionNode } from '../../src/modules/document-changes/types'
 import type { DigestDocument } from '../../src/types/email.types'
 
@@ -58,11 +58,11 @@ const changedDoc = (): DigestDocument => ({
   }
 })
 
-/** The pre-enrichment shape: the raw id as the name, `lower(id)` as the slug. */
+/** What `buildDigestDocuments` hands enrichment: the human name, slug and link. */
 const enrichableDoc = (documentId = DOC_ID): EnrichableDocument => ({
-  name: documentId,
-  slug: documentId.toLowerCase(),
-  url: `https://docs.plus/${documentId.toLowerCase()}`,
+  name: 'API docs',
+  slug: 'api-docs',
+  url: DOC_URL,
   workspace_id: documentId,
   channels: [],
   content_changes: {
@@ -121,7 +121,6 @@ const silentLogger = {
  */
 const enrichDeps = (over: Record<string, unknown> = {}) => ({
   computeChanges: async () => changesResult(),
-  readMetadata: async () => ({ title: 'API docs', slug: 'api-docs' }),
   readLastVisits: async (_reader: string, ids: string[]) => new Map(ids.map((id) => [id, null])),
   logger: silentLogger,
   recipientId: OWNER,
@@ -182,36 +181,24 @@ describe('resolveContentChangeAudience', () => {
   })
 })
 
-describe('filterDigestDocuments', () => {
-  it('keeps a document whose block the recipient may still see', () => {
-    const kept = filterDigestDocuments([changedDoc()], new Set(['Doc123']))
-    expect(kept).toHaveLength(1)
-    expect(kept[0]!.content_changes?.document_id).toBe('Doc123')
-  })
+describe('buildDigestDocuments', () => {
+  const carrier = {
+    notification_type: 'content_change',
+    sender_name: 'Ada',
+    sender_avatar_url: null,
+    message_preview: '',
+    channel_id: DOC_ID,
+    channel_name: 'General',
+    workspace_id: DOC_ID,
+    created_at: '2026-09-01T00:00:00.000Z'
+  }
 
-  it('drops a content-change-only document the recipient may no longer see', () => {
-    const kept = filterDigestDocuments([changedDoc()], new Set<string>())
-    expect(kept).toHaveLength(0)
-  })
-
-  it('keeps the chat and strips only the block when both are present', () => {
-    const mixed: DigestDocument = { ...chatDoc(), content_changes: changedDoc().content_changes }
-    const kept = filterDigestDocuments([mixed], new Set<string>())
-    expect(kept).toHaveLength(1)
-    expect(kept[0]!.content_changes).toBeUndefined()
-    expect(kept[0]!.channels[0]!.notifications).toHaveLength(1)
-  })
-
-  // `withoutContentChanges` rebuilds the entry from an allow-list. A field left
-  // off that list vanishes here, and enrichment then shows the raw 19-char id.
-  it('carries workspace_id through the strip', () => {
-    const mixed: EnrichableDocument = {
-      ...chatDoc(),
-      workspace_id: DOC_ID,
-      content_changes: changedDoc().content_changes
+  it('names a document by its slug when the title is null or blank', () => {
+    for (const title of [null, '']) {
+      const visible = new Map([[DOC_ID, { title, slug: 'api-docs' }]])
+      const [doc] = buildDigestDocuments([carrier], visible, 'https://docs.plus')
+      expect(doc!.name).toBe('api-docs')
     }
-    const kept = filterDigestDocuments([mixed], new Set<string>()) as EnrichableDocument[]
-    expect(kept[0]!.workspace_id).toBe(DOC_ID)
   })
 })
 
@@ -288,7 +275,7 @@ describe('enrichDigestDocuments', () => {
       })
     )
     const rows = doc!.content_changes!.sections!
-    expect(rows[0]!.url).toBe(`${DOC_URL}?id=deep%20id%261`)
+    expect(rows[0]!.url).toBe(`${DOC_URL}?id=deep+id%261`)
     expect(rows[0]!.tocId).toBe('deep id&1')
     expect(rows[1]!.url).toBe(DOC_URL)
     expect(rows[1]!.tocId).toBeUndefined()
@@ -373,42 +360,6 @@ describe('enrichDigestDocuments', () => {
     expect(documents[0]!.content_changes?.document_id).toBe('Bad6a648b3056yMseW')
     expect(documents[0]!.content_changes?.sections).toBeUndefined()
     expect(documents[1]!.content_changes?.sections).toHaveLength(1)
-  })
-
-  // A null workspace_id lands in one synthetic bucket. An unguarded lookup on it
-  // throws, and the message-level catch then loses every block in the digest.
-  it('leaves the unknown bucket untouched and enriches the real document', async () => {
-    const unknown: DigestDocument = { ...chatDoc(), name: 'unknown', slug: 'unknown' }
-    const documents = await enrichDigestDocuments(
-      [unknown, enrichableDoc()],
-      enrichDeps({
-        computeChanges: async () =>
-          changesResult({ sections: [section({ text: 'Intro', tocId: 'intro' })] })
-      })
-    )
-    expect(documents[0]!.channels[0]!.notifications).toHaveLength(1)
-    expect(documents[0]!.content_changes).toBeUndefined()
-    // Without the guard, withResolvedName rewrites all four from the metadata.
-    expect(documents[0]!.name).toBe('unknown')
-    expect(documents[0]!.url).toBe(chatDoc().url)
-    expect(documents[0]!.channels[0]!.notifications[0]!.action_url).toBe(
-      chatDoc().channels[0]!.notifications[0]!.action_url
-    )
-    expect(documents[1]!.content_changes?.sections).toHaveLength(1)
-  })
-
-  it('names a document by its slug when the title is null or blank', async () => {
-    const [nullTitle] = await enrichDigestDocuments(
-      [enrichableDoc()],
-      enrichDeps({ readMetadata: async () => ({ title: null, slug: 'api-docs' }) })
-    )
-    expect(nullTitle!.name).toBe('api-docs')
-
-    const [blankTitle] = await enrichDigestDocuments(
-      [enrichableDoc()],
-      enrichDeps({ readMetadata: async () => ({ title: '', slug: 'api-docs' }) })
-    )
-    expect(blankTitle!.name).toBe('api-docs')
   })
 
   // `changed` is false on a first-open toc-id stamping pass. A block here mails

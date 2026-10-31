@@ -335,7 +335,7 @@ tag a section's home in brackets.
 
 **[`apps/hocuspocus.server/CLAUDE.md`](apps/hocuspocus.server/CLAUDE.md)** · router tag `[hocuspocus]`
 
-§Persistence · §Retention and schema · §Runtime limits · §Documented hazards we accept · §Backend And Infrastructure · §HTTP Modules · §Hocuspocus Server · §Admin API And Dashboard · §Production And Docker Compose
+§Persistence · §Retention and schema · §Runtime limits · §Documented hazards we accept · §Backend And Infrastructure · §HTTP Modules · §Pad Links · §Hocuspocus Server · §Admin API And Dashboard · §Production And Docker Compose
 
 **[`apps/admin-dashboard/CLAUDE.md`](apps/admin-dashboard/CLAUDE.md)** · router tag `[admin]`
 

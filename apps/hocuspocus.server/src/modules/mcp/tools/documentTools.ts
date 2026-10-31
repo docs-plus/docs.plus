@@ -2,6 +2,7 @@ import type { CallToolResult, McpServer } from '@modelcontextprotocol/server'
 import type { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
 
+import { padLink } from '../../../lib/padLink'
 import {
   findSection,
   headingLevel,
@@ -224,7 +225,7 @@ export const registerDocumentTools = (
       })
       if (outcome.status === 'invalid-content') return toolError(refusedText(outcome.detail))
       const { slug } = outcome.document
-      const url = `${deps.appUrl}/${slug}`
+      const url = padLink({ kind: 'document', slug }, deps.appUrl)
       return reply(`Created "${slug}": ${url}`, { slug, title: name, url, version: 1 })
     })
   )

@@ -17,25 +17,23 @@ import type {
 import { captureUnknown } from '../instrument'
 import { emailLogger } from '../logger'
 import { maskEmail } from '../maskEmail'
+import { readPadLinkRows } from '../padLink'
 import { createPgmqConsumer, deterministicJobId } from '../pgmqConsumer'
 import { prisma } from '../prisma'
 import { getOwnerProfiles } from '../profiles'
+import { resolveChatEmailLink } from '../push/chatActionUrl'
 import { getRedisClient } from '../redis'
 import { type DigestDocumentMeta, enrichDigestDocuments } from './digestContentChanges'
 import {
   buildDigestDocuments,
   CONTENT_CHANGE_TYPE,
+  digestDocumentId,
   type DigestRawNotification,
   groupDigestDocuments,
   normaliseDigestFrequency
 } from './digestDocuments'
 import { readDigestGrouping, readDigestMaxKb } from './digestGrouping'
-import {
-  decideDigestOutcome,
-  type DigestMetadataRow,
-  parseLastVisitStamp,
-  visibleDigestDocuments
-} from './digestMessage'
+import { decideDigestOutcome, parseLastVisitStamp, visibleDigestDocuments } from './digestMessage'
 import { queueEmail } from './queue'
 import { resolveUnsubscribe, updateSupabaseEmailStatus } from './sender'
 
@@ -54,7 +52,9 @@ interface EmailQueuePayload {
   notification_type?: string
   message_preview?: string
   channel_id?: string | null
-  document_slug?: string | null
+  /** The exact-case documentId and the message; both absent on a row queued before #647. */
+  workspace_id?: string | null
+  message_id?: string | null
   enqueued_at: string
   // Set by compile_digest_emails; absent on a single-notification payload.
   type?: 'digest'
@@ -70,26 +70,6 @@ const computeDocumentChanges = createComputeDocumentChanges({
   logger: emailLogger,
   getOwnerProfiles
 })
-
-/**
- * One read serves both gates. The rename needs a human title, and the privacy
- * re-read needs the audience fields, and both are columns of the same row. Read
- * per document, this was three queries per document on one table.
- */
-function readDigestMetadataRows(documentIds: string[]): Promise<DigestMetadataRow[]> {
-  if (documentIds.length === 0) return Promise.resolve([])
-  return prisma.documentMetadata.findMany({
-    where: { documentId: { in: documentIds } },
-    select: {
-      documentId: true,
-      title: true,
-      slug: true,
-      isPrivate: true,
-      ownerId: true,
-      deletedAt: true
-    }
-  })
-}
 
 interface WorkspaceMemberVisitRow {
   last_connection_closed_at: string | null
@@ -145,27 +125,28 @@ async function processDigestMessage(
   const recipientId = payload.recipient_id || ''
 
   try {
-    const built = buildDigestDocuments(payload.notifications || [], appUrl)
+    const notifications = payload.notifications || []
     const queueIds = pgmqQueueIds(payload)
 
     // One batched read for the whole message, filtered by the audience rule
-    // once. Both the rename and the block then read the same answer, so the
-    // rule cannot drift and a private title cannot reach the rename.
+    // once. The name, every link and the block then read the same answer, so a
+    // document the reader cannot open leaves the digest whole.
     let metaById = new Map<string, DigestDocumentMeta>()
     let metaReadFailed = false
     try {
-      const ids = built.flatMap((doc) => (doc.workspace_id ? [doc.workspace_id] : []))
-      metaById = visibleDigestDocuments(await readDigestMetadataRows(ids), recipientId)
+      const ids = [...new Set(notifications.flatMap((n) => digestDocumentId(n) ?? []))]
+      metaById = visibleDigestDocuments(await readPadLinkRows(prisma, ids), recipientId)
     } catch (err) {
       emailLogger.error({ err, msgId }, 'Digest metadata read failed')
       metaReadFailed = true
     }
 
+    // Pure and built before compute, so the enrichment fallback below still carries pad links.
+    const built = buildDigestDocuments(notifications, metaById, appUrl)
     let enriched: DigestDocument[] = built
     try {
       enriched = await enrichDigestDocuments(built, {
         computeChanges: computeDocumentChanges,
-        readMetadata: async (documentId: string) => metaById.get(documentId) ?? null,
         readLastVisits: (reader, documentIds) => readDigestLastVisits(client, reader, documentIds),
         logger: emailLogger,
         appUrl,
@@ -181,14 +162,7 @@ async function processDigestMessage(
       enriched = built
     }
 
-    // The same map answers the block gate: a document absent from it is one the
-    // reader may not see, whatever the carrier said.
-    const outcome = decideDigestOutcome({
-      built,
-      enriched,
-      visible: new Set(metaById.keys()),
-      metaReadFailed
-    })
+    const outcome = decideDigestOutcome({ documents: enriched, metaReadFailed })
 
     // A failed re-read is not an answer, so it must not look like one. Writing
     // 'skipped' here acks the message, the carriers stay unread, and the 24-hour
@@ -258,7 +232,7 @@ async function processDigestMessage(
 
     // The rows stay 'processing' until the email worker hears from the provider.
     // Every mail carries every queue id, because the payload cannot map a row to
-    // a document; with one mail per document, any delivered mail settles them all.
+    // a document. Any delivered mail settles them all, a left-out document's rows included.
     emailLogger.info(
       {
         msgId,
@@ -287,15 +261,29 @@ async function processDigestMessage(
   }
 }
 
+/** A row queued before #647 names only its channel, so the document comes from there. */
+async function readChannelDocument(
+  client: SupabaseClient,
+  channelId: string
+): Promise<string | null> {
+  const { data, error } = await client
+    .from('channels')
+    .select('workspace_id')
+    .eq('id', channelId)
+    .maybeSingle()
+  if (error) throw error
+  return data?.workspace_id ?? null
+}
+
 /** queue_id (the email_queue row id) is the stable BullMQ jobId. */
 async function processNotificationMessage(
+  client: SupabaseClient,
   msgId: number,
   payload: EmailQueuePayload
 ): Promise<boolean> {
-  // This path reads no Prisma row, so it cannot answer the privacy question a
-  // content_change asks. One SQL line keeps carriers out of it, and that line
-  // is hand-deployed. Refusing here costs one carrier on a mis-ordered deploy;
-  // trusting it would mail a private document to a non-owner.
+  // A content_change is digest-only: this chat-shaped mail cannot show a change.
+  // One SQL line keeps carriers out of this path, and that line is hand-deployed,
+  // so refusing here costs at most one carrier on a mis-ordered deploy.
   if (payload.notification_type === CONTENT_CHANGE_TYPE) {
     await updateSupabaseEmailStatus({
       queue_id: payload.queue_id!,
@@ -303,6 +291,37 @@ async function processNotificationMessage(
       error_message: 'content_change is digest-only'
     })
     emailLogger.warn({ msgId }, 'Refused a content_change on the immediate path')
+    return true
+  }
+
+  // A failed read is not an answer: leave the row 'processing' so pgmq redelivers.
+  let link: Awaited<ReturnType<typeof resolveChatEmailLink>>
+  try {
+    link = await resolveChatEmailLink(
+      {
+        recipient_id: payload.recipient_id || '',
+        channel_id: payload.channel_id,
+        workspace_id: payload.workspace_id,
+        message_id: payload.message_id
+      },
+      {
+        readChannelDocument: (channelId) => readChannelDocument(client, channelId),
+        readPadRow: async (documentId) => (await readPadLinkRows(prisma, [documentId]))[0] ?? null
+      },
+      config.email.appUrl
+    )
+  } catch (err) {
+    emailLogger.warn({ err, msgId }, 'Email link lookup failed; deferred')
+    return false
+  }
+
+  if (link.kind === 'leave-out') {
+    await updateSupabaseEmailStatus({
+      queue_id: payload.queue_id!,
+      status: 'skipped',
+      error_message: 'Document not openable by the reader'
+    })
+    emailLogger.info({ msgId }, 'Email skipped; the reader cannot open the document')
     return true
   }
 
@@ -318,7 +337,7 @@ async function processNotificationMessage(
       notification_type: (payload.notification_type as NotificationType) || 'message',
       message_preview: payload.message_preview || '',
       channel_id: payload.channel_id || undefined,
-      document_slug: payload.document_slug || undefined
+      action_url: link.url
     }
 
     // Without Redis the send runs inline and settles its row; its failure is
@@ -385,7 +404,7 @@ const consumer = createPgmqConsumer<EmailQueuePayload>({
 
     return payload.type === 'digest'
       ? processDigestMessage(client, msgId, payload)
-      : processNotificationMessage(msgId, payload)
+      : processNotificationMessage(client, msgId, payload)
   }
 })
 

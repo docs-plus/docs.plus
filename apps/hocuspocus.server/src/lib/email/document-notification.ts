@@ -3,6 +3,7 @@ import { buildNewDocumentEmailText, renderNewDocumentEmail } from '@docs.plus/em
 import { config } from '../../config/env'
 import type { EmailJobData, GenericEmailRequest } from '../../types/email.types'
 import { emailLogger } from '../logger'
+import { padLink } from '../padLink'
 import { sendEmailInline } from './sender'
 
 interface NewDocumentEmailParams {
@@ -42,7 +43,7 @@ export const sendNewDocumentNotification = async (
     return false
   }
 
-  const documentUrl = `${config.email.appUrl}/${params.slug}`
+  const documentUrl = padLink({ kind: 'document', slug: params.slug }, config.email.appUrl)
   const creatorDisplay = params.creatorName || params.creatorEmail || 'Anonymous'
 
   const html = renderNewDocumentEmail({

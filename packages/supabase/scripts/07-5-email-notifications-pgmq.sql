@@ -432,6 +432,7 @@ declare
     enqueued int := 0;
     skipped int := 0;
     doc_slug text;
+    doc_workspace_id varchar(36);
 begin
     for pending_email in
         select
@@ -502,11 +503,12 @@ begin
             continue;
         end if;
 
-        -- Get document slug
+        -- Get the channel slug and the documentId (channels.workspace_id, exact case)
         doc_slug := null;
+        doc_workspace_id := null;
         if pending_email.channel_id is not null then
             begin
-                select slug into doc_slug
+                select slug, workspace_id into doc_slug, doc_workspace_id
                 from public.channels
                 where id = pending_email.channel_id
                 limit 1;
@@ -536,6 +538,8 @@ begin
                 'message_preview', coalesce(pending_email.message_preview, ''),
                 'channel_id', pending_email.channel_id,
                 'document_slug', doc_slug,
+                'workspace_id', doc_workspace_id,
+                'message_id', pending_email.message_id::text,
                 'enqueued_at', now()::text
             )
         );

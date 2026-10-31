@@ -1,6 +1,5 @@
 /**
- * Digest enrichment: the reader's window, the changed-section list, and the
- * human name behind a 19-character documentId. It lives apart from
+ * Digest enrichment: the reader's window and the changed-section list. It lives apart from
  * `pgmqConsumer.ts` for the same reason `digestDocuments.ts` does — that file
  * imports `./queue`, which opens a Redis socket at module scope.
  */
@@ -8,7 +7,7 @@ import type { Logger } from 'pino'
 
 import type { ComputeDocumentChanges, SectionNode } from '../../modules/document-changes/types'
 import type { DigestChangedSection, DigestDocument } from '../../types/email.types'
-import { buildChatActionUrl } from '../push/chatActionUrl'
+import { padLink } from '../padLink'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -17,8 +16,6 @@ export interface DigestDocumentMeta {
   title: string | null
   slug: string
 }
-
-export type ReadDigestMetadata = (documentId: string) => Promise<DigestDocumentMeta | null>
 
 /** Last left for every document in one digest. A missing id means no visit. */
 export type ReadDigestLastVisits = (
@@ -32,7 +29,6 @@ export type ReadDigestLastVisits = (
  */
 export interface EnrichDigestOptions {
   computeChanges: ComputeDocumentChanges
-  readMetadata: ReadDigestMetadata
   readLastVisits: ReadDigestLastVisits
   logger: Logger
   recipientId: string
@@ -64,11 +60,6 @@ export function resolveDigestSince(
   return new Date(Math.min(Math.max(start, floor), now.getTime()))
 }
 
-/** `tocId` is stranger-written on a public document, so it is never raw in a URL. */
-function sectionUrl(docUrl: string, tocId: string | null): string {
-  return tocId ? `${docUrl}?id=${encodeURIComponent(tocId)}` : docUrl
-}
-
 /**
  * One walk, so every Section keeps its document place. A heading chat moves
  * only under a live heading; a removed heading's chat keeps its channel row.
@@ -78,7 +69,8 @@ function sectionUrl(docUrl: string, tocId: string | null): string {
  */
 function placeSections(
   tree: SectionNode[],
-  doc: DigestDocument
+  doc: DigestDocument,
+  appUrl: string
 ): { sections: DigestChangedSection[]; channels: DigestDocument['channels'] } {
   const headingOf = (channel: DigestDocument['channels'][number]): string =>
     channel.heading_id || channel.id
@@ -98,7 +90,9 @@ function placeSections(
       if (changed || chats.length > 0) {
         sections.push({
           text: node.text,
-          url: sectionUrl(doc.url, live),
+          url: live
+            ? padLink({ kind: 'heading', slug: doc.slug, headingId: live }, appUrl)
+            : doc.url,
           status: node.status,
           ...(node.previousLevel !== undefined ? { previousLevel: node.previousLevel } : {}),
           ...(live ? { tocId: live } : {}),
@@ -114,35 +108,6 @@ function placeSections(
   return {
     sections,
     channels: doc.channels.filter((channel) => !channel.id || pending.has(headingOf(channel)))
-  }
-}
-
-/**
- * `workspaces.name` is the raw documentId and `workspaces.slug` its lowercased
- * copy, so every link built from them mints a junk draft. A blank title is the
- * same failure as the raw id, so it falls through to the slug too.
- */
-function withResolvedName(
-  doc: DigestDocument,
-  meta: DigestDocumentMeta,
-  appUrl: string
-): DigestDocument {
-  const url = `${appUrl}/${meta.slug}`
-  return {
-    ...doc,
-    name: meta.title?.trim() || meta.slug,
-    slug: meta.slug,
-    url,
-    channels: doc.channels.map((channel) => {
-      const channelUrl = channel.id
-        ? buildChatActionUrl(meta.slug, channel.id, { origin: appUrl })
-        : url
-      return {
-        ...channel,
-        url: channelUrl,
-        notifications: channel.notifications.map((n) => ({ ...n, action_url: channelUrl }))
-      }
-    })
   }
 }
 
@@ -172,7 +137,7 @@ async function withSections(
     return rest
   }
 
-  const placed = placeSections(outcome.result.sections ?? [], doc)
+  const placed = placeSections(outcome.result.sections ?? [], doc, options.appUrl)
   if (placed.sections.length === 0) return doc
 
   // A floor, never a census: a service-role write carries no person, and a failed
@@ -215,8 +180,7 @@ export async function enrichDigestDocuments(
   // and the profile read inside compute makes the loop I/O-bound anyway.
   for (const doc of documents) {
     const documentId = doc.workspace_id
-    // Two left joins in the digest SQL leave this null, and that row is the
-    // synthetic `unknown` bucket. It names no document, so nothing to look up.
+    // `buildDigestDocuments` sets it on every document; the payload type keeps it optional.
     if (!documentId) {
       enriched.push(doc)
       continue
@@ -225,24 +189,15 @@ export async function enrichDigestDocuments(
     // Per-document, so one bad snapshot costs its own block and not the digest.
     // A section list is decoration, not the answer to a privacy question, so a
     // failure logs and omits the detail; it never defers the message.
-    let current = doc
     try {
-      const meta = await options.readMetadata(documentId)
-      // No metadata row means no human slug, and a section link built from the
-      // 19-character id is the failure this whole step exists to prevent.
-      if (!meta) {
-        enriched.push(current)
-        continue
-      }
-      current = withResolvedName(current, meta, options.appUrl)
       enriched.push(
-        current.content_changes
-          ? await withSections(current, documentId, options, visits.get(documentId) ?? null)
-          : current
+        doc.content_changes
+          ? await withSections(doc, documentId, options, visits.get(documentId) ?? null)
+          : doc
       )
     } catch (err) {
       options.logger.warn({ err, documentId }, 'Digest change enrichment failed')
-      enriched.push(current)
+      enriched.push(doc)
     }
   }
 

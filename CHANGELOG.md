@@ -90,6 +90,9 @@ Migration section for when it goes. As the last step, run
 
 ### Fixed
 
+- **Chat emails open the right pad.** An immediate chat email opened the home page, and a digest
+  link could open a new empty pad. Both now open the pad, at the message where there is one
+  ([#647](https://github.com/docs-plus/docs.plus/issues/647)).
 - **Member faces show on every document again.** Documents made before 2026-08-09, the
   `/demo` pad among them, showed no faces in the Documents list, no roster and no admin
   member count. The lookup now uses the document's id, never its slug

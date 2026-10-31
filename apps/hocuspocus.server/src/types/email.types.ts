@@ -35,7 +35,6 @@ export interface NotificationEmailRequest {
   message_preview: string
 
   document_name?: string
-  document_slug?: string
   channel_name?: string
   channel_id?: string
   action_url?: string

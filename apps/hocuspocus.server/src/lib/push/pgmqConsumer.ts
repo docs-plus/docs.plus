@@ -8,6 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { PushNotificationRequest } from '../../types/push.types'
 import { captureUnknown } from '../instrument'
 import { pushLogger } from '../logger'
+import { readPadLinkRows } from '../padLink'
 import { createPgmqConsumer, type PgmqConsumerContext } from '../pgmqConsumer'
 import { prisma } from '../prisma'
 import { type ChatNotificationRow, resolveChatActionUrl } from './chatActionUrl'
@@ -44,9 +45,7 @@ function readSlug(documentId: string): Promise<string | null> {
   if (hit && hit.expiresAt > now) return hit.slug
 
   if (slugCache.size >= SLUG_CACHE_MAX) slugCache.clear()
-  const slug = prisma.documentMetadata
-    .findUnique({ where: { documentId }, select: { slug: true } })
-    .then((row) => row?.slug ?? null)
+  const slug = readPadLinkRows(prisma, [documentId]).then((rows) => rows[0]?.slug ?? null)
   // A failed read must not stick for the whole TTL. The guard spares a newer entry.
   slug.catch(() => {
     if (slugCache.get(documentId)?.slug === slug) slugCache.delete(documentId)

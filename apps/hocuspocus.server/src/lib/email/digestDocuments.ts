@@ -9,12 +9,17 @@ import type {
   DigestDocument,
   NotificationType
 } from '../../types/email.types'
+import { padLink } from '../padLink'
 import { sanitizePlainText } from '../sanitizePlainText'
+import type { DigestDocumentMeta } from './digestContentChanges'
 
 /** notification_category value written by notify_document_content_change. */
 export const CONTENT_CHANGE_TYPE = 'content_change'
 
-/** Raw notification data from SQL compile_digest_emails */
+/**
+ * Raw notification data from SQL compile_digest_emails. It also carries `workspace_name`
+ * and `workspace_slug`, left untyped on purpose: both hold the raw or lowercased id.
+ */
 export interface DigestRawNotification {
   notification_type: string
   sender_name: string
@@ -24,58 +29,54 @@ export interface DigestRawNotification {
   /** Absent on a message queued before #402. */
   heading_id?: string | null
   channel_name: string
+  /** `channels.workspace_id`, the exact-case documentId; null when the channel row is gone. */
   workspace_id: string | null
-  workspace_name: string
-  workspace_slug: string
   created_at: string
 }
 
+/** A heading channel's id is not the documentId (#402); a carrier's channel id is. */
+export function digestDocumentId(n: DigestRawNotification): string | null {
+  return n.notification_type === CONTENT_CHANGE_TYPE
+    ? n.channel_id || n.workspace_id
+    : n.workspace_id
+}
+
 /**
- * A content_change carrier is a document-level fact, not a chat line, so it
- * seeds the block and never enters the channel map. Exported for unit tests.
+ * Leaves out every document the reader cannot open: `visible` holds only those, from
+ * `visibleDigestDocuments`. Links use the pad slug, never `workspace_slug`, which is a
+ * lowercased id that mints a junk draft pad. A carrier seeds the block, never a chat line.
  */
 export function buildDigestDocuments(
   notifications: DigestRawNotification[],
+  visible: Map<string, DigestDocumentMeta>,
   appUrl: string
 ): DigestDocument[] {
-  const workspaceMap = new Map<
+  const documents = new Map<
     string,
     {
-      name: string
-      slug: string
-      workspaceId?: string
+      meta: DigestDocumentMeta
       contentChanges?: DigestContentChanges
       channels: Map<string, Omit<DigestChannel, 'url'>>
     }
   >()
 
   for (const n of notifications) {
-    const wsKey = n.workspace_slug || 'unknown'
+    const documentId = digestDocumentId(n)
+    const meta = documentId ? visible.get(documentId) : undefined
+    if (!documentId || !meta) continue
 
-    if (!workspaceMap.has(wsKey)) {
-      workspaceMap.set(wsKey, {
-        name: n.workspace_name || wsKey,
-        slug: n.workspace_slug || wsKey,
-        // Null here is the `unknown` bucket, and enrichment must skip it: a
-        // lookup on a missing id throws and costs the digest every block.
-        workspaceId: n.workspace_id || undefined,
-        channels: new Map()
-      })
-    }
-
-    const ws = workspaceMap.get(wsKey)!
+    if (!documents.has(documentId)) documents.set(documentId, { meta, channels: new Map() })
+    const doc = documents.get(documentId)!
 
     if (n.notification_type === CONTENT_CHANGE_TYPE) {
-      // workspace_slug is lower(documentId); only channel_id keeps the real case.
-      const documentId = n.channel_id || n.workspace_id || ''
       // Parse, not string compare: carrier timestamps can differ in fractional
       // digits or offset. An unparseable value loses on either side, so a bad
       // incoming row cannot overwrite a good earliest one.
-      const since = ws.contentChanges?.since
+      const since = doc.contentChanges?.since
       const incoming = Date.parse(n.created_at)
       const prior = since ? Date.parse(since) : NaN
       const keepPrior = !Number.isNaN(prior) && (Number.isNaN(incoming) || prior <= incoming)
-      ws.contentChanges = {
+      doc.contentChanges = {
         document_id: documentId,
         // A carrier time is not a Last left, so the email must not say "since you left".
         fromLastLeft: false,
@@ -86,8 +87,8 @@ export function buildDigestDocuments(
 
     const chKey = n.channel_id || 'general'
 
-    if (!ws.channels.has(chKey)) {
-      ws.channels.set(chKey, {
+    if (!doc.channels.has(chKey)) {
+      doc.channels.set(chKey, {
         name: n.channel_name || 'General',
         id: n.channel_id || '',
         heading_id: n.heading_id || undefined,
@@ -95,32 +96,36 @@ export function buildDigestDocuments(
       })
     }
 
-    ws.channels.get(chKey)!.notifications.push({
+    doc.channels.get(chKey)!.notifications.push({
       type: n.notification_type as NotificationType,
       sender_name: n.sender_name,
       sender_avatar_url: n.sender_avatar_url || undefined,
       message_preview: sanitizePlainText(n.message_preview, 200),
-      action_url: n.channel_id
-        ? `${appUrl}/${n.workspace_slug}?chatroom=${n.channel_id}`
-        : `${appUrl}/${n.workspace_slug}`,
+      action_url: '',
       created_at: n.created_at
     })
   }
 
-  return Array.from(workspaceMap.values()).map((ws) => ({
-    name: ws.name,
-    slug: ws.slug,
-    url: `${appUrl}/${ws.slug}`,
-    ...(ws.workspaceId ? { workspace_id: ws.workspaceId } : {}),
-    channels: Array.from(ws.channels.values()).map((ch): DigestChannel => ({
-      name: ch.name,
-      id: ch.id,
-      heading_id: ch.heading_id,
-      url: ch.id ? `${appUrl}/${ws.slug}?chatroom=${ch.id}` : `${appUrl}/${ws.slug}`,
-      notifications: ch.notifications
-    })),
-    ...(ws.contentChanges ? { content_changes: ws.contentChanges } : {})
-  }))
+  return Array.from(documents.entries()).map(([documentId, doc]) => {
+    const { slug } = doc.meta
+    const url = padLink({ kind: 'document', slug }, appUrl)
+    return {
+      // A blank title is the same failure as the raw id, so it falls through to the slug.
+      name: doc.meta.title?.trim() || slug,
+      slug,
+      url,
+      workspace_id: documentId,
+      channels: Array.from(doc.channels.values()).map((ch): DigestChannel => {
+        const channelUrl = ch.id ? padLink({ kind: 'chat', slug, linkId: ch.id }, appUrl) : url
+        return {
+          ...ch,
+          url: channelUrl,
+          notifications: ch.notifications.map((item) => ({ ...item, action_url: channelUrl }))
+        }
+      }),
+      ...(doc.contentChanges ? { content_changes: doc.contentChanges } : {})
+    }
+  })
 }
 
 export type DigestGrouping = 'document' | 'aggregate'
@@ -137,32 +142,4 @@ export function groupDigestDocuments(
 /** The payload frequency is the user's preference, not the queue type. */
 export function normaliseDigestFrequency(raw: string | undefined): 'daily' | 'weekly' {
   return raw === 'weekly' ? 'weekly' : 'daily'
-}
-
-function withoutContentChanges(doc: DigestDocument): DigestDocument {
-  if (!doc.content_changes) return doc
-  // Rest, not an allow-list: the old shape silently dropped any field added to
-  // DigestDocument later, and this path keeps a document that still has chat.
-  const { content_changes, ...rest } = doc
-  return rest
-}
-
-/**
- * Drops a content_changes block this recipient may no longer see, then drops a
- * document entry left with neither a block nor a real chat line.
- */
-export function filterDigestDocuments(
-  documents: DigestDocument[],
-  visible: Set<string>
-): DigestDocument[] {
-  const kept: DigestDocument[] = []
-  for (const doc of documents) {
-    const next =
-      doc.content_changes && visible.has(doc.content_changes.document_id)
-        ? doc
-        : withoutContentChanges(doc)
-    const hasChat = next.channels.some((ch) => ch.notifications.length > 0)
-    if (hasChat || next.content_changes) kept.push(next)
-  }
-  return kept
 }

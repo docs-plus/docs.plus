@@ -9,6 +9,7 @@ import { resolveContentChangeAudience } from './contentChangeAudience'
 import { readOccupantUserIds } from './documentOccupancy'
 import { logger } from './logger'
 import { contentChangeFanoutTotal } from './metrics'
+import { padLink } from './padLink'
 import { prisma } from './prisma'
 import { getServiceRoleClient } from './supabase'
 
@@ -86,7 +87,7 @@ export async function fanOutContentChange(params: FanOutContentChangeParams): Pr
       // Dormant in the digest: `compile_digest_emails` never selects it. The
       // push trigger does copy it into the push payload, and content_change
       // push is opt-in and off by default.
-      p_action_url: `${config.email.appUrl}/${meta.slug}`
+      p_action_url: padLink({ kind: 'document', slug: meta.slug }, config.email.appUrl)
     })
 
     if (error) {
