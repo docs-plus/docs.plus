@@ -21,6 +21,7 @@ import { verifyServiceRole } from '../lib/auth'
 import { emailGateway } from '../lib/email'
 import { recordEmailBounce } from '../lib/email/bounces'
 import { emailLogger } from '../lib/logger'
+import { padLink } from '../lib/padLink'
 import { getServiceRoleClient } from '../lib/supabase'
 import { type UnsubscribePayload, verifyUnsubscribeToken } from '../lib/unsubscribeToken'
 import {
@@ -68,7 +69,7 @@ emailRouter.post(
   }
 )
 
-/** Called by the Supabase cron job, not by the app. */
+/** Service-role route; no caller in this repo. */
 emailRouter.post(
   '/send-digest',
   zValidator('json', sendDigestEmailSchema, houseEnvelopeHook),
@@ -89,7 +90,7 @@ emailRouter.post(
         documents: payload.documents.map((doc): DigestDocument => ({
           name: doc.title || doc.slug,
           slug: doc.slug,
-          url: `${config.email.appUrl}/${doc.slug}`,
+          url: padLink(doc.slug, { kind: 'document' }, config.email.appUrl),
           channels: [] // Simplified - no channel breakdown for API-triggered digests
         })),
         period_end: new Date().toISOString()

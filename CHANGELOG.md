@@ -24,8 +24,10 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 
 **If you self-host.** Read the [hocuspocus Migration](apps/hocuspocus.server/CHANGELOG.md#migration)
 before you deploy, and follow its order. Push Supabase migrations `20261023120000`,
-`20261024120000`, `20261025120000` and `20261025150000` together with the backend and
-frontend deploy. `20261023120000` renames the parameters of three member
+`20261024120000`, `20261025120000`, `20261025150000`, `20261031120000` and `20261031130000`
+together with the backend and frontend deploy. The last two add ids to the email payloads
+([#647](https://github.com/docs-plus/docs.plus/issues/647)); the server accepts mail queued
+before them. `20261023120000` renames the parameters of three member
 functions, so until both sides land, the member faces, the roster and the admin member
 counts fail. `20261025150000` replaces `update_view_duration` and
 `process_document_views_queue`, and keeps both service-role only
@@ -83,16 +85,16 @@ Migration section for when it goes. As the last step, run
 - Link metadata and its image route spend their own rate-limit bucket, at ten times
   `RATE_LIMIT_MAX` per 15 minutes. So hovering does not use up the main API budget
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
-- Copied and shared pad links are easier to read. A heading link reads like a breadcrumb,
-  `…/demo?h=docs.plus-demo>whats-new>docs.plus-2.2.0&id=…`, and a filter link like
+- Copied and shared pad links are easier to read. Pasted into a rich editor, a heading link reads
+  like a breadcrumb, `…/demo?h=docs.plus-demo>whats-new>docs.plus-2.2.0&id=…`, and a filter link like
   `/demo/draw-a-diagram`. A link you copy no longer carries your open filter or chat
   ([#646](https://github.com/docs-plus/docs.plus/issues/646)).
 
 ### Fixed
 
 - **Chat emails open the right pad.** An immediate chat email opened the home page, and a digest
-  link could open a new empty pad. Both now open the pad, at the message where there is one
-  ([#647](https://github.com/docs-plus/docs.plus/issues/647)).
+  link could open a new empty pad. An immediate chat email now opens the pad at the message, and a
+  digest opens the pad's chat ([#647](https://github.com/docs-plus/docs.plus/issues/647)).
 - **Member faces show on every document again.** Documents made before 2026-08-09, the
   `/demo` pad among them, showed no faces in the Documents list, no roster and no admin
   member count. The lookup now uses the document's id, never its slug

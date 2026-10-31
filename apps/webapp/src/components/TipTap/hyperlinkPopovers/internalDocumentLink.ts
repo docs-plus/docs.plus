@@ -2,7 +2,7 @@ import { Icons } from '@components/icons/registry'
 import { parseHistoryHash } from '@components/pages/history/historyShareUrl'
 import { padUrlCore } from '@docs.plus/pad-url'
 import type { Editor } from '@tiptap/core'
-import { TIPTAP_NODES } from '@types'
+import { headingAncestry } from '@utils/headingSlugTrail'
 import type { IconType } from 'react-icons'
 
 import type { InternalDocumentLink, InternalLinkDescriptor } from './types'
@@ -55,19 +55,9 @@ export function classifyInternalDocumentLink(
   return { kind: 'document' }
 }
 
-/** Resolve a heading/channel `toc-id` to its heading text, mirroring the outline walk. */
-const resolveHeadingTitle = (editor: Editor | null, tocId: string): string | undefined => {
-  if (!editor) return undefined
-  const { doc } = editor.state
-  for (let i = 0; i < doc.content.childCount; i++) {
-    const child = doc.content.child(i)
-    if (child.type.name !== TIPTAP_NODES.HEADING_TYPE) continue
-    if ((child.attrs['toc-id'] as string) === tocId) {
-      return child.textContent?.trim() || undefined
-    }
-  }
-  return undefined
-}
+/** Resolve a heading/channel `toc-id` to its heading text. */
+const resolveHeadingTitle = (editor: Editor | null, tocId: string): string | undefined =>
+  editor ? headingAncestry(editor, tocId).at(-1)?.text || undefined : undefined
 
 const HERE = 'In this document'
 const quoted = (title: string): string => `\u201C${title}\u201D`

@@ -5,16 +5,13 @@ import PubSub from 'pubsub-js'
 
 export type NavigateToHeadingOptions = {
   openChat?: boolean
-  updateUrl?: boolean
 }
 
 /** TOC navigate: URL h/id + pad scroll (block start). Optional CHAT_OPEN — never focusEditor. */
 export function navigateToHeading(headingId: string, options: NavigateToHeadingOptions = {}): void {
-  const { openChat = false, updateUrl = true } = options
+  const { openChat = false } = options
 
-  if (updateUrl) {
-    void padUrl.go({ kind: 'heading', headingId })
-  }
+  void padUrl.go({ kind: 'heading', headingId })
 
   scrollPadHeading(headingId, { behavior: 'smooth', block: 'start' })
 

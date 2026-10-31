@@ -6,12 +6,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { PushNotificationRequest } from '../../types/push.types'
+import { chatLink, type ChatSource } from '../chatLink'
 import { captureUnknown } from '../instrument'
 import { pushLogger } from '../logger'
-import { readPadLinkRows } from '../padLink'
+import { type PadLinkRow, readPadLinkRows } from '../padLink'
 import { createPgmqConsumer, type PgmqConsumerContext } from '../pgmqConsumer'
 import { prisma } from '../prisma'
-import { type ChatNotificationRow, resolveChatActionUrl } from './chatActionUrl'
 import { queuePush } from './queue'
 
 const POLL_INTERVAL_MS = 2000
@@ -30,34 +30,34 @@ interface PushQueuePayload {
   enqueued_at: string
 }
 
-const SLUG_CACHE_TTL_MS = 60_000
-const SLUG_CACHE_MAX = 500
+const PAD_ROW_CACHE_TTL_MS = 60_000
+const PAD_ROW_CACHE_MAX = 500
 
 /**
  * One chat message fans out to every member in the same batch, so the Prisma
  * read is shared. The promise is cached, so parallel rows wait on one read.
  */
-const slugCache = new Map<string, { slug: Promise<string | null>; expiresAt: number }>()
+const padRowCache = new Map<string, { row: Promise<PadLinkRow | null>; expiresAt: number }>()
 
-function readSlug(documentId: string): Promise<string | null> {
+function readPadRow(documentId: string): Promise<PadLinkRow | null> {
   const now = Date.now()
-  const hit = slugCache.get(documentId)
-  if (hit && hit.expiresAt > now) return hit.slug
+  const hit = padRowCache.get(documentId)
+  if (hit && hit.expiresAt > now) return hit.row
 
-  if (slugCache.size >= SLUG_CACHE_MAX) slugCache.clear()
-  const slug = readPadLinkRows(prisma, [documentId]).then((rows) => rows[0]?.slug ?? null)
+  if (padRowCache.size >= PAD_ROW_CACHE_MAX) padRowCache.clear()
+  const row = readPadLinkRows(prisma, [documentId]).then((rows) => rows[0] ?? null)
   // A failed read must not stick for the whole TTL. The guard spares a newer entry.
-  slug.catch(() => {
-    if (slugCache.get(documentId)?.slug === slug) slugCache.delete(documentId)
+  row.catch(() => {
+    if (padRowCache.get(documentId)?.row === row) padRowCache.delete(documentId)
   })
-  slugCache.set(documentId, { slug, expiresAt: now + SLUG_CACHE_TTL_MS })
-  return slug
+  padRowCache.set(documentId, { row, expiresAt: now + PAD_ROW_CACHE_TTL_MS })
+  return row
 }
 
 async function readChatNotification(
   client: SupabaseClient | null,
   notificationId: string
-): Promise<ChatNotificationRow | null> {
+): Promise<ChatSource | null> {
   if (!client) return null
   const { data, error } = await client
     .from('notifications')
@@ -74,9 +74,9 @@ async function readChatNotification(
 /** A failed lookup costs the deep link, not the push: the service worker still opens `/`. */
 async function chatActionUrl(payload: PushQueuePayload, ctx: PgmqConsumerContext): Promise<string> {
   try {
-    return await resolveChatActionUrl(payload, {
-      readNotification: (id) => readChatNotification(ctx.getClient(), id),
-      readSlug
+    return await chatLink.forPush(payload, {
+      readSource: () => readChatNotification(ctx.getClient(), payload.notification_id),
+      readPadRow
     })
   } catch (err) {
     pushLogger.warn(

@@ -1,9 +1,9 @@
 export type FilterMode = 'or' | 'and'
 
-/** A chat room by a channel id or a heading id; `openChatFromLink` tells them apart (#402). */
+/** A chat room by a channel id or a heading id; the link does not say which (#402). */
 export type PadChat = { linkId: string; messageId?: string }
 
-/** A place a link points to. `padUrl.link` builds it from the pad base, with no live state. */
+/** A place a link points to. `format` builds it from the pad base, with no live state. */
 export type PadTarget =
   | { kind: 'document'; slug?: string }
   | { kind: 'heading'; headingId: string }
@@ -41,10 +41,23 @@ export type PadWriter = 'keepState' | 'pushBlank' | 'routerPush' | 'routerReplac
 
 export type PadWrite = { to: string; writer: PadWriter }
 
+/** `null` or empty when there is no trail, so the link carries `id=` only. */
+export type TrailOf = (headingId: string) => string | null
+
+/** What `plan` reads: the live address, so a change keeps the reader's filter, chat and hash. */
 export type PadUrlContext = {
   origin: string
-  /** The live address, read from `window.location`, never from `router.asPath`. */
+  /** The address to plan from; the webapp passes `window.location`. */
   live: string
-  /** `null` when there is no editor, so the link carries `id=` only. */
-  trailOf(headingId: string): string | null
+  trailOf: TrailOf
+}
+
+/** What `format` reads: the pad base only, so no live filter, chat or heading state leaks in. */
+export type PadLinkContext = {
+  /** The pad a target names, unless a `document` target names its own. */
+  slug: string
+  /** Without it, the link is a root-relative path. */
+  origin?: string
+  /** Absent means no trail. */
+  trailOf?: TrailOf
 }

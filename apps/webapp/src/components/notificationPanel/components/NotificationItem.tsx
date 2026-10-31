@@ -29,20 +29,12 @@ import NotificationIcon from './NotificationIcon'
 const isSystemNotification = (notification: TNotification): boolean =>
   notification.type === 'system_alert' || !notification.sender?.id
 
-/** `action_url` is absolute, so it parses with no base and stays stable across hydration. */
-const actionUrlPathname = (actionUrl: string | null | undefined): string | null => {
-  if (!actionUrl) return null
-  try {
-    return new URL(actionUrl).pathname
-  } catch {
-    return null
-  }
-}
+/** `action_url` is absolute, so it parses against itself and stays stable across hydration. */
+const actionUrlSlug = (actionUrl: string | null | undefined): string =>
+  (actionUrl && padUrlCore.parse(actionUrl, actionUrl)?.slug) || ''
 
 /** A carrier row has no title column, so its only document identity is the link slug. */
-const documentNameFromActionUrl = (actionUrl: string | null | undefined): string => {
-  // The first segment, not the last: later segments carry the reader's filter terms.
-  const slug = actionUrl ? padUrlCore.parse(actionUrl, actionUrl)?.slug : undefined
+const documentNameFromSlug = (slug: string): string => {
   if (!slug) return 'Document'
   try {
     return decodeURIComponent(slug)
@@ -64,21 +56,20 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
   const profile = useAuthStore((state) => state.profile)
   const dismissBeforeNavigate = useDismissPanelBeforeNavigate(variant)
   const router = useRouter()
+  const slug = actionUrlSlug(notification.action_url)
 
   const handleViewNotification = async (notification: TNotification) => {
     // First, because a sender-less carrier would otherwise be claimed by the
     // system test below. A carrier does carry a sender when the editor is known.
     if (notification.type === 'content_change') {
       void markAsRead(notification)
-      // Compare the document segment, not the whole path: active filter terms
-      // live in later segments, and a bare push would drop the reader's filters.
-      const target = actionUrlPathname(notification.action_url)
-      if (target) void armCompareFromLastLeft(notification.channel_id, profile?.id)
+      if (slug) void armCompareFromLastLeft(notification.channel_id, profile?.id)
       await dismissBeforeNavigate()
-      if (!target) return
+      if (!slug) return
 
-      if (padUrl.read(target)?.slug !== padUrl.read()?.slug) {
-        void router.push(`${target}#history`)
+      // Compare slugs, not paths: the live address may carry the reader's filter terms.
+      if (slug !== padUrl.read()?.slug) {
+        void router.push(`${padUrl.link({ kind: 'document', slug }, 'path')}#history`)
         return
       }
       const historyHash = parseHistoryHash(window.location.hash)
@@ -133,7 +124,7 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
                   ? 'System'
                   : hasSender
                     ? notification.sender?.display_name
-                    : documentNameFromActionUrl(notification.action_url)}
+                    : documentNameFromSlug(slug)}
               </span>
             </p>
             <PanelFeedPreview media={<PanelFeedMediaHint preview={notification.message_preview} />}>

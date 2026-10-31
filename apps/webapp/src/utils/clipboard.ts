@@ -1,5 +1,4 @@
-import { padUrlCore } from '@docs.plus/pad-url'
-
+import { escapeHtml } from './escapeHtml'
 import { logger } from './logger'
 
 /**
@@ -45,15 +44,18 @@ const copyToClipboardLegacy = (text: string): boolean => {
   }
 }
 
-const escapeHtml = (text: string): string =>
-  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+/**
+ * The `?h=` trail as people read it. Only `%3E` is decoded: a `%20` or `%26` turned raw
+ * would end or split the link in many paste targets. Display text only, never an href.
+ */
+export const readable = (href: string): string => href.replace(/%3E/gi, '>')
 
 /**
  * Plain text keeps the encoded link, because some linkifiers end a link at a raw `>`.
  * Rich paste targets get a link whose text shows the readable `>` trail.
  */
 export const copyLinkToClipboard = (url: string): Promise<boolean> => {
-  const label = padUrlCore.readable(url)
+  const label = readable(url)
   if (label === url) return copyToClipboard(url)
   return copyRichContentToClipboard(`<a href="${escapeHtml(url)}">${escapeHtml(label)}</a>`, url)
 }

@@ -1,7 +1,12 @@
-import type { PadUrlContext, PadWrite } from '@docs.plus/pad-url'
-import { padUrlCore } from '@docs.plus/pad-url'
+import {
+  type PadChange,
+  type PadFacets,
+  type PadTarget,
+  type PadUrlContext,
+  padUrlCore,
+  type PadWrite
+} from '@docs.plus/pad-url'
 import { useStore } from '@stores'
-import type { PadChange, PadFacets, PadTarget } from '@types'
 import { headingSlug, headingSlugTrail } from '@utils/headingSlugTrail'
 import Router from 'next/router'
 
@@ -14,6 +19,9 @@ function trailOf(headingId: string): string | null {
   if (!editor.instance || editor.instance.isDestroyed) return null
   return headingSlugTrail(editor.instance, headingId)
 }
+
+/** The first path segment, read as `parse` reads it, without a full parse per link. */
+const padSlug = (): string => window.location.pathname.split('/').filter(Boolean)[0] ?? ''
 
 function context(): PadUrlContext {
   return { origin: window.location.origin, live: window.location.href, trailOf }
@@ -84,7 +92,7 @@ function messageFor(room: {
  */
 export const padUrl = {
   link: (target: PadTarget, form?: 'absolute' | 'path'): string =>
-    padUrlCore.format(target, context(), form),
+    padUrlCore.format(target, { origin: window.location.origin, slug: padSlug(), trailOf }, form),
   go,
   read,
   messageFor

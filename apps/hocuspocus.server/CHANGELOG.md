@@ -12,7 +12,7 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Migration
 
-Push five Supabase migrations with this deploy, in this order:
+Push six Supabase migrations with this deploy, in this order:
 
 1. `20261023120000` drops and re-creates `get_document_member_previews`,
    `get_document_members` and `admin_get_document_member_counts` with new parameter names
@@ -29,8 +29,10 @@ Push five Supabase migrations with this deploy, in this order:
    `workspace_id` (the document id) and `message_id`
    ([#647](https://github.com/docs-plus/docs.plus/issues/647)). The server still sends a correct
    link for a row queued before it.
+6. `20261031130000` replaces `compile_digest_emails`, so each digest notification carries its
+   `queue_id`. A message queued before it keeps the shared list until it drains.
 
-Run `packages/supabase/scripts/check-grants.sql` once, after all five.
+Run `packages/supabase/scripts/check-grants.sql` once, after all six.
 
 Do not push `20261026120000` ([#570](https://github.com/docs-plus/docs.plus/issues/570)) with
 this deploy. It closes default privileges in `pgmq` and `storage`. Push it only after the
@@ -78,7 +80,7 @@ Before you deploy this commit, check that `.env.production` holds both `VAPID_PU
 
 - **Every pad link the server sends goes through `src/lib/padLink.ts`, over the shared
   package `@docs.plus/pad-url`.** Push, email, digest, the content-change notice, the
-  new-document mail and MCP use it. MCP `create_document` refuses reserved slugs through the
+  new-document mail and MCP use it. MCP `create_document` renames reserved slugs through the
   package's list, the same list the webapp uses.
 - **The html stage parses page heads with our own scraper, not metascraper
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).** `infra/headScraper.ts` reads the same head, JSON-LD and title rules in one
@@ -123,6 +125,9 @@ Before you deploy this commit, check that `.env.production` holds both `VAPID_PU
   links came from `workspaces.slug`, which holds `lower(documentId)` for documents made after
   2026-08-09, so a link could mint a new empty pad. A trashed pad, a Private pad of someone else,
   or a pad with no metadata row now drops out of the mail, and a failed metadata read defers it.
+- **A digest row reads the status of its own mail.** Each mail settles only its own queue rows. A
+  left-out document's rows read `skipped`, not `sent`, and a dead-lettered mail reads `failed`
+  even when another mail in the same digest was delivered. The admin `sent` count drops to match.
 - **Three link-metadata answers were wrong
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).**
   - An oEmbed reply with no title is a miss, so the next stage runs. Before, the host name

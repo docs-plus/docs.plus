@@ -14,9 +14,7 @@ const RESERVED_SLUGS = new Set([
   'unsubscribe',
   '404',
   '500',
-  'api',
-  '_next',
-  '.well-known'
+  'api'
 ])
 
 export const isReservedSlug = (slug: string | undefined | null): boolean => {

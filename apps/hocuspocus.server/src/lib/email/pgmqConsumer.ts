@@ -14,6 +14,7 @@ import type {
   NotificationEmailRequest,
   NotificationType
 } from '../../types/email.types'
+import { chatLink, type ChatSource } from '../chatLink'
 import { captureUnknown } from '../instrument'
 import { emailLogger } from '../logger'
 import { maskEmail } from '../maskEmail'
@@ -21,19 +22,18 @@ import { readPadLinkRows } from '../padLink'
 import { createPgmqConsumer, deterministicJobId } from '../pgmqConsumer'
 import { prisma } from '../prisma'
 import { getOwnerProfiles } from '../profiles'
-import { resolveChatEmailLink } from '../push/chatActionUrl'
 import { getRedisClient } from '../redis'
-import { type DigestDocumentMeta, enrichDigestDocuments } from './digestContentChanges'
+import { enrichDigestDocuments } from './digestContentChanges'
 import {
   buildDigestDocuments,
   CONTENT_CHANGE_TYPE,
   digestDocumentId,
+  type DigestDocumentMeta,
   type DigestRawNotification,
-  groupDigestDocuments,
   normaliseDigestFrequency
 } from './digestDocuments'
 import { readDigestGrouping, readDigestMaxKb } from './digestGrouping'
-import { decideDigestOutcome, parseLastVisitStamp, visibleDigestDocuments } from './digestMessage'
+import { parseLastVisitStamp, planDigestMails, visibleDigestDocuments } from './digestMessage'
 import { queueEmail } from './queue'
 import { resolveUnsubscribe, updateSupabaseEmailStatus } from './sender'
 
@@ -110,8 +110,10 @@ async function readDigestLastVisits(
 }
 
 /**
- * No single business id exists, so the BullMQ jobId is hashed from the
- * recipient, frequency, and the set of queue ids the digest covers.
+ * No single business id exists, so the BullMQ jobId is hashed from the recipient,
+ * frequency, document and the message's whole queue id list, never one mail's share.
+ * A server that settled every id on every mail hashed the same inputs, so a
+ * redelivery across the deploy dedupes.
  */
 async function processDigestMessage(
   client: SupabaseClient,
@@ -142,7 +144,11 @@ async function processDigestMessage(
     }
 
     // Pure and built before compute, so the enrichment fallback below still carries pad links.
-    const built = buildDigestDocuments(notifications, metaById, appUrl)
+    const { documents: built, queueIdsByDocument } = buildDigestDocuments(
+      notifications,
+      metaById,
+      appUrl
+    )
     let enriched: DigestDocument[] = built
     try {
       enriched = await enrichDigestDocuments(built, {
@@ -162,21 +168,25 @@ async function processDigestMessage(
       enriched = built
     }
 
-    const outcome = decideDigestOutcome({ documents: enriched, metaReadFailed })
+    const redis = getRedisClient()
+    const grouping = await readDigestGrouping(redis)
+    const plan = planDigestMails({
+      documents: enriched,
+      metaReadFailed,
+      grouping,
+      queueIds,
+      queueIdsByDocument
+    })
 
-    // A failed re-read is not an answer, so it must not look like one. Writing
-    // 'skipped' here acks the message, the carriers stay unread, and the 24-hour
-    // dedupe then suppresses the next fan-out. Returning false leaves the rows
-    // 'processing' and lets pgmq redeliver once Prisma recovers.
-    if (outcome.kind === 'defer') {
+    if (plan.kind === 'defer') {
       emailLogger.warn(
         { msgId, to: maskEmail(payload.recipient_email) },
-        'Digest deferred; re-read failed'
+        'Digest deferred; metadata read failed'
       )
       return false
     }
 
-    if (outcome.kind === 'skip') {
+    if (plan.kind === 'skip') {
       await Promise.all(
         queueIds.map((id) =>
           updateSupabaseEmailStatus({
@@ -190,15 +200,11 @@ async function processDigestMessage(
       return true
     }
 
-    const redis = getRedisClient()
-    const grouping = await readDigestGrouping(redis)
     const maxBytes = (await readDigestMaxKb(redis)) * 1024
-    const groups = groupDigestDocuments(outcome.documents, grouping)
     const queueKey = [...queueIds].sort().join(',')
-
     const footer = recipientId ? resolveUnsubscribe(recipientId, 'digest')?.footer : undefined
 
-    for (const documents of groups) {
+    for (const { documents, queueIds: mailQueueIds } of plan.mails) {
       const docKey = documents.map((document) => document.workspace_id || document.slug).join(',')
       const fitted = fitDigestDocuments(
         {
@@ -217,7 +223,7 @@ async function processDigestMessage(
         frequency,
         documents: fitted,
         period_end: now.toISOString(),
-        queue_ids: queueIds
+        queue_ids: mailQueueIds
       }
       const idempotencyJobId =
         grouping === 'aggregate'
@@ -230,16 +236,25 @@ async function processDigestMessage(
       )
     }
 
-    // The rows stay 'processing' until the email worker hears from the provider.
-    // Every mail carries every queue id, because the payload cannot map a row to
-    // a document. Any delivered mail settles them all, a left-out document's rows included.
+    // A mailed row stays 'processing' until the email worker hears from the provider.
+    // Settled after the loop, so a failed enqueue leaves these rows to the catch.
+    await Promise.all(
+      plan.leftOver.map((id) =>
+        updateSupabaseEmailStatus({
+          queue_id: id,
+          status: 'skipped',
+          error_message: 'Not in any digest mail'
+        })
+      )
+    )
     emailLogger.info(
       {
         msgId,
         grouping,
-        mails: groups.length,
+        mails: plan.mails.length,
+        skipped: plan.leftOver.length,
         to: maskEmail(payload.recipient_email),
-        notifications: (payload.notifications || []).length
+        notifications: notifications.length
       },
       'Digest email queued from pgmq'
     )
@@ -262,17 +277,17 @@ async function processDigestMessage(
 }
 
 /** A row queued before #647 names only its channel, so the document comes from there. */
-async function readChannelDocument(
+async function readChannelSource(
   client: SupabaseClient,
   channelId: string
-): Promise<string | null> {
+): Promise<ChatSource | null> {
   const { data, error } = await client
     .from('channels')
     .select('workspace_id')
     .eq('id', channelId)
     .maybeSingle()
   if (error) throw error
-  return data?.workspace_id ?? null
+  return { documentId: data?.workspace_id ?? null, messageId: null }
 }
 
 /** queue_id (the email_queue row id) is the stable BullMQ jobId. */
@@ -295,9 +310,9 @@ async function processNotificationMessage(
   }
 
   // A failed read is not an answer: leave the row 'processing' so pgmq redelivers.
-  let link: Awaited<ReturnType<typeof resolveChatEmailLink>>
+  let link: Awaited<ReturnType<typeof chatLink.forEmail>>
   try {
-    link = await resolveChatEmailLink(
+    link = await chatLink.forEmail(
       {
         recipient_id: payload.recipient_id || '',
         channel_id: payload.channel_id,
@@ -305,7 +320,7 @@ async function processNotificationMessage(
         message_id: payload.message_id
       },
       {
-        readChannelDocument: (channelId) => readChannelDocument(client, channelId),
+        readSource: () => readChannelSource(client, payload.channel_id || ''),
         readPadRow: async (documentId) => (await readPadLinkRows(prisma, [documentId]))[0] ?? null
       },
       config.email.appUrl
@@ -336,7 +351,6 @@ async function processNotificationMessage(
       sender_avatar_url: payload.sender_avatar_url || undefined,
       notification_type: (payload.notification_type as NotificationType) || 'message',
       message_preview: payload.message_preview || '',
-      channel_id: payload.channel_id || undefined,
       action_url: link.url
     }
 

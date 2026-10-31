@@ -9,12 +9,9 @@ import { resolveContentChangeAudience } from './contentChangeAudience'
 import { readOccupantUserIds } from './documentOccupancy'
 import { logger } from './logger'
 import { contentChangeFanoutTotal } from './metrics'
-import { padLink } from './padLink'
+import { padLink, readPadLinkRows } from './padLink'
 import { prisma } from './prisma'
 import { getServiceRoleClient } from './supabase'
-
-export type { ContentChangeAudience, ContentChangeMetadata } from './contentChangeAudience'
-export { resolveContentChangeAudience } from './contentChangeAudience'
 
 const fanoutLogger = logger.child({ service: 'content-change-fanout' })
 
@@ -43,10 +40,7 @@ export async function fanOutContentChange(params: FanOutContentChangeParams): Pr
       return
     }
 
-    const meta = await prisma.documentMetadata.findUnique({
-      where: { documentId },
-      select: { isPrivate: true, ownerId: true, deletedAt: true, slug: true }
-    })
+    const [meta] = await readPadLinkRows(prisma, [documentId])
     // A `Documents` row cannot exist without this one, so a miss is a purge race.
     if (!meta) {
       contentChangeFanoutTotal.inc({ outcome: 'no-metadata' })
@@ -87,7 +81,7 @@ export async function fanOutContentChange(params: FanOutContentChangeParams): Pr
       // Dormant in the digest: `compile_digest_emails` never selects it. The
       // push trigger does copy it into the push payload, and content_change
       // push is opt-in and off by default.
-      p_action_url: padLink({ kind: 'document', slug: meta.slug }, config.email.appUrl)
+      p_action_url: padLink(meta.slug, { kind: 'document' }, config.email.appUrl)
     })
 
     if (error) {

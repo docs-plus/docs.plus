@@ -666,6 +666,8 @@ begin
         -- Collect notification data for locked items (only unread)
         select jsonb_agg(
             jsonb_build_object(
+                -- The server settles each mail's own rows by this, not the whole list.
+                'queue_id', eq.id,
                 'notification_type', n.type,
                 'sender_name', coalesce(s.display_name, 'Someone'),
                 'sender_avatar_url', s.avatar_url,

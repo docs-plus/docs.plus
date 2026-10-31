@@ -1,4 +1,13 @@
-import type { FilterMode, PadChange, PadFacets, PadTarget, PadUrlContext, PadWrite } from './types'
+import type {
+  FilterMode,
+  PadChange,
+  PadFacets,
+  PadLinkContext,
+  PadTarget,
+  PadUrlContext,
+  PadWrite,
+  TrailOf
+} from './types'
 
 const slugOf = (pathname: string): string => pathname.split('/').filter(Boolean)[0] ?? ''
 
@@ -22,7 +31,12 @@ const termPattern = (term: string): RegExp | null => {
 }
 
 const encodeTerm = (term: string): string =>
-  encodeURIComponent(term.trim().toLowerCase().replace(/\s+/g, '-'))
+  encodeURIComponent(
+    term
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, '-')
+  )
 
 /** Old links carry `%20`. A malformed escape such as `%E0` throws, so it stays raw. */
 const decodeTerm = (segment: string): string => {
@@ -57,8 +71,8 @@ const setParams = (url: URL, params: Record<string, string | null | undefined>):
   }
 }
 
-const setHeading = (url: URL, headingId: string, ctx: PadUrlContext): void =>
-  setParams(url, { h: ctx.trailOf(headingId), id: headingId })
+const setHeading = (url: URL, headingId: string, trailOf?: TrailOf): void =>
+  setParams(url, { h: trailOf?.(headingId) || null, id: headingId })
 
 /** Drops `h` and `id` only when `id` names the closed room, so a plain heading link survives. */
 const stripChat = (url: URL, closedHeadingId: string | null): void => {
@@ -71,16 +85,17 @@ const stripChat = (url: URL, closedHeadingId: string | null): void => {
   }
 }
 
-function format(target: PadTarget, ctx: PadUrlContext, form: 'absolute' | 'path' = 'absolute') {
-  const slug =
-    (target.kind === 'document' ? target.slug : undefined) ??
-    slugOf(new URL(ctx.live, ctx.origin).pathname)
-  const url = new URL(slug ? `/${slug}` : '/', ctx.origin)
-  if (slug && target.kind === 'heading') setHeading(url, target.headingId, ctx)
+/** `URL` needs a base to parse against; the path form reads none of it. */
+const PATH_BASE = 'http://pad.invalid'
+
+function format(target: PadTarget, ctx: PadLinkContext, form: 'absolute' | 'path' = 'absolute') {
+  const slug = (target.kind === 'document' ? target.slug : undefined) ?? ctx.slug
+  const url = new URL(slug ? `/${slug}` : '/', ctx.origin ?? PATH_BASE)
+  if (slug && target.kind === 'heading') setHeading(url, target.headingId, ctx.trailOf)
   if (slug && target.kind === 'chat') {
     setParams(url, { chatroom: target.linkId, msg_id: target.messageId })
   }
-  return form === 'path' ? pathOf(url) : url.href
+  return form === 'path' || !ctx.origin ? pathOf(url) : url.href
 }
 
 function plan(change: PadChange, ctx: PadUrlContext): PadWrite | null {
@@ -92,7 +107,7 @@ function plan(change: PadChange, ctx: PadUrlContext): PadWrite | null {
 
   switch (change.kind) {
     case 'heading':
-      setHeading(url, change.headingId, ctx)
+      setHeading(url, change.headingId, ctx.trailOf)
       writer = change.entry === 'push' ? 'pushBlank' : 'keepState'
       break
     case 'focus': {
@@ -173,14 +188,7 @@ function parse(href: string, origin: string): PadFacets | null {
 }
 
 /**
- * The `?h=` trail as people read it. Only `%3E` is decoded: a `%20` or `%26` turned raw
- * would end or split the link in many paste targets. Display text only, never an href.
- */
-const readable = (href: string): string => href.replace(/%3E/gi, '>')
-
-/**
  * The pure core of Pad URL: every pad address is formatted, planned or parsed here.
- * Callers use `padUrl` (`@services/padUrl`). A module that must not load the store, or must
- * give the same answer on the server, uses this directly.
+ * The webapp calls it through `padUrl`; the server through `padLink`.
  */
-export const padUrlCore = { format, plan, parse, termPattern, readable }
+export const padUrlCore = { format, plan, parse, termPattern }

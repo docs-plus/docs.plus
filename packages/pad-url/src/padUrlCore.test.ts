@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 
-import type { PadUrlContext } from './types'
+import type { PadLinkContext, PadUrlContext } from './types'
 import { padUrlCore } from './padUrlCore'
 
 const ORIGIN = 'https://app.test'
@@ -12,33 +12,41 @@ const ctx = (live: string, trailOf = (id: string) => TRAILS[id] ?? null): PadUrl
   trailOf
 })
 
+const link = (slug: string, trailOf = (id: string) => TRAILS[id] ?? null) =>
+  ({ origin: ORIGIN, slug, trailOf }) satisfies PadLinkContext
+
 const plan = (live: string, change: Parameters<typeof padUrlCore.plan>[0]) =>
   padUrlCore.plan(change, ctx(live))
 
 describe('padUrlCore.format', () => {
-  it('builds a heading link from the pad base, with no live filter, chat or hash', () => {
-    const live = ctx('/doc/apple?chatroom=c1&mode=and#history')
-    expect(padUrlCore.format({ kind: 'heading', headingId: 'h-setup' }, live)).toBe(
+  it('builds a heading link from the pad base, with its trail', () => {
+    expect(padUrlCore.format({ kind: 'heading', headingId: 'h-setup' }, link('doc'))).toBe(
       `${ORIGIN}/doc?h=methods%3Esetup&id=h-setup`
     )
   })
 
   it('writes id only when there is no trail', () => {
-    expect(padUrlCore.format({ kind: 'heading', headingId: 'x' }, ctx('/doc'))).toBe(
+    expect(padUrlCore.format({ kind: 'heading', headingId: 'x' }, link('doc'))).toBe(
       `${ORIGIN}/doc?id=x`
     )
+    expect(
+      padUrlCore.format(
+        { kind: 'heading', headingId: 'x' },
+        link('doc', () => '')
+      )
+    ).toBe(`${ORIGIN}/doc?id=x`)
   })
 
   it('writes chatroom before msg_id, and a root-relative form for stored links', () => {
-    const live = ctx('/doc/apple?h=a&id=b')
-    expect(padUrlCore.format({ kind: 'chat', linkId: 'c1', messageId: 'm1' }, live)).toBe(
+    const base = link('doc')
+    expect(padUrlCore.format({ kind: 'chat', linkId: 'c1', messageId: 'm1' }, base)).toBe(
       `${ORIGIN}/doc?chatroom=c1&msg_id=m1`
     )
-    expect(padUrlCore.format({ kind: 'chat', linkId: 'c1' }, live, 'path')).toBe('/doc?chatroom=c1')
+    expect(padUrlCore.format({ kind: 'chat', linkId: 'c1' }, base, 'path')).toBe('/doc?chatroom=c1')
   })
 
   it('takes an explicit document slug', () => {
-    expect(padUrlCore.format({ kind: 'document', slug: 'other' }, ctx('/doc'))).toBe(
+    expect(padUrlCore.format({ kind: 'document', slug: 'other' }, link('doc'))).toBe(
       `${ORIGIN}/other`
     )
   })
@@ -118,7 +126,7 @@ describe('padUrlCore.plan', () => {
   })
 
   it('writes nothing off a pad', () => {
-    expect(plan('/', { kind: 'filterReset' })).toBeNull()
+    expect(plan('/', { kind: 'filterAdd', term: 'x' })).toBeNull()
   })
 })
 
@@ -148,14 +156,5 @@ describe('padUrlCore.parse', () => {
     expect(pad).toMatchObject({ slug: 'doc', headingId: 'h1', mode: 'and', hash: '#history' })
     expect(padUrlCore.parse('https://other.test/doc', ORIGIN)?.sameOrigin).toBe(false)
     expect(padUrlCore.parse('http://[', ORIGIN)).toBeNull()
-  })
-})
-
-describe('padUrlCore.readable', () => {
-  it('shows the > trail and keeps every escape that would end or split a pasted link', () => {
-    expect(padUrlCore.readable(`${ORIGIN}/doc?h=a%3Eb%3ec&id=x`)).toBe(`${ORIGIN}/doc?h=a>b>c&id=x`)
-    expect(padUrlCore.readable(`${ORIGIN}/doc/a%20b?q=%26%3D%23`)).toBe(
-      `${ORIGIN}/doc/a%20b?q=%26%3D%23`
-    )
   })
 })

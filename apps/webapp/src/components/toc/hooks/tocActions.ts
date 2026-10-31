@@ -54,10 +54,7 @@ export const tocActions = {
   },
 
   /** Never sets focusEditor. */
-  navigateToHeading(
-    headingId: string,
-    options?: { openChat?: boolean; updateUrl?: boolean }
-  ): void {
+  navigateToHeading(headingId: string, options?: { openChat?: boolean }): void {
     if (!editorOrNull()) return
     navigateToHeadingAction(headingId, options)
   },

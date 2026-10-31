@@ -6,7 +6,8 @@
   "type": "module",
   "main": "index.ts",
   "scripts": {
-    "test": "bun test"
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "bun-types": "catalog:"

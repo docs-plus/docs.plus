@@ -92,11 +92,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   Before, it opened the preview, like a plain click.
 
 - Heading slugs in a `?h=` trail use only `a-z`, `0-9`, `.` and `-`, and drop apostrophes, so
-  "What's new" reads `whats-new`. The trail still joins slugs with `>`.
-- Filter and Focus section terms in the path are lowercase, with `-` for a space:
-  `/demo/draw-a-diagram-with-text`. The filter treats any run of spaces, tabs or hyphens as one
+  "What's new" reads `whats-new`. The trail still joins slugs with `>`. A pad with no title, or a
+  heading the pad no longer holds, gives a link with `id=` only and no empty `h=`.
+- Filter and Focus section terms in the path are lowercase, and any run of spaces and hyphens is
+  one `-`: `/demo/draw-a-diagram-with-text`, and "pre - war" is `/demo/pre-war`. The filter treats any run of spaces, tabs or hyphens as one
   gap, so an old `%20` link still filters, and `customer-research` also matches "customer
-  research". Filter chips show the path form.
+  research". A new link's chips show the path form; an old `%20` link shows the decoded words until the next filter change rewrites it.
 - TOC Copy link writes two clipboard formats. Plain text keeps the encoded link with `%3E`, because
   some apps end a link at a raw `>`. A rich paste, as in Gmail or Google Docs, shows the trail with
   `>` and links to the full address.

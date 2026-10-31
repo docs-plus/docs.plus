@@ -11,7 +11,12 @@ import type {
 } from '../../types/email.types'
 import { padLink } from '../padLink'
 import { sanitizePlainText } from '../sanitizePlainText'
-import type { DigestDocumentMeta } from './digestContentChanges'
+
+/** The two human fields behind a documentId. `workspaces` holds neither. */
+export interface DigestDocumentMeta {
+  title: string | null
+  slug: string
+}
 
 /** notification_category value written by notify_document_content_change. */
 export const CONTENT_CHANGE_TYPE = 'content_change'
@@ -21,6 +26,8 @@ export const CONTENT_CHANGE_TYPE = 'content_change'
  * and `workspace_slug`, left untyped on purpose: both hold the raw or lowercased id.
  */
 export interface DigestRawNotification {
+  /** The email_queue row id. Absent on a message from the SQL before per-mail settling. */
+  queue_id?: string
   notification_type: string
   sender_name: string
   sender_avatar_url: string | null
@@ -41,6 +48,12 @@ export function digestDocumentId(n: DigestRawNotification): string | null {
     : n.workspace_id
 }
 
+export interface BuiltDigest {
+  documents: DigestDocument[]
+  /** Each document's own email_queue ids, by documentId. Null when a notification has none. */
+  queueIdsByDocument: Map<string, string[]> | null
+}
+
 /**
  * Leaves out every document the reader cannot open: `visible` holds only those, from
  * `visibleDigestDocuments`. Links use the pad slug, never `workspace_slug`, which is a
@@ -50,13 +63,14 @@ export function buildDigestDocuments(
   notifications: DigestRawNotification[],
   visible: Map<string, DigestDocumentMeta>,
   appUrl: string
-): DigestDocument[] {
+): BuiltDigest {
   const documents = new Map<
     string,
     {
       meta: DigestDocumentMeta
       contentChanges?: DigestContentChanges
       channels: Map<string, Omit<DigestChannel, 'url'>>
+      queueIds: string[]
     }
   >()
 
@@ -65,8 +79,11 @@ export function buildDigestDocuments(
     const meta = documentId ? visible.get(documentId) : undefined
     if (!documentId || !meta) continue
 
-    if (!documents.has(documentId)) documents.set(documentId, { meta, channels: new Map() })
+    if (!documents.has(documentId)) {
+      documents.set(documentId, { meta, channels: new Map(), queueIds: [] })
+    }
     const doc = documents.get(documentId)!
+    if (n.queue_id) doc.queueIds.push(n.queue_id)
 
     if (n.notification_type === CONTENT_CHANGE_TYPE) {
       // Parse, not string compare: carrier timestamps can differ in fractional
@@ -106,9 +123,9 @@ export function buildDigestDocuments(
     })
   }
 
-  return Array.from(documents.entries()).map(([documentId, doc]) => {
+  const built = Array.from(documents.entries()).map(([documentId, doc]): DigestDocument => {
     const { slug } = doc.meta
-    const url = padLink({ kind: 'document', slug }, appUrl)
+    const url = padLink(slug, { kind: 'document' }, appUrl)
     return {
       // A blank title is the same failure as the raw id, so it falls through to the slug.
       name: doc.meta.title?.trim() || slug,
@@ -116,7 +133,7 @@ export function buildDigestDocuments(
       url,
       workspace_id: documentId,
       channels: Array.from(doc.channels.values()).map((ch): DigestChannel => {
-        const channelUrl = ch.id ? padLink({ kind: 'chat', slug, linkId: ch.id }, appUrl) : url
+        const channelUrl = ch.id ? padLink(slug, { kind: 'chat', linkId: ch.id }, appUrl) : url
         return {
           ...ch,
           url: channelUrl,
@@ -126,6 +143,14 @@ export function buildDigestDocuments(
       ...(doc.contentChanges ? { content_changes: doc.contentChanges } : {})
     }
   })
+
+  const perDocument = notifications.every((n) => n.queue_id)
+  return {
+    documents: built,
+    queueIdsByDocument: perDocument
+      ? new Map([...documents].map(([documentId, doc]) => [documentId, doc.queueIds]))
+      : null
+  }
 }
 
 export type DigestGrouping = 'document' | 'aggregate'
@@ -137,6 +162,25 @@ export function groupDigestDocuments(
 ): DigestDocument[][] {
   if (grouping === 'aggregate' || documents.length <= 1) return [documents]
   return documents.map((document) => [document])
+}
+
+/**
+ * The email_queue ids each mail settles, and the ids no mail carries. A row of a
+ * document that was left out, emptied, or has no live channel lands in `leftOver`.
+ * A message without per-notification ids keeps every id on every mail.
+ */
+export function splitDigestQueueIds(
+  groups: DigestDocument[][],
+  allQueueIds: string[],
+  queueIdsByDocument: Map<string, string[]> | null
+): { perMail: string[][]; leftOver: string[] } {
+  if (!queueIdsByDocument) return { perMail: groups.map(() => allQueueIds), leftOver: [] }
+
+  const perMail = groups.map((documents) =>
+    documents.flatMap((doc) => queueIdsByDocument.get(doc.workspace_id ?? '') ?? [])
+  )
+  const mailed = new Set(perMail.flat())
+  return { perMail, leftOver: allQueueIds.filter((id) => !mailed.has(id)) }
 }
 
 /** The payload frequency is the user's preference, not the queue type. */

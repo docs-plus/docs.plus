@@ -7,7 +7,7 @@
 import { buildDigestEmail, countDigestItems, fitDigestDocuments } from '@docs.plus/email-templates'
 import { describe, expect, it } from 'bun:test'
 
-import { resolveContentChangeAudience } from '../../src/lib/contentChangeFanout'
+import { resolveContentChangeAudience } from '../../src/lib/contentChangeAudience'
 import { enrichDigestDocuments, resolveDigestSince } from '../../src/lib/email/digestContentChanges'
 import { buildDigestDocuments, groupDigestDocuments } from '../../src/lib/email/digestDocuments'
 import type { ComputeOutcome, SectionNode } from '../../src/modules/document-changes/types'
@@ -196,7 +196,7 @@ describe('buildDigestDocuments', () => {
   it('names a document by its slug when the title is null or blank', () => {
     for (const title of [null, '']) {
       const visible = new Map([[DOC_ID, { title, slug: 'api-docs' }]])
-      const [doc] = buildDigestDocuments([carrier], visible, 'https://docs.plus')
+      const [doc] = buildDigestDocuments([carrier], visible, 'https://docs.plus').documents
       expect(doc!.name).toBe('api-docs')
     }
   })

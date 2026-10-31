@@ -121,11 +121,7 @@ export function buildEmailMessage(data: EmailJobData): EmailMessage {
 
       // The consumer builds the pad link. A job queued before it did opens Home,
       // never `?chatroom=` on Home, which opens no chat.
-      const actionUrl = !payload.action_url
-        ? `${appUrl}/`
-        : payload.action_url.startsWith('http')
-          ? payload.action_url
-          : `${appUrl}${payload.action_url}`
+      const actionUrl = payload.action_url || `${appUrl}/`
 
       const unsub = userId
         ? resolveUnsubscribe(userId, ACTION_FOR_TYPE[payload.notification_type], nowSeconds)

@@ -43,7 +43,7 @@ export const sendNewDocumentNotification = async (
     return false
   }
 
-  const documentUrl = padLink({ kind: 'document', slug: params.slug }, config.email.appUrl)
+  const documentUrl = padLink(params.slug, { kind: 'document' }, config.email.appUrl)
   const creatorDisplay = params.creatorName || params.creatorEmail || 'Anonymous'
 
   const html = renderNewDocumentEmail({

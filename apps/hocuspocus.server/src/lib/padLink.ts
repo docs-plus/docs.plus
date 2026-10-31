@@ -7,16 +7,12 @@ import { type PadTarget, padUrlCore } from '@docs.plus/pad-url'
 import type { PrismaClient } from '../generated/prisma/client'
 import { type ContentChangeMetadata, resolveContentChangeAudience } from './contentChangeAudience'
 
-/** `format` needs an origin to parse against; only the path form is read from it. */
-const PATH_BASE = 'http://pad.invalid'
-
 /**
  * Prefixing `appUrl` to the path keeps any path inside `APP_URL`. With no `appUrl` the
  * link is relative, so the push service worker resolves it against its own scope.
  */
-export function padLink(target: PadTarget & { slug: string }, appUrl = ''): string {
-  const ctx = { origin: PATH_BASE, live: `/${target.slug}`, trailOf: () => null }
-  return `${appUrl}${padUrlCore.format(target, ctx, 'path')}`
+export function padLink(slug: string, target: PadTarget, appUrl = ''): string {
+  return `${appUrl}${padUrlCore.format(target, { slug }, 'path')}`
 }
 
 /** The columns a link needs: the slug, and the audience fields that decide who may open it. */

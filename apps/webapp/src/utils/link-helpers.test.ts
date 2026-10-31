@@ -1,8 +1,3 @@
-/**
- * @jest-environment jsdom
- * @jest-environment-options { "url": "https://app.test/doc/abc" }
- */
-
 import { getSiteIconUrl } from './link-helpers'
 
 describe('getSiteIconUrl', () => {

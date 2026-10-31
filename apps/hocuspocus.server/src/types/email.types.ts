@@ -36,7 +36,6 @@ export interface NotificationEmailRequest {
 
   document_name?: string
   channel_name?: string
-  channel_id?: string
   action_url?: string
 
   created_at?: string

@@ -83,7 +83,7 @@ export interface DigestDocument {
   name: string
   slug: string
   url: string
-  /** Exact-case documentId. Absent only for the synthetic `unknown` bucket. */
+  /** Exact-case documentId. Absent only on `/send-digest` documents. */
   workspace_id?: string
   channels: DigestChannel[]
   /** Absent on every legacy payload; only a content_change carrier seeds it. */

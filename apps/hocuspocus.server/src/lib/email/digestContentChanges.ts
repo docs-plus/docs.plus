@@ -11,12 +11,6 @@ import { padLink } from '../padLink'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-/** The two human fields behind a documentId. `workspaces` holds neither. */
-export interface DigestDocumentMeta {
-  title: string | null
-  slug: string
-}
-
 /** Last left for every document in one digest. A missing id means no visit. */
 export type ReadDigestLastVisits = (
   recipientId: string,
@@ -65,7 +59,6 @@ export function resolveDigestSince(
  * only under a live heading; a removed heading's chat keeps its channel row.
  * Chats match by heading_id, because a new channel's id is not its toc-id (#402).
  * A nameless changed row is kept, because a changed heading is never dropped.
- * It links to the document, and `walkDigest` names it.
  */
 function placeSections(
   tree: SectionNode[],
@@ -90,9 +83,7 @@ function placeSections(
       if (changed || chats.length > 0) {
         sections.push({
           text: node.text,
-          url: live
-            ? padLink({ kind: 'heading', slug: doc.slug, headingId: live }, appUrl)
-            : doc.url,
+          url: live ? padLink(doc.slug, { kind: 'heading', headingId: live }, appUrl) : doc.url,
           status: node.status,
           ...(node.previousLevel !== undefined ? { previousLevel: node.previousLevel } : {}),
           ...(live ? { tocId: live } : {}),
@@ -164,9 +155,8 @@ async function withSections(
 }
 
 /**
- * Compute runs only where a carrier already seeded a block, so this step is safe
- * on either side of the privacy re-read and cannot defeat
- * `content_email_muted_at`. An invented block would break both.
+ * Compute runs only where a carrier seeded a block, on a document the reader may
+ * open, so it cannot defeat `content_email_muted_at`.
  */
 export async function enrichDigestDocuments(
   documents: DigestDocument[],

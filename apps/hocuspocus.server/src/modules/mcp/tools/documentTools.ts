@@ -225,7 +225,7 @@ export const registerDocumentTools = (
       })
       if (outcome.status === 'invalid-content') return toolError(refusedText(outcome.detail))
       const { slug } = outcome.document
-      const url = padLink({ kind: 'document', slug }, deps.appUrl)
+      const url = padLink(slug, { kind: 'document' }, deps.appUrl)
       return reply(`Created "${slug}": ${url}`, { slug, title: name, url, version: 1 })
     })
   )

@@ -1,5 +1,7 @@
 import DOMPurify from 'dompurify'
 
+import { escapeHtml } from './escapeHtml'
+
 const MESSAGE_HTML_PURIFY = {
   ALLOWED_TAGS: [
     'p',
@@ -22,9 +24,6 @@ const MESSAGE_HTML_PURIFY = {
 
 const TRAILING_EMPTY_P = /<p><\/p>$|<p\s*\/>$/g
 
-const escapeHtmlText = (text: string) =>
-  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-
 const purifyMessageHtml = (html: string) =>
   DOMPurify.sanitize(html, MESSAGE_HTML_PURIFY).replace(TRAILING_EMPTY_P, '')
 
@@ -33,7 +32,7 @@ const sanitizePlainText = (text: string, maxLen: number) =>
 
 /** Legacy rows: autolink plain `messages.content` when `html` is absent. */
 export const linkifyPlainMessageHtml = (text: string) =>
-  escapeHtmlText(text).replace(
+  escapeHtml(text).replace(
     /(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/gi,
     '<a href="$1" rel="noopener noreferrer nofollow">$1</a>'
   )
