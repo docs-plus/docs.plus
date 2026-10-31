@@ -2,10 +2,9 @@ import '@docs.plus/extension-mermaid/styles.css'
 
 import {
   Mermaid,
+  mermaidNodeView,
   type MermaidOptions,
-  type MermaidView,
-  mermaidNodeView
-} from '@docs.plus/extension-mermaid'
+  type MermaidView} from '@docs.plus/extension-mermaid'
 import { setupPlayground } from '@docs.plus/playground/setup'
 import { Editor, Extension, type Extensions } from '@tiptap/core'
 import { CodeBlock } from '@tiptap/extension-code-block'
