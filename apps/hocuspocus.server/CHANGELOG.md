@@ -114,6 +114,9 @@ Before you deploy this commit, check that `.env.production` holds both `VAPID_PU
   Their `jsdom`, `re2`, `chrono-node` and `mime@4` copies leave the server tree with them. The
   pin existed because those helpers crashed REST at boot on Bun. `entities` 7.0.1 now decodes
   HTML.
+- `POST /api/email/send-digest` ([#661](https://github.com/docs-plus/docs.plus/issues/661)). It
+  was a service-role route, and nothing called it. Digests send only through the pgmq queue.
+  `DigestDocument.workspace_id` is now required.
 
 ### Fixed
 
@@ -128,6 +131,8 @@ Before you deploy this commit, check that `.env.production` holds both `VAPID_PU
 - **A digest row reads the status of its own mail.** Each mail settles only its own queue rows. A
   left-out document's rows read `skipped`, not `sent`, and a dead-lettered mail reads `failed`
   even when another mail in the same digest was delivered. The admin `sent` count drops to match.
+  When a digest fails partway, only rows no queued mail carries read `failed`. A digest that
+  defers or skips no longer reads the grouping and size settings from Redis.
 - **Three link-metadata answers were wrong
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).**
   - An oEmbed reply with no title is a miss, so the next stage runs. Before, the host name

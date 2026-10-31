@@ -21,12 +21,10 @@ import { verifyServiceRole } from '../lib/auth'
 import { emailGateway } from '../lib/email'
 import { recordEmailBounce } from '../lib/email/bounces'
 import { emailLogger } from '../lib/logger'
-import { padLink } from '../lib/padLink'
 import { getServiceRoleClient } from '../lib/supabase'
 import { type UnsubscribePayload, verifyUnsubscribeToken } from '../lib/unsubscribeToken'
 import {
   emailBounceSchema,
-  sendDigestEmailSchema,
   sendGenericEmailSchema,
   validateEmailBody
 } from '../schemas/email.schema'
@@ -64,45 +62,6 @@ emailRouter.post(
       return c.json({ success: false, error: result.error }, 500)
     } catch (err) {
       emailLogger.error({ err }, 'Error processing generic email request')
-      return c.json({ error: 'Internal server error' }, 500)
-    }
-  }
-)
-
-/** Service-role route; no caller in this repo. */
-emailRouter.post(
-  '/send-digest',
-  zValidator('json', sendDigestEmailSchema, houseEnvelopeHook),
-  async (c) => {
-    const authHeader = c.req.header('Authorization')
-    if (!verifyServiceRole(authHeader)) {
-      return c.json({ error: 'Unauthorized' }, 401)
-    }
-
-    try {
-      const payload = c.req.valid('json')
-
-      const result = await emailGateway.sendDigestEmail({
-        to: payload.to,
-        recipient_name: payload.user_name || 'User',
-        recipient_id: 'api-request', // Not a real user, just API call
-        frequency: payload.frequency,
-        documents: payload.documents.map((doc): DigestDocument => ({
-          name: doc.title || doc.slug,
-          slug: doc.slug,
-          url: padLink(doc.slug, { kind: 'document' }, config.email.appUrl),
-          channels: [] // Simplified - no channel breakdown for API-triggered digests
-        })),
-        period_end: new Date().toISOString()
-      })
-
-      if (result.success) {
-        return c.json({ success: true, message_id: result.message_id })
-      }
-
-      return c.json({ success: false, error: result.error }, 500)
-    } catch (err) {
-      emailLogger.error({ err }, 'Error processing digest email request')
       return c.json({ error: 'Internal server error' }, 500)
     }
   }

@@ -41,10 +41,17 @@ export function parseLastVisitStamp(raw: string | null | undefined): Date | null
   return Number.isNaN(at.getTime()) ? null : at
 }
 
-type DigestOutcome =
+/** `defer` leaves the rows `processing` so pgmq redelivers; `skip` acks them. */
+export type DigestOutcome =
   { kind: 'defer' } | { kind: 'skip' } | { kind: 'send'; documents: DigestDocument[] }
 
-function decideDigestOutcome(input: DigestPlanInput): DigestOutcome {
+/** Needs no setting, so the defer and skip arms answer before any Redis read. */
+export function decideDigestOutcome(input: {
+  /** Built from `visibleDigestDocuments`, then enriched; empty when the read failed. */
+  documents: DigestDocument[]
+  /** The metadata read threw, so no document has a slug or an audience answer. */
+  metaReadFailed: boolean
+}): DigestOutcome {
   // Ahead of the empty arm, and that order is the rule. A failed read leaves every
   // document out, so the digest lands here reading empty. Acking it marks the
   // carriers read, and the 24-hour dedupe then eats the next fan-out.
@@ -61,42 +68,31 @@ function decideDigestOutcome(input: DigestPlanInput): DigestOutcome {
   return { kind: 'send', documents }
 }
 
-export interface DigestPlanInput {
-  /** Built from `visibleDigestDocuments`, then enriched; empty when the read failed. */
-  documents: DigestDocument[]
-  /** The metadata read threw, so no document has a slug or an audience answer. */
-  metaReadFailed: boolean
-  grouping: DigestGrouping
-  /** The message's whole queue id list. */
-  queueIds: string[]
-  /** From `buildDigestDocuments`; null when a notification has no queue id. */
-  queueIdsByDocument: Map<string, string[]> | null
-}
-
 /** One mail: its documents and the email_queue rows it settles. */
 export interface DigestMail {
   documents: DigestDocument[]
   queueIds: string[]
 }
 
-/** `defer` leaves the rows `processing` so pgmq redelivers; `skip` acks them. */
-export type DigestPlan =
-  { kind: 'defer' } | { kind: 'skip' } | { kind: 'send'; mails: DigestMail[]; leftOver: string[] }
-
-/** The whole decision for one digest message. `leftOver` rows are in no mail and settle `skipped`. */
-export function planDigestMails(input: DigestPlanInput): DigestPlan {
-  const outcome = decideDigestOutcome(input)
-  if (outcome.kind !== 'send') return outcome
-
-  const groups = groupDigestDocuments(outcome.documents, input.grouping)
+/** The mails a `send` outcome makes. `leftOver` rows are in no mail and settle `skipped`. */
+export function planDigestMails(
+  documents: DigestDocument[],
+  input: {
+    grouping: DigestGrouping
+    /** The message's whole queue id list. */
+    queueIds: string[]
+    /** From `buildDigestDocuments`; null when a notification has no queue id. */
+    queueIdsByDocument: Map<string, string[]> | null
+  }
+): { mails: DigestMail[]; leftOver: string[] } {
+  const groups = groupDigestDocuments(documents, input.grouping)
   const { perMail, leftOver } = splitDigestQueueIds(
     groups,
     input.queueIds,
     input.queueIdsByDocument
   )
   return {
-    kind: 'send',
-    mails: groups.map((documents, index) => ({ documents, queueIds: perMail[index] })),
+    mails: groups.map((group, index) => ({ documents: group, queueIds: perMail[index] })),
     leftOver
   }
 }

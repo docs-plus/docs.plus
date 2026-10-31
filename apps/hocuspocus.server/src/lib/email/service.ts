@@ -5,7 +5,6 @@
 
 import { config } from '../../config/env'
 import type {
-  DigestEmailRequest,
   EmailGatewayHealth,
   EmailJobData,
   EmailResult,
@@ -94,10 +93,6 @@ export class EmailGatewayService extends NotificationGatewayBase {
       { type: 'notification', payload: request, created_at: new Date().toISOString() },
       request.queue_id
     )
-  }
-
-  sendDigestEmail(request: DigestEmailRequest): Promise<EmailResult> {
-    return this.send({ type: 'digest', payload: request, created_at: new Date().toISOString() })
   }
 
   sendGenericEmail(request: GenericEmailRequest): Promise<EmailResult> {

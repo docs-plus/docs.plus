@@ -2,7 +2,12 @@ import { describe, expect, test } from 'bun:test'
 
 import type { PadLinkRow } from '../../padLink'
 import { buildDigestDocuments, type DigestRawNotification } from '../digestDocuments'
-import { parseLastVisitStamp, planDigestMails, visibleDigestDocuments } from '../digestMessage'
+import {
+  decideDigestOutcome,
+  parseLastVisitStamp,
+  planDigestMails,
+  visibleDigestDocuments
+} from '../digestMessage'
 
 const OWNER = 'owner-uuid'
 const STRANGER = 'stranger-uuid'
@@ -89,23 +94,17 @@ const chat = (over: Partial<DigestRawNotification> = {}): DigestRawNotification 
 const carrier = (documentId: string): DigestRawNotification =>
   chat({ notification_type: 'content_change', channel_id: documentId, workspace_id: documentId })
 
-/** Build then plan, as `processDigestMessage` does, with the real privacy gate. */
+/** Build then decide, as `processDigestMessage` does, with the real privacy gate. */
 const digest = (notifications: DigestRawNotification[], rows: PadLinkRow[], reader = STRANGER) => {
   const built = buildDigestDocuments(notifications, visibleDigestDocuments(rows, reader), APP)
-  return planDigestMails({
-    documents: built.documents,
-    metaReadFailed: false,
-    grouping: 'aggregate',
-    queueIds: [],
-    queueIdsByDocument: built.queueIdsByDocument
-  })
+  return decideDigestOutcome({ documents: built.documents, metaReadFailed: false })
 }
 
 describe('digest links and leave-out', () => {
   test('every link carries the pad slug, never workspace_slug', () => {
-    const plan = digest([chat()], [row()])
-    if (plan.kind !== 'send') throw new Error(`expected send, got ${plan.kind}`)
-    const [doc] = plan.mails[0].documents
+    const outcome = digest([chat()], [row()])
+    if (outcome.kind !== 'send') throw new Error(`expected send, got ${outcome.kind}`)
+    const [doc] = outcome.documents
     expect(doc.url).toBe('https://docs.plus/quarterly-plan')
     expect(doc.channels[0].url).toBe('https://docs.plus/quarterly-plan?chatroom=ch1')
     expect(doc.channels[0].notifications[0].action_url).toBe(
@@ -114,12 +113,12 @@ describe('digest links and leave-out', () => {
   })
 
   test('a document the reader cannot open leaves out, chat and block alike', () => {
-    const plan = digest(
+    const outcome = digest(
       [chat(), carrier('Doc1'), chat({ workspace_id: 'Doc2', channel_id: 'ch2' })],
       [row({ isPrivate: true }), row({ documentId: 'Doc2', slug: 'notes' })]
     )
-    if (plan.kind !== 'send') throw new Error(`expected send, got ${plan.kind}`)
-    expect(plan.mails[0].documents.map((doc) => doc.workspace_id)).toEqual(['Doc2'])
+    if (outcome.kind !== 'send') throw new Error(`expected send, got ${outcome.kind}`)
+    expect(outcome.documents.map((doc) => doc.workspace_id)).toEqual(['Doc2'])
   })
 
   test('a digest of only unopenable documents is skipped, so its rows settle', () => {
@@ -132,18 +131,12 @@ describe('digest links and leave-out', () => {
   })
 })
 
-describe('planDigestMails', () => {
+describe('decideDigestOutcome', () => {
   test('the defer arm runs ahead of the empty arm', () => {
     // Acking an empty read marks the carriers read, and the dedupe eats the next fan-out.
     const built = buildDigestDocuments([chat(), carrier('Doc1')], new Map(), APP)
-    const plan = planDigestMails({
-      documents: built.documents,
-      metaReadFailed: true,
-      grouping: 'document',
-      queueIds: ['q1'],
-      queueIdsByDocument: built.queueIdsByDocument
-    })
-    expect(plan.kind).toBe('defer')
+    const outcome = decideDigestOutcome({ documents: built.documents, metaReadFailed: true })
+    expect(outcome.kind).toBe('defer')
   })
 })
 
@@ -154,14 +147,13 @@ const mailQueueIds = (notifications: DigestRawNotification[], rows: PadLinkRow[]
   const documents = built.documents.map((doc) =>
     doc.workspace_id === 'Doc3' ? { ...doc, content_changes: undefined } : doc
   )
-  const plan = planDigestMails({
-    documents,
-    metaReadFailed: false,
+  const outcome = decideDigestOutcome({ documents, metaReadFailed: false })
+  if (outcome.kind !== 'send') throw new Error(`expected send, got ${outcome.kind}`)
+  const plan = planDigestMails(outcome.documents, {
     grouping: 'document',
     queueIds: ['q1', 'q2', 'q3', 'q4', 'q5', 'q6'],
     queueIdsByDocument: built.queueIdsByDocument
   })
-  if (plan.kind !== 'send') throw new Error(`expected send, got ${plan.kind}`)
   return { perMail: plan.mails.map((mail) => mail.queueIds), leftOver: plan.leftOver }
 }
 

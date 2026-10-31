@@ -2,7 +2,6 @@ import { z } from 'zod'
 
 import {
   emailBounceSchema,
-  sendDigestEmailSchema,
   sendGenericEmailSchema,
   validateEmailBody
 } from '../../../../schemas/email.schema'
@@ -53,22 +52,6 @@ export const emailPaths: OpenApiPaths = {
       requestBody: {
         required: true,
         content: { 'application/json': { schema: toJsonSchema(sendGenericEmailSchema) } }
-      },
-      responses: {
-        '200': jsonOk('Queued or sent.', sendResult()),
-        ...serviceRoleErrors
-      }
-    }
-  },
-  '/api/email/send-digest': {
-    post: {
-      operationId: 'sendDigestEmail',
-      summary: 'Send a daily or weekly digest',
-      tags,
-      security,
-      requestBody: {
-        required: true,
-        content: { 'application/json': { schema: toJsonSchema(sendDigestEmailSchema) } }
       },
       responses: {
         '200': jsonOk('Queued or sent.', sendResult()),

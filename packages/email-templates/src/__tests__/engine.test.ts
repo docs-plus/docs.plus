@@ -31,6 +31,7 @@ const DIGEST_PARAMS = {
     {
       name: 'API Documentation',
       slug: 'api-docs',
+      workspace_id: 'api-docs-id',
       url: 'https://docs.plus/api-docs',
       channels: [
         {
@@ -253,6 +254,7 @@ describe('buildDigestEmail', () => {
       {
         name: 'Pad',
         slug: 'pad',
+        workspace_id: 'pad-id',
         url: 'https://docs.plus/pad',
         channels: [
           {
@@ -327,6 +329,7 @@ describe('buildDigestEmail', () => {
       {
         name: 'Pad',
         slug: 'pad',
+        workspace_id: 'pad-id',
         url: 'https://docs.plus/pad',
         channels: [],
         content_changes: {

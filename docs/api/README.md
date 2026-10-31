@@ -137,4 +137,4 @@ Some routes exist and are not for you to call. Building against one will break.
 - The internal listener on port `4003`. It carries service-role write endpoints and is never routed publicly.
 - `GET /metrics`. It is a Prometheus endpoint, and it is unrouted rather than authenticated.
 - `/api/admin/*`. The admin dashboard is the only intended client.
-- The service-role email routes: `send-generic`, `send-digest`, `preview/:type` and `bounce`. Delivery runs through a queue. `POST /api/email/validate` is the public magic-link check. `POST /api/email/webhooks/resend` takes only Resend's signed calls.
+- The service-role email routes: `send-generic`, `preview/:type` and `bounce`. Delivery runs through a queue. `POST /api/email/validate` is the public magic-link check. `POST /api/email/webhooks/resend` takes only Resend's signed calls.

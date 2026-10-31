@@ -19,6 +19,9 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 - `get_document_member_previews`, `get_document_members` and
   `admin_get_document_member_counts` take new parameter names
   ([#574](https://github.com/docs-plus/docs.plus/issues/574)).
+- `POST /api/email/send-digest` is removed, and it now answers 404. Nothing in the repo called
+  it. Digests send only through the email queue
+  ([#661](https://github.com/docs-plus/docs.plus/issues/661)).
 
 ### Migration
 

@@ -33,7 +33,12 @@ import {
   normaliseDigestFrequency
 } from './digestDocuments'
 import { readDigestGrouping, readDigestMaxKb } from './digestGrouping'
-import { parseLastVisitStamp, planDigestMails, visibleDigestDocuments } from './digestMessage'
+import {
+  decideDigestOutcome,
+  parseLastVisitStamp,
+  planDigestMails,
+  visibleDigestDocuments
+} from './digestMessage'
 import { queueEmail } from './queue'
 import { resolveUnsubscribe, updateSupabaseEmailStatus } from './sender'
 
@@ -125,6 +130,8 @@ async function processDigestMessage(
   const now = new Date()
   const frequency = normaliseDigestFrequency(payload.frequency)
   const recipientId = payload.recipient_id || ''
+  // Rows a queued mail carries. That mail settles them, so the catch leaves them alone.
+  const handedOff = new Set<string>()
 
   try {
     const notifications = payload.notifications || []
@@ -168,17 +175,9 @@ async function processDigestMessage(
       enriched = built
     }
 
-    const redis = getRedisClient()
-    const grouping = await readDigestGrouping(redis)
-    const plan = planDigestMails({
-      documents: enriched,
-      metaReadFailed,
-      grouping,
-      queueIds,
-      queueIdsByDocument
-    })
+    const outcome = decideDigestOutcome({ documents: enriched, metaReadFailed })
 
-    if (plan.kind === 'defer') {
+    if (outcome.kind === 'defer') {
       emailLogger.warn(
         { msgId, to: maskEmail(payload.recipient_email) },
         'Digest deferred; metadata read failed'
@@ -186,7 +185,7 @@ async function processDigestMessage(
       return false
     }
 
-    if (plan.kind === 'skip') {
+    if (outcome.kind === 'skip') {
       await Promise.all(
         queueIds.map((id) =>
           updateSupabaseEmailStatus({
@@ -200,12 +199,15 @@ async function processDigestMessage(
       return true
     }
 
-    const maxBytes = (await readDigestMaxKb(redis)) * 1024
+    const redis = getRedisClient()
+    const [grouping, maxKb] = await Promise.all([readDigestGrouping(redis), readDigestMaxKb(redis)])
+    const plan = planDigestMails(outcome.documents, { grouping, queueIds, queueIdsByDocument })
+    const maxBytes = maxKb * 1024
     const queueKey = [...queueIds].sort().join(',')
     const footer = recipientId ? resolveUnsubscribe(recipientId, 'digest')?.footer : undefined
 
     for (const { documents, queueIds: mailQueueIds } of plan.mails) {
-      const docKey = documents.map((document) => document.workspace_id || document.slug).join(',')
+      const docKey = documents.map((document) => document.workspace_id).join(',')
       const fitted = fitDigestDocuments(
         {
           recipientName: payload.recipient_name || 'User',
@@ -234,6 +236,7 @@ async function processDigestMessage(
         { type: 'digest', payload: digestPayload, created_at: new Date().toISOString() },
         idempotencyJobId
       )
+      for (const id of mailQueueIds) handedOff.add(id)
     }
 
     // A mailed row stays 'processing' until the email worker hears from the provider.
@@ -262,15 +265,17 @@ async function processDigestMessage(
   } catch (err) {
     emailLogger.error({ err, msgId }, 'Error processing digest queue message')
 
-    // Independent single-row updates; settle the failure marks in parallel.
+    // With Redis, a redelivery re-plans and the job ids dedupe the mails already queued.
     await Promise.all(
-      pgmqQueueIds(payload).map((queueId) =>
-        updateSupabaseEmailStatus({
-          queue_id: queueId,
-          status: 'failed',
-          error_message: String(err)
-        })
-      )
+      pgmqQueueIds(payload)
+        .filter((queueId) => !handedOff.has(queueId))
+        .map((queueId) =>
+          updateSupabaseEmailStatus({
+            queue_id: queueId,
+            status: 'failed',
+            error_message: String(err)
+          })
+        )
     )
     return false
   }

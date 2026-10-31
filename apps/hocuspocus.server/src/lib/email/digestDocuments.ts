@@ -177,7 +177,7 @@ export function splitDigestQueueIds(
   if (!queueIdsByDocument) return { perMail: groups.map(() => allQueueIds), leftOver: [] }
 
   const perMail = groups.map((documents) =>
-    documents.flatMap((doc) => queueIdsByDocument.get(doc.workspace_id ?? '') ?? [])
+    documents.flatMap((doc) => queueIdsByDocument.get(doc.workspace_id) ?? [])
   )
   const mailed = new Set(perMail.flat())
   return { perMail, leftOver: allQueueIds.filter((id) => !mailed.has(id)) }

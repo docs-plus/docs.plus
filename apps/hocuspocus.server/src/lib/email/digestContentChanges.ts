@@ -104,10 +104,10 @@ function placeSections(
 
 async function withSections(
   doc: DigestDocument,
-  documentId: string,
   options: EnrichDigestOptions,
   lastVisit: Date | null
 ): Promise<DigestDocument> {
+  const documentId = doc.workspace_id
   const since = resolveDigestSince(lastVisit, options.frequency, options.now, options.retentionDays)
   const outcome = await options.computeChanges({
     documentId,
@@ -162,28 +162,22 @@ export async function enrichDigestDocuments(
   documents: DigestDocument[],
   options: EnrichDigestOptions
 ): Promise<DigestDocument[]> {
-  const ids = documents.flatMap((doc) => (doc.workspace_id ? [doc.workspace_id] : []))
-  const visits = await options.readLastVisits(options.recipientId, ids)
+  const visits = await options.readLastVisits(
+    options.recipientId,
+    documents.map((doc) => doc.workspace_id)
+  )
   const enriched: DigestDocument[] = []
 
   // Serial on purpose: a loaded room costs 16.5-17x its stored snapshot in heap,
   // and the profile read inside compute makes the loop I/O-bound anyway.
   for (const doc of documents) {
     const documentId = doc.workspace_id
-    // `buildDigestDocuments` sets it on every document; the payload type keeps it optional.
-    if (!documentId) {
-      enriched.push(doc)
-      continue
-    }
-
     // Per-document, so one bad snapshot costs its own block and not the digest.
     // A section list is decoration, not the answer to a privacy question, so a
     // failure logs and omits the detail; it never defers the message.
     try {
       enriched.push(
-        doc.content_changes
-          ? await withSections(doc, documentId, options, visits.get(documentId) ?? null)
-          : doc
+        doc.content_changes ? await withSections(doc, options, visits.get(documentId) ?? null) : doc
       )
     } catch (err) {
       options.logger.warn({ err, documentId }, 'Digest change enrichment failed')

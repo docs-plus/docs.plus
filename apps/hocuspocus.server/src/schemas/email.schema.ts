@@ -8,23 +8,6 @@ export const sendGenericEmailSchema = z.object({
   replyTo: z.string().email().optional()
 })
 
-export const sendDigestEmailSchema = z.object({
-  to: z.string().email('Invalid email address'),
-  frequency: z.enum(['daily', 'weekly']),
-  documents: z
-    .array(
-      z.object({
-        slug: z.string(),
-        title: z.string().optional(),
-        update_count: z.number().optional(),
-        last_activity: z.string().optional()
-      })
-    )
-    .min(1, 'At least one document is required'),
-  user_name: z.string().max(100).optional(),
-  unsubscribe_token: z.string().optional()
-})
-
 export const emailBounceSchema = z.object({
   email: z.string().email('Invalid email address'),
   bounce_type: z.enum(['hard', 'soft', 'complaint']),
