@@ -1,6 +1,6 @@
+import { padUrl } from '@services/padUrl'
 import type { Editor } from '@tiptap/core'
 import { headingAncestry } from '@utils/headingSlugTrail'
-import { buildHeadingHref } from '@utils/link-helpers'
 
 export type HeadingCrumb = { text: string; id: string }
 export type HeadingBreadcrumbItem = HeadingCrumb & { url: string }
@@ -17,6 +17,6 @@ export function resolveHeadingBreadcrumbs(
   if (path.length === 0) return null
   return path.map((crumb) => ({
     ...crumb,
-    url: buildHeadingHref(editor, crumb.id)
+    url: padUrl.link({ kind: 'heading', headingId: crumb.id })
   }))
 }

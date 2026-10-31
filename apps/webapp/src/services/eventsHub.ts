@@ -1,8 +1,5 @@
 import { useChatStore } from '@stores'
 import { ensureEmojiData } from '@utils/ensureEmojiData'
-import { removeFilterSegment, resetFilterPath, shallowPathFromAsPath } from '@utils/filterRoute'
-import { stripChatDeepLinkFromBrowserUrl } from '@utils/stripChatDeepLinkFromUrl'
-import { NextRouter } from 'next/router'
 import PubSub from 'pubsub-js'
 
 import { CHAT_COMMENT, type TChatCommentData } from './chatEvents'
@@ -11,6 +8,7 @@ import {
   openCommentComposer,
   openHeadingChatBrowse
 } from './openHeadingChatroom'
+import { padUrl } from './padUrl'
 
 export { CHAT_COMMENT, type TChatCommentData } from './chatEvents'
 
@@ -22,12 +20,8 @@ export const NOTIFICATION_STATE_CHANGED = Symbol('notification.stateChanged')
 export function closeHeadingChatroom(): void {
   const headingId = useChatStore.getState().chatRoom.headingId
   PubSub.publish(CHAT_CLOSE, { headingId })
-  stripChatDeepLinkFromBrowserUrl(headingId)
+  void padUrl.go({ kind: 'chatClosed', headingId: headingId ?? null })
 }
-
-export const APPLY_FILTER = Symbol('apply.filter')
-export const REMOVE_FILTER = Symbol('remove.filter')
-export const RESET_FILTER = Symbol('reset.filter')
 
 type TOpenChatData = {
   headingId: string
@@ -37,19 +31,11 @@ type TOpenChatData = {
   focusEditor?: boolean
 }
 
-type TApplyFilterData = {
-  href: string
-}
-
-type TRemoveFilterData = {
-  slug: string
-}
-
 type TCloseChatData = {
   headingId: string
 }
 
-export const eventsHub = (router: NextRouter) => {
+export const eventsHub = () => {
   const tokens = [
     PubSub.subscribe(CHAT_COMMENT, (_msg, data: TChatCommentData) => {
       ensureEmojiData(true)
@@ -104,33 +90,6 @@ export const eventsHub = (router: NextRouter) => {
       }
       destroyChatRoom()
       focusHeadingChatTrigger(headingId)
-    }),
-
-    PubSub.subscribe(APPLY_FILTER, (_msg, data: TApplyFilterData) => {
-      const { href } = data
-
-      const url = new URL(href || router.asPath, window.location.origin)
-
-      // Preserve the user's sticky filter mode when the clicked link omits it.
-      if (!url.searchParams.has('mode')) {
-        const mode = new URL(router.asPath, window.location.origin).searchParams.get('mode')
-        if (mode) url.searchParams.set('mode', mode)
-      }
-
-      // Instant in-place fold — no full-doc skeleton; useApplyFilters reacts to the route.
-      void router.push(shallowPathFromAsPath(url.toString()), undefined, { shallow: true })
-    }),
-
-    PubSub.subscribe(REMOVE_FILTER, (_msg, data: TRemoveFilterData) => {
-      const href = removeFilterSegment(router.asPath, data.slug)
-      if (!href) return
-      void router.push(href, undefined, { shallow: true })
-    }),
-
-    PubSub.subscribe(RESET_FILTER, () => {
-      const href = resetFilterPath(router.asPath)
-      if (!href) return
-      void router.push(href, undefined, { shallow: true })
     })
   ]
 

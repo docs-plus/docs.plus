@@ -1,30 +1,14 @@
 import { openChatFromLink } from '@services/openChatFromLink'
+import { padUrl } from '@services/padUrl'
 import { selectDocumentId, useAuthStore, useStore } from '@stores'
 import { useRouter } from 'next/router'
 import { useEffect, useRef } from 'react'
 
-/** `linkId` is a channel id or a heading id; openChatFromLink tells them apart (#402). */
-type ChatDeepLink = { linkId: string; fetchMsgsFromId?: string }
-
-// Cold-load chat deep link → room-open intent. Canonical is ?chatroom=&msg_id=;
-// ?act=ch&c_id=&m_id= is the legacy translator; ?open_heading_chat= is the
-// post-sign-in composer return. Read-only opens — never gated on auth.
-const resolveChatDeepLink = (url: URL): ChatDeepLink | null => {
-  const openHeadingChatId = url.searchParams.get('open_heading_chat')
-  if (openHeadingChatId) return { linkId: openHeadingChatId }
-
-  const chatroomId = url.searchParams.get('chatroom')
-  if (chatroomId) {
-    return { linkId: chatroomId, fetchMsgsFromId: url.searchParams.get('msg_id') || undefined }
-  }
-
-  if (url.searchParams.get('act') === 'ch') {
-    const channelId = url.searchParams.get('c_id')
-    if (channelId) {
-      return { linkId: channelId, fetchMsgsFromId: url.searchParams.get('m_id') || undefined }
-    }
-  }
-  return null
+/** Cold-load chat link: ?chatroom=&msg_id=, the legacy ?act=ch form, or the sign-in return. */
+const readChatDeepLink = (): { linkId: string; fetchMsgsFromId?: string } | null => {
+  const pad = padUrl.read()
+  if (pad?.signInChat) return { linkId: pad.signInChat }
+  return pad?.chat ? { linkId: pad.chat.linkId, fetchMsgsFromId: pad.chat.messageId } : null
 }
 
 const useCheckUrlAndOpenHeadingChat = () => {
@@ -40,7 +24,7 @@ const useCheckUrlAndOpenHeadingChat = () => {
     // heading scroll has nothing to target. workspaceId-gated, never profile-gated.
     if (!workspaceId || editorLoading || providerSyncing) return
 
-    const intent = resolveChatDeepLink(new URL(window.location.href))
+    const intent = readChatDeepLink()
     if (!intent) return
 
     // Deps re-fire on auth transition (anon → signed in). Open each link once

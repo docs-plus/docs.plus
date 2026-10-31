@@ -1,8 +1,11 @@
+import {
+  consumeHistoryDismissEntry,
+  historyDismissMarkerIsLive,
+  type HistoryDismissState
+} from '@services/historyDismiss'
 import { useStore } from '@stores'
 import MobileDetect from 'mobile-detect'
 import { useEffect, useRef } from 'react'
-
-type HistoryDismissState = { historyDismiss?: true }
 
 // The store flag is unset outside the document shell, so fall back to the same
 // user-agent test the server runs. A narrow window is not the mobile shell.
@@ -10,41 +13,9 @@ const isMobileSurface = (): boolean =>
   useStore.getState().settings.editor.isMobile ??
   Boolean(new MobileDetect(window.navigator.userAgent).mobile())
 
-const markerIsLive = (): boolean =>
-  !!(window.history.state as HistoryDismissState | null)?.historyDismiss
-
 /** Surfaces holding the one marked entry. A drawer -> sheet handoff passes it along instead of
  *  stacking, so the consume has to know no owner is left before it pops. */
 let openSurfaces = 0
-let pendingPop: Promise<void> | null = null
-
-/**
- * Pops the marked entry once and resolves when the traversal lands. A caller that writes the
- * URL next awaits this, so the close's pop cannot land on top of its write. `history.state`
- * only changes on landing, so every pop shares the one in-flight promise.
- */
-export function consumeHistoryDismissEntry(): Promise<void> {
-  if (pendingPop) return pendingPop
-  if (!markerIsLive()) return Promise.resolve()
-  pendingPop = new Promise((resolve) => {
-    const onLanded = () => {
-      pendingPop = null
-      resolve()
-    }
-    window.addEventListener('popstate', onLanded, { once: true })
-    window.history.back()
-  })
-  return pendingPop
-}
-
-/**
- * Resolves once a pop that a closing surface started has landed. The close queues its pop in
- * a microtask, so read it one turn later. A push before the landing is taken by that pop:
- * Safari lands it about 90 ms after the tap (#639).
- */
-export function whenHistoryDismissSettles(): Promise<void> {
-  return Promise.resolve().then(() => pendingPop ?? undefined)
-}
 
 /**
  * One marked history entry while any surface is open on mobile, so hardware
@@ -59,12 +30,12 @@ export function useHistoryDismiss(isOpen: boolean, onDismiss: () => void): void 
     if (!isOpen || !isMobileSurface()) return
 
     openSurfaces += 1
-    if (!markerIsLive())
+    if (!historyDismissMarkerIsLive())
       window.history.pushState({ historyDismiss: true } as HistoryDismissState, '')
 
     const onPopState = () => {
       // Landing back on the marker means a surface stacked above us was popped, not us.
-      if (markerIsLive()) return
+      if (historyDismissMarkerIsLive()) return
       onDismissRef.current()
     }
     window.addEventListener('popstate', onPopState)

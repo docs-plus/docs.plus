@@ -139,7 +139,15 @@ describe('headingSlugTrail', () => {
 })
 
 describe('headingSlug', () => {
-  it('keeps an apostrophe in the slug', () => {
-    expect(headingSlug("The row's menu")).toBe("the-row's-menu")
+  it.each([
+    ["The row's menu", 'the-rows-menu'],
+    ['What’s new', 'whats-new'],
+    ['docs.plus 2.2.0', 'docs.plus-2.2.0'],
+    ['Share a document — with QR!', 'share-a-document-with-qr'],
+    ['snake_case name', 'snake-case-name'],
+    ['C++ & C#', 'c-and-c'],
+    ['...v2.0...', 'v2.0']
+  ])('writes %s with only URL-safe characters', (text, slug) => {
+    expect(headingSlug(text)).toBe(slug)
   })
 })

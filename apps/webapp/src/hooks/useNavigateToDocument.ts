@@ -1,4 +1,5 @@
 import * as toast from '@components/toast'
+import { padUrl } from '@services/padUrl'
 import { sanitizeDocumentSlug } from '@utils/sanitizeDocumentSlug'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
@@ -22,7 +23,7 @@ export function useNavigateToDocument() {
       setIsLoading(true)
       const slug = sanitizeDocumentSlug(name)
       try {
-        await router.push(`/${slug}`)
+        await router.push(padUrl.link({ kind: 'document', slug }, 'path'))
       } catch (err) {
         console.warn('Failed to open document:', err)
         toast.Error('Could not open the document. Please try again.')

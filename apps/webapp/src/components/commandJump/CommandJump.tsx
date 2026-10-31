@@ -6,6 +6,7 @@ import { Modal, ModalContent, ModalHeading } from '@components/ui/Dialog'
 import { ListGroupLabel } from '@components/ui/ListGroupLabel'
 import TextInput from '@components/ui/TextInput'
 import { Icons } from '@icons'
+import { padUrl } from '@services/padUrl'
 import { useAuthStore, useSheetStore, useStore } from '@stores'
 import { isModShortcut } from '@utils/platform'
 import debounce from 'lodash/debounce'
@@ -82,7 +83,7 @@ function CommandJumpPanel({ places, userId, onPick, navigate }: PanelProps) {
       label: doc.title || doc.slug,
       icon: Icons.fileText,
       favorite: doc.isFavorite,
-      run: () => navigate(`/${doc.slug}`)
+      run: () => navigate(padUrl.link({ kind: 'document', slug: doc.slug }, 'path'))
     }))
 
   const items = [...placeItems, ...padItems]

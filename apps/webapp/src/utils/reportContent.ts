@@ -25,12 +25,5 @@ export const openReportMail = (kind: ReportKind, url: string): void => {
   window.location.href = buildReportMailto(kind, url)
 }
 
-/**
- * The query is dropped on purpose. A pad URL can carry `?chatroom=` and
- * `?msg_id=`, so keeping it would leak which channel the reporter had open.
- */
-export const reportCurrentDocument = (): void =>
-  openReportMail('document', `${window.location.origin}${window.location.pathname}`)
-
 /** Pad route only. Home and /editor would mail a path that is not a document. */
 export const isDocumentReportPath = (pathname: string): boolean => pathname === '/[...slugs]'

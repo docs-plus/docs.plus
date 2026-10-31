@@ -1,4 +1,5 @@
 import type { Node as PMNode } from '@tiptap/pm/model'
+import { padUrlCore } from '@utils/padUrlCore'
 
 interface TextMatch {
   from: number
@@ -53,30 +54,21 @@ export function findAllSections(doc: PMNode): SectionInfo[] {
 }
 
 function searchTextInRange(doc: PMNode, from: number, to: number, query: string): TextMatch[] {
-  if (!query) return []
+  const pattern = padUrlCore.termPattern(query)
+  if (!pattern) return []
 
   const matches: TextMatch[] = []
-  const lowerQuery = query.toLowerCase()
-  const queryLen = lowerQuery.length
 
   doc.nodesBetween(from, to, (node, pos) => {
     if (!node.isText || !node.text) return
 
-    const text = node.text.toLowerCase()
-    let searchStart = 0
-
-    while (searchStart <= text.length - queryLen) {
-      const idx = text.indexOf(lowerQuery, searchStart)
-      if (idx === -1) break
-
-      const absFrom = pos + idx
-      const absTo = absFrom + queryLen
+    for (const hit of node.text.matchAll(pattern)) {
+      const absFrom = pos + (hit.index ?? 0)
+      const absTo = absFrom + hit[0].length
 
       if (absFrom >= from && absTo <= to) {
         matches.push({ from: absFrom, to: absTo })
       }
-
-      searchStart = idx + 1
     }
   })
 

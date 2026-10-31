@@ -2,9 +2,9 @@ import { useModal } from '@components/ui/ModalDrawer'
 import { Tooltip } from '@components/ui/Tooltip'
 import { useSortable } from '@dnd-kit/sortable'
 import { Icons } from '@icons'
-import { useChatStore, useFocusedHeadingStore, useStore } from '@stores'
+import { padUrl } from '@services/padUrl'
+import { useChatStore, useFocusedHeadingStore } from '@stores'
 import type { TocItem as TocItemType } from '@types'
-import { buildHeadingHref } from '@utils/link-helpers'
 import { twMerge } from '@utils/twMerge'
 import { memo, type MouseEvent, type ReactNode, useCallback, useState } from 'react'
 
@@ -44,7 +44,6 @@ function TocItemBodyComponent({
   renderChild
 }: TocItemBodyProps) {
   const isDesktop = variant === 'desktop'
-  const editor = useStore((s) => s.settings.editor.instance)
   const isFocused = useFocusedHeadingStore((s) => s.focusedHeadingId === item.id)
   const isActive = useChatStore((state) => state.chatRoom.headingId === item.id)
   const modal = useModal()
@@ -156,9 +155,7 @@ function TocItemBodyComponent({
         isActive={isActive}
         isFocused={isFocused}
         onTitleClick={handleClick}
-        titleHref={
-          editor && !editor.isDestroyed ? buildHeadingHref(editor, item.id) : `?id=${item.id}`
-        }
+        titleHref={padUrl.link({ kind: 'heading', headingId: item.id })}
         leading={leading}
         trail={
           <TocRowTrail

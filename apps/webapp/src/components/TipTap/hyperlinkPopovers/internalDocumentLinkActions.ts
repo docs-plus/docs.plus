@@ -1,9 +1,8 @@
 import { pushAppUrlThenNotifyHashChange } from '@components/pages/history/historyShareUrl'
 import { getDefaultController } from '@docs.plus/extension-hyperlink'
-import { APPLY_FILTER } from '@services/eventsHub'
 import { openChatFromLink } from '@services/openChatFromLink'
+import { padUrl } from '@services/padUrl'
 import { scrollToHeading } from '@utils/scrollToHeading'
-import PubSub from 'pubsub-js'
 
 import type { InternalDocumentLink } from './types'
 
@@ -32,15 +31,13 @@ export function runInternalDocumentLink(link: InternalDocumentLink): void {
       scrollToHeading(link.headingId)
       return
     case 'chat':
-      void openChatFromLink(link.channelId, {
+      void openChatFromLink(link.linkId, {
         scroll2Heading: true,
         fetchMsgsFromId: link.messageId
       })
       return
     case 'filter':
-      // Forward the original clicked href verbatim — `APPLY_FILTER` resolves it
-      // through the same `new URL()` + shallow-push path the old ladder used.
-      PubSub.publish(APPLY_FILTER, { href: link.href })
+      void padUrl.go({ kind: 'filterOpen', href: link.href })
       return
     case 'history': {
       const { pathname, search } = window.location

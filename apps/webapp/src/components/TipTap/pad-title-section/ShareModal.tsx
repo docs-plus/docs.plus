@@ -3,8 +3,8 @@ import Button from '@components/ui/Button'
 import { ModalBody, ModalClose, ModalDescription, ModalHeading } from '@components/ui/Dialog'
 import { Tooltip } from '@components/ui/Tooltip'
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
-import { usePadShareUrl } from '@hooks/usePadShareUrl'
 import { Icons } from '@icons'
+import { padUrl } from '@services/padUrl'
 import { useAuthStore, useStore } from '@stores'
 import { isDocumentOwner } from '@utils/isDocumentOwner'
 import type { IconType } from 'react-icons'
@@ -90,7 +90,7 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
   const canChangeAccess = isOwner && documentSettingsOpenRequest.canRequest()
   const title = docMetadata?.title || 'Untitled document'
 
-  const shareUrl = usePadShareUrl()
+  const shareUrl = padUrl.link({ kind: 'document' })
   const hasWebShare = typeof navigator.share === 'function'
 
   const openDocumentSettings = () => {

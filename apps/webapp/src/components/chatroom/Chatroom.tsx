@@ -1,3 +1,4 @@
+import { padUrl } from '@services/padUrl'
 import { useChatStore } from '@stores'
 
 import { ChatroomProvider } from './ChatroomContext'
@@ -21,12 +22,10 @@ const ChatRoom = ({
 
   if (!headingId) return null
 
-  // The four in-app deep-link entry points (BookmarkItem, hrefEventHandler,
-  // NotificationItem, useNotificationClickBridge) push `fetchMsgsFromId` into the
-  // store. Shared links land with `?msg_id=` on first paint and no store
-  // value. Prop wins if a parent passes one explicitly.
-  const urlMsgId =
-    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('msg_id') : null
+  // Every opener, a cold-load shared link included, puts `fetchMsgsFromId` in the store.
+  // The URL id covers a reopen while `?msg_id=` is still in the address. It is
+  // room-matched, so a stale id never anchors a different room. A prop wins.
+  const urlMsgId = padUrl.messageFor({ headingId, channelId }) ?? null
   const effectiveDeepLink = deepLinkMessageId ?? storeMsgId ?? urlMsgId
 
   return (

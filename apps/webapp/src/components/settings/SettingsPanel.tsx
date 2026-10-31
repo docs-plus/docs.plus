@@ -4,8 +4,9 @@ import Button, { dangerGhostClassName } from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
 import { ListGroupLabel } from '@components/ui/ListGroupLabel'
 import { ScrollArea } from '@components/ui/ScrollArea'
+import { padUrl } from '@services/padUrl'
 import { useAuthStore } from '@stores'
-import { reportCurrentDocument } from '@utils/reportContent'
+import { openReportMail } from '@utils/reportContent'
 import { sheetSafeAreaPadMobileClassName } from '@utils/sheetBodyPadding'
 import { twMerge } from '@utils/twMerge'
 import dynamic from 'next/dynamic'
@@ -123,7 +124,7 @@ const SupportRowControl = ({ row }: { row: SupportRow }) => {
   return (
     <button
       type="button"
-      onClick={reportCurrentDocument}
+      onClick={() => openReportMail('document', padUrl.link({ kind: 'document' }))}
       className={twMerge(SUPPORT_ROW_CLASS, 'w-full')}>
       {body}
     </button>

@@ -2,6 +2,7 @@ import Button from '@components/ui/Button'
 import CopyButton, { CopyButtonSize } from '@components/ui/CopyButton'
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { Icons } from '@icons'
+import { padUrl } from '@services/padUrl'
 import { useChatStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
 import { useMemo } from 'react'
@@ -28,9 +29,7 @@ export const ShareButton = ({
 
   const chatRoomUrl = useMemo(() => {
     if (!chatRoom?.headingId) return ''
-    const newUrl = new URL(window.location.href)
-    newUrl.searchParams.set('chatroom', chatRoom.headingId)
-    return newUrl.toString()
+    return padUrl.link({ kind: 'chat', linkId: chatRoom.headingId })
   }, [chatRoom?.headingId])
   const { copy } = useCopyToClipboard({ successMessage, errorMessage })
 

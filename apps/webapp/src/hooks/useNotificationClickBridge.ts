@@ -2,8 +2,8 @@ import { markNotificationAsRead } from '@api'
 import { trackClientRead } from '@components/notificationPanel/feed/readDedupe'
 import { NOTIFICATION_STATE_CHANGED } from '@services/eventsHub'
 import { openChatFromLink } from '@services/openChatFromLink'
+import { padUrl } from '@services/padUrl'
 import { useAuthStore, useStore } from '@stores'
-import { padSlugOf, shallowPath } from '@utils/filterRoute'
 import { isPushSupported } from '@utils/push-notifications'
 import Router, { useRouter } from 'next/router'
 import PubSub from 'pubsub-js'
@@ -49,24 +49,19 @@ const handleNotificationClick = async (event: MessageEvent) => {
   if (notification_id) await markPushNotificationRead(notification_id)
 
   if (url) {
-    const urlObj = new URL(url, window.location.origin)
-    const channelId = urlObj.searchParams.get('chatroom')
-    const messageId = urlObj.searchParams.get('msg_id')
+    const pad = padUrl.read(url)
+    if (!pad) return
 
-    if (channelId && padSlugOf(urlObj.pathname) === padSlugOf(window.location.pathname)) {
+    if (pad.chat && pad.slug === padUrl.read()?.slug) {
       // Stays in-app, same as NotificationItem. The id is resolved against this pad.
-      void openChatFromLink(channelId, {
-        fetchMsgsFromId: messageId || undefined,
+      void openChatFromLink(pad.chat.linkId, {
+        fetchMsgsFromId: pad.chat.messageId,
         scroll2Heading: true
       })
-    } else {
+    } else if (pad.path !== padUrl.read()?.path) {
       // Another pad's chatroom id would open on this pad, so load its page.
       // The path only, so an absolute action_url stays on this origin.
-      const target = shallowPath(urlObj)
-      const { pathname, search, hash } = window.location
-      if (target !== pathname + search + hash) {
-        window.location.assign(target)
-      }
+      window.location.assign(pad.path)
     }
   }
 }
@@ -96,7 +91,8 @@ export function useNotificationClickBridge() {
       if (pendingIdRef.current) {
         // Strip before the session wait, so Share never copies the id.
         url.searchParams.delete(NOTIFICATION_ID_PARAM)
-        void Router.replace(shallowPath(url), undefined, { shallow: true })
+        const path = padUrl.read(url.href)?.path
+        if (path) void Router.replace(path, undefined, { shallow: true })
       }
     }
     const notificationId = pendingIdRef.current

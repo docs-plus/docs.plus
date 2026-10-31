@@ -91,6 +91,18 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   preview.
   Before, it opened the preview, like a plain click.
 
+- Heading slugs in a `?h=` trail use only `a-z`, `0-9`, `.` and `-`, and drop apostrophes, so
+  "What's new" reads `whats-new`. The trail still joins slugs with `>`.
+- Filter and Focus section terms in the path are lowercase, with `-` for a space:
+  `/demo/draw-a-diagram-with-text`. The filter treats any run of spaces, tabs or hyphens as one
+  gap, so an old `%20` link still filters, and `customer-research` also matches "customer
+  research". Filter chips show the path form.
+- TOC Copy link writes two clipboard formats. Plain text keeps the encoded link with `%3E`, because
+  some apps end a link at a raw `>`. A rich paste, as in Gmail or Google Docs, shows the trail with
+  `>` and links to the full address.
+- Copy to doc stores a message link as `?chatroom=&msg_id=`. A stored `?act=ch` link still opens
+  its message. Before, under a filter, it stored the filter term as the pad name.
+
 ### Fixed
 
 - **The link hovercard is wider, and its picture no longer pops.** The card is 24rem wide, and the
@@ -144,6 +156,20 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   ([#312](https://github.com/docs-plus/docs.plus/issues/312)).** The bell and the app icon
   badge used to keep the old count.
 
+- **Copied links no longer carry your open filter, chat or heading.** TOC Copy link, the chat
+  breadcrumb's link, chat Share, Copy link in Bookmarks and Notifications, and the link picker now
+  build from the pad's own address. Before, a heading link copied under a filter kept the filter
+  path. Report no longer mails the filter terms either.
+- **A notification row names the document, not a filter term.** It read the last part of the
+  link's path, which can be a filter term.
+- **A stale `?msg_id=` no longer opens another room at that message.** The address's message id
+  anchors a chat only when the address names that room.
+- **A tap on a heading in the phone TOC drawer keeps the heading in the address.** The drawer
+  closes by going back one history entry, and that step undid the heading write. Pad URL now waits
+  for the step to land, then writes.
+- **A filter link with `%25` in a term no longer throws.** The filter decoded each term twice, so
+  `/demo/100%25` failed.
+
 ### Security
 
 - **Site icons no longer come from Google
@@ -155,6 +181,14 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).** `sanitizeMetadata` no longer
   keeps the site's own icon address or theme color, which nothing read. Links saved before keep
   them, unread.
+
+### Internal
+
+- One module, Pad URL (`services/padUrl.ts`, with its pure core in `utils/padUrlCore.ts`), builds,
+  writes and reads every pad address. `link` builds from the pad's own address, `go` changes the
+  address bar and picks the history writer, and `read` also parses old link forms. It replaces
+  `utils/filterRoute.ts`, `utils/stripChatDeepLinkFromUrl.ts`, `hooks/usePadShareUrl.ts` and the
+  `APPLY_FILTER`, `REMOVE_FILTER` and `RESET_FILTER` topics in `eventsHub`.
 
 ## [2.2.0] — 2026-10-22
 

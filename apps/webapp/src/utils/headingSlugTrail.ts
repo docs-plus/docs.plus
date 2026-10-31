@@ -8,8 +8,11 @@ export type HeadingAncestor = {
   text: string
 }
 
+/** `[a-z0-9.-]` only, so a slug never needs encoding. The `>` join reads as a breadcrumb. */
 export function headingSlug(text: string): string {
-  return slugify(text.toLowerCase().trim())
+  return slugify(text.replace(/['’]/g, ''), { lower: true, trim: true })
+    .replace(/[^a-z0-9.]+/g, '-')
+    .replace(/^[-.]+|[-.]+$/g, '')
 }
 
 /** Title is stack[0]. Same-or-higher level pops siblings; Title never pops. */

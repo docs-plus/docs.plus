@@ -2,8 +2,8 @@ import Button, { dangerGhostClassName } from '@components/ui/Button'
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { Icons } from '@icons'
 import { openChatFromLink } from '@services/openChatFromLink'
+import { padUrl } from '@services/padUrl'
 import { formatTimeAgo } from '@utils/formatTime'
-import { buildBookmarkHref } from '@utils/link-helpers'
 import { messagePreviewKind } from '@utils/messagePreview'
 import { MOTION_OVERLAY_OUT_MS } from '@utils/motion'
 import { twMerge } from '@utils/twMerge'
@@ -119,7 +119,7 @@ export function PanelFeedCopyLink({ messageId, channelId, disabled }: PanelFeedC
   const handleCopy = () => {
     // A carrier has no message, so half a link opens nothing.
     if (!messageId || !channelId) return
-    void copy(buildBookmarkHref({ messageId, channelId }))
+    void copy(padUrl.link({ kind: 'chat', linkId: channelId, messageId }))
   }
 
   return (

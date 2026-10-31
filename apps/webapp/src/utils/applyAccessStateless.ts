@@ -1,3 +1,4 @@
+import { padUrl } from '@services/padUrl'
 import { authStore, useStore } from '@stores'
 
 import { adoptOwner } from './adoptOwner'
@@ -50,5 +51,9 @@ export function applyAccessStateless(args: {
   const ownerId = data.ownerId !== undefined ? data.ownerId : metadata.ownerId
   if (isDocumentOwner({ documentId, ownerId }, authStore.getState().profile?.id)) return
 
-  exitSealedDocument({ to: `/${slug}`, stopReconnect, destroyProvider })
+  exitSealedDocument({
+    to: padUrl.link({ kind: 'document', slug }, 'path'),
+    stopReconnect,
+    destroyProvider
+  })
 }

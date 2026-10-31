@@ -4,16 +4,18 @@ import {
 } from '@components/chatroom/utils/copyChatMediaToDocument'
 import { computeSection } from '@components/TipTap/extensions/shared'
 import * as toast from '@components/toast'
+import { padUrl } from '@services/padUrl'
 import { selectDocumentId, useChatStore, useStore } from '@stores'
 import { TIPTAP_NODES, TMsgRow, TRANSACTION_META } from '@types'
 import { useCallback } from 'react'
 
 const createParagraphNodeJson = (message: TMsgRow) => {
   const workspaceId = selectDocumentId(useStore.getState())
-  const documentSlug = location.pathname.split('/').pop()
-  const channelId = message.channel_id || workspaceId
-  const messageId = message.id
-  const messageUrl = `/${documentSlug}?act=ch&c_id=${channelId}&m_id=${messageId}`
+  const linkId = message.channel_id || workspaceId
+  // The caller's catch shows this; a link with an empty room would open no chat.
+  if (!linkId) throw new Error('This message has no chat room to link to')
+  // Root-relative, so the stored link survives a host change.
+  const messageUrl = padUrl.link({ kind: 'chat', linkId, messageId: message.id }, 'path')
 
   const messageOwner = message.user_details?.username || message.user_details?.full_name
   const messageContent = message.content?.trim() || ''

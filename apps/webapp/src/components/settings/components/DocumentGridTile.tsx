@@ -1,3 +1,4 @@
+import { padUrl } from '@services/padUrl'
 import { useRouter } from 'next/router'
 import { LuEye, LuLock, LuStar } from 'react-icons/lu'
 
@@ -41,7 +42,7 @@ function DocumentGridTile({
   const ownerName = isOwner ? null : doc.owner?.display_name
 
   const open = () => {
-    router.push(`/${doc.slug}`)
+    router.push(padUrl.link({ kind: 'document', slug: doc.slug }, 'path'))
     onOpenDocument?.()
   }
 

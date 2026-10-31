@@ -2,6 +2,7 @@ import { ConversionError, importDocument, type ImportedDocument } from '@api'
 import { applyImportedContent } from '@components/TipTap/toolbar/desktop/applyImportedContent'
 import * as toast from '@components/toast'
 import { isDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
+import { padUrl } from '@services/padUrl'
 import { authStore, useStore } from '@stores'
 import type { Session } from '@supabase/supabase-js'
 import type { Editor } from '@tiptap/core'
@@ -249,7 +250,7 @@ export const runSharedImport = async (
     writeClaim(null)
     applyWhenPadOpens(pad, file.name)
     // Client-side, so the store listener above survives the route change.
-    await Router.replace(`/${pad.slug}`)
+    await Router.replace(padUrl.link({ kind: 'document', slug: pad.slug }, 'path'))
     return { kind: 'opened' }
   } catch (error) {
     const status = error instanceof ConversionError ? error.status : null

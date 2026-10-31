@@ -1,7 +1,5 @@
 import { CHAT_OPEN } from '@services/eventsHub'
-import type { Editor } from '@tiptap/react'
-import { headingSlug } from '@utils/headingSlugTrail'
-import { buildHeadingHref } from '@utils/link-helpers'
+import { padUrl } from '@services/padUrl'
 import { scrollToHeading as scrollPadHeading } from '@utils/scrollToHeading'
 import PubSub from 'pubsub-js'
 
@@ -11,16 +9,11 @@ export type NavigateToHeadingOptions = {
 }
 
 /** TOC navigate: URL h/id + pad scroll (block start). Optional CHAT_OPEN — never focusEditor. */
-export function navigateToHeading(
-  editor: Editor,
-  headingId: string,
-  options: NavigateToHeadingOptions = {}
-): void {
+export function navigateToHeading(headingId: string, options: NavigateToHeadingOptions = {}): void {
   const { openChat = false, updateUrl = true } = options
 
   if (updateUrl) {
-    // Keep the current state object: open overlays park their dismiss marker on it.
-    window.history.replaceState(window.history.state, '', buildHeadingHref(editor, headingId))
+    void padUrl.go({ kind: 'heading', headingId })
   }
 
   scrollPadHeading(headingId, { behavior: 'smooth', block: 'start' })
@@ -31,12 +24,8 @@ export function navigateToHeading(
 }
 
 /** Doc-title row: pad scroll via first H1 toc-id + URL/chat for workspace channel. */
-export function navigateToDocTitle(options: {
-  workspaceId?: string
-  title: string
-  openChat?: boolean
-}): void {
-  const { workspaceId, title, openChat = false } = options
+export function navigateToDocTitle(options: { workspaceId?: string; openChat?: boolean }): void {
+  const { workspaceId, openChat = false } = options
 
   const docTitleHeading = document.querySelector(
     '.tiptap__editor.docy_editor h1[data-toc-id]'
@@ -48,10 +37,7 @@ export function navigateToDocTitle(options: {
 
   if (!workspaceId) return
 
-  const url = new URL(window.location.href)
-  url.searchParams.set('h', headingSlug(title))
-  url.searchParams.set('id', workspaceId)
-  window.history.replaceState(window.history.state, '', url)
+  void padUrl.go({ kind: 'heading', headingId: workspaceId })
 
   if (openChat) {
     PubSub.publish(CHAT_OPEN, { headingId: workspaceId })

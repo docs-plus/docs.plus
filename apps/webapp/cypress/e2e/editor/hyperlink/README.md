@@ -28,7 +28,7 @@ Coverage for `@docs.plus/extension-hyperlink` in the real editor (`TipTap.tsx`: 
 - **hyperlink-picker.cy.js** — Suggestion picker (in-doc headings + workspace bookmarks) on the create + edit popovers
   - Create / pick heading: expand → click row inserts heading deep-link (`?h=…&id=…`) with the picked title as anchor text
   - Create / keyboard: ArrowDown opens the panel, Enter picks the highlighted row
-  - Create / pick bookmark: workspace RPC stubbed via `setupBookmarkSuggestions`; Bookmarks section renders, archived rows show the badge, click inserts a chatroom deep-link (`?msg_id=…&chatroom=…`)
+  - Create / pick bookmark: workspace RPC stubbed via `setupBookmarkSuggestions`; Bookmarks section renders, archived rows show the badge, click inserts a chatroom deep-link (`?chatroom=…&msg_id=…`)
   - Create / typed URL: typing filters by title; a full URL bypasses suggestions and Apply commits it verbatim
   - Edit popover: picking a heading re-points the href and keeps the link text. A changed Text field survives a heading pick, and an unchanged one sends no text. Picking a bookmark re-points the href to a chatroom deep-link
 

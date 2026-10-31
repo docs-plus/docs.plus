@@ -1,4 +1,4 @@
-import { whenHistoryDismissSettles } from '@hooks/useHistoryDismiss'
+import { whenHistoryDismissSettles } from '@services/historyDismiss'
 import { useChatStore } from '@stores'
 import Router from 'next/router'
 import { useEffect } from 'react'

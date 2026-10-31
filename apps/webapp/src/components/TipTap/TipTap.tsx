@@ -6,6 +6,7 @@ import { InlineCode } from '@docs.plus/extension-inline-code'
 import { Mermaid, type MermaidStateEvent } from '@docs.plus/extension-mermaid'
 import { Placeholder } from '@docs.plus/extension-placeholder'
 import type { HocuspocusProvider } from '@hocuspocus/provider'
+import { padUrl } from '@services/padUrl'
 import { useStore } from '@stores'
 import { authStore } from '@stores'
 import { Collaboration, isChangeOrigin } from '@tiptap/extension-collaboration'
@@ -106,8 +107,7 @@ const reportDiagramState = (event: MermaidStateEvent): void => {
 }
 
 const scrollDown = () => {
-  const url = new URL(window.location.href)
-  const id = url.searchParams.get('id')
+  const id = padUrl.read()?.headingId
 
   if (!id) return
   setTimeout(() => {

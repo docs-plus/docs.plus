@@ -1,4 +1,5 @@
 import { logger } from './logger'
+import { padUrlCore } from './padUrlCore'
 
 /**
  * The single source of truth for clipboard writes. React components should use
@@ -41,6 +42,19 @@ const copyToClipboardLegacy = (text: string): boolean => {
     document.body.removeChild(textArea)
     return false
   }
+}
+
+const escapeHtml = (text: string): string =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+/**
+ * Plain text keeps the encoded link, because some linkifiers end a link at a raw `>`.
+ * Rich paste targets get a link whose text shows the readable `>` trail.
+ */
+export const copyLinkToClipboard = (url: string): Promise<boolean> => {
+  const label = padUrlCore.readable(url)
+  if (label === url) return copyToClipboard(url)
+  return copyRichContentToClipboard(`<a href="${escapeHtml(url)}">${escapeHtml(label)}</a>`, url)
 }
 
 /** Writes both flavours so a paste target can keep the formatting. */

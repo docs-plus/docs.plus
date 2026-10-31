@@ -70,6 +70,33 @@ describe('match-section engine', () => {
     )
   })
 
+  it('reads a hyphen and a space as one character, with exact highlight ranges', () => {
+    // A URL writes a space as `-`, so "apple-pie" must hit the text "apple pie".
+    expect(ids(filterSections(makeDoc(), ['apple-pie'], 'or'))).toEqual(['fruit', 'fruit-sweet'])
+    const [hit] = matchSections(makeDoc(), 'apple-pie')
+    const doc = makeDoc()
+    expect(doc.textBetween(hit.matches[0].from, hit.matches[0].to)).toBe('apple pie')
+  })
+
+  it('matches a term written with "-" across any whitespace gap in the text', () => {
+    const doc = schema.nodeFromJSON({
+      type: 'doc',
+      content: [
+        h(1, 'title', 'Title'),
+        h(2, 'nbsp', 'Price\u00a0list'),
+        h(2, 'tab', 'Tab\there'),
+        h(2, 'double', 'Two  spaces')
+      ]
+    })
+    for (const [term, id] of [
+      ['price-list', 'nbsp'],
+      ['tab-here', 'tab'],
+      ['two-spaces', 'double']
+    ]) {
+      expect(matchSections(doc, term).map((m) => m.section.id)).toEqual([id])
+    }
+  })
+
   it('empty slugs means show everything', () => {
     expect(ids(filterSections(makeDoc(), [], 'or'))).toEqual(['fruit', 'fruit-sweet', 'veg'])
   })

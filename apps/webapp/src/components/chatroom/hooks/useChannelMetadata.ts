@@ -1,4 +1,5 @@
 import { fetchChannelInitialData, joinChannel } from '@api'
+import { padUrl } from '@services/padUrl'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { useEffect, useRef, useState } from 'react'
 
@@ -67,9 +68,8 @@ export const useChannelMetadata = (channelId: string) => {
     const loadUid = useAuthStore.getState()?.profile?.id || ''
     const joinedAtLoad = useStore.getState().settings.workspaceJoin === 'joined'
     writeSyncUidRef.current = joinedAtLoad ? loadUid : ''
-    const startMsgId =
-      useChatStore.getState().chatRoom.fetchMsgsFromId ||
-      new URLSearchParams(location.search).get('msg_id')
+    const { fetchMsgsFromId, headingId } = useChatStore.getState().chatRoom
+    const startMsgId = fetchMsgsFromId || padUrl.messageFor({ headingId, channelId }) || null
     ;(async () => {
       try {
         await syncChannel(channelId, loadUid, joinedAtLoad, startMsgId, () => cancelled)

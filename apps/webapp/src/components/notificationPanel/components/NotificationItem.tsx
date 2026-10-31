@@ -16,9 +16,10 @@ import { Avatar } from '@components/ui/Avatar'
 import { useDismissPanelBeforeNavigate } from '@hooks/useDismissPanel'
 import { openOverlayHash } from '@hooks/useHashOverlay'
 import { Icons } from '@icons'
+import { padUrl } from '@services/padUrl'
 import { useAuthStore, useStore } from '@stores'
 import { type PanelSurfaceVariant, type TNotification } from '@types'
-import { padSlugOf } from '@utils/filterRoute'
+import { padUrlCore } from '@utils/padUrlCore'
 import { useRouter } from 'next/router'
 import { LuTriangleAlert } from 'react-icons/lu'
 
@@ -40,7 +41,8 @@ const actionUrlPathname = (actionUrl: string | null | undefined): string | null 
 
 /** A carrier row has no title column, so its only document identity is the link slug. */
 const documentNameFromActionUrl = (actionUrl: string | null | undefined): string => {
-  const slug = actionUrlPathname(actionUrl)?.split('/').filter(Boolean).pop()
+  // The first segment, not the last: later segments carry the reader's filter terms.
+  const slug = actionUrl ? padUrlCore.parse(actionUrl, actionUrl)?.slug : undefined
   if (!slug) return 'Document'
   try {
     return decodeURIComponent(slug)
@@ -75,7 +77,7 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
       await dismissBeforeNavigate()
       if (!target) return
 
-      if (padSlugOf(target) !== padSlugOf(window.location.pathname)) {
+      if (padUrl.read(target)?.slug !== padUrl.read()?.slug) {
         void router.push(`${target}#history`)
         return
       }

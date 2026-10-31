@@ -1,4 +1,5 @@
 import TextInput from '@components/ui/TextInput'
+import { padUrl } from '@services/padUrl'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
 import { LuFileText } from 'react-icons/lu'
@@ -94,7 +95,7 @@ function DocumentListRow({
   }, [isRenaming])
 
   const open = () => {
-    router.push(`/${doc.slug}`)
+    router.push(padUrl.link({ kind: 'document', slug: doc.slug }, 'path'))
     onOpenDocument?.()
   }
 

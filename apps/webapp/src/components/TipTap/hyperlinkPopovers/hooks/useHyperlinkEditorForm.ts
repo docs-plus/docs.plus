@@ -1,5 +1,5 @@
 import { normalizeHref, wholeLink } from '@docs.plus/extension-hyperlink'
-import { buildBookmarkHref, buildHeadingHref } from '@utils/link-helpers'
+import { padUrl } from '@services/padUrl'
 import {
   type FormEvent,
   type KeyboardEvent,
@@ -113,8 +113,11 @@ export function useHyperlinkEditorForm({
 
   const applyPicked = useCallback(
     (s: Suggestion) => {
-      const pickedHref =
-        s.kind === 'heading' ? buildHeadingHref(editor, s.id) : buildBookmarkHref(s)
+      const pickedHref = padUrl.link(
+        s.kind === 'heading'
+          ? { kind: 'heading', headingId: s.id }
+          : { kind: 'chat', linkId: s.channelId, messageId: s.messageId }
+      )
       const pickedText = s.title
       let applied: boolean | void
       if (mode === 'edit') {

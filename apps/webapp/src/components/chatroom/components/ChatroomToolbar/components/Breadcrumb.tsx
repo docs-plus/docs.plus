@@ -1,5 +1,6 @@
 import { Icons } from '@icons'
 import { CHAT_OPEN } from '@services/eventsHub'
+import { padUrl } from '@services/padUrl'
 import { selectDocumentId, useChatStore, useStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
 import PubSub from 'pubsub-js'
@@ -26,7 +27,8 @@ export const Breadcrumb = ({ className }: Props) => {
     (e: React.MouseEvent, heading: HeadingBreadcrumbItem) => {
       if (variant === 'mobile') return
       e.preventDefault()
-      window.history.pushState({}, '', heading.url)
+      // The crumb href is the pad base for Copy link address; the click keeps the live filter.
+      void padUrl.go({ kind: 'heading', headingId: heading.id, entry: 'push' })
 
       PubSub.publish(CHAT_OPEN, {
         headingId: heading.id,

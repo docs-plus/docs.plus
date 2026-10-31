@@ -1,5 +1,5 @@
 import { usePopoverState } from '@components/ui/Popover'
-import { consumeHistoryDismissEntry } from '@hooks/useHistoryDismiss'
+import { consumeHistoryDismissEntry } from '@services/historyDismiss'
 import { useSheetStore } from '@stores'
 import { type PanelSurfaceVariant } from '@types'
 import { useCallback } from 'react'

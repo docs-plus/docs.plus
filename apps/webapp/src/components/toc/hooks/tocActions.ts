@@ -2,11 +2,10 @@ import { computeSection } from '@components/TipTap/extensions/shared'
 import * as toast from '@components/toast'
 import { openConfirmDialog } from '@components/ui/dialogs/ConfirmDialog'
 import { CHAT_OPEN } from '@services/eventsHub'
+import { padUrl } from '@services/padUrl'
 import { useStore } from '@stores'
 import { TIPTAP_NODES } from '@types'
-import { copyToClipboard } from '@utils/clipboard'
-import { buildHeadingHref } from '@utils/link-helpers'
-import Router from 'next/router'
+import { copyLinkToClipboard } from '@utils/clipboard'
 import PubSub from 'pubsub-js'
 
 import {
@@ -44,7 +43,7 @@ function removeSectionNow(headingId: string): void {
   }
 }
 
-/** Call-time getState / Router — one stable object, no per-row subscriptions. */
+/** Call-time getState — one stable object, no per-row subscriptions. */
 export const tocActions = {
   openChatroom(headingId: string, options?: { scrollTo?: boolean; focusEditor?: boolean }): void {
     PubSub.publish(CHAT_OPEN, {
@@ -59,26 +58,21 @@ export const tocActions = {
     headingId: string,
     options?: { openChat?: boolean; updateUrl?: boolean }
   ): void {
-    const editor = editorOrNull()
-    if (!editor) return
-    navigateToHeadingAction(editor, headingId, options)
+    if (!editorOrNull()) return
+    navigateToHeadingAction(headingId, options)
   },
 
   navigateToDocTitle(options: { openChat?: boolean }): void {
-    const { metadata } = useStore.getState().settings
     navigateToDocTitleAction({
-      workspaceId: metadata.documentId,
-      title: metadata.title ?? '',
+      workspaceId: useStore.getState().settings.metadata.documentId,
       openChat: options.openChat
     })
   },
 
   async copyLink(headingId: string): Promise<void> {
-    const editor = editorOrNull()
-    if (!headingId || !editor) return
+    if (!headingId) return
 
-    const href = buildHeadingHref(editor, headingId)
-    const success = await copyToClipboard(href)
+    const success = await copyLinkToClipboard(padUrl.link({ kind: 'heading', headingId }))
     if (success) {
       toast.Success('Section link copied')
     } else {
@@ -98,16 +92,7 @@ export const tocActions = {
     const headingText = (headingElement.innerText || headingElement.textContent || '').trim()
     if (!headingText) return
 
-    const url = new URL(window.location.href)
-    url.searchParams.forEach((_, key) => {
-      url.searchParams.delete(key)
-    })
-
-    const slugs = url.pathname.split('/').slice(1)
-    url.pathname = `/${slugs.at(0)}/${encodeURIComponent(headingText)}`
-    url.searchParams.set('id', headingId)
-
-    void Router.push(url.toString(), undefined, { shallow: true })
+    void padUrl.go({ kind: 'focus', headingId, term: headingText })
   },
 
   deleteSection(headingId: string): void {

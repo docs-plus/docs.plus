@@ -1,6 +1,6 @@
 import { ChunkLoadFallback } from '@components/ChunkLoadFallback'
 import { popoverPanelClassName } from '@components/ui/Popover'
-import { usePadShareUrl } from '@hooks/usePadShareUrl'
+import { padUrl } from '@services/padUrl'
 import { twMerge } from '@utils/twMerge'
 import dynamic from 'next/dynamic'
 import { type CSSProperties, useEffect, useRef, useState } from 'react'
@@ -35,7 +35,7 @@ interface DragSession {
 
 /** The toolbar's QR card for the pad URL. `DesktopEditor` mounts it only while it is shown. */
 export function PadQrCode() {
-  const shareUrl = usePadShareUrl()
+  const shareUrl = padUrl.link({ kind: 'document' })
   // Session-only: hiding the card unmounts it, so the next show starts at MIN_SIZE again.
   const [size, setSize] = useState(MIN_SIZE)
   const [dragging, setDragging] = useState(false)

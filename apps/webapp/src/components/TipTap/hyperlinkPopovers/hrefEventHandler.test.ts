@@ -1,13 +1,13 @@
 /// <reference types="jest" />
 
-jest.mock(
-  '@services/eventsHub',
-  () => ({
-    APPLY_FILTER: 'APPLY_FILTER',
-    CHAT_OPEN: 'CHAT_OPEN'
-  }),
-  { virtual: true }
-)
+// Pad URL loads the app store, which this test does not need; `read` is the pure parse.
+jest.mock('../../../services/padUrl', () => ({
+  padUrl: {
+    go: jest.fn(),
+    read: (href: string) =>
+      jest.requireActual('../../../utils/padUrlCore').padUrlCore.parse(href, window.location.origin)
+  }
+}))
 // The chat-link opener loads the Supabase client, which needs env this test does not set.
 jest.mock('../../../services/openChatFromLink', () => ({ openChatFromLink: jest.fn() }))
 jest.mock('next/router', () => ({ __esModule: true, default: { push: jest.fn() } }))

@@ -18,12 +18,12 @@ describe('classifyInternalDocumentLink', () => {
   it('classifies the canonical chat dialect with and without a message', () => {
     expect(classifyInternalDocumentLink(`${origin}/test?chatroom=c1&msg_id=m1`, here)).toEqual({
       kind: 'chat',
-      channelId: 'c1',
+      linkId: 'c1',
       messageId: 'm1'
     })
     expect(classifyInternalDocumentLink(`${origin}/test?chatroom=c1`, here)).toEqual({
       kind: 'chat',
-      channelId: 'c1',
+      linkId: 'c1',
       messageId: undefined
     })
   })
@@ -31,7 +31,7 @@ describe('classifyInternalDocumentLink', () => {
   it('translates the legacy act=ch chat dialect', () => {
     expect(classifyInternalDocumentLink(`${origin}/test?act=ch&c_id=c2&m_id=m2`, here)).toEqual({
       kind: 'chat',
-      channelId: 'c2',
+      linkId: 'c2',
       messageId: 'm2'
     })
   })
@@ -135,22 +135,22 @@ describe('describeInternalDocumentLink', () => {
 
   it('leads a chat link with the quoted heading name and says Chat or Message below', () => {
     const editor = editorWithHeadings([{ id: 'c1', text: 'Launch plan' }])
-    expect(describeInternalDocumentLink({ kind: 'chat', channelId: 'c1' }, editor)).toMatchObject({
+    expect(describeInternalDocumentLink({ kind: 'chat', linkId: 'c1' }, editor)).toMatchObject({
       label: '\u201CLaunch plan\u201D',
       sublabel: 'In this document \u00B7 Chat'
     })
     expect(
-      describeInternalDocumentLink({ kind: 'chat', channelId: 'c1', messageId: 'm1' }, editor)
+      describeInternalDocumentLink({ kind: 'chat', linkId: 'c1', messageId: 'm1' }, editor)
     ).toMatchObject({ sublabel: 'In this document \u00B7 Message' })
   })
 
   it('falls back to Chat when the heading cannot be resolved', () => {
     const editor = editorWithHeadings([{ id: 'other', text: 'Other' }])
-    expect(describeInternalDocumentLink({ kind: 'chat', channelId: 'c1' }, editor)).toMatchObject({
+    expect(describeInternalDocumentLink({ kind: 'chat', linkId: 'c1' }, editor)).toMatchObject({
       label: 'Chat',
       sublabel: 'In this document'
     })
-    expect(describeInternalDocumentLink({ kind: 'chat', channelId: 'c1' }, null)).toMatchObject({
+    expect(describeInternalDocumentLink({ kind: 'chat', linkId: 'c1' }, null)).toMatchObject({
       label: 'Chat',
       sublabel: 'In this document'
     })

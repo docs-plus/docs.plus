@@ -45,7 +45,7 @@ export default function AppProviders({
 
   useEffect(() => {
     if (!router.isReady || !documentShell) return
-    const stop = eventsHub(router)
+    const stop = eventsHub()
 
     performMaintenanceCleanup().catch(() => {
       // Silently fail - cleanup is best-effort

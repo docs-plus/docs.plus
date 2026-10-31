@@ -6,12 +6,10 @@ import TextInput from '@components/ui/TextInput'
 import Toggle from '@components/ui/Toggle'
 import { useDismissPanel } from '@hooks/useDismissPanel'
 import { Icons } from '@icons'
-import { RESET_FILTER } from '@services/eventsHub'
+import { padUrl } from '@services/padUrl'
 import { useStore } from '@stores'
 import type { PanelSurfaceVariant } from '@types'
-import { appendFilterSegment, setFilterMode } from '@utils/filterRoute'
 import { useRouter } from 'next/router'
-import PubSub from 'pubsub-js'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { FilterSuggestions } from './FilterSuggestions'
@@ -39,7 +37,7 @@ const FilterPanel = ({ variant = 'popover' }: FilterPanelProps) => {
   const router = useRouter()
   const editor = useStore((state) => state.settings.editor.instance)
   const sortedSlugs = useStore((state) => state.settings.editor.filterResult.sortedSlugs)
-  const mode: 'or' | 'and' = router.query.mode === 'and' ? 'and' : 'or'
+  const mode = padUrl.read(router.asPath)?.mode ?? 'or'
 
   const [filterInput, setFilterInput] = useState('')
   const [activeIndex, setActiveIndex] = useState(-1)
@@ -63,13 +61,6 @@ const FilterPanel = ({ variant = 'popover' }: FilterPanelProps) => {
     if (isSheet) dismissPanel()
   }, [isSheet, dismissPanel])
 
-  const pushShallow = useCallback(
-    (href: string) => {
-      void router.push(href, undefined, { shallow: true })
-    },
-    [router]
-  )
-
   useEffect(() => {
     // Mobile sheet: TocModal is closed while filtering — skip dead TOC highlight work.
     if (isSheet) return
@@ -90,13 +81,12 @@ const FilterPanel = ({ variant = 'popover' }: FilterPanelProps) => {
 
   const applyFilterSegment = useCallback(
     (term: string) => {
-      const href = appendFilterSegment(router.asPath, term)
-      if (!href) return
-      pushShallow(href)
+      if (!term.trim()) return
+      void padUrl.go({ kind: 'filterAdd', term })
       clearForm()
       dismissSheetIfNeeded()
     },
-    [router.asPath, pushShallow, clearForm, dismissSheetIfNeeded]
+    [clearForm, dismissSheetIfNeeded]
   )
 
   const handleKeyDown = useCallback(
@@ -135,7 +125,7 @@ const FilterPanel = ({ variant = 'popover' }: FilterPanelProps) => {
 
   const handleClearAll = useCallback(() => {
     clearForm()
-    PubSub.publish(RESET_FILTER, {})
+    void padUrl.go({ kind: 'filterReset' })
     dismissSheetIfNeeded()
   }, [clearForm, dismissSheetIfNeeded])
 
@@ -223,7 +213,7 @@ const FilterPanel = ({ variant = 'popover' }: FilterPanelProps) => {
             id="filter-mode-and"
             checked={mode === 'and'}
             onChange={() =>
-              pushShallow(setFilterMode(router.asPath, mode === 'and' ? 'or' : 'and'))
+              void padUrl.go({ kind: 'filterMode', mode: mode === 'and' ? 'or' : 'and' })
             }
             size="sm"
             variant="primary"

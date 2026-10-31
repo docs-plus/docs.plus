@@ -4,7 +4,8 @@ import {
   isSafeHref,
   SAFE_WINDOW_FEATURES
 } from '@docs.plus/extension-hyperlink'
-import { padSlugOf, shallowPath } from '@utils/filterRoute'
+import { padUrl } from '@services/padUrl'
+import type { PadFacets } from '@types'
 import { isReservedSlug } from '@utils/reservedSlugs'
 import Router from 'next/router'
 
@@ -16,24 +17,14 @@ import { runInternalDocumentLink } from './internalDocumentLinkActions'
 // `previewHyperlinkPopover` is never on this click path. Reuse the extension's
 // exported `SAFE_WINDOW_FEATURES` so both stacks pass `'noopener,noreferrer'`.
 
-/**
- * True for a same-origin pad link. A path with a file extension is a public
- * file, not a pad, and an href that does not parse is not a pad.
- */
-export const isAnotherPad = (href: string): boolean => {
-  try {
-    const url = new URL(href, window.location.origin)
-    const slug = padSlugOf(url.pathname)
-    return (
-      url.origin === window.location.origin &&
-      !!slug &&
-      !isReservedSlug(slug) &&
-      !/\.[a-z0-9]+$/i.test(url.pathname)
-    )
-  } catch {
-    return false
-  }
+/** The address of a same-origin pad, or `null`. A path with a file extension is a public file. */
+const anotherPad = (href: string): PadFacets | null => {
+  const pad = padUrl.read(href)
+  if (!pad?.sameOrigin || !pad.slug || isReservedSlug(pad.slug)) return null
+  return /\.[a-z0-9]+$/i.test(new URL(href, window.location.origin).pathname) ? null : pad
 }
+
+export const isAnotherPad = (href: string): boolean => anotherPad(href) !== null
 
 /**
  * Destinations inside the current document run in place. A same-origin link to
@@ -58,10 +49,11 @@ export const navigateHref = (
   }
 
   // Another pad: route like a Documents row Open, so the app keeps one window.
-  if (!(event?.metaKey || event?.ctrlKey) && isAnotherPad(href)) {
+  const pad = event?.metaKey || event?.ctrlKey ? null : anotherPad(href)
+  if (pad) {
     // Close the preview popover, as an in-document link does; the route stays in this window.
     getDefaultController().close()
-    void Router.push(shallowPath(new URL(href, window.location.origin)))
+    void Router.push(pad.path)
     return
   }
 

@@ -1,4 +1,5 @@
 import * as toast from '@components/toast'
+import { padUrl } from '@services/padUrl'
 import { useMutation } from '@tanstack/react-query'
 import { supabaseClient } from '@utils/supabase'
 
@@ -47,7 +48,8 @@ const useDuplicateDocument = (userId: string) => {
       toast.Success(`Copy of “${name}” created`, {
         id: toastId,
         actionLabel: 'Open',
-        onAction: () => window.open(`/${copy.slug}`, '_blank')
+        onAction: () =>
+          window.open(padUrl.link({ kind: 'document', slug: copy.slug }, 'path'), '_blank')
       })
     },
     onError: (_error, _variables, context) =>

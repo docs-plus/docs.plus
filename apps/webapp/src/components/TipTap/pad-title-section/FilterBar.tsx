@@ -1,9 +1,8 @@
 import Button from '@components/ui/Button'
 import { Icons } from '@icons'
-import { REMOVE_FILTER, RESET_FILTER } from '@services/eventsHub'
+import { padUrl } from '@services/padUrl'
 import { useStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
-import PubSub from 'pubsub-js'
 import { useCallback } from 'react'
 
 const Chip = ({ text }: { text: string }) => (
@@ -11,7 +10,7 @@ const Chip = ({ text }: { text: string }) => (
     <span className="truncate">{text}</span>
     <button
       type="button"
-      onClick={() => PubSub.publish(REMOVE_FILTER, { slug: text })}
+      onClick={() => void padUrl.go({ kind: 'filterRemove', term: text })}
       aria-label={`Remove filter: ${text}`}
       className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full opacity-70 hover:opacity-100">
       <Icons.close size={20} className="stroke-[1.75]" />
@@ -30,7 +29,7 @@ const FilterBar = ({
   const sortedSlugs = useStore((state) => state.settings.editor.filterResult.sortedSlugs)
 
   const resetFilterHandler = useCallback(() => {
-    PubSub.publish(RESET_FILTER, {})
+    void padUrl.go({ kind: 'filterReset' })
   }, [])
 
   if (sortedSlugs.length === 0) return null

@@ -2,7 +2,7 @@ import { Icons } from '@components/icons/registry'
 import { parseHistoryHash } from '@components/pages/history/historyShareUrl'
 import type { Editor } from '@tiptap/core'
 import { TIPTAP_NODES } from '@types'
-import { padSlugOf } from '@utils/filterRoute'
+import { padUrlCore } from '@utils/padUrlCore'
 import type { IconType } from 'react-icons'
 
 import type { InternalDocumentLink, InternalLinkDescriptor } from './types'
@@ -27,72 +27,35 @@ export const INTERNAL_KIND_NAME: Record<InternalDocumentLink['kind'], string> = 
   history: 'Version history'
 }
 
-// A malformed escape such as `%E0` makes decodeURIComponent throw; keep the raw segment.
-const safeDecode = (segment: string): string => {
-  try {
-    return decodeURIComponent(segment)
-  } catch {
-    return segment
-  }
-}
-
 /**
  * Resolves to an in-document destination, or `null` for external. Precedence
- * is history → filter → chat → heading → legacy chat → bare document; the
- * doc-slug match is exact (not `startsWith`) and guarded by origin.
+ * is history → filter → chat → heading → bare document; the doc-slug match is
+ * exact (not `startsWith`) and guarded by origin. Pad URL reads the old forms.
  */
 export function classifyInternalDocumentLink(
   href: string,
   currentPathname: string
 ): InternalDocumentLink | null {
   const origin = typeof window !== 'undefined' ? window.location.origin : undefined
-  let url: URL
-  try {
-    url = new URL(href, origin)
-  } catch {
-    return null
-  }
-  if (origin && url.origin !== origin) return null
+  const base = origin ?? 'http://localhost'
+  const pad = padUrlCore.parse(href, base)
+  if (!pad || (origin && !pad.sameOrigin)) return null
 
-  const currentDocSlug = padSlugOf(currentPathname)
-  const segments = url.pathname.split('/').filter(Boolean)
-  if (!currentDocSlug || segments[0] !== currentDocSlug) return null
+  const currentDocSlug = padUrlCore.parse(currentPathname, base)?.slug
+  if (!currentDocSlug || pad.slug !== currentDocSlug) return null
 
-  const history = parseHistoryHash(url.hash)
+  const history = parseHistoryHash(pad.hash)
   if (history.isHistory) return { kind: 'history', version: history.version }
 
-  if (segments.length > 1) {
-    return {
-      kind: 'filter',
-      terms: segments.slice(1).map(safeDecode),
-      mode: url.searchParams.get('mode') === 'and' ? 'and' : 'or',
-      href
-    }
+  if (pad.terms.length > 0) {
+    return { kind: 'filter', terms: pad.terms, mode: pad.mode ?? 'or', href }
   }
-
-  const chatroom = url.searchParams.get('chatroom')
-  if (chatroom) {
-    return {
-      kind: 'chat',
-      channelId: chatroom,
-      messageId: url.searchParams.get('msg_id') ?? undefined
-    }
-  }
-
-  const headingId = url.searchParams.get('id')
-  if (headingId) return { kind: 'heading', headingId }
-
-  if (url.searchParams.get('act') === 'ch') {
-    const channelId = url.searchParams.get('c_id')
-    if (channelId) {
-      return { kind: 'chat', channelId, messageId: url.searchParams.get('m_id') ?? undefined }
-    }
-  }
-
+  if (pad.chat) return { kind: 'chat', ...pad.chat }
+  if (pad.headingId) return { kind: 'heading', headingId: pad.headingId }
   return { kind: 'document' }
 }
 
-/** Resolve a heading/channel `toc-id` to its heading text, mirroring `buildHeadingHref`'s doc walk. */
+/** Resolve a heading/channel `toc-id` to its heading text, mirroring the outline walk. */
 const resolveHeadingTitle = (editor: Editor | null, tocId: string): string | undefined => {
   if (!editor) return undefined
   const { doc } = editor.state
@@ -132,7 +95,7 @@ export function describeInternalDocumentLink(
       }
     }
     case 'chat': {
-      const title = resolveHeadingTitle(editor, link.channelId)
+      const title = resolveHeadingTitle(editor, link.linkId)
       const noun = link.messageId ? 'Message' : 'Chat'
       return {
         label: title ? quoted(title) : 'Chat',

@@ -13,6 +13,7 @@ import { useCloseAfterHold } from '@hooks/useCloseAfterHold'
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { useDocumentAccessMutation } from '@hooks/useDocumentAccessMutation'
 import { Icons } from '@icons'
+import { padUrl } from '@services/padUrl'
 import { type SheetDataMap, useSheetStore, useStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
 import { type MouseEvent, type ReactNode, useEffect, useId } from 'react'
@@ -178,7 +179,7 @@ function RowMenuItems({ doc, scope, isOwner, onRename, onDelete, rows, close }: 
   }
 
   const openInNewTab = () => {
-    window.open(`/${slug}`, '_blank')
+    window.open(padUrl.link({ kind: 'document', slug }, 'path'), '_blank')
     closeNow()
   }
 
@@ -201,7 +202,7 @@ function RowMenuItems({ doc, scope, isOwner, onRename, onDelete, rows, close }: 
 
       {!isPrivate && (
         <Action
-          onClick={() => void copy(`${window.location.origin}/${slug}`)}
+          onClick={() => void copy(padUrl.link({ kind: 'document', slug }))}
           ariaLabel={copied ? 'Copied!' : 'Copy link'}
           icon={
             <span className={twMerge('swap', copied && 'swap-active')} aria-hidden>
