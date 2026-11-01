@@ -7,10 +7,12 @@ import {
 import { isReservedSlug } from '@docs.plus/pad-url'
 import { padUrl } from '@services/padUrl'
 import type { PadFacets } from '@types'
+import { isWebHref } from '@utils/link-helpers'
 import Router from 'next/router'
 
 import { classifyInternalDocumentLink } from './internalDocumentLink'
 import { runInternalDocumentLink } from './internalDocumentLinkActions'
+import type { InternalDocumentLink } from './types'
 
 // The webapp ships its own preview popover (`previewHyperlink` factory wired
 // into `Hyperlink.configure`), so the extension's hardened
@@ -24,7 +26,24 @@ const anotherPad = (href: string): PadFacets | null => {
   return /\.[a-z0-9]+$/i.test(new URL(href, window.location.origin).pathname) ? null : pad
 }
 
-export const isAnotherPad = (href: string): boolean => anotherPad(href) !== null
+/** Where a link goes from the open pad: a place in it, another pad, a web page, or an app scheme. */
+export type LinkDestination =
+  | { kind: 'here'; link: InternalDocumentLink }
+  | { kind: 'pad'; pad: PadFacets }
+  | { kind: 'web' }
+  | { kind: 'other' }
+
+/** The one order of the link rules. This pad comes first, because `anotherPad` accepts it too. */
+export const linkDestination = (
+  href: string,
+  pathname = window.location.pathname
+): LinkDestination => {
+  const link = classifyInternalDocumentLink(href, pathname)
+  if (link) return { kind: 'here', link }
+  const pad = anotherPad(href)
+  if (pad) return { kind: 'pad', pad }
+  return isWebHref(href) ? { kind: 'web' } : { kind: 'other' }
+}
 
 /**
  * Destinations inside the current document run in place. A same-origin link to
@@ -42,18 +61,17 @@ export const navigateHref = (
   // `javascript:`, `data:`, `vbscript:`, `file:`, `blob:` before anything.
   if (isAllowedUri ? !isAllowedUri(href) : !isSafeHref(href)) return
 
-  const link = classifyInternalDocumentLink(href, window.location.pathname)
-  if (link) {
-    runInternalDocumentLink(link)
+  const destination = linkDestination(href)
+  if (destination.kind === 'here') {
+    runInternalDocumentLink(destination.link)
     return
   }
 
   // Another pad: route like a Documents row Open, so the app keeps one window.
-  const pad = event?.metaKey || event?.ctrlKey ? null : anotherPad(href)
-  if (pad) {
+  if (destination.kind === 'pad' && !event?.metaKey && !event?.ctrlKey) {
     // Close the preview popover, as an in-document link does; the route stays in this window.
     getDefaultController().close()
-    void Router.push(pad.path)
+    void Router.push(destination.pad.path)
     return
   }
 

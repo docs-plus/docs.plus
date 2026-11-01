@@ -56,16 +56,20 @@ describe('navigateHref', () => {
     expect(open).toHaveBeenCalledTimes(3)
   })
 
-  it('isAnotherPad accepts a same-origin pad and refuses reserved, file and foreign hrefs', () => {
+  it('linkDestination puts this pad first, then another pad, then the web', () => {
     history.pushState({}, '', '/pad-a')
-    const { isAnotherPad } = require('./hrefEventHandler') as typeof import('./hrefEventHandler')
+    const { linkDestination } = require('./hrefEventHandler') as typeof import('./hrefEventHandler')
+    const kind = (href: string) => linkDestination(href, '/pad-a').kind
 
-    expect(isAnotherPad('https://docs.plus/other-pad')).toBe(false)
-    expect(isAnotherPad(`${window.location.origin}/other-pad`)).toBe(true)
-    expect(isAnotherPad('/other-pad')).toBe(true)
-    expect(isAnotherPad('/')).toBe(false)
-    expect(isAnotherPad('/privacy')).toBe(false)
-    expect(isAnotherPad('/badges/x.svg')).toBe(false)
-    expect(isAnotherPad('http://[bad')).toBe(false)
+    expect(kind('/pad-a')).toBe('here')
+    expect(kind(`${window.location.origin}/pad-a?id=h1`)).toBe('here')
+    expect(kind(`${window.location.origin}/other-pad`)).toBe('pad')
+    expect(kind('/other-pad')).toBe('pad')
+    expect(kind('https://docs.plus/other-pad')).toBe('web')
+    expect(kind(`${window.location.origin}/privacy`)).toBe('web')
+    expect(kind(`${window.location.origin}/badges/x.svg`)).toBe('web')
+    expect(kind('mailto:a@b.com')).toBe('other')
+    expect(kind('/')).toBe('other')
+    expect(kind('http://[bad')).toBe('other')
   })
 })

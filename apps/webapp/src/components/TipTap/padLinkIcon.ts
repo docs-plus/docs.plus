@@ -3,17 +3,11 @@ import { type LinkIconContext, linkIconFetcher, linkIconMap } from '@docs.plus/e
 import { iconRouteUrl } from '@utils/iconRouteUrl'
 import { lucideSvgString } from '@utils/lucideSvgString'
 
-import { isAnotherPad } from './hyperlinkPopovers/hrefEventHandler'
-import {
-  classifyInternalDocumentLink,
-  INTERNAL_KIND_ICON,
-  INTERNAL_KIND_NAME
-} from './hyperlinkPopovers/internalDocumentLink'
+import { type LinkDestination, linkDestination } from './hyperlinkPopovers/hrefEventHandler'
+import { INTERNAL_KIND_ICON, INTERNAL_KIND_NAME } from './hyperlinkPopovers/internalDocumentLink'
 import type { InternalDocumentLink } from './hyperlinkPopovers/types'
 
-type Kind = InternalDocumentLink['kind']
-
-// isAnotherPad already checked the origin, so any host works here. A fixed key keeps
+// linkDestination already checked the origin, so any host works here. A fixed key keeps
 // linkIconMap's one-request-per-URL image cache (#516), on any origin the app runs on.
 const logoMap = linkIconMap({ 'docs.plus': '/icons/logo.svg' }) // same origin: CSP img-src 'self'
 const LOGO_HREF = 'https://docs.plus/'
@@ -30,20 +24,20 @@ const fetchIcon = linkIconFetcher({
   src: (origin) => routes.get(origin) ?? routes.set(origin, iconRouteUrl(origin)).get(origin)!
 })
 
-// Each link classifies once per page. A new pathname changes which pad is "this" pad.
-const kinds = new Map<string, Kind | null>()
-let kindsPath = ''
-const kindOf = (href: string): Kind | null => {
+// Each link resolves once per page. A new pathname changes which pad is "this" pad.
+const destinations = new Map<string, LinkDestination>()
+let destinationsPath = ''
+const destinationOf = (href: string): LinkDestination => {
   const path = window.location.pathname
-  if (path !== kindsPath) {
-    kinds.clear()
-    kindsPath = path
+  if (path !== destinationsPath) {
+    destinations.clear()
+    destinationsPath = path
   }
-  if (!kinds.has(href)) kinds.set(href, classifyInternalDocumentLink(href, path)?.kind ?? null)
-  return kinds.get(href)!
+  if (!destinations.has(href)) destinations.set(href, linkDestination(href, path))
+  return destinations.get(href)!
 }
 
-const kindIcon = (kind: Kind): HTMLElement => {
+const kindIcon = (kind: InternalDocumentLink['kind']): HTMLElement => {
   const el = Object.assign(document.createElement('span'), {
     innerHTML: lucideSvgString(INTERNAL_KIND_ICON[kind], 16)
   })
@@ -54,8 +48,8 @@ const kindIcon = (kind: Kind): HTMLElement => {
 
 /** Pad resolver: same-pad kind glyph, the logo for another pad, mail and phone, then the favicon. */
 export const padLinkIcon = (ctx: LinkIconContext): HTMLElement | null => {
-  const kind = kindOf(ctx.href)
-  if (kind) return kindIcon(kind)
-  if (isAnotherPad(ctx.href)) return logoMap({ href: LOGO_HREF })
+  const destination = destinationOf(ctx.href)
+  if (destination.kind === 'here') return kindIcon(destination.link.kind)
+  if (destination.kind === 'pad') return logoMap({ href: LOGO_HREF })
   return appScheme(ctx) ?? fetchIcon(ctx)
 }

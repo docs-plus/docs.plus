@@ -1,13 +1,11 @@
 import { Icons } from '@components/icons/registry'
 import { InternalLinkChip } from '@components/TipTap/hyperlinkPopovers/components/InternalLinkChip'
-import { padNavigate } from '@components/TipTap/hyperlinkPopovers/hrefEventHandler'
-import { classifyInternalDocumentLink } from '@components/TipTap/hyperlinkPopovers/internalDocumentLink'
+import { linkDestination, padNavigate } from '@components/TipTap/hyperlinkPopovers/hrefEventHandler'
 import { runInternalDocumentLink } from '@components/TipTap/hyperlinkPopovers/internalDocumentLinkActions'
 import { ContextMenuDivider } from '@components/ui/ContextMenu'
 import { ContextMenuRowButton } from '@components/ui/ContextMenuRowButton'
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { useStore } from '@stores'
-import { isWebHref } from '@utils/link-helpers'
 import { twMerge } from '@utils/twMerge'
 import { useMemo } from 'react'
 
@@ -22,10 +20,8 @@ type Props = {
 
 export function ComposerLinkPreviewDialog({ href, onEdit, onRemove, onClose }: Props) {
   const padEditor = useStore((s) => s.settings.editor.instance)
-  const internalLink = useMemo(
-    () => classifyInternalDocumentLink(href, window.location.pathname),
-    [href]
-  )
+  const destination = useMemo(() => linkDestination(href), [href])
+  const internalLink = destination.kind === 'here' ? destination.link : null
 
   const { copy, copied } = useCopyToClipboard({
     successMessage: null,
@@ -40,7 +36,7 @@ export function ComposerLinkPreviewDialog({ href, onEdit, onRemove, onClose }: P
 
   // C6: a plain open, so `navigateHref` routes another pad in place and opens an external
   // page in a new tab (#359, PWA guard). Close first: the close pops history, which would undo a route.
-  const canOpen = !internalLink && isWebHref(href)
+  const canOpen = destination.kind === 'pad' || destination.kind === 'web'
   const handleOpen = () => {
     onClose()
     padNavigate(href, { newTab: false })

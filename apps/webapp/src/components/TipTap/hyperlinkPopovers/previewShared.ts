@@ -5,13 +5,13 @@ import {
   type SpecialUrlType
 } from '@docs.plus/extension-hyperlink'
 import { type Editor, isMacOS } from '@tiptap/core'
-import { getSiteIconUrl, isWebHref } from '@utils/link-helpers'
+import { getSiteIconUrl } from '@utils/link-helpers'
 import { lucideSvgString } from '@utils/lucideSvgString'
 import type { IconType } from 'react-icons'
 
 import { fetchMetadata } from './fetchMetadata'
 import { FILTER_MODE_LABEL_CLASS, FILTER_TERM_PILL_CLASS } from './filterTermPill'
-import { hrefEventHandler, isAnotherPad } from './hrefEventHandler'
+import { hrefEventHandler, linkDestination } from './hrefEventHandler'
 import { describeInternalDocumentLink } from './internalDocumentLink'
 import { runInternalDocumentLink } from './internalDocumentLinkActions'
 import type { InternalDocumentLink } from './types'
@@ -114,7 +114,7 @@ const createMetadataContent = (
     textContent: href
   })
   titleLink.dataset.popoverAutofocus = ''
-  if (isWebHref(href) && !isAnotherPad(href)) titleLink.title = newTabHint()
+  if (linkDestination(href).kind === 'web') titleLink.title = newTabHint()
   titleLink.addEventListener('click', hrefEventHandler(href))
   container.append(titleLink)
 
