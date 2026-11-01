@@ -58,13 +58,10 @@ const scoreLink = (attrs: Map<string, string>, url: URL, isTouch: boolean): numb
 }
 
 /**
- * Picks one icon href from the page head, or null. `readHead` keeps a whole last chunk,
- * so the scan cuts at `</head` itself. SVG and `data:` are skipped: the byte sniff refuses
- * SVG, and only an http(s) URL can go through `safeFetch`.
+ * Picks one icon href from the page head (`readHead` output), or null. SVG and `data:` are
+ * skipped: the byte sniff refuses SVG, and only an http(s) URL can go through `safeFetch`.
  */
-export const pickIconHref = (html: string, base: string): string | null => {
-  const end = html.search(/<\/head/i)
-  const head = end === -1 ? html : html.slice(0, end)
+export const pickIconHref = (head: string, base: string): string | null => {
   let best: Candidate | null = null
   let seen = 0
   for (const [tag] of head.matchAll(LINK_TAG_RE)) {

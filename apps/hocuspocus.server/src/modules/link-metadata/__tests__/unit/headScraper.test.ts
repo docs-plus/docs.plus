@@ -61,23 +61,13 @@ describe('createHeadScraper', () => {
     expect(meta.description).toBe(`${'a'.repeat(299)}😀…`)
   })
 
-  test('a void tag that matches a text rule does not throw', async () => {
-    // The corpus run hit `<img class="logo">`: onEndTag throws on a tag with no end tag.
+  test('reads no body rule', async () => {
+    // The read stops at </head, so a body rule would only see what the network sent first.
     const meta = await scrape(
-      '<title>Site - Page</title>',
-      '<img class="logo" src="/l.png" alt="Logo">'
+      '',
+      '<h1 class="title">Body</h1><img src="/b.png"><time datetime="2020">'
     )
-    expect(meta.title).toBe('Site - Page')
-  })
-
-  test('one element that two rules match still closes both', async () => {
-    // lol-html keeps one end-tag handler per element: a link with "logo" in its class once left
-    // the logo depth open, so a later banner image became the publisher.
-    const meta = await scrape(
-      '<title>Blog</title>',
-      '<div class="SiteLogo"><a class="logoLink" href="/">Home</a></div><img alt="Banner" src="/b.png">'
-    )
-    expect(meta.publisher).toBeUndefined()
+    expect(meta).toMatchObject({ title: undefined, image: undefined, date: undefined })
   })
 
   test('a title the head cut left open still counts', async () => {

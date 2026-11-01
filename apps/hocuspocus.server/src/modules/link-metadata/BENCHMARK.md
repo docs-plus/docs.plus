@@ -37,6 +37,9 @@ differences are the cut style: metascraper ends a cut with `…`, headScraper wi
 author and date rows are body-text rules, such as bylines, that headScraper does not read on
 purpose. These comparisons ran before the `name="og:*"` fix, which only adds values.
 
+These comparisons also ran before 2026-11-01. Since then `readHead` cuts at `</head`, and
+headScraper reads no body rule. A page whose title sits only in a body `h1` now gives `no-title`.
+
 ### Crafted pages
 
 A crafted page is a head built to be slow, for example deep nesting or a huge `@graph`. There are

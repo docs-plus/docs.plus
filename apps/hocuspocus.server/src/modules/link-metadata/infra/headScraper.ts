@@ -18,25 +18,12 @@ const DESCRIPTION_MAX = 300
 const AUTHOR_MAX = 128
 
 // Only elements a rule reads get a callback; each one costs about 0.1 µs, so a flood of short
-// bare tags must not match. An element that matches several entries is called back once.
+// bare tags must not match.
 const ELEMENT_SELECTOR = [
   'html[lang]',
   'meta[content]',
-  'time[datetime]',
-  'img[src]',
-  'img[alt]',
   'title',
   'script[type="application/ld+json"]',
-  'article',
-  '#content',
-  '#logo',
-  '.post-title',
-  '.entry-title',
-  '.logo',
-  '[class*="logo" i]',
-  'h1[class*="title" i]',
-  'a[href]',
-  'a[class*="brand" i]',
   '[itemprop]'
 ].join(', ')
 
@@ -61,21 +48,18 @@ const attrsOf = (el: HTMLRewriterTypes.Element): Attrs => {
 }
 
 /**
- * One pass over the head with one element handler. lol-html charges a descendant selector once
- * per matching ancestor, and keeps only one end-tag handler per element. So this handler matches
- * every rule itself, tracks ancestry with depth counters, and registers one end tag that undoes
- * what the element opened. One document-level text handler feeds the open captures.
+ * One pass over the head with one element handler and one document-level text handler.
+ * `readHead` cuts at `</head`, so a `<title>` the cut left open settles at the end.
  */
 const collect = (html: string) => {
   const elements: Element[] = []
   const counts = new Map<string, number>()
-  const texts = new Map<string, string>()
-  const open = new Map<string, { buffer: string; depth: number }>()
   const jsonLd: string[] = []
   let jsonLdChars = 0
   let script: string | undefined
+  let title: string | undefined
+  let titleBuffer: string | undefined
   let htmlLang: string | undefined
-  const depth = { article: 0, content: 0, logo: 0, logoLink: 0, h1Title: 0 }
 
   const keep = (tag: string, attrs: Attrs) => {
     const count = counts.get(tag) ?? 0
@@ -83,22 +67,12 @@ const collect = (html: string) => {
     counts.set(tag, count + 1)
     elements.push({ tag, attrs })
   }
-  // The first non-empty text of each key, as metascraper's `$filter` reads it. A nested tag of
-  // the same key joins the open capture, and a capture the head cut left open settles at the end.
-  const settle = (key: string, buffer: string) => {
-    if (!texts.has(key) && condense(buffer)) texts.set(key, buffer)
-  }
-  const capture = (key: string): (() => void) | undefined => {
-    if (texts.has(key)) return undefined
-    const current = open.get(key)
-    if (current) current.depth++
-    else open.set(key, { buffer: '', depth: 1 })
-    return () => {
-      const entry = open.get(key)
-      if (!entry || --entry.depth > 0) return
-      open.delete(key)
-      settle(key, entry.buffer)
+  // The first non-empty title, as metascraper's `$filter` reads it.
+  const settleTitle = () => {
+    if (title === undefined && titleBuffer !== undefined && condense(titleBuffer)) {
+      title = titleBuffer
     }
+    titleBuffer = undefined
   }
 
   const onElement = (el: HTMLRewriterTypes.Element) => {
@@ -106,70 +80,28 @@ const collect = (html: string) => {
     if (tag === 'html') htmlLang ??= el.getAttribute('lang') ?? undefined
     if (tag === 'meta') keep('meta', attrsOf(el))
     if (el.hasAttribute('itemprop')) keep('itemprop', attrsOf(el))
-    if (tag === 'time' && el.hasAttribute('datetime')) keep('time', attrsOf(el))
-    if (tag === 'img') {
-      const attrs = attrsOf(el)
-      if (attrs.src !== undefined) {
-        keep('img', attrs)
-        if (depth.article > 0) keep('article-img', attrs)
-        if (depth.content > 0) keep('content-img', attrs)
-      }
-      if (attrs.alt !== undefined && depth.logoLink > 0) keep('logo-link-img', attrs)
-      if (attrs.alt !== undefined && depth.logo > 0) keep('logo-img', attrs)
+    if (tag === 'title' && title === undefined) {
+      titleBuffer = ''
+      el.onEndTag(settleTitle)
     }
-    if (!el.canHaveContent) return
-
-    // Class tokens and ids match case-sensitively, as CSS does; `*= … i` matches any case.
-    const classAttr = el.getAttribute('class') ?? ''
-    const classes = classAttr.split(/\s+/)
-    const classLower = classAttr.toLowerCase()
-    const id = el.getAttribute('id')
-    const undo: Array<() => void> = []
-    const enter = (key: keyof typeof depth) => {
-      depth[key]++
-      undo.push(() => void depth[key]--)
-    }
-    const start = (key: string) => {
-      const close = capture(key)
-      if (close) undo.push(close)
-    }
-
-    if (tag === 'title') start('title')
-    if (classes.includes('post-title')) start('.post-title')
-    if (classes.includes('entry-title')) start('.entry-title')
-    if (id === 'logo') start('#logo')
-    if (classes.includes('logo')) start('.logo')
-    if (tag === 'a') {
-      if (classLower.includes('brand')) start('a-brand')
-      if (depth.h1Title > 0) start('h1-title-a')
-      if (depth.logo > 0) enter('logoLink')
-    }
-    if (tag === 'h1' && classLower.includes('title')) {
-      start('h1-title')
-      enter('h1Title')
-    }
-    if (tag === 'article') enter('article')
-    if (id === 'content') enter('content')
-    if (classLower.includes('logo')) enter('logo')
     if (
       tag === 'script' &&
       el.getAttribute('type') === 'application/ld+json' &&
       jsonLd.length < JSON_LD_SCRIPTS
     ) {
       script = ''
-      undo.push(() => {
+      el.onEndTag(() => {
         if (script !== undefined) jsonLd.push(script)
         script = undefined
       })
     }
-    if (undo.length > 0) el.onEndTag(() => undo.forEach((step) => step()))
   }
 
   new HTMLRewriter()
     .onDocument({
       text: (chunk) => {
-        for (const entry of open.values()) {
-          if (entry.buffer.length < VALUE_CAP) entry.buffer = clip(entry.buffer + chunk.text)
+        if (titleBuffer !== undefined && titleBuffer.length < VALUE_CAP) {
+          titleBuffer = clip(titleBuffer + chunk.text)
         }
         if (script !== undefined && jsonLdChars < JSON_LD_CAP) {
           script += chunk.text
@@ -180,8 +112,8 @@ const collect = (html: string) => {
     .on(ELEMENT_SELECTOR, { element: onElement })
     .transform(html)
 
-  for (const [key, entry] of open) settle(key, entry.buffer)
-  return { elements, texts, jsonLd, htmlLang }
+  settleTitle()
+  return { elements, title, jsonLd, htmlLang }
 }
 
 /**
@@ -355,13 +287,13 @@ const indexElements = (elements: Element[]) => {
 }
 
 /**
- * The html stage's page parser. It reads metascraper's head, JSON-LD and title fallback rules
- * in metascraper's order, in one HTMLRewriter pass. It does not read the body-text author and
- * date rules (bylines, date classes), and it keeps the page's own quote marks.
+ * The html stage's page parser. It reads metascraper's head and JSON-LD rules in metascraper's
+ * order, in one HTMLRewriter pass. It reads no body rule (h1 titles, page images, body logos,
+ * bylines), because the head cut would make them depend on the network. It keeps the page's quotes.
  */
 export const createHeadScraper = (): Scraper => ({
   scrape: async ({ html, url }) => {
-    const { elements, texts, jsonLd, htmlLang } = collect(html)
+    const { elements, title: titleText, jsonLd, htmlLang } = collect(html)
     const items = parseJsonLd(jsonLd)
     const index = indexElements(elements)
     const budget: Budget = { nodes: SEARCH_NODES }
@@ -383,8 +315,6 @@ export const createHeadScraper = (): Scraper => ({
           (exact ? name === part : name.includes(part))
         )
       })?.attrs[read]
-    const img = (tag: string, test: (attrs: Attrs) => boolean = () => true) =>
-      elements.find((el) => el.tag === tag && test(el.attrs))?.attrs.src
     const both = (key: string) => meta('name', key) ?? meta('property', key)
     const squareLogo = (path: string) => {
       const logo = jsonLdValue(items, path, budget) as Record<string, Json> | undefined
@@ -398,12 +328,8 @@ export const createHeadScraper = (): Scraper => ({
       () => toTitle(meta('property', 'og:title')),
       () => toTitle(meta('name', 'twitter:title')),
       () => toTitle(meta('property', 'twitter:title')),
-      () => toTitle(texts.get('title')),
-      () => toTitle(jsonLdText('headline')),
-      () => toTitle(texts.get('.post-title')),
-      () => toTitle(texts.get('.entry-title')),
-      () => toTitle(texts.get('h1-title-a')),
-      () => toTitle(texts.get('h1-title'))
+      () => toTitle(titleText),
+      () => toTitle(jsonLdText('headline'))
     )
 
     const description = first(
@@ -427,29 +353,12 @@ export const createHeadScraper = (): Scraper => ({
       () => resolveUrl(meta('itemprop', 'image'), url),
       () => resolveUrl(jsonLdText('image.0.url'), url),
       () => resolveUrl(jsonLdText('image.url'), url),
-      () => resolveUrl(jsonLdText('image'), url),
-      () => resolveUrl(img('article-img'), url),
-      () => resolveUrl(img('content-img'), url),
-      () =>
-        resolveUrl(
-          img('img', (a) => a.alt?.toLowerCase().includes('author') ?? false),
-          url
-        ),
-      () =>
-        resolveUrl(
-          img('img', (a) => a['aria-hidden'] !== 'true'),
-          url
-        )
+      () => resolveUrl(jsonLdText('image'), url)
     )
 
     const logo = first(
       () => resolveUrl(meta('property', 'og:logo'), url),
       () => resolveUrl(meta('itemprop', 'logo'), url),
-      () =>
-        resolveUrl(
-          img('img', (a) => a.itemprop === 'logo'),
-          url
-        ),
       ...[
         'brand.logo',
         'organization.logo',
@@ -479,12 +388,7 @@ export const createHeadScraper = (): Scraper => ({
       () => toTitle(both('twitter:app:name:iphone')),
       () => toTitle(both('twitter:app:name:ipad')),
       () => toTitle(both('twitter:app:name:googleplay')),
-      () => toTitle(texts.get('#logo')),
-      () => toTitle(texts.get('.logo')),
-      () => toTitle(texts.get('a-brand')),
-      () => toTitle(elements.find((el) => el.tag === 'logo-link-img')?.attrs.alt),
-      () => toTitle(elements.find((el) => el.tag === 'logo-img')?.attrs.alt),
-      () => publisherFromTitle(texts.get('title'))
+      () => publisherFromTitle(titleText)
     )
 
     const date = first(
@@ -498,8 +402,7 @@ export const createHeadScraper = (): Scraper => ({
       () => toDate(itemprop('datepublished', 'title', true)),
       () => toDate(meta('name', 'date')),
       () => toDate(itemprop('date', 'content')),
-      () => toDate(itemprop('date', 'title')),
-      () => toDate(elements.find((el) => el.tag === 'time')?.attrs.datetime)
+      () => toDate(itemprop('date', 'title'))
     )
 
     const lang = first(

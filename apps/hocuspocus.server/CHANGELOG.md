@@ -90,6 +90,8 @@ Before you deploy this commit, check that `.env.production` holds both `VAPID_PU
   was lost. It also reads `name="og:*"` tags and meta names in any case, which metascraper missed.
   MDN, go.dev and Dropbox now get a picture, and 163.com and Ryanair a description. It keeps the page's own quote marks, and it no longer reads author or date from body
   text such as bylines. `src/modules/link-metadata/BENCHMARK.md` holds the numbers and the method.
+  The read stops at `</head`, and the scraper reads no body rule, so one page always gives the
+  same card. A page whose only title is a body `h1` now gets the fallback card.
 - **Link-metadata fetches name docs.plus and read less
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).**
   - Every outbound link-metadata request names docs.plus truthfully. The html stage no longer

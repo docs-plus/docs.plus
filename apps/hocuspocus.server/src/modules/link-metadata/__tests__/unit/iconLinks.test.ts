@@ -45,12 +45,6 @@ describe('pickIconHref', () => {
     expect(pickIconHref(head, BASE)).toBe('https://example.com/i32.png')
   })
 
-  test('ignores an icon link after </head>', () => {
-    const html =
-      '<link rel="apple-touch-icon" href="/touch.png"></HEAD><body><link rel="icon" href="/b.png">'
-    expect(pickIconHref(html, BASE)).toBe('https://example.com/touch.png')
-  })
-
   test.each([
     ['an SVG by type', '<link rel="icon" type="image/svg+xml" href="/a">'],
     ['an SVG by path', '<link rel="icon" href="/a.SVG?v=2">'],

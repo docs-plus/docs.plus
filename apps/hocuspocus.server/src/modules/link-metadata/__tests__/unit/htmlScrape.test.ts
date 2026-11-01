@@ -7,8 +7,8 @@ import type { Scraper } from '../../domain/types'
 
 const noopScraper: Scraper = { scrape: async () => ({ title: 'scraped' }) }
 
-const html = (charset: string, body: string): string =>
-  `<!doctype html><html><head><meta charset="${charset}"><title>x</title></head><body>${body}</body></html>`
+const html = (charset: string, title: string): string =>
+  `<!doctype html><html><head><meta charset="${charset}"><title>${title}</title></head><body></body></html>`
 
 describe('runHtmlScrape', () => {
   let fetchSpy: ReturnType<typeof spyOn>
@@ -150,7 +150,7 @@ describe('runHtmlScrape', () => {
     expect(receivedLength).toBe(1024 * 1024)
   })
 
-  test('stops reading at a mixed-case </head> split across chunks', async () => {
+  test('cuts at a mixed-case </head> split across chunks', async () => {
     const encoder = new TextEncoder()
     let pulls = 0
     const stream = new ReadableStream<Uint8Array>({
@@ -173,7 +173,7 @@ describe('runHtmlScrape', () => {
       }
     }
     await runHtmlScrape('https://example.com', scraper, undefined)
-    expect(receivedHtml).toBe('<html><head><title>x</title></HeAd><body>')
+    expect(receivedHtml).toBe('<html><head><title>x</title>')
   })
 
   test('stops pulling the stream at the 1 MiB cap', async () => {

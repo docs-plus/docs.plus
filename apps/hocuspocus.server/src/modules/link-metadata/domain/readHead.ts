@@ -1,9 +1,9 @@
 const HEAD_CLOSE = '</head'
 
 /**
- * Every tag we read sits in `<head>`. So the read stops after the chunk that holds `</head`,
- * or at `cap`, and never downloads the rest. That last chunk stays whole; a caller that must
- * not see the body cuts at the tag. The search reads latin1, so one char is one byte.
+ * Every tag we read sits in `<head>`. So the read stops at `</head`, or at `cap`, and returns
+ * the bytes before it. The result never depends on how the network split the page, and the rest
+ * is never downloaded. The search reads latin1, so one char is one byte.
  */
 export const readHead = async (
   response: Response,
@@ -25,12 +25,16 @@ export const readHead = async (
       total += chunk.byteLength
       const window =
         tail + Buffer.from(chunk.buffer, chunk.byteOffset, chunk.byteLength).toString('latin1')
-      if (window.toLowerCase().includes(HEAD_CLOSE)) break
+      const at = window.toLowerCase().indexOf(HEAD_CLOSE)
+      if (at !== -1) {
+        total -= window.length - at
+        break
+      }
       tail = window.slice(-HEAD_CLOSE.length)
     }
   } finally {
     reader.releaseLock()
   }
   hop.abort()
-  return Buffer.concat(chunks, total)
+  return Buffer.concat(chunks).subarray(0, total)
 }
