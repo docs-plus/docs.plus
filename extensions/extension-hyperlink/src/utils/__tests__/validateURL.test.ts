@@ -225,6 +225,8 @@ describe('wholeLink', () => {
     ['https://github.com/a/b_(c).', 'https://github.com/a/b_(c)'],
     ['//example.com/x.', '//example.com/x'],
     ['mailto:a@b.com.', 'mailto:a@b.com'],
+    ['whatsapp://send?text=(hi)', 'whatsapp://send?text=(hi)'],
+    ['whatsapp://send?text=(hi)).', 'whatsapp://send?text=(hi)'],
     ['  https://example.com/path?q=1  ', 'https://example.com/path?q=1'],
     ['+1 (555) 123-4567', '+1 (555) 123-4567'],
     ['hello google.com', null],
@@ -235,6 +237,13 @@ describe('wholeLink', () => {
       expect(wholeLink(input)).toBe(expected)
     })
   }
+
+  it('gives customValidator the value it stores', () => {
+    const seen: string[] = []
+    const record = (url: string): boolean => (seen.push(url), true)
+    expect(wholeLink(' whatsapp://send. ', { customValidator: record })).toBe('whatsapp://send')
+    expect(seen).toEqual(['whatsapp://send'])
+  })
 })
 
 describe('getURLScheme', () => {

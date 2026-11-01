@@ -30,8 +30,26 @@ const STANDARD_WEB_SCHEMES = new Set(['http', 'https', 'ftp', 'ftps'])
 /** IPv4 dotted quad. Deliberately loose on octet range — we only need a shape check. */
 const IPV4_RE = /^\d{1,3}(\.\d{1,3}){3}$/
 
-/** Module-internal; `findLinks` imports it. Not in the public barrel. */
-export const TRAILING_PUNCTUATION_RE = /[.,;:!?)\]}]+$/
+const TRAILING_PUNCTUATION_RE = /[.,;:!?)\]}]+$/
+
+const OPENER_OF: Record<string, string> = { ')': '(', ']': '[', '}': '{' }
+
+const count = (text: string, char: string): number => text.split(char).length - 1
+
+/**
+ * Drops trailing punctuation, but keeps a closer that an opener in the link
+ * balances: `a:x?(hi)).` gives `a:x?(hi)`. Module-internal; `findLinks` imports it.
+ */
+export const stripTrailingPunctuation = (text: string): string => {
+  let end = text.length
+  while (end > 0 && TRAILING_PUNCTUATION_RE.test(text[end - 1])) {
+    const opener = OPENER_OF[text[end - 1]]
+    const body = text.slice(0, end - 1)
+    if (opener && count(body, opener) > count(body, text[end - 1])) break
+    end--
+  }
+  return text.slice(0, end)
+}
 
 export type ValidateURLOptions = {
   customValidator?: (url: string) => boolean
@@ -103,15 +121,15 @@ export const wholeLink = (url: string, options?: ValidateURLOptions): string | n
     // E.164 phones have no scheme prefix and would otherwise fall
     // through to linkifyjs, which has no phone matcher.
     if (isBarePhone(trimmed).ok) {
-      return !options?.customValidator || options.customValidator(url) ? trimmed : null
+      return !options?.customValidator || options.customValidator(trimmed) ? trimmed : null
     }
 
     // new URL() encodes a raw space, so the catalog check alone would pass a sentence.
     if (/\s/.test(trimmed)) return null
 
-    if (isRecognizedSpecialScheme(url)) {
-      if (options?.customValidator && !options.customValidator(url)) return null
-      return linkifyWhole(trimmed)?.text ?? trimmed.replace(TRAILING_PUNCTUATION_RE, '')
+    if (isRecognizedSpecialScheme(trimmed)) {
+      const link = linkifyWhole(trimmed)?.text ?? stripTrailingPunctuation(trimmed)
+      return !options?.customValidator || options.customValidator(link) ? link : null
     }
 
     const found = linkifyWhole(trimmed)

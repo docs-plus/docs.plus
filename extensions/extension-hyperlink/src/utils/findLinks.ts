@@ -1,7 +1,7 @@
 import { find } from 'linkifyjs'
 
 import { isBarePhone } from './phone'
-import { TRAILING_PUNCTUATION_RE, validateURL } from './validateURL'
+import { stripTrailingPunctuation, validateURL } from './validateURL'
 
 const SPECIAL_SCHEME_REGEX_GLOBAL = /\b[a-zA-Z][a-zA-Z0-9+.-]*:[^\s]+/g
 
@@ -31,9 +31,8 @@ export const findLinks = (text: string): FoundLink[] => {
   // on common keyword-token inputs that can't contain a scheme.
   if (text.includes(':')) {
     for (const match of text.matchAll(SPECIAL_SCHEME_REGEX_GLOBAL)) {
-      // Linkify already leaves trailing punctuation out and keeps a balanced `)`.
-      // Only this regex match needs the strip.
-      const url = match[0].replace(TRAILING_PUNCTUATION_RE, '')
+      // Linkify already leaves trailing punctuation out. Only this regex match needs the strip.
+      const url = stripTrailingPunctuation(match[0])
       const start = match.index
       const end = start + url.length
       const alreadyCovered = standardLinks.some((link) => start >= link.start && end <= link.end)

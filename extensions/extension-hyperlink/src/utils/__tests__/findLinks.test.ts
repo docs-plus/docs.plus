@@ -94,6 +94,11 @@ describe('findLinks', () => {
       expect(result[0].value).toBe('https://en.wikipedia.org/wiki/Foo_(bar)')
     })
 
+    it('keeps a balanced closing parenthesis on a special-scheme match', () => {
+      const result = findLinks('whatsapp://send?text=(hi)')
+      expect(result.some((l) => l.href === 'whatsapp://send?text=(hi)')).toBe(true)
+    })
+
     it('linkify leaves a trailing dot out of an email match', () => {
       const result = findLinks('user@example.com.')
       const email = result.find((l) => l.type === 'email')
