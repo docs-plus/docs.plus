@@ -5,6 +5,7 @@ import {
   getURLScheme,
   isSafeHref,
   validateURL,
+  stripTrailingPunctuation,
   wholeLink
 } from '../validateURL'
 
@@ -237,6 +238,13 @@ describe('wholeLink', () => {
       expect(wholeLink(input)).toBe(expected)
     })
   }
+
+  it('strips a long run of closers in linear time', () => {
+    // findLinks runs this on every autolink pass, so a pasted run of `)` must stay cheap.
+    const start = performance.now()
+    expect(stripTrailingPunctuation(`a:(x${')'.repeat(100_000)}`)).toBe('a:(x)')
+    expect(performance.now() - start).toBeLessThan(500)
+  })
 
   it('gives customValidator the value it stores', () => {
     const seen: string[] = []

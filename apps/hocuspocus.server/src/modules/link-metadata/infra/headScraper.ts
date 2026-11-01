@@ -80,6 +80,8 @@ const collect = (html: string) => {
     if (tag === 'html') htmlLang ??= el.getAttribute('lang') ?? undefined
     if (tag === 'meta') keep('meta', attrsOf(el))
     if (el.hasAttribute('itemprop')) keep('itemprop', attrsOf(el))
+    // onEndTag throws on a tag with no end tag, such as `<title/>` inside `<svg>`.
+    if (!el.canHaveContent) return
     if (tag === 'title' && title === undefined) {
       titleBuffer = ''
       el.onEndTag(settleTitle)

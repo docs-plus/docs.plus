@@ -70,6 +70,15 @@ describe('createHeadScraper', () => {
     expect(meta).toMatchObject({ title: undefined, image: undefined, date: undefined })
   })
 
+  test('a self-closing title or script inside svg does not throw', async () => {
+    // lol-html throws on onEndTag for an element that cannot have content.
+    const meta = await createHeadScraper().scrape({
+      html: '<head><svg><title/><script type="application/ld+json"/></svg><title>Real</title>',
+      url: URL
+    })
+    expect(meta.title).toBe('Real')
+  })
+
   test('a title the head cut left open still counts', async () => {
     const meta = await createHeadScraper().scrape({ html: '<html><head><title>Cut off', url: URL })
     expect(meta.title).toBe('Cut off')

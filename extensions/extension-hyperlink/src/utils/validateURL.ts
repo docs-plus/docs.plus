@@ -34,18 +34,26 @@ const TRAILING_PUNCTUATION_RE = /[.,;:!?)\]}]+$/
 
 const OPENER_OF: Record<string, string> = { ')': '(', ']': '[', '}': '{' }
 
-const count = (text: string, char: string): number => text.split(char).length - 1
-
 /**
  * Drops trailing punctuation, but keeps a closer that an opener in the link
- * balances: `a:x?(hi)).` gives `a:x?(hi)`. Module-internal; `findLinks` imports it.
+ * balances: `a:x?(hi)).` gives `a:x?(hi)`. One count pass keeps it linear.
+ * Module-internal; `findLinks` imports it.
  */
 export const stripTrailingPunctuation = (text: string): string => {
+  const counts = new Map<string, number>()
+  for (const char of text) {
+    if ('()[]{}'.includes(char)) counts.set(char, (counts.get(char) ?? 0) + 1)
+  }
   let end = text.length
   while (end > 0 && TRAILING_PUNCTUATION_RE.test(text[end - 1])) {
-    const opener = OPENER_OF[text[end - 1]]
-    const body = text.slice(0, end - 1)
-    if (opener && count(body, opener) > count(body, text[end - 1])) break
+    const char = text[end - 1]
+    const opener = OPENER_OF[char]
+    if (opener) {
+      // The strip never drops an opener, so every opener sits before this closer.
+      const closersBefore = (counts.get(char) ?? 0) - 1
+      if ((counts.get(opener) ?? 0) > closersBefore) break
+      counts.set(char, closersBefore)
+    }
     end--
   }
   return text.slice(0, end)
