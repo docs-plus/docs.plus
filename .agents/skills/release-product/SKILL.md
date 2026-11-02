@@ -61,9 +61,9 @@ Every prose file follows the [tech-writer](../tech-writer/SKILL.md) skill and Si
 
 ### 1. Changelogs
 
-- Root `CHANGELOG.md`, `apps/webapp/CHANGELOG.md`, `apps/hocuspocus.server/CHANGELOG.md`, and each extension that moves.
+- Root `CHANGELOG.md`, and the `CHANGELOG.md` of every app, package and extension whose folder changed since the base commit. The Changelogs paragraph of [`RELEASE_POLICY.md`](../../../RELEASE_POLICY.md) says which change goes where.
 - Keep an empty `## [Unreleased]` heading above the new `## [X.Y.Z] — YYYY-MM-DD` entry.
-- Sections: Highlights, Breaking, Migration, Added, Changed, Fixed, Security, Removed, Internal. Link each item to its issue.
+- Sections: Highlights, Breaking, Migration, Added, Changed, Fixed, Security, Removed, Documentation, Internal. Link each item to its issue.
 - The root entry carries an extensions outline and the UI and UX improvements. The maintainer counts those as proof that the product improves.
 - The hocuspocus entry carries the full self-host Migration checklist: new env vars, migrations, backfills. A missing env var once held every email.
 - Never auto-generate entries from commit subjects.

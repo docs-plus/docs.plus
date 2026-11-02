@@ -234,7 +234,7 @@ const WORKSTREAMS = [
   {
     key: 'changelog-product',
     section: '1. Changelogs',
-    task: `Write the ${version} entries in CHANGELOG.md, apps/webapp/CHANGELOG.md and apps/hocuspocus.server/CHANGELOG.md. Put open gaps the maintainer chose to ship only in the hocuspocus Security section.`
+    task: `Write the ${version} entries in CHANGELOG.md and in the CHANGELOG.md of every apps/* and packages/* folder that changed since the base commit. Follow the Changelogs paragraph in RELEASE_POLICY.md for which change goes where. Put open gaps the maintainer chose to ship only in the hocuspocus Security section.`
   },
   ...(publishExtensions
     ? [
@@ -309,7 +309,7 @@ const LENSES = [
   ],
   [
     'senior-staff-engineer',
-    'Do the changelogs, versions, lockfile and docs agree with each other and with git? Look for a package that moved without an entry.'
+    'Do the changelogs, versions, lockfile and docs agree with each other and with git? Look for an app, package or extension folder that changed since the base commit without an entry.'
   ],
   [
     'tech-writer',

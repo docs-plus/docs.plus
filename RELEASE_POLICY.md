@@ -47,10 +47,13 @@ implementation detail, because the CHANGELOG holds those and the body links to i
 before-and-after tables beat prose for sizes and timings. Close on the most interesting finding rather
 than the biggest. Simplified English still applies; warm is not the same as long.
 
-**Before tagging, audit changelog coverage.** Every package whose `version` moved needs its own entry.
+**Before tagging, audit changelog coverage.** Every app, package and extension folder that changed since
+the base commit, the last product release commit, needs an entry in its own changelog.
 On `v2.0.1` the product changelog was written and `apps/hocuspocus.server/CHANGELOG.md` was missed,
-because both share the product version. Prove which packages really changed with
-`git diff <prev-tag>..HEAD --name-only -- 'extensions/*/src/**'` — a README-only diff is not a release,
+because both share the product version. List the changed folders with
+`git diff <base>..HEAD --name-only -- apps packages extensions | cut -d/ -f1,2 | sort -u`. Prove which
+extensions really changed with
+`git diff <base>..HEAD --name-only -- 'extensions/*/src/**'` — a README-only diff is not a release,
 and zero source files means no `release:family` run is needed. **Create the tag last**, after every
 commit including changelog fixes; if a commit lands later, delete and recreate the unpushed tag so it
 points at `HEAD`. Then `git push origin main` → `git push origin <tag>` → `gh release create`, in that
@@ -67,7 +70,7 @@ for the Releases page only; per-package tags and npm publishing are unchanged.
 
 **Deploy.** Do not add a `(build):` commit for the version string. The version string is not shown in the UI. The next ordinary deploy applies it.
 
-**Changelogs.** The product changelog is [`CHANGELOG.md`](CHANGELOG.md). The webapp changelog is [`apps/webapp/CHANGELOG.md`](apps/webapp/CHANGELOG.md). The hocuspocus changelog is [`apps/hocuspocus.server/CHANGELOG.md`](apps/hocuspocus.server/CHANGELOG.md).
+**Changelogs.** The product changelog is [`CHANGELOG.md`](CHANGELOG.md). Every app, package and extension keeps its own `CHANGELOG.md`: `apps/<name>/`, `packages/<name>/` and `extensions/extension-<x>/`. A change gets an entry in the changelog of each folder it touched, and each entry holds only that folder's part. A change outside those folders, such as in `scripts/`, `.github/` or `.agents/`, goes in the Internal section of the product changelog. The product changelog also sums up the notable changes for users and self-hosters, and the folder entries keep the detail. The hocuspocus Migration section keeps the deploy order, and the product Migration section points to it. [`packages/supabase/CHANGELOG.md`](packages/supabase/CHANGELOG.md) says what each migration does. A private app or package heads each entry with the docs.plus release that carried it, not with its `package.json` version. `packages/floating-popover` and `packages/floating-tooltip` keep their own `[2.0.0]` line instead: no docs.plus heading, and `[Unreleased]` lists every change since `[2.0.0]`.
 
 ## Versioning Doctrine
 

@@ -12,7 +12,8 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Migration
 
-Push six Supabase migrations with this deploy, in this order:
+Push six Supabase migrations with this deploy, in this order. The full record of each migration
+is in [`packages/supabase/CHANGELOG.md`](../../packages/supabase/CHANGELOG.md).
 
 1. `20261023120000` drops and re-creates `get_document_member_previews`,
    `get_document_members` and `admin_get_document_member_counts` with new parameter names

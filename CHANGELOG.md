@@ -4,7 +4,7 @@
 
 All notable changes to docs.plus are documented here.
 
-This file is the product changelog. The webapp package keeps [`apps/webapp/CHANGELOG.md`](apps/webapp/CHANGELOG.md). The hocuspocus app keeps [`apps/hocuspocus.server/CHANGELOG.md`](apps/hocuspocus.server/CHANGELOG.md). The six `@docs.plus/extension-*` packages keep their own `CHANGELOG.md` files. Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Section headings follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) plus the house order in [`RELEASE_POLICY.md`](RELEASE_POLICY.md).
+This file is the product changelog. Every app, package and extension keeps its own `CHANGELOG.md` with the detail, for example [`apps/webapp/CHANGELOG.md`](apps/webapp/CHANGELOG.md), [`apps/hocuspocus.server/CHANGELOG.md`](apps/hocuspocus.server/CHANGELOG.md) and [`packages/supabase/CHANGELOG.md`](packages/supabase/CHANGELOG.md). [`RELEASE_POLICY.md`](RELEASE_POLICY.md) says which change goes where. Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Section headings follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) plus the house order in [`RELEASE_POLICY.md`](RELEASE_POLICY.md).
 
 ---
 
@@ -26,18 +26,12 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 ### Migration
 
 **If you self-host.** Read the [hocuspocus Migration](apps/hocuspocus.server/CHANGELOG.md#migration)
-before you deploy, and follow its order. Push Supabase migrations `20261023120000`,
-`20261024120000`, `20261025120000`, `20261025150000`, `20261031120000` and `20261031130000`
-together with the backend and frontend deploy. The last two add ids to the email payloads
-([#647](https://github.com/docs-plus/docs.plus/issues/647)); the server accepts mail queued
-before them. `20261023120000` renames the parameters of three member
-functions, so until both sides land, the member faces, the roster and the admin member
-counts fail. `20261025150000` replaces `update_view_duration` and
-`process_document_views_queue`, and keeps both service-role only
-([#603](https://github.com/docs-plus/docs.plus/issues/603)). Do not push `20261026120000`
-([#570](https://github.com/docs-plus/docs.plus/issues/570)) with this deploy; see the hocuspocus
-Migration section for when it goes. As the last step, run
-`packages/supabase/scripts/check-grants.sql`. It should return no rows.
+before you deploy, and follow its order. It pushes six Supabase migrations with the backend and
+frontend deploy, and holds `20261026120000`
+([#570](https://github.com/docs-plus/docs.plus/issues/570)). Until both sides land, the member
+faces, the roster and the admin member counts fail
+([#574](https://github.com/docs-plus/docs.plus/issues/574)).
+[`packages/supabase/CHANGELOG.md`](packages/supabase/CHANGELOG.md) says what each migration does.
 
 ### Added
 
@@ -167,6 +161,20 @@ Migration section for when it goes. As the last step, run
 - `get_bookmark_count` and `admin_get_user_notification_subs` are dropped. Nothing called
   them. Needs Supabase migration `20261025120000`
   ([#605](https://github.com/docs-plus/docs.plus/issues/605)).
+
+### Internal
+
+- The `commit-msg` hook checks only the first line of a message, and caps it at 72 characters.
+  Before, a body line that looked like a subject let a bad subject pass. The hook also rejects
+  AI attribution, such as `Co-authored-by: Cursor`, and "Generated with" banners. A human
+  co-author line still passes.
+  [CONTRIBUTING.md](CONTRIBUTING.md) lists the rules.
+- Each house skill has one copy, in `.agents/skills/<name>/`. `.cursor/skills/<name>` is a
+  symlink to it, and `check:agent-docs` fails when it is not. Prettier now checks the house
+  skills, which it had skipped.
+- `apps/admin-dashboard` and the `packages/` folders that had none now keep their own
+  `CHANGELOG.md`, with history back to 2.0.0 where the folder existed.
+  [`RELEASE_POLICY.md`](RELEASE_POLICY.md) says which change goes where.
 
 ## [2.2.0] — 2026-10-22
 

@@ -35,6 +35,11 @@ Versioning follows [Semantic Versioning](https://semver.org/) and commits follow
   still bound. `show()` after `destroy()` also re-appended the removed root.
   Build a new popover to reopen.
 
+### Internal
+
+- `@floating-ui/dom` moves from `^1.7.6` to `^1.8.0`.
+- The package no longer has its own `lint` and `lint:fix` scripts. The root lint gate checks it.
+
 ## [2.0.0] — 2026-06-12
 
 ### Added
