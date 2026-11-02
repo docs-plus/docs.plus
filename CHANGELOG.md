@@ -66,6 +66,10 @@ Migration section for when it goes. As the last step, run
 
 ### Changed
 
+- Google sign-in now shows "docs.plus" in Google's account chooser, not the Supabase project
+  address. Supabase Auth answers on the custom domain `auth.docs.plus`, and Google verified the
+  docs.plus brand. A self-hoster can do the same: see
+  [Turn on Google sign-in](docs/self-hosting/configuration.md#turn-on-google-sign-in).
 - The production deploy now aborts below 20 GB free disk, up from 10 GB. It prunes Docker
   build cache toward a free-space target, not by age.
 - The production deploy now stops when `VAPID_PUBLIC_KEY` and `NEXT_PUBLIC_VAPID_PUBLIC_KEY`

@@ -333,6 +333,13 @@ First, configure the OAuth consent screen in Google Cloud. For the External user
 
 Replace `<SUPABASE_URL>` with your Supabase project URL, from the Supabase project settings. Supabase returns each sign-in only to an address on its allow-list. [Install step 2](install.md#2-prepare-supabase) sets that list.
 
+**Optional: show your own name in Google's account chooser.** By default, Google's chooser says "continue to `<project-ref>.supabase.co`", because that host receives the callback. To change it, do these steps in this order:
+
+1. In the Supabase dashboard, add a custom domain such as `auth.<APP_HOST>` (a paid add-on). Add its CNAME and TXT records at your DNS provider, then click **Verify**.
+2. In Google Cloud, add `https://auth.<APP_HOST>/auth/v1/callback` to **Authorized redirect URIs**. Do this before step 3. If you activate first, every Google sign-in fails with `redirect_uri_mismatch`.
+3. In Supabase, click **Activate**. The chooser now shows `auth.<APP_HOST>`. The old host keeps working, and the OAuth issuer does not change.
+4. To show your app name instead of a host, verify your brand in **Google Auth Platform > Branding**. Google needs your domain verified in Search Console, a home page that links the privacy page, and a privacy page that says how you use, store, share and delete Google data. Remove the `supabase.co` host from **Authorized domains** first, because you cannot verify a host you do not own.
+
 `GOOGLE_CLIENT_ID` and `GOOGLE_SECRET` in the env file feed only `packages/supabase/config.toml`, for the local stack. On a server they do nothing. The secret goes in the Supabase dashboard.
 
 **Local stack.**
