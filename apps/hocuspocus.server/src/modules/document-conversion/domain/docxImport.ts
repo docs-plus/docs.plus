@@ -1,9 +1,11 @@
 import { isImageUrl } from '@docs.plus/extension-hypermultimedia'
+import JSZip from 'jszip'
 import mammoth from 'mammoth'
 
 import type { ConversionWarning, ImportResult } from '../types'
 import { parseDocumentHtml } from './documentHtml'
 import { ensureTitleHeading, titleHeadingText, titleHeadingWarning } from './ensureTitleHeading'
+import { clampTableSpans } from './portableJson'
 
 export interface ImportDocxOptions {
   fallbackTitle: string
@@ -34,6 +36,25 @@ const toWarning = (message: { type: string; message: string }): ConversionWarnin
   code: message.type === 'error' ? 'media-placeholder-dropped' : 'unsupported-element',
   message: message.message
 })
+
+const WORD_PART = /^word\/[^/]+\.xml$/
+const TRACKED_CHANGE = /<w:(ins|del|moveFrom|moveTo)[\s/>]/
+
+// mammoth keeps insertions as plain text and drops deletions, and reports neither.
+// JSZip because a different reader could miss a change that mammoth still accepts.
+const hasTrackedChanges = async (buffer: Buffer): Promise<boolean> => {
+  const zip = await JSZip.loadAsync(buffer)
+  for (const part of zip.file(WORD_PART)) {
+    if (TRACKED_CHANGE.test(await part.async('string'))) return true
+  }
+  return false
+}
+
+const TRACKED_CHANGES_WARNING: ConversionWarning = {
+  code: 'tracked-changes-accepted',
+  message:
+    'Tracked changes were accepted: deletions are gone and insertions are now plain text. To review them, accept or reject them in Word first, then import again.'
+}
 
 /**
  * Nothing here touches the document: the caller owns persistence and the
@@ -72,9 +93,14 @@ export const importDocx = async (
     { styleMap: DOCX_STYLE_MAP, convertImage }
   )
 
-  const { doc, branch } = ensureTitleHeading(parseDocumentHtml(html), fallbackTitle)
+  const { doc, branch } = ensureTitleHeading(
+    clampTableSpans(parseDocumentHtml(html)),
+    fallbackTitle
+  )
   const title = titleHeadingText(doc) || fallbackTitle.trim()
   const warnings = messages.map(toWarning)
+  // First, because the panel lists only the first few warnings.
+  if (await hasTrackedChanges(buffer)) warnings.unshift(TRACKED_CHANGES_WARNING)
   const titled = titleHeadingWarning(branch, title)
   if (titled) warnings.push(titled)
 

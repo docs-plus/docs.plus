@@ -2,7 +2,7 @@ import { isRecord } from '../../../lib/isRecord'
 
 export type JsonNode = Record<string, unknown>
 
-/** A node to put in place of this one, `'drop'` to leave it out, or null to copy it and walk its children. */
+/** A node to put in place of this one, `'drop'` to leave it out, or null to keep it. The result's children are walked too. */
 export type NodeSwap = (node: JsonNode) => JsonNode | 'drop' | null
 
 interface Frame {
@@ -26,15 +26,11 @@ export const mapNodes = <T extends { content?: unknown }>(doc: T, swap: NodeSwap
       if (!isRecord(child)) continue
       const swapped = swap(child)
       if (swapped === 'drop') continue
-      if (swapped) {
-        target.push(swapped)
-        continue
-      }
-      const copy: JsonNode = { ...child }
-      if (Array.isArray(child.content)) {
+      const copy: JsonNode = { ...(swapped ?? child) }
+      if (Array.isArray(copy.content)) {
         const nested: JsonNode[] = []
+        stack.push({ source: copy.content, target: nested })
         copy.content = nested
-        stack.push({ source: child.content, target: nested })
       }
       target.push(copy)
     }

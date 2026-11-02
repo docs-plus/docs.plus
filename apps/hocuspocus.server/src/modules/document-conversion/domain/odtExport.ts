@@ -1,5 +1,5 @@
 import { isRecord } from '../../../lib/isRecord'
-import type { TiptapDocJson } from '../types'
+import { MAX_TABLE_SPAN, type TiptapDocJson } from '../types'
 import { toPortableJson } from './portableJson'
 import { createZip } from './zipWriter'
 
@@ -169,12 +169,7 @@ const renderList = (node: JsonNode): string => {
 
 const COVERED_CELL = '<table:covered-table-cell/>'
 
-// `encodeContent` validates content expressions, not attribute values, so a
-// stored `colspan` is unbounded — and it drives both a `.repeat()` and a
-// per-column loop below. Writer tops out at 64 columns and Word at 63, so no
-// span past this is representable anyway; unclamped it re-allocates gigabytes.
-const MAX_TABLE_SPAN = 64
-
+// A span drives both a `.repeat()` and a per-column loop below.
 const spanOf = (attrs: Record<string, unknown>, key: string): number => {
   const raw = attrs[key]
   return typeof raw === 'number' && raw > 1 ? Math.min(Math.trunc(raw), MAX_TABLE_SPAN) : 1

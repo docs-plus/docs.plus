@@ -48,6 +48,7 @@ const importResult: JsonSchema = {
               'media-placeholder-dropped',
               'title-promoted-paragraph',
               'title-synthesized',
+              'tracked-changes-accepted',
               'unsupported-element'
             ]
           },

@@ -985,13 +985,14 @@ The origin filter is not the last gate. A second filter sniffs the fetched bytes
 
 **Warning codes**
 
-An empty `warnings` array means a clean import.
+An empty `warnings` array does not prove that nothing was lost. The converter drops comments, headers, charts and diagrams with no warning.
 
 | Code                        | Meaning                                                                         |
 | --------------------------- | ------------------------------------------------------------------------------- |
 | `media-placeholder-dropped` | One image could not be re-hosted and was dropped; the rest of the file imported |
 | `title-promoted-paragraph`  | The first paragraph became the document title                                   |
 | `title-synthesized`         | No usable opening text, so the title came from the slug                         |
+| `tracked-changes-accepted`  | Tracked deletions were dropped, and tracked insertions became plain text        |
 | `unsupported-element`       | The converter met something it does not model                                   |
 
 ### Status codes

@@ -1,5 +1,5 @@
 import { isRecord } from '../../../lib/isRecord'
-import type { TiptapDocJson } from '../types'
+import { MAX_TABLE_SPAN, type TiptapDocJson } from '../types'
 import { type JsonNode, mapNodes } from './mapNodes'
 
 // Every embed is an iframe or a player that DOCX, Markdown and ODT cannot express.
@@ -33,6 +33,17 @@ const embedToParagraph = (node: JsonNode): JsonNode => {
   return { type: 'paragraph', content: [text] }
 }
 
+// `Number` because the renderer's column loop also coerces a stored string.
+const clampColspan = (node: JsonNode): JsonNode | null => {
+  if (node.type !== 'tableCell' && node.type !== 'tableHeader') return null
+  const attrs = isRecord(node.attrs) ? node.attrs : {}
+  if (!(Number(attrs.colspan) > MAX_TABLE_SPAN)) return null
+  return { ...node, attrs: { ...attrs, colspan: MAX_TABLE_SPAN } }
+}
+
+/** `colspan` multiplies render memory, and a DOCX `gridSpan` can set any value. */
+export const clampTableSpans = (doc: TiptapDocJson): TiptapDocJson => mapNodes(doc, clampColspan)
+
 /** Rewrites the nodes only the editor can render, so no writer meets them. */
 export const toPortableJson = (doc: TiptapDocJson): TiptapDocJson =>
   mapNodes(doc, (node) => {
@@ -40,5 +51,5 @@ export const toPortableJson = (doc: TiptapDocJson): TiptapDocJson =>
     if (typeof node.type === 'string' && EMBED_NODE_TYPES.has(node.type)) {
       return embedToParagraph(node)
     }
-    return null
+    return clampColspan(node)
   })

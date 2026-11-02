@@ -14,9 +14,10 @@ export type ConversionWarningCode =
   | 'media-placeholder-dropped'
   | 'title-promoted-paragraph'
   | 'title-synthesized'
+  | 'tracked-changes-accepted'
   | 'unsupported-element'
 
-/** Lossy conversions are reported, never silent — the user has to know what changed. */
+/** A loss the server can detect. An empty list does not prove nothing was lost; see API.md. */
 export interface ConversionWarning {
   code: ConversionWarningCode
   message: string
@@ -47,6 +48,11 @@ export const MAX_INFLATED_IMPORT_BYTES = 4 * MAX_IMPORT_BYTES
 // oversized body is rejected as `too-large`. Never truncate to fit: a silently
 // halved document is worse than a refused one.
 export const MAX_MARKDOWN_CHARS = 64 * 1024
+
+// `encodeContent` validates content expressions, not attribute values, so a stored
+// `colspan` is unbounded. Writer tops out at 64 columns and Word at 63, so no span
+// past this is representable anyway. Unclamped, it re-allocates gigabytes.
+export const MAX_TABLE_SPAN = 64
 
 // Matches the pad's upload cap. Inert while the inlined budget below is smaller,
 // because `Math.min` never picks this cap. This cap binds only if that budget is
