@@ -86,6 +86,9 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   sign-in sends, and what closing an account removes. It says that names and profile photos are
   public, and it names DigitalOcean, the team mail for a new document, and Google Analytics
   cookies. It adds the Limited Use statement that Google's brand verification asks for.
+- The privacy page now lists your data rights. It says how to download a document. It also says
+  how to ask for a copy of your personal data, a correction, a deletion, or a limit on its use.
+  The answer comes within one month.
 - A plain click on a link to another pad now opens that pad in the same window, in the pad and
   in chat. Mod-click and middle-click still open a new tab
   ([#359](https://github.com/docs-plus/docs.plus/issues/359)).
@@ -119,6 +122,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- **The Replace with a file warning names History.** It said there was no undo. History keeps
+  the earlier version, and a restore brings it back. The warning also says that edits from the
+  last minute may not be in History yet
+  ([#662](https://github.com/docs-plus/docs.plus/issues/662)).
 - **The link hovercard is wider, and its picture no longer pops.** The card is 24rem wide, and the
   picture keeps its 1.91:1 ratio. The card waits up to 300 ms for the picture. A later picture
   fades in, and a later failure folds the picture well away instead of removing it at once
