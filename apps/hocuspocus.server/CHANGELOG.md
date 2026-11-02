@@ -72,6 +72,8 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
     spends that bucket.
   - The card draws no people: no message text, no author, no name and no face. Counts are
     bucketed 1 to 9, then 10+.
+  - `assets/social-card/ATTRIBUTION.md` credits the Twemoji pictures (CC BY 4.0) and the Arimo
+    font (SIL OFL 1.1).
 - **The worker stores what the card draws.** Each save writes `DocumentMetadata.cardData`: the
   first blocks and the outline. While `SOCIAL_CARD_KINDS` holds `version`, each stored version
   enqueues a job on the new `version-change-summary` queue. That job writes
