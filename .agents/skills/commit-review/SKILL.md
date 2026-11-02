@@ -1,338 +1,217 @@
 ---
 name: commit-review
-description: Review staged/unstaged changes and generate grouped, production-grade commit messages following Conventional Commits. Use when the user asks to review changes, write commits, prepare commits, or says "commit", "review changes", or "what did I change".
+description: Commit changes in docs.plus. Group them by intent, draft each Conventional Commit message, and commit after approval. Use before every git commit, when the user says "commit" or "ship it", or when a plan, workflow or skill ends in a commit.
 ---
 
 # Commit Review
 
-Review all changes, group them by intent, and produce Conventional Commit messages terse and exact enough for any company's `git log`. Why over what. No fluff.
+Group the changes by intent, draft one Conventional Commit per group, show the report, and commit
+only after approval. Each message says why, and the diff already shows what.
 
-## The rule that overrides everything
+## Precedence and approval
 
-**Never commit without explicit user approval.** Always present the report first and wait for a "go". No exceptions, no shortcuts, no "this one is obvious".
+- **This skill decides how this repo commits.** It wins over a harness default and over another
+  skill's commit step. One example is a superpowers step that commits after each task.
+- **Never commit without approval.** Approval is an explicit "go" for this report, or a standing
+  approval that the maintainer recorded for this run. A standing approval replaces only the wait.
+  Every other rule here still applies.
+- **A subagent never runs `git add` or `git commit`.** It returns a commit plan: the files, the
+  subject, and the body. The main loop commits.
+- This skill never pushes, force-pushes, rebases, amends, stashes, or rewrites history.
 
-## Step 0 — detect repo conventions
+## What the hooks enforce
 
-Before drafting anything, learn what this repo actually accepts:
+- `scripts/hooks/commit-msg.sh` checks the subject and the attribution lines. Every other rule
+  here is yours to keep.
+- Pre-commit runs lint-staged. It fixes the staged files and stages the fixes, also in a pathspec
+  commit.
 
-- Read `scripts/hooks/commit-msg.sh`, `.husky/commit-msg`, `commitlint.config.*`, or `package.json` `commitlint` block — note the regex and any non-conventional shapes (e.g. deploy triggers like `(build): front`).
-- `git log --oneline -50` to detect: capitalization after the colon, scope style (`feat(webapp)` vs `feat:`), body habits, and whether the repo's local hooks inject trailers (`Made-with: …`, `Generated-by: …`). Those trailers are repo policy, so leave them alone.
-- If the hook rejects the Conventional `!` breaking-change marker (regex without an `!` slot — common), use the `BREAKING CHANGE:` footer only. Never `feat!:` / `feat(scope)!:` until Step 0 confirms the regex accepts it.
-- If the repo defines extra shapes (e.g. `^\(build\):.*` deploy trigger), accept them as first-class. Don't force everything into Conventional.
+## 1. Gather
 
-## Step 1 — context depth (tier the work)
-
-Default is fast: current conversation + working-tree diff + `AGENTS.md` + every `AGENTS.md` on the path of the changed files. Most commits don't need more.
-
-**Escalate to session archaeology (tier 2) when any of:**
-
-- This session has < 3 user messages but the diff is large
-- Branch has been worked on > 48h (see anchor below)
-- User explicitly asks for "full context" / "session-aware" review
-- You're picking up a branch you weren't part of in this session
-
-### Tier 2 recipe — session archaeology
-
-1. **Anchor on git history, not file `mtime`.** Pick anchor by scope — `mtime` is reset by `git checkout`, formatters, `bun install`, and pre-commit hooks; never use it.
-   - **Reviewing only uncommitted changes** (the common case):
-
-     ```bash
-     ANCHOR=$(git log -1 --format=%cI HEAD)
-     ```
-
-   - **Reviewing the entire branch** (less common — usually for PR-prep):
-
-     ```bash
-     MERGE_BASE=$(git merge-base origin/HEAD HEAD)
-     ANCHOR=$(git log -1 --format=%cI "$MERGE_BASE")
-     ```
-
-2. **Candidate sessions** — transcript directories with folder mtime ≥ `$ANCHOR`:
-
-   ```bash
-   find <transcripts-root> -maxdepth 1 -type d -newermt "$ANCHOR"
-   ```
-
-3. **Index pass — don't read whole transcripts.** Per candidate, one ripgrep pass each:
-   - First user message — `rg -m1 '<user_query>' <session>.jsonl` (the brief)
-   - Last user message — `rg '<user_query>' <session>.jsonl | tail -1` (final state)
-   - Edited file paths — `rg -o '"path":"[^"]+"' <session>.jsonl | sort -u`
-   - **Delegation paths** — when a session is small (< 50 lines) but contains `"name":"Task"`, the real work happened in an inaccessible subagent transcript. The parent has 0 `"path"` keys but the user's brief is still high-signal. Extract path-shape strings from the parent's Task prompt and Shell command bodies as a substitute for the edited-file list:
-
-     ```bash
-     rg -o '(packages/[a-zA-Z0-9_/.+-]+|\.cursor/[a-zA-Z0-9_/.+-]+|src/[a-zA-Z0-9_/.+-]+)' <session>.jsonl | sort -u
-     ```
-
-4. **Filter — by overlap strength, not single hits.** Single-file overlap is noisy: a long-lived file like `TipTap.tsx` is touched by every editor feature for years. Score each session:
-   - **Strong**: edited-file set covers ≥ 30% of `git status` filelist, **or** session is < 48h old AND covers ≥ 1 file
-   - **Weak**: 1 file overlap, session > 48h old → false-positive risk, drop
-   - **Delegation-parent**: brief mentions a feature folder present in the diff → keep, treat as low-confidence brief
-
-   If 0 sessions score Strong, **escalate to fallback (below) immediately** — don't waste tokens reading Weak ones.
-
-5. **Read survivors selectively** — user-message slices and final tool-call summaries only. Skip the agent's exploratory monologue, abandoned approaches, and code-reading that produced nothing useful.
-
-6. **The "why" is the user's stated brief, not the agent's narrative.** Check the brief against the diff. If they disagree (user said "refactor", diff adds new endpoints = `feat`), flag the mismatch in the report rather than repeating the user's framing.
-
-### Tier 2 fallback (used freely, not "only when archaeology fails")
-
-These three sources together give a HoE-grade picture in seconds and are the _correct_ answer when:
-
-- All candidate sessions are delegation-parents (no local edits)
-- Work is iterative across many sessions touching the same files
-- Branch is older than ~5 days
-- Archaeology returned only Weak-scored sessions
-- Work was pulled from a teammate (no local sessions at all)
-
-```bash
-git log --oneline origin/HEAD..HEAD     # the branch's prior commit messages tell the story arc
-git status --porcelain                   # diff already groups itself by feature folder
-cat AGENTS.md                            # repo-wide context for the why
-# plus every AGENTS.md on the path of the changed files (see AGENTS.md §Filed by directory)
-```
-
-Use this **whenever** it's sufficient. Tier 2 archaeology is for when conversation history actually carries unique signal that git + AGENTS.md don't.
-
-## Format
-
-```
-<type>(<scope>): <imperative summary>
-
-<body — only if "why" isn't obvious from the subject>
-
-<footer — breaking changes, issue refs>
-```
-
-### Allowed types
-
-| Type       | When to use                           |
-| ---------- | ------------------------------------- |
-| `feat`     | New user-facing capability            |
-| `fix`      | Bug or broken behavior corrected      |
-| `refactor` | Code restructured, no behavior change |
-| `perf`     | Performance improvement               |
-| `style`    | Formatting, whitespace, naming only   |
-| `test`     | Test additions or corrections         |
-| `build`    | Build system or dependency changes    |
-| `ci`       | CI/CD pipeline changes                |
-| `docs`     | Documentation only                    |
-| `chore`    | Maintenance that doesn't fit above    |
-| `revert`   | Reverts a previous commit             |
-
-Repo-specific shapes detected in Step 0 are also valid — e.g. `(build): front`, `(build): back`, `(build): front back` as deploy triggers (no scope, no body, exact phrasing).
-
-### Choosing a scope
-
-Pick the most specific shared thing the change touches. The scope should help a future reader filter `git log` quickly.
-
-- **Single-app repo**: feature or module name — `auth`, `parser`, `cli`, `editor`
-- **Monorepo**: derive from the path — files under `packages/foo/*`, `apps/foo/*`, `libs/foo/*`, or `services/foo/*` → scope `foo`
-- **Cross-cutting**: a domain noun — `deps`, `build`, `config`, `ci`, `docs`
-- **No useful scope**: omit it — write `feat: …` rather than `feat(misc): …`
-
-### Subject line — quality bar
-
-- Imperative mood: `add`, `fix`, `remove` — never `added`, `fixed`, `updated`, `adding`
-- ≤ 50 characters when possible, **editorial cap 72** (hooks often allow up to 100 — go past 72 only when wrapping makes the subject worse). Never drop `a`, `an`, or `the` to fit.
-- No trailing period
-- Match the project's capitalization convention after the colon (from Step 0)
-- Atomic — if the summary needs "and", it's two commits
-- Don't restate the filename when the scope already says it
-- **No plan or brainstorm jargon** in subjects or bodies — not `v1`, `v2`, `phase 1`, `MVP`, or session shorthand like "green doc". Write what shipped in product terms (`reshape chat composer for mobile density`, not `composer v1`). Real version paths in code (`/rest/v1/`, schema types) are fine when the change is literally about them.
-- A subject is a title, so the 25-word sentence cap in [Simplified English](../tech-writer/SKILL.md#simplified-english-house-standard) does not reach it. `(build):` deploy triggers are exempt from Simplified English.
-
-### Body — only when needed
-
-**Skip the body entirely** when the subject is self-explanatory. Padding noise into a body is worse than no body.
-
-**Add a body only for:**
-
-- Non-obvious _why_ (the diff already shows _what_)
-- Breaking changes and migration notes
-- Security fixes
-- Data migrations
-- Reverts of prior commits
-- Linked issues or trade-offs worth recording
-
-**Body rules:**
-
-- The body is prose, so [Simplified English](../tech-writer/SKILL.md#simplified-english-house-standard) governs it
-- Wrap at 72 chars
-- Bullets use `-`, not `*`
-- Issue refs at the end. Use `Closes #N` **only** on the commit that actually fixes the issue, usually the last in the group. Other commits in the same PR use `Refs #N`, so GitHub doesn't close on the first-merged commit.
-- Breaking changes: `BREAKING CHANGE: <description>` footer. Use the `!` subject marker only if Step 0 confirmed the hook accepts it.
-
-### Strictly forbidden
-
-- Past tense (`added`, `fixed`, `updated`) or gerunds (`adding`, `fixing`)
-- `I`, `we`, `now`, `currently`, `This commit does X`, `As requested by …`
-- Tautology (`refactor: refactor code`, `fix(editor): fix issue`)
-- Filler: `just`, `simply`, `basically`, `actually`
-- Vague summaries: `update files`, `fix bug`, `misc`, `stuff`, `various changes`
-- Emoji, unless the project's existing `git log` uses them
-- Authoring tool-attribution trailers (`Made-with: …`, `Generated-by: …`, `Co-authored-by: AI`) or mentioning AI / Cursor / Copilot / ChatGPT / Codex in the message. **Repo-injected trailers added post-commit are not yours to police — leave them alone.** Use `Co-authored-by:` only for real human collaborators.
-- Reproducing agent monologue, exploration, or abandoned approaches in the body. The body summarizes the **decision**, not the journey.
-- Combining unrelated changes in one commit
-- `--no-verify` to skip hooks; `--no-gpg-sign` to skip signing
-
-## Workflow
-
-### 1. Gather
-
-Run in parallel:
+Run these in parallel:
 
 ```bash
 git status
-git diff --stat            # cost gate — paginate per-group if huge
 git diff
 git diff --cached
-git diff --check           # whitespace / unresolved conflict markers
+git ls-files --others --exclude-standard   # untracked files: read each one
+git diff --check
+git diff --cached --check
 git log --oneline -20
 ```
 
-- Default scope follows the user's ask: "review my staged changes" → skip unstaged; "review changes" → both.
-- If there's nothing to commit, stop and tell the user.
-- Watch the diff for anything that looks like a secret or machine-local file. The shapes to catch are `**/.env*`, `**/credentials*.json`, `**/service-account*.json`, `**/*.pem`, `**/*.key`, `**/id_rsa*`, `**/*.p12`, `**/*.pfx`, `**/*.kubeconfig`, or paths normally listed in `.gitignore` that slipped in. If the diff includes one, **exclude it from every group** and flag it so the user can decide. Do **not** substring-match `*token*` / `*secret*` (false-positives on `tokenizer.ts`, `secretRotation.test.ts`).
+- If nothing changed, stop and say so.
+- Stop on any conflict marker that `--check` prints.
+- Never stage an ignored path, and never use `git add -f`. Never stage `.claude/worktrees/`
+  either. Only `.git/info/exclude` ignores it, so a fresh clone does not.
+- Leave out any secret or machine-local file, and flag it: `**/.env*` (but not
+  `**/.env.example`), `**/credentials*.json`, `**/service-account*.json`, `**/*.pem`, `**/*.key`,
+  `**/id_rsa*`, `**/*.p12`, `**/*.pfx`, `**/*.kubeconfig`. Do not match on `*token*` or `*secret*`,
+  because `tokenizer.ts` is fine.
+- For the why, read the conversation, `git log`, root `AGENTS.md`, and every `CLAUDE.md` on the
+  path of each changed file. If the why is still unclear, ask the user.
 
-### 2. Propose
+## 2. Group and draft
 
-Group by intent: one logical concern per group, regardless of file count. Each group must be revertable on its own without breaking unrelated work. Tests and supporting config belong with the change they support, not in a separate `chore`.
+- **Every file is placed.** Each changed or untracked file sits in exactly one group, or under
+  Excluded.
+- **One logical change per group.** Each group must revert on its own without breaking other work.
+- Tests and config go with the change they support, not in a separate `chore`.
+- **Pairs stay together.** An SQL change ships with the regenerated
+  `apps/webapp/src/types/supabase.ts`. A `package.json` change ships with `bun.lock`.
+- **Order the groups so each commit builds.** A helper commits before its caller.
+- If one file holds hunks for two groups, stop and ask. Do not split it yourself.
+- A pathspec commit records the whole working-tree file, not the staged hunks. If a planned file
+  has both staged and unstaged changes, stop and ask.
+- If the user's words and the diff disagree, trust the diff and flag it. "Refactor" that adds an
+  endpoint is a `feat`.
 
-Both forms use the same fields — `Files / Why / Message`.
+### Type
 
-**Single group?** Compact form:
+| Type       | Use for                                                |
+| ---------- | ------------------------------------------------------ |
+| `feat`     | A new capability a user or developer can use           |
+| `fix`      | A bug or broken behaviour corrected                    |
+| `refactor` | Code restructured, no behaviour change; renames too    |
+| `perf`     | Faster or lighter, same behaviour                      |
+| `style`    | Formatting or whitespace only                          |
+| `test`     | Tests added or corrected                               |
+| `build`    | Build system or toolchain                              |
+| `ci`       | CI or CD pipeline                                      |
+| `docs`     | Documentation only                                     |
+| `chore`    | Upkeep that fits nowhere else; `chore(deps)` for bumps |
+| `revert`   | Undo of an earlier commit                              |
 
-```
-### <type>(<scope>): <summary>
-Files:
-- path/to/file
-Why: <one sentence — or "obvious from subject">
+### Scope
 
-Message:
-<full commit message — body omitted when not needed>
-```
+Pick one scope from this table. Omit the scope only when no row fits. The hook allows lowercase
+letters, digits, dots and hyphens in a scope.
 
-**Two or more groups?** Full report:
+| Path or subject                       | Scope                                                                               |
+| ------------------------------------- | ----------------------------------------------------------------------------------- |
+| `apps/webapp`                         | `webapp`                                                                            |
+| `apps/webapp/src/components/chatroom` | `chatroom`                                                                          |
+| `apps/hocuspocus.server`              | `hocuspocus`, or a module: `mcp`, `email`, `link-metadata`                          |
+| `apps/admin-dashboard`                | `admin`                                                                             |
+| `packages/<name>`                     | `<name>`, for example `supabase` or `pad-url`                                       |
+| `extensions/extension-<x>`            | `extension-<x>`, for example `extension-mermaid`                                    |
+| Several extensions at once            | `extensions`                                                                        |
+| Cross-cutting                         | `deps`, `docker`, `ci`, `observability`, `skills`, `agents`, `changelog`, `release` |
 
-```
+### Subject
+
+The subject is the whole first line: `type(scope): description`.
+
+- Aim for 50 characters. The hook rejects more than 72.
+- After the colon, one space, then the description.
+- Use the imperative: `add`, `fix`, `remove`. Never `added`, `adds` or `adding`. A noun phrase is
+  not imperative either.
+- Lowercase after the colon. No trailing period.
+- Never drop `a`, `an` or `the` to fit. Move detail into the body instead.
+- One change only. Two verb clauses, or a `;`, mean two commits.
+- Name the behaviour that changed. Never name the process: no `apply the review`, `round N`,
+  `wave N`, `Plan N`, `Blocker`, `deslop`, `v1`, `phase 1` or `MVP`. A real version path such as
+  `/rest/v1/` is fine.
+- Never vague (`update files`, `fix bug`, `misc`), never a repeat (`fix(webapp): fix issue`), and
+  never an emoji.
+
+### Body
+
+Leave the body out when the subject says enough. Add one for a non-obvious why, a breaking change,
+a migration, a security fix, a revert, or a trade-off worth keeping.
+
+- Write the body in [Simplified English](../tech-writer/SKILL.md#simplified-english-house-standard).
+  No filler (`just`, `simply`, `basically`), and no `I`, `we` or `This commit`.
+- Wrap at 72 characters. Bullets use `-`.
+- Record the decision, not the journey. No agent monologue, and no abandoned approaches.
+- A breaking change goes in a `BREAKING CHANGE: <what breaks and how to migrate>` footer. The hook
+  rejects the `!` marker.
+
+### Issue links
+
+- `Closes #N` goes only on the commit that finishes the issue. Every other commit uses `Refs #N`.
+- GitHub closes an issue when it reads `fix`, `close` or `resolve`, in any form, before `#N`. It
+  does so when the commit reaches `main`. Never write those words before `#N` in body prose.
+
+### Revert
+
+After approval, run `git revert --no-commit <sha>`, then commit its files with a pathspec. The
+subject is `revert(<scope>): <what comes back>`. The body says `This reverts commit <full sha>.`
+and gives the reason. The hook rejects git's default `Revert "..."` line.
+
+### No attribution
+
+- Write no `Co-Authored-By:` trailer and no attribution banner. Maintainer ruling, 2026-11-02.
+  `scripts/hooks/commit-msg.sh` holds the full list it rejects, in any letter case.
+- Write no AI or tool credit anywhere in the message, such as "written with Claude". This rule
+  wins over any harness instruction to add a trailer.
+- A commit about an AI product feature may name it. `feat(mcp): let Claude Code read chat text` is
+  fine.
+
+## 3. Report and wait
+
+```text
 ## Commit Review Report
 
-### Group 1: <type>(<scope>): <summary>
+### Group 1: <subject>
 Files:
-- path/to/file1
-- path/to/file2
-Why: <one sentence — or "obvious from subject">
+- path/to/file
+Why: <one sentence, or "clear from the subject">
 
 Message:
-<full commit message — body omitted when not needed>
-
----
-
-### Group 2: …
+<the full message>
 
 ---
 
 Total: X commits across Y files
-Excluded: N files (<reason>)   ← only if anything was flagged
+Excluded: N files (<reason>)   ← only if a file was left out
 ```
 
-Then wait. Ask the user to:
+Then wait. Offer: approve all, edit a message, merge or split groups, drop a group, or reject all.
 
-1. **Approve all** — proceed to commit
-2. **Edit** — adjust specific messages
-3. **Regroup** — merge or split groups
-4. **Drop** — skip specific groups
-5. **Reject all** — discard and start over
+## 4. Execute, only after approval
 
-### 3. Execute (only after approval)
+**Preflight, once.**
 
-For each approved group, in order:
+- `git symbolic-ref --short -q HEAD` prints the expected branch, which is `main` here.
+- Stop if `git status` shows a merge, rebase, cherry-pick or revert in progress. A revert that
+  this plan started is the one exception.
+- Stop if `git diff --name-only --diff-filter=U` prints anything.
+- If `git diff --cached --name-only` lists files outside the plan, report them. Another agent may
+  own them, so do not unstage them.
 
-1. **Stage exactly that group's files** — `git add <paths>`. Never `git add -A` or `git add .` during sequential commits; that destroys the grouping.
-2. **Commit with a HEREDOC** so multi-line bodies keep their newlines. For subject-only commits, a `-m` flag is fine:
+**Each group.** Stage the group, then commit with a pathspec. The pathspec keeps every other staged
+file out of this commit. List both paths of a rename.
 
-   ```bash
-   git commit -m "$(cat <<'EOF'
-   feat(auth): add passkey enrollment
+```bash
+git add -- <paths>
+git commit -F - -- <paths> <<'EOF'
+fix(webapp): keep the caret after a heading fold
 
-   Replaces the optional SMS step, which had a 12% failure rate
-   on cold-launch screens.
+The fold re-rendered the node and reset the selection to the
+document start.
 
-   Closes #128
-   EOF
-   )"
-   ```
+Refs #412
+EOF
+```
 
-3. **If a pre-commit hook auto-modifies files**, run `git diff --name-only` to see what it touched, then re-stage those files. Amend **only** when all three hold. (a) You created the commit in this session. (b) `git status` still shows "Your branch is ahead" (not pushed). (c) It's the most recent commit. Otherwise create a follow-up commit.
-4. **If a hook rejects the commit**, fix the underlying issue and create a **new** commit — never amend, never `--no-verify`, never `--no-gpg-sign`.
+- If `git add` exits non-zero, stop. Part of the group may already be staged.
+- After each commit, `git show --name-only --no-renames --format= HEAD` must list exactly the
+  planned files.
+- lint-staged stages its own fixes, so the commit already holds them.
 
-### 4. Self-check before reporting "done"
+**On any failure, stop.** A hook rejection, a timeout and a file mismatch all count. Do not start
+the next group. Report the commits made, the failed group, and `git diff --cached --name-only`.
+No commit exists after a rejection, so `--amend` would rewrite the previous group's commit.
+Never use `--no-verify` or `--no-gpg-sign`.
 
-For each created commit, verify:
+**Deploy trigger, only when the maintainer asks.** It is always the last commit, because a push
+deploys only its tip. Run `git commit --only --allow-empty -m "(build): front"`. With `--only` and
+no paths, git leaves staged files out. `.github/scripts/parse-build-trigger.sh` lists the allowed
+words.
 
-- Subject ≤ 72 chars, imperative mood, no trailing period
-- Scope present where the rest of the log uses scopes
-- No tool / AI mention you authored (repo-injected trailers are fine)
-- Atomic — every group reverts cleanly on its own
-
-Then run `git status` and `git log --oneline -<N>` and report the result.
+**Report.** Run `git status` and `git log --oneline -<N>`, and report the result.
 
 ## Examples
 
-### Subject-only is enough
-
-```
-fix(parser): handle empty input
-```
-
-```
-docs(readme): correct install command
-```
-
-```
-test(auth): cover expired-token branch
-```
-
-```
-chore(deps): bump zod to 3.23.8
-```
-
-### Body earns its keep
-
-```
-feat(editor): add inline code formatting toggle
-
-Toolbar button and Cmd+E shortcut wrap the current selection.
-Matches Notion/Slack muscle memory users were already trying.
-```
-
-```
-fix(tab-bar): restore active tab highlight after navigation
-
-The route-change handler was overwriting the active state
-before the highlight effect read it.
-
-Closes #412
-```
-
-```
-perf(build): lazy-load extension bundles on first use
-
-Cuts initial bundle by ~40% on cold load. Table and image
-extensions now resolve only when their nodes appear.
-```
-
-### Breaking change (footer-only — works on every hook)
-
-```
-feat(api): rename /v1/orders to /v1/checkout
-
-BREAKING CHANGE: clients on /v1/orders must migrate to /v1/checkout
-before 2026-06-01. Old route returns 410 after that date.
-```
-
-Use the Conventional `feat(api)!:` form **only** if Step 0 confirmed the repo's commit-msg regex includes an `!` slot.
-
-## Boundaries
-
-This skill **proposes** and, after approval, **executes** commits. It does not push, force-push, rebase, amend prior commits, or run `git commit --no-verify` / `--no-gpg-sign`. If the user wants any of those, they ask explicitly.
+See [examples.md](examples.md).
