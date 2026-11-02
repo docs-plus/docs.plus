@@ -5,7 +5,7 @@ import type { Mark, Node as PMNode } from '@tiptap/pm/model'
  * that one. Drift makes the first-open toc-id rewrite read as a real edit, and
  * lets the toc-id rewriter outrank the real writer in `blockAuthors`.
  */
-export const VOLATILE_BLOCK_ATTRS: ReadonlySet<string> = new Set(['toc-id'])
+export const VOLATILE_BLOCK_ATTRS: ReadonlySet<string> = new Set(['toc-id', 'keyId'])
 
 /** Numbers for characters, strings for nodes, so the two can never compare equal. */
 type DiffToken = number | string

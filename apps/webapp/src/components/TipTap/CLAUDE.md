@@ -21,6 +21,7 @@ bun run migrate:nested-to-flat
 
 - Invoking the script path from an arbitrary cwd can break Bun resolution of `yjs` for `@hocuspocus/transformer`.
 - **Settings Markdown replace writes natural picture size in the browser.** After `setContent`, `commitImportedImageSizes` loads unsized images and stamps `keyId` plus natural width and height. Do not call `fitLayoutToEditorColumn` at apply time. A load miss leaves attrs empty. The import JSON and a `PATCH` stay unsized. Markdown import never makes the server fetch pictures.
+- **A whole-document replace keeps heading `toc-id`s by level and text** (`carryHeadingIds`, called from `applyImportedContent`). Heading chats, `?id=` links and the digest pair by that id. A renamed or new heading takes a new id from `UniqueID`.
 
 ### Heading Schema
 

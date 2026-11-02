@@ -182,8 +182,9 @@ export interface InitWsOpsDeps {
 }
 
 /** Editor-regenerated identity attrs. Whatever this strips, the author walk must
- *  also ignore, or a toc-id rewriter gets credited for an unchanged block. */
-export const VOLATILE_BLOCK_ATTRS: ReadonlySet<string> = new Set(['toc-id'])
+ *  also ignore, or a toc-id rewriter gets credited for an unchanged block. `keyId`
+ *  is a DOM handle, and a Settings replace writes a new one on every picture. */
+export const VOLATILE_BLOCK_ATTRS: ReadonlySet<string> = new Set(['toc-id', 'keyId'])
 
 export const DIFF_PREVIEW_CHARS = 200
 export const MAX_DIFF_CHANGES = 500

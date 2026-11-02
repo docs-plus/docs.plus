@@ -13,6 +13,37 @@ const changesOf = (before: TiptapDocJson, after: TiptapDocJson) => {
   return diffSections(pairs, undefined, movedTocIds(baseline, pairs))
 }
 
+// A Settings replace writes a new `keyId` on every picture and, before ids were carried,
+// a new `toc-id` on every heading. Neither is an edit.
+describe('diffSections — regenerated attributes are not an edit', () => {
+  const picture = (keyId: string) => ({
+    type: 'image',
+    attrs: { src: 'https://media.test/a.png', keyId }
+  })
+
+  test('a section that differs only by keyId and toc-id is unchanged', () => {
+    const changes = changesOf(
+      doc(heading(1, 'Start', 'old'), para(text('Body')), picture('key-one')),
+      doc(heading(1, 'Start', 'new'), para(text('Body')), picture('key-two'))
+    )
+    expect(changes.map((change) => change.status)).toEqual(['unchanged'])
+  })
+
+  test('a section with a different picture is not unchanged', () => {
+    const changes = changesOf(
+      doc(heading(1, 'Start', 'same'), {
+        type: 'image',
+        attrs: { src: 'https://media.test/a.png' }
+      }),
+      doc(heading(1, 'Start', 'same'), {
+        type: 'image',
+        attrs: { src: 'https://media.test/b.png' }
+      })
+    )
+    expect(changes.map((change) => change.status)).toEqual(['modified'])
+  })
+})
+
 // The changeset's default token encoder keys a character on its code and a node
 // on its type name, so it reads neither marks nor attributes. Each edit below is
 // real, deep-compares as different, and then reports zero changes to quantify.

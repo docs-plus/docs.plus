@@ -282,9 +282,9 @@ const ImportExportSection = ({
             ) : null}
 
             <p className="text-base-content/70 mt-3 text-sm">
-              This replaces the whole document for everyone in it, right now, and there’s no undo.
-              Heading chat rooms, folds and section links stop working — a file can’t carry the
-              heading IDs they point at.
+              This replaces the whole document for everyone in it, right now, and there’s no undo. A
+              heading keeps its chat room, folds and section links only when its level and text stay
+              the same.
             </p>
 
             <div className="mt-3 flex flex-wrap justify-end gap-2">

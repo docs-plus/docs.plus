@@ -3,6 +3,7 @@ import type { Editor } from '@tiptap/core'
 import { yUndoPluginKey } from '@tiptap/y-tiptap'
 
 import { sanitizeJsonContent } from '../../extensions/markdown-paste/markdownPastePlugin'
+import { carryHeadingIds } from './carryHeadingIds'
 import { commitImportedImageSizes } from './commitImportedImageSizes'
 
 /**
@@ -13,7 +14,7 @@ export const applyImportedContent = async (
   editor: Editor,
   content: ImportedDocument['content']
 ): Promise<void> => {
-  editor.commands.setContent(sanitizeJsonContent(content))
+  editor.commands.setContent(carryHeadingIds(editor.getJSON(), sanitizeJsonContent(content)))
   await commitImportedImageSizes(editor)
   // Replace rewrites the whole document, so an undo into the pre-import state
   // lands on a mix of both.

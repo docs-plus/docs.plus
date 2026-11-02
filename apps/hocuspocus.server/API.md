@@ -611,7 +611,7 @@ The default is the greatest version below `:version`, which is not always `:vers
 
 Each entry in `changes` carries `index`, the top-level index in the newer document — in the older one on `removed`. `from` and `to` are ProseMirror positions in the newer document, absent on `removed`. `before` and `after` are the first 200 characters of the block's text.
 
-Comparison is over whole top-level blocks of decoded ProseMirror content, not over words, so a one-word edit reports the paragraph. Editor-regenerated `toc-id` attributes are stripped first: re-anchoring a heading is not a change.
+Comparison is over whole top-level blocks of decoded ProseMirror content, not over words, so a one-word edit reports the paragraph. Editor-regenerated `toc-id` and `keyId` attributes are stripped first: re-anchoring a heading or a picture is not a change.
 
 **Authorship.** `clientIds` lists the Yjs clientIDs holding live content in the block, and `authors` names them — one entry per clientID that has a binding row.
 
@@ -880,9 +880,9 @@ There is no `coarse` field on this response, unlike the [versions diff](#get-api
 
 **A pure reorder of stamped sections reports `changed: false`.** The moved sections pair by `toc-id` and compare equal, so every status is `unchanged`. `scope=headings` still shows the new order, which is where a caller can see the move. Reordering sections that carry no `toc-id` is different: those fall to the matcher and can come back as `removed` plus `added`.
 
-**A caller that rotates every `toc-id` defeats pairing.** Nothing then matches by id, everything falls to the matcher, and an edited section reads `removed` plus `added` rather than `modified`. No editor produces this, because the webapp keeps its ids. A REST caller can, because `PATCH /content` stores a caller-supplied `toc-id` verbatim. The result is coarser, never false: the section is still reported as changed, and no edit is attributed to a section nobody touched.
+**A caller that rotates every `toc-id` defeats pairing.** Nothing then matches by id, everything falls to the matcher, and an edited section reads `removed` plus `added` rather than `modified`. The webapp keeps its ids, and a Settings replace carries each one by heading level and text. So a replace shows this only for a renamed or new heading. A REST caller can rotate every id, because `PATCH /content` stores a caller-supplied `toc-id` verbatim. The result is coarser, never false: the section is still reported as changed, and no edit is attributed to a section nobody touched.
 
-**A `toc-id` rewrite on its own is `unchanged`.** The canonical form drops the attribute, so re-anchoring a heading is not an edit.
+**A `toc-id` or `keyId` rewrite on its own is `unchanged`.** The canonical form drops both attributes, so re-anchoring a heading or a picture is not an edit.
 
 **Attribution is decoration.** It is per-replica and best-effort, anonymous editors are omitted, and retention thinning under-reports contributors on windows longer than the autosave retention. A profile-lookup outage empties `contributors` rather than failing the request. The content comparison stays correct in every one of those cases.
 
