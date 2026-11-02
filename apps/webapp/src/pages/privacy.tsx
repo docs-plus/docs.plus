@@ -209,6 +209,16 @@ export default function PrivacyPage() {
             Email <TextLink href={CONTACT_MAILTO}>{LEGAL_CONTACT_EMAIL}</TextLink> to close your
             account.
           </li>
+          <li>
+            Download a document you can open from Document settings › Import &amp; export, as Word,
+            Markdown or OpenDocument.
+          </li>
+          <li>
+            Email <TextLink href={CONTACT_MAILTO}>{LEGAL_CONTACT_EMAIL}</TextLink> to ask for a copy
+            of your personal data in a common file format, or to ask us to send it to another
+            service. This is your right to data portability. You can also ask us to correct or
+            delete your data, or to limit or stop how we use it. We answer within one month.
+          </li>
         </ul>
       </LegalSection>
 
