@@ -42,7 +42,7 @@ const clampColspan = (node: JsonNode): JsonNode | null => {
 }
 
 /** `colspan` multiplies render memory, and a DOCX `gridSpan` can set any value. */
-export const clampTableSpans = (doc: TiptapDocJson): TiptapDocJson => mapNodes(doc, clampColspan)
+export const clampColspans = (doc: TiptapDocJson): TiptapDocJson => mapNodes(doc, clampColspan)
 
 /** Rewrites the nodes only the editor can render, so no writer meets them. */
 export const toPortableJson = (doc: TiptapDocJson): TiptapDocJson =>

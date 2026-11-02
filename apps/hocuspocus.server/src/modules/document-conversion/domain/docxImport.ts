@@ -5,7 +5,7 @@ import mammoth from 'mammoth'
 import type { ConversionWarning, ImportResult } from '../types'
 import { parseDocumentHtml } from './documentHtml'
 import { ensureTitleHeading, titleHeadingText, titleHeadingWarning } from './ensureTitleHeading'
-import { clampTableSpans } from './portableJson'
+import { clampColspans } from './portableJson'
 
 export interface ImportDocxOptions {
   fallbackTitle: string
@@ -41,7 +41,8 @@ const WORD_PART = /^word\/[^/]+\.xml$/
 const TRACKED_CHANGE = /<w:(ins|del|moveFrom|moveTo)[\s/>]/
 
 // mammoth keeps insertions as plain text and drops deletions, and reports neither.
-// JSZip because a different reader could miss a change that mammoth still accepts.
+// JSZip is mammoth's own zip reader, so both open the same archive. The pattern knows
+// only Word's `w:` prefix, and it also matches parts that mammoth never reads.
 const hasTrackedChanges = async (buffer: Buffer): Promise<boolean> => {
   const zip = await JSZip.loadAsync(buffer)
   for (const part of zip.file(WORD_PART)) {
@@ -93,10 +94,7 @@ export const importDocx = async (
     { styleMap: DOCX_STYLE_MAP, convertImage }
   )
 
-  const { doc, branch } = ensureTitleHeading(
-    clampTableSpans(parseDocumentHtml(html)),
-    fallbackTitle
-  )
+  const { doc, branch } = ensureTitleHeading(clampColspans(parseDocumentHtml(html)), fallbackTitle)
   const title = titleHeadingText(doc) || fallbackTitle.trim()
   const warnings = messages.map(toWarning)
   // First, because the panel lists only the first few warnings.
