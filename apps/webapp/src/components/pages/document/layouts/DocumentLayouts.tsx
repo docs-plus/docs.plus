@@ -1,10 +1,11 @@
 import { CommandJump } from '@components/commandJump/CommandJump'
-import { useHistoryHash } from '@components/pages/history/historyShareUrl'
+import { adoptVersionQuery, useHistoryHash } from '@components/pages/history/historyShareUrl'
 import type { HocuspocusProvider } from '@hocuspocus/provider'
 import { usePadBookmarkStats } from '@hooks/usePadBookmarkStats'
 import useReportTabReading from '@hooks/useReportTabReading'
 import { useStore } from '@stores'
-import React from 'react'
+import { useRouter } from 'next/router'
+import React, { useEffect } from 'react'
 
 import DesktopLayout from './DesktopLayout'
 import MobileLayout from './MobileLayout'
@@ -18,6 +19,11 @@ const DocumentLayouts = ({
   provider: HocuspocusProvider
 }) => {
   const { isHistory } = useHistoryHash()
+  // Keyed on the path, so an in-app jump to a `?version=` link is adopted as a fresh load is.
+  const { asPath } = useRouter()
+  useEffect(() => {
+    void adoptVersionQuery()
+  }, [asPath])
   useReportTabReading(provider)
   // Here, not in a toolbar: both layouts show the dot, and a remount would blink it.
   usePadBookmarkStats()

@@ -5,7 +5,8 @@ import {
   normalizeToPlainHistoryHash,
   parseHistoryHash,
   replaceHistoryHashVersion,
-  resolveHistoryListTargetVersion
+  resolveHistoryListTargetVersion,
+  versionQueryArrival
 } from './historyShareUrl'
 
 const item = (version: number): HistoryItem =>
@@ -107,5 +108,26 @@ describe('the hash writers keep the router state', () => {
 
     clearHistoryHash()
     expect(window.location.hash).toBe('')
+  })
+})
+
+describe('versionQueryArrival', () => {
+  it('moves a valid version into the History hash and keeps the rest', () => {
+    expect(versionQueryArrival('https://docs.plus/demo?id=x&version=36#history?version=36')).toBe(
+      '/demo?id=x#history?version=36'
+    )
+    expect(versionQueryArrival('https://docs.plus/demo?version=36')).toBe(
+      '/demo#history?version=36'
+    )
+  })
+
+  it('strips a bad version and leaves the hash alone', () => {
+    expect(versionQueryArrival('https://docs.plus/demo?version=abc#settings')).toBe(
+      '/demo#settings'
+    )
+  })
+
+  it('does nothing without the query', () => {
+    expect(versionQueryArrival('https://docs.plus/demo#history?version=36')).toBeNull()
   })
 })

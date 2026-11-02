@@ -1,6 +1,7 @@
 import { useLocationHash } from '@hooks/useLocationHash'
 import type { HistoryItem } from '@types'
 import { splitHashRoute } from '@utils/splitHashRoute'
+import Router from 'next/router'
 import { useMemo } from 'react'
 
 import { formatVersionDate } from './helpers'
@@ -45,9 +46,40 @@ export function useHistoryHash(): ParsedHistoryHash {
   return useMemo(() => parseHistoryHash(hash), [hash])
 }
 
+/**
+ * The hash opens History in the app. The `?version=` copy is the part a server sees, so a
+ * shared link can unfurl that version's card (#668). The app strips it on arrival.
+ */
 export function buildHistoryShareUrl(version: number): string {
-  const { origin, pathname, search } = window.location
-  return `${origin}${pathname}${search}#${HISTORY_ROUTE}?${VERSION_QUERY}=${version}`
+  const url = new URL(window.location.href)
+  url.searchParams.set(VERSION_QUERY, String(version))
+  url.hash = `${HISTORY_ROUTE}?${VERSION_QUERY}=${version}`
+  return url.href
+}
+
+/**
+ * Pure. For an address with `?version=<n>`: the same address without that query, opened
+ * at History version n. Null when the query is absent or not a positive integer.
+ */
+export function versionQueryArrival(href: string): string | null {
+  const url = new URL(href)
+  const raw = url.searchParams.get(VERSION_QUERY)
+  if (raw === null) return null
+  url.searchParams.delete(VERSION_QUERY)
+  if (/^[1-9]\d*$/.test(raw)) url.hash = `${HISTORY_ROUTE}?${VERSION_QUERY}=${raw}`
+  return `${url.pathname}${url.search}${url.hash}`
+}
+
+/**
+ * Takes `?version=` off the address on arrival, in place. The Router writes it, so its own
+ * state drops the query too, and a later Back or address write never brings it back.
+ */
+export async function adoptVersionQuery(): Promise<void> {
+  const to = versionQueryArrival(window.location.href)
+  if (!to) return
+  const oldURL = window.location.href
+  await Router.replace(to, undefined, { shallow: true })
+  notifyHashChange(oldURL)
 }
 
 /** `pushState` / `replaceState` never fire `hashchange`, so every hash reader would miss the write. */
