@@ -120,6 +120,12 @@ export default function PrivacyPage() {
           you remove it.
         </p>
         <p>
+          When you share a link to a public document in another app, such as Slack or X, that app
+          asks our server for the link&apos;s preview. The preview can show the document&apos;s
+          title and first lines. That app keeps its own copy, and we cannot delete it, so a preview
+          can stay after an edit or after the document turns Private.
+        </p>
+        <p>
           Our logs keep your IP address, your browser's user agent and the request path. For a
           preview, our server also logs the host of the linked site, never the full link. Our error
           reports follow the same rule: they keep only the host of a linked site.

@@ -1,4 +1,4 @@
-import { isReservedSlug } from '@docs.plus/pad-url'
+import { isReservedSlug, padUrlCore } from '@docs.plus/pad-url'
 import { type Session } from '@supabase/supabase-js'
 import { DocumentFetchError, fetchDocument } from '@utils/fetchDocument'
 import { logger } from '@utils/logger'
@@ -10,6 +10,28 @@ import { type GetServerSidePropsContext } from 'next'
 import { getDeviceInfo } from './getDeviceInfo'
 
 const AUTH_TIMEOUT_MS = 5000
+
+/**
+ * Asks REST for the social card (`card=1`) with the link's sub-ids, read by the one Pad URL
+ * parser. Only a full page load renders the head, so a client navigation asks for none.
+ * A person who opens a shared chat link waits on the chat read too, by design.
+ */
+const cardQueryOf = (context: GetServerSidePropsContext): URLSearchParams | undefined => {
+  if (context.req.headers['x-nextjs-data']) return undefined
+  const facets = padUrlCore.parse(context.resolvedUrl, 'http://pad.invalid')
+  if (!facets) return undefined
+  const params = new URLSearchParams({ card: '1' })
+  if (facets.headingId) params.set('id', facets.headingId)
+  if (facets.chat) {
+    params.set('c', facets.chat.linkId)
+    if (facets.chat.messageId) params.set('m', facets.chat.messageId)
+  }
+  for (const term of facets.terms) params.append('t', term)
+  if (facets.mode === 'and') params.set('mode', 'and')
+  const { version } = context.query
+  if (typeof version === 'string') params.set('version', version)
+  return params
+}
 
 export const documentServerSideProps = async (context: GetServerSidePropsContext) => {
   // The document shell is client-rendered, so its `noindex` <Head> never reaches a
@@ -63,7 +85,7 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
       }
     }
 
-    const docMetadata = await fetchDocument(documentSlug, session)
+    const docMetadata = await fetchDocument(documentSlug, session, cardQueryOf(context))
 
     // Page props carry no token. The service worker caches the HTML and the
     // `/_next/data` response, and its header rule cannot see a token in a body.

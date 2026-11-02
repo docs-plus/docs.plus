@@ -5,15 +5,11 @@ import '@config'
 import { AppQueryClientRoot } from '@components/AppQueryClientRoot'
 import BottomSheet from '@components/BottomSheet'
 import GoogleAnalytics from '@components/GoogleAnalytics'
-import {
-  HOME_OG_IMAGE,
-  HOME_OG_IMAGE_HEIGHT,
-  HOME_OG_IMAGE_WIDTH,
-  HOME_SITE_URL
-} from '@components/pages/home/homeMetadata'
+import { HOME_SITE_URL } from '@components/pages/home/homeMetadata'
 import { MutationCache, onlineManager, QueryCache, QueryClient } from '@tanstack/react-query'
 import { trackEvent } from '@utils/analytics'
 import { installChunkLoadRecovery } from '@utils/chunkLoadRecovery'
+import type { DocumentCard } from '@utils/fetchDocument'
 import { captureUnknown } from '@utils/observability'
 import { getRoutePolicy, isDocumentAsPath } from '@utils/routePolicy'
 import { MotionConfig } from 'motion/react'
@@ -62,19 +58,57 @@ const DOCUMENT_OG_DESCRIPTION =
   'docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge efficiently.'
 
 interface DocumentHeadMetadata {
+  documentId?: string
   title?: string
   description?: string
   slug?: string
   isPrivate?: boolean
+  card?: DocumentCard
 }
+
+const sameText = (a: string | undefined, b: string | undefined) =>
+  !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase()
+
+// The server defaults a new pad's description to its slug, so most pads would print
+// their title twice in an unfurl. Those get the product description instead.
+const headDescription = ({ description, title, slug }: DocumentHeadMetadata) =>
+  !description?.trim() || sameText(description, title) || sameText(description, slug)
+    ? DOCUMENT_OG_DESCRIPTION
+    : description
+
+const CARD_WIDTH = '1200'
+const CARD_HEIGHT = '630'
+
+// The Fallback card, for a pad with no card of its own. `v` is the start of the file's
+// sha256; REST names the same URL in `apps/hocuspocus.server/src/config/env.ts`.
+const PAD_FALLBACK_IMAGE = {
+  url: `${HOME_SITE_URL}/icons/og-card-pad-1200x630.png?v=3fff4849`,
+  alt: 'A document on docs.plus'
+}
+
+// The card is served by REST; its `v` changes whenever anything it draws changes.
+const headImage = ({ documentId, card }: DocumentHeadMetadata) =>
+  documentId && card && process.env.NEXT_PUBLIC_RESTAPI_URL
+    ? {
+        url: `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${encodeURIComponent(documentId)}/card.png?${card.query}`,
+        alt: card.alt
+      }
+    : PAD_FALLBACK_IMAGE
 
 // The document shell is ssr:false, so a <Head> inside the page never reaches a social
 // crawler. These tags render from _app, outside that boundary, so the server response
 // carries them. HeadSeo still owns the client-side title on SPA navigation.
 const DocumentHead = ({ docMetadata }: { docMetadata: DocumentHeadMetadata }) => {
-  const title = docMetadata.title || 'docs.plus'
-  const description = docMetadata.description || DOCUMENT_OG_DESCRIPTION
-  const url = docMetadata.slug ? `${HOME_SITE_URL}/${docMetadata.slug}` : HOME_SITE_URL
+  const { card } = docMetadata
+  // A Heading, Chat or Version card names what the link opens, so its URL and title do too.
+  const title = card?.title || docMetadata.title || 'docs.plus'
+  const description = headDescription(docMetadata)
+  const url = card
+    ? `${HOME_SITE_URL}${card.path}`
+    : docMetadata.slug
+      ? `${HOME_SITE_URL}/${docMetadata.slug}`
+      : HOME_SITE_URL
+  const image = headImage(docMetadata)
 
   return (
     <Head>
@@ -85,14 +119,16 @@ const DocumentHead = ({ docMetadata }: { docMetadata: DocumentHeadMetadata }) =>
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:url" content={url} />
-      <meta property="og:image" content={HOME_OG_IMAGE} />
-      <meta property="og:image:width" content={HOME_OG_IMAGE_WIDTH} />
-      <meta property="og:image:height" content={HOME_OG_IMAGE_HEIGHT} />
+      <meta property="og:image" content={image.url} />
+      <meta property="og:image:width" content={CARD_WIDTH} />
+      <meta property="og:image:height" content={CARD_HEIGHT} />
+      <meta property="og:image:alt" content={image.alt} />
 
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:url" content={url} />
-      <meta name="twitter:image" content={HOME_OG_IMAGE} />
+      <meta name="twitter:image" content={image.url} />
+      <meta name="twitter:image:alt" content={image.alt} />
     </Head>
   )
 }

@@ -12,6 +12,18 @@ type DocumentData = DocumentOwnerFields & {
   isPrivate: boolean
   readOnly?: boolean
   ownerProfile?: (FaceSource & { default_avatar_url?: string | null }) | null
+  /** Present only when the pad has a social preview card. */
+  card?: DocumentCard
+}
+
+/** What REST resolved for the page head. `query` is the image query string, `v` included. */
+export interface DocumentCard {
+  query: string
+  /** `og:title`, or null to keep the Pad title. */
+  title: string | null
+  alt: string
+  /** `og:url` path. */
+  path: string
 }
 
 interface DocumentResponse {
@@ -54,9 +66,11 @@ export class DocumentFetchError extends Error {
   }
 }
 
+/** @param cardQuery The link's card sub-ids with `card=1`, sent only for a full page load. */
 export async function fetchDocument(
   slug: string | undefined,
-  session?: Session | null
+  session?: Session | null,
+  cardQuery?: URLSearchParams
 ): Promise<DocumentMetadata | null> {
   if (!slug?.trim()) return null
 
@@ -68,10 +82,10 @@ export async function fetchDocument(
   if (!apiBaseUrl) throw new DocumentFetchError('API URL not configured')
 
   try {
-    const baseAPIUrl = `${apiBaseUrl}/documents/${encodeURIComponent(slug)}`
-    const url = session?.user?.id
-      ? `${baseAPIUrl}?userId=${encodeURIComponent(session.user.id)}`
-      : baseAPIUrl
+    const params = new URLSearchParams(cardQuery)
+    if (session?.user?.id) params.set('userId', session.user.id)
+    const search = params.toString()
+    const url = `${apiBaseUrl}/documents/${encodeURIComponent(slug)}${search ? `?${search}` : ''}`
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
