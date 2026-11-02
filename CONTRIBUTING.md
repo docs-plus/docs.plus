@@ -132,14 +132,20 @@ This repository follows the [Conventional Commits](https://www.conventionalcommi
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
-- `style`: Code style changes (formatting, etc.)
-- `refactor`: Code refactoring
+- `style`: Formatting or whitespace only
+- `refactor`: Code refactoring, renames included
 - `perf`: Performance work
 - `test`: Adding or updating tests
-- `build`: Build system or dependency changes
+- `build`: Build system or toolchain changes
 - `ci`: CI configuration changes
-- `chore`: Maintenance tasks
+- `chore`: Maintenance tasks, and `chore(deps)` for dependency bumps
 - `revert`: Revert of an earlier commit
+
+The hook checks the shape of the first line only. That line must be 72 characters or less. A scope
+uses lowercase letters, digits, dots and hyphens. The hook rejects the `!` marker, so put
+`BREAKING CHANGE:` in the footer. It also rejects any `Co-authored-by:`, `Generated-by:`,
+`Made-with:` or `Assisted-by:` line, and a "Generated with [Claude Code]", "[Codex]" or
+"[Cursor]" banner. Turn off your editor's or agent's commit attribution.
 
 **Examples:**
 

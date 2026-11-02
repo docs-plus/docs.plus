@@ -2,5 +2,10 @@
   "enabledPlugins": {
     "buildkite@claude-plugins-official": true
   },
-  "outputStyle": "docsplus-simplified-english"
+  "outputStyle": "docsplus-simplified-english",
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  }
 }
