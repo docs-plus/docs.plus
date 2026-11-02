@@ -7,10 +7,14 @@ first_line=$(printf '%s\n' "$commit_msg" | head -n 1)
 conventional='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9][a-z0-9.-]*\))?: [^ ]'
 max_subject=72
 
-# Maintainer ruling, 2026-11-02: no attribution in commits, so an agent runtime's default is refused.
-if printf '%s\n' "$commit_msg" | grep -qiE '^[[:space:]]*(co-authored-by|generated-by|made-with|assisted-by)[[:space:]]*:|generated with \[(claude code|codex|cursor)\]'; then
-    echo "❌ Remove the attribution line. Commits here carry no Co-authored-by, Generated-by,"
-    echo "   Made-with or Assisted-by line, and no \"Generated with\" banner."
+# Maintainer ruling, 2026-11-02: no AI credit in commits. A human co-author may stay, so "Claude Monet" or "Gemini Jones" passes.
+# The banner must start its line, so a body that quotes it in prose passes.
+ai_coauthor='^[[:space:]]*co-authored-by[[:space:]]*:[[:space:]]*(claude[[:space:]]+(code|opus|sonnet|haiku|fable|[0-9])([[:space:]<]|$)|(cursor( agent)?|codex|chatgpt|copilot|github copilot|gemini)[[:space:]]*(<|$)|.*(@anthropic\.com|@cursor\.(com|sh)|@openai\.com|cursoragent))'
+tool_line='^[[:space:]]*(generated-by|made-with|assisted-by)[[:space:]]*:|^[^[:alnum:]]*generated with \[(claude code|codex|cursor)\]'
+if printf '%s\n' "$commit_msg" | grep -qiE "$ai_coauthor|$tool_line"; then
+    echo "❌ Remove the AI attribution line. Commits here carry no AI Co-authored-by line,"
+    echo "   no Generated-by, Made-with or Assisted-by line, and no \"Generated with\" banner."
+    echo "   A Co-authored-by line for a human co-author is fine."
     exit 1
 fi
 

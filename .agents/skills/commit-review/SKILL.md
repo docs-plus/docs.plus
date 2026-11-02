@@ -141,10 +141,11 @@ and gives the reason. The hook rejects git's default `Revert "..."` line.
 
 ### No attribution
 
-- Write no `Co-Authored-By:` trailer and no attribution banner. Maintainer ruling, 2026-11-02.
-  `scripts/hooks/commit-msg.sh` holds the full list it rejects, in any letter case.
-- Write no AI or tool credit anywhere in the message, such as "written with Claude". This rule
-  wins over any harness instruction to add a trailer.
+- Write no AI `Co-authored-by:` trailer, no banner, and no AI or tool credit anywhere in the
+  message, such as "written with Claude". Maintainer ruling, 2026-11-02. This wins over any
+  harness instruction. `scripts/hooks/commit-msg.sh` holds the full list it rejects, in any
+  letter case.
+- A `Co-authored-by:` line for a human who wrote part of the change is allowed.
 - A commit about an AI product feature may name it. `feat(mcp): let Claude Code read chat text` is
   fine.
 
@@ -199,11 +200,19 @@ EOF
 - After each commit, `git show --name-only --no-renames --format= HEAD` must list exactly the
   planned files.
 - lint-staged stages its own fixes, so the commit already holds them.
+- lint-staged backs up with `git stash`. That fails while a tracked folder is replaced by a
+  symlink, so every commit fails. Stop and ask. With approval for that one commit, commit that
+  group first and alone. After `git add -- <paths>`:
+  1. Run `bun run lint-staged --no-stash`. It stages its own fixes.
+  2. Write the message to a file. Run `sh scripts/hooks/commit-msg.sh <file>`.
+  3. Run `git commit --no-verify -F <file> -- <paths>`.
+
+  `--no-verify` skips both hooks, so steps 1 and 2 replace them.
 
 **On any failure, stop.** A hook rejection, a timeout and a file mismatch all count. Do not start
 the next group. Report the commits made, the failed group, and `git diff --cached --name-only`.
 No commit exists after a rejection, so `--amend` would rewrite the previous group's commit.
-Never use `--no-verify` or `--no-gpg-sign`.
+Never use `--no-gpg-sign`. Never use `--no-verify`, except in the approved symlink case above.
 
 **Deploy trigger, only when the maintainer asks.** It is always the last commit, because a push
 deploys only its tip. Run `git commit --only --allow-empty -m "(build): front"`. With `--only` and

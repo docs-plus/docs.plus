@@ -143,9 +143,11 @@ This repository follows the [Conventional Commits](https://www.conventionalcommi
 
 The hook checks the shape of the first line only. That line must be 72 characters or less. A scope
 uses lowercase letters, digits, dots and hyphens. The hook rejects the `!` marker, so put
-`BREAKING CHANGE:` in the footer. It also rejects any `Co-authored-by:`, `Generated-by:`,
-`Made-with:` or `Assisted-by:` line, and a "Generated with [Claude Code]", "[Codex]" or
-"[Cursor]" banner. Turn off your editor's or agent's commit attribution.
+`BREAKING CHANGE:` in the footer. It also rejects a `Co-authored-by:` line that names an AI
+tool or uses an AI vendor's email domain. It rejects any `Generated-by:`, `Made-with:` or
+`Assisted-by:` line, and a "Generated with [Claude Code]", "[Codex]" or "[Cursor]" banner. Turn
+off your editor's or agent's commit attribution. A `Co-authored-by:` line for a human co-author is
+fine.
 
 **Examples:**
 
