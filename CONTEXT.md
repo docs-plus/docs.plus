@@ -65,7 +65,10 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 
 ## Document access
 
-- **Private** — only the owner may open the document (REST slug + WS room sealed). A Joined membership grants no access. Its chat closes too, through the Supabase `document_access` table (the Private mirror, #396). Settings → Documents never lists a private or deleted Document the caller does not own.
+- **Invite only** — the user-facing name of the closed access state (maintainer ruling, 2026-10-25). Only the owner and the People with access may open the document. Today that list is always empty, so Invite only behaves as Private. Code identifiers keep the `Private` names (`PrivateAccess`, `isPrivate`, `PrivateDocumentGate`). Invite links and the switch dialog are designed, not built.
+  _Avoid_: "Private" or "invite-only" in new UI text; "invite list"
+- **People with access** — the people an Invite only document lets in, besides the owner. The one name for that list in UI text. "Invite link" names only the link that adds people.
+- **Private** — the code and server name of Invite only: only the owner may open the document (REST slug + WS room sealed). A Joined membership grants no access. Its chat closes too, through the Supabase `document_access` table (the Private mirror, #396). Settings → Documents never lists a private or deleted Document the caller does not own.
 - **Private media** — a Private document's uploaded files. The media route serves them only with the owner's `dp_media` cookie, which the webapp gets from REST after sign-in, because an image request carries no token (#439). Anyone else gets `404`, as for Trash.
 - **Read-only** — non-owners may view but not edit; owners remain editable. Turning Private ON clears Read-only and disables the control until the doc is public again.
 - **PrivateAccess** — server decision: `allow` | `sign-in-required` | `denied` (`resolvePrivateAccess`).
@@ -75,6 +78,10 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **Open document** — a document with no `ownerId`. Anyone may retitle it, signed in or not. The client retitle answer is `canEditDocumentMetadata`: the owner, or anyone on an open document. It is also no until `documentId` lands. A signed-in person whose first focus, edit or chat open creates the row becomes its owner (maintainer ruling, 2026-10-06). A signed-out one leaves the row open. An existing row is never claimed. A signed-in `PUT` or `POST` create also sets the owner. Private/Read-only locks stay off until ownership handoff ships.
 - **Live seal** — REST publish → Redis `doc:{id}:access` → WS broadcast/close → client `applyAccessStateless`. The first-edit `owner` event has no REST publish and no `doc:{id}:access` key. The anchor broadcasts it to the room, and the same client handler applies it.
 - **Editing lock** — client cannot edit: content-fork error, `authorizedScope === 'readonly'`, or metadata Read-only for a non-owner (`selectDocumentEditingLocked`).
+- **Viewing mode** — a personal, desktop-only choice to stop your own typing. Others still edit, and chat still works. It is never the Editing lock and never access. Remembered per document on this device. Designed, not built.
+  _Avoid_: "read mode", "Read-only" or a lock icon for this choice
+- **Read full screen** — the action that opens the document in large text, one section at a time, with the header, toolbar, wide TOC and docked chat hidden. The state is "Full screen". Designed, not built.
+  _Avoid_: "Present" for this view; Present is the full-screen QR code (`PresentQrCode`)
 - **Restore** — a signed-in writer putting a stored version back into the live document through `history.revert`. It writes through the Live document write. History is readable without a session. Restore is not. The control is hidden when there is no profile and when the editing lock is on. The server refuses the same cases (`unauthorized`, `read-only`).
   _Avoid_: client `setContent` as the write; showing Restore to a visitor
 
