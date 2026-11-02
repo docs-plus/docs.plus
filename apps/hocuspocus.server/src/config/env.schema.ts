@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { CARD_KINDS } from '../modules/social-card/domain/cardRequest'
+
 const booleanString = z
   .string()
   .optional()
@@ -111,6 +113,9 @@ export const envSchema = z.object({
   DO_STORAGE_SECRET_ACCESS_KEY: z.string().optional().default(''),
   DO_STORAGE_MAX_FILE_SIZE: positiveByteString('10485760'),
   LINK_ICON_MAX_BYTES: positiveByteString('32768'),
+  // Card kinds that are switched on, for example `document`. Empty keeps every pad on the static
+  // image. An unknown name fails the boot, so a typo cannot quietly turn every card off.
+  SOCIAL_CARD_KINDS: commaSeparatedList.pipe(z.array(z.enum(CARD_KINDS))),
   // Signs the Private media cookie. Empty boots, and Private media then loads
   // for nobody. A short secret is refused, as for EMAIL_UNSUBSCRIBE_SECRET.
   MEDIA_COOKIE_SECRET: z

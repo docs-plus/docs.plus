@@ -12,6 +12,7 @@ import { httpLogger } from '../lib/logger'
 import { rateLimitFailOpenTotal } from '../lib/metrics'
 import { getRedisClient } from '../lib/redis'
 import { LINK_ICON_PATH, LINK_IMAGE_PATH, LINK_METADATA_MOUNT_PATH } from '../modules/link-metadata'
+import { isSocialCardPath } from '../modules/social-card'
 
 const redisClient = getRedisClient()
 
@@ -34,6 +35,9 @@ const LINK_ICON_BUDGET_FACTOR = 10
 // points per link. On the global bucket a 429 there would also break pad and chat REST
 // calls from the same address.
 const LINK_METADATA_BUDGET_FACTOR = 10
+
+// Crawlers fetch the card from their own addresses, and one shared link brings several.
+const SOCIAL_CARD_BUDGET_FACTOR = 4
 
 // Genuine internal/direct traffic carries no proxy-forwarding headers — Traefik
 // always sets them for external requests, so this signal can't be spoofed from
@@ -285,6 +289,11 @@ export const setupMiddleware = (app: Hono, opts: MiddlewareOptions) => {
     duration: 15 * 60,
     keyPrefix: 'link-metadata'
   })
+  const socialCardRateLimiter = rateLimiter({
+    points: config.security.rateLimitMax * SOCIAL_CARD_BUDGET_FACTOR,
+    duration: 15 * 60,
+    keyPrefix: 'social-card'
+  })
   app.use('*', async (c, next) => {
     if (c.req.method === 'OPTIONS') {
       return next()
@@ -302,6 +311,9 @@ export const setupMiddleware = (app: Hono, opts: MiddlewareOptions) => {
     }
     if (path === LINK_METADATA_MOUNT_PATH || path === LINK_IMAGE_PATH) {
       return linkMetadataRateLimiter(c, next)
+    }
+    if (isSocialCardPath(path)) {
+      return socialCardRateLimiter(c, next)
     }
 
     // The public read only. The POST on this same prefix is an upload, and it

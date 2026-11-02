@@ -135,7 +135,11 @@ export const createDocument = async (prisma: PrismaClient, params: CreateDocumen
   }
 }
 
-export const getDocumentBySlug = async (prisma: PrismaClient, slug: string) => {
+export const getDocumentBySlug = async (
+  prisma: PrismaClient,
+  slug: string,
+  options: { cardData?: boolean } = {}
+) => {
   if (!slug || slug.trim().length === 0) {
     throw new ValidationError('Slug is required and cannot be empty')
   }
@@ -145,7 +149,10 @@ export const getDocumentBySlug = async (prisma: PrismaClient, slug: string) => {
 
     const doc = await prisma.documentMetadata.findUnique({
       where: { slug: normalizedSlug },
-      select: PUBLIC_METADATA_SELECT
+      // The card columns are for the page head's card only; the controller strips them.
+      select: options.cardData
+        ? { ...PUBLIC_METADATA_SELECT, cardData: true }
+        : PUBLIC_METADATA_SELECT
     })
 
     if (!doc) return null
@@ -177,7 +184,7 @@ const SORT_FIELD_MAP: Record<
   title_desc: { field: 'title', dir: 'desc' }
 }
 
-/** Create, slug GET, update, and the public fleet. Never `preview` or `lastOpenedAt`. */
+/** Create, slug GET, update, and the public fleet. Never `preview`, `lastOpenedAt` or `cardData`. */
 const PUBLIC_METADATA_SELECT = {
   id: true,
   slug: true,

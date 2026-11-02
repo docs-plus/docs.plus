@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import { Hono } from 'hono'
 import pino from 'pino'
 
+import type { OwnImage } from '../../domain/types'
 import { init } from '../../module'
 
 // Wire shape that tests assert against. Kept independent of the production types
@@ -37,8 +38,8 @@ const makeMockRedis = () => {
   } as any
 }
 
-const buildApp = () => {
-  const { router } = init({ redis: makeMockRedis(), logger: silentLogger })
+const buildApp = (ownImage?: OwnImage) => {
+  const { router } = init({ redis: makeMockRedis(), logger: silentLogger, ownImage })
   const app = new Hono()
   app.route('/api/metadata', router)
   return app
@@ -356,6 +357,29 @@ describe('routed fetch (integration)', () => {
       const response = await requestImage('https://example.com/post')
       expect(response.status).toBe(204)
       expect(fetchedUrls()).not.toContain('https://intranet.example.com/card.png')
+    })
+
+    test('reads our own card in process, and follows its 302 over the network', async () => {
+      const card = 'https://api.docs.plus/api/documents/a/card.png?v=1'
+      const shed = 'https://api.docs.plus/api/documents/b/card.png?v=1'
+      const fallback = 'https://docs.plus/icons/og-card.png'
+      const ownImage: OwnImage = (url) =>
+        url === card
+          ? Promise.resolve(new Response(pngBytes(1024)))
+          : url === shed
+            ? Promise.resolve(new Response(null, { status: 302, headers: { location: fallback } }))
+            : null
+      routes['https://docs.plus/a'] = pageWithImage(card)
+      routes['https://docs.plus/b'] = pageWithImage(shed)
+      routes[fallback] = () => new Response(pngBytes(512))
+      const app = buildApp(ownImage)
+      const read = (page: string) =>
+        app.request('http://localhost/api/metadata/image?url=' + encodeURIComponent(page))
+
+      expect((await (await read('https://docs.plus/a')).arrayBuffer()).byteLength).toBe(1024)
+      expect((await (await read('https://docs.plus/b')).arrayBuffer()).byteLength).toBe(512)
+      expect(fetchedUrls()).not.toContain(card)
+      expect(fetchedUrls()).not.toContain(shed)
     })
 
     test('no page image, or an SVG one, is an empty 204', async () => {

@@ -54,6 +54,9 @@ export type RelayedImage = { bytes: Uint8Array<ArrayBuffer>; type: string }
 
 export type Miss = 'clean' | 'error'
 
+/** Reads an image URL this process serves itself, without the network; null for any other URL. */
+export type OwnImage = (url: string) => Promise<Response> | null
+
 export interface Cache {
   get(key: string): Promise<CacheEntry | null>
   set(key: string, value: CacheEntry, ttlSeconds: number): Promise<void>

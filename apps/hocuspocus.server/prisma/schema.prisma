@@ -20,6 +20,9 @@ model Documents {
   trigger       String?
   triggeredBy   String?
   contributors  String[]         @default([])
+  // What this version changed against the previous one, for the Version card. NULL = not computed.
+  // Its own worker job writes it with SQL, so updatedAt stays as it was.
+  changeSummary Json?
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
   metadata      DocumentMetadata @relation(fields: [documentId], references: [documentId], onDelete: Cascade)
@@ -48,6 +51,9 @@ model DocumentMetadata {
   // First-page extract for the owner Documents grid. NULL = never extracted.
   // Application SQL writes this column without touching updatedAt.
   preview Json?
+  // The social preview card's first blocks and outline. NULL = never extracted, or failed closed.
+  // Application SQL writes this column without touching updatedAt.
+  cardData Json?
   // Owner pad open. Application SQL writes this column without touching updatedAt.
   lastOpenedAt DateTime?
 

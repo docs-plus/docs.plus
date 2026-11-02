@@ -9,7 +9,13 @@ import {
   userIdQuerySchema
 } from '../../../../schemas/document.schema'
 import { MAX_DUPLICATE_MEDIA_OBJECTS } from '../../../../schemas/hypermultimedia.schema'
-import type { JsonSchema, OpenApiOperation, OpenApiPaths, SecurityRequirement } from '../../types'
+import type {
+  JsonSchema,
+  OpenApiOperation,
+  OpenApiParameter,
+  OpenApiPaths,
+  SecurityRequirement
+} from '../../types'
 import { envelopeResponse, rateLimitedRef } from '../components'
 import {
   dataEnvelope,
@@ -57,6 +63,44 @@ const ownedLifecycle = (
     ...extraResponses
   }
 })
+
+const query = (
+  name: string,
+  description: string,
+  schema: JsonSchema = { type: 'string' }
+): OpenApiParameter => ({
+  name,
+  in: 'query',
+  required: false,
+  description,
+  schema
+})
+
+/** The social card sub-ids. The slug read and the card image URL take the same keys. */
+const cardQueryParams: OpenApiParameter[] = [
+  query('id', 'Heading `toc-id` from the pad link (`id=`): a Heading card.'),
+  query('c', 'Chat room link id, a channel id or a heading id (`chatroom=`).'),
+  query('m', 'Message id (`msg_id=`), read only with `c`: a Message card.'),
+  query('t', 'One filter term per value, at most 4: a Filter card.', {
+    type: 'array',
+    items: { type: 'string' }
+  }),
+  query('mode', 'Filter mode; only `and` is carried.', { type: 'string', enum: ['and'] }),
+  query('version', 'History version number: a Version card.', { type: 'integer', minimum: 1 })
+]
+
+const socialCard: JsonSchema = {
+  type: 'object',
+  description:
+    'Sent only when the read asked with `card=1` and the pad has a card. The page head points `og:image` at `GET /api/documents/{documentId}/card.png?{query}`.',
+  properties: {
+    query: { type: 'string', description: 'The card image query string, `v` included.' },
+    title: { type: ['string', 'null'], description: '`og:title`; null keeps the Pad title.' },
+    alt: { type: 'string', description: 'Image alt text, from drawn values only.' },
+    path: { type: 'string', description: '`og:url` path for this card.' }
+  },
+  required: ['query', 'title', 'alt', 'path']
+}
 
 export const documentsPaths: OpenApiPaths = {
   '/api/documents': {
@@ -124,11 +168,20 @@ export const documentsPaths: OpenApiPaths = {
         pathParam('docRef', 'The document **slug**.'),
         ...toParameters(userIdQuerySchema, 'query', {
           userId: 'Accepted for access context; owner identity always comes from the token subject.'
-        })
+        }),
+        query(
+          'card',
+          '`1` asks for the social preview card. The webapp sends it on a full page load only.',
+          { type: 'string', enum: ['1'] }
+        ),
+        ...cardQueryParams
       ],
       responses: {
         '200': okEnvelope('Document metadata, or a synthesized draft.', {
-          $ref: '#/components/schemas/DocumentSummary'
+          allOf: [
+            { $ref: '#/components/schemas/DocumentSummary' },
+            { type: 'object', properties: { card: socialCard } }
+          ]
         }),
         '400': { $ref: '#/components/responses/ValidationError' },
         '403': {
@@ -314,6 +367,41 @@ export const documentsPaths: OpenApiPaths = {
         '401': { $ref: '#/components/responses/Unauthorized' },
         '429': rateLimitedRef,
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
+      }
+    }
+  },
+  '/api/documents/{documentId}/card.png': {
+    get: {
+      operationId: 'getSocialCardImage',
+      summary: 'Social preview card image',
+      description:
+        'A 1200 × 630 PNG drawn from stored values only. Kinds turn on with `SOCIAL_CARD_KINDS`. `v` is a cache key only; the server computes its own, which is also the `ETag`. Every refusal (Private, deleted, ownerless, missing, bad id shape) is the same `404`, so the route never tells a Private pad from a missing one. The route answers `302` to the static Fallback image, never `5xx`, in four cases. The cases are a kind that is off, a full render queue, a chat read that failed for now, and a render error. Rate-limited by its own bucket.',
+      tags,
+      security: [{}],
+      parameters: [
+        pathParam('documentId', DOCUMENT_ID_NOTE),
+        ...cardQueryParams,
+        query('v', 'The card version from the slug read. Ignored by the server.')
+      ],
+      responses: {
+        '200': {
+          description: 'The card. `Cache-Control: public, max-age=3600`, `X-Robots-Tag: noindex`.',
+          content: { 'image/png': { schema: { type: 'string', format: 'binary' } } },
+          headers: {
+            'Cache-Control': { schema: { type: 'string' } },
+            ETag: { schema: { type: 'string' } }
+          }
+        },
+        '302': {
+          description: 'The static Fallback image, `Cache-Control: public, max-age=300`.',
+          headers: { Location: { schema: { type: 'string', format: 'uri' } } }
+        },
+        '304': { description: '`If-None-Match` equals the current `ETag`.' },
+        '404': {
+          description: 'No card for this id. One body and header set for every refusal.',
+          content: { 'text/plain': { schema: { type: 'string' } } }
+        },
+        '429': rateLimitedRef
       }
     }
   }

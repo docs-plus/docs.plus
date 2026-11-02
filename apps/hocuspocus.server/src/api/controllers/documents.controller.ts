@@ -17,6 +17,7 @@ import {
 import { resolvePrivateAccess } from '../../lib/privateAccess'
 import { getOwnerProfile } from '../../lib/profiles'
 import { createDocumentWithContent } from '../../modules/document-content'
+import { attachCard, wantsCard } from '../../modules/social-card'
 import type {
   CreateDocumentInput,
   DocumentQueryInput,
@@ -89,7 +90,8 @@ export const getDocumentBySlug = async (c: AppContext): Promise<Response> => {
   const requesterId = c.get('userId')
 
   try {
-    const doc = await documentsService.getDocumentBySlug(prisma, docName)
+    const withCard = wantsCard(c.req, config.socialCard.kinds)
+    const doc = await documentsService.getDocumentBySlug(prisma, docName, { cardData: withCard })
 
     if (!doc) {
       return ok(c, await documentsService.createDraftDocument(prisma, docName))
@@ -112,7 +114,10 @@ export const getDocumentBySlug = async (c: AppContext): Promise<Response> => {
       if (access !== 'allow') return privateGateResponse(c, access)
     }
 
-    return ok(c, doc)
+    return ok(
+      c,
+      await attachCard({ prisma, doc, req: c.req, kinds: config.socialCard.kinds, withCard })
+    )
   } catch (error) {
     return handleError(c, error, { docName })
   }

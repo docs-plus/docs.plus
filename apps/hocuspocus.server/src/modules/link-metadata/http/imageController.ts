@@ -1,7 +1,8 @@
 import type { Context } from 'hono'
 
-import { fetchImage, isMiss } from '../domain/icon'
+import { fetchImage, isMiss, sniffImageType } from '../domain/icon'
 import { runPipeline } from '../domain/pipeline'
+import type { Miss, RelayedImage } from '../domain/types'
 import type { ControllerDeps } from './controller'
 
 const IMAGE_TIMEOUT_MS = 5000
@@ -15,6 +16,20 @@ const MISS_CACHE_HEADER = 'public, max-age=600'
  * fetched through the SSRF guard. SVG never passes. A miss is an empty 204.
  */
 export const createImageController = (deps: ControllerDeps) => {
+  // A pad link names this REST's own card. Read in process, it skips Traefik and the card bucket.
+  const relay = async (src: string, signal: AbortSignal): Promise<RelayedImage | Miss> => {
+    const own = deps.ownImage?.(src)
+    if (!own) return fetchImage(src, signal, IMAGE_MAX_BYTES)
+    const response = await own
+    // A shed or switched-off card points at the static image on the web app host.
+    const location = response.status === 302 ? response.headers.get('location') : null
+    if (location) return fetchImage(location, signal, IMAGE_MAX_BYTES)
+    if (!response.ok) return 'clean'
+    const bytes = new Uint8Array(await response.arrayBuffer())
+    const type = sniffImageType(bytes)
+    return type ? { bytes, type } : 'clean'
+  }
+
   return async (c: Context): Promise<Response> => {
     const { url } = c.req.valid('query' as never) as { url: string }
     // The pipeline keys on the language, so both answers vary on it.
@@ -35,7 +50,7 @@ export const createImageController = (deps: ControllerDeps) => {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), IMAGE_TIMEOUT_MS)
     try {
-      const image = await fetchImage(src, controller.signal, IMAGE_MAX_BYTES)
+      const image = await relay(src, controller.signal)
       if (isMiss(image)) return miss()
       return c.body(image.bytes, 200, {
         'Content-Type': image.type,

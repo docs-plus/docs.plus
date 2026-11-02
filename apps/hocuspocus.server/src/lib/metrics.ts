@@ -2,6 +2,7 @@ import type { MiddlewareHandler } from 'hono'
 import { collectDefaultMetrics, Counter, Gauge, Histogram, Registry } from 'prom-client'
 
 import pkg from '../../package.json'
+import { CHANGE_SUMMARY_QUEUE_NAME } from './changeSummaryQueueName'
 import { EMAIL_QUEUE_NAME } from './email/jobIdentity'
 
 // One shared registry for every service; runtime defaults (heap, RSS, CPU,
@@ -242,6 +243,89 @@ export const retentionLeaseTotal = new Counter({
   registers: [register]
 })
 
+// A failed card answers a 302 to the static image, never a 5xx, so the HTTP error
+// alerts cannot see it. `refused` is an ineligible pad; `fallback` is a kind switched off.
+// `chat-unavailable` is a chat read that timed out or failed; `chat-shed` hit the read cap.
+// `hit`, `render` and `not-modified` split the 200s and 304s, so the cache can be sized.
+export const SOCIAL_CARD_OUTCOMES = [
+  'hit',
+  'render',
+  'not-modified',
+  'fallback',
+  'refused',
+  'chat-shed',
+  'chat-unavailable',
+  'slot-shed',
+  'error'
+] as const
+export type SocialCardOutcome = (typeof SOCIAL_CARD_OUTCOMES)[number]
+
+export const socialCardRequestsTotal = new Counter({
+  name: 'social_card_requests_total',
+  help: 'Social card image requests, by outcome',
+  labelNames: ['outcome'] as const,
+  registers: [register]
+})
+
+// `timeout`, `error` and `shed` are indefinite: the card route then sends the static image.
+// `joined` shared a read already in flight for the same key.
+export const CHAT_READ_OUTCOMES = [
+  'ok',
+  'missing',
+  'rejected',
+  'memo',
+  'joined',
+  'timeout',
+  'error',
+  'shed'
+] as const
+export type ChatReadOutcome = (typeof CHAT_READ_OUTCOMES)[number]
+
+export const socialCardChatReadsTotal = new Counter({
+  name: 'social_card_chat_reads_total',
+  help: 'Anon chat reads behind a social card, by outcome',
+  labelNames: ['outcome'] as const,
+  registers: [register]
+})
+
+// Build plus PNG encode, inside the one render slot. Queue wait is not counted.
+export const socialCardRenderSeconds = new Histogram({
+  name: 'social_card_render_seconds',
+  help: 'Social card render time in seconds, by kind',
+  labelNames: ['kind'] as const,
+  buckets: [0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5],
+  registers: [register]
+})
+
+// Only reads that sent a query; a memo hit, a join or a shed costs no round trip.
+export const socialCardChatReadSeconds = new Histogram({
+  name: 'social_card_chat_read_seconds',
+  help: 'Anon chat read round trip in seconds, for reads that sent a query',
+  buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.5],
+  registers: [register]
+})
+
+// `skipped` changed no row: the data was the same, or a newer head won. `nulled` is a fail-closed
+// write after an extract error; `failed` means even that write failed.
+export const CARD_DATA_WRITE_OUTCOMES = ['ok', 'skipped', 'nulled', 'failed'] as const
+
+export const socialCardDataWritesTotal = new Counter({
+  name: 'social_card_data_writes_total',
+  help: 'Worker writes of the stored card data (first blocks and outline), by outcome',
+  labelNames: ['outcome'] as const,
+  registers: [register]
+})
+
+// `skipped`: retention removed the version, or its row is gone.
+export const CHANGE_SUMMARY_OUTCOMES = ['ok', 'skipped', 'failed'] as const
+
+export const changeSummaryWritesTotal = new Counter({
+  name: 'change_summary_writes_total',
+  help: 'Version change summary jobs, by outcome',
+  labelNames: ['outcome'] as const,
+  registers: [register]
+})
+
 // The degraded arms matter most here. This is the only rate limit on the revert
 // path, and a Redis fault silently drops it back to one budget per process.
 export const revertCooldownTotal = new Counter({
@@ -331,12 +415,32 @@ export const seedWsAlertSeries = (): void => {
   }
 }
 
+export const seedRestAlertSeries = (): void => {
+  for (const outcome of SOCIAL_CARD_OUTCOMES) {
+    socialCardRequestsTotal.inc({ outcome }, 0)
+  }
+  for (const outcome of CHAT_READ_OUTCOMES) {
+    socialCardChatReadsTotal.inc({ outcome }, 0)
+  }
+}
+
 export const seedWorkerAlertSeries = (): void => {
-  for (const queue of ['store-documents', EMAIL_QUEUE_NAME, 'push-notifications']) {
+  for (const queue of [
+    'store-documents',
+    EMAIL_QUEUE_NAME,
+    'push-notifications',
+    CHANGE_SUMMARY_QUEUE_NAME
+  ]) {
     jobsTotal.inc({ queue, status: 'failed' }, 0)
   }
   for (const reason of ['gone', 'failed-count']) {
     pushSubscriptionsDeactivatedTotal.inc({ reason }, 0)
+  }
+  for (const outcome of CARD_DATA_WRITE_OUTCOMES) {
+    socialCardDataWritesTotal.inc({ outcome }, 0)
+  }
+  for (const outcome of CHANGE_SUMMARY_OUTCOMES) {
+    changeSummaryWritesTotal.inc({ outcome }, 0)
   }
 }
 

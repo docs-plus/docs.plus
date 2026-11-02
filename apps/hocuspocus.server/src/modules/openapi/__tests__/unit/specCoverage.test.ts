@@ -8,6 +8,7 @@ import * as documentVersions from '../../../document-versions'
 import * as emailSetup from '../../../email-setup'
 import * as emailWebhooks from '../../../email-webhooks'
 import * as linkMetadata from '../../../link-metadata'
+import * as socialCard from '../../../social-card'
 import { buildOpenApiDocument } from '../../domain/document'
 import type { OpenApiOperation } from '../../types'
 
@@ -66,6 +67,16 @@ const mounted = (): Set<string> => {
       }).router
     ],
     ['/api/metadata', linkMetadata.init({ redis: null as never, logger }).router],
+    [
+      '/api/documents',
+      socialCard.init({
+        prisma: stub,
+        logger,
+        kinds: new Set(),
+        fallbackImageUrl: 'http://x',
+        publicUrl: null
+      }).router
+    ],
     [
       '/api/email/webhooks',
       emailWebhooks.init({

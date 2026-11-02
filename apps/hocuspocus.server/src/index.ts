@@ -24,7 +24,12 @@ import { AppError, getErrorResponse } from './lib/errors'
 import { captureHttpError, captureUnknown, flushObservability } from './lib/instrument'
 import { conversionLogger, logger, restApiLogger } from './lib/logger'
 import { mediaCookieHeader } from './lib/mediaSession'
-import { httpMetricsMiddleware, metricsContentType, metricsText } from './lib/metrics'
+import {
+  httpMetricsMiddleware,
+  metricsContentType,
+  metricsText,
+  seedRestAlertSeries
+} from './lib/metrics'
 import { prisma, shutdownDatabase } from './lib/prisma'
 import { getOwnerProfiles } from './lib/profiles'
 import { pushGateway } from './lib/push'
@@ -40,6 +45,7 @@ import * as emailWebhooks from './modules/email-webhooks'
 import * as linkMetadata from './modules/link-metadata'
 import * as mcp from './modules/mcp'
 import * as openapi from './modules/openapi'
+import * as socialCard from './modules/social-card'
 
 const app = new Hono()
 
@@ -143,6 +149,15 @@ const documentConversionModule = documentConversion.init({
   mediaCookieFor: (uid) => mediaCookieHeader(uid, config.storage.mediaCookieSecret)
 })
 app.route('/api/documents', documentConversionModule.router)
+// Raw PNG bytes outside the JSON envelope. Two segments, so the legacy `/:docName` read never shadows it.
+const socialCardModule = socialCard.init({
+  prisma,
+  logger: logger.child({ module: 'social-card' }),
+  kinds: config.socialCard.kinds,
+  fallbackImageUrl: config.socialCard.fallbackImageUrl,
+  publicUrl: config.app.publicUrl
+})
+app.route(socialCard.SOCIAL_CARD_MOUNT_PATH, socialCardModule.router)
 app.route(HYPERMULTIMEDIA_MOUNT_PATH, hypermultimediaRouter)
 if (!config.storage.mediaCookieSecret) {
   restApiLogger.warn('MEDIA_COOKIE_SECRET is not set: Private document media loads for nobody')
@@ -186,7 +201,8 @@ const linkMetadataModule = linkMetadata.init({
   redis: getRedisClient(),
   logger: logger.child({ module: 'link-metadata' }),
   iconMaxBytes: config.linkMetadata.iconMaxBytes,
-  publicUrl: config.app.publicUrl
+  publicUrl: config.app.publicUrl,
+  ownImage: socialCardModule.ownImage
 })
 app.route(linkMetadata.LINK_METADATA_MOUNT_PATH, linkMetadataModule.router)
 app.route(mcp.MCP_MOUNT_PATH, mcpModule.router)
@@ -208,6 +224,8 @@ app.onError((err, c) => {
   const status = (err instanceof AppError ? err.statusCode : 500) as ContentfulStatusCode
   return c.json(getErrorResponse(err instanceof Error ? err : new Error(String(err))), status)
 })
+
+seedRestAlertSeries()
 
 // Queue-only here so rest-api replicas do not start duplicate workers.
 emailGateway.initialize(false).catch((err) => {
