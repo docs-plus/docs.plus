@@ -629,7 +629,7 @@ The gear button opens Document settings. Its Import & export section holds four 
 
 An export is built from the last saved version, so a very recent edit may be missing from it.
 
-Import takes `.docx` and `.md` only, up to 10,485,760 bytes, and Markdown stops at 65,536 characters. It replaces the whole document — needs an account and a document you can edit. A heading keeps its chatroom only when its level and text stay the same. On this read-only page, Replace with a file says the document cannot be replaced — try it here. A Markdown replace keeps pictures at their natural size, and a lone video, audio, or embed URL becomes a player.
+Import takes `.docx` and `.md` only, up to 10,485,760 bytes, and Markdown stops at 65,536 characters. It replaces the whole document — needs an account and a document you can edit. A heading keeps its chatroom only when its level and text stay the same. History keeps the earlier version, so a restore can bring it back. On this read-only page, Replace with a file says the document cannot be replaced — try it here. A Markdown replace keeps pictures at their natural size, and a lone video, audio, or embed URL becomes a player.
 
 Filtered to this section? [Show the whole document](/demo).
 
