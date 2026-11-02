@@ -1357,6 +1357,19 @@ content — sweep of `apps/webapp/src` (shims `styles/globals.scss`, `styles/_da
 
 > Off-system: one-off token-tinted shadows — `.toc-drag-card` `0 8px 24px`, mobile toolbar upward shadows, crinkle-fold paper shadows (\_heading-fold.scss). Ring-as-shadow idioms `0 0 0 1px color-mix(primary 44%/22%)`. Sub-token px radii (2–3px) scattered in SCSS (chat inline-code 3px, cursor label 3px, heading-filter 2px) — no micro-radius token exists. The type stack is tokenized as `--font-sans` (`globals.scss` `:root`; consumed by the universal reset and the `em-emoji-picker` `--font-family`). Intentional brand escapes (ShareModal/HomeFooter/EditorToolbar Discord, socialIcons palette, DocsPlusIcon fills, commentReferenceTheme platform hexes) are cataloged on their components.
 
+## Server-rendered images
+
+### Social preview card (REST PNG) — both
+
+image — `apps/hocuspocus.server/src/modules/social-card/` (frame in `apps/hocuspocus.server/src/modules/social-card/domain/frame.ts`, fit in `apps/hocuspocus.server/src/modules/social-card/domain/fit.ts`, the Takumi renderer in `apps/hocuspocus.server/src/modules/social-card/infra/renderer.ts`). Catalog row added on the maintainer's R9 ruling, 2026-11-01 (#663). The card reuses existing light-theme tokens at 2.5x; it adds no token, species, size or radius.
+
+| State      | Recipe                                                                                                                                                                                                                                                                                                                                      |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame      | 1200 × 630 PNG on the `--pad-well` floor (`base-200`). Mark row at the top left: the 24px logo and a `text-lg font-bold` wordmark, both at 2.5x. The sheet is `base-100` with a `base-300` hairline and `rounded-box`, and it runs off the bottom edge so its lower corners never show. Light theme only: no platform swaps a dark og:image |
+| kind label | Top right, the static label of `DocumentAccessChip` at 2.5x: `rounded-field`, `base-300` border, `base-100` fill, kind glyph and word at `/70`. The plain Document card carries none                                                                                                                                                        |
+| text       | Arimo. Every line meant to be read is at least `text-lg` at 2.5x (45px), `base-content` or `/70`. The title fits the pad Title step (28pt), then the card title step (`text-2xl`), and is cut at a word. Headings use line height 1.15                                                                                                      |
+| content    | Stored values only, English only, no people. A URL in a drawn line becomes `[link]`. A fact shown only once ends at y 550 or above on the left half, clear of the label X draws in that corner                                                                                                                                              |
+
 ## Do / Never
 
 **Do**

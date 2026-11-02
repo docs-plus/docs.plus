@@ -180,6 +180,17 @@ Read by `src/lib/prisma.ts` from the validated config only. There are no runtime
 - **On a host that `prod.docs.plus.yml` deploys,** set it in the host env file that the workflow copies to `.env.production` (`ENV_SOURCE`). Then deploy again.
 - **Proxy log.** `scripts/traefik/traefik.yml` drops query strings from the Traefik access log. So an icon miss logs no `?origin=` there. That setting needs Traefik v3.6.18 or later.
 
+## Social card
+
+| Variable            | Type       | Default | Notes                                                                                                                                         |
+| ------------------- | ---------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SOCIAL_CARD_KINDS` | comma list | empty   | Card kinds to switch on: `document`, `heading`, `chat`, `message`, `version`, `filter`. Empty keeps every pad link on the static share image. |
+
+- **An unknown name stops the boot.** So a typo cannot quietly turn every card off.
+- **Give `rest-api` and the worker the same value.** The worker stores version change summaries only while `version` is on.
+- **Turn kinds on one at a time,** and only after every REST replica runs the code that knows them. Start with `document`.
+- **Keep `PUBLIC_RESTAPI_URL` on the same origin as `NEXT_PUBLIC_RESTAPI_URL`.** The page head points `og:image` at the card on that origin. The hovercard relay reads the card in process only when the origins match. Otherwise it fetches the card over the network, and every reader's hover shares one rate bucket.
+
 ## Email
 
 The provider is an explicit choice. `resolveEmailConfig` (`src/config/email.ts`) reads the variables once at boot. The result is one of three states:

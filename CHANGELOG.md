@@ -41,6 +41,14 @@ Migration section for when it goes. As the last step, run
 
 ### Added
 
+- A shared pad link now shows a docs.plus card in chat apps and on social sites
+  ([#663](https://github.com/docs-plus/docs.plus/issues/663)). At first every pad link shows
+  one static card. The server can also draw a card for each pad: its title with its outline or
+  first lines, a section, a chat room, a message, a version, or a filter. Each kind turns on
+  with `SOCIAL_CARD_KINDS`. A card never shows a name, a face or message text, and a Private pad
+  never gets one.
+- When a pad's description only repeats its title or address, the link preview shows the
+  docs.plus description instead.
 - The server icon route `GET /api/metadata/icon` finds a site's icon for pad links. It
   tries `/favicon.ico` first. When that file has no icon, it reads the site's page head, as
   on Notion. `LINK_ICON_MAX_BYTES` caps one icon at 32768 bytes by default, so the LinkedIn

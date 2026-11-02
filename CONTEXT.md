@@ -35,6 +35,8 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
   _Avoid_: hover card, link tooltip, preview (the click popover)
 - **Page image** — the one picture `GET /api/metadata` names for a page, as `image.url`. It can come from `og:image`, an oEmbed `thumbnail_url`, or a site handler such as the GitHub avatar or the Reddit or Wikipedia thumbnail. `GET /api/metadata/image` relays it. User-facing text says "the page's picture".
   _Avoid_: social image, share card, og:image (for the value), hovercard picture
+- **Social card** — the 1200 × 630 picture a chat app or social site shows for a docs.plus pad link (`GET /api/documents/:documentId/card.png`). REST draws it from stored values only. Its kinds are Document, Heading, Chat, Message, Version and Filter; `SOCIAL_CARD_KINDS` switches each one on. A pad with no card, or a card that fails, shows the **Fallback card**, one static image.
+  _Avoid_: og image, share image, preview card, Page image (that is another site's picture)
 - **Diagram** — a code block whose language is exactly `mermaid`. The pad draws it with Pele below its source (`@docs.plus/extension-mermaid`). The document stores only the source text.
   _Avoid_: mermaid block, chart
 - **Fold module** — the per-editor owner of each Diagram's folded state, head and Copy state (`createFolds`, `extensions/extension-mermaid/src/nodeView/fold.ts`). It writes `data-source` as output, and no script reads it back. Known limit: `blockAt` finds a block through `view.nodeDOM(pos)`. A host that wraps the node view DOM silently breaks caret-enter open and the arrow-key step.

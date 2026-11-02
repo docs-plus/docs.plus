@@ -18,6 +18,15 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Added
 
+- The pad page head names a share image
+  ([#663](https://github.com/docs-plus/docs.plus/issues/663)). A full page load asks REST for
+  the pad's card with `card=1`. `og:image`, `twitter:image` and their alt text then point at that
+  card. A pad with no card gets the static `icons/og-card-pad-1200x630.png`. A description that
+  equals the Pad title or the slug is replaced by the product description.
+- A History share link now also carries `?version=<n>` in the address, so a server can draw
+  that version's card ([#668](https://github.com/docs-plus/docs.plus/issues/668)). The pad
+  takes the query off on arrival and opens History at that version, on a fresh load and on an
+  in-app jump.
 - Every pad link now shows a link icon before its text, in the pad, history and `/editor`
   ([#516](https://github.com/docs-plus/docs.plus/issues/516)). A link to another pad shows the
   docs.plus logo, and `mailto:` and `tel:` links show a mail or phone glyph. Other web links show the site's

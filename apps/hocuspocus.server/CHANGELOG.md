@@ -49,7 +49,45 @@ older image then does not start.
 Before you deploy this commit, check that `.env.production` holds both `VAPID_PUBLIC_KEY` and
 `VAPID_PRIVATE_KEY`. Without them, the worker healthcheck fails and the deploy rolls back.
 
+The deploy's `migrate` step applies two Prisma migrations for the social card. `20261101120000`
+adds `DocumentMetadata.cardData`, and `20261101130000` adds `Documents.changeSummary`. Each adds
+one nullable `jsonb` column. After the deploy, run `scripts/backfill-card-data.ts` once: a dry
+run first, then `--apply`. Run it in a one-off container, never in `rest-api` or the worker.
+Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is set.
+
 ### Added
+
+- **A social preview card for every pad link ([#663](https://github.com/docs-plus/docs.plus/issues/663)).**
+  - `GET /api/documents/:documentId/card.png` draws a 1200 × 630 PNG from stored values only,
+    never from URL text. The kinds are `document`, `heading`, `chat`, `message`, `version` and
+    `filter`.
+  - Each kind ships off. `SOCIAL_CARD_KINDS` turns kinds on; set the same value on both REST
+    replicas and on the worker. An unknown name fails the boot.
+  - The slug read takes `card=1` and then returns `card: { query, title, alt, path }`. Next
+    sends it only on a full page load.
+  - A Private, deleted, ownerless or missing pad gets one identical `404`. A kind that is off, a
+    full render queue, a failed chat read or a render error answers `302` to the static image.
+  - The route has its own rate-limit bucket, at four times `RATE_LIMIT_MAX` per 15 minutes.
+    `GET /api/metadata/image` reads a docs.plus pad's card in process, so a hovercard never
+    spends that bucket.
+  - The card draws no people: no message text, no author, no name and no face. Counts are
+    bucketed 1 to 9, then 10+.
+- **The worker stores what the card draws.** Each save writes `DocumentMetadata.cardData`: the
+  first blocks and the outline. While `SOCIAL_CARD_KINDS` holds `version`, each stored version
+  enqueues a job on the new `version-change-summary` queue. That job writes
+  `Documents.changeSummary` and costs 99 to 148 ms on a 3.7 MB pair.
+- **Card numbers for later tuning.** The App Performance dashboard has a "Social preview card"
+  row.
+  - `social_card_requests_total{outcome}` splits served cards into `hit`, `render` and
+    `not-modified`, and sheds into `chat-shed` and `slot-shed`. `chat-unavailable` is a chat
+    read that timed out or failed.
+  - `social_card_render_seconds{kind}` times each render.
+  - `social_card_chat_read_seconds` times each chat round trip.
+  - `social_card_chat_reads_total{outcome}`, `social_card_data_writes_total{outcome}` and
+    `change_summary_writes_total{outcome}` count reads and writes.
+  - Three Grafana rules warn: `social-card-errors` (more than 3 failures in 15 minutes),
+    `social-card-shed` (any shed in 1 hour) and `worker-summary-queue-backlog` (jobs waiting for
+    15 minutes).
 
 - **The link hovercard gets its own server support
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).**

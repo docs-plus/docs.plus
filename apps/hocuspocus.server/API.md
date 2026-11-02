@@ -32,7 +32,7 @@ Three schemes apply, by route group:
 
 | Scheme                                | Used by                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Header                                                                    |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| None                                  | `/`, `/health/*`, `/openapi.json`, `/docs`, `GET /api/plugins/hypermultimedia/:documentId/:mediaId`, `DELETE /api/plugins/hypermultimedia/session`, `/api/metadata`, `GET /api/metadata/icon`, `GET /api/metadata/image`, `GET`/`POST /api/email/unsubscribe`, `GET /api/email/health`, `GET /api/email/status`, `POST /api/email/validate`                                                                                                                                                                                      | —                                                                         |
+| None                                  | `/`, `/health/*`, `/openapi.json`, `/docs`, `GET /api/plugins/hypermultimedia/:documentId/:mediaId`, `DELETE /api/plugins/hypermultimedia/session`, `GET /api/documents/:documentId/card.png`, `/api/metadata`, `GET /api/metadata/icon`, `GET /api/metadata/image`, `GET`/`POST /api/email/unsubscribe`, `GET /api/email/health`, `GET /api/email/status`, `POST /api/email/validate`                                                                                                                                           | —                                                                         |
 | Optional Supabase user JWT            | `GET /api/documents` (list without `ownerId`), `GET /api/documents/:slug`, `PUT /api/documents/:docId`                                                                                                                                                                                                                                                                                                                                                                                                                           | `Authorization: Bearer <jwt>` or `token: <jwt>`                           |
 | Required Supabase user JWT            | `GET /api/documents?ownerId=…` / `?deleted=true`, `POST /api/documents`, document lifecycle (`DELETE /:id`, `/:id/restore`, `/:id/duplicate`, `/:id/favorite`, `/:id/opened`, `/:id/permanent`, `POST /trash/purge`, `/trash/restore`), `GET /api/connected-apps/redirects`, `POST /api/plugins/hypermultimedia/session` (the Private media cookie), `POST /api/plugins/hypermultimedia/:documentId` (media upload; the service-role key is refused there — it is not a user token, so `requireUser` can resolve nobody from it) | `Authorization: Bearer <jwt>` or `token: <jwt>`                           |
 | Either of the two above               | `GET /api/documents/:documentId/export`, `POST /api/documents/:documentId/import` — the key passes every document, a user token is checked against the document's privacy and lock                                                                                                                                                                                                                                                                                                                                               | `Authorization: Bearer <jwt>`, `token: <jwt>`, or the service-role bearer |
@@ -170,9 +170,10 @@ List rows include `readOnly`, `isPrivate`, `createdAt`, `updatedAt`, and `isOwne
 
 Fetch one document by slug. When no row matches, returns a synthesized draft (`createDraftDocument`) rather than `404`. A soft-deleted row is the one `404` case. Synthesizing a draft there would mint a new `documentId` under a still-unique slug, and the two would collide on persist.
 
-| Param    | Type           | Description                           |
-| -------- | -------------- | ------------------------------------- |
-| `userId` | string (query) | Optional; accepted for access context |
+| Param    | Type           | Description                             |
+| -------- | -------------- | --------------------------------------- |
+| `userId` | string (query) | Optional; accepted for access context   |
+| `card`   | string (query) | `1` asks for the social card; see below |
 
 **Auth (shipped — owner-scoped private):** `optionalUser` attaches the caller (owner identity is `token.sub`, never the `userId` query param), and the controller applies:
 
@@ -187,6 +188,21 @@ Fetch one document by slug. When no row matches, returns a synthesized draft (`c
 | Private, `ownerId: null` | any signed-in user                    | `403` — `{ access: 'sign-in-required' }` (sign-in wall until owner backfill) |
 
 The `403` body is `{ success: false, error: { code: 'FORBIDDEN', message }, access }`; the top-level `access` hint drives the webapp private gate's CTA. Draft slugs (no DB row) are unchanged — synthesized draft, never treated as private.
+
+**Social card.** Next sends `card=1` on a full page load, never on a client-side `x-nextjs-data` read. With `card=1`, and when a kind in `SOCIAL_CARD_KINDS` can draw the pad, the reply carries `card: { query, title, alt, path }`. The page head points `og:image` at [`card.png`](#get-apidocumentsdocumentidcardpng) with `query`. The pad link's own sub-ids (`id`, `chatroom` as `c`, `msg_id` as `m`, filter terms as `t`, `mode`, `version`) pass through the same way. Without `card=1`, the reply has no `card` field and the server makes no card read. The stored card data never leaves REST.
+
+### GET /api/documents/:documentId/card.png
+
+The social preview card: a 1200 × 630 PNG drawn from stored values only, never from URL text. Each kind ships off; `SOCIAL_CARD_KINDS` turns kinds on. The kinds are `document`, `heading`, `chat`, `message`, `version` and `filter`. The full contract is in the OpenAPI spec (`getSocialCardImage`).
+
+| Status | `Cache-Control`        | When                                                                                                                            |
+| ------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `200`  | `public, max-age=3600` | The card. `ETag` is the server's own `cardVersion`. `X-Robots-Tag: noindex`.                                                    |
+| `304`  | `public, max-age=3600` | `If-None-Match` equals the current `ETag`.                                                                                      |
+| `302`  | `public, max-age=300`  | To the static image: the kind is off, the render queue is full, a chat read failed for now, or the render threw. Never a `5xx`. |
+| `404`  | `public, max-age=60`   | Private, deleted, ownerless, missing, or a bad id shape. One body and header set for all of them.                               |
+
+The `v` query parameter is a cache key for crawlers only. The server never reads it, so never cache this route as `immutable`. The route has its own rate limit; see [Rate limiting](#rate-limiting). `social_card_requests_total{outcome}` counts every answer, and the "Social preview card" row on the App Performance dashboard shows it.
 
 ### POST /api/documents
 
@@ -1202,6 +1218,8 @@ The server runs the same pipeline as `GET /api/metadata`, usually a cache hit, a
 
 It shares the `/api/metadata` rate-limit bucket. See [Rate limiting](#rate-limiting).
 
+**A docs.plus pad link never leaves the process.** When the page image is this server's own `card.png` (same origin as `PUBLIC_RESTAPI_URL`), the route reads it in process. Over the network, every reader's hover would arrive from the server's one address and share one card bucket. A `302` from the card still goes over the network, to the static image on the web app host.
+
 **Accepted risk.** The same DNS rebinding risk as the icon route is accepted here, limited to sniffed image bytes up to 2 MiB within 5 s.
 
 ## Email
@@ -1405,7 +1423,7 @@ Admins read the gateway status on `GET /api/admin/push/gateway`: `vapid_configur
 
 ## Rate limiting
 
-Four Redis-backed limiters (`src/middleware/index.ts`) cover every non-`OPTIONS` request except `/health`, `/health/*` and a verified `/api/mcp` call. All four are keyed on client IP alone, and **when Redis is unavailable, rate limiting is disabled** (requests pass). User-Agent is not part of the key: a client that varied that header earned a fresh budget on every request. Requests with no `x-forwarded-for` and no `x-real-ip` (direct/internal traffic) skip all four.
+Five Redis-backed limiters (`src/middleware/index.ts`) cover every non-`OPTIONS` request except `/health`, `/health/*` and a verified `/api/mcp` call. All five are keyed on client IP alone, and **when Redis is unavailable, rate limiting is disabled** (requests pass). User-Agent is not part of the key: a client that varied that header earned a fresh budget on every request. Requests with no `x-forwarded-for` and no `x-real-ip` (direct/internal traffic) skip all five.
 
 The global limit is `RATE_LIMIT_MAX` requests (default `100`) per 15-minute window. Production runs `500`. There is no separate per-role tier in the REST middleware, so a service-role caller shares the same per-IP budget as a browser. Issue #166 tracks whether that should change.
 
@@ -1415,9 +1433,11 @@ The global limit is `RATE_LIMIT_MAX` requests (default `100`) per 15-minute wind
 
 **Link previews have their own budget** (maintainer ruling, 2026-10-26). `GET /api/metadata` and `GET /api/metadata/image` share a fourth limiter, with ten times the global points over its own 15-minute window. A hovercard spends one point on its metadata and one on its page image. So hovering many links never spends the budget that pad saves and chat calls need. This multiplier is a constant in the middleware too.
 
+**The social card has a fifth budget.** `GET` and `HEAD` on `/api/documents/:documentId/card.png` are charged to their own limiter, with four times the global points over its own 15-minute window. Crawlers fetch the card from their own addresses, so they never spend a reader's budget. The hovercard relay reads the card in process and spends none of it.
+
 **A verified `/api/mcp` call skips the global limiter** (#551). It must be a `POST`, `GET` or `DELETE` on `/api/mcp` whose bearer token the MCP transport accepts. Supabase Auth must verify the token. It must carry a `client_id` claim and no past `exp`. It spends two per-person buckets instead: 300 requests a minute for every call, and 60 tool calls a minute for its tool calls. A missing, fake, invalid or browser-session token, an Auth outage, and the MCP resource-metadata routes (`.well-known/oauth-protected-resource`) still spend the global budget. A hosted AI app sends many people from one address, so the person is the fair unit. The server checks the token only while the address has global budget left. So a call from a spent address gets a `429` before its token is checked, even a token that would pass. That keeps a spent address from making Supabase Auth calls. A token with no `client_id` claim or a past `exp` is refused before the Auth call.
 
-A response that a limiter charges carries `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` (ISO timestamp). A verified `/api/mcp` call carries none of them. A media read, an icon read and a link-preview read report their own limiter's numbers in those headers. On `429`, the body is the house envelope with code `RATE_LIMIT_EXCEEDED`, and a `Retry-After` header carries the seconds until the window resets.
+A response that a limiter charges carries `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` (ISO timestamp). A verified `/api/mcp` call carries none of them. A media read, an icon read, a link-preview read and a card read report their own limiter's numbers in those headers. On `429`, the body is the house envelope with code `RATE_LIMIT_EXCEEDED`, and a `Retry-After` header carries the seconds until the window resets.
 
 ## WebSocket API
 
