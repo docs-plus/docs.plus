@@ -47,6 +47,47 @@ groups:
                 - evaluator: { type: gt, params: [0] }
               refId: C
 
+      - uid: worker-summary-queue-backlog
+        title: version-change-summary queue backlog (jobs waiting for 15m)
+        condition: C
+        for: 15m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: version-change-summary has had jobs waiting at every check for 15m. Each job takes under a second, so the summary worker has stalled. Waiting jobs have no TTL and grow Redis memory; new Version cards fall back to the Document card.
+          runbook_url: 'Restart hocuspocus-worker; check its logs for "Change summary worker error".'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # Every worker replica samples the same shared queue, so take the max.
+              expr: 'max by (queue) (queue_jobs{queue="version-change-summary",state="waiting"})'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C
+
       - uid: worker-job-failures
         title: store-documents job failures (>5 in 10m)
         condition: C
