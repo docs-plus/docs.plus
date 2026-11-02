@@ -82,6 +82,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- The privacy page now says how docs.plus uses, stores, shares and keeps the data that Google
+  sign-in sends, and what closing an account removes. It says that names and profile photos are
+  public, and it names DigitalOcean, the team mail for a new document, and Google Analytics
+  cookies. It adds the Limited Use statement that Google's brand verification asks for.
 - A plain click on a link to another pad now opens that pad in the same window, in the pad and
   in chat. Mod-click and middle-click still open a new tab
   ([#359](https://github.com/docs-plus/docs.plus/issues/359)).
