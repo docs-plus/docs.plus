@@ -1,6 +1,6 @@
 # Release Policy
 
-This document defines how the `@docs.plus/extension-*` package family is versioned, published, and announced. It is the authoritative reference; the `release-extensions` skill (`.cursor/skills/release-extensions/SKILL.md`) carries the operational subset and points here.
+This document defines how the `@docs.plus/extension-*` package family is versioned, published, and announced. It is the authoritative reference; the `release-extensions` skill (`.agents/skills/release-extensions/SKILL.md`) carries the operational subset and points here.
 
 ## Status
 
@@ -196,7 +196,7 @@ Aligned to docs.plus <version> family release. No behavioral changes since <prev
 
 Set by the `extension-hyperlink@2.0.0` rewrite. Applies to every publishable extension.
 
-**Voice:** entry prose follows [Simplified English](.cursor/skills/tech-writer/SKILL.md#simplified-english-house-standard). The section headings below are exempt from it. A published entry is frozen against fact changes: its facts, versions, dates, headings, and ordering never change. Only a maintainer-approved prose pass may reshape its sentences.
+**Voice:** entry prose follows [Simplified English](.agents/skills/tech-writer/SKILL.md#simplified-english-house-standard). The section headings below are exempt from it. A published entry is frozen against fact changes: its facts, versions, dates, headings, and ordering never change. Only a maintainer-approved prose pass may reshape its sentences.
 
 **Format:** [keepachangelog.com](https://keepachangelog.com).
 

@@ -46,9 +46,10 @@ file. The map:
 | Admin dashboard                                                | `apps/admin-dashboard/CLAUDE.md`                |
 | Supabase, SQL, RLS, storage                                    | `packages/supabase/CLAUDE.md`                   |
 | Extensions                                                     | `extensions/CLAUDE.md`                          |
-| Cutting a product release                                      | `.cursor/skills/release-product/SKILL.md`       |
-| Publishing a release                                           | `.cursor/skills/release-extensions/SKILL.md`    |
-| Writing a README, CHANGELOG, report, runbook or PR description | `.cursor/skills/tech-writer/SKILL.md`           |
+| Cutting a product release                                      | `.agents/skills/release-product/SKILL.md`       |
+| Publishing a release                                           | `.agents/skills/release-extensions/SKILL.md`    |
+| Writing a README, CHANGELOG, report, runbook or PR description | `.agents/skills/tech-writer/SKILL.md`           |
+| Any `git commit`                                               | `.agents/skills/commit-review/SKILL.md`         |
 
 Nested files stack: work under `apps/webapp/src/components/chatroom/` is governed by the root file,
 the webapp file and the chatroom file together.
@@ -74,7 +75,7 @@ Search with `grep -rl <pattern> Notes/local-docs/`.
 
 Every sentence an agent writes here is Simplified English. It binds chat replies, reports, code
 comments, commit bodies, and every document. The rules and the exempt surfaces live in
-[tech-writer](../skills/tech-writer/SKILL.md#simplified-english-house-standard). `AGENTS.md`
+[tech-writer](../../.agents/skills/tech-writer/SKILL.md#simplified-english-house-standard). `AGENTS.md`
 §Simplified English Mandate carries the same obligation for Claude Code.
 
 Brevity you choose does not suspend it. When you dispatch any agent, the dispatch prompt must say
@@ -87,7 +88,7 @@ you does not reach it.
 [design-system.md](../docs/design-system.md) is maintainer-owned and mandatory for every UI
 change. Follow it as written. Never add or change a token, species, size, radius, shadow, ink step
 or house-language rule unless the maintainer asked for that exact change. The full rule is its
-§Change protocol (locked). In Claude Code a hook enforces it; in Cursor this rule is the guard.
+§Change protocol (locked). No hook enforces it in any tool. This rule is the guard.
 
 ## Keeping this honest
 

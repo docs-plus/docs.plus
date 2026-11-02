@@ -15,7 +15,7 @@ export const meta = {
 
 // Shared rules every agent gets. The skill holds the detail; agents read it themselves.
 const RULES = `
-Read .cursor/skills/release-product/SKILL.md first and follow the section named below.
+Read .agents/skills/release-product/SKILL.md first and follow the section named below.
 House rules that bind you:
 - Simplified English: at most 25 words per sentence. Your returned text complies too. Restate this rule to any agent you dispatch.
 - Bun only. Never run npm, yarn, pnpm or npx for repo work. (npm view for registry reads is allowed.)

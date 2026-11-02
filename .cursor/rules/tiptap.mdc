@@ -10,7 +10,7 @@ Use this rule when modifying the Tiptap editor, ProseMirror plugins, editor exte
 
 ## References
 
-- Load `.cursor/skills/tiptap/SKILL.md` before non-trivial Tiptap work.
+- Load `.agents/skills/tiptap/SKILL.md` before non-trivial Tiptap work.
 - Official Tiptap LLM docs index: `https://tiptap.dev/llms.txt`.
 - Tiptap source/docs repositories: `https://github.com/ueberdosis/tiptap` and `https://github.com/ueberdosis/tiptap-docs`.
 - ProseMirror has no official `llms.txt`, Cursor rule, skill, or MCP found. Use `https://prosemirror.net/docs/ref/` and `https://prosemirror.net/docs/` as source of truth.

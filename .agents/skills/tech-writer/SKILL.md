@@ -200,8 +200,8 @@ still drops a job.
   `RELEASE_POLICY.md` fixes their order. `Added`, `Changed`, `Fixed`, `Security` and `Removed` come
   from Keep a Changelog; `Highlights`, `Breaking`, `Documentation` and `Internal` are ours. Keep a
   Changelog also defines `Deprecated`, which `RELEASE_POLICY.md` does not yet place.
-- **The agent rule files** — `AGENTS.md`, every `AGENTS.md`, `CONTEXT.md`, package-local
-  `AGENTS.md`, `.cursor/rules/*.mdc`, `.cursor/docs/*` and `.cursor/skills/*/SKILL.md` — are exempt
+- **The agent rule files** — `AGENTS.md`, every `CLAUDE.md`, `CONTEXT.md`, package-local
+  `AGENTS.md`, `.cursor/rules/*.mdc`, `.cursor/docs/*` and `.agents/skills/*/SKILL.md` — are exempt
   from the cap. The exemption covers only the text already in them. Text you add or edit follows
   the rules. Do not rewrite the existing text as part of another task. AGENTS.md §Workflow And
   Review Expectations forbids compressing `AGENTS.md`. Splitting a sentence is not compression: it

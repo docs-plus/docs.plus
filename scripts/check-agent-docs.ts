@@ -6,7 +6,7 @@
  * unreachable.
  */
 
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, lstatSync, readFileSync, readlinkSync } from 'fs'
 import { dirname, resolve } from 'path'
 
 const ROOT = resolve(import.meta.dir, '..')
@@ -28,13 +28,13 @@ const HEADING_SOURCES = [
   'extensions/extension-hyperlink/AGENTS.md',
   '.cursor/docs/design-system.md',
   '.cursor/docs/scripts-naming-convention.md',
-  '.cursor/skills/code-janitor/SKILL.md',
-  '.cursor/skills/commit-review/SKILL.md',
-  '.cursor/skills/design-system/SKILL.md',
-  '.cursor/skills/release-extensions/SKILL.md',
-  '.cursor/skills/release-product/SKILL.md',
-  '.cursor/skills/tech-writer/SKILL.md',
-  '.cursor/skills/tiptap/SKILL.md'
+  '.agents/skills/code-janitor/SKILL.md',
+  '.agents/skills/commit-review/SKILL.md',
+  '.agents/skills/design-system/SKILL.md',
+  '.agents/skills/release-extensions/SKILL.md',
+  '.agents/skills/release-product/SKILL.md',
+  '.agents/skills/tech-writer/SKILL.md',
+  '.agents/skills/tiptap/SKILL.md'
 ]
 
 const REFERRER_TYPES = /\.(md|mdc|ts|tsx|js|mjs|cjs|sh|sql|ya?ml)$/
@@ -103,6 +103,15 @@ const trackedFiles = new Set(
 for (const file of HEADING_SOURCES) {
   if (existsSync(resolve(ROOT, file)) && !trackedFiles.has(file))
     failures.push(`${file} — not tracked by git; stage it or the rule ships to nobody`)
+}
+
+/** A house skill has one copy. By 2026-11-02, four skills with a real `.cursor/skills` copy had drifted. */
+for (const file of HEADING_SOURCES.filter((f) => f.startsWith('.agents/skills/'))) {
+  const name = file.split('/')[2]
+  const link = resolve(ROOT, '.cursor/skills', name)
+  const target = `../../.agents/skills/${name}`
+  if (!existsSync(link) || !lstatSync(link).isSymbolicLink() || readlinkSync(link) !== target)
+    failures.push(`.cursor/skills/${name} — must be a symlink to ${target}`)
 }
 
 /** Working-tree deletions of tracked files (staged or not) are an ordinary workflow, not a gate failure. */

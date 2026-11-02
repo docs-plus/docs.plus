@@ -43,7 +43,7 @@ every file written to disk or to git. Commit subjects stay exempt.
 
 ## The full standard, and what this file cannot do
 
-The complete rules live in `.cursor/skills/tech-writer/SKILL.md`, section
+The complete rules live in `.agents/skills/tech-writer/SKILL.md`, section
 `Simplified English (house standard)`: the naming rule, the four glossaries that name things, the
 idiom and word-choice rules, the exempt surfaces, and a worked example. Read it before any prose
 task. The three rules above are the deliberate minimum this file repeats, and copying more would

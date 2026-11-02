@@ -16,6 +16,14 @@
 **/public
 ./components/icons/icons.jsx
 apps/webapp/src/types/supabase.ts
-.agents/skills
+# Upstream skills stay as their authors wrote them. The house skills are ours, so Prettier checks them.
+/.agents/skills/*
+!/.agents/skills/code-janitor
+!/.agents/skills/commit-review
+!/.agents/skills/design-system
+!/.agents/skills/release-extensions
+!/.agents/skills/release-product
+!/.agents/skills/tech-writer
+!/.agents/skills/tiptap
 .claude/worktrees
 apps/hocuspocus.server/src/generated

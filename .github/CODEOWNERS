@@ -2,7 +2,8 @@
 # Turn on "Require review from Code Owners" in the main branch protection to make this binding.
 /.cursor/docs/design-system.md                 @HMarzban
 /.cursor/rules/design-system.mdc               @HMarzban
-/.cursor/skills/design-system/                 @HMarzban
+/.agents/skills/design-system/                 @HMarzban
+/.cursor/skills/design-system                  @HMarzban
 /apps/webapp/src/styles/globals.scss           @HMarzban
 /apps/admin-dashboard/src/styles/globals.scss  @HMarzban
 /.claude/settings.json                         @HMarzban

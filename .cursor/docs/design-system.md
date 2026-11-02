@@ -4,7 +4,7 @@ Canonical reference for every visual decision in `apps/webapp` (desktop + mobile
 touching UI. Precedence: explicit maintainer instruction → this doc + `AGENTS.md` → vendor docs.
 `apps/webapp/CLAUDE.md` owns _behavioral_ invariants (pad geometry, motion wiring, focus-trap/inert rules,
 sheet systems); this doc owns the _visual language_ they render in. `.cursor/rules/design-system.mdc`
-auto-attaches a pointer here; the `design-system` skill in `.cursor/skills/` is the working protocol.
+auto-attaches a pointer here; the `design-system` skill in `.agents/skills/` is the working protocol.
 
 ## Change protocol (locked)
 

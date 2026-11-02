@@ -6,9 +6,9 @@ description: Apply the docs.plus design system (tokens, themes, elevation specie
 # Design System
 
 Working protocol for visual changes in `apps/webapp`. The source of truth is
-[.cursor/docs/design-system.md](../../docs/design-system.md) — tokens, themes, elevation species,
+[.cursor/docs/design-system.md](../../../.cursor/docs/design-system.md) — tokens, themes, elevation species,
 state language, and the per-component catalog. `AGENTS.md` owns §UI And Theme.
-[apps/webapp/AGENTS.md](../../../apps/webapp/AGENTS.md) owns the rest of the behavioral invariants
+[apps/webapp/CLAUDE.md](../../../apps/webapp/CLAUDE.md) owns the rest of the behavioral invariants
 (§Pad Workspace Surfaces, §Floating Surfaces And Modal Scrims, §Motion System). That file loads
 automatically when you work under `apps/webapp/`.
 
@@ -38,7 +38,11 @@ automatically when you work under `apps/webapp/`.
 
 ## Hard guardrails
 
+- **The design system is locked.** Read and follow `.cursor/docs/design-system.md` §Change protocol
+  (locked). Never add or change a token, species, size, radius, shadow, ink step or house-language
+  rule unless the maintainer asked for that exact change. Updating a catalog row to match approved
+  code is the only routine edit. Never loosen `CODEOWNERS`.
 - No new shadow/radius values; no shadows on docked light surfaces; scrims are black tokens only.
 - No `*Classes.ts`/`*Styles.ts` string modules; no second floating-surface language.
-- No live regions inside `.ProseMirror`; overlay species and motion tiers come from `apps/webapp/AGENTS.md`.
+- No live regions inside `.ProseMirror`; overlay species and motion tiers come from `apps/webapp/CLAUDE.md`.
 - Never `next build` against a live dev server (shared `.next`) — `tsc --noEmit` + the running app.

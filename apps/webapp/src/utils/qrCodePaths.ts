@@ -1,5 +1,5 @@
 // The house QR drawing rules. QrCode.tsx renders them, and the release banner script
-// (.cursor/skills/release-product/scripts/qr-svg.ts) imports them, so keep this file alias-free.
+// (.agents/skills/release-product/scripts/qr-svg.ts) imports them, so keep this file alias-free.
 import { encode } from 'uqr'
 
 export const FINDER_SIZE = 7

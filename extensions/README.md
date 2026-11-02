@@ -105,7 +105,7 @@ Four packages carry a Keyboard shortcuts table, and every Context cell in them n
 
 [RELEASE_POLICY.md](../RELEASE_POLICY.md) — versioning doctrine, lockstep, release readiness, CHANGELOG style.
 
-Release policy and the publish flow: [RELEASE_POLICY.md](../RELEASE_POLICY.md) and the [release-extensions skill](../.cursor/skills/release-extensions/SKILL.md).
+Release policy and the publish flow: [RELEASE_POLICY.md](../RELEASE_POLICY.md) and the [release-extensions skill](../.agents/skills/release-extensions/SKILL.md).
 
 ## Contributing
 

@@ -95,9 +95,9 @@ Check every page the release makes wrong: `README.md` (extension status), `exten
 
 - Use the Claude Design canvas with the docs.plus design system (`Artifact` quickstart with `intent: "design"`). Make three or more concepts at 1280×720 and let the maintainer pick or combine.
 - What worked on 2.1.0: a real pad scene (outline, Find bar, AI app card, QR card, voice note), a big version number, and a strip of real numbers with Lucide icons. It ships in a light theme and a dark theme.
-- **Use real product pieces.** Make the QR code with `.cursor/skills/release-product/scripts/qr-svg.ts`; it opens the demo. Take AI logos and icons from `react-icons`, the same set as `apps/webapp/src/utils/aiAppBrands.ts`. Use only numbers from §Facts to gather.
+- **Use real product pieces.** Make the QR code with `.agents/skills/release-product/scripts/qr-svg.ts`; it opens the demo. Take AI logos and icons from `react-icons`, the same set as `apps/webapp/src/utils/aiAppBrands.ts`. Use only numbers from §Facts to gather.
 - Third-party logos imply "works with". Confirm each one is true for MCP clients.
-- **Render.** `.cursor/skills/release-product/scripts/render-banner.js` (`bun <script> <artboard> <logo.svg> <out.html>`) expands the artboard into one page. Then render it at 2× with headless Chrome: `--headless=new --force-device-scale-factor=2 --window-size=1280,720 --screenshot=<out.png>`. Look at the PNG before saving it.
+- **Render.** `.agents/skills/release-product/scripts/render-banner.js` (`bun <script> <artboard> <logo.svg> <out.html>`) expands the artboard into one page. Then render it at 2× with headless Chrome: `--headless=new --force-device-scale-factor=2 --window-size=1280,720 --screenshot=<out.png>`. Look at the PNG before saving it.
 - Save `release-X.Y.Z-banner.png`, `release-X.Y.Z-banner-dark.png` and both HTML sources in `apps/webapp/public/demo-assets/`.
 
 ### 7. Readiness

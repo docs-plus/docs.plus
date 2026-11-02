@@ -1,13 +1,13 @@
 ---
 description: docs.plus design system — tokens, themes, elevation species, state language for all webapp UI
-globs: apps/webapp/src/**/*.tsx,apps/webapp/src/**/*.ts,apps/webapp/src/styles/**,apps/admin-dashboard/src/**,.cursor/docs/design-system.md,.cursor/skills/design-system/**
+globs: apps/webapp/src/**/*.tsx,apps/webapp/src/**/*.ts,apps/webapp/src/styles/**,apps/admin-dashboard/src/**,.cursor/docs/design-system.md,.agents/skills/design-system/**
 alwaysApply: false
 ---
 
 # Design System
 
 Authoritative source: [.cursor/docs/design-system.md](../docs/design-system.md). Read it before any
-UI/theme/styling work; the `design-system` skill in `.cursor/skills/` is the working protocol.
+UI/theme/styling work; the `design-system` skill in `.agents/skills/` is the working protocol.
 Behavioral invariants (pad geometry, motion wiring, scrims, sheet systems) live in
 `apps/webapp/CLAUDE.md`, which loads automatically under `apps/webapp/`. `AGENTS.md` keeps only
 §UI And Theme.
