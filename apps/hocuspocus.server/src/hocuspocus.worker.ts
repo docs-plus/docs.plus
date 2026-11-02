@@ -4,6 +4,7 @@ import { Hono } from 'hono'
 
 import { purgeDocumentFootprint } from './api/services/documentPurge.service'
 import { config } from './config/env'
+import { closeChangeSummaryQueue, createChangeSummaryWorker } from './lib/changeSummaryQueue'
 import {
   emailGateway,
   getEmailQueueConsumerHealth,
@@ -72,6 +73,7 @@ workerLogger.info('✅ Redis connection established and ready')
 
 // This is the ONLY place workers should be created - not in rest-api
 const documentWorker = createDocumentWorker()
+const changeSummaryWorker = createChangeSummaryWorker()
 
 workerLogger.info({
   msg: '🔧 BullMQ document worker started',
@@ -304,7 +306,10 @@ const shutdown = async (exitCode = 0) => {
       // add-after-close. Once the consumers stop, tear down the rest.
       await Promise.all([stopPushQueueConsumer(), stopEmailQueueConsumer()])
       await Promise.all([
-        documentWorker.close(),
+        // A store job still running enqueues its summary, so that queue closes after it.
+        documentWorker
+          .close()
+          .then(() => Promise.all([changeSummaryWorker.close(), closeChangeSummaryQueue()])),
         closeQueues(),
         emailGateway.shutdown(),
         pushGateway.shutdown()

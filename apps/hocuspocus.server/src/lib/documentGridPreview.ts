@@ -2,7 +2,9 @@ import { TiptapTransformer } from '@hocuspocus/transformer'
 import * as Y from 'yjs'
 
 import type { PrismaClient } from '../generated/prisma/client'
+import { cardDataFromPmJson, type PmNode } from './cardData'
 import { dbLogger } from './logger'
+import { socialCardDataWritesTotal } from './metrics'
 import { sanitizePlainText } from './sanitizePlainText'
 
 export type DocumentGridPreview = {
@@ -24,13 +26,6 @@ const MAX_LIST = 3
 const IMAGE_TYPES = new Set(['image', 'Image'])
 const LIST_TYPES = new Set(['bulletList', 'orderedList', 'taskList'])
 const EMBED_TYPES = new Set(['youtube', 'vimeo', 'video', 'audio', 'twitter', 'iframe'])
-
-type PmNode = {
-  type?: string
-  text?: string
-  attrs?: Record<string, unknown>
-  content?: PmNode[]
-}
 
 const nodeText = (node: PmNode): string => {
   if (typeof node.text === 'string') return node.text
@@ -141,24 +136,33 @@ export const previewFromPmJson = (
   return preview
 }
 
-export const extractDocumentGridPreview = (
-  data: Buffer | Uint8Array | null | undefined,
-  options: { documentId: string }
-): DocumentGridPreview => {
-  if (!data || data.byteLength === 0) return { ...EMPTY_DOCUMENT_GRID_PREVIEW }
-
+/** The snapshot as ProseMirror JSON; null when it is empty or does not decode. */
+export const decodePmJson = (data: Buffer | Uint8Array | null | undefined): unknown => {
+  if (!data || data.byteLength === 0) return null
   const ydoc = new Y.Doc()
   try {
-    const bytes = data instanceof Uint8Array ? data : new Uint8Array(data)
-    Y.applyUpdate(ydoc, bytes)
-    const json = TiptapTransformer.fromYdoc(ydoc, 'default')
-    return previewFromPmJson(json, options)
+    Y.applyUpdate(ydoc, data instanceof Uint8Array ? data : new Uint8Array(data))
+    return TiptapTransformer.fromYdoc(ydoc, 'default')
   } catch {
-    return { ...EMPTY_DOCUMENT_GRID_PREVIEW }
+    return null
   } finally {
     ydoc.destroy()
   }
 }
+
+const previewOf = (json: unknown, options: { documentId: string }): DocumentGridPreview => {
+  if (json === null) return { ...EMPTY_DOCUMENT_GRID_PREVIEW }
+  try {
+    return previewFromPmJson(json, options)
+  } catch {
+    return { ...EMPTY_DOCUMENT_GRID_PREVIEW }
+  }
+}
+
+export const extractDocumentGridPreview = (
+  data: Buffer | Uint8Array | null | undefined,
+  options: { documentId: string }
+): DocumentGridPreview => previewOf(decodePmJson(data), options)
 
 /** Sets `preview` only. Prisma `update` would stamp `@updatedAt` and rewrite Last modified. */
 const persistDocumentGridPreview = async (
@@ -187,14 +191,62 @@ const persistDocumentGridPreview = async (
   `
 }
 
+/**
+ * Sets `cardData` only while `version` is still the head, so a late job never draws text a
+ * newer save removed. `payload` null is the fail-closed write. Like the preview, no updatedAt.
+ */
+export const writeCardData = (
+  prisma: PrismaClient,
+  documentId: string,
+  version: number,
+  payload: string | null
+): Promise<number> => prisma.$executeRaw`
+  UPDATE "DocumentMetadata"
+  SET "cardData" = CAST(${payload} AS jsonb)
+  WHERE "documentId" = ${documentId}
+    AND "cardData" IS DISTINCT FROM CAST(${payload} AS jsonb)
+    AND (SELECT max(version) FROM "Documents" WHERE "documentId" = ${documentId}) = ${version}
+`
+
+/** Never throws: an extract or write error stores NULL, so the card draws fewer details. */
+const refreshCardData = async (
+  prisma: PrismaClient,
+  documentId: string,
+  version: number,
+  json: unknown
+): Promise<void> => {
+  let payload: string | null = null
+  try {
+    if (json !== null) payload = JSON.stringify(cardDataFromPmJson(json))
+  } catch (err) {
+    dbLogger.warn({ err, documentId }, 'Failed to extract social card data')
+  }
+  try {
+    const written = await writeCardData(prisma, documentId, version, payload)
+    socialCardDataWritesTotal.inc({
+      outcome: payload === null ? 'nulled' : written > 0 ? 'ok' : 'skipped'
+    })
+  } catch (err) {
+    dbLogger.warn({ err, documentId }, 'Failed to write social card data')
+    await writeCardData(prisma, documentId, version, null).then(
+      () => socialCardDataWritesTotal.inc({ outcome: 'nulled' }),
+      () => socialCardDataWritesTotal.inc({ outcome: 'failed' })
+    )
+  }
+}
+
+/** The worker's pass after a save: one decode for the grid preview and the card data. */
 export const refreshDocumentGridPreview = async (
   prisma: PrismaClient,
   args: {
     documentId: string
+    version: number
     data: Buffer | Uint8Array | null | undefined
   }
 ): Promise<DocumentGridPreview> => {
-  const preview = extractDocumentGridPreview(args.data, { documentId: args.documentId })
+  const json = decodePmJson(args.data)
+  await refreshCardData(prisma, args.documentId, args.version, json)
+  const preview = previewOf(json, { documentId: args.documentId })
   await persistDocumentGridPreview(prisma, args.documentId, preview, { onlyIfNull: false })
   return preview
 }

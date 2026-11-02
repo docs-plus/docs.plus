@@ -1,4 +1,5 @@
 import { fetchFleetRows } from '../api/services/adminMediaStorage.service'
+import { getChangeSummaryQueue } from './changeSummaryQueue'
 import { EmailDeadLetterQueue, EmailQueue } from './email/queue'
 import { workerLogger } from './logger'
 import {
@@ -30,7 +31,8 @@ const monitoredQueues = [
 ].filter((queue) => queue !== null)
 
 async function sampleQueueDepth() {
-  for (const queue of monitoredQueues) {
+  // Got per tick, not at import: the change summary queue opens its socket on first use.
+  for (const queue of [...monitoredQueues, getChangeSummaryQueue()]) {
     try {
       const counts = await queue.getJobCounts()
       for (const [state, count] of Object.entries(counts)) {

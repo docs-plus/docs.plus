@@ -9,6 +9,7 @@ import type {
   StoreDocumentData
 } from '../types'
 import { toBullMQConnection } from '../types/redis.types'
+import { enqueueChangeSummary } from './changeSummaryQueue'
 import { fanOutContentChange } from './contentChangeFanout'
 import { refreshDocumentGridPreview } from './documentGridPreview'
 import { sendNewDocumentNotification } from './email/document-notification'
@@ -501,9 +502,12 @@ export const createDocumentWorker = () => {
           'Document stored successfully'
         )
 
+        enqueueChangeSummary({ documentId: data.documentName, version })
+
         try {
           await refreshDocumentGridPreview(prisma, {
             documentId: data.documentName,
+            version,
             data: versionData
           })
         } catch (err) {
