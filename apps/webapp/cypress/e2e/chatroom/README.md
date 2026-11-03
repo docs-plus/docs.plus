@@ -6,7 +6,7 @@ The hostile HTML spec checks both render sinks: the feed body and the long-press
 
 ## Run locally
 
-The workflow uses Bun 1.4.1 and Node 26.8.2, matching the validated local run.
+The workflow uses Bun 1.4.4 and Node 26.8.2, matching the validated local run.
 Install workspace dependencies with `bun install --frozen-lockfile`.
 Provide a valid Virtuoso Message List license through `NEXT_PUBLIC_VIRTUOSO_LICENSE`, then run:
 

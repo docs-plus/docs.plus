@@ -11,7 +11,7 @@ description: 'Setup Bun with cached dependencies'
 inputs:
   bun-version:
     description: 'Bun version. Pinned on purpose; bump by hand, never below the 1.4.0 floor (AGENTS.md).'
-    default: '1.4.1'
+    default: '1.4.4'
   ignore-scripts:
     description: 'Skip postinstall scripts (for security job)'
     default: 'false'

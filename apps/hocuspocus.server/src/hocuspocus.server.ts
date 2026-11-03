@@ -61,6 +61,11 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 // document connection, so the budget sits well above any real frame.
 const MAX_AWARENESS_FRAME_BYTES = 64 * 1024
 
+// Bun 1.4.4 enforces `ws` maxPayload (100 MiB by default); up to 1.4.3 Bun itself
+// refused anything over 16 MiB. Keep the old bound, which still sits above the
+// largest client sync message (about one document's size).
+const MAX_WS_MESSAGE_BYTES = 16 * 1024 * 1024
+
 // Bracket load/store hooks keyed by the Document object. WeakMap means an aborted
 // load that never reaches the `after` hook is GC'd instead of leaking a timer.
 const loadStartedAt = new WeakMap<object, number>()
@@ -601,7 +606,7 @@ const serverConfig = {
   }
 }
 
-const server = new Server(serverConfig)
+const server = new Server(serverConfig, { maxPayload: MAX_WS_MESSAGE_BYTES })
 
 // Read live counts at scrape time rather than tracking inc/dec, which drifts up
 // forever: a load that failed before unload, or a socket rejected pre-auth whose
@@ -617,7 +622,9 @@ wsLogger.info({
   msg: '🚀 WebSocket Server started successfully',
   port: baseConfig.port,
   environment: process.env.NODE_ENV,
-  url: `ws://localhost:${baseConfig.port}`
+  url: `ws://localhost:${baseConfig.port}`,
+  maxPayload: server.webSocketServer.options.maxPayload,
+  bun: Bun.version
 })
 
 // Content injection and version ops both have to run where the live Y.Doc is, so

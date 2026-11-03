@@ -737,6 +737,35 @@ try {
     )
     control.provider.destroy()
 
+    // Message cap (#651). Control first: a 15 MiB message still arrives and parses,
+    // so the 17 MiB close below comes from the cap, not from a dead socket.
+    dropped = await droppedTotal('oversized')
+    attacker.provider.sendStateless(
+      JSON.stringify({ type: 'docTitle', pad: 'x'.repeat(15 * 1024 * 1024) })
+    )
+    const parsedBy = Date.now() + 10_000
+    while ((await droppedTotal('oversized')) === dropped && Date.now() < parsedBy) await sleep(100)
+    check(
+      (await droppedTotal('oversized')) === dropped + 1,
+      'a 15 MiB message reaches the server and parses'
+    )
+
+    const raw = new WebSocket(`ws://127.0.0.1:${wsPort}`)
+    const closeCode = await new Promise<number | null>((resolve) => {
+      const timer = setTimeout(() => resolve(null), 10_000)
+      raw.onopen = () => raw.send(new Uint8Array(17 * 1024 * 1024))
+      raw.onclose = (event) => {
+        clearTimeout(timer)
+        resolve(event.code)
+      }
+    })
+    if (closeCode === null) raw.close()
+    check(closeCode === 1009, `a 17 MiB message closes the socket with 1009 (got ${closeCode})`)
+
+    const afterCap = await openProvider(doc.documentId, doc.slug)
+    check(afterCap.synced, 'a new collaborator still syncs after the refused message')
+    afterCap.provider.destroy()
+
     // Type 6 never enters onStateless. The raw frame rides the already-authenticated
     // socket; the refusal closes the attacker's document connection, so it goes last.
     victim.stateless.length = 0

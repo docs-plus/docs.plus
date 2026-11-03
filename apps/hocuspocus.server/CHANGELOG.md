@@ -223,6 +223,12 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 
 ### Security
 
+- **One WebSocket message is capped at 16 MiB again ([#651](https://github.com/docs-plus/docs.plus/issues/651)).**
+  Bun 1.4.4 obeys the `ws` `maxPayload` option, and its default is 100 MiB. Bun 1.4.3 and
+  older refused anything over 16 MiB on their own. The collaboration server now passes
+  `maxPayload` as 16 MiB, and a larger message closes the socket with `1009`. Each replica
+  logs its cap and its Bun version at start. CI now runs Bun 1.4.4, the version production
+  ships ([#650](https://github.com/docs-plus/docs.plus/issues/650)).
 - **A crafted page can no longer block the REST server ([#242](https://github.com/docs-plus/docs.plus/issues/242)).** metascraper took 28 s
   on one crafted 262 KB page. On all 28 crafted inputs up to 1 MiB,
   the new scraper's worst case was 46 to 53 ms across five runs on the same laptop.
