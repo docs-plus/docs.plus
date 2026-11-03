@@ -107,7 +107,7 @@
     "npm-check-updates": "^23.1.1",
     "prettier": "^3.9.9",
     "prettier-plugin-tailwindcss": "^0.8.1",
-    "sass": "^1.105.2",
+    "sass": "^1.107.1",
     "stylelint": "^17.16.0",
     "stylelint-config-standard": "^40.0.0",
     "stylelint-config-standard-scss": "^17.0.0",
