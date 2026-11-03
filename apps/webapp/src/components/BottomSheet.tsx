@@ -15,6 +15,7 @@ import {
 } from '@floating-ui/react'
 import { useHistoryDismiss } from '@hooks/useHistoryDismiss'
 import { type SheetData, type SheetDataMap, sheetTransitionHandlers, useSheetStore } from '@stores'
+import { twMerge } from '@utils/twMerge'
 import { useMotionValueEvent } from 'motion/react'
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Sheet, SheetProps } from 'react-modal-sheet'
@@ -95,12 +96,6 @@ const SHEETS: { [K in keyof SheetDataMap]: SheetEntry<K> } = {
     detent: 'content',
     // The query is typed in the editor, so focus must stay there.
     trapFocus: false,
-    // Where the VirtualKeyboard API exists (Android Chrome), avoidance turns on overlay mode. The
-    // viewport stops shrinking, so the pad reads the keyboard as closed and leaves edit mode (#251).
-    // A getter, so the check runs on the client when the sheet opens. The sheet has no input to lift.
-    get avoidKeyboard() {
-      return !('virtualKeyboard' in navigator)
-    },
     render: (data) => <SlashMenuSheet data={data} />
   },
   historyCompare: {
@@ -138,6 +133,33 @@ const SHEETS: { [K in keyof SheetDataMap]: SheetEntry<K> } = {
 
 const DEFAULT_SHEET_PROPS: Partial<SheetProps> = { id: 'bottom_sheet' }
 
+const TABBABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]'
+
+/** Tab stops in DOM order. A radio group is one stop, its checked radio, as the browser does. */
+const tabbablesIn = (root: HTMLElement): HTMLElement[] =>
+  Array.from(root.querySelectorAll<HTMLElement>(TABBABLE)).filter(
+    (el) =>
+      el.tabIndex >= 0 &&
+      el.getClientRects().length > 0 &&
+      !el.closest('[inert], [aria-hidden="true"]') &&
+      !(
+        el instanceof HTMLInputElement &&
+        el.type === 'radio' &&
+        el.name &&
+        !el.checked &&
+        root.querySelector(`input[type="radio"][name="${CSS.escape(el.name)}"]:checked`)
+      )
+  )
+
+/** Focuses the first of `items` that takes focus; collapsed content can refuse it. */
+const focusFirstTaking = (items: HTMLElement[]): void => {
+  for (const el of items) {
+    el.focus()
+    if (document.activeElement === el) return
+  }
+}
+
 /** The library renders this only while the sheet is not closed, so a closed sheet holds no listener. */
 const FocusOnTween = ({ focusSheet }: { focusSheet: () => void }) => {
   useMotionValueEvent(Sheet.useContext().y, 'change', focusSheet)
@@ -149,6 +171,10 @@ const BottomSheet = () => {
   const isOpen = !!activeSheet
   const activeEntry = isOpen ? SHEETS[activeSheet] : null
   const trapFocus = !!activeEntry && activeEntry.trapFocus !== false
+  // On Chromium (VirtualKeyboard API) avoidance turns on overlay mode, the viewport stops
+  // shrinking, and the pad reads the keyboard as closed and leaves edit mode (#251). A sheet that
+  // keeps the keyboard up for the pad skips avoidance there and is pinned to the visible viewport.
+  const keepsPadKeyboard = activeEntry?.trapFocus === false && 'virtualKeyboard' in navigator
   const { refs, context } = useFloating({
     open: isOpen,
     onOpenChange: (open) => {
@@ -217,7 +243,18 @@ const BottomSheet = () => {
     const onKeyDown = (event: KeyboardEvent) => {
       const sheet = refs.floating.current
       const active = document.activeElement
-      if (event.key !== 'Tab' || sheet?.contains(active)) return
+      if (event.key !== 'Tab') return
+      // Wrap at the edges here. Native Shift-Tab from the first control reached the before-guard,
+      // which handed focus to the container, and the two then traded focus (#310).
+      if (sheet?.contains(active)) {
+        const items = tabbablesIn(sheet)
+        const edge = event.shiftKey ? items[0] : items.at(-1)
+        if (!items.length || (active !== sheet && active !== edge)) return
+        event.preventDefault()
+        event.stopPropagation()
+        focusFirstTaking(event.shiftKey ? items.reverse() : items)
+        return
+      }
       if (entered && active !== document.body && !sheet?.parentElement?.contains(active)) return
       event.preventDefault()
       event.stopPropagation()
@@ -257,13 +294,17 @@ const BottomSheet = () => {
       escapeKey: _escapeKey,
       ...props
     } = SHEETS[activeSheet]
-    return props
-  }, [activeSheet])
+    return keepsPadKeyboard ? { ...props, avoidKeyboard: false } : props
+  }, [activeSheet, keepsPadKeyboard])
 
   return (
     <Sheet
       avoidKeyboard
-      className="bottom-sheet !z-50"
+      className={twMerge(
+        'bottom-sheet !z-50',
+        keepsPadKeyboard &&
+          '!top-[var(--visual-viewport-offset-top,0px)] !bottom-auto !h-[var(--visual-viewport-height,100%)]'
+      )}
       isOpen={isOpen}
       onClose={closeSheet}
       mountPoint={mountPoint}

@@ -15,7 +15,8 @@ import { useHyperlinkSuggestions } from '../hooks/useHyperlinkSuggestions'
 import { useLinkSuggestionState } from '../hooks/useLinkSuggestionState'
 import type { HyperlinkEditorProps, Suggestion } from '../types'
 
-const MOBILE_AUTOFOCUS_DELAY_MS = 50
+// About one second at 60 Hz, longer than the sheet's open tween.
+const MOBILE_AUTOFOCUS_MAX_FRAMES = 60
 
 export function useHyperlinkEditorForm({
   mode,
@@ -82,17 +83,22 @@ export function useHyperlinkEditorForm({
       if (mode === 'edit' && initialHref) inputRef.current?.select()
       return
     }
-    let timeoutId: ReturnType<typeof setTimeout> | undefined
-    const rafId = requestAnimationFrame(() => {
-      timeoutId = setTimeout(() => {
-        inputRef.current?.focus()
-        if (mode === 'edit' && initialHref) inputRef.current?.select()
-      }, MOBILE_AUTOFOCUS_DELAY_MS)
-    })
-    return () => {
-      cancelAnimationFrame(rafId)
-      if (timeoutId !== undefined) clearTimeout(timeoutId)
+    // The sheet root stays `visibility: hidden` until its open tween moves it, and focus() fails
+    // silently there. Retry each frame until the field takes focus (as `FocusOnTween` does).
+    let frames = 0
+    let rafId = 0
+    const focusField = () => {
+      const input = inputRef.current
+      if (!input) return
+      input.focus()
+      if (document.activeElement === input) {
+        if (mode === 'edit' && initialHref) input.select()
+      } else if (++frames < MOBILE_AUTOFOCUS_MAX_FRAMES) {
+        rafId = requestAnimationFrame(focusField)
+      }
     }
+    rafId = requestAnimationFrame(focusField)
+    return () => cancelAnimationFrame(rafId)
   }, [variant, mode, initialHref])
 
   const applyTyped = useCallback(() => {
