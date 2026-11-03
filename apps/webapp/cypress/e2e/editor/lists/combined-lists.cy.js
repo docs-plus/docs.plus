@@ -199,7 +199,7 @@ describe('Combined Lists', { testIsolation: false }, () => {
       cy.get('.docy_editor ul > li > ol > li').eq(1).should('contain', 'Ordered sub-item 2')
     })
 
-    // After Shift+Tab out of the nested task list, only 1 ol item remains; cause unknown. https://github.com/docs-plus/docs.plus/issues/477
+    // After Shift+Tab out of the nested task list, only 1 ol item remains; cause unknown. https://github.com/docs-plus/docs.plus/issues/679
     it.skip('should support ordered list with nested task list', () => {
       // Get the paragraph element
       cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
@@ -257,7 +257,7 @@ describe('Combined Lists', { testIsolation: false }, () => {
       cy.createDocument(DocumentStructure)
     })
 
-    // Back at level 1, no taskList item is found; cause unknown. https://github.com/docs-plus/docs.plus/issues/477
+    // Back at level 1, no taskList item is found; cause unknown. https://github.com/docs-plus/docs.plus/issues/679
     it.skip('should support three levels of different list types', () => {
       // Get the paragraph element
       cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')

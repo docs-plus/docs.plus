@@ -110,7 +110,7 @@ describe('List Edge Cases', () => {
     cy.get('.docy_editor .tiptap.ProseMirror > ul').should('contain', 'Nested item 2.1')
   })
 
-  // Mod+Shift+9 on items 2-3 moves item 1 out of the ol; cause unknown. https://github.com/docs-plus/docs.plus/issues/477
+  // Mod+Shift+9 on items 2-3 moves item 1 out of the ol; cause unknown. https://github.com/docs-plus/docs.plus/issues/679
   it.skip('converts only a selected subset of ordered items into task list items', () => {
     cy.createDocument(SimpleDocument)
     cy.wait(150)
