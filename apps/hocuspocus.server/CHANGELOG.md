@@ -167,6 +167,9 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 
 ### Fixed
 
+- The admin MCP Usage page no longer fails with a 500 when no OAuth app is registered. With no clients,
+  GoTrue answers `{}` instead of an empty list, and the server now reads that as no apps.
+
 - **An immediate chat email opens the pad at the message
   ([#647](https://github.com/docs-plus/docs.plus/issues/647)).** Before, it linked
   `${appUrl}?chatroom=…`, which opens Home. The link is now `/<pad>?chatroom=…&msg_id=…`, with

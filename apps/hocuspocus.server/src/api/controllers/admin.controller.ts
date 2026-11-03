@@ -204,13 +204,15 @@ async function listOAuthClients() {
     adminLogger.warn({ err: error }, 'Failed to list OAuth clients')
     return null
   }
-  if (data.total > data.clients.length) {
+  // With no clients, GoTrue drops the empty array and answers `{}`.
+  const clients = data.clients ?? []
+  if (data.total > clients.length) {
     adminLogger.warn(
-      { total: data.total, returned: data.clients.length },
+      { total: data.total, returned: clients.length },
       'OAuth client list is paged; the rest count as Unknown app'
     )
   }
-  return data.clients
+  return clients
 }
 
 // A count of 1 to 4 people could point at one person, so it never leaves the server.
