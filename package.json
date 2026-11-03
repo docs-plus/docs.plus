@@ -120,7 +120,7 @@
     "@hocuspocus/extension-database": "^3.4.4",
     "@hocuspocus/extension-logger": "^3.4.4",
     "@hocuspocus/extension-redis": "3.4.4",
-    "@hocuspocus/extension-throttle": "^3.4.4",
+    "@hocuspocus/extension-throttle": "^4.8.0",
     "@hocuspocus/provider": "^3.4.4",
     "@hocuspocus/server": "^3.4.4",
     "@hocuspocus/transformer": "^3.4.4",
