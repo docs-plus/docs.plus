@@ -79,6 +79,10 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
     bucketed 1 to 9, then 10+.
   - `assets/social-card/ATTRIBUTION.md` credits the Twemoji pictures (CC BY 4.0) and the Arimo
     font (SIL OFL 1.1).
+  - A Pad title that needs two lines wraps on the Document outline card and the Filter card. A
+    longer title is cut at a word, with "…". Before this, the outline card drew the title on
+    one line and clipped it at the card edge. The template id is now `social-card-2`, so every
+    card URL changed and crawlers fetch the new image.
 - **The worker stores what the card draws.** Each save writes `DocumentMetadata.cardData`: the
   first blocks and the outline. While `SOCIAL_CARD_KINDS` holds `version`, each stored version
   enqueues a job on the new `version-change-summary` queue. That job writes
