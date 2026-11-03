@@ -37,7 +37,7 @@ describe('caret find plugin', () => {
     for (let i = 0; i < 6; i++) run((s, tr) => stepFindTr(s, tr, 1))
     expect(caretFindPluginKey.getState(state)?.current).toBe(6)
 
-    // y-tiptap replaces the whole document on a remote change, then restores the caret.
+    // y-tiptap's fallback path replaces the whole document on a remote change, then restores the caret.
     const { from } = state.selection
     const tr = state.tr.replace(0, state.doc.content.size, new Slice(state.doc.content, 0, 0))
     tr.setSelection(TextSelection.create(tr.doc, from))

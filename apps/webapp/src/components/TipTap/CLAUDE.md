@@ -58,7 +58,7 @@ bun run migrate:nested-to-flat
 - Fingerprint is top-level heading levels in order, e.g. `1,2,4,1,3`.
 - Map the decoration set while the fingerprint is unchanged. Rebuild fully when the fingerprint changes, or when mapping drops a decoration.
 - Detect a drop with the `onRemove` option of `DecorationSet.map`. A step that replaces a heading's tokens drops its node decoration: `setNodeMarkup` (UniqueID writes `toc-id` this way), `moveSection`, split, join and paste.
-- A Yjs change (remote, undo, redo) replaces the whole document, so mapping drops every decoration and the set rebuilds. A peer pays one full rebuild per remote transaction (measured ~8.7 ms at 1501 headings).
+- A Yjs change (remote, undo, redo) replaces only the changed top-level blocks (`@tiptap/y-tiptap` 3.0.10, #520). Mapping then drops only the decorations in that span, and a drop rebuilds the set. A full-document replace is y-tiptap's fallback path, and it drops every decoration. One full rebuild cost ~8.7 ms at 1501 headings (measured on y-tiptap 3.0.9, where every remote transaction replaced the whole document).
 - Do not gate on a y-sync key string. PluginKey adds a numeric suffix (`y-sync$1` in the live app), so the old `getMeta('y-sync$')` check never matched.
 - Do not replace this with fixed per-level point maps.
 - A heading that is not top-level (inside a blockquote or a table cell) gets no rank decoration. It falls back to a fixed size by HTML level in `_heading-node.scss`: 24, 22, 20, 18, 16 and 14pt for h1 to h6, the same range as the scale. Keep those fallbacks in step with the range.
