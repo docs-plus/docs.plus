@@ -1,7 +1,7 @@
 import type { Editor } from '@tiptap/core'
-import { getMarkRange } from '@tiptap/core'
 
 import type { ApplyHyperlinkArgs, ApplyHyperlinkCommandOpts } from '../types'
+import { markRangeAt } from './markRangeAt'
 
 interface ApplyEditDeps {
   editor: Editor
@@ -9,8 +9,8 @@ interface ApplyEditDeps {
   markName?: string
   /** For surfaces that do not move selection before opening. */
   nodePos?: number
-  /** Raw stored href read at open time. A stale `nodePos` on another link then edits nothing. */
-  expectedHref?: string
+  /** Guards a stale `nodePos` (see `markRangeAt`). */
+  expectedHref: string | undefined
 }
 
 /** No text → `editHyperlinkHref` so the rendered link text is not rewritten. */
@@ -24,10 +24,11 @@ export function applyEdit(
   const markName = deps.markName ?? 'hyperlink'
   const chain = focus ? deps.editor.chain().focus() : deps.editor.chain()
   if (typeof deps.nodePos === 'number') {
-    const markType = deps.editor.schema.marks[markName]
-    if (!markType) return false
-    const attrs = deps.expectedHref === undefined ? undefined : { href: deps.expectedHref }
-    const range = getMarkRange(deps.editor.state.doc.resolve(deps.nodePos), markType, attrs)
+    const range = markRangeAt(deps.editor, {
+      nodePos: deps.nodePos,
+      markName,
+      expectedHref: deps.expectedHref
+    })
     if (!range) return false
     chain.setTextSelection(range)
   }

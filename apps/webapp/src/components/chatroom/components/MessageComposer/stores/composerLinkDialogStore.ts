@@ -145,7 +145,7 @@ export const useComposerLinkDialogStore = create<{
       }
       if (phase === 'edit' && edit) {
         const ok = applyEdit(
-          { editor: edit.editor, nodePos: edit.nodePos },
+          { editor: edit.editor, nodePos: edit.nodePos, expectedHref: edit.initialHref },
           { href: result.href, text: result.text?.trim() || undefined },
           commandOpts
         )
@@ -158,7 +158,11 @@ export const useComposerLinkDialogStore = create<{
     removeLink: () => {
       const preview = get().preview
       if (!preview) return
-      removeHyperlinkAtPos({ editor: preview.editor, nodePos: preview.nodePos })
+      removeHyperlinkAtPos({
+        editor: preview.editor,
+        nodePos: preview.nodePos,
+        expectedHref: preview.href
+      })
       get().close({ refocus: get().keyboardWasOpenAtOpen })
     },
 

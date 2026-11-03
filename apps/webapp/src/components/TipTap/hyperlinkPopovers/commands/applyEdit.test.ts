@@ -50,7 +50,9 @@ describe('applyEdit', () => {
       }
     }
 
-    expect(applyEdit({ editor, nodePos: 10 }, { href: 'https://next.test' })).toBe(true)
+    expect(
+      applyEdit({ editor, nodePos: 10, expectedHref: undefined }, { href: 'https://next.test' })
+    ).toBe(true)
     expect(calls.find((c) => c.method === 'setTextSelection')?.args[0]).toEqual({
       from: 10,
       to: 14
