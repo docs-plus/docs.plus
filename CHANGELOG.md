@@ -138,6 +138,15 @@ faces, the roster and the admin member counts fail
   of the document per reload, and every load decoded all of them. On a 2000-link pad, 20
   reloads left 42 copies (22.6 MB) and a 202 ms frame. It now stays at one copy (0.55 MB)
   ([#638](https://github.com/docs-plus/docs.plus/issues/638)).
+- **Phone editing on Android works with the keyboard up.** The slash menu and the link editor no
+  longer drop the keyboard or leave edit mode
+  ([#251](https://github.com/docs-plus/docs.plus/issues/251)). Enter just before a link with an
+  icon no longer adds an empty line break
+  ([#513](https://github.com/docs-plus/docs.plus/issues/513)).
+- **Phone sheets work better with a keyboard and a screen reader.** Close returns focus to the
+  link that opened the sheet, the page behind a sheet stays hidden from screen readers, and
+  Shift+Tab wraps inside the sheet ([#248](https://github.com/docs-plus/docs.plus/issues/248),
+  [#310](https://github.com/docs-plus/docs.plus/issues/310)).
 
 ### Security
 
@@ -172,6 +181,9 @@ faces, the roster and the admin member counts fail
 - Each house skill has one copy, in `.agents/skills/<name>/`. `.cursor/skills/<name>` is a
   symlink to it, and `check:agent-docs` fails when it is not. Prettier now checks the house
   skills, which it had skipped.
+- The root catalog holds `tailwindcss` and `@tailwindcss/postcss` at exactly 4.3.3. Tailwind
+  4.3.4 writes a nested `@scope` rule that Lightning CSS rejects, so the webapp CSS failed to
+  build with "Invalid empty selector". Lift the pin when a Tailwind release fixes it.
 - `apps/admin-dashboard` and the `packages/` folders that had none now keep their own
   `CHANGELOG.md`, with history back to 2.0.0 where the folder existed.
   [`RELEASE_POLICY.md`](RELEASE_POLICY.md) says which change goes where.

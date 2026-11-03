@@ -190,6 +190,20 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   for the step to land, then writes.
 - **A filter link with `%25` in a term no longer throws.** The filter decoded each term twice, so
   `/demo/100%25` failed.
+- **The slash menu keeps the keyboard up on Android.** The menu closed about 600 ms after `/`,
+  the keyboard dropped, and the pad left edit mode. The slash sheet turned on Chrome's keyboard
+  overlay mode, so the pad read the keyboard as closed
+  ([#251](https://github.com/docs-plus/docs.plus/issues/251)).
+- **The phone link editor keeps edit mode on Android.** It hit the same overlay mode, so the URL
+  field lost focus and Apply left the user out of edit mode. Every sheet that keeps the pad's
+  keyboard up now skips the library's keyboard handling on Chromium and stays above the keyboard.
+  The URL field also takes focus as soon as the sheet shows.
+- **A phone sheet returns focus to the pad link that opened it.** Close used to leave focus on
+  the page body. The sheet also lets go of its opener before it hides the page, so screen readers
+  no longer see the pad header under a sheet opened from the TOC drawer
+  ([#248](https://github.com/docs-plus/docs.plus/issues/248)).
+- **Shift+Tab wraps inside a phone sheet.** It used to stop on the sheet itself and a hidden guard,
+  and never reached the other controls ([#310](https://github.com/docs-plus/docs.plus/issues/310)).
 
 ### Security
 
