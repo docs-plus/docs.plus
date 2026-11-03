@@ -177,7 +177,8 @@ const BottomSheet = () => {
 
   // Focus at open is often the editor, not the tapped control: iOS never focuses a tapped button,
   // and dismissSoftKeyboard blurs 50ms late. Return only to a tabbable, non-text opener, so close
-  // never raises the keyboard or lands on `#pad-main`'s first link. Null returns focus to nothing.
+  // never raises the keyboard or lands on `#pad-main`'s first link. A link in a read-only pad
+  // qualifies: `isContentEditable` already rules out the editable editor. Null returns to nothing.
   useLayoutEffect(() => {
     if (!isOpen) return
     const active = document.activeElement
@@ -185,10 +186,14 @@ const BottomSheet = () => {
       active instanceof HTMLElement &&
       active.tabIndex >= 0 &&
       !active.isContentEditable &&
-      !active.closest('.ProseMirror, input, textarea')
+      !active.closest('input, textarea')
         ? active
         : null
-  }, [isOpen])
+    // The focus manager hides the page in a passive effect, after this one. Chrome refuses
+    // aria-hidden over a focused element and keeps refusing after focus leaves (#248), so the
+    // opener lets go first. The sheet takes focus on its first visible frame.
+    if (trapFocus) openerRef.current?.blur()
+  }, [isOpen, trapFocus])
 
   // The root stays `visibility: hidden` until the open tween moves it, and focus() on it fails
   // silently. So `FocusOnTween` retries each frame, and focus enters on the first visible frame.
