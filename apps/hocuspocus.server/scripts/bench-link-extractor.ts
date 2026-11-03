@@ -1,35 +1,23 @@
 /**
- * Link-metadata benchmark: fetch | run (vs metascraper, needs commit f96bb6766) | attack | coverage
- * | reference. Not a test: timing tests are banned. BENCHMARK.md in the module has the method.
+ * Link-metadata benchmark: fetch | run | attack | coverage | reference.
+ * Not a test: timing tests are banned. BENCHMARK.md in the module has the method.
  * Usage: <mode> <dir> [iterations|rest-url] [dev|holdout|all]
  */
 import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { cpus, platform, release, totalmem } from 'node:os'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 
 import { decodeHTML } from 'entities'
 
 import { pickIconHref } from '../src/modules/link-metadata/domain/iconLinks'
 import { runHtmlScrape } from '../src/modules/link-metadata/domain/stages/htmlScrape'
 import type { Scraper } from '../src/modules/link-metadata/domain/types'
+import { createHeadScraper } from '../src/modules/link-metadata/infra/headScraper'
 
 type Fields = Awaited<ReturnType<Scraper['scrape']>>
-type FieldName = keyof Fields
 type Page = { requested: string; url: string; file: string; sha256: string; bytes: number }
 
-const FIELDS: FieldName[] = [
-  'title',
-  'description',
-  'image',
-  'logo',
-  'author',
-  'publisher',
-  'date',
-  'lang'
-]
-const PRODUCT_FIELDS: FieldName[] = ['title', 'description', 'image']
-const URL_FIELDS = new Set<FieldName>(['image', 'logo'])
 // In production these hosts are answered by oEmbed or a special handler, never by the html stage.
 const NOT_HTML_STAGE = ['youtube.com', 'x.com', 'github.com', 'wikipedia.org']
 
@@ -43,63 +31,32 @@ const fileHash = (path: string) => {
     return 'missing'
   }
 }
-const packageVersion = (name: string, from = import.meta.dir) => {
+const packageVersion = (name: string) => {
   try {
-    const path = Bun.resolveSync(`${name}/package.json`, from)
-    return { version: JSON.parse(readFileSync(path, 'utf8')).version as string, dir: dirname(path) }
+    const path = Bun.resolveSync(`${name}/package.json`, import.meta.dir)
+    return JSON.parse(readFileSync(path, 'utf8')).version as string
   } catch {
-    return { version: 'missing', dir: from }
+    return 'missing'
   }
 }
 
-const environment = () => {
-  const metascraper = packageVersion('metascraper')
-  return {
-    date: new Date().toISOString(),
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    bun: Bun.version,
-    cpu: cpus()[0]?.model,
-    cores: cpus().length,
-    os: `${platform()} ${release()}`,
-    memoryGb: Math.round(totalmem() / 2 ** 30),
-    commit: sh(['git', '-C', ROOT, 'rev-parse', 'HEAD']),
-    dirty: sh(['git', '-C', ROOT, 'status', '--porcelain']).length > 0,
-    code: {
-      headScraper: fileHash(
-        'apps/hocuspocus.server/src/modules/link-metadata/infra/headScraper.ts'
-      ),
-      metascraper: fileHash(
-        'apps/hocuspocus.server/src/modules/link-metadata/infra/metascraper.ts'
-      ),
-      script: fileHash('apps/hocuspocus.server/scripts/bench-link-extractor.ts'),
-      bunLock: fileHash('bun.lock')
-    },
-    versions: {
-      metascraper: metascraper.version,
-      cheerio: packageVersion('cheerio', metascraper.dir).version,
-      entities: packageVersion('entities').version
-    }
-  }
-}
-
-const loadScrapers = async () => {
-  const scrapers: Record<string, Scraper> = {}
-  try {
-    // A variable specifier, because a plain one fails the typecheck now that the file is gone.
-    const oldAdapter: string = '../src/modules/link-metadata/infra/metascraper'
-    const { createMetascraper } = await import(oldAdapter)
-    scrapers.old = createMetascraper()
-  } catch {
-    console.warn('metascraper is not installed: old side skipped')
-  }
-  try {
-    const { createHeadScraper } = await import('../src/modules/link-metadata/infra/headScraper')
-    scrapers.new = createHeadScraper()
-  } catch {
-    console.warn('headScraper is not built yet: new side skipped')
-  }
-  return scrapers
-}
+const environment = () => ({
+  date: new Date().toISOString(),
+  timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  bun: Bun.version,
+  cpu: cpus()[0]?.model,
+  cores: cpus().length,
+  os: `${platform()} ${release()}`,
+  memoryGb: Math.round(totalmem() / 2 ** 30),
+  commit: sh(['git', '-C', ROOT, 'rev-parse', 'HEAD']),
+  dirty: sh(['git', '-C', ROOT, 'status', '--porcelain']).length > 0,
+  code: {
+    headScraper: fileHash('apps/hocuspocus.server/src/modules/link-metadata/infra/headScraper.ts'),
+    script: fileHash('apps/hocuspocus.server/scripts/bench-link-extractor.ts'),
+    bunLock: fileHash('bun.lock')
+  },
+  versions: { entities: packageVersion('entities') }
+})
 
 // Each URL keeps the `#` heading above it, so coverage can group results by section.
 const readUrls = () => {
@@ -158,58 +115,21 @@ const fetchCorpus = async (dir: string) => {
   )
 }
 
-// The comparison rules are fixed before any new result exists (decisions.md, 2026-10-27).
-const foldText = (value: string) =>
-  value
-    .normalize('NFC')
-    .replace(/[‘’‚‛′]/g, "'")
-    .replace(/[“”„‟″]/g, '"')
-    .replace(/…/g, '...')
-    .replace(/\s+/g, ' ')
-    .trim()
-
-const foldUrl = (value: string) => {
-  try {
-    const url = new URL(value)
-    for (const key of [...url.searchParams.keys()])
-      if (/^utm_/i.test(key)) url.searchParams.delete(key)
-    return url.href
-  } catch {
-    return value
-  }
-}
-
-const foldDate = (value: string) => {
-  const time = Date.parse(value)
-  return Number.isNaN(time) ? value : new Date(time).toISOString().slice(0, 10)
-}
-
-type Verdict = 'same' | 'same-folded' | 'differ' | 'old-only' | 'new-only' | 'neither'
 type CorpusRow = {
   requested: string
   bytes: number
   htmlStage: boolean
-  outputs: Record<string, Fields>
-  verdicts: Partial<Record<FieldName, Verdict>>
-  medianMs: Record<string, number>
-  p95Ms: Record<string, number>
+  output: Fields
+  medianMs: number
+  p95Ms: number
 }
 type AttackRow = {
   vector: string
-  side: string
+  parser: string
   targetBytes: number
   inputBytes: number
   runs: number
   medianMs: number
-}
-
-const compareField = (field: FieldName, a?: string, b?: string): Verdict => {
-  if (!a && !b) return 'neither'
-  if (a && !b) return 'old-only'
-  if (!a && b) return 'new-only'
-  if (a === b) return 'same'
-  const fold = URL_FIELDS.has(field) ? foldUrl : field === 'date' ? foldDate : foldText
-  return fold(a as string) === fold(b as string) ? 'same-folded' : 'differ'
 }
 
 // For an even count this takes the lower middle value.
@@ -239,108 +159,50 @@ const reachesHtmlStage = (requested: string) => {
   return !NOT_HTML_STAGE.some((suffix) => host === suffix || host.endsWith(`.${suffix}`))
 }
 
-const summarize = (rows: CorpusRow[], sides: string[]) => {
-  const summary: Record<string, unknown> = { pages: rows.length }
-  for (const side of sides) {
-    const medians = rows.map((r) => r.medianMs[side])
-    summary[side] = {
-      p50OfPageMedians: median(medians),
-      p95OfPageMedians: quantile(medians, 0.95),
-      maxOfPageMedians: Math.max(...medians),
-      sumOfPageMedians: round(
-        medians.reduce((x, y) => x + y, 0),
-        3
-      )
-    }
+const summarize = (rows: CorpusRow[]) => {
+  const medians = rows.map((r) => r.medianMs)
+  return {
+    pages: rows.length,
+    p50OfPageMedians: median(medians),
+    p95OfPageMedians: quantile(medians, 0.95),
+    maxOfPageMedians: Math.max(...medians),
+    sumOfPageMedians: round(
+      medians.reduce((x, y) => x + y, 0),
+      3
+    )
   }
-  if (sides.length < 2) return summary
-  const ratios = rows.map((r) => r.medianMs.old / r.medianMs.new)
-  const sum = (side: string) => rows.reduce((x, r) => x + r.medianMs[side], 0)
-  summary.speedup = {
-    medianOfPageRatios: round(median(ratios), 1),
-    minOfPageRatios: round(Math.min(...ratios), 1),
-    maxOfPageRatios: round(Math.max(...ratios), 1),
-    ratioOfSums: round(sum('old') / sum('new'), 1)
-  }
-  summary.quality = Object.fromEntries(
-    FIELDS.map((f) => {
-      const counts: Record<string, number> = {}
-      for (const row of rows) {
-        const verdict = row.verdicts[f] ?? 'neither'
-        counts[verdict] = (counts[verdict] ?? 0) + 1
-      }
-      return [f, counts]
-    })
-  )
-  summary.pagesWithValue = Object.fromEntries(
-    FIELDS.map((f) => [f, rows.filter((r) => r.verdicts[f] !== 'neither').length])
-  )
-  // The pre-registered pass bar: every product-field change, folded ones included, and every
-  // date row that is not the same.
-  summary.listed = rows.flatMap((r) =>
-    FIELDS.filter((f) => {
-      const verdict = r.verdicts[f]
-      if (PRODUCT_FIELDS.includes(f)) return verdict !== 'same' && verdict !== 'neither'
-      return f === 'date' && verdict !== 'same' && verdict !== 'neither'
-    }).map((f) => ({
-      page: r.requested,
-      field: f,
-      verdict: r.verdicts[f],
-      old: r.outputs.old[f],
-      new: r.outputs.new[f]
-    }))
-  )
-  return summary
 }
 
 const runCorpus = async (dir: string, iterations: number, set: string) => {
   const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8'))
   manifest.pages = (manifest.pages as Page[]).filter((page) => inSet(page, set))
-  const scrapers = await loadScrapers()
-  const sides = Object.keys(scrapers)
+  const scraper = createHeadScraper()
   const rows: CorpusRow[] = []
 
   for (const page of manifest.pages as Page[]) {
     const html = readFileSync(join(dir, 'pages', page.file), 'utf8')
     if (sha256(html) !== page.sha256) throw new Error(`corpus changed: ${page.file}`)
-    const outputs: Record<string, Fields> = {}
-    for (const side of sides) outputs[side] = await scrapers[side].scrape({ html, url: page.url })
+    const output = await scraper.scrape({ html, url: page.url })
 
-    // Warm up, then alternate the order each round so neither side always runs first.
-    const times: Record<string, number[]> = Object.fromEntries(sides.map((s) => [s, []]))
-    for (let i = 0; i < 3; i++)
-      for (const side of sides) await timeOnce(scrapers[side], html, page.url)
-    for (let i = 0; i < iterations; i++) {
-      const order = i % 2 === 0 ? sides : [...sides].reverse()
-      for (const side of order) times[side].push(await timeOnce(scrapers[side], html, page.url))
-    }
+    // Warm-up rounds, so the first timed round does not pay for the JIT.
+    for (let i = 0; i < 3; i++) await timeOnce(scraper, html, page.url)
+    const times: number[] = []
+    for (let i = 0; i < iterations; i++) times.push(await timeOnce(scraper, html, page.url))
 
-    const verdicts =
-      outputs.old && outputs.new
-        ? Object.fromEntries(
-            FIELDS.map((f) => [f, compareField(f, outputs.old[f], outputs.new[f])])
-          )
-        : {}
     rows.push({
       requested: page.requested,
       bytes: page.bytes,
       htmlStage: reachesHtmlStage(page.requested),
-      outputs,
-      verdicts,
-      medianMs: Object.fromEntries(sides.map((s) => [s, ms(median(times[s]))])),
-      p95Ms: Object.fromEntries(sides.map((s) => [s, ms(quantile(times[s], 0.95))]))
+      output,
+      medianMs: ms(median(times)),
+      p95Ms: ms(quantile(times, 0.95))
     })
-    console.log(
-      `${page.requested.padEnd(64)} ${sides.map((s) => `${s} ${ms(median(times[s]))} ms`).join('  ')}`
-    )
+    console.log(`${page.requested.padEnd(64)} ${ms(median(times))} ms`)
   }
 
   const summary = {
-    all: summarize(rows, sides),
-    htmlStageOnly: summarize(
-      rows.filter((r) => r.htmlStage),
-      sides
-    )
+    all: summarize(rows),
+    htmlStageOnly: summarize(rows.filter((r) => r.htmlStage))
   }
   const result = {
     environment: environment(),
@@ -400,9 +262,8 @@ const VECTORS: Record<string, (n: number) => string> = {
   'flood: <i itemprop>': (n) => page('', '<i itemprop>'.repeat(n)),
   'flood: <i class=logo>': (n) => page('', '<i class=logo>'.repeat(n))
 }
-const SIZES_OLD = [16, 64, 128, 256].map((k) => k * 1024)
-const SIZES_NEW = [16, 64, 128, 256, 1024].map((k) => k * 1024)
-// A side that took this long at one size is not run at the next, larger size.
+const SIZES = [16, 64, 128, 256, 1024].map((k) => k * 1024)
+// An input that took this long at one size is not run at the next, larger size.
 const STOP_MS = 10_000
 
 const buildExact = (build: (n: number) => string, target: number) => {
@@ -418,7 +279,7 @@ const buildExact = (build: (n: number) => string, target: number) => {
 }
 
 const attack = async (dir: string) => {
-  const scrapers = await loadScrapers()
+  const scraper = createHeadScraper()
   const rows: AttackRow[] = []
   const vectors: Array<[string, (target: number) => string]> = [
     ...Object.entries(VECTORS).map(([name, build]): [string, (target: number) => string] => [
@@ -429,28 +290,23 @@ const attack = async (dir: string) => {
     ['valid JSON-LD block under the cap', () => page(ldJson({ articleBody: 'w '.repeat(255_000) }))]
   ]
   for (const [name, build] of vectors) {
-    for (const side of Object.keys(scrapers)) {
-      for (const target of side === 'old' ? SIZES_OLD : SIZES_NEW) {
-        const html = build(target)
-        const runs = [await timeOnce(scrapers[side], html, 'https://example.com/')]
-        if (runs[0] / 1e6 < STOP_MS / 2) {
-          for (let i = 0; i < 4; i++)
-            runs.push(await timeOnce(scrapers[side], html, 'https://example.com/'))
-        }
-        const row: AttackRow = {
-          vector: name,
-          side,
-          targetBytes: target,
-          inputBytes: Buffer.byteLength(html),
-          runs: runs.length,
-          medianMs: ms(median(runs))
-        }
-        rows.push(row)
-        console.log(
-          `${name.padEnd(36)} ${side} ${String(row.inputBytes).padStart(8)} B  ${row.medianMs} ms`
-        )
-        if (row.medianMs > STOP_MS || name === 'valid JSON-LD block under the cap') break
+    for (const target of SIZES) {
+      const html = build(target)
+      const runs = [await timeOnce(scraper, html, 'https://example.com/')]
+      if (runs[0] / 1e6 < STOP_MS / 2) {
+        for (let i = 0; i < 4; i++) runs.push(await timeOnce(scraper, html, 'https://example.com/'))
       }
+      const row: AttackRow = {
+        vector: name,
+        parser: 'headScraper',
+        targetBytes: target,
+        inputBytes: Buffer.byteLength(html),
+        runs: runs.length,
+        medianMs: ms(median(runs))
+      }
+      rows.push(row)
+      console.log(`${name.padEnd(36)} ${String(row.inputBytes).padStart(8)} B  ${row.medianMs} ms`)
+      if (row.medianMs > STOP_MS || name === 'valid JSON-LD block under the cap') break
     }
   }
   // pickIconHref is the other parser of untrusted HTML; the icon route reads 64 KiB at most.
@@ -464,7 +320,7 @@ const attack = async (dir: string) => {
   }
   rows.push({
     vector: 'pickIconHref crafted head',
-    side: 'icon',
+    parser: 'pickIconHref',
     targetBytes: 64 * 1024,
     inputBytes: iconHead.length,
     runs: iconRuns.length,
@@ -584,6 +440,17 @@ const referenceValues = (html: string): Record<(typeof REFERENCE_FIELDS)[number]
       ''
   }
 }
+
+// Folds typography, so a curly quote or an ellipsis is not a disagreement.
+const foldText = (value: string) =>
+  value
+    .normalize('NFC')
+    .replace(/[‘’‚‛′]/g, "'")
+    .replace(/[“”„‟″]/g, '"')
+    .replace(/…/g, '...')
+    .replace(/\s+/g, ' ')
+    .trim()
+
 // A description may be cut and end in "..."; an image matches without its query string.
 const agrees = (field: string, reference: string, ours: string, base: string) => {
   if (field === 'image') {
@@ -601,7 +468,6 @@ const agrees = (field: string, reference: string, ours: string, base: string) =>
 }
 
 const reference = async (dir: string) => {
-  const { createHeadScraper } = await import('../src/modules/link-metadata/infra/headScraper')
   const scraper = createHeadScraper()
   const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8')) as { pages: Page[] }
   const counts = Object.fromEntries(

@@ -1,8 +1,9 @@
 # Link-metadata benchmark
 
 These are the numbers behind the switch from metascraper to `infra/headScraper.ts` (#242), and the
-steps to measure them again. All numbers below come from one laptop on 2026-10-27. After a deploy,
-use [After a deploy: check production](#after-a-deploy-check-production) to compare.
+steps to measure headScraper again. All numbers below come from one laptop on 2026-10-27. The
+metascraper numbers are a frozen record, because the script no longer runs metascraper. After a
+deploy, use [After a deploy: check production](#after-a-deploy-check-production) to compare.
 
 ## Results (2026-10-27)
 
@@ -43,7 +44,7 @@ headScraper reads no body rule. A page whose title sits only in a body `h1` now 
 ### Crafted pages
 
 A crafted page is a head built to be slow, for example deep nesting or a huge `@graph`. There are
-28 crafted inputs. metascraper stops at the next size once one input takes more than 10 s.
+28 crafted inputs. metascraper was not run at the next size once one input took more than 10 s.
 
 | Input                         | Size      | metascraper | headScraper |
 | ----------------------------- | --------- | ----------- | ----------- |
@@ -112,7 +113,8 @@ file the site no longer has (TechCrunch). 29 site icons failed.
 - Apple M5 Max, 18 cores, 48 GB, macOS (`darwin 27.0.0`), Bun 1.4.4.
 - metascraper 5.50.6 with cheerio 1.2.0; `entities` 7.0.1.
 - Code: commit `f96bb6766` plus the uncommitted parser change. Every result file records the
-  sha256 prefix of `headScraper.ts`, the script and `bun.lock`.
+  sha256 prefix of `headScraper.ts`, the script and `bun.lock`. No single commit holds both
+  parsers, so a plain checkout cannot replay this comparison.
 - Page heads were fetched once on 2026-10-27 with the honest `DocsplusBot` User-Agent and frozen.
 
 ## Measure it again
@@ -121,8 +123,8 @@ Run every command from `apps/hocuspocus.server`. `<dir>` is any empty folder out
 
 1. Freeze the page heads: `bun scripts/bench-link-extractor.ts fetch <dir>`. Expect about 206 of
    249 heads; the rest are refused or time out.
-2. Compare the parsers: `bun scripts/bench-link-extractor.ts run <dir> 30 holdout`, then `dev`. This
-   needs metascraper, so check out `f96bb6766` first. On later commits it times headScraper alone.
+2. Time headScraper: `bun scripts/bench-link-extractor.ts run <dir> 30 holdout`, then `dev`.
+   Compare the result with the headScraper p50 and p95 columns above.
 3. Time the crafted inputs: `bun scripts/bench-link-extractor.ts attack <dir>`. Any input above
    60 ms at 1 MiB needs a look.
 4. Check the page tags: `bun scripts/bench-link-extractor.ts reference <dir>`.
