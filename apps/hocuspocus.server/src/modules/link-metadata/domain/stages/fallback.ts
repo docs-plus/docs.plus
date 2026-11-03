@@ -1,4 +1,4 @@
-import { LINK_ICON_PATH } from '../icon'
+import { LINK_ICON_PATH } from '../routes'
 import type { StageResult } from '../types'
 
 /**

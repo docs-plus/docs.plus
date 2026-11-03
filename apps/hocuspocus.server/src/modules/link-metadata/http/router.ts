@@ -1,7 +1,7 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 
-import { LINK_ICON_ROUTE, LINK_IMAGE_ROUTE } from '../domain/icon'
+import { LINK_ICON_ROUTE, LINK_IMAGE_ROUTE } from '../domain/routes'
 import type { ErrorResponse } from '../domain/types'
 import type { ControllerDeps } from './controller'
 import { createController } from './controller'

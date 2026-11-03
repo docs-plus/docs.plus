@@ -1,6 +1,7 @@
 import type { Context } from 'hono'
 
-import { fetchSiteIcon, isMiss } from '../domain/icon'
+import { fetchSiteIcon } from '../domain/icon'
+import { isMiss } from '../domain/relay'
 import type { Miss, RelayedImage } from '../domain/types'
 
 const ICON_TIMEOUT_MS = 3000

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { sniffImageType } from '../../domain/icon'
+import { sniffImageType } from '../../domain/relay'
 
 // Pads a header to the 16-byte floor, so only the signature decides the answer.
 const header = (...bytes: number[]): Uint8Array => {

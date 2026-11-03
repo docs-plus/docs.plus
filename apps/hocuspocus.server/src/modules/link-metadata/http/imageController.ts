@@ -1,7 +1,7 @@
 import type { Context } from 'hono'
 
-import { fetchImage, isMiss, sniffImageType } from '../domain/icon'
 import { runPipeline } from '../domain/pipeline'
+import { fetchImage, isMiss, sniffImageType } from '../domain/relay'
 import type { Miss, RelayedImage } from '../domain/types'
 import type { ControllerDeps } from './controller'
 
