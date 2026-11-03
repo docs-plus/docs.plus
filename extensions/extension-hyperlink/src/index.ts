@@ -24,6 +24,8 @@ export {
 } from './openers'
 // The caret-inside-a-link test that Mod-K and Alt+Enter use, for host keymaps such as a composer.
 export { linkAtSelection } from './openers/linkAtSelection'
+// The platform Mod test (Cmd on macOS, Ctrl elsewhere) behind the package's Mod-click rule.
+export { hasMod } from './interactions/modKey'
 export { createHyperlinkPopover, editHyperlinkPopover, previewHyperlinkPopover } from './popovers'
 // Tooltip primitive — the same hover/focus bubble the prebuilt popovers
 // put on their icon buttons, re-exported for BYO popover parity.

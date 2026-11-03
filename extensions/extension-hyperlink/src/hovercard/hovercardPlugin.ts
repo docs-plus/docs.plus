@@ -55,7 +55,6 @@ function createHovercardView(
   let dwellTimer: ReturnType<typeof setTimeout> | undefined
   let openTimer: ReturnType<typeof setTimeout> | undefined
   let closeTimer: ReturnType<typeof setTimeout> | undefined
-  let destroyed = false
   let warnedShouldShow = false
 
   const canHover = (): boolean => doc.defaultView?.matchMedia?.(FINE_POINTER_QUERY).matches ?? false
@@ -147,7 +146,7 @@ function createHovercardView(
 
   // `createPopover` adopts at once and would destroy a mounted preview, so check right before it.
   const open = (token: Pending): void => {
-    if (pending !== token || destroyed || !token.data) return
+    if (pending !== token || !token.data) return
     pending = null
     if (!token.link.isConnected || isOtherPopoverOpen()) return
     show({ ...token, data: token.data })
@@ -170,7 +169,7 @@ function createHovercardView(
   }
 
   const onData = (token: Pending, data: HovercardData | null): void => {
-    if (pending !== token || destroyed) return
+    if (pending !== token) return
     if (!data) {
       pending = null
       return
@@ -243,8 +242,7 @@ function createHovercardView(
   }
 
   const onKeyDown = (e: KeyboardEvent): void => {
-    const altGraph = e.getModifierState?.('AltGraph') ?? false
-    if (!keepsHovercardOpen({ ...pickKeyFields(e), altGraph })) dismiss(e)
+    if (!keepsHovercardOpen(e)) dismiss(e)
   }
 
   doc.addEventListener('pointerover', onPointerOver)
@@ -255,7 +253,6 @@ function createHovercardView(
 
   return {
     destroy() {
-      destroyed = true
       doc.removeEventListener('pointerover', onPointerOver)
       doc.removeEventListener('pointerout', onPointerOut)
       doc.removeEventListener('pointerdown', dismiss, true)
@@ -269,13 +266,3 @@ function createHovercardView(
     }
   }
 }
-
-// Spread does not copy a KeyboardEvent's getters, so pick the fields the rule reads.
-const pickKeyFields = (e: KeyboardEvent) => ({
-  key: e.key,
-  metaKey: e.metaKey,
-  ctrlKey: e.ctrlKey,
-  altKey: e.altKey,
-  shiftKey: e.shiftKey,
-  isComposing: e.isComposing
-})

@@ -29,9 +29,10 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 - `@docs.plus/extension-hyperlink/hovercard.css` styles the card through `--hl-*` tokens. Three are new: `--hl-well`, `--hl-hovercard-width` and `--hl-hovercard-thumb`.
 - The `HovercardOptions`, `HovercardData` and `HovercardImageLayout` types are root exports.
 - `PopoverKind` gains the `'hovercard'` literal.
+- `hasMod(event, isMac?)` is a new root export. It is `true` when the platform Mod key is held: Cmd on macOS, Ctrl elsewhere. `isMac` defaults to the current platform. A host can use it to match the package's Mod-click rule.
 - `linkAtSelection(state, markType)` is a new root export. It returns `{ from, to, href }` when a collapsed caret sits strictly inside one link, and `null` otherwise. A host keymap can use it, for example a chat composer that must not send on `Alt-Enter` over a link.
 - `Mod-k` with a collapsed caret strictly inside a link opens that link's preview, with focus inside it. Escape returns focus to the editor at the same caret. At a link edge, or outside a link, `Mod-k` still opens the create form.
-- A preview opened from the keyboard focuses the element with `data-popover-autofocus`, else its first focusable control. When it closes and focus would be lost, focus goes back to the editor. Focus that the user moved elsewhere stays there.
+- A preview opened from the keyboard focuses the element with `data-popover-autofocus`, else the first control that Tab visits. When it closes and focus would be lost, focus goes back to the editor. Focus that the user moved elsewhere stays there.
 - `Alt-Enter` with the caret inside a link opens the link through `navigate`, with `newTab: false`. With `navigate` unset, that is a new tab. A refused link still uses up the key, so Enter never splits the link.
 - In a read-only editor, Enter on a focused link opens its preview with focus inside it. Escape returns focus to the link.
 - Mod-click on a link (Cmd on macOS, Ctrl elsewhere) opens it in a new tab through `navigate`, with no preview.

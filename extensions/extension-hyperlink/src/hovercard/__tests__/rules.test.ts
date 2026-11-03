@@ -34,21 +34,21 @@ describe('chooseImageShape', () => {
   })
 })
 
-type Flags = Partial<Omit<Parameters<typeof keepsHovercardOpen>[0], 'key'>>
+type Flags = Partial<Omit<Parameters<typeof keepsHovercardOpen>[0], 'key' | 'getModifierState'>> & {
+  altGraph?: boolean
+}
+const keyEvent = (key: string, { altGraph = false, ...flags }: Flags = {}) => ({
+  key,
+  metaKey: false,
+  ctrlKey: false,
+  altKey: false,
+  shiftKey: false,
+  isComposing: false,
+  ...flags,
+  getModifierState: (k: string) => k === 'AltGraph' && altGraph
+})
 const press = (key: string, flags: Flags = {}, isMac = false) =>
-  keepsHovercardOpen(
-    {
-      key,
-      metaKey: false,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      isComposing: false,
-      altGraph: false,
-      ...flags
-    },
-    isMac
-  )
+  keepsHovercardOpen(keyEvent(key, flags), isMac)
 
 describe('keepsHovercardOpen', () => {
   it('keeps the card for held modifiers and lock keys', () => {
@@ -115,15 +115,7 @@ describe('keepsHovercardOpen', () => {
     const real = Object.getOwnPropertyDescriptor(globalThis, 'navigator')
     const set = (platform: string) =>
       Object.defineProperty(globalThis, 'navigator', { value: { platform }, configurable: true })
-    const ev = {
-      key: 'c',
-      metaKey: true,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      isComposing: false,
-      altGraph: false
-    }
+    const ev = keyEvent('c', { metaKey: true })
     try {
       set('MacIntel')
       expect(keepsHovercardOpen(ev)).toBe(true)

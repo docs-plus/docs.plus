@@ -4,9 +4,10 @@ import type { EditorView } from '@tiptap/pm/view'
 
 import { getDefaultController } from '../floating-popover'
 import { buildPreviewOptionsFromAnchor } from '../openers/buildPreviewOptionsFromAnchor'
-import { focusPreviewFromKeyboard } from '../openers/openPreviewAtSelection'
+import { focusPreviewFromKeyboard } from '../openers/focusPreviewFromKeyboard'
 import { openPreviewHyperlink } from '../openers/openPreviewHyperlink'
-import { attachModCursor, hasMod } from './modCursor'
+import { attachModCursor } from './modCursor'
+import { hasMod } from './modKey'
 import { openLink } from './openLink'
 import type { LinkContext } from './types'
 

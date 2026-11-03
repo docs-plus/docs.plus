@@ -1,4 +1,4 @@
-import { hasMod } from '../interactions/modCursor'
+import { hasMod } from '../interactions/modKey'
 import type { LinkIconResolver } from '../link-icons/types'
 import { createHTMLElement } from '../utils/createHTMLElement'
 import { logger } from '../utils/logger'

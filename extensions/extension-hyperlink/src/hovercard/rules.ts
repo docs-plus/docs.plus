@@ -1,5 +1,4 @@
-import { isMacOS } from '@tiptap/core'
-
+import { hasMod, MODIFIER_KEYS } from '../interactions/modKey'
 import type { HovercardImageLayout } from './types'
 
 const THUMB_BELOW_RATIO = 1.3
@@ -17,7 +16,6 @@ export function chooseImageShape(
   return w / h < THUMB_BELOW_RATIO || w < THUMB_BELOW_WIDTH ? 'thumb' : 'cover'
 }
 
-const HELD_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'AltGraph'])
 const MOVE_KEY = /^(Arrow(Left|Right|Up|Down)|Home|End|PageUp|PageDown|F([1-9]|1[0-2]))$/
 
 /**
@@ -25,13 +23,19 @@ const MOVE_KEY = /^(Arrow(Left|Right|Up|Down)|Home|End|PageUp|PageDown|F([1-9]|1
  * or Mod+C. `isMac` is injectable so tests need no navigator stub.
  */
 export function keepsHovercardOpen(
-  e: Pick<KeyboardEvent, 'key' | 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'isComposing'> & {
-    altGraph: boolean
-  },
-  isMac: boolean = isMacOS()
+  e: Pick<
+    KeyboardEvent,
+    'key' | 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'isComposing' | 'getModifierState'
+  >,
+  isMac?: boolean
 ): boolean {
   if (e.isComposing) return false
-  if (HELD_KEYS.has(e.key) || MOVE_KEY.test(e.key)) return true
-  const mod = isMac ? e.metaKey : e.ctrlKey
-  return mod && !e.altKey && !e.shiftKey && !e.altGraph && e.key.toLowerCase() === 'c'
+  if (MODIFIER_KEYS.has(e.key) || MOVE_KEY.test(e.key)) return true
+  return (
+    hasMod(e, isMac) &&
+    !e.altKey &&
+    !e.shiftKey &&
+    !e.getModifierState('AltGraph') &&
+    e.key.toLowerCase() === 'c'
+  )
 }

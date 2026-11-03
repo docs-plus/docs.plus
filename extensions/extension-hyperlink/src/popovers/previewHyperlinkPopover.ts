@@ -2,7 +2,7 @@ import { attachTooltip } from '@docs.plus/floating-tooltip'
 
 import { getDefaultController } from '../floating-popover'
 import type { PreviewHyperlinkOptions } from '../hyperlink'
-import { hasMod } from '../interactions/modCursor'
+import { hasMod } from '../interactions/modKey'
 import { getLinkContext, openLink } from '../interactions/openLink'
 import { openEditHyperlink } from '../openers/openEditHyperlink'
 import { Copy, copyToClipboard, createHTMLElement, isSafeHref, LinkOff, Pencil } from '../utils'

@@ -1,15 +1,9 @@
-import { isMacOS } from '@tiptap/core'
+import { hasMod, MODIFIER_KEYS, modKeyName } from './modKey'
 
 const MOD_ATTR = 'data-hyperlink-mod'
-const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'AltGraph', 'CapsLock'])
 
 // Editors share one document, so the listeners and the flag live once per document.
 const refCounts = new WeakMap<Document, number>()
-
-/** The platform Mod key: Cmd on macOS, Ctrl elsewhere. */
-export function hasMod(event: Pick<MouseEvent, 'metaKey' | 'ctrlKey'>): boolean {
-  return isMacOS() ? event.metaKey : event.ctrlKey
-}
 
 function docOf(event: Event): Document {
   const target = event.currentTarget as Document | Window
@@ -25,9 +19,8 @@ function setFlag(doc: Document, on: boolean): void {
 
 function onKeyDown(event: KeyboardEvent): void {
   if (event.repeat) return
-  const modKey = isMacOS() ? 'Meta' : 'Control'
   // A shortcut such as Mod+K is not a click intent, so it drops the hand.
-  if (event.key === modKey) setFlag(docOf(event), true)
+  if (event.key === modKeyName()) setFlag(docOf(event), true)
   else if (!MODIFIER_KEYS.has(event.key)) setFlag(docOf(event), false)
 }
 
