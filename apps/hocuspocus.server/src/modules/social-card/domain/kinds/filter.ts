@@ -16,8 +16,7 @@ import {
   plural,
   read,
   row,
-  T,
-  titleNode
+  T
 } from '../frame'
 import { outlineRow, tocHeader } from '../parts'
 import type { StoredOutlineItem } from '../storedData'
@@ -173,7 +172,7 @@ export const resolveFilter: KindResolver = async ({ padName, outline, query, isD
       const k = Math.max(0, Math.min(rows.length, Math.floor(rowsRoom / LINE_H)))
       const rowNodes = await Promise.all(rows.slice(0, k).map((r) => outlineRow(r.text, r.depth)))
       return cardFrame('filter', [
-        tocHeader(titleNode(title)),
+        tocHeader(title),
         chipRow,
         container({ style: { height: T.space[1], flexShrink: 0 } }),
         ...(countInline ? [] : [row([count], { height: LINE_H })]),

@@ -65,7 +65,7 @@ const outlineCard = (padName: string, rows: OutlineRow[]): DrawnCard => ({
     const shown = await Promise.all(rows.slice(0, k).map((r) => outlineRow(r.text, r.depth)))
     const more = rows.length - k
     return cardFrame('document', [
-      tocHeader(titleNode(title)),
+      tocHeader(title),
       ...shown,
       ...(more > 0
         ? [

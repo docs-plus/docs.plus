@@ -3,7 +3,19 @@ import { container, image } from '@takumi-rs/helpers'
 
 import { type IsDrawable, LINK_WORD, usableLine } from './eligibility'
 import { cutLine, cutLines } from './fit'
-import { CONTENT_W, LINE_H, NEST, over, read, READ_LH, row, stack, strokeSvg, T } from './frame'
+import {
+  CONTENT_W,
+  LINE_H,
+  NEST,
+  over,
+  read,
+  READ_LH,
+  row,
+  stack,
+  strokeSvg,
+  T,
+  titleNode
+} from './frame'
 import type { CardSource } from './kinds/types'
 import type { ListKind, StoredBlock, StoredOutlineItem } from './storedData'
 
@@ -123,8 +135,11 @@ export const blockLines = async (lines: BlockLine[], room: number): Promise<Node
   return nodes
 }
 
-/** TocHeader at 2.5x: the pad name with its bottom border. */
-export const tocHeader = (title: Node): Node =>
+/**
+ * TocHeader at 2.5x: the pad name with its bottom border. The title takes `CONTENT_W`, so it
+ * wraps as `fitHead` measured it; without a width this row kept it on one line and clipped it.
+ */
+export const tocHeader = (title: { text: string; size: number }): Node =>
   container({
     style: {
       display: 'flex',
@@ -136,7 +151,7 @@ export const tocHeader = (title: Node): Node =>
       flexShrink: 0,
       width: CONTENT_W
     },
-    children: [title]
+    children: [titleNode(title, { width: CONTENT_W })]
   })
 
 const rail = () =>
