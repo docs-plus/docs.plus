@@ -90,7 +90,7 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   how to ask for a copy of your personal data, a correction, a deletion, or a limit on its use.
   The answer comes within one month.
 - A plain click on a link to another pad now opens that pad in the same window, in the pad and
-  in chat. Mod-click and middle-click still open a new tab
+  in chat. Mod-click (Cmd on macOS, Ctrl elsewhere) and middle-click still open a new tab
   ([#359](https://github.com/docs-plus/docs.plus/issues/359)).
 - `EditorContent` mounts the Tiptap editor hidden while `providerSyncing` is true, under the
   skeleton or `SyncErrorCard`. Mounted after the fill, its `createNodeViews()` rebuilt every
@@ -210,6 +210,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   address bar and picks the history writer, and `read` also parses old link forms. It replaces
   `utils/filterRoute.ts`, `utils/stripChatDeepLinkFromUrl.ts`, `hooks/usePadShareUrl.ts` and the
   `APPLY_FILTER`, `REMOVE_FILTER` and `RESET_FILTER` topics in `eventsHub`.
+- The link metadata cache stores a `LinkCard`, whose image URL is already our image route. No
+  caller can reach the scraped image URL, so the privacy rule holds by type
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- `linkDestination` lives in `internalDocumentLink.ts`, which loads no router or Supabase. Link
+  edit and remove take a required `expectedHref`, so the chat link dialog checks the stored
+  href too.
 
 ## [2.2.0] — 2026-10-22
 

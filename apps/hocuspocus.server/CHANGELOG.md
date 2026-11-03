@@ -246,6 +246,8 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 - Prisma is `7.10.1` ([#198](https://github.com/docs-plus/docs.plus/issues/198)). `prisma.config.ts` holds the schema path and the database URL. The client generates into `src/generated/prisma`, which is gitignored.
 - The root overrides pin `prosemirror-model` `1.25.12`, `prosemirror-transform` `1.12.2`, and `prosemirror-view` `1.42.6`.
 - `prosemirror-changeset` stays `2.4.1`. `@tiptap/pm` 3.32.0 asks for `^2.4.4`. Later versions halve `MAX_DIFF_SIZE`.
+- Link metadata: `domain/routes.ts` holds the route paths, and `domain/relay.ts` holds the image fetch and the byte sniff. `domain/icon.ts` keeps the icon steps.
+- The link bench times headScraper only. `BENCHMARK.md` keeps the 2026-10-27 metascraper numbers as a frozen record.
 
 ## [2.2.0] — 2026-10-22
 
