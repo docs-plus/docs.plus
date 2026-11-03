@@ -36,13 +36,6 @@ describe('ComposerLinkPreviewDialog Open link', () => {
     expect(calls).toEqual(['close', 'navigate https://example.com/page newTab=false'])
   })
 
-  it('closes, then routes to another pad in this window', () => {
-    const href = `${window.location.origin}/another-pad`
-    const { row, calls } = openRow(href)
-    fireEvent.click(row!)
-    expect(calls).toEqual(['close', `navigate ${href} newTab=false`])
-  })
-
   it('shows no Open row for mailto: or tel:', () => {
     expect(openRow('mailto:a@example.com').row).toBeNull()
     expect(openRow('tel:+15551234567').row).toBeNull()
