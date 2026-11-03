@@ -3,9 +3,12 @@ import { type LinkIconContext, linkIconFetcher, linkIconMap } from '@docs.plus/e
 import { iconRouteUrl } from '@utils/iconRouteUrl'
 import { lucideSvgString } from '@utils/lucideSvgString'
 
-import { type LinkDestination, linkDestination } from './hyperlinkPopovers/hrefEventHandler'
-import { INTERNAL_KIND_ICON, INTERNAL_KIND_NAME } from './hyperlinkPopovers/internalDocumentLink'
-import type { InternalDocumentLink } from './hyperlinkPopovers/types'
+import {
+  INTERNAL_KIND_ICON,
+  INTERNAL_KIND_NAME,
+  linkDestination
+} from './hyperlinkPopovers/internalDocumentLink'
+import type { InternalDocumentLink, LinkDestination } from './hyperlinkPopovers/types'
 
 // linkDestination already checked the origin, so any host works here. A fixed key keeps
 // linkIconMap's one-request-per-URL image cache (#516), on any origin the app runs on.

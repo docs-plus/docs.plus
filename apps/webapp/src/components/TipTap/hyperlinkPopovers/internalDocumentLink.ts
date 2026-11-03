@@ -1,11 +1,13 @@
 import { Icons } from '@components/icons/registry'
 import { parseHistoryHash } from '@components/pages/history/historyShareUrl'
-import { padUrlCore } from '@docs.plus/pad-url'
+import { isReservedSlug, padUrlCore } from '@docs.plus/pad-url'
 import type { Editor } from '@tiptap/core'
+import type { PadFacets } from '@types'
 import { headingAncestry } from '@utils/headingSlugTrail'
+import { isWebHref } from '@utils/link-helpers'
 import type { IconType } from 'react-icons'
 
-import type { InternalDocumentLink, InternalLinkDescriptor } from './types'
+import type { InternalDocumentLink, InternalLinkDescriptor, LinkDestination } from './types'
 
 // Side-effectful execution lives in `internalDocumentLinkActions.ts`; this
 // module stays import-light so `classify` is testable without the app's
@@ -53,6 +55,25 @@ export function classifyInternalDocumentLink(
   if (pad.chat) return { kind: 'chat', ...pad.chat }
   if (pad.headingId) return { kind: 'heading', headingId: pad.headingId }
   return { kind: 'document' }
+}
+
+/** The address of a same-origin pad, or `null`. A path with a file extension is a public file. */
+const anotherPad = (href: string): PadFacets | null => {
+  const pad = padUrlCore.parse(href, window.location.origin)
+  if (!pad?.sameOrigin || !pad.slug || isReservedSlug(pad.slug)) return null
+  return /\.[a-z0-9]+$/i.test(new URL(href, window.location.origin).pathname) ? null : pad
+}
+
+/** The one order of the link rules. This pad comes first, because `anotherPad` accepts it too. */
+export const linkDestination = (
+  href: string,
+  pathname = window.location.pathname
+): LinkDestination => {
+  const link = classifyInternalDocumentLink(href, pathname)
+  if (link) return { kind: 'here', link }
+  const pad = anotherPad(href)
+  if (pad) return { kind: 'pad', pad }
+  return isWebHref(href) ? { kind: 'web' } : { kind: 'other' }
 }
 
 /** Resolve a heading/channel `toc-id` to its heading text. */

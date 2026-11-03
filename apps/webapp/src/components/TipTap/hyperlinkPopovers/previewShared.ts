@@ -11,8 +11,8 @@ import type { IconType } from 'react-icons'
 
 import { fetchMetadata } from './fetchMetadata'
 import { FILTER_MODE_LABEL_CLASS, FILTER_TERM_PILL_CLASS } from './filterTermPill'
-import { hrefEventHandler, linkDestination } from './hrefEventHandler'
-import { describeInternalDocumentLink } from './internalDocumentLink'
+import { hrefEventHandler } from './hrefEventHandler'
+import { describeInternalDocumentLink, linkDestination } from './internalDocumentLink'
 import { runInternalDocumentLink } from './internalDocumentLinkActions'
 import type { InternalDocumentLink } from './types'
 

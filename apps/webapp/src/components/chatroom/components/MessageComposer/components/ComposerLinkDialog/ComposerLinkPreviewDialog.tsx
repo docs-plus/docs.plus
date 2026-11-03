@@ -1,6 +1,7 @@
 import { Icons } from '@components/icons/registry'
 import { InternalLinkChip } from '@components/TipTap/hyperlinkPopovers/components/InternalLinkChip'
-import { linkDestination, padNavigate } from '@components/TipTap/hyperlinkPopovers/hrefEventHandler'
+import { padNavigate } from '@components/TipTap/hyperlinkPopovers/hrefEventHandler'
+import { linkDestination } from '@components/TipTap/hyperlinkPopovers/internalDocumentLink'
 import { runInternalDocumentLink } from '@components/TipTap/hyperlinkPopovers/internalDocumentLinkActions'
 import { ContextMenuDivider } from '@components/ui/ContextMenu'
 import { ContextMenuRowButton } from '@components/ui/ContextMenuRowButton'

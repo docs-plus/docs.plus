@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/core'
-import type { FilterMode, PadChat } from '@types'
+import type { FilterMode, PadChat, PadFacets } from '@types'
 import type { IconType } from 'react-icons'
 
 export type HyperlinkSurface = 'pad' | 'composer'
@@ -161,6 +161,24 @@ export type InternalDocumentLink =
   | ({ kind: 'chat' } & PadChat)
   | { kind: 'filter'; terms: string[]; mode: FilterMode; href: string }
   | { kind: 'history'; version: number | null }
+
+/**
+ * A metadata answer as the cache holds it. `image.url` is already our image route, so no
+ * caller can reach the linked site's own image URL. `url` is the server's canonical page URL.
+ */
+export interface LinkCard {
+  url: string
+  title: string
+  description?: string
+  image?: { url: string }
+}
+
+/** Where a link goes from the open pad: a place in it, another pad, a web page, or an app scheme. */
+export type LinkDestination =
+  | { kind: 'here'; link: InternalDocumentLink }
+  | { kind: 'pad'; pad: PadFacets }
+  | { kind: 'web' }
+  | { kind: 'other' }
 
 export interface InternalLinkDescriptor {
   label: string

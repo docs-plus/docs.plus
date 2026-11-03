@@ -2,7 +2,11 @@
 
 import type { Editor } from '@tiptap/core'
 
-import { classifyInternalDocumentLink, describeInternalDocumentLink } from './internalDocumentLink'
+import {
+  classifyInternalDocumentLink,
+  describeInternalDocumentLink,
+  linkDestination
+} from './internalDocumentLink'
 
 const origin = window.location.origin
 const here = '/test'
@@ -154,5 +158,22 @@ describe('describeInternalDocumentLink', () => {
       label: 'Chat',
       sublabel: 'In this document'
     })
+  })
+})
+
+describe('linkDestination', () => {
+  it('puts this pad first, then another pad, then the web', () => {
+    const kind = (href: string) => linkDestination(href, '/pad-a').kind
+
+    expect(kind('/pad-a')).toBe('here')
+    expect(kind(`${window.location.origin}/pad-a?id=h1`)).toBe('here')
+    expect(kind(`${window.location.origin}/other-pad`)).toBe('pad')
+    expect(kind('/other-pad')).toBe('pad')
+    expect(kind('https://docs.plus/other-pad')).toBe('web')
+    expect(kind(`${window.location.origin}/privacy`)).toBe('web')
+    expect(kind(`${window.location.origin}/badges/x.svg`)).toBe('web')
+    expect(kind('mailto:a@b.com')).toBe('other')
+    expect(kind('/')).toBe('other')
+    expect(kind('http://[bad')).toBe('other')
   })
 })
