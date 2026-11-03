@@ -17,6 +17,7 @@ import { createHovercardPlugin } from './hovercard/hovercardPlugin'
 import type { HovercardOptions } from './hovercard/types'
 import { createInteractions, createLinkContext, type LinkContext } from './interactions'
 import { openLink } from './interactions/openLink'
+import { linkIconEnter } from './link-icons/linkIconEnter'
 import { linkIconCompositionSweep, linkIconMarkView } from './link-icons/linkIconMarkView'
 import type { LinkIconResolver } from './link-icons/types'
 import { linkAtSelection } from './openers/linkAtSelection'
@@ -339,7 +340,7 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
   addProseMirrorPlugins() {
     const ctx = getContext(this)
     const plugins = [...createInteractions(ctx).plugins]
-    if (this.options.linkIcon) plugins.push(linkIconCompositionSweep)
+    if (this.options.linkIcon) plugins.push(linkIconCompositionSweep, linkIconEnter(this.name))
     if (this.options.hovercard) plugins.push(createHovercardPlugin(ctx, this.options.hovercard))
     return plugins
   }

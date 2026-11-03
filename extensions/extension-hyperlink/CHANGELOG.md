@@ -61,6 +61,7 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 - `validateURL` and the link forms now accept only one whole link. Before, `hello google.com` passed and was stored as `https://hello google.com`. A raw space is refused for every scheme: `mailto:`, `tel:`, app links and catalog sites such as `github.com`. Trailing punctuation such as `google.com.` still passes the check, and the forms store the link without it: `google.com,` stores `https://google.com`, and `user@example.com.` stores `mailto:user@example.com`. A typed `Re:google.com` now links only `google.com`.
 - Autolink and the link forms keep a closing parenthesis that belongs to the link, as paste already did. This covers app links too, such as `whatsapp://send?text=(hi)`. Before, a typed `https://en.wikipedia.org/wiki/Foo_(bar)` stored an href without the `)`.
 - The prebuilt edit popover fills Text from the document, not from `innerText`. Before, CSS such as `text-transform` could change the text that Apply wrote back ([#518](https://github.com/docs-plus/docs.plus/issues/518)).
+- With `linkIcon` set, Enter just before a link on Chrome for Android no longer adds a hard break. Chrome split the block itself and inserted a `<br>` before the icon, which read back as a hard break. The editor's own Enter now runs instead ([#513](https://github.com/docs-plus/docs.plus/issues/513)).
 
 ## [2.2.0] — 2026-10-22
 
