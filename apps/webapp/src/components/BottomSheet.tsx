@@ -95,6 +95,12 @@ const SHEETS: { [K in keyof SheetDataMap]: SheetEntry<K> } = {
     detent: 'content',
     // The query is typed in the editor, so focus must stay there.
     trapFocus: false,
+    // Where the VirtualKeyboard API exists (Android Chrome), avoidance turns on overlay mode. The
+    // viewport stops shrinking, so the pad reads the keyboard as closed and leaves edit mode (#251).
+    // A getter, so the check runs on the client when the sheet opens. The sheet has no input to lift.
+    get avoidKeyboard() {
+      return !('virtualKeyboard' in navigator)
+    },
     render: (data) => <SlashMenuSheet data={data} />
   },
   historyCompare: {

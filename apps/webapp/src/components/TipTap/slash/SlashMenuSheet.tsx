@@ -8,7 +8,11 @@ export default function SlashMenuSheet({ data }: { data: SheetDataMap['slashMenu
   const closeSheet = useSheetStore((s) => s.closeSheet)
 
   return (
-    <SheetLayout title="Insert block" onClose={closeSheet}>
+    // The keyboard stays up, so `dvh` is too tall: fit the visible viewport, less the grabber row.
+    <SheetLayout
+      title="Insert block"
+      onClose={closeSheet}
+      className="max-h-[min(85dvh,calc(var(--visual-viewport-height,100dvh)-3rem))]">
       <SlashMenuList editor={data.editor} className="px-2" />
     </SheetLayout>
   )
