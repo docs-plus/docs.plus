@@ -223,7 +223,7 @@ Follow industry overlay UX (Material, Apple HIG, Radix/shadcn) and dim-not-lift 
   2. Watch `chrome://gcm-internals` during a real mention from a second account.
   3. Compare the browser's `pushManager` endpoint tail with the `push_subscriptions` row.
   4. Read the worker log line `Push notification batch completed`, which gives `sent` and `total`.
-- **Push cannot work on local `next dev`.** next-pwa is disabled outside production, so `registerPushSubscription` registers whatever `public/sw.js` a past production build left. That worker precaches chunks that `next dev` no longer serves, so it goes `redundant`, and subscribe throws `SERVICE_WORKER_FAILED`. Test push against a production build.
+- **Push cannot work on local `next dev`.** next-pwa is disabled outside production, so `registerPushSubscription` registers whatever service worker a past production build left in `apps/webapp/public/` (next-pwa writes `sw.js` there at build time). That worker precaches chunks that `next dev` no longer serves, so it goes `redundant`, and subscribe throws `SERVICE_WORKER_FAILED`. Test push against a production build.
 - **Inbound share is `/receive`.** The manifest `share_target` posts there. `public/service-worker.js` handles only `POST /receive`: it stashes the file and redirects. `/receive` is a utility route and a reserved slug, so it never becomes a pad. Do not add `file_handlers` or change manifest `id` or `launch_handler`.
 
 ### Next Product APIs
