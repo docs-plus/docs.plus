@@ -54,6 +54,10 @@ Pass the documentId exactly as stored. Do not pass `lower(documentId)` or the sl
   ([#647](https://github.com/docs-plus/docs.plus/issues/647)).** `20261031130000` replaces
   `compile_digest_emails`. Each notification object gains `queue_id`, its own `email_queue` row
   id. Every old key stays, so an old server ignores the new one.
+- **The immediate email payload drops `document_slug`
+  ([#661](https://github.com/docs-plus/docs.plus/issues/661)).** `20261103120000` replaces
+  `process_email_queue` again. It no longer reads `channels.slug` or sends `document_slug`. The
+  server builds the pad link from `workspace_id` since #648.
 
 ### Security
 

@@ -35,6 +35,10 @@ is in [`packages/supabase/CHANGELOG.md`](../../packages/supabase/CHANGELOG.md).
 
 Run `packages/supabase/scripts/check-grants.sql` once, after all six.
 
+Push `20261103120000` ([#661](https://github.com/docs-plus/docs.plus/issues/661)) only after this
+backend is live. It drops `document_slug` from the immediate email payload, which an older server
+still reads.
+
 Do not push `20261026120000` ([#570](https://github.com/docs-plus/docs.plus/issues/570)) with
 this deploy. It closes default privileges in `pgmq` and `storage`. Push it only after the
 production row-5 read on 2026-10-28 and the #553 phase 2 run on or after 2026-11-01. Then run
