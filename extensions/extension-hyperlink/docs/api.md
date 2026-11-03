@@ -68,7 +68,7 @@ An iconed link has this DOM:
 - The package sets `aria-hidden="true"` on the icon, so screen readers read only the link text. An icon with its own non-empty `aria-label` is the exception. It gets `role="img"` and stays exposed, so a host can speak a link's kind.
 - An icon click puts the caret at the link start.
 - At a link that starts its block, the caret shows after the icon, but typed text lands before the link. This is a deliberate exception to Google Docs, Word and Notion, whose links carry no icon.
-- The clean-room tests run on `prosemirror-view` 1.42.6, the version `@tiptap/pm` 3.32.0 asks for.
+- The clean-room tests run on `prosemirror-view` 1.42.6, the version `@tiptap/pm` 3.32.2 asks for.
 - With `linkIcon` unset, the package still registers a mark view, which draws the same `<a>` as `renderHTML`.
 
 #### `linkIconMap` and `linkIconFetcher`

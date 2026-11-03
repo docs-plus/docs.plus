@@ -416,14 +416,14 @@ Inbox only. New workspace facts go into the topical section that owns the subjec
 - Email HTML must survive Gmail. Gmail strips inline SVG, the CSS `position` property, and negative margins. The digest mark and bell are hosted PNGs at `apps/webapp/public/email/mark.png` and `bell.png`, linked through `APP_URL`. The unread badge is its own linked cell. A test in `packages/email-templates/src/__tests__/engine.test.ts` fails on `<svg`, `position:`, or a negative margin. The PNGs ship with the webapp and the mail ships with the backend, so a change to both goes out with `(build): back front`.
 - **Key a document's Supabase workspace and member data on the documentId verbatim (`workspaces.id`), never on a slug or `lower(documentId)`.** Workspaces made before 2026-08-09 hold the human slug in `workspaces.slug`, so a slug match silently drops them (#574, maintainer rule 2026-10-23). The pad URL keeps the human slug. Details in [`packages/supabase/CLAUDE.md`](packages/supabase/CLAUDE.md).
 - Prod deploys read only the pushed tip commit. `prod.docs.plus.yml` parses `github.event.head_commit.message`, so an earlier `(build):` commit inside the same push does not deploy. To ship a range, the tip itself must start with `(build):` (a colon, then one space). `(build):front` fails triage, and the deploy does not start. A green `bun run check:ci` does not parse the deploy line.
-- The TipTap catalog and overrides are `3.32.0`. `@tiptap/y-tiptap` is `^3.0.10`.
+- The TipTap catalog and overrides are `3.32.2`. `@tiptap/y-tiptap` is `^3.0.10`.
 - Keep all `@tiptap` package versions aligned. Bump them in one change.
 - TipTap 3.32 inserts a zero-size image inside a link. Linked-image checks must ignore `img.ProseMirror-separator`.
 - That tree pins `prosemirror-model` `1.25.12`, `prosemirror-transform` `1.12.2`, and `prosemirror-view` `1.42.6`. `prosemirror-changeset` stays `2.4.1`.
-- `@tiptap/pm` 3.32.0 asks for `prosemirror-changeset` `^2.4.4`. Do not take `2.4.2` or later. It halves `MAX_DIFF_SIZE`.
-- `@sentry/nextjs` and `@sentry/bun` are `11.9.0` in that tree. Load `withSentryConfig` from `@sentry/nextjs/config`.
+- `@tiptap/pm` 3.32.2 asks for `prosemirror-changeset` `^2.4.4`. Do not take `2.4.2` or later. It halves `MAX_DIFF_SIZE`.
+- `@sentry/nextjs` and `@sentry/bun` are `11.10.0` in that tree. Load `withSentryConfig` from `@sentry/nextjs/config`.
 - `disableLogger` is gone. Use `bundleSizeOptimizations.excludeDebugStatements`.
 - `dataCollection` keeps the version 10 baseline. MCP tool text is off. Each app keeps its own `sentryDataCollection.ts`. `genAI` set to false does not cover MCP tool text. Set `mcp` inputs and outputs to false on each copy. Leave stack-frame values on. Version 10 already collected them.
-- Cypress is `16.2.0` in that tree. `Cypress.env()` is gone. Use `Cypress.expose()` for a public value.
+- Cypress is `16.2.1` in that tree. `Cypress.env()` is gone. Use `Cypress.expose()` for a public value.
 - `pele` stays `1.8.0` in hocuspocus and `extension-mermaid`. Do not take `1.9.0` until diagram labels are handled.
 - Pull requests `#534`, `#535`, `#536`, and `#538` are merged. `#539`, `#540`, `#537`, and `#473` wait on this tree. `#364` is set aside.

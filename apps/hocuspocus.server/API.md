@@ -1027,7 +1027,7 @@ An empty `warnings` array does not prove that nothing was lost. The converter dr
 
 ## MCP connector
 
-`/api/mcp` is a Model Context Protocol server (`src/modules/mcp/`). A person adds docs.plus to an AI app as a connector and signs in as themselves. The app's agent then reads and edits that person's documents through the tools below. It uses `@modelcontextprotocol/server` 2.3.1 with `createMcpHandler`. Every request gets a fresh server, so the endpoint holds no session between requests or replicas.
+`/api/mcp` is a Model Context Protocol server (`src/modules/mcp/`). A person adds docs.plus to an AI app as a connector and signs in as themselves. The app's agent then reads and edits that person's documents through the tools below. It uses `@modelcontextprotocol/server` 2.4.0 with `createMcpHandler`. Every request gets a fresh server, so the endpoint holds no session between requests or replicas.
 
 **Supported hosts.** claude.ai, Claude Desktop and ChatGPT add it as a remote connector. Tested against production on 2026-10-20 through dynamic client registration (DCR): Claude Code (sign-in plus all ten tools), Codex and Cursor. Other hosts, such as Copilot CLI, Cline, VS Code, LM Studio and Replit, are not tested yet (#357).
 
