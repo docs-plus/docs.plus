@@ -60,6 +60,9 @@ faces, the roster and the admin member counts fail
 
 ### Changed
 
+- Markdown export, and what an AI app reads, now writes underlined text as `<u>text</u>`. Before,
+  it wrote `++text++`. Markdown import reads only `<u>` now, so older `++text++` comes in as
+  plain text. The change comes from TipTap 3.32.2.
 - Google sign-in now shows "docs.plus" in Google's account chooser, not the Supabase project
   address. Supabase Auth answers on the custom domain `auth.docs.plus`, and Google verified the
   docs.plus brand. A self-hoster can do the same: see

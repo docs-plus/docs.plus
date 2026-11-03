@@ -64,7 +64,8 @@ describe('Markdown Round-Trip Fidelity', () => {
       })
     })
 
-    it('silently drops underline from Markdown output (lossy construct)', () => {
+    // @tiptap/extension-underline 3.32.2 writes `<u>`; 3.32.0 wrote `++text++`.
+    it('writes underline as inline <u> HTML', () => {
       focusEndOfFirstParagraph()
 
       cy.get('.docy_editor').realPress([MOD, 'u'])
@@ -75,8 +76,7 @@ describe('Markdown Round-Trip Fidelity', () => {
 
       cy.window().then((win) => {
         const md = win._getMarkdown?.()
-        expect(md).to.include('underlined')
-        expect(md).to.not.include('<u>')
+        expect(md).to.include('<u>underlined</u>')
       })
     })
   })
