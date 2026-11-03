@@ -163,6 +163,9 @@ faces, the roster and the admin member counts fail
   ([#570](https://github.com/docs-plus/docs.plus/issues/570)).
 - **A crafted page can no longer block the server.** Our old page parser took 28 s on one
   crafted page. The new one took about 50 ms at worst on every crafted input we tried, up to 1 MiB ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- **One collaboration WebSocket message is capped at 16 MiB again.** Bun 1.4.4 raised the
+  limit to 100 MiB, and a larger message now closes the socket with `1009`. Redeploy the backend
+  ([#651](https://github.com/docs-plus/docs.plus/issues/651)).
 - **Error reports no longer carry the `url` query value of a link preview request.** The webapp
   and the server filter it from `GET /api/metadata` and `GET /api/metadata/image` before they send
   a report. Server reports of the preview fetch keep only the host of the linked site, and the
@@ -187,6 +190,9 @@ faces, the roster and the admin member counts fail
 - The root catalog holds `tailwindcss` and `@tailwindcss/postcss` at exactly 4.3.3. Tailwind
   4.3.4 writes a nested `@scope` rule that Lightning CSS rejects, so the webapp CSS failed to
   build with "Invalid empty selector". Lift the pin when a Tailwind release fixes it.
+- CI runs Bun 1.4.4, the version the production images ship. Each deploy's run summary prints
+  the image's Bun beside CI's, and warns when they differ
+  ([#650](https://github.com/docs-plus/docs.plus/issues/650)).
 - `apps/admin-dashboard` and the `packages/` folders that had none now keep their own
   `CHANGELOG.md`, with history back to 2.0.0 where the folder existed.
   [`RELEASE_POLICY.md`](RELEASE_POLICY.md) says which change goes where.

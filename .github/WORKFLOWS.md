@@ -144,7 +144,7 @@ Every scope is on for a `(build):` push, a `workflow_dispatch`, the weekly cron,
 
 - Composite actions: `actions/setup-bun/action.yml`, `actions/setup-cypress/action.yml`, `actions/build-extensions/action.yml`
 - Cache rule for `setup-bun` and `setup-cypress`: pull requests restore only. Other events save once per key. The `--ignore-scripts` install never saves.
-- `setup-bun` pins the Bun version for CI. Bump it by hand. The Docker images stay on `oven/bun:1-slim`.
+- `setup-bun` pins the Bun version for CI. Bump it by hand. The Docker images stay on `oven/bun:1-slim`. After the build, `🥟 Compare image Bun with CI Bun` writes both versions to the run summary and warns when they differ. It never fails a deploy. Then bump `setup-bun` and `lockstep-guard.yml` together (#650).
 - Trigger tokenizer: `.github/scripts/parse-build-trigger.sh`
 - Change-scope classifier: `.github/scripts/detect-change-scopes.sh` (test: `detect-change-scopes.test.sh`)
 - Telegram notifier: `scripts/ci/notify-telegram.sh` (shared by prod deploy, observability, runner-watchdog, chatroom-e2e, and editor-e2e failure steps; never fails the caller)
