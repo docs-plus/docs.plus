@@ -6,7 +6,8 @@
   "type": "module",
   "main": "index.ts",
   "scripts": {
-    "test": "APP_URL=https://docs.plus NEXT_PUBLIC_APP_URL=https://docs.plus bun test"
+    "test": "APP_URL=https://docs.plus NEXT_PUBLIC_APP_URL=https://docs.plus bun test",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "eta": "^4.6.0"
