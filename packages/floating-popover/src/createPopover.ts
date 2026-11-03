@@ -12,6 +12,7 @@ import {
 } from '@floating-ui/dom'
 
 import { getDefaultController, type VirtualCoordinates } from './controller'
+import { focusables } from './focusables'
 
 type PopoverAnchor =
   | { referenceElement: HTMLElement; coordinates?: never }
@@ -94,23 +95,12 @@ function createVirtualReference(coords: VirtualCoordinates): VirtualElement {
   }
 }
 
-const FOCUSABLE_SELECTOR = ['button', '[href]', 'input', 'select', 'textarea', '[tabindex]']
-  .map((part) => `${part}:not([tabindex="-1"])`)
-  .join(', ')
-
-// Skips controls that cannot take focus. Without this, Tab onto a disabled
-// Apply button is a dead end: the key is cancelled and focus() does nothing.
-const canTakeFocus = (el: HTMLElement): boolean =>
-  !el.matches(':disabled') && !el.closest('[inert]') && el.getClientRects().length > 0
-
 // Wraps Tab inside the popover. The cycle is read on each Tab, so a control
 // that renders after open joins it.
 function setupKeyboardNav(root: HTMLElement): () => void {
   const onKeydown = (e: KeyboardEvent) => {
     if (e.key !== 'Tab') return
-    const focusable = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
-      canTakeFocus
-    )
+    const focusable = focusables(root)
     const i = focusable.indexOf(e.target as HTMLElement)
     if (i === -1) return
     e.preventDefault()

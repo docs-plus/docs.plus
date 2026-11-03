@@ -11,3 +11,4 @@ export {
   type VirtualCoordinates
 } from './controller'
 export { createPopover, DEFAULT_OFFSET, type Popover, type PopoverOptions } from './createPopover'
+export { focusables } from './focusables'

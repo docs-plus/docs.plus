@@ -13,6 +13,7 @@ Versioning follows [Semantic Versioning](https://semver.org/) and commits follow
 ### Added
 
 - `PopoverKind` gains the `'hovercard'` literal, for the extension-hyperlink link hovercard.
+- `focusables(root)` returns the controls that Tab visits in a popover, in DOM order. An opener can use it to choose the first focus.
 
 ### Changed
 
