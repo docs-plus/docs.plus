@@ -8,9 +8,20 @@ Pull requests are welcome 🎉. Read [README.md](README.md) for what docs.plus i
 
 ## 🚀 Getting Started
 
-Install Docker, Bun and Node.js first. [README Prerequisites](README.md#-prerequisites) lists the versions, the macOS and Windows notes, and the Bun-only rule.
+Install the tools in [Prerequisites](#-prerequisites) first. Then fork and clone the repository.
 
-- **Git** - [Install](https://git-scm.com/downloads)
+### 📋 Prerequisites
+
+- 🐳 **Docker** and **Docker Compose** v2+ - [Install](https://docs.docker.com/get-docker/)
+  - ⚠️ **macOS on Apple silicon:** Docker Desktop has slow file IO. Use [OrbStack](https://orbstack.dev/) instead. It is a drop-in replacement, and it is faster and lighter.
+- 🚀 **Bun** >=1.4.0 - [Install](https://bun.sh/docs/installation)
+- 📦 **Node.js** >=24.11.0 - [Install](https://nodejs.org/). Next.js and the tooling binaries run on Node.
+- 🔨 **GNU Make** - every `make` command here needs it. macOS installs it with `xcode-select --install`. Most Linux distributions ship it in a build-tools package.
+- 🌱 **Git** - [Install](https://git-scm.com/downloads)
+- 🪟 **Windows:** use WSL2, because the dev workflow uses `make` and `bash`.
+- 🚫 **Bun only:** never run npm, yarn, pnpm or npx in this repository. `bun.lock` is the only lockfile. Never commit `package-lock.json`, `yarn.lock` or `pnpm-lock.yaml`.
+
+You do not need a global Supabase CLI. The repository pins it as a workspace dependency.
 
 ### Fork and Clone
 
@@ -36,7 +47,7 @@ Install Docker, Bun and Node.js first. [README Prerequisites](README.md#-prerequ
    make dev-local
    ```
 
-   URLs, sign-in notes, stop commands and the full-Docker alternative live in the [README Quick Start](README.md#-quick-start).
+   The URLs and the sign-in notes live in the [README section Run the code on your computer](README.md#run-the-code-on-your-computer). To stop or reset the stack, see [Stop and reset](#stop-and-reset). To run every service in containers, see [Full Docker](#full-docker-make-up-dev).
 
 2. **Check the environment** when something is wrong:
 
@@ -48,11 +59,87 @@ Install Docker, Bun and Node.js first. [README Prerequisites](README.md#-prerequ
 
    The port block never fails. It reports a warning when only some ports are in use, and a warning still exits 0. When it warns, read the `In use` line and start any service you still need.
 
-   An idle 3100 is normal. `make dev-local` starts no Admin Dashboard. Start it with `bun run dev:admin` from the [README Command Reference](README.md#-command-reference).
+   An idle 3100 is normal. `make dev-local` starts no Admin Dashboard. Start it with `bun run dev:admin`, as in [Command Reference](#-command-reference).
 
    `bun run doctor` exits 1 only for a real failure. The failing checks are a Bun version below the floor, a missing `docker` or `docker compose`, a stopped Docker daemon, a missing `.env.development`, and a missing `node_modules`.
 
 3. **Fix a port conflict** when `make dev-local` stops at "Infrastructure failed (Postgres/Redis)" while Docker is running. Read the Docker error printed above that line. If port 5432 or 6379 is already allocated or in use, stop the host Postgres or Redis. Or set `DB_PORT` in `.env.local` and change the port in `DATABASE_URL` to match. For Redis, set `REDIS_PORT` instead.
+
+### Stop and reset
+
+**Stop:** `Ctrl+C` stops the app processes · `make infra-down` stops Postgres/Redis · `bun --filter @docs.plus/supabase_back stop` stops Supabase
+
+**Reset the local Supabase database:** `bun --filter @docs.plus/supabase_back reset`
+
+The local stack runs two databases. That command resets the Supabase database on port 54322 only. The Prisma database `docsplus` runs in the container `docsy-postgres-local` on port 5432, and it survives the reset.
+
+### Full Docker (`make up-dev`)
+
+This path runs all services in containers instead of native processes.
+
+Google sign-in is optional. Local Supabase reads the Google keys from `.env.local` when it starts, and this path does not create that file. To keep the keys in that file, do these three steps first. Otherwise, skip to the start commands.
+
+1. Run `make dev-local` once. It creates `.env.development` and `.env.local`.
+2. Wait until it has started the apps, then press `Ctrl+C`. Both stacks use the same ports, such as 3000, 4000 and 5432. So stop its containers and Supabase, from the repository root:
+
+   ```bash
+   make infra-down
+   bun --filter @docs.plus/supabase_back stop
+   ```
+
+3. Add `GOOGLE_CLIENT_ID` and `GOOGLE_SECRET` to `.env.local`. Get both values from the Local stack part of [Turn on Google sign-in](docs/self-hosting/configuration.md#turn-on-google-sign-in).
+
+Then start the stack, from the repository root. Skip the `cp` line when `.env.development` already exists, or it overwrites your edits.
+
+```bash
+bun install
+cp .env.example .env.development
+make up-dev
+bun --filter @docs.plus/supabase_back start
+```
+
+`make up-dev` starts no Supabase. The containers read `SUPABASE_URL: http://host.docker.internal:54321` from the host, so the last command supplies it. That command also opens Supabase Studio at <http://127.0.0.1:54323>.
+
+If you skipped the three steps, you can still turn on Google sign-in. Export the two keys in your shell, then restart Supabase. Run this from the repository root:
+
+```bash
+bun --filter @docs.plus/supabase_back stop
+export GOOGLE_CLIENT_ID=<YOUR_GOOGLE_CLIENT_ID>
+export GOOGLE_SECRET=<YOUR_GOOGLE_SECRET>
+bun --filter @docs.plus/supabase_back start
+```
+
+Get both values from the Local stack part of [Turn on Google sign-in](docs/self-hosting/configuration.md#turn-on-google-sign-in).
+
+**URLs:** see [All local addresses](README.md#run-the-code-on-your-computer) in the README.
+
+### Supabase Cloud for local development
+
+You can use a hosted Supabase project instead of local Supabase. With `make up-dev`, no local Supabase starts. But `docker-compose.dev.yml` fixes `SUPABASE_URL` to local Supabase for the webapp and admin containers. So with Supabase Cloud, use `make dev-local`. `make dev-local` still starts and checks local Supabase, but the apps use the cloud values in `.env.local`.
+
+Put your project values in `.env.development` and in the generated `.env.local`. Run `make dev-local` once before you edit, so it creates `.env.local`. When it creates `.env.local` again, it sets `SUPABASE_URL` back to local Supabase, so set it again.
+
+```bash
+# Server-side (local app processes → Supabase Cloud)
+SUPABASE_URL=https://<PROJECT_REF>.supabase.co
+SUPABASE_ANON_KEY=<SUPABASE_ANON_KEY>
+SUPABASE_SERVICE_ROLE_KEY=<SUPABASE_SERVICE_ROLE_KEY>
+
+# Client-side (browser → Supabase Cloud)
+NEXT_PUBLIC_SUPABASE_URL=https://<PROJECT_REF>.supabase.co
+NEXT_PUBLIC_SUPABASE_WS_URL=wss://<PROJECT_REF>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<SUPABASE_ANON_KEY>
+```
+
+`<PROJECT_REF>`, `<SUPABASE_ANON_KEY>` and `<SUPABASE_SERVICE_ROLE_KEY>` come from **Settings → API** in the Supabase Dashboard.
+
+Then set up the project with the self-hosting pages:
+
+- Extensions and schema: [Install step 2](docs/self-hosting/install.md#2-prepare-supabase).
+- Push notifications, optional: [Turn on push notifications](docs/self-hosting/configuration.md#turn-on-push-notifications). Put the keys in `.env.development` and `.env.local`, not `.env.production`. Then restart the whole stack: stop `make dev-local` and start it again.
+- Site URL and redirect URLs: [Install step 2](docs/self-hosting/install.md#2-prepare-supabase).
+  For local development, set Site URL to `http://localhost:3000` and add `http://localhost:3100/` under Redirect URLs.
+- Admin user: [Make yourself an admin](docs/self-hosting/install.md#10-make-yourself-an-admin).
 
 ### Sign in to the admin dashboard locally
 
@@ -60,6 +147,83 @@ The admin dashboard at <http://localhost:3100> signs in with Google only. Local 
 
 1. Set up the Google keys. Follow the Local stack part of [Turn on Google sign-in](docs/self-hosting/configuration.md#turn-on-google-sign-in).
 2. Sign in to the webapp once with Google, so your user exists. Then add an `admin_users` row for that user. The SQL is in [Make yourself an admin](docs/self-hosting/install.md#10-make-yourself-an-admin). Run it in the SQL editor of local Supabase Studio at <http://127.0.0.1:54323>.
+
+## 📖 Command Reference
+
+```bash
+# Running (local apps on host)
+make dev-local         # Full local stack (bootstraps everything)
+make dev-backend       # Backend only
+make infra-up          # Start Postgres + Redis only
+make infra-down        # Stop Postgres + Redis
+bun --filter @docs.plus/supabase_back stop   # Stop Supabase
+
+# Running (all services in Docker)
+make up-dev            # Development
+make up-prod           # Production
+
+# Building
+make build             # Production images
+make build-dev         # Development images
+
+# Other Bun entrypoints
+bun run dev                                          # Webapp only
+bun run dev:admin                                    # Admin dashboard
+bun run doctor                                       # Environment health check
+
+# Management
+make down              # Stop services (auto-detects env)
+make logs              # All logs (auto-detects env)
+make ps                # Container status
+make clean             # Cleanup + delete volumes (DATA LOSS)
+```
+
+Run `make dev-local` first on a new clone. On the first run it writes `.env.development` from `.env.example`. It then writes `.env.local` from that file, with localhost hostnames and `DATABASE_URL`, because native apps cannot resolve Docker service names. Both files are gitignored. Edit `.env.local` for local changes, such as Google keys. The comments in [.env.example](.env.example) explain each value.
+
+`make infra-up` copies `.env.development` as it is, so an `.env.local` that it creates does not work for native apps. If that happened, delete `.env.local` and run `make dev-local` again.
+
+`make help` lists the day-to-day surface, not every target. It omits `run-prod-backend`, `observability-up`, `observability-down`, `observability-logs` and `observability-pull`. The four `observability-*` targets run on the production droplet. `run-prod-backend` runs the production backend images locally against `.env.local`. Run `bun run` with no arguments for all root scripts.
+
+## 📁 Project Structure
+
+```
+docs.plus/
+├── apps/
+│   ├── webapp/                  # 🌐 Next.js frontend
+│   │   ├── src/
+│   │   │   ├── components/      # React components
+│   │   │   ├── api/             # API clients
+│   │   │   ├── hooks/           # React hooks
+│   │   │   ├── stores/          # State management
+│   │   │   └── utils/           # Utility functions
+│   │   └── cypress/             # E2E tests
+│   ├── hocuspocus.server/       # ⚡ REST API, WebSocket, Workers
+│   │   ├── src/
+│   │   │   ├── api/             # REST API routes & controllers
+│   │   │   ├── lib/             # Shared libraries (email, push, etc.)
+│   │   │   ├── middleware/      # Hono middleware
+│   │   │   └── config/          # Configuration & env schemas
+│   │   └── prisma/              # Prisma schema & migrations
+│   └── admin-dashboard/         # 🖥️ Admin interface (Next.js)
+├── extensions/
+│   └── extension-*/             # 🔌 Publishable @docs.plus Tiptap packages
+├── packages/
+│   ├── document-swarm/          # 🐝 Multi-user demo and load CLI (Playwright)
+│   ├── email-templates/         # ✉️ Email templates and rendering
+│   ├── eslint-config/           # 🧹 Shared ESLint configuration
+│   ├── floating-popover/        # 🎈 Popover lifecycle engine
+│   ├── floating-tooltip/        # 💬 Hover/focus tooltip primitive
+│   ├── playground/              # 🧪 Clean-room Cypress harness
+│   ├── release-tooling/         # 📦 Shared prepack and publish guards
+│   └── supabase/                # 🗄️ Database schema, seed, migrations
+├── .github/workflows/           # 🔄 CI/CD pipelines
+├── docker-compose.dev.yml       # 🐳 Development orchestration
+├── docker-compose.prod.yml      # 🚀 Production orchestration
+├── Makefile                     # 🛠️ Build & deployment commands
+└── .env.example                 # ⚙️ Environment template
+```
+
+Deeper layout lives in `apps/webapp/README.md`, `apps/hocuspocus.server/Readme.md` and each area's `CLAUDE.md`.
 
 ## 🎯 Areas for Contribution
 
@@ -78,7 +242,7 @@ Extension work has its own per-package scoping. That scoping lives in [extension
 
 ## ✏️ Making Changes
 
-The repository layout lives in [README Project Structure](README.md#-project-structure).
+The repository layout lives in [Project Structure](#-project-structure).
 
 ### Project rules (and AI coding agents)
 
@@ -345,7 +509,7 @@ A schema change has three steps. Local Supabase must run for steps 2 and 3.
 
 `packages/supabase/seed.sql` and `apps/webapp/src/types/supabase.ts` are generated output. Never hand-edit either file. Include both regenerated files in the same change.
 
-Other scripts in the package include `start`, `stop`, `status` and `seed`. Run each as `bun --filter @docs.plus/supabase_back <SCRIPT>`. Both `bun --filter` and `bun run --filter` work, so the README form and this form match.
+Other scripts in the package include `start`, `stop`, `status` and `seed`. Run each as `bun --filter @docs.plus/supabase_back <SCRIPT>`. Both `bun --filter` and `bun run --filter` work, so this form and the form in steps 2 and 3 match.
 
 The SQL, migration and RLS rules live in [`packages/supabase/CLAUDE.md`](packages/supabase/CLAUDE.md). Read it before you write SQL.
 
@@ -431,11 +595,7 @@ CI on a fork pull request starts only after a maintainer approves the run. The c
 
 ## 💡 Getting Help
 
-- 💬 **Discord**: [Join our server](https://discord.gg/25JPG38J59) for real-time help
-- 💬 **Questions and ideas**: [GitHub Discussions](https://github.com/docs-plus/docs.plus/discussions)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/docs-plus/docs.plus/issues) for bug reports
-- 🔒 **Security**: See [SECURITY.md](SECURITY.md) for reporting vulnerabilities
-- 📧 **Email**: [contact@newspeak.house](mailto:contact@newspeak.house)
+Every channel, and what each one is for, is in the README's [Community and support](README.md#community-and-support) table. Report a vulnerability through [SECURITY.md](SECURITY.md), never in a public issue.
 
 Ask in Discord before you start a large change. A maintainer can tell you early whether the idea fits.
 

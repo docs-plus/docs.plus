@@ -1,48 +1,80 @@
-# 📚 docs.plus
+<p align="center">
+  <img src="apps/webapp/public/icons/logo.svg" height="72" alt="" />
+</p>
 
-docs.plus is a free, open-source tool for real-time collaborative documents. Every heading in a document has its own chatroom, so a discussion stays next to the section it is about. The table of contents shows who is in each chatroom and how many messages you have not read.
+<h1 align="center">docs.plus</h1>
 
-You can also [use docs.plus from Claude or ChatGPT](docs/mcp/README.md). The AI app reads the documents you can open and edits the ones you own.
+<p align="center"><strong>Get everyone on the same page.</strong></p>
 
-[![Tiptap extensions](https://img.shields.io/badge/Tiptap%20extensions-on%20npm-1a73e8.svg)](https://www.npmjs.com/search?q=keywords:docs.plus)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://github.com/docs-plus/docs.plus/pulls)
-[![Discord](https://img.shields.io/badge/Discord-Join-5865F2.svg?logo=discord&logoColor=white)](https://discord.gg/25JPG38J59)
-[![Supabase](https://img.shields.io/badge/Supabase-Powered-3ECF8E.svg?logo=supabase&logoColor=white)](https://supabase.com)
-[![Bun](https://img.shields.io/badge/Bun-Runtime-000000.svg?logo=bun&logoColor=white)](https://bun.sh)
+<p align="center">
+  Shared documents with a chatroom on every heading.<br />
+  The talk stays next to the text it is about. docs.plus is free and open source.
+</p>
 
+<p align="center">
+  <a href="https://docs.plus"><strong>Try docs.plus</strong></a> ·
+  <a href="https://docs.plus/demo">Demo</a> ·
+  <a href="docs/README.md">Docs</a> ·
+  <a href="docs/self-hosting/README.md">Host it yourself</a> ·
+  <a href="extensions/README.md">Tiptap extensions</a> ·
+  <a href="https://discord.gg/25JPG38J59">Discord</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/docs-plus/docs.plus/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/docs-plus/docs.plus" /></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" /></a>
+</p>
+
+<!-- Hero: recapture both files at the same paths. 1600 px wide, light and dark, signed in as the owner,
+     one heading's chatroom open, counts in the table of contents. No "Read-only" chip and no "Sign in" button. -->
 <a href="https://docs.plus">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset=".github/assets/editor-dark.png" />
-    <img alt="The docs.plus demo document: an outline of headings on the left, each with its own chat button, and the document sheet on the right" src=".github/assets/editor-light.png" />
+    <img alt="Open docs.plus. The docs.plus demo document, with its table of contents on the left and the page on the right." src=".github/assets/editor-light.png" />
   </picture>
 </a>
 
-**[Try it live at docs.plus →](https://docs.plus)**
+## Try it now
 
-**Tech Stack:**
+Open [docs.plus](https://docs.plus) in your browser. There is nothing to install.
 
-- **Runtime**: 🚀 Bun 1.4.0+
-- **Frontend**: ⚛️ Next.js 15 (`apps/webapp`) and Next.js 16 (`apps/admin-dashboard`), React 19, Tiptap 3, Tailwind CSS 4
-- **Backend**: 🔧 Hono, Hocuspocus (Yjs), BullMQ, Prisma ORM
-- **Database**: 🐘 PostgreSQL 17 for the Prisma database in local and dev, 🐘 PostgreSQL 15 for local Supabase, 🔴 Redis
-- **Infrastructure**: 🐳 Docker Compose, Supabase
-- **Real-time**: 🔌 WebSocket (Hocuspocus), Supabase Realtime
+- **[Open a blank document](https://docs.plus/new).** You do not need an account. Write, and paste a link to a video or picture to embed it. Then send the link to your group.
+- **[Take the tour](https://docs.plus/demo).** The demo has a section for each feature. You cannot edit its text, but many sections let you try the feature right there.
+- **[Use it from your AI app](#use-it-from-your-ai-app).** Claude, ChatGPT, Cursor and other MCP apps can work in your documents.
 
-## 📋 Prerequisites
+Sign in with Google or an email link when you need more. You need an account to post, comment or react in a chatroom, and to upload, import or export files. You also need one to restore a version and to connect an AI app. Writing and printing do not need one.
 
-- 🐳 **Docker** & **Docker Compose** v2+ - [Install](https://docs.docker.com/get-docker/)
-  - ⚠️ **macOS Silicon users:** Docker Desktop has IO performance issues. Use [OrbStack](https://orbstack.dev/) instead (drop-in replacement, faster, lighter).
-- 🚀 **Bun** >=1.4.0 - [Install](https://bun.sh/docs/installation)
-- 📦 **Node.js** >=24.11.0 - [Install](https://nodejs.org/) (Next.js and tooling binaries run on Node)
-- 🔨 **GNU Make** - every command below starts with `make`. macOS installs it with `xcode-select --install`; most Linux distributions ship it in a build-tools package.
-- 🌱 **Git** - [Install](https://git-scm.com/downloads)
-- 🪟 **Windows:** use WSL2 — the dev workflow relies on `make` and `bash`
-- 🚫 **Bun only:** never run npm, yarn, pnpm or npx in this repo. `bun.lock` is the only lockfile. Never commit `package-lock.json`, `yarn.lock` or `pnpm-lock.yaml`.
+## What you get
 
-No global Supabase CLI needed — the repo pins it as a workspace dependency.
+**A chatroom on every heading.** Ask a question under a section, and the answer stays with that section. Nobody has to guess which part you meant. On desktop, select a passage to comment on it, and the comment posts in that heading's chatroom. Reply in thread turns a message into a new heading. [Open a chatroom in the demo](https://docs.plus/demo/notifications).
 
-## 🚀 Quick Start
+**Find the busy sections.** The table of contents shows a message count beside each heading with messages. Sign in, and each count shows only what you have not read. On desktop, faces show who has each chatroom open, and you can drag a row to move its whole section. Drag it sideways to change its level. [Try it in the demo](https://docs.plus/demo/invisible).
+
+**Send the exact view you mean.** Filter a document by a word, and it folds to the sections that contain it. The filter is part of the link, so you can send that view to someone. Here is [the demo, filtered to "spotify"](https://docs.plus/demo/spotify).
+
+**Public by default, on purpose.** A new document is public, and anyone with the link can read and edit it. We kept this rule from Etherpad, where docs.plus began. Sign in before you first click into, type in or open chat in a new document, and it becomes yours. As the owner, you can make it Private or Read-only. A document you start signed out has no owner, so nobody can make it Private later.
+
+**Catch up on what changed.** Open a document while signed in, and you follow it. Turn on email in Settings, and a digest shows what others changed, with the added and removed words under each heading. History lets you compare any two versions and restore one. [Compare versions in the demo](https://docs.plus/demo/versions).
+
+### Use it from your AI app
+
+Connect Claude, ChatGPT, Claude Code, Codex, Cursor, VS Code or any app that supports remote MCP. The app signs in as you, and it reads only the documents and chatrooms you can open. It can create documents, but it edits and posts chat only in documents you own. It never edits or removes an existing heading, and it never removes media. History marks each version an AI app wrote. [Set up your AI app](https://docs.plus/mcp) · [How to connect](docs/mcp/README.md)
+
+### Also inside
+
+| Write                                   | Share and keep                                   | On any device                                        |
+| --------------------------------------- | ------------------------------------------------ | ---------------------------------------------------- |
+| Live co-editing with presence           | Import `.docx` and `.md`                         | A phone layout, with the chatroom below the document |
+| Mermaid diagrams drawn in the document  | Print or save as PDF, with no account            | Install it from the browser                          |
+| Pictures, video, YouTube, Loom and more | Voice notes, reactions and mentions in chatrooms | Push and email alerts, with Quiet hours              |
+
+## Host it yourself
+
+docs.plus is MIT-licensed, and you can run it on your own server. It needs Docker, outside services such as Supabase and S3-compatible storage, and a paid license key for the chat list. Read [Self-hosting](docs/self-hosting/README.md) for the full list, then follow [Install](docs/self-hosting/install.md).
+
+## Run the code on your computer
+
+This path is for trying the code and for contributing. It is not a production setup. Install the [Prerequisites](CONTRIBUTING.md#-prerequisites) first.
 
 ```bash
 git clone https://github.com/docs-plus/docs.plus.git
@@ -50,234 +82,29 @@ cd docs.plus
 make dev-local
 ```
 
-One command bootstraps everything: env files from `.env.example`, dependencies, Postgres + Redis containers, local Supabase (schema and seed apply automatically), Prisma migrations, editor-extension builds. It then starts the REST API, WebSocket server, worker, and webapp. The first run downloads Docker images and takes several minutes. Later runs start in seconds.
+`make dev-local` sets up everything. It creates env files, installs dependencies, and starts PostgreSQL, Redis and a local Supabase. Then it starts the REST API, the WebSocket server, the worker and the webapp.
 
-If the first run stops, see [Development Setup](CONTRIBUTING.md#-development-setup) in the contributing guide. It owns the environment health check and what to do when a check fails.
+> [!NOTE]
+> The first run downloads Docker images and takes several minutes. Later runs skip the downloads and start faster.
 
-**URLs:** webapp <http://localhost:3000> · API <http://localhost:4000> · WS `ws://localhost:4001` · Supabase Studio <http://127.0.0.1:54323> · local email inbox <http://127.0.0.1:54324>
-
-**Sign-in:** enter any email address. No real mail leaves your machine. Open the sign-in link in the local inbox at <http://127.0.0.1:54324>. Google sign-in is optional locally. To set it up, see the Local stack part of [Turn on Google sign-in](docs/self-hosting/configuration.md#turn-on-google-sign-in).
-
-**Stop:** `Ctrl+C` stops the app processes · `make infra-down` stops Postgres/Redis · `bun --filter @docs.plus/supabase_back stop` stops Supabase
-
-**Reset the local Supabase database:** `bun --filter @docs.plus/supabase_back reset`
-
-The local stack runs two databases. That command resets the Supabase database on port 54322 only. The Prisma database `docsplus` runs in the container `docsy-postgres-local` on port 5432, and it survives the reset.
-
-## 📖 Documentation
-
-Full documentation lives in [`docs/`](docs/README.md).
-
-| I want to                            | Read                                                                                    |
-| ------------------------------------ | --------------------------------------------------------------------------------------- |
-| Run docs.plus on my own server       | [Self-hosting](docs/self-hosting/README.md) → [Install](docs/self-hosting/install.md)   |
-| Call the API from my code            | [API overview](docs/api/README.md) → [Quickstart](docs/api/quickstart.md)               |
-| Use docs.plus from Claude or ChatGPT | [How to connect](docs/mcp/README.md) → [MCP connector reference](docs/mcp/reference.md) |
-| Change the code                      | [CONTRIBUTING.md](CONTRIBUTING.md)                                                      |
-| Understand a past decision           | [Decision records](docs/README.md#decision-records)                                     |
+Then open <http://localhost:3000>. Sign in with a real email address: its domain must accept mail, so you need a network connection. Open the sign-in link in the local inbox at <http://127.0.0.1:54324>. No real mail leaves your machine. Google sign-in is optional; see [Turn on Google sign-in](docs/self-hosting/configuration.md#turn-on-google-sign-in).
 
 <details>
-<summary><strong>🐳 Alternative: full Docker (`make up-dev`)</strong></summary>
+<summary>All local addresses</summary>
 
-All services in containers instead of native processes.
-
-Google sign-in is optional. Local Supabase reads the Google keys from `.env.local` when it starts, and this path does not create that file. To keep the keys in that file, do these three steps first. Otherwise, skip to the start commands.
-
-1. Run `make dev-local` once. It creates `.env.development` and `.env.local`.
-2. Wait until it has started the apps, then press `Ctrl+C`. Both stacks use the same ports, such as 3000, 4000 and 5432. So stop its containers and Supabase, from the repository root:
-
-   ```bash
-   make infra-down
-   bun --filter @docs.plus/supabase_back stop
-   ```
-
-3. Add `GOOGLE_CLIENT_ID` and `GOOGLE_SECRET` to `.env.local`. Get both values from the Local stack part of [Turn on Google sign-in](docs/self-hosting/configuration.md#turn-on-google-sign-in).
-
-Then start the stack, from the repository root. Skip the `cp` line when `.env.development` already exists, or it overwrites your edits.
-
-```bash
-bun install
-cp .env.example .env.development
-make up-dev
-bun --filter @docs.plus/supabase_back start
-```
-
-`make up-dev` starts no Supabase. The containers read `SUPABASE_URL: http://host.docker.internal:54321` from the host, so the last command supplies it. That command also opens Supabase Studio at <http://127.0.0.1:54323>.
-
-If you skipped the three steps, you can still turn on Google sign-in. Export the two keys in your shell, then restart Supabase. Run this from the repository root:
-
-```bash
-bun --filter @docs.plus/supabase_back stop
-export GOOGLE_CLIENT_ID=<YOUR_GOOGLE_CLIENT_ID>
-export GOOGLE_SECRET=<YOUR_GOOGLE_SECRET>
-bun --filter @docs.plus/supabase_back start
-```
-
-Get both values from the Local stack part of [Turn on Google sign-in](docs/self-hosting/configuration.md#turn-on-google-sign-in).
-
-**URLs:** webapp <http://localhost:3000> · API <http://localhost:4000> · WS `ws://localhost:4001` · Studio <http://127.0.0.1:54323>
+- Webapp: <http://localhost:3000>
+- REST API: <http://localhost:4000>
+- WebSocket server: `ws://localhost:4001`
+- Supabase Studio: <http://127.0.0.1:54323>
+- Local email inbox: <http://127.0.0.1:54324>
 
 </details>
 
-<details>
-<summary><strong>☁️ Alternative: Supabase Cloud instead of local Supabase</strong></summary>
+If the first run stops, see [Development Setup](CONTRIBUTING.md#-development-setup). It covers the health check, stop and reset, the full-Docker path and Supabase Cloud.
 
-Use a hosted Supabase project instead of the local stack.
+## Tiptap extensions
 
-With `make up-dev`, no local Supabase starts. `make dev-local` still starts and checks local Supabase, but the apps use the cloud values in `.env.local`.
-
-**Step 1: Create a Supabase project** 🚀
-
-1. Go to the [Supabase Dashboard](https://supabase.com/dashboard)
-2. Create a new project
-3. Copy your project URL and keys from **Settings → API**
-
-**Step 2: Update environment variables** ⚙️
-
-Update `.env.development` (and the generated `.env.local`) with your cloud project credentials:
-
-```bash
-# Server-side (containers → Supabase Cloud)
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key-here
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-
-# Client-side (browser → Supabase Cloud)
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_WS_URL=wss://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-```
-
-**Step 3: Apply schema and extensions** 📊
-
-- Activate **pg_cron** and **pgmq (Queues)** in the Dashboard's Integrations page
-- Run the SQL from `packages/supabase/scripts/` in numbered order via the SQL Editor. Run `00-bootstrap.sql` first: it creates the extensions and the `internal` schema the later scripts depend on. Skip `idea.sql`, `cleanup-orphan-chat-media.sql` and `30-seed-car-conversation.sql`. They are not schema. See [Install step 2](docs/self-hosting/install.md#2-prepare-supabase).
-
-**Step 4: Configure push notifications (optional)** 🔔
-
-```env
-VAPID_PUBLIC_KEY=your-vapid-public-key
-VAPID_PRIVATE_KEY=your-vapid-private-key
-VAPID_SUBJECT=mailto:support@yourdomain.com
-NEXT_PUBLIC_VAPID_PUBLIC_KEY=your-vapid-public-key
-```
-
-Set `NEXT_PUBLIC_VAPID_PUBLIC_KEY` to the same value as `VAPID_PUBLIC_KEY`. It is a build value, so restart or rebuild the webapp after you set it.
-
-Generate VAPID keys: `bunx web-push generate-vapid-keys`. Architecture notes: `packages/supabase/scripts/07-4-push-notifications-pgmq.sql`.
-
-**Step 5: Configure OAuth redirect URLs** 🔐
-
-Go to **Authentication → URL Configuration** in the Supabase Dashboard and add your **Redirect URLs**:
-
-```
-https://yourdomain.com
-https://yourdomain.com/*
-https://admin.yourdomain.com
-https://admin.yourdomain.com/*
-```
-
-**Step 6: Add admin users** 👤
-
-Only users in the `admin_users` table can access the admin dashboard:
-
-```sql
-INSERT INTO public.admin_users (user_id, created_at)
-SELECT id, now() FROM auth.users WHERE email = 'your-admin@example.com';
-```
-
-</details>
-
-## ⚙️ Environment Files
-
-| Docker Compose File        | Environment File   | Usage                                            |
-| -------------------------- | ------------------ | ------------------------------------------------ |
-| `docker-compose.prod.yml`  | `.env.production`  | Production deployment                            |
-| `docker-compose.dev.yml`   | `.env.development` | Docker development (all services in containers)  |
-| `docker-compose.local.yml` | `.env.local`       | Local development (infra in Docker, apps native) |
-
-Two more compose files sit outside this table. `make run-prod-backend` layers `docker-compose.backend-local.override.yml` over the production file with `.env.local`. `docker-compose.observability.yml` runs on the production droplet only.
-
-`make dev-local` creates both dev files on first run. It writes `.env.development` from `.env.example`, then `.env.local` from it with localhost hostnames and `DATABASE_URL` applied. Native apps can't resolve Docker service names. Both are gitignored — edit `.env.local` for local customizations like Google OAuth keys. Details live in the comments of [.env.example](.env.example).
-
-## 📖 Command Reference
-
-```bash
-# Running (local apps on host)
-make dev-local         # Full local stack (bootstraps everything)
-make dev-backend       # Backend only
-make infra-up          # Start Postgres + Redis only
-make infra-down        # Stop Postgres + Redis
-bun --filter @docs.plus/supabase_back stop   # Stop Supabase
-
-# Running (all services in Docker)
-make up-dev            # Development
-make up-prod           # Production
-
-# Building
-make build             # Production images
-make build-dev         # Development images
-
-# Other Bun entrypoints
-bun run dev                                          # Webapp only
-bun run dev:admin                                    # Admin dashboard
-bun run doctor                                       # Environment health check
-
-# Management
-make down              # Stop services (auto-detects env)
-make logs              # All logs (auto-detects env)
-make ps                # Container status
-make clean             # Cleanup + delete volumes (DATA LOSS)
-```
-
-Run `make dev-local` first on a new clone. It writes `.env.local` with localhost values and `DATABASE_URL`. `make infra-up` copies `.env.development` as it is, so an `.env.local` that it creates does not work for native apps. If that happened, delete `.env.local` and run `make dev-local` again.
-
-`make help` lists the day-to-day surface, not every target. It omits `run-prod-backend`, `observability-up`, `observability-down`, `observability-logs` and `observability-pull`. The four `observability-*` targets run on the production droplet. `run-prod-backend` runs the production backend images locally against `.env.local`. Run `bun run` with no arguments for all root scripts.
-
-## 📁 Project Structure
-
-```
-docs.plus/
-├── apps/
-│   ├── webapp/                  # 🌐 Next.js frontend
-│   │   ├── src/
-│   │   │   ├── components/      # React components
-│   │   │   ├── api/             # API clients
-│   │   │   ├── hooks/           # React hooks
-│   │   │   ├── stores/          # State management
-│   │   │   └── utils/           # Utility functions
-│   │   └── cypress/             # E2E tests
-│   ├── hocuspocus.server/       # ⚡ REST API, WebSocket, Workers
-│   │   ├── src/
-│   │   │   ├── api/             # REST API routes & controllers
-│   │   │   ├── lib/             # Shared libraries (email, push, etc.)
-│   │   │   ├── middleware/      # Hono middleware
-│   │   │   └── config/          # Configuration & env schemas
-│   │   └── prisma/              # Prisma schema & migrations
-│   └── admin-dashboard/         # 🖥️ Admin interface (Next.js)
-├── extensions/
-│   └── extension-*/             # 🔌 Publishable @docs.plus Tiptap packages
-├── packages/
-│   ├── document-swarm/          # 🐝 Multi-user demo and load CLI (Playwright)
-│   ├── email-templates/         # ✉️ Email templates and rendering
-│   ├── eslint-config/           # 🧹 Shared ESLint configuration
-│   ├── floating-popover/        # 🎈 Popover lifecycle engine
-│   ├── floating-tooltip/        # 💬 Hover/focus tooltip primitive
-│   ├── playground/              # 🧪 Clean-room Cypress harness
-│   ├── release-tooling/         # 📦 Shared prepack and publish guards
-│   └── supabase/                # 🗄️ Database schema, seed, migrations
-├── .github/workflows/           # 🔄 CI/CD pipelines
-├── docker-compose.dev.yml       # 🐳 Development orchestration
-├── docker-compose.prod.yml      # 🚀 Production orchestration
-├── Makefile                     # 🛠️ Build & deployment commands
-└── .env.example                 # ⚙️ Environment template
-```
-
-Deeper layout lives in `apps/webapp/README.md`, `apps/hocuspocus.server/Readme.md` and each area's `CLAUDE.md`.
-
-## 🔌 Tiptap Extensions
-
-Open-source [Tiptap](https://tiptap.dev) extensions power the docs.plus editor. The table below describes the source in this repository. All of them share one version and release together. A published version can still lag this source, so check each package's `CHANGELOG.md` before you pin one.
+The editor parts we build are open too. We publish six MIT [Tiptap](https://tiptap.dev) extensions on npm, and docs.plus runs on them in production. [Choose an extension](extensions/README.md#choose-an-extension), or see them all [on npm](https://www.npmjs.com/org/docs.plus).
 
 ```sh
 npm install @docs.plus/extension-hyperlink
@@ -285,101 +112,53 @@ npm install @docs.plus/extension-hyperlink
 
 Or use `pnpm add`, `yarn add`, or `bun add` with the same package name.
 
-| Package                                                              | Description                                                                                   |
-| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [`extension-hyperlink`](extensions/extension-hyperlink/)             | Hyperlink mark, autolink, optional prebuilt popovers, dangerous-scheme gate                   |
-| [`extension-hypermultimedia`](extensions/extension-hypermultimedia/) | Nine media nodes: image, audio, video, YouTube, Vimeo, SoundCloud, Spotify, X, Loom           |
-| [`extension-indent`](extensions/extension-indent/)                   | Tab / Shift-Tab literal indent with a context allowlist                                       |
-| [`extension-inline-code`](extensions/extension-inline-code/)         | Inline code mark (`Mod-e`, backtick rules)                                                    |
-| [`extension-mermaid`](extensions/extension-mermaid/)                 | Mermaid diagram preview for `codeBlock`, drawn by Pele                                        |
-| [`extension-placeholder`](extensions/extension-placeholder/)         | Hint text in the empty textblock at the cursor; cost tracks cursor depth, not document length |
+## Documentation
 
-Install notes, recommended pairings, and contributing: [extensions/README.md](extensions/README.md). Release policy: [RELEASE_POLICY.md](RELEASE_POLICY.md).
+Full documentation lives in [`docs/`](docs/README.md).
 
-## 🤝 Contributing
+| I want to                            | Read                                                                                            |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| Call the API from my code            | [API overview](docs/api/README.md), then [Quickstart](docs/api/quickstart.md)                   |
+| Use docs.plus from Claude or ChatGPT | [How to connect](docs/mcp/README.md), then the [MCP connector reference](docs/mcp/reference.md) |
+| See what changed in each release     | [CHANGELOG.md](CHANGELOG.md) · [Releases](https://github.com/docs-plus/docs.plus/releases)      |
+| See what is planned                  | [Roadmap](docs/roadmap/README.md)                                                               |
+| Add a docs.plus badge to my README   | [Badges](docs/badges.md)                                                                        |
 
-PRs welcome! See [contributing guidelines](CONTRIBUTING.md) for details.
+## Contributing
+
+We are a small team, and every pull request helps. A typo fix is as welcome as a new feature. Start with the [contributing guide](CONTRIBUTING.md), and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 **First contribution? Start here:**
 
+- Run `make dev-local` from a clean clone. Then tell us where it was hard, in [#149](https://github.com/docs-plus/docs.plus/issues/149). Your notes make the first run easier for the next person.
 - Pick an issue labeled [good first issue](https://github.com/docs-plus/docs.plus/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22) or [help wanted](https://github.com/docs-plus/docs.plus/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22help%20wanted%22).
-- Run the quality gate before opening a PR — the commands are in [CONTRIBUTING.md](CONTRIBUTING.md#-code-style).
-- Use our issue and PR templates to speed up review.
+- Planning a large change? Ask in Discord first, so we can tell you early whether the idea fits.
 
-## 🚀 Production Deployment
+## Community and support
 
-**Read [Self-hosting](docs/self-hosting/README.md) first, then follow [Install](docs/self-hosting/install.md).** That is the full path, and it covers four steps this page used to omit: creating the external Docker network, running the migration as its own step, editing the five hard-coded Traefik hostnames, and the three template values that are wrong for a server.
+| Channel                                                                  | Best for                                                             |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| [Discord](https://discord.gg/25JPG38J59)                                 | Chat with the team and other users                                   |
+| [GitHub Discussions](https://github.com/docs-plus/docs.plus/discussions) | Questions and ideas                                                  |
+| [GitHub Issues](https://github.com/docs-plus/docs.plus/issues)           | Bugs and feature requests                                            |
+| [X: @docsdotplus](https://x.com/docsdotplus)                             | Follow the project                                                   |
+| [contact@newspeak.house](mailto:contact@newspeak.house)                  | Anything else                                                        |
+| [SECURITY.md](SECURITY.md)                                               | A security problem. Do not report it in a public issue or on Discord |
 
-You must supply your own PostgreSQL, Supabase project, object storage, email sender, and domain. The compose file provides none of them.
+docs.plus is free to use, and a small team keeps it running. If it helps you, you can support us on [Patreon](https://www.patreon.com/docsplus).
 
-**Architecture:** Traefik v3 terminates TLS with Let's Encrypt and load-balances. The REST API, collaboration server, worker, and webapp each run two replicas; the admin dashboard runs one. Deploys are best-effort rolling, not true zero-downtime.
+The hosted service at docs.plus has a [Privacy policy](https://docs.plus/privacy) and [Terms](https://docs.plus/terms).
 
-**Scaling.** No compose file reads a replica environment variable. Two Make targets apply fixed counts:
+## Our story
 
-```bash
-make scale-webapp        # webapp=3
-make scale-hocuspocus    # rest-api=3, hocuspocus-server=5, hocuspocus-worker=3
-```
+docs.plus began as a fork of [Etherpad](https://github.com/ether/etherpad). We changed it to fit our needs, with plugins for section filtering, video chat on each heading and a mobile view. The idea of a chatroom on every heading comes from those years.
 
-`scale-hocuspocus` raises all three backend processes at once, so check your Postgres `max_connections` first. The [backend docs](apps/hocuspocus.server/Readme.md#scaling-character) advise scaling them independently. Both targets run `up -d --scale` without `--no-recreate`, so a changed config or `DEPLOY_TAG` recreates the serving replicas. Read [Scaling past the defaults](docs/self-hosting/configuration.md#scaling-past-the-defaults) first.
+Etherpad struggled when many people worked in one long document, for example a hundred people at once. So in September 2022, after our last Etherpad-based tag, `v1.8.18`, we started again on [Tiptap](https://tiptap.dev), [ProseMirror](https://prosemirror.net) and [Yjs](https://yjs.dev). We owe a lot to Etherpad and its contributors, and we thank them.
 
-For any other count, edit `deploy.replicas` in `docker-compose.prod.yml`.
+docs.plus is a free and open-source project by [Newspeak House](https://newspeak.house), seed funded by Grant for the Web and Nesta. Hossein Marzban ([HMarzban](https://github.com/HMarzban)) maintains it.
 
-## 🎨 Badges
+**Built with** Bun, Next.js, React, Hono, Hocuspocus, Supabase, PostgreSQL and Redis. [Pele](https://pele.run) draws the Mermaid diagrams.
 
-Add a badge to your README and link it to [docs.plus](https://docs.plus).
+## License
 
-### Variants
-
-| Style         | Size      | Preview                                                                  | File                               |
-| ------------- | --------- | ------------------------------------------------------------------------ | ---------------------------------- |
-| Default       | 85×20     | ![docs.plus](apps/webapp/public/badges/badge-docsplus.svg)               | `badge-docsplus.svg`               |
-| Light         | 85×20     | ![docs.plus](apps/webapp/public/badges/badge-docsplus-light.svg)         | `badge-docsplus-light.svg`         |
-| Dark          | 85×20     | ![docs.plus](apps/webapp/public/badges/badge-docsplus-dark.svg)          | `badge-docsplus-dark.svg`          |
-| Flat-square   | 85×20     | ![docs.plus](apps/webapp/public/badges/badge-docsplus-flat-square.svg)   | `badge-docsplus-flat-square.svg`   |
-| For-the-badge | 130.25×28 | ![docs.plus](apps/webapp/public/badges/badge-docsplus-for-the-badge.svg) | `badge-docsplus-for-the-badge.svg` |
-
-Light and dark match the default.
-
-### Usage
-
-**Markdown:**
-
-```markdown
-[![docs.plus](https://docs.plus/badges/badge-docsplus.svg)](https://docs.plus)
-```
-
-**HTML:**
-
-```html
-<a href="https://docs.plus">
-  <picture>
-    <source
-      media="(prefers-color-scheme: dark)"
-      srcset="https://docs.plus/badges/badge-docsplus-dark.svg" />
-    <img alt="docs.plus" height="20" src="https://docs.plus/badges/badge-docsplus.svg" />
-  </picture>
-</a>
-```
-
-Set `height="28"` on `badge-docsplus-for-the-badge.svg`.
-
-## 📄 License
-
-MIT License - See [LICENSE](LICENSE)
-
-## 💬 Support
-
-- 💬 **Discord**: [Join our server](https://discord.gg/25JPG38J59)
-- 💬 **Questions and ideas**: [GitHub Discussions](https://github.com/docs-plus/docs.plus/discussions)
-- 🐦 **Twitter**: [@docsdotplus](https://twitter.com/docsdotplus)
-- 🐙 **GitHub**: [docs.plus](https://github.com/docs-plus/docs.plus)
-- 📧 **Email**: [contact@newspeak.house](mailto:contact@newspeak.house)
-- 🔒 **Security**: see [SECURITY.md](SECURITY.md). Do not report in a public issue or on Discord.
-- 🤝 **Conduct**: [Code of Conduct](CODE_OF_CONDUCT.md)
-- Privacy: <https://docs.plus/privacy>
-- Terms: <https://docs.plus/terms>
-
----
-
-<a href="https://patreon.com/docsplus"><img src="https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Ddocsplus%26type%3Dpatrons&style=for-the-badge" /></a>
+[MIT](LICENSE) © 2023-2026 Hossein Marzban

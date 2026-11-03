@@ -12,7 +12,7 @@ This page lists requirements, and how to back up and restore your data. For what
 
 ## What runs on your server
 
-Eight containers. The compose file starts them all.
+Eight services. Four of them run two replicas. The compose file starts them all.
 
 | Container           | Job                                                       |
 | ------------------- | --------------------------------------------------------- |
@@ -24,6 +24,8 @@ Eight containers. The compose file starts them all.
 | `hocuspocus-worker` | Saves documents, sends email and push                     |
 | `webapp`            | The editor people use                                     |
 | `admin-dashboard`   | Operator screens                                          |
+
+Traefik ends TLS with Let's Encrypt certificates and balances load across replicas. The REST API, collaboration socket, worker and webapp each run two replicas. The admin dashboard runs one. Traefik routes only to healthy containers. The upgrade in [Install](install.md#upgrade-to-a-new-release) recreates all replicas at once, so expect a short outage. Only an `up --no-recreate --scale` keeps the old replicas serving. To change the counts, see [Scaling past the defaults](configuration.md#scaling-past-the-defaults).
 
 **The worker is not optional.** It owns document persistence. Without it, saves sit in Redis and expire after an hour. A running worker is part of the definition of "up".
 

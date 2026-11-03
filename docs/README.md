@@ -51,6 +51,7 @@ The full route-by-route contract is [`apps/hocuspocus.server/API.md`](../apps/ho
 | [CONTEXT.md](../CONTEXT.md)                                       | The domain glossary: what each term in this project means                                                                         |
 | [apps/hocuspocus.server/ENV.md](../apps/hocuspocus.server/ENV.md) | Every backend environment variable, its type, and its default                                                                     |
 | [RUNBOOK-backend.md](RUNBOOK-backend.md)                          | What to do when a backend alert pages you                                                                                         |
+| [badges.md](badges.md)                                            | A docs.plus badge for your own README, in five styles                                                                             |
 
 ## Roadmap
 

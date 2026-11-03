@@ -1,6 +1,6 @@
 # `@docs.plus/extension-*` family
 
-Six publishable Tiptap extensions for [docs.plus](https://docs.plus). The six packages share one version under the `@docs.plus` npm scope, and they release together. `extension-mermaid` is not on npm yet; it publishes with the next family release. [Release policy](#release-policy) explains how.
+Six publishable Tiptap extensions for [docs.plus](https://docs.plus). The six packages share one version under the `@docs.plus` npm scope, and they release together. [Release policy](#release-policy) explains how.
 
 ## Choose an extension
 

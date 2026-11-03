@@ -148,6 +148,17 @@ Replica counts live in `docker-compose.prod.yml`. Raising them is not uniform, b
 
 The short version: the REST API scales fully. The collaboration socket gains connection capacity, but not document capacity. The worker costs twice the database connections of the other two.
 
+Two Make targets apply fixed counts. Run them at the repository root.
+
+```bash
+make scale-webapp        # webapp=3
+make scale-hocuspocus    # rest-api=3, hocuspocus-server=5, hocuspocus-worker=3
+```
+
+`scale-hocuspocus` raises all three backend processes at once. Both targets run `up -d --scale` without `--no-recreate`. So a changed config or `DEPLOY_TAG` also recreates the serving replicas.
+
+For any other count, edit `deploy.replicas` in `docker-compose.prod.yml`.
+
 Next step: read [`apps/hocuspocus.server/Readme.md`](../../apps/hocuspocus.server/Readme.md#scaling-character) before raising any count.
 
 ## When a value is wrong
