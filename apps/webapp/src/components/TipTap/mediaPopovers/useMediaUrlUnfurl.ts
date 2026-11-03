@@ -1,12 +1,8 @@
 import { useEffect, useState } from 'react'
 
-import {
-  fetchMetadata,
-  getCachedMetadata,
-  metadataImageUrl,
-  type MetadataResponse
-} from '../hyperlinkPopovers/fetchMetadata'
+import { fetchMetadata, getCachedMetadata } from '../hyperlinkPopovers/fetchMetadata'
 import { hostnameOf } from '../hyperlinkPopovers/linkMarkUtils'
+import type { LinkCard } from '../hyperlinkPopovers/types'
 
 export type MediaUnfurlStatus = 'idle' | 'loading' | 'loaded' | 'error'
 
@@ -24,11 +20,10 @@ export interface UseMediaUrlUnfurlResult {
 const DEBOUNCE_MS = 400
 const IDLE: UseMediaUrlUnfurlResult = { status: 'idle', data: null }
 
-// The thumbnail loads through our server with the page URL, so the provider never sees the reader.
-const project = (url: string, data: MetadataResponse): MediaUnfurl => ({
-  thumbnail: metadataImageUrl(url, data),
-  title: data.title,
-  hostname: hostnameOf(data.url)
+const project = (card: LinkCard): MediaUnfurl => ({
+  thumbnail: card.image?.url,
+  title: card.title,
+  hostname: hostnameOf(card.url)
 })
 
 /**
@@ -55,7 +50,7 @@ export function useMediaUrlUnfurl(url: string, enabled: boolean): UseMediaUrlUnf
         if (controller.signal.aborted) return
         setFetched(
           data
-            ? { url, status: 'loaded', data: project(url, data) }
+            ? { url, status: 'loaded', data: project(data) }
             : { url, status: 'error', data: null }
         )
       })
@@ -69,6 +64,6 @@ export function useMediaUrlUnfurl(url: string, enabled: boolean): UseMediaUrlUnf
 
   if (!active) return IDLE
   if (own) return own
-  if (cached) return { status: 'loaded', data: project(url, cached) }
+  if (cached) return { status: 'loaded', data: project(cached) }
   return { status: cached === null ? 'error' : 'loading', data: null }
 }

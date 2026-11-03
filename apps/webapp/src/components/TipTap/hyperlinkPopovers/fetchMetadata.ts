@@ -2,7 +2,9 @@ import { normalizeHref } from '@docs.plus/extension-hyperlink'
 import { apiBaseUrl } from '@utils/apiBaseUrl'
 import { isWebHref } from '@utils/link-helpers'
 
-export interface MetadataResponse {
+import type { LinkCard } from './types'
+
+interface MetadataResponse {
   success: true
   url: string
   title: string
@@ -17,14 +19,14 @@ interface ErrorResponse {
 type ApiResponse = MetadataResponse | ErrorResponse
 
 interface CacheEntry {
-  data: MetadataResponse | null
+  data: LinkCard | null
   expiresAt: number
 }
 
 const CACHE_TTL_MS = 5 * 60 * 1000
 const REQUEST_TIMEOUT_MS = 15_000
 const sessionCache = new Map<string, CacheEntry>()
-const inFlight = new Map<string, Promise<MetadataResponse | null>>()
+const inFlight = new Map<string, Promise<LinkCard | null>>()
 
 /**
  * One string is both the cache key and the `?url=` value. The fragment never changes the
@@ -41,7 +43,7 @@ const metadataKey = (href: string): string | null => {
   }
 }
 
-const readEntry = (key: string): MetadataResponse | null | undefined => {
+const readEntry = (key: string): LinkCard | null | undefined => {
   const entry = sessionCache.get(key)
   if (!entry) return undefined
   if (Date.now() > entry.expiresAt) {
@@ -51,36 +53,36 @@ const readEntry = (key: string): MetadataResponse | null | undefined => {
   return entry.data
 }
 
-const remember = (key: string, data: MetadataResponse | null): MetadataResponse | null => {
+const remember = (key: string, data: LinkCard | null): LinkCard | null => {
   sessionCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS })
   return data
 }
 
 /** `undefined` = not loaded yet, `null` = no card for this href, data = hit. Never fetches. */
-export const getCachedMetadata = (href: string): MetadataResponse | null | undefined => {
+export const getCachedMetadata = (href: string): LinkCard | null | undefined => {
   const key = metadataKey(href)
   return key === null ? null : readEntry(key)
 }
 
 /**
- * The page image through our server, so the linked site never sees the reader. The server
- * keeps only http(s) image URLs. `undefined` when the card has no image.
+ * The page image goes through our server, so the linked site never sees the reader. The
+ * server keeps only http(s) image URLs. Field by field, so the raw image URL is never kept.
  */
-export const metadataImageUrl = (
-  href: string,
-  data: { image?: { url: string } }
-): string | undefined => {
-  const key = metadataKey(href)
-  if (!data.image?.url || key === null) return undefined
-  return `${apiBaseUrl()}/metadata/image?url=${encodeURIComponent(key)}`
-}
+const toLinkCard = (key: string, data: MetadataResponse): LinkCard => ({
+  url: data.url,
+  title: data.title,
+  description: data.description,
+  image: data.image?.url
+    ? { url: `${apiBaseUrl()}/metadata/image?url=${encodeURIComponent(key)}` }
+    : undefined
+})
 
 /**
  * Only a 400 or a `success: false` body is cached as null: those answers will not change.
  * A 429, a 5xx (Traefik can send 502/503), a timeout or a network error is not cached,
  * so the next open asks again.
  */
-const request = async (key: string): Promise<MetadataResponse | null> => {
+const request = async (key: string): Promise<LinkCard | null> => {
   try {
     const response = await fetch(`${apiBaseUrl()}/metadata?url=${encodeURIComponent(key)}`, {
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
@@ -91,7 +93,7 @@ const request = async (key: string): Promise<MetadataResponse | null> => {
       return null
     }
     const data: ApiResponse = await response.json()
-    return remember(key, data.success ? data : null)
+    return remember(key, data.success ? toLinkCard(key, data) : null)
   } catch (error) {
     console.error('Error fetching metadata:', error)
     return null
@@ -102,7 +104,7 @@ const request = async (key: string): Promise<MetadataResponse | null> => {
  * Callers of one URL share one request, and none of them can abort it. So a hover that
  * leaves still fills the cache for the click that follows. Each caller drops its own late result.
  */
-export const fetchMetadata = (href: string): Promise<MetadataResponse | null> => {
+export const fetchMetadata = (href: string): Promise<LinkCard | null> => {
   const key = metadataKey(href)
   if (key === null) return Promise.resolve(null)
   const cached = readEntry(key)

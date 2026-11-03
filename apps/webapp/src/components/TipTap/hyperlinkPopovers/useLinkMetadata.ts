@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 
-import { fetchMetadata, getCachedMetadata, type MetadataResponse } from './fetchMetadata'
+import { fetchMetadata, getCachedMetadata } from './fetchMetadata'
+import type { LinkCard } from './types'
 
 export type LinkMetadataStatus = 'loading' | 'loaded' | 'error'
 
 export interface UseLinkMetadataResult {
   status: LinkMetadataStatus
-  data: MetadataResponse | null
+  data: LinkCard | null
 }
 
 /**
