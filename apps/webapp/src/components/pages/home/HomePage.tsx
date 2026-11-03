@@ -173,7 +173,7 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
                 </p>
                 <p>
                   Seed funded by{' '}
-                  <TextLink href="https://www.grantfortheweb.org">Grant for Web</TextLink> &{' '}
+                  <TextLink href="https://www.grantfortheweb.org">Grant for the Web</TextLink> &{' '}
                   <TextLink href="https://www.nesta.org.uk">Nesta</TextLink>
                 </p>
               </div>
