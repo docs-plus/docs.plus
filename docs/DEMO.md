@@ -354,6 +354,25 @@ When a link's text names one site but the link opens another, the card warns you
 
 On mobile the card is a bottom sheet instead. Its four rows are Open link, Copy link, Edit link and Remove link. The first two work with no sign-in — try it here.
 
+## Paste a link, get its name
+
+Copy a web address, paste it into a document, and the link takes **the page's title** in place of the long address — needs a document you can edit. The address shows at once, and the title replaces it when our server answers, usually within a second. Paste [https://github.com/docs-plus/docs.plus](https://github.com/docs-plus/docs.plus) into a page from [/new](/new) to see it.
+
+One undo brings the address back, and a second removes the paste. ⌘+⇧+V (Ctrl+Shift+V) pastes the address as it is. A file link takes its file name and format, so the sample PDF above reads `dummy.pdf`. A link to a docs.plus page keeps its address, and so does a link pasted in a chatroom.
+
+A title can never pose as another site. A page titled `paypal.com` that lives anywhere else keeps its address.
+
+Settings › Appearance › **Use page titles for pasted links** turns it off — needs an account.
+
+## Built on an open extension
+
+The hover cards and the pasted titles both come from [`@docs.plus/extension-hyperlink`](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hyperlink), our open-source Tiptap extension. Any Tiptap editor can use them, and both stay off until a developer turns them on.
+
+- `hovercard` takes your own preview service. It brings the timing, the keys and the card frame, and you can draw your own card inside it. Guide: [Hovercard](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/hovercard.md).
+- `pasteTitle` takes your own title service. It brings the undo step, the raw paste and the title cleaning. Guide: [Paste title](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/paste-title.md).
+
+Both ship in the next npm release of the extension.
+
 ## Addresses that are not web pages
 
 A `mailto:` or `tel:` link has no page to fetch. The address becomes the title, and the icon names the kind. The pad maps **40 schemes** this way: mail, phone, maps, video calls, and app links.
