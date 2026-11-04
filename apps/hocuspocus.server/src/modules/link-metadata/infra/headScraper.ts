@@ -1,6 +1,7 @@
 import { decodeHTML } from 'entities'
 
 import type { Scraper } from '../domain/types'
+import { jobPostingFacts } from './jobPosting'
 
 // Every captured value stops here, before any decode, JSON or regex work.
 const VALUE_CAP = 4096
@@ -47,16 +48,39 @@ const attrsOf = (el: HTMLRewriterTypes.Element): Attrs => {
   return attrs
 }
 
+/** JSON-LD script text, under the script and char caps. One per HTMLRewriter pass. */
+const jsonLdCapture = () => {
+  const scripts: string[] = []
+  let script: string | undefined
+  let chars = 0
+  return {
+    scripts,
+    /** For a `script[type="application/ld+json"]` that can have content. */
+    open: (el: HTMLRewriterTypes.Element) => {
+      if (scripts.length >= JSON_LD_SCRIPTS) return
+      script = ''
+      el.onEndTag(() => {
+        if (script !== undefined) scripts.push(script)
+        script = undefined
+      })
+    },
+    text: (chunk: string) => {
+      if (script !== undefined && chars < JSON_LD_CAP) {
+        script += chunk
+        chars += chunk.length
+      }
+    }
+  }
+}
+
 /**
  * One pass over the head with one element handler and one document-level text handler.
- * `readHead` cuts at `</head`, so a `<title>` the cut left open settles at the end.
+ * `readPage` cuts at `</head`, so a `<title>` the cut left open settles at the end.
  */
 const collect = (html: string) => {
   const elements: Element[] = []
   const counts = new Map<string, number>()
-  const jsonLd: string[] = []
-  let jsonLdChars = 0
-  let script: string | undefined
+  const jsonLd = jsonLdCapture()
   let title: string | undefined
   let titleBuffer: string | undefined
   let htmlLang: string | undefined
@@ -86,17 +110,7 @@ const collect = (html: string) => {
       titleBuffer = ''
       el.onEndTag(settleTitle)
     }
-    if (
-      tag === 'script' &&
-      el.getAttribute('type') === 'application/ld+json' &&
-      jsonLd.length < JSON_LD_SCRIPTS
-    ) {
-      script = ''
-      el.onEndTag(() => {
-        if (script !== undefined) jsonLd.push(script)
-        script = undefined
-      })
-    }
+    if (tag === 'script' && el.getAttribute('type') === 'application/ld+json') jsonLd.open(el)
   }
 
   new HTMLRewriter()
@@ -105,37 +119,39 @@ const collect = (html: string) => {
         if (titleBuffer !== undefined && titleBuffer.length < VALUE_CAP) {
           titleBuffer = clip(titleBuffer + chunk.text)
         }
-        if (script !== undefined && jsonLdChars < JSON_LD_CAP) {
-          script += chunk.text
-          jsonLdChars += chunk.text.length
-        }
+        jsonLd.text(chunk.text)
       }
     })
     .on(ELEMENT_SELECTOR, { element: onElement })
     .transform(html)
 
   settleTitle()
-  return { elements, title, jsonLd, htmlLang }
+  return { elements, title, jsonLd: jsonLd.scripts, htmlLang }
 }
+
+/** Each script's parsed value, top-level arrays included. Bad JSON is skipped. */
+const parseRoots = (scripts: string[]): Json[] =>
+  scripts.flatMap((text) => {
+    try {
+      return [JSON.parse(text) as Json]
+    } catch {
+      return []
+    }
+  })
 
 /**
  * metascraper's `$jsonld` collection: `@graph` items flattened with the outer props. Items and
  * copied outer keys are capped, because the copy multiplies one by the other.
  */
-const parseJsonLd = (scripts: string[]): Json[] =>
-  scripts.flatMap((text) => {
-    try {
-      const json = JSON.parse(text) as Record<string, Json>
-      if (!json || typeof json !== 'object') return []
-      const { '@graph': graph, ...rest } = json
-      const props = Object.fromEntries(Object.entries(rest).slice(0, OUTER_KEYS))
-      if (Array.isArray(graph)) {
-        return graph.slice(0, GRAPH_ITEMS).map((item) => ({ ...props, ...(item as object) }))
-      }
-      return [graph ? props : json]
-    } catch {
-      return []
+const jsonLdItems = (roots: Json[]): Json[] =>
+  roots.flatMap((json) => {
+    if (!json || typeof json !== 'object') return []
+    const { '@graph': graph, ...rest } = json as Record<string, Json>
+    const props = Object.fromEntries(Object.entries(rest).slice(0, OUTER_KEYS))
+    if (Array.isArray(graph)) {
+      return graph.slice(0, GRAPH_ITEMS).map((item) => ({ ...props, ...(item as object) }))
     }
+    return [graph ? props : json]
   })
 
 const getPath = (data: Json, path: string[]): Json => {
@@ -290,13 +306,14 @@ const indexElements = (elements: Element[]) => {
 
 /**
  * The html stage's page parser. It reads metascraper's head and JSON-LD rules in metascraper's
- * order, in one HTMLRewriter pass. It reads no body rule (h1 titles, page images, body logos,
- * bylines), because the head cut would make them depend on the network. It keeps the page's quotes.
+ * order, in one HTMLRewriter pass. `jobFacts` reads the body for JobPosting facts only; no other
+ * body rule runs (h1 titles, page images, logos, bylines), so the card fields stay head-only.
  */
 export const createHeadScraper = (): Scraper => ({
   scrape: async ({ html, url }) => {
     const { elements, title: titleText, jsonLd, htmlLang } = collect(html)
-    const items = parseJsonLd(jsonLd)
+    const roots = parseRoots(jsonLd)
+    const items = jsonLdItems(roots)
     const index = indexElements(elements)
     const budget: Budget = { nodes: SEARCH_NODES }
 
@@ -413,6 +430,22 @@ export const createHeadScraper = (): Scraper => ({
       () => toLang(htmlLang)
     )
 
-    return { title, description, image, logo, author, publisher, date, lang }
+    const facts = jobPostingFacts(roots, new Date())
+
+    return { title, description, image, logo, author, publisher, date, lang, facts }
+  },
+
+  // The one rule that reads past `</head`, with one narrow selector.
+  jobFacts: (body) => {
+    const jsonLd = jsonLdCapture()
+    new HTMLRewriter()
+      .on('script[type="application/ld+json"]', {
+        element: (el) => {
+          if (el.canHaveContent) jsonLd.open(el)
+        },
+        text: (chunk) => jsonLd.text(chunk.text)
+      })
+      .transform(body)
+    return jobPostingFacts(parseRoots(jsonLd.scripts), new Date())
   }
 })

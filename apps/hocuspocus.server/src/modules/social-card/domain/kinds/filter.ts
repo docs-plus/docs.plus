@@ -1,6 +1,7 @@
 import { padUrlCore } from '@docs.plus/pad-url'
 import { container } from '@takumi-rs/helpers'
 
+import { plural } from '../../../../lib/cardText'
 import { type IsDrawable, usableLine } from '../eligibility'
 import { cutLine, fitHead, HEAD_LINE, LADDER, widthOf } from '../fit'
 import {
@@ -13,7 +14,6 @@ import {
   mixOklab,
   muted,
   over,
-  plural,
   read,
   row,
   T

@@ -1,5 +1,6 @@
 import { safeFetch } from '../../ssrf'
 import { BOT_USER_AGENT, type StageResult } from '../../types'
+import { readApiJson } from './readApiJson'
 
 export const matchesReddit = (host: string, path: string): boolean =>
   /(^|\.)reddit\.com$/.test(host) && /^\/r\/[^/]+\/comments\//.test(path)
@@ -20,23 +21,25 @@ interface RedditListing {
 
 export const runReddit = async (
   canonicalUrl: string,
-  signal: AbortSignal
+  hop: AbortController
 ): Promise<StageResult> => {
   let jsonUrl: string
   try {
     const u = new URL(canonicalUrl)
     if (!u.pathname.endsWith('.json')) u.pathname += '.json'
+    // The card reads the post only. One comment keeps the body under the API byte cap.
+    u.searchParams.set('limit', '1')
     jsonUrl = u.toString()
   } catch {
     return null
   }
   const response = await safeFetch(jsonUrl, {
-    signal,
+    signal: hop.signal,
     headers: { Accept: 'application/json', 'User-Agent': BOT_USER_AGENT }
   })
   if (!response.ok) return null
-  const listings = (await response.json()) as RedditListing[]
-  const post = listings[0]?.data?.children?.[0]?.data
+  const listings = await readApiJson<RedditListing[]>(response, hop)
+  const post = Array.isArray(listings) ? listings[0]?.data?.children?.[0]?.data : undefined
   if (!post?.title) return null
 
   const validThumbnail =

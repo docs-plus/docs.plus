@@ -10,6 +10,18 @@ const scrape = (head: string, body = '') =>
   })
 
 describe('createHeadScraper', () => {
+  test('jobFacts reads JobPosting facts from body JSON-LD only', () => {
+    const ld = (value: unknown) =>
+      `<script type="application/ld+json">${JSON.stringify(value)}</script>`
+    const body = `</head><body><p>${ld({ '@type': 'Article' })}</p>${ld({
+      '@type': 'JobPosting',
+      headline: 'Body headline',
+      employmentType: 'PART_TIME'
+    })}`
+    expect(createHeadScraper().jobFacts(body)).toEqual([{ icon: 'work', text: 'Part-time' }])
+    expect(createHeadScraper().jobFacts('<body><p>no posting</p>')).toBeUndefined()
+  })
+
   test('follows metascraper rule order: og:title, then twitter:title, then <title>, then JSON-LD', async () => {
     expect((await scrape('<title>T</title><meta property="og:title" content="OG">')).title).toBe(
       'OG'

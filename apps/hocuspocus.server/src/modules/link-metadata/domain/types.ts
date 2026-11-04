@@ -1,3 +1,25 @@
+/** The extension draws one glyph per name, so the list is closed. */
+export const FACT_ICONS = [
+  'location',
+  'work',
+  'posted',
+  'stars',
+  'language',
+  'updated',
+  'answers',
+  'accepted'
+] as const
+
+export type FactIcon = (typeof FACT_ICONS)[number]
+
+export interface Fact {
+  icon: FactIcon
+  text: string
+}
+
+// A card with no kind is a plain page.
+export const LINK_KINDS = ['repo'] as const
+
 /**
  * The wire contract (response side). The request side lives in http/schema.ts.
  * Additive changes only within v1; breaking changes mint a new path.
@@ -28,6 +50,11 @@ export interface MetadataResponse {
   }
   published_at?: string
   modified_at?: string
+  kind?: (typeof LINK_KINDS)[number]
+  /** At most three. */
+  facts?: Fact[]
+  /** Every stage missed, and the card names the host only. */
+  fallback?: true
   cached: boolean
   fetched_at: string
 }
@@ -38,13 +65,34 @@ export interface ErrorResponse {
   code: 'INVALID_URL' | 'BLOCKED_URL'
 }
 
-export type StageResult = Omit<MetadataResponse, 'cached' | 'fetched_at'> | null
+export type StageResult = Omit<MetadataResponse, 'cached' | 'fetched_at' | 'fallback'> | null
 
 /** Why the html stage missed. It goes to the `stages` log field only, never to the response. */
 export type HtmlMiss = 'status:4xx' | 'status:5xx' | 'no-title' | 'timeout' | 'error'
 
-/** A Redis entry. `fallback` marks a negative write, so a hit keeps the short header. */
-export type CacheEntry = NonNullable<StageResult> & { fallback?: true }
+/**
+ * A special-stage API miss that may clear soon. The card that follows is cached for the
+ * short TTL only, so a rate limit never pins a card without its facts for 24 h.
+ */
+export type SpecialMiss = 'rate-limit' | 'status:5xx' | 'timeout' | 'error'
+
+/** A card the html stage built after a late or failed body read, so it gets the short TTL. */
+export type HtmlCard = NonNullable<StageResult> & { retry?: true }
+
+/**
+ * A Redis entry. `fallback` and `retry` mark a short-TTL write, so a hit keeps the short
+ * header. `retry` never reaches the wire.
+ */
+export type CacheEntry = NonNullable<StageResult> & { fallback?: true; retry?: true }
+
+/**
+ * Optional API credentials. Without them GitHub allows 60 calls an hour and Stack Exchange
+ * 300 a day, per address. The GitHub token must reach public repositories only.
+ */
+export interface ApiKeys {
+  githubToken: string | null
+  stackExchangeKey: string | null
+}
 
 /**
  * Relayed bytes, an icon or a page image. `type` comes from the sniffed bytes, never the
@@ -63,6 +111,7 @@ export interface Cache {
 }
 
 export interface Scraper {
+  /** `html` is the head only. */
   scrape(input: { html: string; url: string }): Promise<{
     title?: string
     description?: string
@@ -72,7 +121,10 @@ export interface Scraper {
     author?: string
     date?: string
     lang?: string
+    facts?: Fact[]
   }>
+  /** JobPosting facts from the JSON-LD scripts in `body`, the bytes after the head. */
+  jobFacts(body: string): Fact[] | undefined
 }
 
 /** Per-stage timeouts. One home so the stages and their tests agree. */
@@ -81,6 +133,9 @@ export const STAGE_TIMEOUT_MS = {
   special: 3_000,
   html: 8_000
 } as const
+
+/** A repo answer is about 7 KB and a question about 1 KB. A larger body is a miss, unparsed. */
+export const API_BODY_MAX_BYTES = 64 * 1024
 
 /**
  * Every outbound call names docs.plus and nothing else. Never add another crawler's

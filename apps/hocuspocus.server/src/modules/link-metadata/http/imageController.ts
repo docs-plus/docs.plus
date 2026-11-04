@@ -46,6 +46,8 @@ export const createImageController = (deps: ControllerDeps) => {
     })
     const src = result.kind === 'success' ? result.payload.image?.url : undefined
     if (!src) return miss()
+    // A card built after a rate limit may name another image once the API answers again.
+    const retry = result.kind === 'success' && result.retry
 
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), IMAGE_TIMEOUT_MS)
@@ -54,7 +56,7 @@ export const createImageController = (deps: ControllerDeps) => {
       if (isMiss(image)) return miss()
       return c.body(image.bytes, 200, {
         'Content-Type': image.type,
-        'Cache-Control': HIT_CACHE_HEADER
+        'Cache-Control': retry ? MISS_CACHE_HEADER : HIT_CACHE_HEADER
       })
     } catch {
       return miss()

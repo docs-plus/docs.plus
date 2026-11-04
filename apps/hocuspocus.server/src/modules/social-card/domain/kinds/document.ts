@@ -1,16 +1,7 @@
+import { plural } from '../../../../lib/cardText'
 import { type IsDrawable, usableLine } from '../eligibility'
 import { fitHead, HEAD_LINE, LADDER } from '../fit'
-import {
-  BODY_H,
-  cardFrame,
-  CONTENT_W,
-  HEAD_EXTRA,
-  LINE_H,
-  muted,
-  plural,
-  T,
-  titleNode
-} from '../frame'
+import { BODY_H, cardFrame, CONTENT_W, HEAD_EXTRA, LINE_H, muted, T, titleNode } from '../frame'
 import {
   altSentences,
   type BlockLine,

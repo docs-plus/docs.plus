@@ -27,7 +27,9 @@ const ok = (title: string): NonNullable<StageResult> => ({
   title
 })
 
-const noopScraper: Scraper = { scrape: async () => ({}) }
+const noopScraper: Scraper = { scrape: async () => ({}), jobFacts: () => undefined }
+// The html stage never returns null; a miss is a reason string.
+const noHtml = async () => 'no-title' as const
 
 describe('runPipeline', () => {
   test('rejects unparseable URL with INVALID_URL', async () => {
@@ -36,7 +38,7 @@ describe('runPipeline', () => {
       acceptLanguage: undefined,
       cache: fakeCache(),
       scraper: noopScraper,
-      stages: { oembed: async () => null, special: async () => null, html: async () => null }
+      stages: { oembed: async () => null, special: async () => null, html: noHtml }
     })
     expect(result.kind).toBe('error')
     if (result.kind === 'error') expect(result.code).toBe('INVALID_URL')
@@ -48,7 +50,7 @@ describe('runPipeline', () => {
       acceptLanguage: undefined,
       cache: fakeCache(),
       scraper: noopScraper,
-      stages: { oembed: async () => null, special: async () => null, html: async () => null }
+      stages: { oembed: async () => null, special: async () => null, html: noHtml }
     })
     expect(result.kind).toBe('error')
     if (result.kind === 'error') expect(result.code).toBe('BLOCKED_URL')
@@ -67,7 +69,7 @@ describe('runPipeline', () => {
       acceptLanguage: 'en',
       cache: cache2,
       scraper: noopScraper,
-      stages: { oembed, special: async () => null, html: async () => null }
+      stages: { oembed, special: async () => null, html: noHtml }
     })
 
     expect(result.kind).toBe('success')
@@ -126,7 +128,7 @@ describe('runPipeline', () => {
       acceptLanguage: 'en',
       cache,
       scraper: noopScraper,
-      stages: { oembed: async () => null, special: async () => null, html: async () => null }
+      stages: { oembed: async () => null, special: async () => null, html: noHtml }
     })
 
     expect(result.kind).toBe('success')
@@ -144,7 +146,7 @@ describe('runPipeline', () => {
       acceptLanguage: 'en',
       cache,
       scraper: noopScraper,
-      stages: { oembed: async () => null, special: async () => null, html: async () => null }
+      stages: { oembed: async () => null, special: async () => null, html: noHtml }
     })
 
     expect(result.kind).toBe('success')
@@ -188,6 +190,86 @@ describe('runPipeline', () => {
     expect(result.payload.requested_url).toBe('https://example.com/?utm_source=x')
   })
 
+  test('keeps at most three known facts, cut, and a known kind', async () => {
+    const cache = fakeCache()
+    const html = mock(async () => ({
+      ...ok('T'),
+      kind: 'video' as never,
+      // Untrusted shapes on purpose: capCard must drop what the contract does not allow.
+      facts: [
+        { icon: 'stars', text: '' },
+        { icon: 'unknown' as never, text: 'x' },
+        { icon: 'location', text: 'L'.repeat(500) },
+        { icon: 'work', text: 'Full-time' },
+        { icon: 'posted', text: 'Posted Oct 31' },
+        { icon: 'answers', text: '4 answers' }
+      ] as never
+    }))
+    const result = await runPipeline({
+      requestedUrl: 'https://example.com/',
+      acceptLanguage: 'en',
+      cache,
+      scraper: noopScraper,
+      stages: { oembed: async () => null, special: async () => null, html }
+    })
+    if (result.kind !== 'success') throw new Error('expected success')
+    expect(result.payload.kind).toBeUndefined()
+    expect(result.payload.facts?.map((fact) => fact.icon)).toEqual(['location', 'work', 'posted'])
+    expect([...(result.payload.facts?.[0]?.text ?? '')]).toHaveLength(65)
+  })
+
+  test('a special-stage miss that may clear soon caches the next card for the short TTL', async () => {
+    const { cacheKey, CACHE_TTL_NEGATIVE_SECONDS } = await import('../../domain/stages/cache')
+    const cache = fakeCache()
+    const events: StageEvent[] = []
+    const run = () =>
+      runPipeline({
+        requestedUrl: 'https://github.com/docs-plus/docs.plus',
+        acceptLanguage: 'en',
+        cache,
+        scraper: noopScraper,
+        stages: {
+          oembed: async () => null,
+          special: async () => 'rate-limit' as const,
+          html: async () => ok('scraped')
+        },
+        onStage: (e) => events.push(e)
+      })
+
+    const first = await run()
+    expect(first).toMatchObject({ kind: 'success', fallback: false, retry: true })
+    expect(cache.lastTtl).toBe(CACHE_TTL_NEGATIVE_SECONDS)
+    expect(events.find((e) => e.stage === 'special')).toMatchObject({
+      hit: false,
+      reason: 'rate-limit'
+    })
+    const stored = await cache.get(cacheKey('https://github.com/docs-plus/docs.plus', 'en'))
+    expect(stored?.retry).toBe(true)
+
+    const again = await run()
+    expect(again).toMatchObject({ kind: 'success', fromCache: true, retry: true })
+    if (again.kind === 'success') expect('retry' in again.payload).toBe(false)
+  })
+
+  test('an html card built from a cut body read gets the short TTL, and no marker leaves', async () => {
+    const { CACHE_TTL_NEGATIVE_SECONDS } = await import('../../domain/stages/cache')
+    const cache = fakeCache()
+    const result = await runPipeline({
+      requestedUrl: 'https://jobs.lever.co/acme/1',
+      acceptLanguage: 'en',
+      cache,
+      scraper: noopScraper,
+      stages: {
+        oembed: async () => null,
+        special: async () => null,
+        html: async () => ({ ...ok('Job'), retry: true as const })
+      }
+    })
+    expect(result).toMatchObject({ kind: 'success', retry: true })
+    expect(cache.lastTtl).toBe(CACHE_TTL_NEGATIVE_SECONDS)
+    if (result.kind === 'success') expect('retry' in result.payload).toBe(false)
+  })
+
   test('treats stage throws as misses and continues to fallback', async () => {
     const cache = fakeCache()
     const oembed = mock(async (): Promise<StageResult> => {
@@ -198,7 +280,7 @@ describe('runPipeline', () => {
       acceptLanguage: 'en',
       cache,
       scraper: noopScraper,
-      stages: { oembed, special: async () => null, html: async () => null }
+      stages: { oembed, special: async () => null, html: noHtml }
     })
     expect(result.kind).toBe('success')
     if (result.kind === 'success') expect(result.payload.title).toBe('example.com')
@@ -212,7 +294,7 @@ describe('runPipeline', () => {
       acceptLanguage: 'en',
       cache: fakeCache(),
       scraper: noopScraper,
-      stages: { oembed: async () => null, special: async () => null, html: async () => null },
+      stages: { oembed: async () => null, special: async () => null, html: noHtml },
       onStage: (e) => events.push({ stage: e.stage, hit: e.hit })
     })
     expect(events.map((e) => e.stage)).toEqual(['oembed', 'special', 'html', 'fallback'])

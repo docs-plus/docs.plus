@@ -90,7 +90,7 @@ const blocksIn = (nodes: PmNode[], start: number, end: number): StoredBlock[] =>
   return blocks
 }
 
-const tocIdOf = (node: PmNode): string | null => {
+export const tocIdOf = (node: PmNode): string | null => {
   const id = node.attrs?.[TOC_ID_ATTR]
   return typeof id === 'string' && id.length > 0 ? id : null
 }
@@ -157,7 +157,8 @@ const boundedOutline = (outline: StoredOutline): StoredOutline | null => {
   return fits(bare) ? bare : null
 }
 
-const topNodes = (json: unknown): PmNode[] => {
+/** The root's child nodes, objects only. */
+export const topNodes = (json: unknown): PmNode[] => {
   const root = json as { content?: unknown } | null
   return (Array.isArray(root?.content) ? root.content : []).filter(
     (node): node is PmNode => typeof node === 'object' && node !== null

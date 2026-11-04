@@ -86,7 +86,8 @@ const fetchCorpus = async (dir: string) => {
       scrape: async (input) => {
         captured = input
         return { title: 'captured' }
-      }
+      },
+      jobFacts: () => undefined
     }
     const result = await runHtmlScrape(requested, capture, 'en')
     if (!captured) {
@@ -130,6 +131,7 @@ type AttackRow = {
   inputBytes: number
   runs: number
   medianMs: number
+  runMs: number[]
 }
 
 // For an even count this takes the lower middle value.
@@ -144,9 +146,16 @@ const quantile = (values: number[], q: number) => {
 const ms = (ns: number) => Number((ns / 1e6).toFixed(3))
 const round = (value: number, digits: number) => Number(value.toFixed(digits))
 
-const timeOnce = async (scraper: Scraper, html: string, url: string) => {
+// Split as `readPage` does: the head pass reads up to `</head`, the JSON-LD tail pass the rest.
+// The tail is not cut to the production 256 KiB, so its time is an upper bound.
+const timeOnce = async (scraper: Scraper, page: string, url: string) => {
+  const at = page.toLowerCase().indexOf('</head')
+  const html = at === -1 ? page : page.slice(0, at)
+  const body = at === -1 ? undefined : page.slice(at)
   const start = Bun.nanoseconds()
+  // Production reads the tail only on a job URL with no head posting; timing both is the worst case.
   await scraper.scrape({ html, url })
+  if (body !== undefined) scraper.jobFacts(body)
   return Bun.nanoseconds() - start
 }
 
@@ -260,7 +269,34 @@ const VECTORS: Record<string, (n: number) => string> = {
   'flood: <article>': (n) => page('', '<article>'.repeat(n)),
   'flood: <img src>': (n) => page('', '<img src>'.repeat(n)),
   'flood: <i itemprop>': (n) => page('', '<i itemprop>'.repeat(n)),
-  'flood: <i class=logo>': (n) => page('', '<i class=logo>'.repeat(n))
+  'flood: <i class=logo>': (n) => page('', '<i class=logo>'.repeat(n)),
+  'body: huge JSON-LD script': (n) =>
+    page('', ldJson({ '@type': 'JobPosting', d: 'w '.repeat(n) })),
+  'body: deep JSON-LD nesting': (n) =>
+    page('', `<script type="application/ld+json">${'['.repeat(n)}${']'.repeat(n)}</script>`),
+  'body: many JSON-LD scripts': (n) => page('', ldJson({ '@type': 'JobPosting' }).repeat(n)),
+  'body: empty JSON-LD flood': (n) =>
+    page('', '<script type="application/ld+json"></script>'.repeat(n)),
+  'body: JobPosting long lists': (n) =>
+    page(
+      '',
+      ldJson({
+        '@type': 'JobPosting',
+        jobLocationType: 'TELECOMMUTE',
+        applicantLocationRequirements: Array.from({ length: n }, () => ({ name: 'C' })),
+        employmentType: Array.from({ length: n }, () => 'FULL_TIME')
+      })
+    ),
+  'body: @graph of JobPostings': (n) =>
+    page(
+      '',
+      ldJson({
+        '@graph': Array.from({ length: n }, () => ({
+          '@type': 'JobPosting',
+          jobLocation: { address: { addressLocality: 'X', addressCountry: 'DE' } }
+        }))
+      })
+    )
 }
 const SIZES = [16, 64, 128, 256, 1024].map((k) => k * 1024)
 // An input that took this long at one size is not run at the next, larger size.
@@ -302,10 +338,13 @@ const attack = async (dir: string) => {
         targetBytes: target,
         inputBytes: Buffer.byteLength(html),
         runs: runs.length,
-        medianMs: ms(median(runs))
+        medianMs: ms(median(runs)),
+        runMs: runs.map(ms)
       }
       rows.push(row)
-      console.log(`${name.padEnd(36)} ${String(row.inputBytes).padStart(8)} B  ${row.medianMs} ms`)
+      console.log(
+        `${name.padEnd(36)} ${String(row.inputBytes).padStart(8)} B  ${row.medianMs} ms  [${row.runMs.join(', ')}]`
+      )
       if (row.medianMs > STOP_MS || name === 'valid JSON-LD block under the cap') break
     }
   }
@@ -324,7 +363,8 @@ const attack = async (dir: string) => {
     targetBytes: 64 * 1024,
     inputBytes: iconHead.length,
     runs: iconRuns.length,
-    medianMs: ms(median(iconRuns))
+    medianMs: ms(median(iconRuns)),
+    runMs: iconRuns.map(ms)
   })
   console.log(`pickIconHref crafted head ${iconHead.length} B  ${ms(median(iconRuns))} ms`)
 

@@ -30,7 +30,7 @@ interface MessageFacts {
 /** A chat room the anon read found. `headingId` null is the pad's own room. */
 export interface ChatFacts {
   headingId: string | null
-  /** Live messages counted, up to 10. */
+  /** Live messages, notices included, up to 10. */
   count: number
   /** Present only when the link names a message and the read found it. */
   message: MessageFacts | null

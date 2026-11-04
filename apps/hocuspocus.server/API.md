@@ -191,6 +191,40 @@ The `403` body is `{ success: false, error: { code: 'FORBIDDEN', message }, acce
 
 **Social card.** Next sends `card=1` on a full page load, never on a client-side `x-nextjs-data` read. With `card=1`, and when a kind in `SOCIAL_CARD_KINDS` can draw the pad, the reply carries `card: { query, title, alt, path }`. The page head points `og:image` at [`card.png`](#get-apidocumentsdocumentidcardpng) with `query`. The pad link's own sub-ids (`id`, `chatroom` as `c`, `msg_id` as `m`, filter terms as `t`, `mode`, `version`) pass through the same way. Without `card=1`, the reply has no `card` field and the server makes no card read. The stored card data never leaves REST.
 
+### GET /api/documents/:docName/hovercard
+
+Answers the docs.plus link card for one pad, by slug. It never synthesizes a draft. Auth is `optionalPadReader`, like the slug read. Every reply sends `Cache-Control: private, no-store`, because the answer depends on the reader.
+
+| Query      | Meaning                                                                         |
+| ---------- | ------------------------------------------------------------------------------- |
+| `id`       | A heading toc-id.                                                               |
+| `chatroom` | A heading toc-id or a channel id.                                               |
+| `msg_id`   | A message uuid. Read only with `chatroom`.                                      |
+| `terms`    | One filter term per key, as in the pad URL path. At most 8, 60 characters each. |
+| `mode`     | `and` or `or`. A missing value is `or`, as in the app.                          |
+| `version`  | An integer of 1 or more.                                                        |
+| `history`  | `1`.                                                                            |
+
+Every key is optional, and a key with a bad shape is ignored. The kind order is the app's: version, history, filter, message, chat, heading, then pad.
+
+| Document                   | Viewer                                         | Result                                              |
+| -------------------------- | ---------------------------------------------- | --------------------------------------------------- |
+| Unknown or soft-deleted    | anyone                                         | `404` — `NOT_FOUND`                                 |
+| Private                    | not the owner, signed out, or Auth unreachable | `200` — `{ success: true, data: { locked: true } }` |
+| Private (owner), or public | anyone allowed                                 | `200` — one of the kinds below                      |
+
+- `{ kind: 'pad', title, sections, total }`: `sections` holds the first two section titles from the stored card data.
+- `{ kind: 'heading', padTitle, title, trail, subsections, lines, messages? }`
+- `{ kind: 'chat', padTitle, heading, trail, messages, lastMessageAt? }`
+- `{ kind: 'message', padTitle, heading, trail, sentAt, replies, reactions }`
+- `{ kind: 'filter', padTitle, terms, mode, shown, shownCount, total }`
+- `{ kind: 'version', padTitle, version, name?, savedAt, sectionsChanged?, wordsAdded?, wordsRemoved? }`
+- `{ kind: 'history', padTitle, versions, lastSavedAt? }`
+
+`trail` lists parent heading titles, outermost first, without the Title or the heading itself. `lines` holds up to 2 first lines of the section body. Chat facts are counts and dates only, never text or authors. A message count includes notices, like the count the app shows for a room. The filter follows the app's filter: the shown set adds the ancestors and descendants of each match, and `total` leaves out the Title. Dates are ISO strings.
+
+The pad card answers instead for an unknown heading, room, message or version, a failed chat read on the chat or message kind, and a filter on a head over 1 MiB. A failed chat read on a heading leaves `messages` out. A database error answers `500`, and an empty name answers `400`.
+
 ### GET /api/documents/:documentId/card.png
 
 The social preview card: a 1200 × 630 PNG drawn from stored values only, never from URL text. Each kind ships off; `SOCIAL_CARD_KINDS` turns kinds on. The kinds are `document`, `heading`, `chat`, `message`, `version` and `filter`. The full contract is in the OpenAPI spec (`getSocialCardImage`).
@@ -1165,6 +1199,8 @@ Base path `/api/metadata` (self-contained module at `src/modules/link-metadata`)
 Success (`200`) returns the `MetadataResponse` contract from `src/modules/link-metadata/domain/types.ts` — `success: true`, `url`, `requested_url`, `title`, optional `description`/`image`/`author`/`publisher`/`oembed`/etc., plus `cached` and `fetched_at`. Each `200` answer sets `Cache-Control` (positive cache for hits, short negative cache for fallbacks) and `Vary: Accept-Language`.
 
 A fallback result's `favicon`, when present, is this server's `GET /api/metadata/icon` URL for the site's origin.
+
+Optional `kind` (`repo` only; a plain page has none) and `facts` (at most three `{ icon, text }`). `icon` is one of `location`, `work`, `posted`, `stars`, `language`, `updated`, `answers` or `accepted`. `fallback: true` marks the fallback card, also on a cache hit. A card built after a miss that may clear soon gets the short negative `Cache-Control`.
 
 Errors (`400`) use this module's own shape — top-level `code` and `message`, not the nested envelope:
 

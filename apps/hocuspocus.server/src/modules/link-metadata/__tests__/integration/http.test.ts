@@ -18,6 +18,7 @@ interface WireBody {
   title?: string
   publisher?: { name?: string }
   cached?: boolean
+  fallback?: boolean
   fetched_at?: string
   oembed?: { html?: string }
 }
@@ -150,12 +151,15 @@ describe('GET /api/metadata (integration)', () => {
     const body = await readBody(response)
     expect(body.success).toBe(true)
     expect(body.title).toBe('random-blog.example.com')
+    expect(body.fallback).toBe(true)
 
     // Before #242 a cache hit on a fallback card got the one-hour positive header.
     const again = await app.request(
       'http://localhost/api/metadata?url=' + encodeURIComponent('https://random-blog.example.com')
     )
-    expect((await readBody(again)).cached).toBe(true)
+    const cachedBody = await readBody(again)
+    expect(cachedBody.cached).toBe(true)
+    expect(cachedBody.fallback).toBe(true)
     expect(again.headers.get('cache-control')).toBe('public, max-age=600')
   })
 

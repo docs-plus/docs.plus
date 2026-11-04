@@ -77,6 +77,8 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
     spends that bucket.
   - The card draws no people: no message text, no author, no name and no face. Counts are
     bucketed 1 to 9, then 10+.
+  - A Chat card counts every live message, notices included. The count comes from the room's
+    message counter, so it is the number the app shows.
   - `assets/social-card/ATTRIBUTION.md` credits the Twemoji pictures (CC BY 4.0) and the Arimo
     font (SIL OFL 1.1).
   - A Pad title that needs two lines wraps on the Document outline card and the Filter card. A
@@ -108,6 +110,22 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
   - `GET /api/metadata` and the image route share their own rate-limit bucket, at ten times
     `RATE_LIMIT_MAX` per 15 minutes. So hovercards do not spend the global budget.
   - The `metadata request completed` log records why the html stage missed.
+  - Link previews carry up to three facts. A job page shows place, work type and posting date,
+    from its JobPosting JSON-LD. A GitHub repository shows stars, language and last push, read
+    from api.github.com. A Stack Overflow question shows its answer count and whether an answer is
+    accepted, read from api.stackexchange.com.
+  - The metadata response gains `kind`, `facts` and `fallback`. The change is additive.
+    `fallback: true` marks the fallback card, also on a cache hit.
+  - New optional settings: `GITHUB_TOKEN` (public-repository read access only) and
+    `STACKEXCHANGE_KEY`. Without them the shared quotas are 60 GitHub calls an hour and 300 Stack
+    Exchange calls a day per server address.
+  - `GET /api/documents/:docName/hovercard` answers the docs.plus link card for every pad link
+    kind: pad, heading, heading chat, message, filter, version and History. The query keys are
+    `id`, `chatroom`, `msg_id`, `terms`, `mode`, `version` and `history`, and every open reply carries
+    `kind`. A Private pad answers `{ locked: true }` to anyone but its owner, and nothing else is
+    read. Chat facts are counts and dates only, and a message count includes notices. An unknown
+    sub-id answers the pad card, and an unknown or deleted pad answers 404. The reply depends on
+    the reader and is never cached (`Cache-Control: private, no-store`).
 - **`GET /api/metadata/icon?origin=<origin>` returns a favicon
   ([#515](https://github.com/docs-plus/docs.plus/issues/515)).** The route fetches
   `<origin>/favicon.ico` through the SSRF guard and checks the bytes. When that file misses,

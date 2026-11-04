@@ -36,9 +36,9 @@ const sample: NonNullable<StageResult> = {
 }
 
 describe('cacheKey', () => {
-  test('uses meta:v2: prefix, sha1 of the canonical url, and the primary lang subtag', () => {
+  test('uses meta:v3: prefix, sha1 of the canonical url, and the primary lang subtag', () => {
     const key = cacheKey('https://example.com/x', 'en-US')
-    expect(key).toMatch(/^meta:v2:[a-f0-9]{40}:en$/)
+    expect(key).toMatch(/^meta:v3:[a-f0-9]{40}:en$/)
   })
 
   test('collapses a full Accept-Language header to its primary subtag', () => {

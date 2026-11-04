@@ -1,14 +1,20 @@
-import { STAGE_TIMEOUT_MS, type StageResult } from '../../types'
+import { type ApiKeys, type SpecialMiss, STAGE_TIMEOUT_MS, type StageResult } from '../../types'
 import { matchesGithub, runGithub } from './github'
 import { matchesReddit, runReddit } from './reddit'
+import { matchesStackOverflow, runStackOverflow } from './stackoverflow'
 import { matchesWikipedia, runWikipedia } from './wikipedia'
 
 /**
- * Try the first matching special handler. Returns null on no-match,
- * non-2xx, abort, or unparseable JSON. The pipeline calls the next stage
- * (HTML scrape) on null.
+ * Try the first matching special handler. Null is a lasting miss: no match, a 4xx, an over-cap
+ * body or bad JSON, and any non-2xx from Wikipedia or Reddit. A `SpecialMiss` may clear soon:
+ * a timeout or network error from any handler, or a rate limit or 5xx from GitHub or Stack
+ * Exchange. Either way the pipeline calls the html stage next.
  */
-export const runSpecialHandler = async (canonicalUrl: string): Promise<StageResult> => {
+export const runSpecialHandler = async (
+  canonicalUrl: string,
+  keys: ApiKeys,
+  decodeHtml: (text: string) => string
+): Promise<StageResult | SpecialMiss> => {
   let parsed: URL
   try {
     parsed = new URL(canonicalUrl)
@@ -24,16 +30,30 @@ export const runSpecialHandler = async (canonicalUrl: string): Promise<StageResu
 
   try {
     const gh = matchesGithub(host, path)
-    if (gh) return await runGithub(canonicalUrl, gh.owner, gh.repo, controller.signal)
+    if (gh) {
+      return await runGithub(canonicalUrl, gh.owner, gh.repo, controller, keys.githubToken)
+    }
+
+    const question = matchesStackOverflow(host, path)
+    if (question) {
+      return await runStackOverflow(
+        canonicalUrl,
+        question,
+        controller,
+        keys.stackExchangeKey,
+        decodeHtml
+      )
+    }
 
     const wiki = matchesWikipedia(host, path)
-    if (wiki) return await runWikipedia(canonicalUrl, wiki.lang, wiki.slug, controller.signal)
+    if (wiki) return await runWikipedia(canonicalUrl, wiki.lang, wiki.slug, controller)
 
-    if (matchesReddit(host, path)) return await runReddit(canonicalUrl, controller.signal)
+    if (matchesReddit(host, path)) return await runReddit(canonicalUrl, controller)
 
     return null
   } catch {
-    return null
+    // An over-cap body aborts the controller too, but returns null and never reaches here.
+    return controller.signal.aborted ? 'timeout' : 'error'
   } finally {
     clearTimeout(timer)
   }

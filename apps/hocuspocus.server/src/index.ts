@@ -7,6 +7,7 @@ import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import pkg from '../package.json'
 import emailRouter from './api/email'
 import { adminAuthMiddleware } from './api/middleware/adminAuth'
+import { optionalPadReader } from './api/middleware/auth'
 import adminRouter from './api/routers/admin.router'
 import documentsRouter from './api/routers/documents.router'
 import healthRouter from './api/routers/health.router'
@@ -149,13 +150,15 @@ const documentConversionModule = documentConversion.init({
   mediaCookieFor: (uid) => mediaCookieHeader(uid, config.storage.mediaCookieSecret)
 })
 app.route('/api/documents', documentConversionModule.router)
-// Raw PNG bytes outside the JSON envelope. Two segments, so the legacy `/:docName` read never shadows it.
+// The card PNG and the pad hovercard. Both paths have two segments, so the legacy
+// `/:docName` read never shadows them.
 const socialCardModule = socialCard.init({
   prisma,
   logger: logger.child({ module: 'social-card' }),
   kinds: config.socialCard.kinds,
   fallbackImageUrl: config.socialCard.fallbackImageUrl,
-  publicUrl: config.app.publicUrl
+  publicUrl: config.app.publicUrl,
+  optionalPadReader
 })
 app.route(socialCard.SOCIAL_CARD_MOUNT_PATH, socialCardModule.router)
 app.route(HYPERMULTIMEDIA_MOUNT_PATH, hypermultimediaRouter)
@@ -202,7 +205,8 @@ const linkMetadataModule = linkMetadata.init({
   logger: logger.child({ module: 'link-metadata' }),
   iconMaxBytes: config.linkMetadata.iconMaxBytes,
   publicUrl: config.app.publicUrl,
-  ownImage: socialCardModule.ownImage
+  ownImage: socialCardModule.ownImage,
+  apiKeys: config.linkMetadata.apiKeys
 })
 app.route(linkMetadata.LINK_METADATA_MOUNT_PATH, linkMetadataModule.router)
 app.route(mcp.MCP_MOUNT_PATH, mcpModule.router)

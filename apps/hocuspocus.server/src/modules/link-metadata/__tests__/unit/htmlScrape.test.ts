@@ -4,8 +4,12 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 
 import { runHtmlScrape } from '../../domain/stages/htmlScrape'
 import type { Scraper } from '../../domain/types'
+import { createHeadScraper } from '../../infra/headScraper'
 
-const noopScraper: Scraper = { scrape: async () => ({ title: 'scraped' }) }
+const noopScraper: Scraper = {
+  scrape: async () => ({ title: 'scraped' }),
+  jobFacts: () => undefined
+}
 
 const html = (charset: string, title: string): string =>
   `<!doctype html><html><head><meta charset="${charset}"><title>${title}</title></head><body></body></html>`
@@ -26,6 +30,55 @@ describe('runHtmlScrape', () => {
   afterEach(() => {
     fetchSpy.mockRestore()
     dnsSpy.mockRestore()
+  })
+
+  describe('JSON-LD tail', () => {
+    const posting = (fields: object) =>
+      `<script type="application/ld+json">${JSON.stringify({ '@type': 'JobPosting', ...fields })}</script>`
+    // Lever's shape on 2026-11-03: no JSON-LD in the head, the posting 8 KB into the body.
+    const leverLike = `<html><head><title>Job</title></head><body>${'<p>x</p>'.repeat(1000)}${posting({ employmentType: 'FULL_TIME' })}</body></html>`
+    const page = (body: string) =>
+      new Response(body, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } })
+    const recording = () => {
+      const bodies: string[] = []
+      const real = createHeadScraper()
+      const scraper: Scraper = {
+        scrape: real.scrape,
+        jobFacts: (body) => {
+          bodies.push(body)
+          return real.jobFacts(body)
+        }
+      }
+      return { bodies, scraper }
+    }
+
+    test('reads the body for a job URL whose head has no posting', async () => {
+      fetchSpy.mockResolvedValue(page(leverLike))
+      const { bodies, scraper } = recording()
+      const card = await runHtmlScrape('https://jobs.lever.co/acme/1234', scraper, 'en')
+      expect(typeof card === 'object' && card.facts).toEqual([{ icon: 'work', text: 'Full-time' }])
+      expect(bodies[0]).toContain('JobPosting')
+    })
+
+    test('never reads the body for a URL that does not look like a job page', async () => {
+      fetchSpy.mockResolvedValue(page(leverLike))
+      const { bodies, scraper } = recording()
+      const card = await runHtmlScrape('https://example.com/blog/post', scraper, 'en')
+      expect(typeof card === 'object' && card.facts).toBeUndefined()
+      expect(bodies).toEqual([])
+    })
+
+    test('never reads the body when the head already holds the posting', async () => {
+      fetchSpy.mockResolvedValue(
+        page(
+          `<html><head><title>Job</title>${posting({ employmentType: 'INTERN' })}</head><body></body></html>`
+        )
+      )
+      const { bodies, scraper } = recording()
+      const card = await runHtmlScrape('https://example.com/careers/42', scraper, 'en')
+      expect(typeof card === 'object' && card.facts).toEqual([{ icon: 'work', text: 'Internship' }])
+      expect(bodies).toEqual([])
+    })
   })
 
   test('sends the cache-key language subtag and the honest User-Agent', async () => {
@@ -57,6 +110,7 @@ describe('runHtmlScrape', () => {
 
     let receivedHtml = ''
     const scraper: Scraper = {
+      jobFacts: () => undefined,
       scrape: async ({ html: h }) => {
         receivedHtml = h
         return { title: 'x' }
@@ -81,6 +135,7 @@ describe('runHtmlScrape', () => {
 
     let receivedHtml = ''
     const scraper: Scraper = {
+      jobFacts: () => undefined,
       scrape: async ({ html: h }) => {
         receivedHtml = h
         return { title: 'x' }
@@ -110,13 +165,14 @@ describe('runHtmlScrape', () => {
       status: 200,
       url: 'https://final.example.com/x',
       headers: new Headers({ 'content-type': 'text/html; charset=utf-8' }),
-      // readHead reads the stream, so the stub needs a real one.
+      // readPage reads the stream, so the stub needs a real one.
       body: new Response(body).body
     }
     fetchSpy.mockResolvedValue(fakeResponse as unknown as Response)
 
     let receivedUrl = ''
     const scraper: Scraper = {
+      jobFacts: () => undefined,
       scrape: async ({ url }) => {
         receivedUrl = url
         return { title: 'x' }
@@ -140,6 +196,7 @@ describe('runHtmlScrape', () => {
     )
     let receivedLength = 0
     const scraper: Scraper = {
+      jobFacts: () => undefined,
       scrape: async ({ html: h }) => {
         receivedLength = h.length
         return { title: 'scraped' }
@@ -167,6 +224,7 @@ describe('runHtmlScrape', () => {
 
     let receivedHtml = ''
     const scraper: Scraper = {
+      jobFacts: () => undefined,
       scrape: async ({ html: h }) => {
         receivedHtml = h
         return { title: 'x' }
@@ -199,6 +257,7 @@ describe('runHtmlScrape', () => {
 
     let receivedLength = 0
     const scraper: Scraper = {
+      jobFacts: () => undefined,
       scrape: async ({ html: h }) => {
         receivedLength = h.length
         return { title: 'scraped' }
@@ -219,7 +278,10 @@ describe('runHtmlScrape', () => {
       })
     )
 
-    const noTitleScraper: Scraper = { scrape: async () => ({ description: 'no title here' }) }
+    const noTitleScraper: Scraper = {
+      scrape: async () => ({ description: 'no title here' }),
+      jobFacts: () => undefined
+    }
     const result = await runHtmlScrape('https://example.com', noTitleScraper, undefined)
     expect(result).toBe('no-title')
   })

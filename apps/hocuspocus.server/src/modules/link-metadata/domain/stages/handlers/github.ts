@@ -1,5 +1,7 @@
+import { compactCount, factDate } from '../../facts'
 import { safeFetch } from '../../ssrf'
-import { LINK_PREVIEW_USER_AGENT, type StageResult } from '../../types'
+import { type Fact, LINK_PREVIEW_USER_AGENT, type SpecialMiss, type StageResult } from '../../types'
+import { readApiJson } from './readApiJson'
 
 const REPO_PATH = /^\/([^/]+)\/([^/]+)\/?$/
 
@@ -15,25 +17,53 @@ export const matchesGithub = (
 interface RepoJson {
   full_name?: string
   description?: string
-  html_url?: string
   language?: string
   stargazers_count?: number
+  pushed_at?: string
+  updated_at?: string
+  private?: boolean
   owner?: { avatar_url?: string }
 }
 
+/** `pushed_at` is what github.com shows as "Updated"; `updated_at` also moves on metadata edits. */
+const repoFacts = (data: RepoJson): Fact[] => {
+  const facts: Fact[] = []
+  if (typeof data.stargazers_count === 'number' && data.stargazers_count >= 0) {
+    facts.push({ icon: 'stars', text: compactCount(data.stargazers_count) })
+  }
+  if (typeof data.language === 'string' && data.language) {
+    facts.push({ icon: 'language', text: data.language })
+  }
+  const updated = factDate(data.pushed_at ?? data.updated_at, new Date())
+  if (updated) facts.push({ icon: 'updated', text: `Updated ${updated}` })
+  return facts
+}
+
+/** GitHub answers a spent rate limit with 403 or 429. */
 export const runGithub = async (
   canonicalUrl: string,
   owner: string,
   repo: string,
-  signal: AbortSignal
-): Promise<StageResult> => {
+  hop: AbortController,
+  token: string | null
+): Promise<StageResult | SpecialMiss> => {
   const response = await safeFetch(`https://api.github.com/repos/${owner}/${repo}`, {
-    signal,
-    headers: { Accept: 'application/vnd.github+json', 'User-Agent': LINK_PREVIEW_USER_AGENT }
+    signal: hop.signal,
+    headers: {
+      Accept: 'application/vnd.github+json',
+      'User-Agent': LINK_PREVIEW_USER_AGENT,
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    }
   })
+  if (response.status === 403 || response.status === 429) return 'rate-limit'
+  if (response.status >= 500) return 'status:5xx'
   if (!response.ok) return null
-  const data = (await response.json()) as RepoJson
+  const data = await readApiJson<RepoJson>(response, hop)
+  if (!data) return null
+  // A token that can read a private repository must not show its name to every reader.
+  if (data.private === true) return null
 
+  const facts = repoFacts(data)
   return {
     success: true,
     url: canonicalUrl,
@@ -41,6 +71,8 @@ export const runGithub = async (
     title: data.full_name ?? `${owner}/${repo}`,
     description: data.description,
     publisher: { name: 'GitHub', url: 'https://github.com' },
-    image: data.owner?.avatar_url ? { url: data.owner.avatar_url } : undefined
+    image: data.owner?.avatar_url ? { url: data.owner.avatar_url } : undefined,
+    kind: 'repo',
+    facts: facts.length > 0 ? facts : undefined
   }
 }

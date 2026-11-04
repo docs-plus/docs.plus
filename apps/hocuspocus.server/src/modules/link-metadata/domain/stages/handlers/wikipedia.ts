@@ -1,5 +1,6 @@
 import { safeFetch } from '../../ssrf'
 import { LINK_PREVIEW_USER_AGENT, type StageResult } from '../../types'
+import { readApiJson } from './readApiJson'
 
 const WIKI_HOST = /^([a-z-]+)\.wikipedia\.org$/
 const WIKI_PATH = /^\/wiki\/([^/]+)\/?$/
@@ -25,17 +26,18 @@ export const runWikipedia = async (
   canonicalUrl: string,
   lang: string,
   slug: string,
-  signal: AbortSignal
+  hop: AbortController
 ): Promise<StageResult> => {
   const response = await safeFetch(
     `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${slug}`,
     {
-      signal,
+      signal: hop.signal,
       headers: { Accept: 'application/json', 'User-Agent': LINK_PREVIEW_USER_AGENT }
     }
   )
   if (!response.ok) return null
-  const data = (await response.json()) as SummaryJson
+  const data = await readApiJson<SummaryJson>(response, hop)
+  if (!data) return null
 
   return {
     success: true,

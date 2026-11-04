@@ -113,6 +113,9 @@ export const envSchema = z.object({
   DO_STORAGE_SECRET_ACCESS_KEY: z.string().optional().default(''),
   DO_STORAGE_MAX_FILE_SIZE: positiveByteString('10485760'),
   LINK_ICON_MAX_BYTES: positiveByteString('32768'),
+  // Optional link-preview API credentials. Empty means unauthenticated, with a lower quota.
+  GITHUB_TOKEN: z.string().optional(),
+  STACKEXCHANGE_KEY: z.string().optional(),
   // Card kinds that are switched on, for example `document`. Empty keeps every pad on the static
   // image. An unknown name fails the boot, so a typo cannot quietly turn every card off.
   SOCIAL_CARD_KINDS: commaSeparatedList.pipe(z.array(z.enum(CARD_KINDS))),

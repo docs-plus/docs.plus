@@ -3,7 +3,12 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { CHAT_READS_IN_FLIGHT, createChatRead } from '../infra/chatRead'
 
-const ROOM = { id: 'chan-1', heading_id: 'head-1', live: [{ id: 'a' }, { id: 'b' }] }
+const ROOM = {
+  id: 'chan-1',
+  heading_id: 'head-1',
+  channel_message_counts: { message_count: 2 },
+  last: [{ created_at: '2026-10-10T16:00:00.000Z' }]
+}
 
 /** A PostgREST stand-in: every builder call chains, and awaiting it answers after `delayMs`. */
 const fakeClient = (answer: () => { data: unknown; error: unknown }, delayMs = 0) => {

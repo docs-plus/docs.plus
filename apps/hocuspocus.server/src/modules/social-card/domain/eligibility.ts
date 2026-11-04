@@ -43,16 +43,17 @@ export const drawnTitle = (row: CardRow | null, isDrawable: IsDrawable): string 
   return usableLine(row.title, isDrawable)
 }
 
-/**
- * The name a card draws: a Pad title still equal to the slug says nothing, so the
- * Title replaces it when the Title is drawable. `og:title` keeps the Pad title.
- */
+/** A Pad title still equal to the slug says nothing, so the Title replaces it when there is one. */
+export const padName = (
+  padTitle: string,
+  slug: string,
+  titleText: string | null | undefined
+): string => (padTitle !== slug ? padTitle : titleText || padTitle)
+
+/** The name a card draws, with a Title it can draw. `og:title` keeps the Pad title. */
 export const drawnPadName = (
   padTitle: string,
   slug: string,
   titleText: string | null,
   isDrawable: IsDrawable
-): string => {
-  if (padTitle !== slug) return padTitle
-  return usableLine(titleText, isDrawable) ?? padTitle
-}
+): string => padName(padTitle, slug, usableLine(titleText, isDrawable))

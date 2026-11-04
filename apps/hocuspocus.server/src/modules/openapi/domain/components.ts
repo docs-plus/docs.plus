@@ -1,4 +1,5 @@
 import { tiptapDocSchema } from '../../document-content/http/schema'
+import { FACT_ICONS, LINK_KINDS } from '../../link-metadata'
 import type { JsonSchema, OpenApiComponents, OpenApiResponse } from '../types'
 import { toJsonSchema } from './jsonSchema'
 
@@ -212,6 +213,29 @@ const linkMetadata: JsonSchema = {
     },
     published_at: { type: 'string' },
     modified_at: { type: 'string' },
+    kind: {
+      type: 'string',
+      enum: [...LINK_KINDS],
+      description: 'Present for a card with a special layout. A plain page has none.'
+    },
+    facts: {
+      type: 'array',
+      maxItems: 3,
+      description: 'Short facts by page kind, such as a job location or a repository star count.',
+      items: {
+        type: 'object',
+        properties: {
+          icon: { type: 'string', enum: [...FACT_ICONS] },
+          text: { type: 'string', maxLength: 65 }
+        },
+        required: ['icon', 'text']
+      }
+    },
+    fallback: {
+      type: 'boolean',
+      enum: [true],
+      description: 'Present when every stage missed and the card names the host only.'
+    },
     cached: { type: 'boolean' },
     fetched_at: { type: 'string', format: 'date-time' }
   },

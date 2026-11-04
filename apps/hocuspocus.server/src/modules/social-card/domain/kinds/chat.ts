@@ -1,4 +1,5 @@
-import { countBucket, plural } from '../frame'
+import { plural } from '../../../../lib/cardText'
+import { countBucket } from '../frame'
 import { inBubble, outBubble } from '../parts'
 import { chatFrame, innerWidth, roomName } from './chatPanel'
 import type { KindResolver } from './types'

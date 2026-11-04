@@ -1,4 +1,4 @@
-import { type Context, Hono } from 'hono'
+import { type Context, Hono, type MiddlewareHandler } from 'hono'
 import type { Logger } from 'pino'
 
 import type { PrismaClient } from '../../../generated/prisma/client'
@@ -11,8 +11,10 @@ import { documentIdField } from '../../../schemas/document.schema'
 import { type CardKind, parseCardQuery } from '../domain/cardRequest'
 import { CARD_ROW_SELECT, type CardSourceRow } from '../domain/resolveCard'
 import { resolveStoredCard } from '../infra/cardReads'
+import { createHovercardChatRead, type HovercardChatRead } from '../infra/hovercardReads'
 import { renderPng } from '../infra/renderer'
 import { createPngCache, createRenderSlot, createSingleFlight, SHED } from '../infra/renderGuards'
+import { createHovercardHandler, HOVERCARD_ROUTE } from './hovercard'
 
 export const SOCIAL_CARD_MOUNT_PATH = '/api/documents'
 const CARD_ROUTE = '/:documentId/card.png'
@@ -27,6 +29,10 @@ export interface RouterDeps {
   kinds: ReadonlySet<CardKind>
   /** Where a shed or failed render sends the crawler. */
   fallbackImageUrl: string
+  /** optionalUser with the #596 Auth deadline, as on the slug read. A test hands its own. */
+  optionalPadReader: MiddlewareHandler
+  /** The hovercard's service-role chat read. A test hands its own. */
+  hovercardChat?: HovercardChatRead
 }
 
 const etagMatches = (header: string | undefined, etag: string): boolean =>
@@ -129,6 +135,17 @@ export const createRouter = (deps: RouterDeps): Hono => {
       return toStaticImage(c, 'error')
     }
   })
+
+  // The link hovercard for another pad, by slug. Two segments, so `/:docName` never shadows it.
+  router.get(
+    HOVERCARD_ROUTE,
+    deps.optionalPadReader,
+    createHovercardHandler({
+      prisma: deps.prisma,
+      logger: deps.logger,
+      chat: deps.hovercardChat ?? createHovercardChatRead()
+    })
+  )
 
   return router
 }

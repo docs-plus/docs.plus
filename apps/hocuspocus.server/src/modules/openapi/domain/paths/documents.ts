@@ -9,6 +9,8 @@ import {
   userIdQuerySchema
 } from '../../../../schemas/document.schema'
 import { MAX_DUPLICATE_MEDIA_OBJECTS } from '../../../../schemas/hypermultimedia.schema'
+import { MAX_TERM_CHARS } from '../../../social-card/domain/cardRequest'
+import { HOVERCARD_LIST, HOVERCARD_MAX_TERMS } from '../../../social-card/domain/hovercard'
 import type {
   JsonSchema,
   OpenApiOperation,
@@ -367,6 +369,136 @@ export const documentsPaths: OpenApiPaths = {
         '401': { $ref: '#/components/responses/Unauthorized' },
         '429': rateLimitedRef,
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
+      }
+    }
+  },
+  '/api/documents/{docName}/hovercard': {
+    get: {
+      operationId: 'getPadHovercard',
+      summary: 'Link hovercard for one pad link',
+      description:
+        'Reads by slug and never drafts. A Private pad answers `{ locked: true }` to anyone but its owner, and also when Auth is unreachable; nothing else is read then. The query keys pick one link kind, in the order the app uses: `version`, `history=1`, `terms` (filter), `msg_id` with `chatroom` (message), `chatroom` (chat), `id` (heading), else the pad. A key with a bad shape is dropped, and the next kind answers. An unknown heading, room, message or version, a failed chat read on a chat or message link, or a head over 1 MiB for a filter, answers the pad kind. On a heading link a failed chat read leaves `messages` out. Chat facts are counts and dates only: no message text, author or user id. Every reply sends `Cache-Control: private, no-store`, because the answer depends on the reader.',
+      tags,
+      security: optionalUserSecurity,
+      parameters: [
+        pathParam('docName', 'The document **slug**.'),
+        query('id', 'Heading `toc-id` (`id=` in the pad link).'),
+        query('chatroom', 'Chat room link id: a heading `toc-id` or a channel id.'),
+        query('msg_id', 'Message uuid, read only with `chatroom`.'),
+        query(
+          'terms',
+          `One filter term per \`terms\` key, as in the pad URL path. At most ${HOVERCARD_MAX_TERMS}, each at most ${MAX_TERM_CHARS} characters.`,
+          { type: 'array', items: { type: 'string' } }
+        ),
+        query('mode', 'Filter mode. A missing value is `or`, as in the app.', {
+          type: 'string',
+          enum: ['and', 'or']
+        }),
+        query('version', 'History version number.', { type: 'integer', minimum: 1 }),
+        query('history', 'The History link.', { type: 'string', enum: ['1'] })
+      ],
+      responses: {
+        '200': okEnvelope('The card for the link kind, or a locked notice.', {
+          oneOf: [
+            {
+              type: 'object',
+              properties: { locked: { type: 'boolean', enum: [true] } },
+              required: ['locked']
+            },
+            {
+              type: 'object',
+              properties: {
+                kind: { type: 'string', enum: ['pad'] },
+                title: { type: 'string' },
+                sections: { type: 'array', items: { type: 'string' }, maxItems: HOVERCARD_LIST },
+                total: { type: 'integer', minimum: 0 }
+              },
+              required: ['kind', 'title', 'sections', 'total']
+            },
+            {
+              type: 'object',
+              properties: {
+                kind: { type: 'string', enum: ['heading'] },
+                padTitle: { type: 'string' },
+                title: { type: 'string' },
+                trail: { type: 'array', items: { type: 'string' } },
+                subsections: { type: 'integer', minimum: 0 },
+                lines: { type: 'array', items: { type: 'string' }, maxItems: HOVERCARD_LIST },
+                messages: {
+                  type: 'integer',
+                  minimum: 0,
+                  description: 'Left out when the chat read failed.'
+                }
+              },
+              required: ['kind', 'padTitle', 'title', 'trail', 'subsections', 'lines']
+            },
+            {
+              type: 'object',
+              properties: {
+                kind: { type: 'string', enum: ['chat'] },
+                padTitle: { type: 'string' },
+                heading: { type: 'string' },
+                trail: { type: 'array', items: { type: 'string' } },
+                messages: { type: 'integer', minimum: 0 },
+                lastMessageAt: { type: 'string', format: 'date-time' }
+              },
+              required: ['kind', 'padTitle', 'heading', 'trail', 'messages']
+            },
+            {
+              type: 'object',
+              properties: {
+                kind: { type: 'string', enum: ['message'] },
+                padTitle: { type: 'string' },
+                heading: { type: 'string' },
+                trail: { type: 'array', items: { type: 'string' } },
+                sentAt: { type: 'string', format: 'date-time' },
+                replies: { type: 'integer', minimum: 0 },
+                reactions: { type: 'integer', minimum: 0 }
+              },
+              required: ['kind', 'padTitle', 'heading', 'trail', 'sentAt', 'replies', 'reactions']
+            },
+            {
+              type: 'object',
+              properties: {
+                kind: { type: 'string', enum: ['filter'] },
+                padTitle: { type: 'string' },
+                terms: { type: 'array', items: { type: 'string' } },
+                mode: { type: 'string', enum: ['and', 'or'] },
+                shown: { type: 'array', items: { type: 'string' }, maxItems: HOVERCARD_LIST },
+                shownCount: { type: 'integer', minimum: 0 },
+                total: { type: 'integer', minimum: 0 }
+              },
+              required: ['kind', 'padTitle', 'terms', 'mode', 'shown', 'shownCount', 'total']
+            },
+            {
+              type: 'object',
+              properties: {
+                kind: { type: 'string', enum: ['version'] },
+                padTitle: { type: 'string' },
+                version: { type: 'integer', minimum: 1 },
+                name: { type: 'string' },
+                savedAt: { type: 'string', format: 'date-time' },
+                sectionsChanged: { type: 'integer', minimum: 0 },
+                wordsAdded: { type: 'integer', minimum: 0 },
+                wordsRemoved: { type: 'integer', minimum: 0 }
+              },
+              required: ['kind', 'padTitle', 'version', 'savedAt']
+            },
+            {
+              type: 'object',
+              properties: {
+                kind: { type: 'string', enum: ['history'] },
+                padTitle: { type: 'string' },
+                versions: { type: 'integer', minimum: 0 },
+                lastSavedAt: { type: 'string', format: 'date-time' }
+              },
+              required: ['kind', 'padTitle', 'versions']
+            }
+          ]
+        }),
+        '400': { $ref: '#/components/responses/ValidationError' },
+        '404': { $ref: '#/components/responses/NotFound' },
+        '429': rateLimitedRef
       }
     }
   },

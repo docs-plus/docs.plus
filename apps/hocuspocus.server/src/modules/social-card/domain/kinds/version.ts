@@ -1,8 +1,9 @@
 import { container } from '@takumi-rs/helpers'
 
+import { cardDate, plural } from '../../../../lib/cardText'
 import { usableLine } from '../eligibility'
 import { fitHead, HEAD_LINE, LADDER, widthOf } from '../fit'
-import { cardDate, cardFrame, CONTENT_W, plural, read, row, stack, T, titleNode } from '../frame'
+import { cardFrame, CONTENT_W, read, row, stack, T, titleNode } from '../frame'
 import type { StoredChangeSummary } from '../storedData'
 import type { KindResolver } from './types'
 

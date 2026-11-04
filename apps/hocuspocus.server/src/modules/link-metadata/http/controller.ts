@@ -52,6 +52,7 @@ export const createController = (deps: ControllerDeps) => {
 
     const response: MetadataResponse = {
       ...result.payload,
+      ...(result.fallback ? { fallback: true } : {}),
       cached: result.fromCache,
       fetched_at: new Date().toISOString()
     }
@@ -70,7 +71,8 @@ export const createController = (deps: ControllerDeps) => {
       'metadata request completed'
     )
 
-    c.header('Cache-Control', result.fallback ? NEGATIVE_CACHE_HEADER : POSITIVE_CACHE_HEADER)
+    const short = result.fallback || result.retry
+    c.header('Cache-Control', short ? NEGATIVE_CACHE_HEADER : POSITIVE_CACHE_HEADER)
     c.header('Vary', 'Accept-Language')
     return c.json(response, 200)
   }

@@ -5,14 +5,25 @@ Self-contained link-unfurling service. It is built as a modular monolith, so it 
 ## Boundary rules (do not violate)
 
 1. **Single bounded folder.** Code, tests, types, infra adapters all live here. Files outside this folder may only import from `./index.ts`. One exception: the openapi module reads `http/schema.ts` directly to build the spec. The lint rule does not catch that relative path.
-2. **One public surface.** `index.ts` exports `{ init, LINK_METADATA_MOUNT_PATH, LINK_ICON_PATH, LINK_IMAGE_PATH, type MetadataResponse, type ErrorResponse }`. The host mounts the router at the first path constant. The rate limiter matches all three: the icon route spends its own budget, and the metadata and image routes share one. Nothing else is consumable from outside.
-3. **DI at the seam.** Module exports `init({ redis, logger, iconMaxBytes, publicUrl })`. `iconMaxBytes` is optional and defaults to `32768`. `publicUrl` is optional and defaults to `null`; the fallback stage builds its `favicon` URL from it. The module does not call `getRedisClient()` or read env vars for infra clients.
+2. **One public surface.** `index.ts` exports `{ init, LINK_METADATA_MOUNT_PATH, LINK_ICON_PATH, LINK_IMAGE_PATH, FACT_ICONS, LINK_KINDS, type MetadataResponse, type ErrorResponse }`. The host mounts the router at the first path constant. The rate limiter matches all three: the icon route spends its own budget, and the metadata and image routes share one. Nothing else is consumable from outside.
+3. **DI at the seam.** Module exports `init({ redis, logger, iconMaxBytes, publicUrl, apiKeys })`. `iconMaxBytes` is optional and defaults to `32768`. `publicUrl` is optional and defaults to `null`; the fallback stage builds its `favicon` URL from it. `apiKeys` is optional: `{ githubToken, stackExchangeKey }`, each a string or `null`, and both `null` when it is left out. The module does not call `getRedisClient()` or read env vars for infra clients.
 4. **Framework-free domain.** Files under `domain/` import zero infra SDKs (no `hono`, no `ioredis`, no `entities`). `infra/` is the only place SDKs live. Domain↔infra contracts use tiny inline port types declared in `domain/types.ts`.
 5. **Stable wire contract.** `http/schema.ts` (request) and `domain/types.ts` `MetadataResponse` / `ErrorResponse` (response) are the published contract. Additive changes only within v1. One recorded exception: the fallback's `favicon` changed from a Google URL to this server's icon route URL ([#517](https://github.com/docs-plus/docs.plus/issues/517), maintainer ruling 2026-10-18).
 6. **No shared mutable state.** No module-level singletons or top-level side effects. Adapters are constructed inside `init()` and held in closure.
 7. **Tests live inside the module.** `__tests__/` moves with the folder during extraction.
 
 ESLint enforces parts of rules 1 and 4 via `no-restricted-imports` in `apps/hocuspocus.server/eslint.config.js` (ESM package — `"type": "module"`).
+
+## Facts
+
+A card may carry `facts`: at most three `{ icon, text }` rows, such as "12.3k" stars or "Posted Oct 31". `icon` is one of the names in `FACT_ICONS` (`domain/types.ts`); the extension draws one glyph per name. `capCard` drops an unknown icon and an empty text, and cuts each text to 64 code points.
+
+- **Job postings.** `infra/jobPosting.ts` reads the first `JobPosting` in the page's JSON-LD. Its facts are the location, the work type (or the hiring organization) and the posting date. Job boards put this script in the body: Stripe 49 B after `</head`, Lever 8 KB after it. So the html stage reads past `</head` with `readPage`. It reads 256 KiB at most, within 1 s, inside the 1 MiB cap. Only `script[type="application/ld+json"]` is read there, and it feeds the facts only. Every card field still comes from the head. A late or failed tail is cut, never thrown, and the head card stays. When a cut tail gives no facts, the card gets the short TTL, because a later read may reach the posting. A tail cut by the 256 KiB limit is not retried.
+- **GitHub repositories.** `github.com/{owner}/{repo}` calls `api.github.com/repos/{owner}/{repo}`. The card gets `kind: 'repo'` and the owner avatar as the image. Its facts are stars, language and the last push. A private repository is a miss, so a token that can read one never shows it.
+- **Stack Overflow questions.** `stackoverflow.com/questions/{id}` calls `api.stackexchange.com/2.3/questions/{id}`. The card gets the title, decoded by the `decodeHTML` that `module.ts` passes in (`domain/` may not import `entities`). Its facts are the answer count and "Accepted answer". Stack Exchange sends every error as HTTP 400 with an `error_id`, a throttle included.
+- **API bodies are capped.** Every special handler reads its answer through `readApiJson` (`domain/stages/handlers/readApiJson.ts`): `readCappedBody` at 64 KiB, then `JSON.parse`. A larger body or bad JSON is a lasting miss. Reddit asks for one comment (`limit=1`) so the post fits.
+- **A miss that may clear soon is not cached for long.** A timeout or a network error from any handler, or a rate limit or 5xx from GitHub or Stack Exchange, makes the special stage return a `SpecialMiss`. A Wikipedia or Reddit non-2xx is a lasting miss. The card that follows, usually the scraped page, gets the short TTL and a `retry` marker. A hit on it sends the short `Cache-Control`, and so does the image route. `retry` never reaches the wire.
+- **`fallback: true`** is on the wire when every stage missed, on a fresh answer and on a cache hit.
 
 ## Favicons
 

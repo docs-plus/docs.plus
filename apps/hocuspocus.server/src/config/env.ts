@@ -75,7 +75,12 @@ export const config = {
   },
 
   linkMetadata: {
-    iconMaxBytes: env.LINK_ICON_MAX_BYTES
+    iconMaxBytes: env.LINK_ICON_MAX_BYTES,
+    // Compose interpolates an unset var to `''`, which is as absent as undefined.
+    apiKeys: {
+      githubToken: env.GITHUB_TOKEN || null,
+      stackExchangeKey: env.STACKEXCHANGE_KEY || null
+    }
   },
 
   socialCard: {

@@ -1,0 +1,33 @@
+{
+  "items": [
+    {
+      "tags": ["c++", "namespaces", "std", "using-directives", "c++-faq"],
+      "owner": {
+        "account_id": 58859,
+        "reputation": 35441,
+        "user_id": 176191,
+        "user_type": "registered",
+        "accept_rate": 90,
+        "profile_image": "https://www.gravatar.com/avatar/9174a104ae0b0a02688a5925bdcaacc8?s=256&d=identicon&r=PG",
+        "display_name": "akbiggs",
+        "link": "https://stackoverflow.com/users/176191/akbiggs"
+      },
+      "is_answered": true,
+      "view_count": 1346457,
+      "protected_date": 1431212620,
+      "accepted_answer_id": 1452738,
+      "answer_count": 39,
+      "score": 3483,
+      "last_activity_date": 1740200935,
+      "creation_date": 1253502503,
+      "last_edit_date": 1706628806,
+      "question_id": 1452721,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/1452721/whats-the-problem-with-using-namespace-std",
+      "title": "What&#39;s the problem with &quot;using namespace std;&quot;?"
+    }
+  ],
+  "has_more": false,
+  "quota_max": 300,
+  "quota_remaining": 290
+}

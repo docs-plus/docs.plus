@@ -117,6 +117,36 @@ file the site no longer has (TechCrunch). 29 site icons failed.
   parsers, so a plain checkout cannot replay this comparison.
 - Page heads were fetched once on 2026-10-27 with the honest `DocsplusBot` User-Agent and frozen.
 
+### Crafted pages with the JSON-LD tail (2026-11-03)
+
+Since 2026-11-03 the html stage reads past `</head` for JSON-LD scripts (`readPage`, up to
+256 KiB and 1 s). The `attack` mode now splits each crafted page as production does. The head
+pass reads up to `</head`, and the JSON-LD tail pass (`jobFacts`) reads the rest. The bench
+runs both on every page, and the tail is not cut to 256 KiB, so its time is an upper bound.
+Measured again on 2026-11-04, after the head pass and the tail pass began to share one JSON-LD
+capture and one parse.
+
+| Input at 1 MiB                | Five runs (ms)               |
+| ----------------------------- | ---------------------------- |
+| deep JSON-LD nesting (head)   | 14.9, 12.5, 16.6, 10.1, 10.2 |
+| many meta tags (head)         | 17.4, 17.8, 18.0, 17.8, 17.4 |
+| body: many JSON-LD scripts    | 5.0, 5.1, 4.9, 5.0, 5.2      |
+| body: empty JSON-LD flood     | 4.4, 4.1, 4.2, 4.3, 4.4      |
+| body: deep JSON-LD nesting    | 9.9, 10.1, 14.9, 15.3, 9.5   |
+| body: huge JSON-LD script     | 0.17, 0.17, 0.50, 0.23, 0.16 |
+| body: JobPosting long lists   | 0.96, 0.95, 1.0, 1.0, 0.89   |
+| body: `@graph` of JobPostings | 0.78, 0.81, 0.95, 0.55, 1.3  |
+
+The slowest single run was 18.0 ms, against "about 50 ms" on 2026-10-27. The 2026-10-27 method
+passed the whole page to the head pass. Timed that way again, `flood: <article>` took 7.5 to
+10.3 ms. With the same body as a tail, it took 10.7 to 11.7 ms. The cause of the drop since
+2026-10-27 is not known. The tail no longer skips a script over 128 KiB before parse, so deep
+body nesting now parses and costs about 10 to 15 ms. The 512 KiB JSON-LD text cap still cuts a
+huge script, which then fails to parse at once. The machine is the one above, on Bun 1.4.4.
+
+Reading the tail costs download time. Warm, on one laptop, Stripe's job page took 115 to 125 ms
+for the head and about 490 ms with the tail. Wikipedia took 125 to 141 ms, and 448 to 797 ms.
+
 ## Measure it again
 
 Run every command from `apps/hocuspocus.server`. `<dir>` is any empty folder outside the repo.

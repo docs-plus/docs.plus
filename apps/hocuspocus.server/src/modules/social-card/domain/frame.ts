@@ -309,16 +309,8 @@ export const cardFrame = (
   })
 }
 
-/** The one plural rule for card text. */
-export const plural = (n: number, one: string, many: string): string => (n === 1 ? one : many)
-
 /** The one count rule for values that grow: 1 to 9 exact, then "10+". Null for 0. */
 export const countBucket = (n: number): string | null => {
   if (!Number.isFinite(n) || n <= 0) return null
   return n >= 10 ? '10+' : String(Math.floor(n))
 }
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-/** "28 Oct 2026", a UTC day: one value for every viewer, so one `cardVersion`. */
-export const cardDate = (date: Date): string =>
-  `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`

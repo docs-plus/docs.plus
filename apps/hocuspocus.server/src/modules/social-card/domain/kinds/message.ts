@@ -1,8 +1,9 @@
 import { container, image, text } from '@takumi-rs/helpers'
 import { extractEmojis } from '@takumi-rs/helpers/emoji'
 
+import { cardDate, plural } from '../../../../lib/cardText'
 import type { IsDrawable } from '../eligibility'
-import { cardDate, countBucket, over, plural, read, row, stack, strokeSvg, T } from '../frame'
+import { countBucket, over, read, row, stack, strokeSvg, T } from '../frame'
 import { inBubble, outBubble } from '../parts'
 import { chatFrame, innerWidth, roomName } from './chatPanel'
 import type { KindResolver } from './types'

@@ -74,7 +74,8 @@ const mounted = (): Set<string> => {
         logger,
         kinds: new Set(),
         fallbackImageUrl: 'http://x',
-        publicUrl: null
+        publicUrl: null,
+        optionalPadReader: async (_c, next) => next()
       }).router
     ],
     [

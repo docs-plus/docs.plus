@@ -15,13 +15,13 @@ export const primaryLangSubtag = (lang: string | undefined): string | null => {
 }
 
 /**
- * Cache key shape: `meta:v2:{sha1(canonical_url)}:{lang | '_'}`. The prefix moves whenever
+ * Cache key shape: `meta:v3:{sha1(canonical_url)}:{lang | '_'}`. The prefix moves whenever
  * the stored value shape changes. Old keys then expire by TTL, and a replica still on the
  * old code never reads a value it cannot serve. It is not the wire contract version.
  */
 export const cacheKey = (canonicalUrl: string, lang: string | undefined): string => {
   const hash = createHash('sha1').update(canonicalUrl).digest('hex')
-  return `meta:v2:${hash}:${primaryLangSubtag(lang) ?? '_'}`
+  return `meta:v3:${hash}:${primaryLangSubtag(lang) ?? '_'}`
 }
 
 export const readCache = async (

@@ -1,17 +1,43 @@
-import { readHead } from '../readHead'
+import { readPage, type TailLimit } from '../readHead'
 import { safeFetch } from '../ssrf'
 import {
+  type HtmlCard,
   type HtmlMiss,
   LINK_PREVIEW_USER_AGENT,
   type Scraper,
-  STAGE_TIMEOUT_MS,
-  type StageResult
+  STAGE_TIMEOUT_MS
 } from '../types'
 import { primaryLangSubtag } from './cache'
 
 // Bounds the bytes read and parsed; a 5 MiB parse cost about 850 ms and 116 MiB of heap.
-// The head scraper's slowest crafted 1 MiB input measured 46 to 53 ms (scripts/bench-link-extractor.ts).
-const MAX_HEAD_BYTES = 1024 * 1024
+// The head scraper's slowest crafted 1 MiB input measured 17 to 18 ms on 2026-11-04 (BENCHMARK.md).
+const MAX_PAGE_BYTES = 1024 * 1024
+// Job boards put JobPosting JSON-LD in the body: Stripe 49 B after `</head`, Lever 8 KB.
+// Reading it cost 300 to 700 ms a page, so only a job-looking URL with no head posting reads it.
+const JSON_LD_TAIL: TailLimit = { bytes: 256 * 1024, ms: 1_000 }
+const JOB_HOSTS = [
+  'lever.co',
+  'boards.greenhouse.io',
+  'job-boards.greenhouse.io',
+  'jobs.ashbyhq.com',
+  'myworkdayjobs.com',
+  'apply.workable.com',
+  'jobs.smartrecruiters.com',
+  'wellfound.com'
+]
+const JOB_SEGMENT = /^(jobs?|careers?|positions?|posting|vacancy)$/i
+
+/** An applicant-system host, or a path segment such as `/careers/`. */
+const looksLikeJobPage = (url: string): boolean => {
+  try {
+    const { hostname, pathname } = new URL(url)
+    const host = hostname.toLowerCase()
+    if (JOB_HOSTS.some((name) => host === name || host.endsWith(`.${name}`))) return true
+    return pathname.split('/').some((segment) => JOB_SEGMENT.test(segment))
+  } catch {
+    return false
+  }
+}
 
 const META_CHARSET_RE = /<meta[^>]+charset\s*=\s*["']?([\w-]+)/i
 const META_HTTP_EQUIV_RE =
@@ -44,12 +70,14 @@ const filenameFromUrl = (url: string): string => {
   }
 }
 
-const decodeBody = (bytes: Uint8Array, contentType: string | null): string => {
-  let charset = parseCharsetFromHeader(contentType)
-  if (!charset) {
-    const firstKb = new TextDecoder('utf-8', { fatal: false }).decode(bytes.subarray(0, 1024))
-    charset = parseCharsetFromMeta(firstKb)
-  }
+const pickCharset = (head: Uint8Array, contentType: string | null): string | null => {
+  const charset = parseCharsetFromHeader(contentType)
+  if (charset) return charset
+  const firstKb = new TextDecoder('utf-8', { fatal: false }).decode(head.subarray(0, 1024))
+  return parseCharsetFromMeta(firstKb)
+}
+
+const decodeBody = (bytes: Uint8Array, charset: string | null): string => {
   try {
     // Bun's TextDecoder ctor types the encoding as a closed union, but the
     // value here is parsed from arbitrary HTTP / HTML and cannot be narrowed
@@ -70,7 +98,7 @@ export const runHtmlScrape = async (
   canonicalUrl: string,
   scraper: Scraper,
   acceptLanguage: string | undefined
-): Promise<NonNullable<StageResult> | HtmlMiss> => {
+): Promise<HtmlCard | HtmlMiss> => {
   const controller = new AbortController()
   let timedOut = false
   const timer = setTimeout(() => {
@@ -108,10 +136,18 @@ export const runHtmlScrape = async (
       }
     }
 
-    const html = decodeBody(await readHead(response, controller, MAX_HEAD_BYTES), contentType)
-    const meta = await scraper.scrape({ html, url: baseUrl })
-
+    const page = await readPage(response, controller, MAX_PAGE_BYTES)
+    const charset = pickCharset(page.head, contentType)
+    const meta = await scraper.scrape({ html: decodeBody(page.head, charset), url: baseUrl })
     if (!meta.title) return 'no-title'
+    let facts = meta.facts
+    let retry = false
+    if (!facts && (looksLikeJobPage(canonicalUrl) || looksLikeJobPage(baseUrl))) {
+      const tail = await page.readTail(JSON_LD_TAIL)
+      facts = scraper.jobFacts(decodeBody(tail.bytes, charset))
+      // The posting may sit past where a late or failed read stopped; a later read may find it.
+      retry = tail.cut && !facts
+    }
 
     return {
       success: true,
@@ -124,14 +160,16 @@ export const runHtmlScrape = async (
       publisher: meta.publisher ? { name: meta.publisher } : undefined,
       image: meta.image ? { url: meta.image } : undefined,
       icon: meta.logo,
-      published_at: meta.date
+      published_at: meta.date,
+      facts,
+      ...(retry ? { retry: true as const } : {})
     }
   } catch {
     return timedOut ? 'timeout' : 'error'
   } finally {
     clearTimeout(timer)
-    // Release the socket on early returns (non-ok / non-HTML) that never
-    // drained the body. A no-op once the body was fully read.
+    // Ends every read: an early return, a head-only page, or a tail. The rest of the
+    // body is never downloaded. A no-op once the body was fully read.
     controller.abort()
   }
 }

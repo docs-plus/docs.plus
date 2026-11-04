@@ -2,23 +2,34 @@ import { canonicalize } from './canonicalize'
 import { isSafeUrl } from './ssrf'
 import { readCache, writeCache } from './stages/cache'
 import { runFallback } from './stages/fallback'
-import type { Cache, ErrorResponse, HtmlMiss, Scraper, StageResult } from './types'
+import {
+  type Cache,
+  type ErrorResponse,
+  type Fact,
+  FACT_ICONS,
+  type HtmlCard,
+  type HtmlMiss,
+  LINK_KINDS,
+  type Scraper,
+  type SpecialMiss,
+  type StageResult
+} from './types'
 
 export interface PipelineStages {
   oembed: (canonicalUrl: string) => Promise<StageResult>
-  special: (canonicalUrl: string) => Promise<StageResult>
+  special: (canonicalUrl: string) => Promise<StageResult | SpecialMiss>
   html: (
     canonicalUrl: string,
     scraper: Scraper,
     acceptLanguage: string | undefined
-  ) => Promise<StageResult | HtmlMiss>
+  ) => Promise<HtmlCard | HtmlMiss>
 }
 
 export interface StageEvent {
   stage: string
   hit: boolean
   durationMs: number
-  reason?: HtmlMiss
+  reason?: HtmlMiss | SpecialMiss
 }
 
 export interface PipelineInput {
@@ -32,8 +43,15 @@ export interface PipelineInput {
   onStage?: (event: StageEvent) => void
 }
 
+/** `retry` means a stage missed or read less for a reason that may clear soon. */
 export type PipelineResult =
-  | { kind: 'success'; payload: NonNullable<StageResult>; fromCache: boolean; fallback: boolean }
+  | {
+      kind: 'success'
+      payload: NonNullable<StageResult>
+      fromCache: boolean
+      fallback: boolean
+      retry: boolean
+    }
   | { kind: 'error'; status: 400; message: string; code: ErrorResponse['code'] }
 
 const orderedStageNames = ['oembed', 'special', 'html'] as const
@@ -42,6 +60,8 @@ const TEXT_MAX = 300
 const NAME_MAX = 128
 const URL_MAX = 2048
 const TOKEN_MAX = 64
+const FACT_MAX = 64
+const FACTS_MAX = 3
 const OEMBED_TYPES = ['video', 'rich', 'photo', 'link'] as const
 
 /** Keeps `max` code points, so a cut never splits a surrogate pair, and adds "…". */
@@ -74,6 +94,18 @@ const size = (value: number | undefined): number | undefined =>
 
 const unlessEmpty = <T extends object>(value: T): T | undefined =>
   Object.values(value).some((field) => field !== undefined) ? value : undefined
+
+const capFacts = (facts: unknown): Fact[] | undefined => {
+  if (!Array.isArray(facts)) return undefined
+  const kept: Fact[] = []
+  for (const fact of facts) {
+    const icon = FACT_ICONS.find((name) => name === fact?.icon)
+    const value = text(fact?.text, FACT_MAX)?.trim()
+    if (icon && value) kept.push({ icon, text: value })
+    if (kept.length === FACTS_MAX) break
+  }
+  return kept.length > 0 ? kept : undefined
+}
 
 /**
  * Every stage result and the fallback card pass here before Redis and the reply. The card
@@ -125,7 +157,9 @@ const capCard = (card: NonNullable<StageResult>, canonical: string): NonNullable
         }
       : undefined,
     published_at: token(card.published_at),
-    modified_at: token(card.modified_at)
+    modified_at: token(card.modified_at),
+    kind: LINK_KINDS.find((kind) => kind === card.kind),
+    facts: capFacts(card.facts)
   }
 }
 
@@ -148,18 +182,20 @@ export const runPipeline = async (input: PipelineInput): Promise<PipelineResult>
 
   const cached = await readCache(cache, canonical, acceptLanguage)
   if (cached) {
-    const { fallback, ...payload } = cached
+    const { fallback, retry, ...payload } = cached
     return {
       kind: 'success',
       payload: { ...payload, requested_url: requestedUrl },
       fromCache: true,
-      fallback: fallback === true
+      fallback: fallback === true,
+      retry: retry === true
     }
   }
 
+  let retry = false
   for (const name of orderedStageNames) {
     const start = Date.now()
-    let outcome: StageResult | HtmlMiss
+    let outcome: HtmlCard | null | HtmlMiss | SpecialMiss
     try {
       outcome =
         name === 'html'
@@ -171,6 +207,7 @@ export const runPipeline = async (input: PipelineInput): Promise<PipelineResult>
     }
     const reason = typeof outcome === 'string' ? outcome : undefined
     const result = typeof outcome === 'string' ? null : outcome
+    if ((name === 'special' && reason) || result?.retry) retry = true
     onStage?.({
       stage: name,
       hit: result !== null,
@@ -180,12 +217,19 @@ export const runPipeline = async (input: PipelineInput): Promise<PipelineResult>
 
     if (result) {
       const card = capCard(result, canonical)
-      await writeCache(cache, canonical, acceptLanguage, card, 'positive')
+      await writeCache(
+        cache,
+        canonical,
+        acceptLanguage,
+        retry ? { ...card, retry: true } : card,
+        retry ? 'negative' : 'positive'
+      )
       return {
         kind: 'success',
         payload: { ...card, requested_url: requestedUrl },
         fromCache: false,
-        fallback: false
+        fallback: false,
+        retry
       }
     }
   }
@@ -197,6 +241,7 @@ export const runPipeline = async (input: PipelineInput): Promise<PipelineResult>
     kind: 'success',
     payload: { ...card, requested_url: requestedUrl },
     fromCache: false,
-    fallback: true
+    fallback: true,
+    retry
   }
 }
