@@ -1,7 +1,26 @@
 import { randomUUID } from 'node:crypto'
 
 import type { RedisClient } from '../../../types/redis.types'
-import type { Cache, CacheEntry } from '../domain/types'
+import type { ArchiveCache, ArchiveSnapshot, Cache, CacheEntry } from '../domain/types'
+
+/** The `ArchiveCache` port on the same client. Failures are swallowed, like the card cache. */
+export const createArchiveCache = (redis: RedisClient | null): ArchiveCache => ({
+  get: async (key) => {
+    try {
+      const raw = redis ? await redis.get(key) : null
+      return raw ? (JSON.parse(raw) as { snapshot: ArchiveSnapshot | null }) : null
+    } catch {
+      return null
+    }
+  },
+  set: async (key, snapshot, ttlSeconds) => {
+    try {
+      await redis?.set(key, JSON.stringify({ snapshot }), 'EX', ttlSeconds)
+    } catch {
+      /* swallow — cache is best-effort */
+    }
+  }
+})
 
 /**
  * Implements the `Cache` port using ioredis. A failed `get` or `set` is swallowed, so a

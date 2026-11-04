@@ -11,7 +11,12 @@ import { CONSUME_TIMEOUT_MS, consumeWithin, readWithin } from '../lib/consumeWit
 import { httpLogger } from '../lib/logger'
 import { rateLimitFailOpenTotal } from '../lib/metrics'
 import { getRedisClient } from '../lib/redis'
-import { LINK_ICON_PATH, LINK_IMAGE_PATH, LINK_METADATA_MOUNT_PATH } from '../modules/link-metadata'
+import {
+  LINK_ARCHIVE_PATH,
+  LINK_ICON_PATH,
+  LINK_IMAGE_PATH,
+  LINK_METADATA_MOUNT_PATH
+} from '../modules/link-metadata'
 import { isSocialCardPath } from '../modules/social-card'
 
 const redisClient = getRedisClient()
@@ -31,9 +36,9 @@ const MEDIA_READ_PATH_PREFIX = `${HYPERMULTIMEDIA_MOUNT_PATH}/`
 // would eat the global budget in a few loads.
 const LINK_ICON_BUDGET_FACTOR = 10
 
-// The metadata and image routes share this bucket, so a hovercard spends up to two
-// points per link. On the global bucket a 429 there would also break pad and chat REST
-// calls from the same address.
+// The metadata, image and archive routes share this bucket, so a hovercard spends up to
+// two points per link, and a click on "View archived copy" one more. On the global bucket
+// a 429 there would also break pad and chat REST calls from the same address.
 const LINK_METADATA_BUDGET_FACTOR = 10
 
 // Crawlers fetch the card from their own addresses, and one shared link brings several.
@@ -309,7 +314,11 @@ export const setupMiddleware = (app: Hono, opts: MiddlewareOptions) => {
     if (path === LINK_ICON_PATH) {
       return linkIconRateLimiter(c, next)
     }
-    if (path === LINK_METADATA_MOUNT_PATH || path === LINK_IMAGE_PATH) {
+    if (
+      path === LINK_METADATA_MOUNT_PATH ||
+      path === LINK_IMAGE_PATH ||
+      path === LINK_ARCHIVE_PATH
+    ) {
       return linkMetadataRateLimiter(c, next)
     }
     if (isSocialCardPath(path)) {

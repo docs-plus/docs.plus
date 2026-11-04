@@ -1,15 +1,16 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 
-import { LINK_ICON_ROUTE, LINK_IMAGE_ROUTE } from '../domain/routes'
-import type { ErrorResponse } from '../domain/types'
+import { LINK_ARCHIVE_ROUTE, LINK_ICON_ROUTE, LINK_IMAGE_ROUTE } from '../domain/routes'
+import type { ArchiveCache, ErrorResponse } from '../domain/types'
+import { createArchiveController } from './archiveController'
 import type { ControllerDeps } from './controller'
 import { createController } from './controller'
 import { CLEAN_MISS_CACHE_HEADER, createIconController } from './iconController'
 import { createImageController } from './imageController'
 import { iconQuerySchema, metadataQuerySchema } from './schema'
 
-export type RouterDeps = ControllerDeps & { iconMaxBytes: number }
+export type RouterDeps = ControllerDeps & { iconMaxBytes: number; archiveCache: ArchiveCache }
 
 // Custom error hook so a missing/malformed `?url=` returns the same
 // ErrorResponse shape as the controller's hand-rolled errors. Without
@@ -30,6 +31,7 @@ export const createRouter = (deps: RouterDeps): Hono => {
   const router = new Hono()
   router.get('/', validPageUrl, createController(deps))
   router.get(LINK_IMAGE_ROUTE, validPageUrl, createImageController(deps))
+  router.get(LINK_ARCHIVE_ROUTE, validPageUrl, createArchiveController(deps))
   router.get(
     LINK_ICON_ROUTE,
     // The schema tags the SSRF refine BLOCKED_URL. Every other first issue means a malformed origin.

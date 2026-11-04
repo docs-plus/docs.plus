@@ -62,6 +62,10 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 
 ### Added
 
+- `GET /api/metadata/archive?url=` asks the Wayback Machine for the closest copy of a page. It
+  answers only `https://web.archive.org/web/` snapshots, never saves a page, and never sends a
+  docs.plus pad link. A hit is cached 1 h and no copy 10 min; an archive that does not answer is
+  never cached. It shares the link-metadata rate budget.
 - **A social preview card for every pad link ([#663](https://github.com/docs-plus/docs.plus/issues/663)).**
   - `GET /api/documents/:documentId/card.png` draws a 1200 × 630 PNG from stored values only,
     never from URL text. The kinds are `document`, `heading`, `chat`, `message`, `version` and
@@ -247,6 +251,13 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 
 ### Security
 
+- **The favicon route fetches only a link's registrable domain.** An AI agent can be tricked
+  into writing a link such as `https://<data>.attacker.example` into a pad. Every reader's pad then
+  asked `GET /api/metadata/icon` for that origin, and the server looked up and fetched the full host,
+  so the data reached the attacker with no click. The route now reduces the origin to its registrable
+  domain, by the ICANN suffix list only (`tldts`), before any DNS lookup. An IP origin stays as it is,
+  and a host with no registrable domain is a clean miss. Subdomain sites now show their parent site's
+  icon: `docs.google.com` shows Google's, and `*.github.io` shows GitHub's.
 - **Link card text carries no control or bidi characters.** `capCard` cleans every text field:
   the title, the description, fact text, names, image alt and the oEmbed provider. It turns each
   whitespace run into one space. Then it drops the C0, DEL and C1 controls and the bidi controls

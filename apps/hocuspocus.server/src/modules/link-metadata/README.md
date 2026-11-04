@@ -5,7 +5,7 @@ Self-contained link-unfurling service. It is built as a modular monolith, so it 
 ## Boundary rules (do not violate)
 
 1. **Single bounded folder.** Code, tests, types, infra adapters all live here. Files outside this folder may only import from `./index.ts`. One exception: the openapi module reads `http/schema.ts` directly to build the spec. The lint rule does not catch that relative path.
-2. **One public surface.** `index.ts` exports `{ init, LINK_METADATA_MOUNT_PATH, LINK_ICON_PATH, LINK_IMAGE_PATH, FACT_ICONS, FACT_MAX, FACTS_MAX, LINK_KINDS, LINK_MISSES, type MetadataResponse, type ErrorResponse, type LinkMiss }`. The OpenAPI schema reads `FACT_MAX` and `FACTS_MAX`, so it never copies the caps. The host mounts the router at the first path constant. The rate limiter matches all three: the icon route spends its own budget, and the metadata and image routes share one. Nothing else is consumable from outside.
+2. **One public surface.** `index.ts` exports `{ init, LINK_METADATA_MOUNT_PATH, LINK_ICON_PATH, LINK_IMAGE_PATH, LINK_ARCHIVE_PATH, FACT_ICONS, FACT_MAX, FACTS_MAX, LINK_KINDS, LINK_MISSES, type MetadataResponse, type ErrorResponse, type LinkMiss }`. The OpenAPI schema reads `FACT_MAX` and `FACTS_MAX`, so it never copies the caps. The host mounts the router at the first path constant. The rate limiter matches all four: the icon route spends its own budget, and the metadata, image and archive routes share one. Nothing else is consumable from outside.
 3. **DI at the seam.** Module exports `init({ redis, logger, iconMaxBytes, publicUrl, ownImage, apiKeys, padSlugOf })`, which returns `{ router, forgetPad }`. `iconMaxBytes` is optional and defaults to `32768`. `publicUrl` is optional and defaults to `null`; the fallback stage builds its `favicon` URL from it. `apiKeys` is optional: `{ githubToken, stackExchangeKey }`, each a string or `null`, and both `null` when it is left out. `padSlugOf` is optional: the host's function from a URL to the slug key of the pad it opens, or `null`. Without it, no card is a pad card. The module does not call `getRedisClient()` or read env vars for infra clients.
 4. **Framework-free domain.** Files under `domain/` import zero infra SDKs (no `hono`, no `ioredis`, no `entities`). `infra/` is the only place SDKs live. Domain↔infra contracts use tiny inline port types declared in `domain/types.ts`.
 5. **Stable wire contract.** `http/schema.ts` (request) and `domain/types.ts` `MetadataResponse` / `ErrorResponse` (response) are the published contract. Additive changes only within v1. One recorded exception: the fallback's `favicon` changed from a Google URL to this server's icon route URL ([#517](https://github.com/docs-plus/docs.plus/issues/517), maintainer ruling 2026-10-18).
@@ -49,6 +49,7 @@ A docs.plus pad link can be scraped like any page, and its card holds the pad's 
 `GET /api/metadata/icon?origin=<origin>` returns one favicon. [API.md](../../../API.md#link-metadata) holds the full contract.
 
 - **Origin only.** The query names a bare origin, never a page. The route fetches `<origin>/favicon.ico` first.
+- **Site, not host.** `iconSiteOrigin` (`domain/icon.ts`) reduces the origin to its registrable domain before any lookup, by the ICANN list only. A private suffix such as `github.io` would let an attacker choose the label below it, so it is not used. A host label can carry data that an agent was tricked into writing, and a DNS lookup alone sends it out. The cost: a subdomain site shows its parent site's icon.
 - **HTML step.** When that file misses, `domain/readHead.ts` reads the head of `<origin>/`: 64 KiB at most, cut at `</head`. `domain/iconLinks.ts` scans that text. Its small regex scanner picks one `rel=icon` or `apple-touch-icon` href and skips SVG and `data:`. It is not the page scraper (`infra/headScraper.ts`): that reads the card fields, and prefers large logos. The page, the href and every redirect go through `safeFetch`.
 - **One timer.** Each hop has its own `AbortController` under the route's one 3 s timer. An over-cap read then aborts only its own hop, and the HTML step can still run.
 - **Sniffed types.** `domain/relay.ts` reads the first bytes. PNG, ICO (image count above 0), GIF, JPEG and WebP pass. SVG, HTML and CUR are a miss. The served `Content-Type` comes from the sniff.
@@ -59,6 +60,16 @@ A docs.plus pad link can be scraped like any page, and its card holds the pad's 
 - **Our own card skips the network.** The host passes `ownImage` (type `OwnImage` in `domain/types.ts`). The image route calls it first. A docs.plus pad link names this server's own `card.png`, and `ownImage` reads it in process. Through Traefik, every reader's hover would arrive from one address and share one card bucket. This module never imports social-card; `src/index.ts` wires the two.
 - **DNS rebinding.** `safeFetch` checks the DNS answer, then connects in a separate step. A host that changes its answer in between can reach a private address. This route returns bytes from that fetch, so the leak is limited to sniffed image bytes, up to the cap, within 3 s. That risk is accepted. The HTML step lets a site name any public image URL, under the same guard.
 - **Proxy log.** `pinoLogger` logs `c.req.path`, which has no query. `scripts/traefik/traefik.yml` drops query strings from the Traefik access log, so an icon miss does not log `?origin=` there either. That setting needs Traefik v3.6.18 or later.
+
+## Archived copies
+
+`GET /api/metadata/archive?url=<url>` finds the Wayback Machine's closest copy of a page. The webapp's no-preview card calls it only on a click. [API.md](../../../API.md#link-metadata) holds the full contract.
+
+- **Lookup only.** `domain/archive.ts` asks `archive.org/wayback/available`, through `safeFetch` and `readApiJson`, under one 4 s timer. It never calls Save Page Now: archiving on our side is ruled out.
+- **The page is never touched.** The route fetches and resolves only archive.org. It canonicalizes the URL first, so tracking params never leave.
+- **No pad URL leaves.** When `padSlugOf` names a pad, the route answers `none` and sends nothing.
+- **Snapshot check.** The API names snapshots with `http://`, so the scheme is upgraded first. Then the URL must parse to origin `https://web.archive.org` with a `/web/` path.
+- **Cache.** `createArchiveCache` stores a hit for 1 h and `none` for 10 min, under its own `meta:archive:v1:` prefix. `unreachable` is never stored, so a timeout never reads as "no copy".
 
 ## Future extraction (not planned)
 

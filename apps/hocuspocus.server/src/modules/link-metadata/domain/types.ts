@@ -77,6 +77,26 @@ export interface ErrorResponse {
   code: 'INVALID_URL' | 'BLOCKED_URL'
 }
 
+/** The Wayback Machine's closest copy of a page. `url` is always on `https://web.archive.org/web/`. */
+export interface ArchiveSnapshot {
+  url: string
+  /** ISO 8601, in UTC. */
+  timestamp: string
+}
+
+/** `none`: the archive holds no copy. `unreachable`: the archive did not answer, so ask again later. */
+export type ArchiveMiss = 'none' | 'unreachable'
+
+export type ArchiveResponse =
+  | { success: true; url: string; snapshot: ArchiveSnapshot }
+  | { success: true; url: string; snapshot: null; miss: ArchiveMiss }
+
+/** Stores only a definite answer: a snapshot, or `null` when the archive holds no copy. */
+export interface ArchiveCache {
+  get(key: string): Promise<{ snapshot: ArchiveSnapshot | null } | null>
+  set(key: string, snapshot: ArchiveSnapshot | null, ttlSeconds: number): Promise<void>
+}
+
 export type StageResult = Omit<
   MetadataResponse,
   'cached' | 'fetched_at' | 'fallback' | 'miss'

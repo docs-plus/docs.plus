@@ -265,6 +265,17 @@ describe('routed fetch (integration)', () => {
     const requestIcon = (origin: string) =>
       buildApp().request('http://localhost/api/metadata/icon?origin=' + encodeURIComponent(origin))
 
+    // An agent-written link can hide data in a host label. No fetch and no DNS lookup may name it.
+    test('fetches only the registrable domain, never the requested host', async () => {
+      routes['https://attacker.example/favicon.ico'] = () => new Response(pngBytes(64))
+
+      const response = await requestIcon('https://c2vjcmv0.attacker.example')
+      expect(response.status).toBe(200)
+      expect(fetchedUrls()).toEqual(['https://attacker.example/favicon.ico'])
+      const lookups = dnsSpy.mock.calls.map((call: unknown[]) => String(call[0]))
+      expect(lookups.some((host: string) => host.includes('c2vjcmv0'))).toBe(false)
+    })
+
     test('a miss is an empty 204 with the clean-miss cache header', async () => {
       const response = await requestIcon('https://example.com')
       expect(response.status).toBe(204)
@@ -396,6 +407,119 @@ describe('routed fetch (integration)', () => {
       const response = await requestImage('https://example.com/svg')
       expect(response.status).toBe(204)
       expect(response.headers.get('cache-control')).toBe('public, max-age=600')
+    })
+  })
+
+  describe('GET /api/metadata/archive', () => {
+    const page = 'https://example.com/post'
+    const lookup = (url: string) =>
+      'https://archive.org/wayback/available?url=' + encodeURIComponent(url)
+    const closest = (snapshot: Record<string, unknown>) => () =>
+      Response.json({ url: page, archived_snapshots: { closest: snapshot } })
+    // One app per test, so a second request can hit the first one's cache.
+    const archiveApp = () => {
+      const { router } = init({
+        redis: makeMockRedis(),
+        logger: silentLogger,
+        padSlugOf: (url) => (new URL(url).hostname === 'docs.plus' ? 'pad' : null)
+      })
+      const app = new Hono().route('/api/metadata', router)
+      return (url: string) =>
+        app.request('http://localhost/api/metadata/archive?url=' + encodeURIComponent(url))
+    }
+    interface ArchiveBody {
+      url?: string
+      snapshot?: { url: string; timestamp: string } | null
+      miss?: string
+      code?: string
+    }
+    const readArchive = async (response: Response) => (await response.json()) as ArchiveBody
+
+    test('answers the https snapshot, asks only the availability API, and caches the hit', async () => {
+      routes[lookup(page)] = closest({
+        status: '200',
+        available: true,
+        url: 'http://web.archive.org/web/20130919044612/http://example.com/post',
+        timestamp: '20130919044612'
+      })
+      const request = archiveApp()
+
+      // Tracking params and the fragment never reach archive.org.
+      const first = await request(`${page}?utm_source=x#top`)
+      expect(first.status).toBe(200)
+      expect(first.headers.get('cache-control')).toBe('public, max-age=3600')
+      expect(await readArchive(first)).toEqual({
+        success: true,
+        url: page,
+        snapshot: {
+          url: 'https://web.archive.org/web/20130919044612/http://example.com/post',
+          timestamp: '2013-09-19T04:46:12.000Z'
+        }
+      } as ArchiveBody)
+
+      const second = await request(page)
+      expect((await readArchive(second)).snapshot?.url).toStartWith('https://web.archive.org/web/')
+      expect(fetchedUrls()).toEqual([lookup(page)])
+    })
+
+    test.each([
+      ['a look-alike host', 'http://web.archive.org.evil.example/web/2020/x'],
+      ['credentials before the host', 'https://web.archive.org@evil.example/web/2020/x'],
+      ['a Save Page Now path', 'https://web.archive.org/save/https://example.com/post'],
+      ['a non-web scheme', 'javascript://web.archive.org/web/2020/x']
+    ])('refuses a snapshot URL with %s', async (_name, url) => {
+      routes[lookup(page)] = closest({ available: true, url, timestamp: '20200101000000' })
+      const response = await archiveApp()(page)
+      expect(await readArchive(response)).toMatchObject({ snapshot: null, miss: 'none' })
+    })
+
+    test('no snapshot is a clean miss, cached for ten minutes', async () => {
+      routes[lookup(page)] = () => Response.json({ url: page, archived_snapshots: {} })
+      const request = archiveApp()
+
+      const response = await request(page)
+      expect(response.headers.get('cache-control')).toBe('public, max-age=600')
+      expect(await readArchive(response)).toMatchObject({ snapshot: null, miss: 'none' })
+      await request(page)
+      expect(fetchedUrls()).toHaveLength(1)
+    })
+
+    test('an archive 5xx is unreachable and never cached', async () => {
+      routes[lookup(page)] = () => new Response('busy', { status: 503 })
+      const request = archiveApp()
+
+      const response = await request(page)
+      expect(response.headers.get('cache-control')).toBe('no-store')
+      expect(await readArchive(response)).toMatchObject({ snapshot: null, miss: 'unreachable' })
+      await request(page)
+      expect(fetchedUrls()).toHaveLength(2)
+    })
+
+    test('one 4 s timer bounds the lookup', async () => {
+      routes[lookup(page)] = hangUntilAbort
+      const started = performance.now()
+      const response = await archiveApp()(page)
+      expect(performance.now() - started).toBeLessThan(4500)
+      expect(await readArchive(response)).toMatchObject({ miss: 'unreachable' })
+    }, 6000)
+
+    test('refuses a private address and a malformed URL with no fetch', async () => {
+      const request = archiveApp()
+      const blocked = await request('http://192.168.1.1/admin')
+      expect(blocked.status).toBe(400)
+      expect((await readArchive(blocked)).code).toBe('BLOCKED_URL')
+
+      const invalid = await request('not-a-url')
+      expect(invalid.status).toBe(400)
+      expect((await readArchive(invalid)).code).toBe('INVALID_URL')
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
+    // A Private pad's slug must never leave this server.
+    test('never sends a docs.plus pad URL to archive.org', async () => {
+      const response = await archiveApp()('https://docs.plus/secret-pad')
+      expect(await readArchive(response)).toMatchObject({ snapshot: null, miss: 'none' })
+      expect(fetchSpy).not.toHaveBeenCalled()
     })
   })
 })

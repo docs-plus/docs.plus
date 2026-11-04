@@ -11,7 +11,7 @@ import { runOembed } from './domain/stages/oembed'
 import type { ApiKeys, OwnImage } from './domain/types'
 import { createRouter } from './http/router'
 import { createHeadScraper } from './infra/headScraper'
-import { createRedisCache } from './infra/redisCache'
+import { createArchiveCache, createRedisCache } from './infra/redisCache'
 
 export interface InitDeps {
   redis: RedisClient | null
@@ -50,6 +50,7 @@ export const init = (deps: InitDeps): InitResult => {
     stages,
     logger: deps.logger,
     iconMaxBytes: deps.iconMaxBytes ?? ICON_MAX_BYTES_DEFAULT,
+    archiveCache: createArchiveCache(deps.redis),
     publicUrl: deps.publicUrl ?? null,
     ownImage: deps.ownImage,
     padSlugOf: deps.padSlugOf

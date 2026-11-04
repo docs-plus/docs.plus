@@ -77,6 +77,55 @@ export const linkMetadataPaths: OpenApiPaths = {
       }
     }
   },
+  '/api/metadata/archive': {
+    get: {
+      operationId: 'getLinkArchive',
+      summary: 'Find an archived copy of a page',
+      description:
+        'Asks the Wayback Machine availability API (`archive.org/wayback/available`) for the closest copy of the page. It never calls Save Page Now and never fetches the page itself. The URL is canonicalized first: tracking params and the fragment are dropped. A docs.plus pad URL is never sent to archive.org and answers `miss: none`. The snapshot URL is always on `https://web.archive.org/web/`. A hit is cached for one hour, `none` for ten minutes, and `unreachable` not at all. Shares the `/api/metadata` rate-limit bucket.',
+      tags: ['Link metadata'],
+      security: [{}],
+      parameters: toParameters(metadataQuerySchema, 'query', {
+        url: 'Required. The page URL. Must use the http(s) scheme and be at most 2048 characters.'
+      }),
+      responses: {
+        '200': {
+          description:
+            'A snapshot, or `snapshot: null` with `miss`. `none`: the archive holds no copy. `unreachable`: the archive did not answer within 4 s, or answered non-2xx or an unreadable body.',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['success', 'url', 'snapshot'],
+                properties: {
+                  success: { type: 'boolean', const: true },
+                  url: { type: 'string', description: 'The canonical page URL that was asked.' },
+                  snapshot: {
+                    type: ['object', 'null'],
+                    required: ['url', 'timestamp'],
+                    properties: {
+                      url: { type: 'string', pattern: '^https://web\\.archive\\.org/web/' },
+                      timestamp: { type: 'string', format: 'date-time' }
+                    }
+                  },
+                  miss: { type: 'string', enum: ['none', 'unreachable'] }
+                }
+              }
+            }
+          },
+          headers: { 'Cache-Control': { schema: { type: 'string' } } }
+        },
+        '400': {
+          description:
+            'Malformed URL (`INVALID_URL`) or refused by the SSRF string check (`BLOCKED_URL`).',
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/LinkMetadataError' } }
+          }
+        },
+        '429': rateLimitedRef
+      }
+    }
+  },
   '/api/metadata/icon': {
     get: {
       operationId: 'getLinkIcon',
