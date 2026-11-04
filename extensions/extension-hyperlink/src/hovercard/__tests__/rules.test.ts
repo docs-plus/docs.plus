@@ -1,44 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 
-import { chooseImageShape, keepsHovercardOpen } from '../rules'
-
-describe('chooseImageShape', () => {
-  it('always covers under the cover layout', () => {
-    expect(chooseImageShape('cover', undefined, { width: 400, height: 400 })).toBe('cover')
-  })
-
-  it('covers a wide, large picture under adaptive', () => {
-    expect(chooseImageShape('adaptive', undefined, { width: 1200, height: 630 })).toBe('cover')
-  })
-
-  it('makes a thumb of a near-square picture', () => {
-    expect(chooseImageShape('adaptive', undefined, { width: 460, height: 460 })).toBe('thumb')
-  })
-
-  it('makes a thumb of a narrow picture', () => {
-    expect(chooseImageShape('adaptive', undefined, { width: 300, height: 157 })).toBe('thumb')
-  })
-
-  it('makes a thumb of a wide-enough picture with a low ratio', () => {
-    expect(chooseImageShape('adaptive', undefined, { width: 640, height: 500 })).toBe('thumb')
-  })
-
-  it('covers when a size is missing', () => {
-    expect(chooseImageShape('adaptive', undefined, { width: 1200 })).toBe('cover')
-    expect(chooseImageShape('adaptive', undefined, undefined)).toBe('cover')
-  })
-
-  it('makes a tile of a small or unsized repo picture, under either layout', () => {
-    expect(chooseImageShape('cover', 'repo', { width: 460, height: 460 })).toBe('tile')
-    expect(chooseImageShape('cover', 'repo', undefined)).toBe('tile')
-    expect(chooseImageShape('cover', 'repo', { width: 1200, height: 630 })).toBe('cover')
-  })
-
-  it('covers when a size is zero or negative', () => {
-    expect(chooseImageShape('adaptive', undefined, { width: 0, height: 100 })).toBe('cover')
-    expect(chooseImageShape('adaptive', undefined, { width: 100, height: -5 })).toBe('cover')
-  })
-})
+import { keepsHovercardOpen } from '../rules'
 
 type Flags = Partial<Omit<Parameters<typeof keepsHovercardOpen>[0], 'key' | 'getModifierState'>> & {
   altGraph?: boolean

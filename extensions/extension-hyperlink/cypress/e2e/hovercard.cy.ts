@@ -13,16 +13,22 @@ const TIMERS: Cypress.ClockFunction[] = [
   'Date'
 ]
 
-type HovercardWindow = Cypress.AUTWindow & { _hovercard: { calls: string[]; delayMs: number } }
+type HovercardStub = {
+  calls: string[]
+  delayMs: number
+  views: Array<{ href: string; state: string; destroyed: number }>
+  attachedAtDestroy: boolean[]
+}
+type HovercardWindow = Cypress.AUTWindow & { _hovercard: HovercardStub }
 
 const CARD = '.floating-popover .hyperlink-hovercard'
 const SHOWN_CARD = '.floating-popover.visible .hyperlink-hovercard'
 const PREVIEW = '.hyperlink-preview-popover'
 const MAIN = `${CARD} .hyperlink-hovercard__main`
+const DEMO = `${CARD} .demo-card`
 const BARS = `${CARD} .hyperlink-hovercard__bar`
 const NOTE = `${CARD} .hyperlink-hovercard__note`
 const COPY = `${CARD} button[aria-label="Copy link"], ${CARD} button[aria-label="Link copied"]`
-const OPEN = `${CARD} button[aria-label="Open in new tab"]`
 
 const svg = (width: number, height: number): string =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
@@ -36,16 +42,14 @@ const DOC =
   '<p>Plain text with no link at all.</p>' +
   '<p><a href="https://a.example/">Alpha</a> <a href="https://b.example/">Beta</a> ' +
   '<a href="https://c.example/">Gamma</a></p>' +
-  '<p><a href="https://wide.example/">Wide</a> and <a href="https://square.example/">Square</a> ' +
-  'and <a href="https://thumb.example/">Thumb</a> and <a href="https://slow.example/">Slow</a></p>' +
+  '<p><a href="https://wide.example/">Wide</a> and <a href="https://slow.example/">Slow</a> ' +
+  'and <a href="https://builtin.example/">Builtin</a> and <a href="https://throw.example/">Throw</a></p>' +
   '<p><a href="https://xss.example/">Xss</a> and <a href="https://noshow.example/">Hidden</a> ' +
   'and <a href="https://blocked.example/">Blocked</a></p>' +
-  '<p><a href="https://facts.example/">Facts</a> and <a href="https://repo.example/">Repo</a> ' +
-  'and <a href="https://notitle.example/">Notitle</a> ' +
-  'and <a href="https://deep.example/docs/page?q=1#top">Deep</a> ' +
-  '<a href="https://avatar.example/">Avatar</a></p>'
+  '<p><a href="https://late.example/">Late</a> and <a href="https://notitle.example/">Notitle</a> ' +
+  'and <a href="https://deep.example/docs/page?q=1#top">Deep</a></p>'
 
-const stub = (): Cypress.Chainable<HovercardWindow['_hovercard']> =>
+const stub = (): Cypress.Chainable<HovercardStub> =>
   cy.window().then((win) => (win as HovercardWindow)._hovercard)
 
 const hoverLink = (text: string): void => {
@@ -75,8 +79,8 @@ const waitForPicture = (alias: `@${string}`): void => {
   flush()
 }
 
-const visitHovercard = (layout: 'cover' | 'adaptive' = 'cover', extra = ''): void => {
-  cy.visitPlayground({ query: `hovercard=${layout}${extra}` })
+const visitHovercard = (mode: 'on' | 'custom' = 'on', extra = ''): void => {
+  cy.visitPlayground({ query: `hovercard=${mode}${extra}` })
   cy.setEditorContent(DOC)
   // Real key presses reach the page only while it has focus.
   cy.focusEditor()
@@ -167,7 +171,6 @@ describe('hovercard — timing', () => {
     // The link line is real from the first frame.
     cy.get(`${CARD} .hyperlink-hovercard__host`).should('have.text', 'slow.example')
     cy.get(COPY).should('exist')
-    cy.get(OPEN).should('exist')
     cy.get('.floating-popover').then(($shell) => {
       // The data lands at 700 ms; the picture never loads.
       cy.tick(200)
@@ -187,7 +190,7 @@ describe('hovercard — timing', () => {
     stub().then((s) => {
       s.delayMs = 5000
     })
-    hoverLink('Facts')
+    hoverLink('Late')
     cy.tick(500)
     cy.get(BARS).should('have.length', 3)
     cy.tick(3499)
@@ -232,7 +235,7 @@ describe('hovercard — timing', () => {
 describe('hovercard — host read gate', () => {
   beforeEach(() => {
     cy.intercept(pictureRoute('wide'), { body: svg(1200, 630), headers: SVG_HEADERS })
-    visitHovercard('cover', '&gate=strict')
+    visitHovercard('on', '&gate=strict')
   })
 
   it('sends no request and shows no card for an href the host gate refuses', () => {
@@ -304,7 +307,6 @@ describe('hovercard — keys and other popovers', () => {
 
 describe('hovercard — card bodies', () => {
   beforeEach(() => {
-    cy.intercept(pictureRoute('repo'), { body: svg(460, 460), headers: SVG_HEADERS })
     visitHovercard()
   })
 
@@ -314,25 +316,6 @@ describe('hovercard — card bodies', () => {
     cy.get(`${CARD} .hyperlink-hovercard__title`).should('not.exist')
     cy.get(`${CARD} .hyperlink-hovercard__description`).should('not.exist')
     cy.get(`${CARD} .hyperlink-hovercard__host`).should('have.text', 'notitle.example')
-  })
-
-  it('draws a repo picture as an owner tile, even under the cover layout', () => {
-    openCard('Repo')
-    cy.get(MAIN).should('have.class', 'hyperlink-hovercard__main--tile')
-    cy.get(`${CARD} .hyperlink-hovercard__image`).should(($tile) => {
-      expect($tile[0].getBoundingClientRect().width).to.be.closeTo(40, 1)
-    })
-    cy.get(`${CARD} .hyperlink-hovercard__fact`).should('have.length', 2)
-  })
-
-  it('draws a repo picture of unknown size as a tile while it still loads', () => {
-    cy.intercept(pictureRoute('avatar'), {
-      body: svg(460, 460),
-      headers: SVG_HEADERS,
-      delay: 3000
-    })
-    openCard('Avatar')
-    cy.get(MAIN).should('have.class', 'hyperlink-hovercard__main--tile')
   })
 })
 
@@ -391,7 +374,7 @@ describe('hovercard — the title opens through navigate (?navigate=spy)', () =>
 
   beforeEach(() => {
     cy.intercept(pictureRoute('wide'), { body: svg(1200, 630), headers: SVG_HEADERS })
-    visitHovercard('cover', '&navigate=spy')
+    visitHovercard('on', '&navigate=spy')
     openCard()
   })
 
@@ -409,58 +392,95 @@ describe('hovercard — the title opens through navigate (?navigate=spy)', () =>
     fire('auxclick', { button: 1 })
     calls().should('deep.equal', [{ href: 'https://wide.example/', newTab: true }])
   })
-
-  it('opens a new tab from Open in new tab, and closes the card', () => {
-    cy.get(OPEN).click()
-    calls().should('deep.equal', [{ href: 'https://wide.example/', newTab: true }])
-    cy.get(SHOWN_CARD).should('not.exist')
-  })
 })
 
-describe('hovercard — adaptive layout', () => {
+describe('hovercard — custom render (?hovercard=custom)', () => {
+  const views = (): Cypress.Chainable<HovercardStub['views']> => stub().its('views')
+
   beforeEach(() => {
-    visitHovercard('adaptive')
+    cy.intercept(pictureRoute('wide'), { body: svg(1200, 630), headers: SVG_HEADERS })
+    visitHovercard('custom')
   })
 
-  it('shows a near-square picture as a thumb', () => {
-    cy.intercept(pictureRoute('square'), { body: svg(460, 460), headers: SVG_HEADERS }).as('square')
-    hoverLink('Square')
+  it('draws the loading and data states, and destroys the loading view on the swap', () => {
+    stub().then((s) => {
+      s.delayMs = 550
+    })
+    hoverLink('Wide')
+    cy.tick(500)
+    cy.get(SHOWN_CARD).should('exist')
+    cy.get(DEMO).should('have.attr', 'data-state', 'loading')
+    cy.get(MAIN).should('not.exist')
+    // The data lands at 700 ms and replaces the loading view in the same frame.
+    cy.tick(200)
+    flush()
+    cy.get(DEMO).should('have.length', 1).and('have.attr', 'data-state', 'data')
+    cy.get(DEMO).should('contain.text', 'Wide page')
+    cy.get(CARD).should('have.length', 1)
+    views().should('deep.equal', [
+      { href: 'https://wide.example/', state: 'loading', destroyed: 1 },
+      { href: 'https://wide.example/', state: 'data', destroyed: 0 }
+    ])
+  })
+
+  it('keeps the built-in card when render returns null', () => {
+    openCard('Builtin')
+    cy.get(`${CARD} .hyperlink-hovercard__title`).should('have.text', 'https://builtin.example/')
+    cy.get(DEMO).should('not.exist')
+    views().should('have.length', 0)
+  })
+
+  it('destroys the shown view once when the card closes', () => {
+    openCard()
+    cy.get(DEMO).should('have.attr', 'data-state', 'data')
+    views().should('deep.equal', [{ href: 'https://wide.example/', state: 'data', destroyed: 0 }])
+    hoverPlain()
+    cy.tick(300)
+    cy.get(SHOWN_CARD).should('not.exist')
+    // The view is destroyed once the exit fade has removed the card.
+    cy.tick(150)
+    views().should('deep.equal', [{ href: 'https://wide.example/', state: 'data', destroyed: 1 }])
+  })
+
+  it('destroys the shown view only after the card has left the DOM', () => {
+    openCard()
+    hoverPlain()
+    cy.tick(300)
+    // The exit ends on transitionend, or on the engine's 150 ms fallback timer.
+    cy.tick(150)
+    cy.get('.floating-popover').should('not.exist')
+    stub().its('attachedAtDestroy').should('deep.equal', [false])
+  })
+
+  it('destroys a drawn view when the pointer leaves before the open', () => {
+    hoverLink('Wide')
+    // The data lands at 250 ms and is drawn at once; the card would open at 500 ms.
     cy.tick(250)
     flush()
-    waitForPicture('@square')
-    cy.tick(250)
-    cy.get(MAIN).should('have.class', 'hyperlink-hovercard__main--thumb')
-    cy.get(`${CARD} .hyperlink-hovercard__image`).should('have.attr', 'data-state', 'ready')
+    views().should('deep.equal', [{ href: 'https://wide.example/', state: 'data', destroyed: 0 }])
+    hoverPlain()
+    views().should('deep.equal', [{ href: 'https://wide.example/', state: 'data', destroyed: 1 }])
+    cy.tick(1000)
+    cy.get(CARD).should('not.exist')
   })
 
-  it('keeps the text in place when a thumb fails after open', () => {
-    cy.intercept(pictureRoute('thumb'), { statusCode: 404, delay: 900 }).as('thumb')
-    // The picture is still pending, so the card opens at 550 ms.
-    openCard('Thumb')
-    cy.get(MAIN).should('have.class', 'hyperlink-hovercard__main--thumb')
-    cy.get(`${CARD} .hyperlink-hovercard__image`).should('have.attr', 'data-state', 'loading')
-    // The shell scales in, and a rect includes that transform. Measure once it ends.
-    cy.get('.floating-popover.visible').should(($shell) => {
-      expect(getComputedStyle($shell[0]).transform).to.be.oneOf([
-        'none',
-        'matrix(1, 0, 0, 1, 0, 0)'
-      ])
+  it('falls back to the built-in card when render throws, and logs once per editor', () => {
+    cy.window().then((win) => {
+      cy.spy(win.console, 'error').as('error')
     })
-    // The thumb holds column 2, so a removed thumb would widen the text column.
-    const box = (el: HTMLElement) => {
-      const { left, width } = el.getBoundingClientRect()
-      return { left, width }
-    }
-    cy.get(`${CARD} .hyperlink-hovercard__title`).then(($title) => {
-      const before = box($title[0])
-      cy.wait('@thumb')
-      cy.get(`${CARD} .hyperlink-hovercard__image`).should('have.attr', 'data-state', 'failed')
-      // Past the 200 ms fade, so a fold or a removal would have finished.
-      cy.wait(300)
-      cy.get(`${CARD} .hyperlink-hovercard__title`).should(($after) => {
-        expect(box($after[0])).to.deep.equal(before)
-      })
-    })
+    openCard('Throw')
+    cy.get(`${CARD} .hyperlink-hovercard__title`).should('have.text', 'https://throw.example/')
+    hoverPlain()
+    cy.tick(300)
+    cy.get(SHOWN_CARD).should('not.exist')
+    openCard('Throw')
+    cy.get(`${CARD} .hyperlink-hovercard__title`).should('have.text', 'https://throw.example/')
+    cy.get('@error').should('have.been.calledOnce')
+    cy.get('@error').should(
+      'have.been.calledWith',
+      '[extension-hyperlink]',
+      'render threw; the built-in card shows'
+    )
   })
 })
 

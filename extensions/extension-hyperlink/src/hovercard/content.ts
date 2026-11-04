@@ -1,16 +1,16 @@
 import { hasMod } from '../interactions/modKey'
 import type { LinkIconResolver } from '../link-icons/types'
-import { copyToClipboard } from '../utils/copyToClipboard'
 import { createHTMLElement } from '../utils/createHTMLElement'
+import { Check, Copy } from '../utils/icons'
 import { logger } from '../utils/logger'
 import { normalizeHref } from '../utils/normalizeHref'
-import { createIcon, hasIcon } from './icons'
-import type { HovercardData, HovercardFact, ImageShape } from './types'
+import type { HovercardRenderContext, HovercardView } from './types'
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
 // Covers the 200 ms fold; transitionend never fires under `transition: none`.
 const FOLD_FALLBACK_MS = 200
 const COPIED_MS = 1500
+const ICON_SIZE = 18
 const NO_PREVIEW = 'No preview for this page.'
 
 export type PreloadedImage = {
@@ -20,27 +20,9 @@ export type PreloadedImage = {
   done: Promise<void>
 }
 
-/** What the card shows above its link line. */
-export type HovercardBody =
-  | { state: 'loading' }
-  | { state: 'empty' }
-  | {
-      state: 'data'
-      data: HovercardData & { title: string }
-      picture: PreloadedImage | null
-      shape: ImageShape
-    }
-
-export type HovercardContent = {
-  element: HTMLElement
-  /** Replaces everything above the link line in place. The link line and its buttons stay. */
-  setBody: (body: HovercardBody) => void
-  dispose: () => void
-}
-
-type Deps = {
-  siteIcon?: LinkIconResolver
-  open: (href: string, newTab: boolean) => void
+/** The built-in card. `setBody` replaces everything above the link line, so the link line stays. */
+export type BuiltInCard = HovercardView & {
+  setBody: (ctx: HovercardRenderContext, picture: PreloadedImage | null) => void
 }
 
 /** Starts the load now. The plugin decides how long to wait for it. */
@@ -78,8 +60,7 @@ const collapseWell = (well: HTMLElement): void => {
   setTimeout(done, FOLD_FALLBACK_MS)
 }
 
-// A failed thumb or tile only fades in place (A5), so the text beside it never moves.
-const createImageWell = (image: PreloadedImage, shape: ImageShape): HTMLElement | null => {
+const createImageWell = (image: PreloadedImage): HTMLElement | null => {
   if (image.settled === 'failed') return null
   const well = createHTMLElement('div', { className: 'hyperlink-hovercard__image' })
   well.dataset.state = image.settled === 'ready' ? 'ready' : 'loading'
@@ -87,8 +68,7 @@ const createImageWell = (image: PreloadedImage, shape: ImageShape): HTMLElement 
   if (image.settled === 'pending') {
     void image.done.then(() => {
       if (image.settled === 'ready') well.dataset.state = 'ready'
-      else if (shape === 'cover') collapseWell(well)
-      else well.dataset.state = 'failed'
+      else collapseWell(well)
     })
   }
   return well
@@ -133,7 +113,7 @@ const textBlock = (className: string, textContent: string): HTMLElement =>
   createHTMLElement('p', { className, textContent })
 
 // Tab must stay in the editor (it indents there), so no card control joins the Tab order.
-const createTitle = (text: string, href: string, open: Deps['open']): HTMLElement => {
+const createTitle = (text: string, { href, open }: HovercardRenderContext): HTMLElement => {
   const title = createHTMLElement('a', {
     className: 'hyperlink-hovercard__title',
     href,
@@ -144,33 +124,22 @@ const createTitle = (text: string, href: string, open: Deps['open']): HTMLElemen
   })
   title.addEventListener('click', (e) => {
     e.preventDefault()
-    open(href, hasMod(e))
+    open(hasMod(e))
   })
   title.addEventListener('auxclick', (e) => {
     if (e.button !== 1) return
     e.preventDefault()
-    open(href, true)
+    open(true)
   })
   return title
 }
 
-const createFacts = (facts: HovercardFact[]): HTMLElement => {
-  const row = createHTMLElement('div', { className: 'hyperlink-hovercard__facts' })
-  for (const { icon, text } of facts.slice(0, 3)) {
-    const fact = createHTMLElement('span', { className: 'hyperlink-hovercard__fact' })
-    if (hasIcon(icon)) fact.append(createIcon(icon))
-    fact.append(createHTMLElement('span', { textContent: text }))
-    row.append(fact)
-  }
-  return row
-}
-
-const createMain = (body: HovercardBody, href: string, deps: Deps): HTMLElement => {
+const createMain = (ctx: HovercardRenderContext, picture: PreloadedImage | null): HTMLElement => {
   const main = createHTMLElement('div', { className: 'hyperlink-hovercard__main' })
   const text = createHTMLElement('div', { className: 'hyperlink-hovercard__body' })
   main.append(text)
 
-  if (body.state === 'loading') {
+  if (ctx.state === 'loading') {
     text.setAttribute('aria-busy', 'true')
     for (let i = 0; i < 3; i++) {
       text.append(createHTMLElement('span', { className: 'hyperlink-hovercard__bar' }))
@@ -178,98 +147,92 @@ const createMain = (body: HovercardBody, href: string, deps: Deps): HTMLElement 
     return main
   }
 
-  if (body.state !== 'data') {
+  const data = ctx.state === 'data' ? ctx.data : null
+  if (!data?.title) {
     text.append(textBlock('hyperlink-hovercard__note', NO_PREVIEW))
     return main
   }
 
-  const { data } = body
-  text.append(createTitle(data.title, href, deps.open))
-  if (data.facts?.length) text.append(createFacts(data.facts))
+  text.append(createTitle(data.title, ctx))
   if (data.description) text.append(textBlock('hyperlink-hovercard__description', data.description))
-
-  const well = body.picture && createImageWell(body.picture, body.shape)
-  if (!well) return main
-  if (body.shape !== 'cover') main.classList.add(`hyperlink-hovercard__main--${body.shape}`)
-  main.prepend(well)
+  const well = picture && createImageWell(picture)
+  if (well) main.prepend(well)
   return main
 }
 
-const createAction = (label: string, ...icons: SVGSVGElement[]): HTMLButtonElement => {
+const createCopyButton = (copy: HovercardRenderContext['copy']): HTMLButtonElement => {
+  // Static icon strings only: no host data ever reaches `innerHTML`.
   const button = createHTMLElement('button', {
     type: 'button',
     className: 'hyperlink-hovercard__action',
-    tabIndex: -1
+    tabIndex: -1,
+    innerHTML: Copy({ size: ICON_SIZE }) + Check({ size: ICON_SIZE })
   })
-  button.setAttribute('aria-label', label)
-  button.append(...icons)
+  button.lastElementChild?.classList.add('hyperlink-hovercard__check')
+  button.setAttribute('aria-label', 'Copy link')
   // A press must not take focus, so the caret stays in the editor.
   button.addEventListener('mousedown', (e) => e.preventDefault())
+
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const reset = (): void => {
+    delete button.dataset.copied
+    button.setAttribute('aria-label', 'Copy link')
+  }
+  button.addEventListener('click', () => {
+    // A refused write keeps the copy icon; the button has nothing else to say.
+    void copy().then((ok) => {
+      if (!ok) return
+      button.dataset.copied = ''
+      button.setAttribute('aria-label', 'Link copied')
+      clearTimeout(timer)
+      timer = setTimeout(reset, COPIED_MS)
+    })
+  })
   return button
 }
 
-/** Built from the host's `fetchMetadata` data, never from mark attrs. */
-export const createHovercardContent = (
-  href: string,
-  body: HovercardBody,
-  deps: Deps
-): HovercardContent => {
-  const card = createHTMLElement('div', { className: 'hyperlink-hovercard' })
-  let copiedTimer: ReturnType<typeof setTimeout> | undefined
-  let disposed = false
-
-  const site = createHTMLElement('div', { className: 'hyperlink-hovercard__site' })
-  const icon = resolveSiteIcon(deps.siteIcon, href)
+const createLinkLine = (
+  { href, copy }: HovercardRenderContext,
+  siteIcon: LinkIconResolver | undefined
+): HTMLElement => {
+  const line = createHTMLElement('div', { className: 'hyperlink-hovercard__site' })
+  const icon = resolveSiteIcon(siteIcon, href)
   if (icon) {
     icon.classList.add('hyperlink-hovercard__site-icon')
     icon.setAttribute('aria-hidden', 'true')
-    site.append(icon)
+    line.append(icon)
   }
   const { host, rest } = urlParts(href)
   const url = createHTMLElement('span', { className: 'hyperlink-hovercard__url' })
   url.append(
     createHTMLElement('span', { className: 'hyperlink-hovercard__host', textContent: host })
   )
-  if (rest)
+  if (rest) {
     url.append(
       createHTMLElement('span', { className: 'hyperlink-hovercard__path', textContent: rest })
     )
-
-  const check = createIcon('check')
-  check.classList.add('hyperlink-hovercard__check')
-  const copy = createAction('Copy link', createIcon('copy'), check)
-  const resetCopy = (): void => {
-    delete copy.dataset.copied
-    copy.setAttribute('aria-label', 'Copy link')
   }
-  copy.addEventListener('click', () => {
-    // A refused write keeps the copy icon; the button has nothing else to say.
-    void copyToClipboard(href).then((ok) => {
-      if (!ok || disposed) return
-      copy.dataset.copied = ''
-      copy.setAttribute('aria-label', 'Link copied')
-      clearTimeout(copiedTimer)
-      copiedTimer = setTimeout(resetCopy, COPIED_MS)
-    })
-  })
-  const open = createAction('Open in new tab', createIcon('open'))
-  open.addEventListener('click', () => deps.open(href, true))
-  site.append(url, copy, open)
+  line.append(url, createCopyButton(copy))
+  return line
+}
 
-  let main = createMain(body, href, deps)
-  card.append(main, site)
+/** Drawn from the public render context, like a host card. Never from mark attrs. */
+export const createBuiltInCard = (
+  ctx: HovercardRenderContext,
+  picture: PreloadedImage | null,
+  siteIcon: LinkIconResolver | undefined
+): BuiltInCard => {
+  const element = createHTMLElement('div')
+  let main = createMain(ctx, picture)
+  element.append(main, createLinkLine(ctx, siteIcon))
 
   return {
-    element: card,
-    setBody: (next) => {
-      const nextMain = createMain(next, href, deps)
+    element,
+    setBody: (next, nextPicture) => {
+      const nextMain = createMain(next, nextPicture)
       nextMain.dataset.swapped = ''
       main.replaceWith(nextMain)
       main = nextMain
-    },
-    dispose: () => {
-      disposed = true
-      clearTimeout(copiedTimer)
     }
   }
 }

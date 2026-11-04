@@ -42,10 +42,9 @@ export type { LinkIconContext } from './link-icons/types'
 // Hovercard: the shapes behind HyperlinkOptions.hovercard.
 export type {
   HovercardData,
-  HovercardFact,
-  HovercardFactIcon,
-  HovercardImageLayout,
-  HovercardOptions
+  HovercardOptions,
+  HovercardRenderContext,
+  HovercardView
 } from './hovercard/types'
 
 // Utilities (validateURL, isSafeHref, …) re-exported for BYO popovers.

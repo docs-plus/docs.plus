@@ -4,16 +4,17 @@ import type { EditorView } from '@tiptap/pm/view'
 import { createPopover, getDefaultController, type Popover } from '../floating-popover'
 import { openLink } from '../interactions/openLink'
 import type { LinkContext } from '../interactions/types'
+import { copyToClipboard } from '../utils/copyToClipboard'
+import { createHTMLElement } from '../utils/createHTMLElement'
 import { logger } from '../utils/logger'
-import {
-  createHovercardContent,
-  type HovercardBody,
-  type HovercardContent,
-  type PreloadedImage,
-  preloadImage
-} from './content'
-import { chooseImageShape, keepsHovercardOpen } from './rules'
-import type { HovercardData, HovercardOptions, ImageShape } from './types'
+import { createBuiltInCard, type PreloadedImage, preloadImage } from './content'
+import { keepsHovercardOpen } from './rules'
+import type {
+  HovercardData,
+  HovercardOptions,
+  HovercardRenderContext,
+  HovercardView
+} from './types'
 
 const HOVERCARD_KIND = 'hovercard'
 // The dwell is also the herd guard: a pointer that only passes over a link sends no request.
@@ -26,22 +27,33 @@ const IMAGE_WAIT_MS = 300
 const GIVE_UP_MS = 4000
 const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)'
 
-type Pending = {
-  link: HTMLAnchorElement
-  href: string
+/** What a card shows. Only the built-in card has `setBody`, which keeps its link line on a swap. */
+type Drawn = HovercardView & {
+  setBody?: (ctx: HovercardRenderContext, picture: PreloadedImage | null) => void
+}
+
+type Target = { link: HTMLAnchorElement; href: string }
+
+type State = { state: 'loading' | 'empty' } | { state: 'data'; data: HovercardData }
+
+type Pending = Target & {
   enteredAt: number
+  /** The accepted answer. The built-in card is drawn from it at the open. */
   data?: HovercardData
   dataAt?: number
   picture?: PreloadedImage
   pictureAt?: number
+  /** A host view drawn when the answer is accepted, so it can paint before the open. */
+  view?: HovercardView
 }
 
 type Zone = HTMLAnchorElement | 'card' | null
 
-type Card = {
+type Card = Target & {
   popover: Popover
-  link: HTMLAnchorElement
-  content: HovercardContent
+  /** The engine's `.hyperlink-hovercard` frame. Drawn content fills it. */
+  frame: HTMLElement
+  drawn: Drawn
   /** The request a loading card still waits for. */
   awaiting: Pending | null
 }
@@ -72,6 +84,7 @@ function createHovercardView(
   let closeTimer: ReturnType<typeof setTimeout> | undefined
   let giveUpTimer: ReturnType<typeof setTimeout> | undefined
   let warnedShouldShow = false
+  let warnedRender = false
 
   const canHover = (): boolean => doc.defaultView?.matchMedia?.(FINE_POINTER_QUERY).matches ?? false
 
@@ -113,9 +126,18 @@ function createHovercardView(
     }
   }
 
+  const destroyView = (view: HovercardView): void => {
+    try {
+      view.destroy?.()
+    } catch (e) {
+      logger.error('A hovercard view destroy threw', e)
+    }
+  }
+
   const dropPending = (): void => {
     clearTimeout(dwellTimer)
     clearTimeout(openTimer)
+    if (pending?.view) destroyView(pending.view)
     pending = null
   }
 
@@ -124,75 +146,105 @@ function createHovercardView(
     card?.popover.hide()
   }
 
-  // The host's size wins; else the loaded picture's own size.
-  const chooseShape = (data: HovercardData, picture?: PreloadedImage): ImageShape => {
-    const size =
-      data.image?.width && data.image.height
-        ? data.image
-        : picture?.settled === 'ready'
-          ? { width: picture.img.naturalWidth, height: picture.img.naturalHeight }
-          : undefined
-    return chooseImageShape(options.imageLayout ?? 'cover', data.kind, size)
+  // A stale view must not close a newer card for another link.
+  const open = (href: string) => (newTab: boolean) => {
+    if (card?.href === href) hideCard()
+    openLink(linkCtx, href, { newTab })
+  }
+
+  const context = ({ link, href }: Target, state: State): HovercardRenderContext => ({
+    href,
+    link,
+    editor: linkCtx.editor,
+    open: open(href),
+    copy: () => copyToClipboard(href),
+    ...state
+  })
+
+  // A host view, or null for the built-in card. A throw logs once per editor.
+  const renderHost = (ctx: HovercardRenderContext): HovercardView | null => {
+    if (!options.render) return null
+    try {
+      const out = options.render(ctx)
+      if (!out) return null
+      return 'element' in out ? out : { element: out }
+    } catch (e) {
+      if (!warnedRender) logger.error('render threw; the built-in card shows', e)
+      warnedRender = true
+      return null
+    }
+  }
+
+  const builtIn = (ctx: HovercardRenderContext, picture: PreloadedImage | null): Drawn =>
+    createBuiltInCard(ctx, picture, options.siteIcon)
+
+  // Built-in to built-in keeps the link line. Any host view replaces the whole content.
+  const swap = (shown: Card, ctx: HovercardRenderContext, picture: PreloadedImage | null): void => {
+    const view = renderHost(ctx)
+    const old = shown.drawn
+    if (!view && old.setBody) return old.setBody(ctx, picture)
+    const next = view ?? builtIn(ctx, picture)
+    shown.drawn = next
+    shown.frame.dataset.swapped = ''
+    shown.frame.replaceChildren(next.element)
+    // A host may return the same view for two states; it stays in use.
+    if (next !== old) destroyView(old)
   }
 
   // A page with no title shows no picture, so its picture is never loaded.
   const preloadFor = (data: HovercardData): PreloadedImage | undefined =>
     data.title && data.image ? preloadImage(data.image.url) : undefined
 
-  const dataBody = (data: HovercardData, picture?: PreloadedImage): HovercardBody => {
-    const { title } = data
-    if (!title) return { state: 'empty' }
-    return {
-      state: 'data',
-      data: { ...data, title },
-      picture: picture ?? null,
-      shape: chooseShape(data, picture)
-    }
-  }
-
-  const show = (token: Pending, body: HovercardBody): void => {
+  const show = (token: Pending, drawn: Drawn, loading: boolean): void => {
     const { link, href } = token
-    const content = createHovercardContent(href, body, {
-      siteIcon: options.siteIcon,
-      open: (target, newTab) => {
-        hideCard()
-        openLink(linkCtx, target, { newTab })
-      }
-    })
+    const frame = createHTMLElement('div', { className: 'hyperlink-hovercard' })
+    frame.append(drawn.element)
     const popover = createPopover({
       referenceElement: link,
-      content: content.element,
+      content: frame,
       placement: 'bottom-start',
       onHide: () => {
-        content.dispose()
-        if (card?.popover !== popover) return
+        if (card !== shown) return
         card = null
         clearTimeout(giveUpTimer)
-      }
+      },
+      // After the exit fade, so a host never empties a card that is still on screen.
+      onRemove: () => destroyView(shown.drawn)
     })
     getDefaultController().adopt(popover, HOVERCARD_KIND, {
       element: popover.element,
       referenceElement: link
     })
-    card = { popover, link, content, awaiting: body.state === 'loading' ? token : null }
+    const shown: Card = { link, href, popover, frame, drawn, awaiting: loading ? token : null }
+    card = shown
     popover.show()
   }
 
-  // Swaps the loading body in the same popover. `autoUpdate` re-places the card as it grows.
+  // Fills the loading card in the same popover. `autoUpdate` re-places the card as it grows.
   const fill = (token: Pending, data: HovercardData | null): void => {
     if (!card || card.awaiting !== token) return
     card.awaiting = null
     clearTimeout(giveUpTimer)
-    card.content.setBody(data ? dataBody(data, preloadFor(data)) : { state: 'empty' })
+    if (!data) return swap(card, context(token, { state: 'empty' }), null)
+    swap(card, context(token, { state: 'data', data }), preloadFor(data) ?? null)
   }
 
   // `createPopover` adopts at once and would destroy a mounted preview, so check right before it.
-  const open = (token: Pending): void => {
+  const openPending = (token: Pending): void => {
     if (pending !== token) return
     pending = null
-    if (!token.link.isConnected || isOtherPopoverOpen()) return
-    if (token.data) return show(token, dataBody(token.data, token.picture))
-    show(token, { state: 'loading' })
+    const { view, data } = token
+    token.view = undefined
+    if (!token.link.isConnected || isOtherPopoverOpen()) {
+      if (view) destroyView(view)
+      return
+    }
+    if (data) {
+      const drawn = view ?? builtIn(context(token, { state: 'data', data }), token.picture ?? null)
+      return show(token, drawn, false)
+    }
+    const ctx = context(token, { state: 'loading' })
+    show(token, renderHost(ctx) ?? builtIn(ctx, null), true)
     giveUpTimer = setTimeout(() => fill(token, null), token.enteredAt + GIVE_UP_MS - Date.now())
   }
 
@@ -209,9 +261,10 @@ function createHovercardView(
       Math.min(token.dataAt + IMAGE_WAIT_MS, pictureAt)
     )
     clearTimeout(openTimer)
-    openTimer = setTimeout(() => open(token), Math.max(0, openAt - Date.now()))
+    openTimer = setTimeout(() => openPending(token), Math.max(0, openAt - Date.now()))
   }
 
+  // Only an accepted answer reaches `render`; a late or dropped one never does.
   const onData = (token: Pending, data: HovercardData | null): void => {
     if (card?.awaiting === token) return fill(token, data)
     if (pending !== token) return
@@ -221,6 +274,7 @@ function createHovercardView(
     }
     token.data = data
     token.dataAt = Date.now()
+    token.view = renderHost(context(token, { state: 'data', data })) ?? undefined
     const picture = preloadFor(data)
     if (picture) {
       token.picture = picture
@@ -239,12 +293,14 @@ function createHovercardView(
     dwellTimer = setTimeout(() => {
       if (pending !== token) return
       if (isOtherPopoverOpen()) return dropPending()
-      new Promise<HovercardData | null>((resolve) => resolve(options.fetchMetadata({ href }))).then(
+      new Promise<HovercardData | null>((resolve) =>
+        resolve(options.fetchMetadata({ href, editor: linkCtx.editor }))
+      ).then(
         (data) => onData(token, data),
         () => onData(token, null)
       )
     }, DWELL_MS)
-    openTimer = setTimeout(() => open(token), OPEN_AT_MS)
+    openTimer = setTimeout(() => openPending(token), OPEN_AT_MS)
   }
 
   const enterZone = (next: Zone, buttons: number): void => {

@@ -121,7 +121,7 @@ export interface HyperlinkOptions {
    * Default: `window.open(href, '_blank', 'noopener,noreferrer')`, whatever `newTab` says.
    */
   navigate?: (href: string, ctx: { newTab: boolean }) => void
-  /** Desktop link hovercard. Off when unset. Ship `hovercard.css` with it. */
+  /** Desktop link hovercard. Off when unset. Ship `hovercard.css` with it. See `docs/hovercard.md`. */
   hovercard?: HovercardOptions
 }
 

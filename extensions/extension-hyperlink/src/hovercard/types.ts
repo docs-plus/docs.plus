@@ -1,39 +1,45 @@
+import type { Editor } from '@tiptap/core'
+
 import type { LinkIconResolver } from '../link-icons/types'
 
-/** `cover` fills the card; `thumb` sits after the text; `tile` is a repo owner picture before it. Internal. */
-export type ImageShape = 'cover' | 'thumb' | 'tile'
-
-/** `cover` always fills the card. `adaptive` shrinks near-square or small pictures to a thumb. */
-export type HovercardImageLayout = 'cover' | 'adaptive'
-
-/** The glyph before one fact. */
-export type HovercardFactIcon =
-  'location' | 'work' | 'posted' | 'stars' | 'language' | 'updated' | 'answers' | 'accepted'
-
-/** One short line in the row under the title, such as a place or a star count. */
-export interface HovercardFact {
-  icon: HovercardFactIcon
-  text: string
-}
-
 export interface HovercardData {
-  /** Absent means the page shares no preview: the card shows one line and the link line. */
+  /** The built-in card shows "No preview for this page." without it. */
   title?: string
   description?: string
   image?: { url: string; width?: number; height?: number }
-  /** `repo` draws a square picture as a small owner tile before the title. */
-  kind?: 'repo'
-  facts?: HovercardFact[]
 }
 
-export interface HovercardOptions {
+export interface HovercardOptions<D extends HovercardData = HovercardData> {
   /**
-   * Returns the card data. With no answer at 500 ms the card opens with loading bars.
-   * `null` or a rejection shows no card before it opens; after, it shows "No preview for this page."
+   * Returns the card data. With no answer at 500 ms the card opens in the `loading` state.
+   * `null` or a rejection shows no card before it opens; after, it shows the `empty` state.
    */
-  fetchMetadata: (ctx: { href: string }) => Promise<HovercardData | null>
-  /** Same contract as `linkIcon`: a fresh element with no text, or null. */
+  fetchMetadata: (ctx: { href: string; editor: Editor }) => Promise<D | null>
+  /** The built-in card's site icon. Same contract as `linkIcon`: a fresh element with no text, or null. */
   siteIcon?: LinkIconResolver
   shouldShow?: (ctx: { href: string; link: HTMLAnchorElement }) => boolean
-  imageLayout?: HovercardImageLayout
+  /**
+   * Draws the card content. `null` keeps the built-in card for this state.
+   * Method syntax lets host data with required fields assign to `HyperlinkOptions['hovercard']`.
+   */
+  render?(ctx: HovercardRenderContext<D>): HTMLElement | HovercardView | null
+}
+
+export type HovercardRenderContext<D extends HovercardData = HovercardData> = {
+  href: string
+  link: HTMLAnchorElement
+  editor: Editor
+  /** Hides this link's card if it is open, then opens through the read gate and `navigate`. */
+  open: (newTab: boolean) => void
+  /** Copies `href`; resolves `false` on failure. */
+  copy: () => Promise<boolean>
+} & ({ state: 'loading' | 'empty' } | { state: 'data'; data: D })
+
+export interface HovercardView {
+  element: HTMLElement
+  /**
+   * Runs when the engine swaps this content out, drops a pending open, or closes the card.
+   * On a close it runs after the card has left the DOM, at the end of the exit fade.
+   */
+  destroy?: () => void
 }

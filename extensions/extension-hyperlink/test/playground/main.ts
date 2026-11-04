@@ -95,10 +95,10 @@ const linkIcon: HyperlinkModule.HyperlinkOptions['linkIcon'] =
           : undefined
 if (linkIcon) window._iconCalls = 0
 
-// `hovercard=cover|adaptive` turns the hovercard on. The stub counts calls on `window._hovercard`
-// and answers after `delayMs` on the page clock, so `cy.tick` drives it. Pictures are served by
-// each spec's `cy.intercept`; with no intercept they 404, which the card treats as no picture.
-const hovercardLayout = params.get('hovercard')
+// `hovercard=on` shows the built-in card; `hovercard=custom` draws `renderCard` below. The stub
+// counts calls on `window._hovercard` and answers after `delayMs` on the page clock, so `cy.tick`
+// drives it. Each spec serves pictures with `cy.intercept`; with none they 404 (no picture).
+const hovercardMode = params.get('hovercard')
 const picture = (name: string): string => `/readme-media/hovercard/${name}.svg?run=${RUN}`
 const HOVERCARD_PAGES: Record<string, HyperlinkModule.HovercardData> = {
   'https://wide.example/': {
@@ -106,45 +106,79 @@ const HOVERCARD_PAGES: Record<string, HyperlinkModule.HovercardData> = {
     description: 'A page with a wide share picture.',
     image: { url: picture('wide'), width: 1200, height: 630 }
   },
-  'https://square.example/': { title: 'Square page', image: { url: picture('square') } },
-  'https://thumb.example/': {
-    title: 'Thumb page',
-    description: 'A square picture with its size sent.',
-    image: { url: picture('thumb'), width: 460, height: 460 }
-  },
   'https://slow.example/': { title: 'Slow page', image: { url: picture('slow') } },
   'https://xss.example/': { title: '<img src=x onerror=alert(1)>' },
-  'https://facts.example/': {
-    title: 'Facts page',
-    description: 'A document with facts.',
-    facts: [
-      { icon: 'stars', text: '1.2k' },
-      { icon: 'language', text: 'TypeScript' },
-      { icon: 'updated', text: 'Updated 2 days ago' }
-    ]
-  },
-  'https://avatar.example/': {
-    kind: 'repo',
-    title: 'docs-plus/avatar',
-    image: { url: picture('avatar') }
-  },
-  'https://repo.example/': {
-    kind: 'repo',
-    title: 'docs-plus/docs.plus',
-    description: 'A repository with an owner picture.',
-    image: { url: picture('repo'), width: 460, height: 460 },
-    facts: [
-      { icon: 'stars', text: '1.2k' },
-      { icon: 'language', text: 'TypeScript' }
-    ]
-  },
-  'https://notitle.example/': { description: 'A page with no title.' }
+  'https://notitle.example/': { description: 'A page with no title.' },
+  // The README gallery shot. `readme-gallery.cy.ts` serves its picture.
+  'https://docs.plus/': {
+    title: 'docs.plus',
+    description: 'Documents with a chat for every heading.',
+    image: { url: picture('gallery'), width: 1200, height: 630 }
+  }
 }
-const hovercardState = { calls: [] as string[], delayMs: 100 }
+
+// The custom card that `docs/hovercard.md` points at: plain DOM, one element per state.
+function renderCard(ctx: HyperlinkModule.HovercardRenderContext): HyperlinkModule.HovercardView {
+  const root = document.createElement('div')
+  root.className = 'demo-card'
+  root.dataset.state = ctx.state
+  root.style.padding = '12px'
+  if (ctx.state !== 'data') {
+    root.textContent = ctx.state === 'loading' ? 'Loading…' : 'Nothing to show for this link.'
+    return { element: root }
+  }
+
+  // Card controls stay out of the Tab order, and a press keeps the caret in the editor.
+  const button = (text: string, onClick: (e: MouseEvent) => void): HTMLButtonElement => {
+    const el = document.createElement('button')
+    el.type = 'button'
+    el.tabIndex = -1
+    el.textContent = text
+    el.addEventListener('mousedown', (e) => e.preventDefault())
+    el.addEventListener('click', onClick)
+    return el
+  }
+  const title = document.createElement('strong')
+  title.textContent = ctx.data.title ?? ctx.href
+  const open = button('Open', (e) => ctx.open(HyperlinkModule.hasMod(e)))
+  const copy = button('Copy', () => {
+    void ctx.copy().then((ok) => {
+      copy.textContent = ok ? 'Copied' : 'Copy failed'
+    })
+  })
+  root.append(title, document.createElement('br'), open, copy)
+  return { element: root }
+}
+
+type HovercardStub = {
+  calls: string[]
+  delayMs: number
+  /** One entry per view `renderCard` drew, with how often the engine destroyed it. */
+  views: Array<{ href: string; state: string; destroyed: number }>
+  /** For each destroy, whether the view's element was still in the DOM. */
+  attachedAtDestroy: boolean[]
+}
+const hovercardState: HovercardStub = { calls: [], delayMs: 100, views: [], attachedAtDestroy: [] }
+
+// Test hooks around the example: `builtin.example` keeps the built-in card, `throw.example` throws.
+const trackedRender: HyperlinkModule.HovercardOptions['render'] = (ctx) => {
+  if (ctx.href.includes('builtin.example')) return null
+  if (ctx.href.includes('throw.example')) throw new Error('render failed')
+  const view = renderCard(ctx)
+  const entry = { href: ctx.href, state: ctx.state, destroyed: 0 }
+  hovercardState.views.push(entry)
+  return {
+    element: view.element,
+    destroy: () => {
+      entry.destroyed++
+      hovercardState.attachedAtDestroy.push(view.element.isConnected)
+    }
+  }
+}
+
 const hovercard: HyperlinkModule.HovercardOptions | undefined =
-  hovercardLayout === 'cover' || hovercardLayout === 'adaptive'
+  hovercardMode === 'on' || hovercardMode === 'custom'
     ? {
-        imageLayout: hovercardLayout,
         fetchMetadata: ({ href }) => {
           hovercardState.calls.push(href)
           const data = HOVERCARD_PAGES[href] ?? { title: href }
@@ -155,7 +189,8 @@ const hovercard: HyperlinkModule.HovercardOptions | undefined =
         },
         siteIcon: () =>
           Object.assign(document.createElement('span'), { style: 'background:#16a34a' }),
-        shouldShow: ({ href }) => !href.includes('noshow.example')
+        shouldShow: ({ href }) => !href.includes('noshow.example'),
+        ...(hovercardMode === 'custom' && { render: trackedRender })
       }
     : undefined
 if (hovercard) window._hovercard = hovercardState
@@ -285,7 +320,7 @@ declare global {
     _byo?: ByoState
     _iconCalls?: number
     _navigateCalls?: Array<{ href: string; newTab: boolean }>
-    _hovercard?: { calls: string[]; delayMs: number }
+    _hovercard?: HovercardStub
     _getMarkdown?: () => string
     _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
   }

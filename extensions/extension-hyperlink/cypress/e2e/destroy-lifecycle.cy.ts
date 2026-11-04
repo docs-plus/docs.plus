@@ -135,7 +135,7 @@ describe('destroy lifecycle — hovercard', () => {
   type HovercardWindow = Cypress.AUTWindow & { _hovercard: { calls: string[] } }
 
   beforeEach(() => {
-    cy.visitPlayground({ query: 'hovercard=cover' })
+    cy.visitPlayground({ query: 'hovercard=on' })
     cy.setEditorContent(DOC)
   })
 

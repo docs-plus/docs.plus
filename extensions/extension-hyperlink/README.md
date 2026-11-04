@@ -84,6 +84,8 @@ The `styles.css` import is optional. The snippet also styles no document link �
 
 You should see a paragraph with one link. Click the link to open the preview popover, with copy, edit, and remove actions. Type `example.org` and a space, and the text becomes a link. Select a word and press `Mod-k` (Cmd on macOS, Ctrl elsewhere) to open the create-link form.
 
+To show a card when the pointer rests on a link, add the `hovercard` option. See [Show a card on hover](#show-a-card-on-hover).
+
 ## Caveats
 
 - **`StarterKit.configure({ link: false })` is required, not stylistic.** StarterKit v3 bundles `@tiptap/extension-link` by default. The two marks collide on the `setLink` / `unsetLink` / `toggleLink` command names. Your `extensions` array order then decides which mark each command writes, with no warning. If you keep Link only to load stored `link` marks, parsed and pasted HTML still gives `hyperlink`. This package's `a[href]` rule runs at priority 51, above Link's default 50.
@@ -175,7 +177,7 @@ A map entry may also be a `{ light, dark }` pair of image URLs, or a function th
 
 ### Show a card on hover
 
-The `hovercard` option shows a card when a mouse pointer rests on a link. Your `fetchMetadata` returns the title, description, picture and facts. The card ends with the link, Copy link and Open in new tab. The package makes no request of its own:
+The `hovercard` option shows a card when a mouse pointer rests on a link. Your `fetchMetadata` returns the title, description and picture, and the package makes no request of its own:
 
 ```ts
 import { Hyperlink } from '@docs.plus/extension-hyperlink'
@@ -191,11 +193,11 @@ Hyperlink.configure({
 })
 ```
 
-The request starts after a 150 ms rest on the link, and the card opens at 500 ms at the earliest. A slow answer opens the card with loading bars, and the data replaces them in place. See [Hovercard](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md#hovercard) for the options, the timing and the keys that close it.
+The built-in card shows the picture, the title, the description and a link line with Copy link. To draw your own card, add `render`. See [Hovercard](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/hovercard.md) for the data contract, `render`, the timing and the keys.
 
 ## Gallery
 
-Prebuilt create, preview, and edit popovers (`styles.css` + `popovers` config). Each screenshot has a light and a dark version, and follows your system preference.
+Prebuilt create, preview, and edit popovers (`styles.css` + `popovers` config), and the built-in hovercard (`hovercard.css` + `hovercard` option). Each screenshot has a light and a dark version, and follows your system preference.
 
 <details>
 <summary><strong>Create</strong> — Mod+K</summary>
@@ -233,12 +235,25 @@ Prebuilt create, preview, and edit popovers (`styles.css` + `popovers` config). 
 
 </details>
 
+<details>
+<summary><strong>Hovercard</strong> — rest the pointer on a link</summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/hovercard-dark.png">
+    <img alt="Built-in hovercard with the page picture, title, description, and a link line with Copy link" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/hovercard-light.png">
+  </picture>
+</p>
+
+</details>
+
 ## Documentation
 
 | Guide                                                                                                                   | What it covers                                                                                                          |
 | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | [API reference](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md)            | Options, commands, keyboard shortcuts, the full caveats list, server bundles, and TypeScript exports                    |
 | [Popovers](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/popovers.md)            | The three popover slots, factory option shapes, openers, and custom popovers                                            |
+| [Hovercard](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/hovercard.md)          | The link card on hover: the built-in card, the data contract, custom `render`, timing, and keys                         |
 | [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/styling.md)              | The stylesheet, `--hl-*` theme tokens, dark mode, and class names                                                       |
 | [URL handling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/url-handling.md)    | Href normalization, scheme classification, and Markdown round-trip                                                      |
 | [Security](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/security.md)            | The dangerous-scheme gate at each boundary, and the exported safety helpers                                             |

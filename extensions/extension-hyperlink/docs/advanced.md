@@ -28,6 +28,7 @@ The shell owns dismissal and focus. Escape hides the popover, and the shell bind
 | `crossAxisShift?`       | `boolean`                                    | `true`                 | With `false`, `shift` moves the popover on the main axis only, so an end-aligned menu stays pinned to the anchor's end edge.                                                   |
 | `onShow?`               | `() => void`                                 | `undefined`            | Fires synchronously at the end of `show()`, after the popover mounts and before the `.visible` entrance frame. Defer focus and measurement work to it (see the create opener). |
 | `onHide?`               | `() => void`                                 | `undefined`            | Fires when the popover is dismissed: outside click, programmatic `hide()`, or controller replacement.                                                                          |
+| `onRemove?`             | `() => void`                                 | `undefined`            | Fires once, after the popover root has left the DOM: at the end of the exit fade, or at once on `destroy()`. Unmount framework content here, so it never empties on screen.    |
 
 Returns a `Popover`:
 
@@ -62,7 +63,7 @@ type ControllerState =
     }
 ```
 
-`referenceElement` holds the anchor node for the preview popover and the [hovercard](./api.md#hovercard). Create and edit both anchor to virtual coordinates, so both report `null`.
+`referenceElement` holds the anchor node for the preview popover and the [hovercard](./hovercard.md). Create and edit both anchor to virtual coordinates, so both report `null`.
 
 `PopoverController`:
 

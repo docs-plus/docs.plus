@@ -1,5 +1,6 @@
 /**
  * Link hovercard skin, for the `hovercard` option. Class names are public.
+ * `.hyperlink-hovercard` is the engine's frame; a custom `render` fills it.
  * Each colour reads a `--hl-*` token; the fallback is the `styles.css` default.
  */
 
@@ -38,7 +39,7 @@
   overflow: hidden;
   background-color: var(--hl-well, light-dark(#f3f4f6, #374151));
   border-bottom: 1px solid var(--hl-border, light-dark(#e5e7eb, #374151));
-  /* A failed cover folds; a failed thumb fades in place. */
+  /* A picture that fails after open folds its well away. */
   transition:
     height 200ms ease-in,
     opacity 200ms ease-in;
@@ -57,57 +58,8 @@
   opacity: 0;
 }
 
-/* Thumb and tile: a small square picture beside the text. The text column never depends on it. */
-.hyperlink-hovercard__main--thumb,
-.hyperlink-hovercard__main--tile {
-  display: grid;
-  column-gap: 12px;
-  align-items: start;
-  padding: 12px;
-}
-
-.hyperlink-hovercard__main--thumb .hyperlink-hovercard__body,
-.hyperlink-hovercard__main--tile .hyperlink-hovercard__body {
-  grid-area: body;
-  padding: 0;
-}
-
-.hyperlink-hovercard__main--thumb .hyperlink-hovercard__image,
-.hyperlink-hovercard__main--tile .hyperlink-hovercard__image {
-  grid-area: image;
-  box-sizing: border-box;
-  aspect-ratio: auto;
-  border: 1px solid var(--hl-border, light-dark(#e5e7eb, #374151));
-  border-radius: var(--hl-radius-sm, 8px);
-}
-
-/* Thumb: a 64px picture after the text. */
-.hyperlink-hovercard__main--thumb {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: 'body image';
-}
-
-.hyperlink-hovercard__main--thumb .hyperlink-hovercard__image {
-  width: var(--hl-hovercard-thumb, 4rem);
-  height: var(--hl-hovercard-thumb, 4rem);
-}
-
-.hyperlink-hovercard__main--thumb .hyperlink-hovercard__image img {
-  object-position: center top;
-}
-
-/* Tile: a repo's 40px owner picture before the title. */
-.hyperlink-hovercard__main--tile {
-  grid-template-columns: 40px minmax(0, 1fr);
-  grid-template-areas: 'image body';
-}
-
-.hyperlink-hovercard__main--tile .hyperlink-hovercard__image {
-  width: 40px;
-  height: 40px;
-}
-
-/* A body that replaces the loading bars fades in. */
+/* Content that replaces the loading state fades in. */
+.hyperlink-hovercard[data-swapped] > *,
 .hyperlink-hovercard__main[data-swapped] {
   animation: hyperlink-hovercard-fade-in 120ms ease-out;
 }
@@ -144,25 +96,6 @@
   text-decoration: underline;
 }
 
-.hyperlink-hovercard__fact svg {
-  flex-shrink: 0;
-}
-
-.hyperlink-hovercard__facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  margin-top: 4px;
-  color: var(--hl-muted, light-dark(#6b7280, #9ca3af));
-}
-
-.hyperlink-hovercard__fact {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-}
-
 .hyperlink-hovercard__description,
 .hyperlink-hovercard__note {
   margin: 0;
@@ -196,7 +129,7 @@
   width: 58%;
 }
 
-/* The link line: site icon, host and path, then Copy link and Open in new tab. */
+/* The link line: site icon, host and path, then Copy link. */
 .hyperlink-hovercard__site {
   box-sizing: border-box;
   display: flex;
@@ -269,6 +202,7 @@
     transition: none;
   }
 
+  .hyperlink-hovercard[data-swapped] > *,
   .hyperlink-hovercard__main[data-swapped] {
     animation: none;
   }
