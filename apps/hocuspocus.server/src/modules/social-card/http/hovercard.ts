@@ -17,8 +17,9 @@ import {
 } from '../domain/hovercard'
 import { parseChangeSummary, type StoredOutline } from '../domain/storedData'
 import * as reads from '../infra/hovercardReads'
+import { createSingleFlight } from '../infra/renderGuards'
 
-// Larger heads skip the filter kind: a decode costs about 16x the snapshot in heap, per hover.
+// Larger heads skip the filter kind: a decode costs about 16x the snapshot in heap.
 const HOVERCARD_FILTER_MAX_BYTES = 1024 * 1024
 
 export const HOVERCARD_ROUTE = '/:docName/hovercard'
@@ -31,8 +32,12 @@ export interface HovercardDeps {
 
 type HovercardDetail = Exclude<HovercardReply, { locked: true } | { kind: 'pad' }>
 
+/** The decoded head of a pad, or null when it is over the cap or does not decode. */
+type ReadFilterHead = (documentId: string) => Promise<Record<string, unknown> | null>
+
 interface HovercardInput {
   deps: HovercardDeps
+  readFilterHead: ReadFilterHead
   documentId: string
   outline: StoredOutline | null
   padTitle: string
@@ -143,17 +148,9 @@ const hovercardDetail = async (input: HovercardInput): Promise<HovercardDetail |
       }
     }
     case 'filter': {
-      const head = await reads.getPadHeadWithin(prisma, documentId, HOVERCARD_FILTER_MAX_BYTES)
-      if (!head?.data) return null
-      const decoded = ydocToPmJson(head.data)
-      if (!decoded.ok) {
-        deps.logger.warn(
-          { err: decoded.error, documentId, version: head.version },
-          'Hovercard snapshot decode failed'
-        )
-        return null
-      }
-      return { kind: 'filter', padTitle, ...filterFacts(decoded.json, request.terms, request.mode) }
+      const doc = await input.readFilterHead(documentId)
+      if (!doc) return null
+      return { kind: 'filter', padTitle, ...filterFacts(doc, request.terms, request.mode) }
     }
   }
 }
@@ -162,9 +159,24 @@ const hovercardDetail = async (input: HovercardInput): Promise<HovercardDetail |
  * The link hovercard for another pad, for every pad link kind. Never drafts a row: an unknown
  * slug is a 404. The answer depends on who reads it, so nothing may cache it.
  */
-export const createHovercardHandler =
-  (deps: HovercardDeps) =>
-  async (c: Context): Promise<Response> => {
+export const createHovercardHandler = (deps: HovercardDeps) => {
+  // Concurrent filter hovers on one pad share one head read and one decode. The flight wraps
+  // the read, because the decode alone is synchronous and no second hover could join it.
+  const decodeOnce = createSingleFlight<Record<string, unknown> | null>()
+  const readFilterHead: ReadFilterHead = (documentId) =>
+    decodeOnce(documentId, async () => {
+      const head = await reads.getPadHeadWithin(deps.prisma, documentId, HOVERCARD_FILTER_MAX_BYTES)
+      if (!head?.data) return null
+      const decoded = ydocToPmJson(head.data)
+      if (decoded.ok) return decoded.json
+      deps.logger.warn(
+        { err: decoded.error, documentId, version: head.version },
+        'Hovercard snapshot decode failed'
+      )
+      return null
+    })
+
+  return async (c: Context): Promise<Response> => {
     c.header('Cache-Control', 'private, no-store')
     const docName = c.req.param('docName')
     if (!docName?.trim()) return fail(c, 400, 'BAD_REQUEST', 'Missing document name')
@@ -185,6 +197,7 @@ export const createHovercardHandler =
       const padTitle = padName(doc.title || doc.slug, doc.slug, outline?.title)
       const detail = await hovercardDetail({
         deps,
+        readFilterHead,
         documentId: doc.documentId,
         outline,
         padTitle,
@@ -203,3 +216,4 @@ export const createHovercardHandler =
       return fail(c, 500, 'INTERNAL_SERVER_ERROR', 'Hovercard read failed')
     }
   }
+}

@@ -109,6 +109,8 @@ interface Options {
   query?: string
   chat?: HovercardChatRead
   head?: Uint8Array | null
+  /** Holds the snapshot read open, so a second hover arrives while it is in flight. */
+  slowSnapshot?: boolean
 }
 
 const harness = (reader: Reader, row: Row | null | 'throws', options: Options = {}) => {
@@ -160,6 +162,7 @@ const harness = (reader: Reader, row: Row | null | 'throws', options: Options = 
   }
   prisma.$queryRaw = async (_sql: TemplateStringsArray, ...values: unknown[]) => {
     reads.push({ snapshot: values })
+    if (options.slowSnapshot) await Bun.sleep(20)
     return [{ version: 9, data: options.head === undefined ? HEAD : options.head }]
   }
 
@@ -475,6 +478,15 @@ describe('GET /api/documents/:docName/hovercard — link kinds', () => {
       expect((await response.json()).data).toEqual(PAD)
     }
   )
+
+  test('concurrent filter hovers on one pad read and decode its head once', async () => {
+    const { data, reads } = harness({}, PUBLIC, { query: 'terms=apple', slowSnapshot: true })
+    const [first, second] = await Promise.all([data(), data()])
+
+    expect(first).toMatchObject({ kind: 'filter', shownCount: 3 })
+    expect(second).toEqual(first)
+    expect(reads.filter((read) => 'snapshot' in read)).toHaveLength(1)
+  })
 
   test('a head over the size cap is never decoded, and the pad card answers', async () => {
     const { data } = harness({}, PUBLIC, { query: 'terms=apple', head: null })
