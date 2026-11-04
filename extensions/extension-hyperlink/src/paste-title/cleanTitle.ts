@@ -26,6 +26,9 @@ export function cleanTitle(raw: string, link: { text: string; href: string }): s
 
 // A title that reads as another site's address would hide where the link goes.
 function spoofsHost(title: string, href: string): boolean {
+  // `support@paypal.com` reads as paypal.com too, and linkify types it as an email, not a URL.
+  const [mail] = find(title, 'email')
+  if (mail && mail.value === title) return mailDomainOf(title) !== hostOf(href)
   const [match] = find(title, 'url')
   if (!match || match.value !== title) return false
   if (isOwnFileName(title, href)) return false
@@ -54,6 +57,13 @@ function fileNameOf(href: string): string | null {
   } catch {
     return null
   }
+}
+
+function mailDomainOf(address: string): string {
+  return address
+    .slice(address.lastIndexOf('@') + 1)
+    .toLowerCase()
+    .replace(/^www\./, '')
 }
 
 function hostOf(href: string): string | null {

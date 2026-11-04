@@ -66,7 +66,8 @@ describe('cleanTitle', () => {
   it.each([
     ['https://evil.example/x/paypal.com%2Flogin.zip', 'paypal.com/login.zip'],
     ['https://evil.example/x/paypal.com.zip', 'paypal.com.zip'],
-    ['https://evil.example/x/https%3A%2F%2Fpaypal.com%2Fa.zip', 'https://paypal.com/a.zip']
+    ['https://evil.example/x/https%3A%2F%2Fpaypal.com%2Fa.zip', 'https://paypal.com/a.zip'],
+    ['https://evil.example/x/me%40paypal.com.zip', 'me@paypal.com.zip']
   ])('skips an own file name that reads as another site: %s', (href, name) => {
     expect(cleanTitle(name, { text: href, href })).toBeNull()
   })
@@ -74,6 +75,17 @@ describe('cleanTitle', () => {
   it('skips a page whose own path names another site', () => {
     const href = 'https://evil.example/paypal.com'
     expect(cleanTitle('paypal.com', { text: href, href })).toBeNull()
+  })
+
+  it.each([
+    ['support@paypal.com', null],
+    ['Support@PayPal.com', null],
+    ['support@mail.example.com', null],
+    ['hello@example.com', 'hello@example.com'],
+    ['hello@www.example.com', 'hello@www.example.com'],
+    ['Write to support@paypal.com', 'Write to support@paypal.com']
+  ])('reads a title %s as an email of its domain', (title, expected) => {
+    expect(cleanTitle(title, LINK)).toBe(expected)
   })
 
   it('compares the URL text and the href apart', () => {
