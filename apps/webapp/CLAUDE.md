@@ -306,6 +306,7 @@ Follow industry overlay UX (Material, Apple HIG, Radix/shadcn) and dim-not-lift 
 - **Pad only.** `TipTap.tsx` passes it only with a live `provider`, so history and `/editor` never fetch. The chat composer (`useTiptapEditor.ts`) does not get it.
 - `fetchTitle` calls the shared `fetchMetadata(href)`. A fallback card or a missing title returns `null`, so the URL stays. It never passes `signal` on: callers of one URL share one request, and an abort would cancel the hover after it. The engine's 4 s deadline drops a late title.
 - **Pad links stay URLs.** `fetchMetadata` gives a same-origin pad no metadata key, so it answers `null`.
+- **A file link takes its file name and format** (maintainer ruling, 2026-11-04). For a non-HTML reply the server's title is the decoded last path segment, such as `Q3 Report.pdf`. Do not add a `card.file` check to `padPasteTitle.ts` to keep the URL; that was offered and declined. A file name that reads as a domain (`archive.zip`) passes the engine's spoof check only as the link's own file name.
 - `shouldFetch` calls `linkPreviewOn('pasteTitles')` from `linkPreviewStore.ts` at call time, never through a hook. The hover gate calls the same reader. Settings shows it as the second "Link previews" row.
 - `pages/privacy.tsx` says that a link pasted into a document goes to our server. Update that sentence if paste title reaches another surface, such as chat.
 - Run `paste-title.cy.ts` on every Tiptap or y-tiptap bump.

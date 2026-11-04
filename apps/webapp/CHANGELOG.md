@@ -72,7 +72,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - A web link pasted on its own into a pad shows the page title in place of its address
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)). The link appears at once with the
   address, and the title replaces it when our server answers. One undo brings the address back.
-  ⌘+⇧+V (Ctrl+Shift+V) pastes the address as is. A link to a docs.plus pad keeps its address,
+  ⌘+⇧+V (Ctrl+Shift+V) pastes the address as is. A file link shows its file name, such as
+  "Q3 Report.pdf" or "archive.zip". A link to a docs.plus pad keeps its address,
   and so do the chat composer, history and `/editor`. The second "Link previews" switch, "Use page
   titles for pasted links", turns it off. Like the first, it is per browser, on by default, and
   applies only while you are signed in. The pasted link goes to our server, as for a link preview.

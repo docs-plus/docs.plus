@@ -18,6 +18,8 @@ ESLint enforces parts of rules 1 and 4 via `no-restricted-imports` in `apps/hocu
 
 `capCard` cleans every text field before the cut: the title, the description, fact text, author and publisher names, image alt and the oEmbed provider. Each whitespace run becomes one space, so a newline stays a word break. Then the C0, DEL and C1 controls go, and so do the bidi controls U+200E, U+200F, U+202A–U+202E and U+2066–U+2069. Whitespace collapses once more, so a stripped mark leaves one space. ZWNJ and ZWJ stay, because Persian words and emoji sequences need them. The rule keeps a bidi override from flipping how the hovercard reads.
 
+A reply that is not HTML gives a `media_type: 'document'` card. Its title is the decoded last path segment with its extension, such as `Q3 Report.pdf` (`filenameFromUrl` in `domain/stages/htmlScrape.ts`). A bad escape keeps the raw segment. The webapp's paste title shows this name, by maintainer ruling (2026-11-04).
+
 The stored value shape did not change, so the cache key prefix stays. A cache hit skips `capCard`, so a card stored before this rule keeps its old text until its TTL ends, at most 24 h.
 
 ## Facts
