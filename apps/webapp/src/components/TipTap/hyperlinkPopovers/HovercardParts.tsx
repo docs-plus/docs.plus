@@ -1,7 +1,10 @@
+import { Icons } from '@components/icons/registry'
 import { hasMod } from '@docs.plus/extension-hyperlink'
 import { twMerge } from '@utils/twMerge'
 import type { MouseEvent, ReactNode } from 'react'
 import type { IconType } from 'react-icons'
+
+import { linkTextMismatch } from './linkTextMismatch'
 
 /** The glyph size on both link hovercards. */
 export const ICON_SIZE = 16
@@ -32,6 +35,21 @@ export const Band = ({
 export const Note = ({ children }: { children: ReactNode }) => (
   <p className="text-meta text-base-content/70">{children}</p>
 )
+
+/** A plain line, never a live region: one inside the card would reload the editor's embeds. */
+export function LinkTextWarning({ text, href }: { text: string; href: string }) {
+  const mismatch = linkTextMismatch(text, href)
+  if (!mismatch) return null
+  return (
+    <p className="text-meta flex items-start gap-2 text-[var(--warning-ink)]">
+      <Icons.alert size={ICON_SIZE} aria-hidden className="mt-0.5 shrink-0" />
+      <span className="min-w-0 [overflow-wrap:anywhere]">
+        The text says {mismatch.says}, but this link opens{' '}
+        <span className="font-semibold">{mismatch.opens}</span>.
+      </span>
+    </p>
+  )
+}
 
 /** `newTab` is true for Mod-click and a middle click. */
 export function HovercardTitle({

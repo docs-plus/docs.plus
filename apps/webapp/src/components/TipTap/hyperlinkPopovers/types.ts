@@ -170,8 +170,30 @@ export interface LinkCard {
   description?: string
   image?: { url: string }
   fallback?: true
+  /** Why the fallback card has no preview. An older server sends none. */
+  miss?: LinkMiss
+  /** The server got a file, not a page (`media_type: 'document'`): the title is only its name. */
+  file?: true
   kind?: 'repo'
   facts?: LinkFact[]
+}
+
+/** Keep in step with the server's fallback `miss` values. */
+export const LINK_MISSES = ['blocked', 'no-preview', 'unreachable'] as const
+
+export type LinkMiss = (typeof LINK_MISSES)[number]
+
+/** The site a link's text names, and the different site the link opens. */
+export interface LinkTextMismatch {
+  says: string
+  opens: string
+}
+
+/** What a web card with no preview draws: a title, the address under it, and the reason. */
+export interface NoPreviewView {
+  title: string
+  path: string
+  reason: string
 }
 
 /** The glyphs the web link card can draw before a fact. Keep in step with the server's `FACT_ICONS`. */
@@ -194,7 +216,7 @@ export interface LinkFact {
   text: string
 }
 
-/** What the web link card draws. A page with no title gets the no-preview line instead. */
+/** What the web link card draws. A page with no title gets the no-preview card instead. */
 export type WebCardData = Pick<LinkCard, 'description' | 'image' | 'kind' | 'facts'> & {
   title: string
 }

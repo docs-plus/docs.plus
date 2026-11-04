@@ -2,7 +2,7 @@ import { normalizeHref } from '@docs.plus/extension-hyperlink'
 import { apiBaseUrl } from '@utils/apiBaseUrl'
 
 import { linkDestination } from './internalDocumentLink'
-import { LINK_FACT_ICONS, type LinkCard, type LinkFact } from './types'
+import { LINK_FACT_ICONS, LINK_MISSES, type LinkCard, type LinkFact, type LinkMiss } from './types'
 
 interface MetadataResponse {
   success: true
@@ -13,6 +13,8 @@ interface MetadataResponse {
   kind?: unknown
   facts?: unknown
   fallback?: unknown
+  miss?: unknown
+  media_type?: unknown
 }
 
 interface ErrorResponse {
@@ -91,6 +93,12 @@ const toFacts = (value: unknown): LinkFact[] | undefined => {
   return facts.length > 0 ? facts : undefined
 }
 
+const KNOWN_MISSES: ReadonlySet<string> = new Set(LINK_MISSES)
+
+/** A reason this build does not know is dropped, so the card says the general line. */
+const toMiss = (value: unknown): LinkMiss | undefined =>
+  typeof value === 'string' && KNOWN_MISSES.has(value) ? (value as LinkMiss) : undefined
+
 /**
  * The page image goes through our server, so the linked site never sees the reader. The
  * server keeps only http(s) image URLs. Field by field, so the raw image URL is never kept.
@@ -103,6 +111,8 @@ const toLinkCard = (key: string, data: MetadataResponse): LinkCard => ({
     ? { url: `${apiBaseUrl()}/metadata/image?url=${encodeURIComponent(key)}` }
     : undefined,
   fallback: data.fallback === true ? true : undefined,
+  miss: data.fallback === true ? toMiss(data.miss) : undefined,
+  file: data.media_type === 'document' ? true : undefined,
   kind: data.kind === 'repo' ? 'repo' : undefined,
   facts: toFacts(data.facts)
 })

@@ -1,6 +1,6 @@
 import { Icons } from '@components/icons/registry'
 import { twMerge } from '@utils/twMerge'
-import { useRef, useState } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
 import type { IconType } from 'react-icons'
 
 import { Band, HovercardFacts, HovercardTitle } from './HovercardParts'
@@ -67,10 +67,12 @@ type Props = {
   data: WebCardData
   /** `newTab` is true for Mod-click and a middle click. */
   onOpen: (newTab: boolean) => void
+  /** The link-text warning, drawn under the title when there is one. */
+  children?: ReactNode
 }
 
 /** The docs.plus card body for a web page: picture, title, facts and description. */
-export function WebLinkCard({ href, data, onOpen }: Props) {
+export function WebLinkCard({ href, data, onOpen, children }: Props) {
   const { title, description, image, facts } = data
   const tile = !!image && data.kind === 'repo'
 
@@ -81,6 +83,7 @@ export function WebLinkCard({ href, data, onOpen }: Props) {
         <HovercardTitle href={href} onOpen={onOpen}>
           {title}
         </HovercardTitle>
+        {children}
         {facts && (
           <HovercardFacts
             className="mt-1"
