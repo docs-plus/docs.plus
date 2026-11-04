@@ -8,6 +8,7 @@ import { openRenameDocumentDialog } from '../openRenameDocumentDialog'
 import type { OwnedDocument } from '../types'
 import { documentDisplayName } from '../utils/documentDisplayName'
 import { documentListDate } from '../utils/documentListDate'
+import { isPlainLeftClick } from '../utils/isPlainLeftClick'
 import DocumentMembersCluster from './DocumentMembersCluster'
 import DocumentPreviewPaper from './DocumentPreviewPaper'
 import DocumentRowMenu from './DocumentRowMenu'
@@ -23,7 +24,7 @@ interface DocumentGridTileProps {
   onDelete: (documentId: string, keyboard: boolean) => void
 }
 
-/** Preview + title navigate; the footer ⋮ is a sibling so it never nests in the nav button. */
+/** The whole tile is one link (middle-click opens a new tab); the footer buttons are siblings. */
 function DocumentGridTile({
   doc,
   scope,
@@ -41,17 +42,20 @@ function DocumentGridTile({
   const isOwner = doc.isOwner !== false
   const ownerName = isOwner ? null : doc.owner?.display_name
 
-  const open = () => {
-    router.push(padUrl.link({ kind: 'document', slug: doc.slug }, 'path'))
+  const href = padUrl.link({ kind: 'document', slug: doc.slug }, 'path')
+  const open = (e: React.MouseEvent) => {
+    if (!isPlainLeftClick(e)) return
+    e.preventDefault()
+    router.push(href)
     onOpenDocument?.()
   }
 
   const openRenameDialog = () => openRenameDocumentDialog(doc, scope)
 
   return (
-    <div className="rounded-box border-base-300 bg-base-100 hover:bg-base-200 focus-within:ring-primary flex flex-col border transition-colors focus-within:ring-2">
-      <button
-        type="button"
+    <div className="rounded-box border-base-300 bg-base-100 hover:bg-base-200 focus-within:ring-primary relative flex flex-col border transition-colors focus-within:ring-2">
+      <a
+        href={href}
         data-doc-row-button
         tabIndex={isActive ? 0 : -1}
         onClick={open}
@@ -62,7 +66,7 @@ function DocumentGridTile({
             openRenameDialog()
           }
         }}
-        className="flex flex-col text-left focus-visible:outline-none">
+        className="flex flex-col text-left after:absolute after:inset-0 focus-visible:outline-none">
         <span className="rounded-t-box relative flex aspect-[4/3] items-end justify-center overflow-hidden bg-[var(--pad-well)] px-3.5 pt-2.5">
           <DocumentPreviewPaper preview={doc.preview} title={doc.title} />
           {doc.isFavorite && (
@@ -89,9 +93,10 @@ function DocumentGridTile({
             date
           )}
         </span>
-      </button>
+      </a>
 
-      <div className="mt-auto flex items-center gap-2 px-3 pt-1 pb-2">
+      {/* The link's `after:` box covers the whole tile; footer buttons sit above it. */}
+      <div className="mt-auto flex items-center gap-2 px-3 pt-1 pb-2 [&_button]:relative">
         <DocumentMembersCluster
           documentId={doc.documentId}
           memberCount={members?.member_count ?? 0}

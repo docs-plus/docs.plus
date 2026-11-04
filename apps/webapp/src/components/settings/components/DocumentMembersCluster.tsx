@@ -16,7 +16,7 @@ interface DocumentMembersClusterProps {
 
 /**
  * Inline avatar cluster on a document row/tile — the trigger for the roster popover.
- * One-member documents show nothing. The button is a sibling of the row's nav button
+ * One-member documents show nothing. The button is a sibling of the row's link
  * and stops propagation, so opening the roster never navigates the row.
  */
 function DocumentMembersCluster({

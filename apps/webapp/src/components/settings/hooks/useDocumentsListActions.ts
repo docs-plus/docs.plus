@@ -47,7 +47,7 @@ export function useDocumentsListActions({ userId, docs }: DocumentsListActionsIn
   }, [docs.length])
 
   const focusRowAt = useCallback((index: number) => {
-    const buttons = listRef.current?.querySelectorAll<HTMLButtonElement>('[data-doc-row-button]')
+    const buttons = listRef.current?.querySelectorAll<HTMLElement>('[data-doc-row-button]')
     if (!buttons?.length) return
     const next = Math.max(0, Math.min(index, buttons.length - 1))
     setActiveIndex(next)

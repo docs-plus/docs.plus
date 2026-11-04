@@ -11,6 +11,7 @@ import { openRenameDocumentDialog } from '../openRenameDocumentDialog'
 import type { OwnedDocument } from '../types'
 import { documentDisplayName } from '../utils/documentDisplayName'
 import { documentListDate } from '../utils/documentListDate'
+import { isPlainLeftClick } from '../utils/isPlainLeftClick'
 import DocumentMembersCluster from './DocumentMembersCluster'
 import DocumentRowLabel from './DocumentRowLabel'
 import DocumentRowMenu from './DocumentRowMenu'
@@ -29,8 +30,8 @@ interface DocumentListRowProps {
 }
 
 /**
- * The ⋮ menu is a sibling of the row button (its trigger stops propagation) so it never fires
- * row nav or nests button-in-button. F2/Rename inlines an input: Enter/blur commit, Esc reverts.
+ * The row is a link, so middle-click and Cmd/Ctrl-click open a new tab. The ⋮ menu is a sibling
+ * (its trigger stops propagation). F2/Rename inlines an input: Enter/blur commit, Esc reverts.
  */
 function DocumentListRow({
   doc,
@@ -54,7 +55,7 @@ function DocumentListRow({
   const { commit } = useCommitDocumentRename(scope)
   const [isRenaming, setIsRenaming] = useState(false)
   const [draft, setDraft] = useState('')
-  const buttonRef = useRef<HTMLButtonElement>(null)
+  const buttonRef = useRef<HTMLAnchorElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   // Enter commits then blurs the unmounting input, which would commit again — latch once.
   const finishedRef = useRef(false)
@@ -94,8 +95,11 @@ function DocumentListRow({
     }
   }, [isRenaming])
 
-  const open = () => {
-    router.push(padUrl.link({ kind: 'document', slug: doc.slug }, 'path'))
+  const href = padUrl.link({ kind: 'document', slug: doc.slug }, 'path')
+  const open = (e: React.MouseEvent) => {
+    if (!isPlainLeftClick(e)) return
+    e.preventDefault()
+    router.push(href)
     onOpenDocument?.()
   }
 
@@ -147,10 +151,11 @@ function DocumentListRow({
   return (
     // The fill sits on an inner row: rounding the `li` would bend the sibling hairline.
     <li data-doc-row>
-      <div className="hover:bg-base-200 md:rounded-field flex items-center gap-1 pr-1 transition-colors">
-        <button
+      {/* The link's `after:` box covers the whole row; sibling buttons sit above it. */}
+      <div className="hover:bg-base-200 md:rounded-field relative flex items-center gap-1 pr-1 transition-colors [&>button]:relative">
+        <a
           ref={buttonRef}
-          type="button"
+          href={href}
           data-doc-row-button
           tabIndex={isActive ? 0 : -1}
           onClick={open}
@@ -161,7 +166,7 @@ function DocumentListRow({
               enterRename()
             }
           }}
-          className="rounded-field focus-visible:ring-primary flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none">
+          className="rounded-field focus-visible:ring-primary flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left transition-colors after:absolute after:inset-0 focus-visible:ring-2 focus-visible:outline-none">
           <LuFileText size={18} className="text-base-content/60 shrink-0" />
           <span className="flex min-w-0 flex-1 flex-col">
             <DocumentRowLabel doc={doc} className="text-sm" />
@@ -174,7 +179,7 @@ function DocumentListRow({
               <span className="text-meta text-base-content/60 sm:hidden">{date}</span>
             )}
           </span>
-        </button>
+        </a>
 
         <DocumentMembersCluster
           documentId={doc.documentId}
