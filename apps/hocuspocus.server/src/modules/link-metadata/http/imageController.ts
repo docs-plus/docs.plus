@@ -42,7 +42,8 @@ export const createImageController = (deps: ControllerDeps) => {
       cache: deps.cache,
       scraper: deps.scraper,
       stages: deps.stages,
-      publicUrl: deps.publicUrl
+      publicUrl: deps.publicUrl,
+      padSlugOf: deps.padSlugOf
     })
     const src = result.kind === 'success' ? result.payload.image?.url : undefined
     if (!src) return miss()

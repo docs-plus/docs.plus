@@ -1202,6 +1202,18 @@ A fallback result's `favicon`, when present, is this server's `GET /api/metadata
 
 Optional `kind` (`repo` only; a plain page has none) and `facts` (at most three `{ icon, text }`). `icon` is one of `location`, `work`, `posted`, `stars`, `language`, `updated`, `answers` or `accepted`. `fallback: true` marks the fallback card, also on a cache hit. A card built after a miss that may clear soon gets the short negative `Cache-Control`.
 
+A fallback card may carry `miss`, which says why there is no preview. A cache hit returns the same value, and any other card has none.
+
+| `miss`        | Cause                                                                                                          |
+| ------------- | -------------------------------------------------------------------------------------------------------------- |
+| `blocked`     | The page answered 4xx.                                                                                         |
+| `no-preview`  | The page answered, but its head has no title.                                                                  |
+| `unreachable` | The page answered 5xx, timed out or failed. Or a site API timed out, failed, hit a rate limit or answered 5xx. |
+
+A site API miss wins over the page's own miss, because that API may answer later.
+
+**A docs.plus pad link loses its cached card when the pad's access narrows.** A URL on a host in `APP_HOSTS` is a pad URL, and its cache key carries the pad's generation. When the pad turns Private, moves to Trash or is erased, the server sets a new generation, so no old card of that pad is read again. The next request that reaches the server then shows the pad's current state; a browser or proxy may still hold a copy for the `Cache-Control` time. The switch is best-effort: if Redis fails, the old cards expire by their TTL (24 h at most). A page that redirects into a pad is not cached.
+
 Errors (`400`) use this module's own shape — top-level `code` and `message`, not the nested envelope:
 
 ```json

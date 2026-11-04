@@ -116,6 +116,9 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
     accepted, read from api.stackexchange.com.
   - The metadata response gains `kind`, `facts` and `fallback`. The change is additive.
     `fallback: true` marks the fallback card, also on a cache hit.
+  - A fallback card says why it has no preview, in `miss`: `blocked` (the page answered 4xx),
+    `no-preview` (the page has no title) or `unreachable` (a 5xx, a timeout, a network error or an
+    API rate limit). A cache hit returns the same `miss`. Any other card has none.
   - New optional settings: `GITHUB_TOKEN` (public-repository read access only) and
     `STACKEXCHANGE_KEY`. Without them the shared quotas are 60 GitHub calls an hour and 300 Stack
     Exchange calls a day per server address.
@@ -241,6 +244,22 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 
 ### Security
 
+- **Link card text carries no control or bidi characters.** `capCard` cleans every text field:
+  the title, the description, fact text, names, image alt and the oEmbed provider. It turns each
+  whitespace run into one space. Then it drops the C0, DEL and C1 controls and the bidi controls
+  U+200E, U+200F, U+202A–U+202E and U+2066–U+2069, and collapses whitespace again. ZWNJ and ZWJ
+  stay. Before, a page title could use a bidi override to flip how a hovercard read. The value
+  shape did not change, so the cache prefix stays. A card cached before the deploy keeps its old
+  text for up to 24 h.
+- **A pad that turns Private hides its cached link cards.** Before, `GET /api/metadata` kept a
+  public pad's scraped title in Redis for up to 24 h after the pad turned Private. A pad URL's
+  cache key now carries a per-pad generation, read before the page is fetched. Turning a pad
+  Private, moving it to Trash or erasing it sets a new generation, so no old card of that pad is
+  read again, and a scrape still in flight writes where nobody reads. The switch is best-effort
+  and never fails the write. A page that redirects into a pad is not cached. The cache prefix
+  moved to `meta:v4`, so link cards are fetched again once after the deploy.
+  - New setting `APP_HOSTS`: the hosts that serve pads. Empty means the `APP_URL` host and its
+    `www.` form. Production sets `docs.plus,new.docs.plus,www.new.docs.plus`.
 - **One WebSocket message is capped at 16 MiB again ([#651](https://github.com/docs-plus/docs.plus/issues/651)).**
   Bun 1.4.4 obeys the `ws` `maxPayload` option, and its default is 100 MiB. Bun 1.4.3 and
   older refused anything over 16 MiB on their own. The collaboration server now passes
@@ -282,6 +301,10 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 - The root overrides pin `prosemirror-model` `1.25.12`, `prosemirror-transform` `1.12.2`, and `prosemirror-view` `1.42.6`.
 - `prosemirror-changeset` stays `2.4.1`. `@tiptap/pm` 3.32.0 asks for `^2.4.4`. Later versions halve `MAX_DIFF_SIZE`.
 - Link metadata: `domain/routes.ts` holds the route paths, and `domain/relay.ts` holds the image fetch and the byte sniff. `domain/icon.ts` keeps the icon steps.
+- Concurrent filter hovercards on one pad share one head read and one decode. Each hover used
+  to read and decode up to 1 MiB on its own. Nothing is kept after the read settles.
+- The OpenAPI `MetadataResponse.facts` limits come from link-metadata's own `FACTS_MAX` and
+  `FACT_MAX`, not copied numbers.
 - The link bench times headScraper only. `BENCHMARK.md` keeps the 2026-10-27 metascraper numbers as a frozen record.
 
 ## [2.2.0] — 2026-10-22

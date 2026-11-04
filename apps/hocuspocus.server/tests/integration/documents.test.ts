@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll, beforeEach, mock } from 'bun:test'
+import { describe, test, expect, beforeAll, beforeEach, afterEach, mock, spyOn } from 'bun:test'
 
 // Null by default, so the membership read fails closed. The Private flip test sets
 // a stub, because that write must reach the `document_access` mirror (#396).
@@ -22,6 +22,7 @@ mock.module('../../src/api/services/documentPurge.service', () => ({
   }
 }))
 
+import * as dns from 'node:dns/promises'
 import { readdir } from 'fs/promises'
 import path from 'path'
 import { Hono } from 'hono'
@@ -29,6 +30,9 @@ import * as Y from 'yjs'
 import { searchDocuments } from '../../src/api/services/documents.service'
 import documentsRouter from '../../src/api/routers/documents.router'
 import { config } from '../../src/config/env'
+import { setPadCardForgetter } from '../../src/lib/padLinkCards'
+import { padSlugOfUrl } from '../../src/lib/slug'
+import * as linkMetadata from '../../src/modules/link-metadata'
 import {
   TestServer,
   createMockPrisma,
@@ -1790,6 +1794,100 @@ describe('Documents API', () => {
 
       expect(response.status).toBe(200)
       // Should not crash, Prisma handles this
+    })
+  })
+
+  // A Private pad's title stayed in the link-metadata cache for 24 h after the flip.
+  describe('PUT /api/documents/:documentId — Private drops cached link cards', () => {
+    const APP_URL = 'https://docs.plus'
+    const HOSTS = new Set(['docs.plus', 'new.docs.plus'])
+    const TITLE = 'Launch plan — salaries'
+    let fetchSpy: ReturnType<typeof spyOn>
+    let dnsSpy: ReturnType<typeof spyOn>
+
+    // The two ioredis calls the cache adapter makes, over one in-memory store.
+    const memoryRedis = () => {
+      const values = new Map<string, string>()
+      return {
+        get: async (key: string) => values.get(key) ?? null,
+        set: async (key: string, value: string) => {
+          values.set(key, value)
+          return 'OK'
+        }
+      }
+    }
+
+    beforeEach(() => {
+      fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(
+        (async () =>
+          new Response(`<!doctype html><html><head><title>${TITLE}</title></head></html>`, {
+            status: 200,
+            headers: { 'content-type': 'text/html; charset=utf-8' }
+          })) as never
+      )
+      dnsSpy = spyOn(dns, 'lookup').mockResolvedValue([
+        { address: '93.184.216.34', family: 4 }
+      ] as never)
+    })
+
+    afterEach(() => {
+      fetchSpy.mockRestore()
+      dnsSpy.mockRestore()
+      setPadCardForgetter(null)
+    })
+
+    test('every cached URL form of the pad loses its title', async () => {
+      const metadata = linkMetadata.init({
+        redis: memoryRedis() as any,
+        logger: (await import('pino')).default({ level: 'silent' }),
+        padSlugOf: (url) => padSlugOfUrl(url, HOSTS)
+      })
+      const forgets: Promise<void>[] = []
+      setPadCardForgetter((slug) => {
+        const forget = metadata.forgetPad(slug)
+        forgets.push(forget)
+        return forget
+      })
+      const cardApp = new Hono().route(linkMetadata.LINK_METADATA_MOUNT_PATH, metadata.router)
+      const card = async (url: string) =>
+        (await (await cardApp.request(`/api/metadata?url=${encodeURIComponent(url)}`)).json()) as {
+          title: string
+          cached: boolean
+        }
+      const urls = [
+        `${APP_URL}/launch-plan`,
+        `${APP_URL}/Launch-Plan/salaries?chatroom=h2`,
+        'http://docs.plus/launch-plan?id=h1',
+        'https://new.docs.plus/launch-plan'
+      ]
+
+      for (const url of urls) await card(url)
+      for (const url of urls) expect(await card(url)).toMatchObject({ title: TITLE, cached: true })
+
+      serviceRoleClient = { from: () => ({ upsert: async () => ({ error: null }) }) }
+      mockPrisma.documentMetadata.findUnique = async () => ({
+        ownerId: 'user-123',
+        readOnly: false,
+        isPrivate: false
+      })
+      mockPrisma.documentMetadata.upsert = async (data: any) => ({
+        id: 1,
+        documentId: 'abc123',
+        slug: 'launch-plan',
+        ownerId: 'user-123',
+        isPrivate: data.update.isPrivate,
+        readOnly: false,
+        keywords: ''
+      })
+      const response = await testServer.put(
+        '/api/documents/abc123',
+        { isPrivate: true },
+        { token: 'valid-test-token' }
+      )
+      expect(response.status).toBe(200)
+      await Promise.all(forgets)
+
+      for (const url of urls) expect((await card(url)).cached).toBe(false)
     })
   })
 })

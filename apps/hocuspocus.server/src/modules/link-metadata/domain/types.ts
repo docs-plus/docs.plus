@@ -12,6 +12,11 @@ export const FACT_ICONS = [
 
 export type FactIcon = (typeof FACT_ICONS)[number]
 
+/** At most this many facts on a card. */
+export const FACTS_MAX = 3
+/** Code points kept in one fact text. A longer text is cut and ends in "…". */
+export const FACT_MAX = 64
+
 export interface Fact {
   icon: FactIcon
   text: string
@@ -19,6 +24,11 @@ export interface Fact {
 
 // A card with no kind is a plain page.
 export const LINK_KINDS = ['repo'] as const
+
+/** Why a fallback card has no preview: the site refused, the page has no title, or no answer came. */
+export const LINK_MISSES = ['blocked', 'no-preview', 'unreachable'] as const
+
+export type LinkMiss = (typeof LINK_MISSES)[number]
 
 /**
  * The wire contract (response side). The request side lives in http/schema.ts.
@@ -55,6 +65,8 @@ export interface MetadataResponse {
   facts?: Fact[]
   /** Every stage missed, and the card names the host only. */
   fallback?: true
+  /** On a fallback card only: why no stage built a preview. */
+  miss?: LinkMiss
   cached: boolean
   fetched_at: string
 }
@@ -65,9 +77,12 @@ export interface ErrorResponse {
   code: 'INVALID_URL' | 'BLOCKED_URL'
 }
 
-export type StageResult = Omit<MetadataResponse, 'cached' | 'fetched_at' | 'fallback'> | null
+export type StageResult = Omit<
+  MetadataResponse,
+  'cached' | 'fetched_at' | 'fallback' | 'miss'
+> | null
 
-/** Why the html stage missed. It goes to the `stages` log field only, never to the response. */
+/** Why the html stage missed. The `stages` log field carries it; the wire gets only its `LinkMiss`. */
 export type HtmlMiss = 'status:4xx' | 'status:5xx' | 'no-title' | 'timeout' | 'error'
 
 /**
@@ -81,9 +96,13 @@ export type HtmlCard = NonNullable<StageResult> & { retry?: true }
 
 /**
  * A Redis entry. `fallback` and `retry` mark a short-TTL write, so a hit keeps the short
- * header. `retry` never reaches the wire.
+ * header. `retry` never reaches the wire. `miss` rides only with `fallback`.
  */
-export type CacheEntry = NonNullable<StageResult> & { fallback?: true; retry?: true }
+export type CacheEntry = NonNullable<StageResult> & {
+  fallback?: true
+  retry?: true
+  miss?: LinkMiss
+}
 
 /**
  * Optional API credentials. Without them GitHub allows 60 calls an hour and Stack Exchange
@@ -108,6 +127,10 @@ export type OwnImage = (url: string) => Promise<Response> | null
 export interface Cache {
   get(key: string): Promise<CacheEntry | null>
   set(key: string, value: CacheEntry, ttlSeconds: number): Promise<void>
+  /** A pad's generation token, `0` when none is stored. Rejects on failure. */
+  generation(key: string): Promise<string>
+  /** Stores a new random generation token, in one write with its TTL. Rejects on failure. */
+  newGeneration(key: string, ttlSeconds: number): Promise<void>
 }
 
 export interface Scraper {

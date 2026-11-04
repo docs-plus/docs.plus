@@ -60,17 +60,20 @@ These have no default and fail startup if missing.
 
 ## Core application
 
-| Variable                        | Type                                    | Default                 |
-| ------------------------------- | --------------------------------------- | ----------------------- |
-| `NODE_ENV`                      | `development` \| `production` \| `test` | `development`           |
-| `APP_NAME`                      | string                                  | `hocuspocus`            |
-| `APP_PORT`                      | number                                  | `4000` (REST API)       |
-| `HOCUSPOCUS_PORT`               | number                                  | `4001` (WebSocket)      |
-| `WORKER_HEALTH_PORT`            | number                                  | `4002` (worker health)  |
-| `HOCUSPOCUS_INTERNAL_HTTP_PORT` | number                                  | `4003` (internal HTTP)  |
-| `HOCUSPOCUS_INTERNAL_HTTP_HOST` | string                                  | `0.0.0.0`               |
-| `HOCUSPOCUS_INTERNAL_URL`       | string                                  | `http://localhost:4003` |
-| `PUBLIC_RESTAPI_URL`            | string                                  | — (unset)               |
+| Variable                        | Type                                    | Default                   |
+| ------------------------------- | --------------------------------------- | ------------------------- |
+| `NODE_ENV`                      | `development` \| `production` \| `test` | `development`             |
+| `APP_NAME`                      | string                                  | `hocuspocus`              |
+| `APP_PORT`                      | number                                  | `4000` (REST API)         |
+| `HOCUSPOCUS_PORT`               | number                                  | `4001` (WebSocket)        |
+| `WORKER_HEALTH_PORT`            | number                                  | `4002` (worker health)    |
+| `HOCUSPOCUS_INTERNAL_HTTP_PORT` | number                                  | `4003` (internal HTTP)    |
+| `HOCUSPOCUS_INTERNAL_HTTP_HOST` | string                                  | `0.0.0.0`                 |
+| `HOCUSPOCUS_INTERNAL_URL`       | string                                  | `http://localhost:4003`   |
+| `PUBLIC_RESTAPI_URL`            | string                                  | — (unset)                 |
+| `APP_HOSTS`                     | list                                    | `APP_URL` host and `www.` |
+
+`APP_HOSTS` lists the hosts that serve pads. The link-metadata cache treats a URL on any of them as a pad link, so a card of that pad is hidden when the pad turns Private, moves to Trash or is erased. An empty list means the `APP_URL` host and its `www.` form. Production should list every webapp host that Traefik routes: `docs.plus,new.docs.plus,www.new.docs.plus`.
 
 ### Public origin
 

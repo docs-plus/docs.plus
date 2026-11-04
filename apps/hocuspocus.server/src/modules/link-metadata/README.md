@@ -5,14 +5,20 @@ Self-contained link-unfurling service. It is built as a modular monolith, so it 
 ## Boundary rules (do not violate)
 
 1. **Single bounded folder.** Code, tests, types, infra adapters all live here. Files outside this folder may only import from `./index.ts`. One exception: the openapi module reads `http/schema.ts` directly to build the spec. The lint rule does not catch that relative path.
-2. **One public surface.** `index.ts` exports `{ init, LINK_METADATA_MOUNT_PATH, LINK_ICON_PATH, LINK_IMAGE_PATH, FACT_ICONS, LINK_KINDS, type MetadataResponse, type ErrorResponse }`. The host mounts the router at the first path constant. The rate limiter matches all three: the icon route spends its own budget, and the metadata and image routes share one. Nothing else is consumable from outside.
-3. **DI at the seam.** Module exports `init({ redis, logger, iconMaxBytes, publicUrl, apiKeys })`. `iconMaxBytes` is optional and defaults to `32768`. `publicUrl` is optional and defaults to `null`; the fallback stage builds its `favicon` URL from it. `apiKeys` is optional: `{ githubToken, stackExchangeKey }`, each a string or `null`, and both `null` when it is left out. The module does not call `getRedisClient()` or read env vars for infra clients.
+2. **One public surface.** `index.ts` exports `{ init, LINK_METADATA_MOUNT_PATH, LINK_ICON_PATH, LINK_IMAGE_PATH, FACT_ICONS, FACT_MAX, FACTS_MAX, LINK_KINDS, LINK_MISSES, type MetadataResponse, type ErrorResponse, type LinkMiss }`. The OpenAPI schema reads `FACT_MAX` and `FACTS_MAX`, so it never copies the caps. The host mounts the router at the first path constant. The rate limiter matches all three: the icon route spends its own budget, and the metadata and image routes share one. Nothing else is consumable from outside.
+3. **DI at the seam.** Module exports `init({ redis, logger, iconMaxBytes, publicUrl, ownImage, apiKeys, padSlugOf })`, which returns `{ router, forgetPad }`. `iconMaxBytes` is optional and defaults to `32768`. `publicUrl` is optional and defaults to `null`; the fallback stage builds its `favicon` URL from it. `apiKeys` is optional: `{ githubToken, stackExchangeKey }`, each a string or `null`, and both `null` when it is left out. `padSlugOf` is optional: the host's function from a URL to the slug key of the pad it opens, or `null`. Without it, no card is a pad card. The module does not call `getRedisClient()` or read env vars for infra clients.
 4. **Framework-free domain.** Files under `domain/` import zero infra SDKs (no `hono`, no `ioredis`, no `entities`). `infra/` is the only place SDKs live. Domain↔infra contracts use tiny inline port types declared in `domain/types.ts`.
 5. **Stable wire contract.** `http/schema.ts` (request) and `domain/types.ts` `MetadataResponse` / `ErrorResponse` (response) are the published contract. Additive changes only within v1. One recorded exception: the fallback's `favicon` changed from a Google URL to this server's icon route URL ([#517](https://github.com/docs-plus/docs.plus/issues/517), maintainer ruling 2026-10-18).
 6. **No shared mutable state.** No module-level singletons or top-level side effects. Adapters are constructed inside `init()` and held in closure.
 7. **Tests live inside the module.** `__tests__/` moves with the folder during extraction.
 
 ESLint enforces parts of rules 1 and 4 via `no-restricted-imports` in `apps/hocuspocus.server/eslint.config.js` (ESM package — `"type": "module"`).
+
+## Card text
+
+`capCard` cleans every text field before the cut: the title, the description, fact text, author and publisher names, image alt and the oEmbed provider. Each whitespace run becomes one space, so a newline stays a word break. Then the C0, DEL and C1 controls go, and so do the bidi controls U+200E, U+200F, U+202A–U+202E and U+2066–U+2069. Whitespace collapses once more, so a stripped mark leaves one space. ZWNJ and ZWJ stay, because Persian words and emoji sequences need them. The rule keeps a bidi override from flipping how the hovercard reads.
+
+The stored value shape did not change, so the cache key prefix stays. A cache hit skips `capCard`, so a card stored before this rule keeps its old text until its TTL ends, at most 24 h.
 
 ## Facts
 
@@ -24,6 +30,17 @@ A card may carry `facts`: at most three `{ icon, text }` rows, such as "12.3k" s
 - **API bodies are capped.** Every special handler reads its answer through `readApiJson` (`domain/stages/handlers/readApiJson.ts`): `readCappedBody` at 64 KiB, then `JSON.parse`. A larger body or bad JSON is a lasting miss. Reddit asks for one comment (`limit=1`) so the post fits.
 - **A miss that may clear soon is not cached for long.** A timeout or a network error from any handler, or a rate limit or 5xx from GitHub or Stack Exchange, makes the special stage return a `SpecialMiss`. A Wikipedia or Reddit non-2xx is a lasting miss. The card that follows, usually the scraped page, gets the short TTL and a `retry` marker. A hit on it sends the short `Cache-Control`, and so does the image route. `retry` never reaches the wire.
 - **`fallback: true`** is on the wire when every stage missed, on a fresh answer and on a cache hit.
+- **`miss`** says why a fallback card has no preview. `status:4xx` is `blocked`, `no-title` is `no-preview`, and `status:5xx`, `timeout`, `error` and `rate-limit` are `unreachable`. A special-stage miss wins over the html miss, because the site's API may answer later. The Redis entry keeps `miss`, so a hit returns the same value. A card that is not a fallback never carries it. The field is optional on both sides, so on its own it would not move the prefix.
+
+## Pad cards
+
+A docs.plus pad link can be scraped like any page, and its card holds the pad's title. When the pad's access narrows, that card must go at once, not after 24 h.
+
+- **One generation per pad.** `meta:pad-gen:{slug key}` holds a random token. A missing key means `0`, so a pad that never narrowed costs one Redis read and no write. A pad URL's cache key ends in `:g{generation}`, read before any stage runs. If that read fails, the request skips the cache.
+- **`forgetPad(slugKey)`** sets a new token, in one `SET … EX` with a 48 h TTL. Every entry under the old token is then never read, and expires by its own TTL. A scrape in flight read the old token, so its late write lands where nobody reads. It never rejects: a failure logs the key, and the cards expire by TTL.
+- **The token outlives every entry.** Its 48 h TTL is twice the longest entry TTL. When it lapses back to `0`, the `0` entries written before the first `forgetPad` are long gone.
+- **A redirect into a pad is not cached.** The html stage returns the final URL. When that URL is a pad and the request was not the same pad, the card is answered and not stored.
+- **The host calls it** through `src/lib/padLinkCards.ts`, which normalizes the stored slug, after a write turns a pad Private, moves it to Trash or erases it. No server write renames a slug. The worker binds no forgetter, so a reaper purge changes nothing; the earlier move to Trash already did.
 
 ## Favicons
 

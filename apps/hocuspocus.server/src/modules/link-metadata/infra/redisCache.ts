@@ -1,10 +1,12 @@
+import { randomUUID } from 'node:crypto'
+
 import type { RedisClient } from '../../../types/redis.types'
 import type { Cache, CacheEntry } from '../domain/types'
 
 /**
- * Implements the `Cache` port using ioredis. Cache failures are logged
- * by ioredis itself; here they're swallowed so a Redis blip doesn't
- * break a metadata fetch (cache is best-effort by design).
+ * Implements the `Cache` port using ioredis. A failed `get` or `set` is swallowed, so a
+ * Redis blip never breaks a metadata fetch. The generation calls reject, so the pipeline
+ * skips a pad's cache and `forgetPad` logs the failure.
  */
 export const createRedisCache = (redis: RedisClient | null): Cache => {
   if (!redis) {
@@ -12,7 +14,9 @@ export const createRedisCache = (redis: RedisClient | null): Cache => {
       get: async () => null,
       set: async () => {
         /* no-op when Redis is disabled */
-      }
+      },
+      generation: async () => '0',
+      newGeneration: async () => {}
     }
   }
 
@@ -32,6 +36,10 @@ export const createRedisCache = (redis: RedisClient | null): Cache => {
       } catch {
         /* swallow — cache is best-effort */
       }
+    },
+    generation: async (key) => (await redis.get(key)) ?? '0',
+    newGeneration: async (key, ttlSeconds) => {
+      await redis.set(key, randomUUID(), 'EX', ttlSeconds)
     }
   }
 }

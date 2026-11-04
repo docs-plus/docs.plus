@@ -4,6 +4,7 @@ import type { Logger } from 'pino'
 
 import type { RedisClient } from '../../types/redis.types'
 import { ICON_MAX_BYTES_DEFAULT } from './domain/icon'
+import { PAD_GENERATION_TTL_SECONDS, padGenerationKey } from './domain/stages/cache'
 import { runSpecialHandler } from './domain/stages/handlers'
 import { runHtmlScrape } from './domain/stages/htmlScrape'
 import { runOembed } from './domain/stages/oembed'
@@ -19,10 +20,17 @@ export interface InitDeps {
   publicUrl?: string | null
   ownImage?: OwnImage
   apiKeys?: ApiKeys
+  /** The slug key of the docs.plus pad a URL opens, or null. Without it, no card is a pad card. */
+  padSlugOf?: (url: string) => string | null
 }
 
 export interface InitResult {
   router: Hono
+  /**
+   * Hides every cached card of one pad, by the slug key `padSlugOf` gives. Call it when the
+   * pad's access narrows. It never rejects: a failure logs the key, and the cards expire by TTL.
+   */
+  forgetPad: (slugKey: string) => Promise<void>
 }
 
 export const init = (deps: InitDeps): InitResult => {
@@ -43,7 +51,17 @@ export const init = (deps: InitDeps): InitResult => {
     logger: deps.logger,
     iconMaxBytes: deps.iconMaxBytes ?? ICON_MAX_BYTES_DEFAULT,
     publicUrl: deps.publicUrl ?? null,
-    ownImage: deps.ownImage
+    ownImage: deps.ownImage,
+    padSlugOf: deps.padSlugOf
   })
-  return { router }
+
+  const forgetPad = async (slugKey: string): Promise<void> => {
+    if (!slugKey) return
+    try {
+      await cache.newGeneration(padGenerationKey(slugKey), PAD_GENERATION_TTL_SECONDS)
+    } catch (err) {
+      deps.logger.warn({ err, slug: slugKey }, 'Pad link cards not forgotten')
+    }
+  }
+  return { router, forgetPad }
 }

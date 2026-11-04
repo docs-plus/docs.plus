@@ -4,6 +4,7 @@ import type { PrismaClient } from '../../generated/prisma/client'
 import { publishDocumentAccessEvent } from '../../lib/accessRealtime'
 import { deriveDocumentId, INITIAL_EPOCH } from '../../lib/documentId'
 import { documentsServiceLogger as purgeLogger } from '../../lib/logger'
+import { forgetPadCards } from '../../lib/padLinkCards'
 import { normalizeSlug } from '../../lib/slug'
 import { deleteDocumentMedia } from './media.service'
 
@@ -121,5 +122,7 @@ export async function purgeDocumentFootprint(
     // version rows. A P2028 re-runs an already-erased footprint into the same wall.
     { maxWait: 10_000, timeout: 30_000 }
   )
+  // An admin purge erases a live pad, and the freed slug may name a new one.
+  if (count > 0) void forgetPadCards(slug)
   return { purged: count }
 }

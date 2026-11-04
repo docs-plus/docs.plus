@@ -11,6 +11,7 @@ export interface ControllerDeps {
   logger: Logger
   publicUrl: string | null
   ownImage?: OwnImage
+  padSlugOf?: (url: string) => string | null
 }
 
 const POSITIVE_CACHE_HEADER = 'public, max-age=3600, stale-while-revalidate=86400'
@@ -30,6 +31,7 @@ export const createController = (deps: ControllerDeps) => {
       scraper: deps.scraper,
       stages: deps.stages,
       publicUrl: deps.publicUrl,
+      padSlugOf: deps.padSlugOf,
       onStage: (e) => stageEvents.push(e)
     })
 
@@ -53,6 +55,7 @@ export const createController = (deps: ControllerDeps) => {
     const response: MetadataResponse = {
       ...result.payload,
       ...(result.fallback ? { fallback: true } : {}),
+      ...(result.miss ? { miss: result.miss } : {}),
       cached: result.fromCache,
       fetched_at: new Date().toISOString()
     }

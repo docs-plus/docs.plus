@@ -4,7 +4,6 @@ import {
   CACHE_TTL_NEGATIVE_SECONDS,
   CACHE_TTL_POSITIVE_SECONDS,
   cacheKey,
-  readCache,
   writeCache
 } from '../../domain/stages/cache'
 import type { Cache, CacheEntry, StageResult } from '../../domain/types'
@@ -23,7 +22,9 @@ const makeFakeCache = (): FakeCache => {
     set: async (key, value, ttl) => {
       store.set(key, value)
       fake.lastTtl = ttl
-    }
+    },
+    generation: async () => '0',
+    newGeneration: async () => {}
   }
   return fake
 }
@@ -36,9 +37,9 @@ const sample: NonNullable<StageResult> = {
 }
 
 describe('cacheKey', () => {
-  test('uses meta:v3: prefix, sha1 of the canonical url, and the primary lang subtag', () => {
+  test('uses meta:v4: prefix, sha1 of the canonical url, and the primary lang subtag', () => {
     const key = cacheKey('https://example.com/x', 'en-US')
-    expect(key).toMatch(/^meta:v3:[a-f0-9]{40}:en$/)
+    expect(key).toMatch(/^meta:v4:[a-f0-9]{40}:en$/)
   })
 
   test('collapses a full Accept-Language header to its primary subtag', () => {
@@ -67,29 +68,16 @@ describe('cacheKey', () => {
   })
 })
 
-describe('readCache', () => {
-  test('returns null on miss', async () => {
-    const cache = makeFakeCache()
-    expect(await readCache(cache, 'https://example.com', 'en')).toBeNull()
-  })
-
-  test('returns stored payload on hit', async () => {
-    const cache = makeFakeCache()
-    cache.store.set(cacheKey('https://example.com', 'en'), sample)
-    expect(await readCache(cache, 'https://example.com', 'en')).toEqual(sample)
-  })
-})
-
 describe('writeCache', () => {
   test('stores a positive result with positive TTL', async () => {
     const cache = makeFakeCache()
-    await writeCache(cache, 'https://example.com', 'en', sample, 'positive')
+    await writeCache(cache, cacheKey('https://example.com', 'en'), sample, 'positive')
     expect(cache.lastTtl).toBe(CACHE_TTL_POSITIVE_SECONDS)
   })
 
   test('stores a fallback result with negative TTL', async () => {
     const cache = makeFakeCache()
-    await writeCache(cache, 'https://example.com', 'en', sample, 'negative')
+    await writeCache(cache, cacheKey('https://example.com', 'en'), sample, 'negative')
     expect(cache.lastTtl).toBe(CACHE_TTL_NEGATIVE_SECONDS)
   })
 })

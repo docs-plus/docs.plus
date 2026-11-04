@@ -1,5 +1,5 @@
 import { tiptapDocSchema } from '../../document-content/http/schema'
-import { FACT_ICONS, LINK_KINDS } from '../../link-metadata'
+import { FACT_ICONS, FACT_MAX, FACTS_MAX, LINK_KINDS, LINK_MISSES } from '../../link-metadata'
 import type { JsonSchema, OpenApiComponents, OpenApiResponse } from '../types'
 import { toJsonSchema } from './jsonSchema'
 
@@ -220,13 +220,14 @@ const linkMetadata: JsonSchema = {
     },
     facts: {
       type: 'array',
-      maxItems: 3,
+      maxItems: FACTS_MAX,
       description: 'Short facts by page kind, such as a job location or a repository star count.',
       items: {
         type: 'object',
         properties: {
           icon: { type: 'string', enum: [...FACT_ICONS] },
-          text: { type: 'string', maxLength: 65 }
+          // A cut text ends in "…", one code point past the cap.
+          text: { type: 'string', maxLength: FACT_MAX + 1 }
         },
         required: ['icon', 'text']
       }
@@ -235,6 +236,12 @@ const linkMetadata: JsonSchema = {
       type: 'boolean',
       enum: [true],
       description: 'Present when every stage missed and the card names the host only.'
+    },
+    miss: {
+      type: 'string',
+      enum: [...LINK_MISSES],
+      description:
+        'On a fallback card only, also on a cache hit: why no preview. `blocked`: the page answered 4xx. `no-preview`: the page has no title. `unreachable`: the page answered 5xx, timed out or failed, or a site API missed in a way that may clear soon. A site API miss wins.'
     },
     cached: { type: 'boolean' },
     fetched_at: { type: 'string', format: 'date-time' }

@@ -2,6 +2,7 @@ import type { PrismaClient } from '../../generated/prisma/client'
 import { publishDocumentAccessEvent } from '../../lib/accessRealtime'
 import { writeDocumentAccessMirror } from '../../lib/documentAccessMirror'
 import { adminLogger } from '../../lib/logger'
+import { forgetPadCards } from '../../lib/padLinkCards'
 import { parseSupabaseArray, supabaseUsersArraySchema } from '../../schemas/supabase.schema'
 import { getSupabaseClient, supabaseRest } from '../utils/supabase'
 import { fetchByIds } from '../utils/supabaseFetchByIds'
@@ -272,6 +273,8 @@ export async function updateDocumentFlags(
       updatedAt: true
     }
   })
+
+  if (updateData.isPrivate === true) void forgetPadCards(document.slug)
 
   // Same fire-and-forget seal the PUT route sends, so an admin toggle reaches
   // live rooms too. Only the changed flags ride along: a readOnly flip on an

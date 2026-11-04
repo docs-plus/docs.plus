@@ -8,6 +8,30 @@ import { uniqueViolationFields } from './errors'
 export const normalizeSlug = (slug: string): string =>
   slugify(slug.toLowerCase(), { lower: true, strict: true })
 
+/**
+ * The normalized slug of the pad a URL opens, as the slug read resolves it. It matches the
+ * host, not the origin, because `http://` redirects to the same pad. Null for another host
+ * or the root.
+ */
+export const padSlugOfUrl = (url: string, hosts: ReadonlySet<string>): string | null => {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return null
+  }
+  if (!hosts.has(parsed.hostname)) return null
+  const segment = parsed.pathname.split('/').find(Boolean)
+  if (!segment) return null
+  let slug = segment
+  try {
+    slug = decodeURIComponent(segment)
+  } catch {
+    // A malformed escape stays raw.
+  }
+  return normalizeSlug(slug) || null
+}
+
 // Runs `write` with the base slug, then retries with a uniquified suffix on a
 // Prisma P2002 slug collision. Shared by first-save (queue), duplicate and MCP create so the
 // collision-retry lives in one side-effect-free module. `queue.ts` connects Redis

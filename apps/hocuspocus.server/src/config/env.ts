@@ -5,6 +5,8 @@ export { env }
 
 // `||` because Compose can set APP_URL to ''.
 const appUrl = (env.APP_URL || 'https://docs.plus').replace(/\/+$/, '')
+const appHost = new URL(appUrl).hostname
+const appHosts = env.APP_HOSTS.length > 0 ? env.APP_HOSTS : [appHost, `www.${appHost}`]
 const webhookSecret = resolveWebhookSecret(env.RESEND_WEBHOOK_SECRET)
 const emailFacts = describeEmailEnv(env)
 
@@ -14,7 +16,9 @@ export const config = {
     name: env.APP_NAME,
     env: env.NODE_ENV,
     // Compose interpolates an unset var to `''`, which is as absent as undefined.
-    publicUrl: env.PUBLIC_RESTAPI_URL || null
+    publicUrl: env.PUBLIC_RESTAPI_URL || null,
+    // Every host that serves pads, so a link-metadata card of any of them is a pad card.
+    hosts: new Set(appHosts.map((host) => host.toLowerCase()))
   },
 
   hocuspocus: {

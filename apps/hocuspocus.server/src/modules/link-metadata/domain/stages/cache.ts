@@ -15,28 +15,33 @@ export const primaryLangSubtag = (lang: string | undefined): string | null => {
 }
 
 /**
- * Cache key shape: `meta:v3:{sha1(canonical_url)}:{lang | '_'}`. The prefix moves whenever
- * the stored value shape changes. Old keys then expire by TTL, and a replica still on the
- * old code never reads a value it cannot serve. It is not the wire contract version.
+ * Cache key shape: `meta:v4:{sha1(canonical_url)}:{lang | '_'}`, plus `:g{generation}` for a
+ * pad URL. The prefix moves whenever the stored value shape changes. Old keys then expire by
+ * TTL, and a replica still on the old code never reads a value it cannot serve. It is not the
+ * wire contract version.
  */
-export const cacheKey = (canonicalUrl: string, lang: string | undefined): string => {
+export const cacheKey = (
+  canonicalUrl: string,
+  lang: string | undefined,
+  generation?: string
+): string => {
   const hash = createHash('sha1').update(canonicalUrl).digest('hex')
-  return `meta:v3:${hash}:${primaryLangSubtag(lang) ?? '_'}`
+  const base = `meta:v4:${hash}:${primaryLangSubtag(lang) ?? '_'}`
+  return generation === undefined ? base : `${base}:g${generation}`
 }
 
-export const readCache = async (
-  cache: Cache,
-  canonicalUrl: string,
-  lang: string | undefined
-): Promise<CacheEntry | null> => cache.get(cacheKey(canonicalUrl, lang))
+/** Longer than any entry TTL, so a pad's old entries are gone before its generation lapses to `0`. */
+export const PAD_GENERATION_TTL_SECONDS = 2 * CACHE_TTL_POSITIVE_SECONDS
+
+/** One generation per pad slug key. A new generation hides every entry under the old one. */
+export const padGenerationKey = (slugKey: string): string => `meta:pad-gen:${slugKey}`
 
 export const writeCache = async (
   cache: Cache,
-  canonicalUrl: string,
-  lang: string | undefined,
+  key: string,
   value: CacheEntry,
   kind: 'positive' | 'negative'
 ): Promise<void> => {
   const ttl = kind === 'positive' ? CACHE_TTL_POSITIVE_SECONDS : CACHE_TTL_NEGATIVE_SECONDS
-  await cache.set(cacheKey(canonicalUrl, lang), value, ttl)
+  await cache.set(key, value, ttl)
 }

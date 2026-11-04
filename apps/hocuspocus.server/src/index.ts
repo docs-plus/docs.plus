@@ -31,10 +31,12 @@ import {
   metricsText,
   seedRestAlertSeries
 } from './lib/metrics'
+import { setPadCardForgetter } from './lib/padLinkCards'
 import { prisma, shutdownDatabase } from './lib/prisma'
 import { getOwnerProfiles } from './lib/profiles'
 import { pushGateway } from './lib/push'
 import { disconnectRedis, getRedisClient } from './lib/redis'
+import { padSlugOfUrl } from './lib/slug'
 import { getServiceRoleClient } from './lib/supabase'
 import { setupMiddleware } from './middleware'
 import * as documentChanges from './modules/document-changes'
@@ -206,9 +208,12 @@ const linkMetadataModule = linkMetadata.init({
   iconMaxBytes: config.linkMetadata.iconMaxBytes,
   publicUrl: config.app.publicUrl,
   ownImage: socialCardModule.ownImage,
-  apiKeys: config.linkMetadata.apiKeys
+  apiKeys: config.linkMetadata.apiKeys,
+  padSlugOf: (url) => padSlugOfUrl(url, config.app.hosts)
 })
 app.route(linkMetadata.LINK_METADATA_MOUNT_PATH, linkMetadataModule.router)
+// A pad turned Private, trashed or erased drops its cached link cards.
+setPadCardForgetter(linkMetadataModule.forgetPad)
 app.route(mcp.MCP_MOUNT_PATH, mcpModule.router)
 // RFC 9728's standard locations, beside the /api/mcp copy the 401 header names (#550).
 app.route(mcp.RESOURCE_METADATA_PATH, mcpModule.wellKnownRouter)

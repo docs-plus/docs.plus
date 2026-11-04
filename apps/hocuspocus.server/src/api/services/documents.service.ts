@@ -18,6 +18,7 @@ import {
 } from '../../lib/errors'
 import { documentsServiceLogger } from '../../lib/logger'
 import { isDocumentOwner, isOpenDocument } from '../../lib/ownerAccess'
+import { forgetPadCards } from '../../lib/padLinkCards'
 import { isPadTitleChange, notifyPadTitleChange } from '../../lib/padTitleChange'
 import { resolvePrivateAccess } from '../../lib/privateAccess'
 import { getOwnerProfile, getOwnerProfiles } from '../../lib/profiles'
@@ -637,6 +638,9 @@ export const updateDocument = async (
       select: PUBLIC_METADATA_SELECT
     })
 
+    // A cached link card would show the title for 24 h after the pad turned Private.
+    if (updateData.isPrivate === true) void forgetPadCards(upsertedDoc.slug)
+
     if (updateData.isPrivate !== undefined || updateData.readOnly !== undefined) {
       // Fire-and-forget seal; DB write already succeeded for new connects.
       // Only include changed fields so a readOnly flip on an already-private doc
@@ -715,7 +719,7 @@ const setDeletedAt = async (
 
   const existing = await prisma.documentMetadata.findUnique({
     where: { documentId },
-    select: { ownerId: true, isPrivate: true }
+    select: { ownerId: true, isPrivate: true, slug: true }
   })
   if (!isDocumentOwner(existing, requesterId)) return { authorized: false }
 
@@ -734,6 +738,8 @@ const setDeletedAt = async (
     documentsServiceLogger.error({ err: error, documentId }, 'Error toggling document deletedAt')
     throw handlePrismaError(error)
   }
+
+  if (deletedAt !== null && existing) void forgetPadCards(existing.slug)
 
   // One publish covers soft delete and restore. Not on the P2025 path above —
   // nothing changed there.

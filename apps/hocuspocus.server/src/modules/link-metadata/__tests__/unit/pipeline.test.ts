@@ -1,7 +1,15 @@
 import { describe, expect, mock, test } from 'bun:test'
 
 import { runPipeline, type StageEvent } from '../../domain/pipeline'
-import type { Cache, CacheEntry, Scraper, StageResult } from '../../domain/types'
+import type {
+  Cache,
+  CacheEntry,
+  HtmlMiss,
+  LinkMiss,
+  Scraper,
+  SpecialMiss,
+  StageResult
+} from '../../domain/types'
 
 interface FakeCache extends Cache {
   lastTtl: number
@@ -15,7 +23,9 @@ const fakeCache = (): FakeCache => {
     set: async (k, v, ttl) => {
       store.set(k, v)
       fake.lastTtl = ttl
-    }
+    },
+    generation: async () => '0',
+    newGeneration: async () => {}
   }
   return fake
 }
@@ -190,6 +200,38 @@ describe('runPipeline', () => {
     expect(result.payload.requested_url).toBe('https://example.com/?utm_source=x')
   })
 
+  // A page title can carry bidi overrides that flip how the link text reads.
+  test.each([
+    ['C0 and C1 controls go', 'Tab\u0000le\u0007 \u0085t\u009Fop', 'Table top'],
+    ['a newline stays a word break', 'Two\r\n\tlines', 'Two lines'],
+    ['bidi marks go', '\u200Eleft\u200F right', 'left right'],
+    [
+      'bidi embeddings and overrides go',
+      'evil\u202Efdp.exe\u202C\u202A\u202B\u202D',
+      'evilfdp.exe'
+    ],
+    ['bidi isolates go', '\u2066a\u2067b\u2068c\u2069', 'abc'],
+    ['a stripped mark leaves one space', 'a \u202E b', 'a b'],
+    ['ZWNJ and ZWJ stay', 'نیم\u200Cفاصله 👩\u200D💻', 'نیم\u200Cفاصله 👩\u200D💻']
+  ])('cleans the title, description and fact text: %s', async (_, raw, clean) => {
+    const html = mock(async () => ({
+      ...ok(raw),
+      description: raw,
+      facts: [{ icon: 'stars' as const, text: raw }]
+    }))
+    const result = await runPipeline({
+      requestedUrl: 'https://example.com/',
+      acceptLanguage: 'en',
+      cache: fakeCache(),
+      scraper: noopScraper,
+      stages: { oembed: async () => null, special: async () => null, html }
+    })
+    if (result.kind !== 'success') throw new Error('expected success')
+    expect(result.payload.title).toBe(clean)
+    expect(result.payload.description).toBe(clean)
+    expect(result.payload.facts?.[0]?.text).toBe(clean)
+  })
+
   test('keeps at most three known facts, cut, and a known kind', async () => {
     const cache = fakeCache()
     const html = mock(async () => ({
@@ -320,5 +362,68 @@ describe('runPipeline', () => {
       reason: 'status:4xx'
     })
     expect(result.kind === 'success' && result.fallback).toBe(true)
+  })
+
+  // The no-preview card says why; a cache hit must say the same.
+  test.each<[LinkMiss, SpecialMiss | null, HtmlMiss]>([
+    ['blocked', null, 'status:4xx'],
+    ['no-preview', null, 'no-title'],
+    ['unreachable', 'rate-limit', 'no-title']
+  ])(
+    'a fallback after these misses says %s, also on a cache hit',
+    async (miss, specialMiss, htmlMiss) => {
+      const cache = fakeCache()
+      const run = () =>
+        runPipeline({
+          requestedUrl: 'https://example.com/',
+          acceptLanguage: 'en',
+          cache,
+          scraper: noopScraper,
+          stages: {
+            oembed: async () => null,
+            special: async () => specialMiss,
+            html: async () => htmlMiss
+          }
+        })
+      const fresh = await run()
+      const hit = await run()
+
+      expect(fresh).toMatchObject({ kind: 'success', fallback: true, fromCache: false, miss })
+      expect(hit).toMatchObject({ kind: 'success', fallback: true, fromCache: true, miss })
+    }
+  )
+
+  test('a card that is not a fallback carries no miss', async () => {
+    const result = await runPipeline({
+      requestedUrl: 'https://example.com/',
+      acceptLanguage: 'en',
+      cache: fakeCache(),
+      scraper: noopScraper,
+      stages: {
+        oembed: async () => null,
+        special: async () => 'timeout' as const,
+        html: async () => ok('Page')
+      }
+    })
+    expect(result.kind === 'success' && 'miss' in result).toBe(false)
+  })
+
+  // A short link that redirects into a pad would keep the pad's title outside its generation.
+  test('a card whose page redirected into a pad is not cached', async () => {
+    const html = mock(async () => ({ ...ok('Pad title'), url: 'https://docs.plus/launch-plan' }))
+    const cache = fakeCache()
+    const run = () =>
+      runPipeline({
+        requestedUrl: 'https://short.example/x',
+        acceptLanguage: 'en',
+        cache,
+        scraper: noopScraper,
+        stages: { oembed: async () => null, special: async () => null, html },
+        padSlugOf: (url) => (new URL(url).hostname === 'docs.plus' ? 'launch-plan' : null)
+      })
+
+    expect(await run()).toMatchObject({ kind: 'success', fromCache: false })
+    expect(await run()).toMatchObject({ kind: 'success', fromCache: false })
+    expect(html).toHaveBeenCalledTimes(2)
   })
 })

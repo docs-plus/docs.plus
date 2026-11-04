@@ -1,15 +1,18 @@
 import { canonicalize } from './canonicalize'
 import { isSafeUrl } from './ssrf'
-import { readCache, writeCache } from './stages/cache'
+import { cacheKey, padGenerationKey, writeCache } from './stages/cache'
 import { runFallback } from './stages/fallback'
 import {
   type Cache,
   type ErrorResponse,
   type Fact,
   FACT_ICONS,
+  FACT_MAX,
+  FACTS_MAX,
   type HtmlCard,
   type HtmlMiss,
   LINK_KINDS,
+  type LinkMiss,
   type Scraper,
   type SpecialMiss,
   type StageResult
@@ -39,6 +42,8 @@ export interface PipelineInput {
   scraper: Scraper
   stages: PipelineStages
   publicUrl?: string | null
+  /** The slug key of the pad a URL opens; its cards join that pad's group. */
+  padSlugOf?: (url: string) => string | null
   /** Optional logger hook the controller wires up; pipeline stays framework-free. */
   onStage?: (event: StageEvent) => void
 }
@@ -51,17 +56,25 @@ export type PipelineResult =
       fromCache: boolean
       fallback: boolean
       retry: boolean
+      miss?: LinkMiss
     }
   | { kind: 'error'; status: 400; message: string; code: ErrorResponse['code'] }
 
 const orderedStageNames = ['oembed', 'special', 'html'] as const
 
+const LINK_MISS_OF: Record<HtmlMiss | SpecialMiss, LinkMiss> = {
+  'status:4xx': 'blocked',
+  'no-title': 'no-preview',
+  'status:5xx': 'unreachable',
+  timeout: 'unreachable',
+  error: 'unreachable',
+  'rate-limit': 'unreachable'
+}
+
 const TEXT_MAX = 300
 const NAME_MAX = 128
 const URL_MAX = 2048
 const TOKEN_MAX = 64
-const FACT_MAX = 64
-const FACTS_MAX = 3
 const OEMBED_TYPES = ['video', 'rich', 'photo', 'link'] as const
 
 /** Keeps `max` code points, so a cut never splits a surrogate pair, and adds "…". */
@@ -77,8 +90,21 @@ const cut = (value: string, max: number): string => {
   return value
 }
 
+const WHITESPACE_RUN = /\s+/g
+// C0, DEL, C1, and the bidi marks, embeddings, overrides and isolates. ZWNJ and ZWJ stay:
+// Persian words and emoji sequences need them.
+// eslint-disable-next-line no-control-regex -- matching them is the whole point
+const CONTROL_CHARS = /[\u0000-\u001F\u007F-\u009F\u200E\u200F\u202A-\u202E\u2066-\u2069]/g
+
+const clean = (value: string): string =>
+  value.replace(WHITESPACE_RUN, ' ').replace(CONTROL_CHARS, '').replace(WHITESPACE_RUN, ' ').trim()
+
+/**
+ * Whitespace collapses before the strip, so a newline stays a word break, and again after,
+ * so a stripped mark leaves one space. The cut counts what is left.
+ */
 const text = (value: unknown, max: number): string | undefined =>
-  typeof value === 'string' ? cut(value, max) : undefined
+  typeof value === 'string' ? cut(clean(value), max) : undefined
 
 // A cut URL names another resource, and the image route would fetch it, so it is dropped.
 const link = (value: unknown): string | undefined =>
@@ -100,7 +126,7 @@ const capFacts = (facts: unknown): Fact[] | undefined => {
   const kept: Fact[] = []
   for (const fact of facts) {
     const icon = FACT_ICONS.find((name) => name === fact?.icon)
-    const value = text(fact?.text, FACT_MAX)?.trim()
+    const value = text(fact?.text, FACT_MAX)
     if (icon && value) kept.push({ icon, text: value })
     if (kept.length === FACTS_MAX) break
   }
@@ -163,8 +189,28 @@ const capCard = (card: NonNullable<StageResult>, canonical: string): NonNullable
   }
 }
 
+/**
+ * A pad URL's key carries the pad's generation, read before any fetch. A scrape in flight
+ * when the pad narrows then writes under a key nobody reads. Null when that read fails: the
+ * pad card skips the cache rather than risk an old generation.
+ */
+const keyFor = async (
+  cache: Cache,
+  canonical: string,
+  lang: string | undefined,
+  padSlug: string | null
+): Promise<string | null> => {
+  if (!padSlug) return cacheKey(canonical, lang)
+  try {
+    return cacheKey(canonical, lang, await cache.generation(padGenerationKey(padSlug)))
+  } catch {
+    return null
+  }
+}
+
 export const runPipeline = async (input: PipelineInput): Promise<PipelineResult> => {
-  const { requestedUrl, acceptLanguage, cache, scraper, stages, publicUrl, onStage } = input
+  const { requestedUrl, acceptLanguage, cache, scraper, stages, publicUrl, padSlugOf, onStage } =
+    input
 
   if (!isSafeUrl(requestedUrl)) {
     let parsed: URL | null = null
@@ -179,20 +225,25 @@ export const runPipeline = async (input: PipelineInput): Promise<PipelineResult>
   }
 
   const canonical = canonicalize(requestedUrl)
+  const padSlug = padSlugOf?.(canonical) ?? null
+  const key = await keyFor(cache, canonical, acceptLanguage, padSlug)
 
-  const cached = await readCache(cache, canonical, acceptLanguage)
+  const cached = key ? await cache.get(key) : null
   if (cached) {
-    const { fallback, retry, ...payload } = cached
+    const { fallback, retry, miss, ...payload } = cached
     return {
       kind: 'success',
       payload: { ...payload, requested_url: requestedUrl },
       fromCache: true,
       fallback: fallback === true,
-      retry: retry === true
+      retry: retry === true,
+      ...(fallback && miss ? { miss } : {})
     }
   }
 
   let retry = false
+  // The first reason wins. Special runs before html, and a site API that missed may answer later.
+  let missReason: HtmlMiss | SpecialMiss | undefined
   for (const name of orderedStageNames) {
     const start = Date.now()
     let outcome: HtmlCard | null | HtmlMiss | SpecialMiss
@@ -208,6 +259,7 @@ export const runPipeline = async (input: PipelineInput): Promise<PipelineResult>
     const reason = typeof outcome === 'string' ? outcome : undefined
     const result = typeof outcome === 'string' ? null : outcome
     if ((name === 'special' && reason) || result?.retry) retry = true
+    if (reason) missReason ??= reason
     onStage?.({
       stage: name,
       hit: result !== null,
@@ -217,13 +269,16 @@ export const runPipeline = async (input: PipelineInput): Promise<PipelineResult>
 
     if (result) {
       const card = capCard(result, canonical)
-      await writeCache(
-        cache,
-        canonical,
-        acceptLanguage,
-        retry ? { ...card, retry: true } : card,
-        retry ? 'negative' : 'positive'
-      )
+      // A redirect into a pad must not store that pad's title outside its generation.
+      const landedOn = padSlugOf?.(card.url) ?? null
+      if (key && (!landedOn || landedOn === padSlug)) {
+        await writeCache(
+          cache,
+          key,
+          retry ? { ...card, retry: true } : card,
+          retry ? 'negative' : 'positive'
+        )
+      }
       return {
         kind: 'success',
         payload: { ...card, requested_url: requestedUrl },
@@ -235,13 +290,17 @@ export const runPipeline = async (input: PipelineInput): Promise<PipelineResult>
   }
 
   const card = capCard(runFallback(canonical, publicUrl), canonical)
-  await writeCache(cache, canonical, acceptLanguage, { ...card, fallback: true }, 'negative')
+  const miss = missReason ? LINK_MISS_OF[missReason] : undefined
+  if (key) {
+    await writeCache(cache, key, { ...card, fallback: true, ...(miss ? { miss } : {}) }, 'negative')
+  }
   onStage?.({ stage: 'fallback', hit: true, durationMs: 0 })
   return {
     kind: 'success',
     payload: { ...card, requested_url: requestedUrl },
     fromCache: false,
     fallback: true,
-    retry
+    retry,
+    ...(miss ? { miss } : {})
   }
 }

@@ -58,6 +58,8 @@ export const envSchema = z.object({
   // the result is persisted into document content. No default: an unset value must
   // drop imported images, never guess an origin nobody can resolve.
   PUBLIC_RESTAPI_URL: z.string().optional(),
+  // The hosts that serve pads. Empty means the APP_URL host and its `www.` form.
+  APP_HOSTS: commaSeparatedList,
 
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 
