@@ -366,7 +366,7 @@ Settings › Appearance › **Use page titles for pasted links** turns it off �
 
 ## Built on an open extension
 
-The hover cards and the pasted titles both come from [`@docs.plus/extension-hyperlink`](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hyperlink), our open-source Tiptap extension. Any Tiptap editor can use them, and both stay off until a developer turns them on.
+The hover cards and the pasted titles both come from our open-source Tiptap extension, [@docs.plus/extension-hyperlink](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hyperlink). Any Tiptap editor can use them, and both stay off until a developer turns them on.
 
 - `hovercard` takes your own preview service. It brings the timing, the keys and the card frame, and you can draw your own card inside it. Guide: [Hovercard](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/hovercard.md).
 - `pasteTitle` takes your own title service. It brings the undo step, the raw paste and the title cleaning. Guide: [Paste title](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/paste-title.md).
