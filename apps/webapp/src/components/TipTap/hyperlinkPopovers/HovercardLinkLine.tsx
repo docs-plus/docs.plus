@@ -1,5 +1,6 @@
 import { Icons } from '@components/icons/registry'
 import CopyButton from '@components/ui/CopyButton'
+import { attachTooltip } from '@docs.plus/extension-hyperlink'
 import { getSiteIconUrl } from '@utils/link-helpers'
 import { twMerge } from '@utils/twMerge'
 import { useState } from 'react'
@@ -34,6 +35,13 @@ export function LinkIcon({
   )
 }
 
+/**
+ * The `attachTooltip` bubble, because the card rules ban the house `Tooltip`. It reads the
+ * label at mount. One stable ref, so a re-render does not detach and hide a bubble on screen.
+ */
+const bubble = (button: HTMLButtonElement | null) =>
+  button ? attachTooltip(button, button.getAttribute('aria-label') ?? '') : undefined
+
 type Props = {
   href: string
   /** A docs.plus link (`pad` or `here`): the line shows the docs.plus logo. */
@@ -64,6 +72,7 @@ export function HovercardLinkLine({ href, pad, reason, onApplyTitle, onOpen }: P
       {/* Tab stays in the editor (it indents there), so no card control joins the Tab order. */}
       {onApplyTitle && (
         <button
+          ref={bubble}
           type="button"
           tabIndex={-1}
           aria-label="Use page title"
@@ -74,6 +83,7 @@ export function HovercardLinkLine({ href, pad, reason, onApplyTitle, onOpen }: P
         </button>
       )}
       <CopyButton
+        ref={bubble}
         text={href}
         square
         tabIndex={-1}
@@ -83,6 +93,7 @@ export function HovercardLinkLine({ href, pad, reason, onApplyTitle, onOpen }: P
         className="text-base-content/70 hover:text-base-content shrink-0"
       />
       <button
+        ref={bubble}
         type="button"
         tabIndex={-1}
         aria-label="Open in new tab"

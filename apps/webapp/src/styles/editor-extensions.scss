@@ -4,6 +4,7 @@
 @import '../../../../extensions/extension-hypermultimedia/src/styles/media-node-x.css';
 @import '../../../../extensions/extension-hypermultimedia/src/styles/media-node-loom.css';
 @import '../../../../extensions/extension-hypermultimedia/src/styles/media-node-spotify.css';
+// Also skins the `.floating-tooltip` bubble on the link hovercard's buttons (the webapp never imports the hyperlink styles.css).
 @import '../../../../extensions/extension-hypermultimedia/src/styles/media-toolbar.css';
 /* @docs.plus/extension-hyperlink — the hovercard layout; the docs.plus tokens are in document-styles.scss */
 @import '@docs.plus/extension-hyperlink/hovercard.css';
