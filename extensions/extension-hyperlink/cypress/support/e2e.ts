@@ -29,6 +29,12 @@ interface PlaygroundByoState {
   configuredValidate: (url: string) => boolean
 }
 
+/** Hand-mirrored from the `pasteTitle` stub in `test/playground/main.ts`. */
+interface PlaygroundPasteTitleStub {
+  calls: Array<{ href: string; signal: AbortSignal }>
+  delayMs: number
+}
+
 declare global {
   interface Window {
     _editor: Editor
@@ -36,6 +42,7 @@ declare global {
     _byo?: PlaygroundByoState
     _iconCalls?: number
     _navigateCalls?: Array<{ href: string; newTab: boolean }>
+    _pasteTitle?: PlaygroundPasteTitleStub
     _getMarkdown?: () => string
     _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
   }

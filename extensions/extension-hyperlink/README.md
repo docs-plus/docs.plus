@@ -195,6 +195,27 @@ Hyperlink.configure({
 
 The built-in card shows the picture, the title, the description and a link line with Copy link. To draw your own card, add `render`. See [Hovercard](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/hovercard.md) for the data contract, `render`, the timing and the keys.
 
+### Name pasted links after their page
+
+The `pasteTitle` option swaps a pasted bare URL for the page title. The link appears at once with the URL, and your `fetchTitle` returns the title:
+
+```ts
+import { Hyperlink } from '@docs.plus/extension-hyperlink'
+
+Hyperlink.configure({
+  pasteTitle: {
+    fetchTitle: async ({ href, signal }) => {
+      const res = await fetch(`/metadata?url=${encodeURIComponent(href)}`, { signal })
+      if (!res.ok) return null
+      const data = await res.json()
+      return typeof data.title === 'string' ? data.title : null
+    }
+  }
+})
+```
+
+The swap is its own undo step, so one `Mod-z` restores the URL. `Mod-Shift-v` pastes the raw URL, and `shouldFetch` can follow a user setting. With no answer in 4 s, the URL stays. See [Paste title](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/paste-title.md) for the rules, the title cleaning and a safe backend.
+
 ## Gallery
 
 Prebuilt create, preview, and edit popovers (`styles.css` + `popovers` config), and the built-in hovercard (`hovercard.css` + `hovercard` option). Each screenshot has a light and a dark version, and follows your system preference.
@@ -254,6 +275,7 @@ Prebuilt create, preview, and edit popovers (`styles.css` + `popovers` config), 
 | [API reference](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md)            | Options, commands, keyboard shortcuts, the full caveats list, server bundles, and TypeScript exports                    |
 | [Popovers](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/popovers.md)            | The three popover slots, factory option shapes, openers, and custom popovers                                            |
 | [Hovercard](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/hovercard.md)          | The link card on hover: the built-in card, the data contract, custom `render`, timing, and keys                         |
+| [Paste title](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/paste-title.md)      | A pasted URL named after its page: when it runs, the resolver contract, undo and a safe backend                         |
 | [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/styling.md)              | The stylesheet, `--hl-*` theme tokens, dark mode, and class names                                                       |
 | [URL handling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/url-handling.md)    | Href normalization, scheme classification, and Markdown round-trip                                                      |
 | [Security](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/security.md)            | The dangerous-scheme gate at each boundary, and the exported safety helpers                                             |

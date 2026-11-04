@@ -195,6 +195,33 @@ const hovercard: HyperlinkModule.HovercardOptions | undefined =
     : undefined
 if (hovercard) window._hovercard = hovercardState
 
+// `pasteTitle=on` answers "Example Domain" after `delayMs` on the page clock, so `cy.tick` drives
+// it. `slow` answers after the 4 s deadline, `throw` throws at once and `null` keeps the URL.
+// Every mode refuses nofetch.example through `shouldFetch`. Each call keeps its signal.
+const pasteTitleMode = params.get('pasteTitle')
+type PasteTitleStub = {
+  calls: Array<{ href: string; signal: AbortSignal }>
+  delayMs: number
+}
+const pasteTitleState: PasteTitleStub = {
+  calls: [],
+  delayMs: pasteTitleMode === 'slow' ? 6000 : 100
+}
+const pasteTitle: HyperlinkModule.PasteTitleOptions | undefined = pasteTitleMode
+  ? {
+      fetchTitle: ({ href, signal }) => {
+        pasteTitleState.calls.push({ href, signal })
+        if (pasteTitleMode === 'throw') throw new Error('fetchTitle failed')
+        const title = pasteTitleMode === 'null' ? null : 'Example Domain'
+        return new Promise((resolve) =>
+          window.setTimeout(() => resolve(title), pasteTitleState.delayMs)
+        )
+      },
+      shouldFetch: ({ href }) => !href.includes('nofetch.example')
+    }
+  : undefined
+if (pasteTitle) window._pasteTitle = pasteTitleState
+
 // Stable reference for custom-popover.cy.ts; permissive so preview fixture hrefs pass.
 const configuredValidate = (url: string): boolean => /^https?:/i.test(url)
 
@@ -295,6 +322,7 @@ const editor = new Editor({
       ...(exitable && { exitable: true }),
       ...(linkIcon && { linkIcon }),
       ...(hovercard && { hovercard }),
+      ...(pasteTitle && { pasteTitle }),
       ...(strictGate && {
         isAllowedUri: (uri: string, { defaultValidate }: HyperlinkModule.IsAllowedUriContext) =>
           defaultValidate(uri) && !uri.includes('blocked.example')
@@ -321,6 +349,7 @@ declare global {
     _iconCalls?: number
     _navigateCalls?: Array<{ href: string; newTab: boolean }>
     _hovercard?: HovercardStub
+    _pasteTitle?: PasteTitleStub
     _getMarkdown?: () => string
     _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
   }

@@ -47,6 +47,9 @@ export type {
   HovercardView
 } from './hovercard/types'
 
+// Paste title: the shapes behind HyperlinkOptions.pasteTitle.
+export type { PasteTitleContext, PasteTitleOptions } from './paste-title/types'
+
 // Utilities (validateURL, isSafeHref, …) re-exported for BYO popovers.
 export * from './utils'
 

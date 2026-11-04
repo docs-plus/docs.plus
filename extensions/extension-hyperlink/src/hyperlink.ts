@@ -23,6 +23,14 @@ import type { LinkIconResolver } from './link-icons/types'
 import { linkAtSelection } from './openers/linkAtSelection'
 import { openPreviewAtSelection } from './openers/openPreviewAtSelection'
 import { closeOwnedPopover } from './openers/popoverOwnership'
+import {
+  createPasteTitlePlugin,
+  createPasteTitleState,
+  endPasteTitleRuns,
+  type PasteTitleState,
+  trackPasteTitle
+} from './paste-title/pasteTitle'
+import type { PasteTitleOptions } from './paste-title/types'
 import { isSafeHref } from './url-decisions'
 import { DEFAULT_PROTOCOL, normalizeHref } from './utils/normalizeHref'
 
@@ -123,6 +131,8 @@ export interface HyperlinkOptions {
   navigate?: (href: string, ctx: { newTab: boolean }) => void
   /** Desktop link hovercard. Off when unset. Ship `hovercard.css` with it. See `docs/hovercard.md`. */
   hovercard?: HovercardOptions
+  /** Swaps a pasted bare URL's link text for the page title. Off when unset. See `docs/paste-title.md`. */
+  pasteTitle?: PasteTitleOptions
 }
 
 /** Extension storage; one slot per editor instance. */
@@ -132,6 +142,8 @@ export interface HyperlinkStorage {
    * hooks share one URL Decisions pipeline instead of allocating per hook.
    */
   context: LinkContext | null
+  /** Internal: the armed paste and the pending title runs of this editor. Do not touch it. */
+  pasteTitle: PasteTitleState
 }
 
 // linkifyjs has one process-global scheme registry that warns once it auto-inits
@@ -181,7 +193,7 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
   },
 
   addStorage() {
-    return { context: null }
+    return { context: null, pasteTitle: createPasteTitleState() }
   },
 
   onCreate() {
@@ -200,6 +212,20 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
   // outlive the editor.
   onDestroy() {
     closeOwnedPopover(this.editor)
+    endPasteTitleRuns(this.storage.pasteTitle)
+  },
+
+  onTransaction({ transaction, appendedTransactions }) {
+    const pasteTitle = this.storage.pasteTitle
+    if (!pasteTitle.armed && pasteTitle.runs.size === 0) return
+    if (!this.options.pasteTitle) return
+    trackPasteTitle(
+      getContext(this),
+      this.options.pasteTitle,
+      pasteTitle,
+      transaction,
+      appendedTransactions
+    )
   },
 
   addOptions() {
@@ -226,7 +252,8 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
       exitable: false,
       linkIcon: undefined,
       navigate: undefined,
-      hovercard: undefined
+      hovercard: undefined,
+      pasteTitle: undefined
     }
   },
 
@@ -342,6 +369,7 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
     const plugins = [...createInteractions(ctx).plugins]
     if (this.options.linkIcon) plugins.push(linkIconCompositionSweep, linkIconEnter(this.name))
     if (this.options.hovercard) plugins.push(createHovercardPlugin(ctx, this.options.hovercard))
+    if (this.options.pasteTitle) plugins.push(createPasteTitlePlugin(ctx, this.storage.pasteTitle))
     return plugins
   }
 })
