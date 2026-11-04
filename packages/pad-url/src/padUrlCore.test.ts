@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 
-import type { PadLinkContext, PadUrlContext } from './types'
+import type { PadLinkContext, PadPlace, PadUrlContext } from './types'
 import { padUrlCore } from './padUrlCore'
 
 const ORIGIN = 'https://app.test'
@@ -156,5 +156,16 @@ describe('padUrlCore.parse', () => {
     expect(pad).toMatchObject({ slug: 'doc', headingId: 'h1', mode: 'and', hash: '#history' })
     expect(padUrlCore.parse('https://other.test/doc', ORIGIN)?.sameOrigin).toBe(false)
     expect(padUrlCore.parse('http://[', ORIGIN)).toBeNull()
+  })
+})
+
+describe('padUrlCore.place', () => {
+  it.each<[string, PadPlace]>([
+    ['/doc/term?id=x', { kind: 'filter', terms: ['term'], mode: 'or' }],
+    ['/doc/a/b?mode=and&chatroom=c', { kind: 'filter', terms: ['a', 'b'], mode: 'and' }],
+    ['/doc?chatroom=c&msg_id=m&id=x', { kind: 'chat', linkId: 'c', messageId: 'm' }]
+  ])('%s opens one place', (href, place) => {
+    const pad = padUrlCore.parse(href, ORIGIN)
+    expect(pad && padUrlCore.place(pad)).toEqual(place)
   })
 })

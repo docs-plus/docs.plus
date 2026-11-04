@@ -13,7 +13,7 @@ This package is private and ships inside docs.plus, so each heading names the do
 ### Added
 
 - First version. The package holds the pure pad link rules in `padUrlCore` (`format`, `plan`,
-  `parse`, `termPattern`), their types, and the one reserved-slug list
+  `parse`, `place`, `termPattern`), their types, and the one reserved-slug list
   (`isReservedSlug`). It is raw TypeScript, like `email-templates`, and its tests run under
   `bun test` ([#648](https://github.com/docs-plus/docs.plus/issues/648)).
 - The webapp and the hocuspocus server both build pad links from it, so they give the same

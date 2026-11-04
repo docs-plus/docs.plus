@@ -3,6 +3,7 @@ import type {
   PadChange,
   PadFacets,
   PadLinkContext,
+  PadPlace,
   PadTarget,
   PadUrlContext,
   PadWrite,
@@ -187,8 +188,16 @@ function parse(href: string, origin: string): PadFacets | null {
   }
 }
 
+/** The order the app opens a link in: filter, then chat, then heading. A filter path keeps `id=`, and the filter wins. */
+function place(pad: PadFacets): PadPlace {
+  if (pad.terms.length > 0) return { kind: 'filter', terms: pad.terms, mode: pad.mode ?? 'or' }
+  if (pad.chat) return { kind: 'chat', ...pad.chat }
+  if (pad.headingId) return { kind: 'heading', headingId: pad.headingId }
+  return { kind: 'document' }
+}
+
 /**
  * The pure core of Pad URL: every pad address is formatted, planned or parsed here.
  * The webapp calls it through `padUrl`; the server through `padLink`.
  */
-export const padUrlCore = { format, plan, parse, termPattern }
+export const padUrlCore = { format, plan, parse, place, termPattern }

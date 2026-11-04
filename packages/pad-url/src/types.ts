@@ -9,6 +9,13 @@ export type PadTarget =
   | { kind: 'heading'; headingId: string }
   | ({ kind: 'chat' } & PadChat)
 
+/** What an address opens. History is not here: it is a client hash or a server-only `?version=`. */
+export type PadPlace =
+  | { kind: 'document' }
+  | { kind: 'heading'; headingId: string }
+  | ({ kind: 'chat' } & PadChat)
+  | { kind: 'filter'; terms: string[]; mode: FilterMode }
+
 /** One change to this tab's address bar. The kind picks the writer. */
 export type PadChange =
   | { kind: 'heading'; headingId: string; entry?: 'push' }
