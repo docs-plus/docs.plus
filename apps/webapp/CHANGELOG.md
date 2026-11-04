@@ -69,14 +69,29 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   hover" ([#242](https://github.com/docs-plus/docs.plus/issues/242)). It is stored per browser
   and is on by default. It turns off web and docs.plus cards alike, and it applies only while
   you are signed in.
+- When a site blocked our server or did not answer, the no-preview link card offers **View
+  archived copy**. One click asks the Wayback Machine for the closest copy, then shows an
+  "Open archived copy" link that opens it in a new tab. The link goes to archive.org only on
+  that click.
+- A link whose text is its own web address shows a **Use page title** button on its hover card.
+  One click puts the page title in place of the address, and one undo brings the address back.
+  It shows only on a pad you can edit, for example on a link typed or pasted as a plain address
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - A web link pasted on its own into a pad shows the page title in place of its address
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)). The link appears at once with the
   address, and the title replaces it when our server answers. One undo brings the address back.
   ⌘+⇧+V (Ctrl+Shift+V) pastes the address as is. A file link shows its file name, such as
-  "Q3 Report.pdf" or "archive.zip". A link to a docs.plus pad keeps its address,
-  and so do the chat composer, history and `/editor`. The second "Link previews" switch, "Use page
-  titles for pasted links", turns it off. Like the first, it is per browser, on by default, and
-  applies only while you are signed in. The pasted link goes to our server, as for a link preview.
+  "Q3 Report.pdf" or "archive.zip". The chat composer, history and `/editor` keep the address.
+  The second "Link previews" switch, "Use page titles for pasted links", turns it off. Like the
+  first, it is per browser, on by default, and applies only while you are signed in. The pasted
+  link goes to our server, as for a link preview.
+- A link to another docs.plus pad, pasted on its own into a pad, shows that pad's title
+  ([#680](https://github.com/docs-plus/docs.plus/issues/680)). A heading link shows the heading,
+  then the pad title, such as "Budget · Q3 launch plan". The title comes from a request with no
+  sign-in, so a link to a Private pad keeps its address, even for its owner. Chat, message,
+  filter and version links keep their address. The title is written once; a later rename does
+  not change it. The third "Link previews" switch, "Use pad titles for pasted pad links", turns
+  it off, with the same rules as the second.
 - A link to a part of this pad shows its kind icon: heading, chat, filter, version or top
   ([#174](https://github.com/docs-plus/docs.plus/issues/174)). A screen reader speaks the kind,
   such as "Heading". The link renders as a chip with a light primary tint. In headings and the
@@ -109,6 +124,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- Links in posted chat messages show the same icons as links in the document. A click on a
+  message link opens the link preview: a popover on a computer, the Link sheet on a phone.
+  Ctrl-click (⌘-click on a Mac) or a middle click opens a new tab. This also holds for a chat
+  link to the open document, which used to jump inside the page
+  ([#678](https://github.com/docs-plus/docs.plus/issues/678)).
 - A link to another pad shows its address in the click preview and the phone sheet, not a
   scraped title. The pad's own card is the hovercard, and it knows who is reading.
 - The privacy page now says how docs.plus uses, stores, shares and keeps the data that Google
@@ -153,6 +173,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- Desktop link Edit now finds the link after a co-editor types above it. Before, Apply did
+  nothing in that case ([#678](https://github.com/docs-plus/docs.plus/issues/678)).
 - **The Replace with a file warning names History.** It said there was no undo. History keeps
   the earlier version, and a restore brings it back. The warning also says that edits from the
   last minute may not be in History yet
@@ -162,7 +184,7 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   fades in, and a later failure folds the picture well away instead of removing it at once
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - **The link forms store the whole link without trailing punctuation.** The pad form and the
-  chat link dialog store `wholeLink(value)`, so `google.com,` becomes `https://google.com`.
+  chat link dialog store `toStoredLink(value)`, so `google.com,` becomes `https://google.com`.
 - **The link form refuses a sentence.** `validateURL` from the hyperlink extension now accepts
   only one whole link. Before, `hello google.com` passed the pad and chat link forms.
 - **Editing a link's URL no longer reverts a co-editor's link text.** When you leave the Text

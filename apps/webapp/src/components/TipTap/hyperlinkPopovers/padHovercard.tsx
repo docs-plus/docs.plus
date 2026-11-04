@@ -72,12 +72,23 @@ export const padHovercard = {
           </WebLinkCard>
         ) : (
           noPreview && (
-            <NoPreviewCard href={href} title={noPreview.title} path={noPreview.path} onOpen={open}>
+            <NoPreviewCard
+              href={href}
+              title={noPreview.title}
+              path={noPreview.path}
+              miss={data?.miss}
+              onOpen={open}>
               {warning}
             </NoPreviewCard>
           )
         )}
-        <HovercardLinkLine href={href} pad={pad} reason={noPreview?.reason} onOpen={open} />
+        <HovercardLinkLine
+          href={href}
+          pad={pad}
+          reason={noPreview?.reason}
+          onApplyTitle={ctx.applyTitle}
+          onOpen={open}
+        />
       </>
     )
   }

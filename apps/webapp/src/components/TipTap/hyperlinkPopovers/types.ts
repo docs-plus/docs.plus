@@ -183,6 +183,9 @@ export const LINK_MISSES = ['blocked', 'no-preview', 'unreachable'] as const
 
 export type LinkMiss = (typeof LINK_MISSES)[number]
 
+/** A Wayback Machine copy, or why there is none. `unreachable` means ask again later. */
+export type ArchivedCopy = { url: string } | 'none' | 'unreachable'
+
 /** The site a link's text names, and the different site the link opens. */
 export interface LinkTextMismatch {
   says: string

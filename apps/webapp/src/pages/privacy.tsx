@@ -104,10 +104,10 @@ export default function PrivacyPage() {
 
       <LegalSection title="Link icons and previews">
         <p>
-          When you open a document, your browser asks our server for the icon of each linked
-          website. It does the same for profile links, link previews and the hovercard. The request
-          carries the site address only, not the full link. Our server fetches the icon, so the site
-          sees our server, not you.
+          When you open a document or its chat, your browser asks our server for the icon of each
+          linked website. It does the same for profile links, link previews and the hovercard. The
+          request carries the site address only, not the full link. Our server fetches the icon from
+          the site's main domain, so the site sees our server, not you.
         </p>
         <p>
           A link preview, the hovercard and an embed thumbnail in chat or in Insert media work
@@ -120,6 +120,12 @@ export default function PrivacyPage() {
           the page can answer in it. Our server keeps the preview for up to a day, and the stored
           preview can hold the link. A web link on your profile keeps its title and description with
           your profile until you remove it.
+        </p>
+        <p>
+          When the hovercard has no preview, it can offer View archived copy. Only when you click
+          it, our server sends the link to archive.org, the Internet Archive, to find a saved copy.
+          Our server never sends a docs.plus document link there. It keeps the answer for up to an
+          hour.
         </p>
         <p>
           When you share a link to a public document in another app, such as Slack or X, that app
@@ -141,6 +147,7 @@ export default function PrivacyPage() {
             load from GIPHY. Readers see our copy.
           </li>
           <li>YouTube thumbnails.</li>
+          <li>An archived copy you open from the hovercard, which loads from web.archive.org.</li>
         </ul>
       </LegalSection>
 

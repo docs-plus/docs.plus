@@ -2,7 +2,14 @@ import { normalizeHref } from '@docs.plus/extension-hyperlink'
 import { apiBaseUrl } from '@utils/apiBaseUrl'
 
 import { linkDestination } from './internalDocumentLink'
-import { LINK_FACT_ICONS, LINK_MISSES, type LinkCard, type LinkFact, type LinkMiss } from './types'
+import {
+  type ArchivedCopy,
+  LINK_FACT_ICONS,
+  LINK_MISSES,
+  type LinkCard,
+  type LinkFact,
+  type LinkMiss
+} from './types'
 
 interface MetadataResponse {
   success: true
@@ -156,4 +163,32 @@ export const fetchMetadata = (href: string): Promise<LinkCard | null> => {
     inFlight.set(key, pending)
   }
   return pending
+}
+
+// The server gives up on archive.org at 4 s; this is only the network margin above it.
+const ARCHIVE_WAIT_MS = 5_000
+const SNAPSHOT_PREFIX = 'https://web.archive.org/web/'
+
+/**
+ * Asks our server for the Wayback Machine's closest copy, on a click only. The server
+ * already checks the snapshot host; the prefix check here keeps a bad reply out of the link's href.
+ */
+export const fetchArchivedCopy = async (href: string): Promise<ArchivedCopy> => {
+  const key = metadataKey(href)
+  if (key === null) return 'none'
+  try {
+    const response = await fetch(
+      `${apiBaseUrl()}/metadata/archive?url=${encodeURIComponent(key)}`,
+      {
+        signal: AbortSignal.timeout(ARCHIVE_WAIT_MS)
+      }
+    )
+    if (!response.ok) return 'unreachable'
+    const data: { snapshot?: { url?: unknown } | null; miss?: unknown } = await response.json()
+    const url = data.snapshot?.url
+    if (typeof url === 'string' && url.startsWith(SNAPSHOT_PREFIX)) return { url }
+    return data.miss === 'unreachable' ? 'unreachable' : 'none'
+  } catch {
+    return 'unreachable'
+  }
 }

@@ -40,11 +40,13 @@ type Props = {
   pad: boolean
   /** Replaces the address when the card body already shows it: why there is no preview. */
   reason?: string
+  /** Set by the engine only when the link text is its own URL and the pad is editable. */
+  onApplyTitle?: () => void
   onOpen: (newTab: boolean) => void
 }
 
-/** The last row of every link hovercard: the address or a reason, Copy link, Open in new tab. */
-export function HovercardLinkLine({ href, pad, reason, onOpen }: Props) {
+/** The last row of every link hovercard: the address or a reason, then its actions. */
+export function HovercardLinkLine({ href, pad, reason, onApplyTitle, onOpen }: Props) {
   const address = reason ? null : linkParts(href)
   return (
     <div className="text-meta border-base-300 flex min-h-10 min-w-0 items-center gap-2 border-t py-1 pr-1 pl-3">
@@ -60,6 +62,17 @@ export function HovercardLinkLine({ href, pad, reason, onOpen }: Props) {
         <span className="text-base-content/60 min-w-0 flex-1">{reason}</span>
       )}
       {/* Tab stays in the editor (it indents there), so no card control joins the Tab order. */}
+      {onApplyTitle && (
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label="Use page title"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={onApplyTitle}
+          className="btn btn-ghost btn-sm btn-square text-base-content/70 hover:text-base-content shrink-0">
+          <Icons.textFormat size={ICON_SIZE} aria-hidden className="stroke-[1.75]" />
+        </button>
+      )}
       <CopyButton
         text={href}
         square
