@@ -193,7 +193,7 @@ Hyperlink.configure({
 })
 ```
 
-The built-in card shows the picture, the title, the description and a link line with Copy link. To draw your own card, add `render`. See [Hovercard](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/hovercard.md) for the data contract, `render`, the timing and the keys.
+The built-in card shows the picture, the title, the description and a link line with Copy link. On an editable link whose text is its own URL, the line also shows Use page title. To draw your own card, add `render`. See [Hovercard](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/hovercard.md) for the data contract, `render`, the timing and the keys.
 
 ### Name pasted links after their page
 

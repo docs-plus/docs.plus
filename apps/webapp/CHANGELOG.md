@@ -49,8 +49,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   Open in new tab. The site icon and the link line come from the link itself. Only the title,
   facts, description and picture come from the page.
 - A slow page opens the card with loading bars and the link line, then fills it in place. With
-  no data after 4 s, or when the site shares no preview, the card says "No preview for this page."
-  Before, a site that refused us showed its bare host as the title.
+  no data after 4 s, a web link shows the no-preview card below, and a docs.plus link says "No
+  preview for this page."
 - A docs.plus link has its own hovercard on the desktop pad. It covers a link to another pad, and
   a link to a heading, heading chat, chat message, filter, version or version history, in this pad
   or another one. The title says what the link opens, a quiet breadcrumb says where it lives, and
@@ -78,10 +78,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   It shows only on a pad you can edit, for example on a link typed or pasted as a plain address
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - A web link pasted on its own into a pad shows the page title in place of its address
-  ([#242](https://github.com/docs-plus/docs.plus/issues/242)). The link appears at once with the
+  ([#681](https://github.com/docs-plus/docs.plus/issues/681)). The link appears at once with the
   address, and the title replaces it when our server answers. One undo brings the address back.
   ⌘+⇧+V (Ctrl+Shift+V) pastes the address as is. A file link shows its file name, such as
-  "Q3 Report.pdf" or "archive.zip". The chat composer, history and `/editor` keep the address.
+  "Q3 Report.pdf" or "archive.zip". A title that reads as another site's address keeps the
+  address ([#682](https://github.com/docs-plus/docs.plus/issues/682)). The chat composer, history and `/editor` keep the address.
   The second "Link previews" switch, "Use page titles for pasted links", turns it off. Like the
   first, it is per browser, on by default, and applies only while you are signed in. The pasted
   link goes to our server, as for a link preview.
@@ -91,7 +92,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   sign-in, so a link to a Private pad keeps its address, even for its owner. Chat, message,
   filter and version links keep their address. The title is written once; a later rename does
   not change it. The third "Link previews" switch, "Use pad titles for pasted pad links", turns
-  it off, with the same rules as the second.
+  it off, with the same rules as the second. The service worker never caches the pad card reply,
+  so an offline paste never writes a title from before the pad turned Private.
 - A link to a part of this pad shows its kind icon: heading, chat, filter, version or top
   ([#174](https://github.com/docs-plus/docs.plus/issues/174)). A screen reader speaks the kind,
   such as "Heading". The link renders as a chip with a light primary tint. In headings and the
@@ -124,7 +126,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
-- Links in posted chat messages show the same icons as links in the document. A click on a
+- Links in posted chat messages show the same icons as links in the document
+  ([#516](https://github.com/docs-plus/docs.plus/issues/516)). A click on a
   message link opens the link preview: a popover on a computer, the Link sheet on a phone.
   Ctrl-click (⌘-click on a Mac) or a middle click opens a new tab. This also holds for a chat
   link to the open document, which used to jump inside the page
@@ -138,8 +141,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - The privacy page now lists your data rights. It says how to download a document. It also says
   how to ask for a copy of your personal data, a correction, a deletion, or a limit on its use.
   The answer comes within one month.
-- The privacy page now says that a web link pasted into a document goes to our server, as a
-  link preview does. `LEGAL_UPDATED` is now 4 November 2026.
+- The privacy page now says more about links. A web link pasted into a document goes to our
+  server, as a link preview does. For a GitHub repository or a Stack Overflow question, our server
+  also asks api.github.com or api.stackexchange.com. A View archived copy click sends the link to
+  archive.org, and our server keeps the answer for up to an hour. Link icons come from the site's
+  main domain, in documents and in chat. `LEGAL_UPDATED` is now 4 November 2026.
 - A plain click on a link to another pad now opens that pad in the same window, in the pad and
   in chat. Mod-click (Cmd on macOS, Ctrl elsewhere) and middle-click still open a new tab
   ([#359](https://github.com/docs-plus/docs.plus/issues/359)).

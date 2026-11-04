@@ -131,7 +131,7 @@ export const linkMetadataPaths: OpenApiPaths = {
       operationId: 'getLinkIcon',
       summary: 'Fetch a favicon',
       description:
-        'Fetches `<origin>/favicon.ico` through the SSRF guard, with a 3 s budget. When it misses, reads the head of `<origin>/` and fetches one `rel=icon` or `apple-touch-icon` href through the same guard, skipping SVG and `data:`. The body is capped at `LINK_ICON_MAX_BYTES` (default 32768). `Content-Type` comes from the bytes only: PNG, ICO, GIF, JPEG or WebP. Every miss is an empty `204`, so an `<img>` fires `onerror` and Chrome logs no `404`. `HEAD` runs the same handler with no body. Rate-limited by its own bucket.',
+        'First reduces `origin` to its registrable domain, by the ICANN public suffix list only. So `https://a.b.example.co.uk` becomes `https://example.co.uk`. An IP origin stays as it is. A host with no registrable domain is a clean `204`. The longer host is never looked up or fetched. Below, `<origin>` means that site origin. Fetches `<origin>/favicon.ico` through the SSRF guard, with a 3 s budget. When it misses, reads the head of `<origin>/` and fetches one `rel=icon` or `apple-touch-icon` href through the same guard, skipping SVG and `data:`. The body is capped at `LINK_ICON_MAX_BYTES` (default 32768). `Content-Type` comes from the bytes only: PNG, ICO, GIF, JPEG or WebP. Every miss is an empty `204`, so an `<img>` fires `onerror` and Chrome logs no `404`. `HEAD` runs the same handler with no body. Rate-limited by its own bucket.',
       tags: ['Link metadata'],
       security: [{}],
       parameters: toParameters(iconQuerySchema, 'query', {

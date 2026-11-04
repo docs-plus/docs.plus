@@ -65,7 +65,8 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 - `GET /api/metadata/archive?url=` asks the Wayback Machine for the closest copy of a page. It
   answers only `https://web.archive.org/web/` snapshots, never saves a page, and never sends a
   docs.plus pad link. A hit is cached 1 h and no copy 10 min; an archive that does not answer is
-  never cached. It shares the link-metadata rate budget.
+  never cached. It shares the link-metadata rate budget
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - **A social preview card for every pad link ([#663](https://github.com/docs-plus/docs.plus/issues/663)).**
   - `GET /api/documents/:documentId/card.png` draws a 1200 × 630 PNG from stored values only,
     never from URL text. The kinds are `document`, `heading`, `chat`, `message`, `version` and
@@ -124,8 +125,8 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
     `no-preview` (the page has no title) or `unreachable` (a 5xx, a timeout, a network error or an
     API rate limit). A cache hit returns the same `miss`. Any other card has none.
   - A file link's title is its decoded file name with its extension, so `Q3%20Report.pdf` reads
-    `Q3 Report.pdf`. A bad escape keeps the raw name. Cards cached before this keep the raw name
-    until they expire, within 24 h.
+    `Q3 Report.pdf`. A bad escape keeps the raw name. The `meta:v4` prefix in this release starts
+    the cache cold, so no card keeps the raw name.
   - New optional settings: `GITHUB_TOKEN` (public-repository read access only) and
     `STACKEXCHANGE_KEY`. Without them the shared quotas are 60 GitHub calls an hour and 300 Stack
     Exchange calls a day per server address.
@@ -137,8 +138,9 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
     sub-id answers the pad card, and an unknown or deleted pad answers 404. The reply depends on
     the reader and is never cached (`Cache-Control: private, no-store`).
 - **`GET /api/metadata/icon?origin=<origin>` returns a favicon
-  ([#515](https://github.com/docs-plus/docs.plus/issues/515)).** The route fetches
-  `<origin>/favicon.ico` through the SSRF guard and checks the bytes. When that file misses,
+  ([#515](https://github.com/docs-plus/docs.plus/issues/515)).** The route reduces the origin
+  to its registrable domain, then fetches that site's `/favicon.ico` through the SSRF guard and
+  checks the bytes. When that file misses,
   it reads the head of `<origin>/`, at most 64 KiB, and fetches one `rel=icon` or
   `apple-touch-icon` href through the same guard. It skips SVG and `data:` URLs. It answers
   with the image or an empty `204`, so Chrome logs no `404` for a link with no icon.
@@ -177,8 +179,8 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
   - Spotify and SoundCloud links skip oEmbed and use the html stage, so their previews gain a
     description. Reddit oEmbed runs only on comment paths.
   - The cache key drops the URL fragment.
-  - The cache key prefix is now `meta:v2`. Old keys expire within 24 h, and no operator step is
-    needed.
+  - The cache key prefix moved. This release ends on `meta:v4` (see Security). Old keys expire
+    within 24 h, and no operator step is needed.
 - **The worker `/health` reports `unhealthy` in production when push has no VAPID keys
   ([#608](https://github.com/docs-plus/docs.plus/issues/608)).** Before, the status ignored
   `workers.push.vapid_configured`, so a missing or bad key never paged. A dev stack with empty
@@ -262,9 +264,8 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
   the title, the description, fact text, names, image alt and the oEmbed provider. It turns each
   whitespace run into one space. Then it drops the C0, DEL and C1 controls and the bidi controls
   U+200E, U+200F, U+202A–U+202E and U+2066–U+2069, and collapses whitespace again. ZWNJ and ZWJ
-  stay. Before, a page title could use a bidi override to flip how a hovercard read. The value
-  shape did not change, so the cache prefix stays. A card cached before the deploy keeps its old
-  text for up to 24 h.
+  stay. Before, a page title could use a bidi override to flip how a hovercard read. The cache
+  prefix moved to `meta:v4` in this release, so no card cached before the deploy is read again.
 - **A pad that turns Private hides its cached link cards.** Before, `GET /api/metadata` kept a
   public pad's scraped title in Redis for up to 24 h after the pad turned Private. A pad URL's
   cache key now carries a per-pad generation, read before the page is fetched. Turning a pad

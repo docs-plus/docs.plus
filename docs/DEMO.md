@@ -330,7 +330,7 @@ On desktop, rest the mouse on a link and a card opens after half a second, with 
 
 A slow page opens the card with grey bars, and the content then replaces them in the same card. After 4 seconds with no answer, the card shows the address and says the site shares no preview.
 
-The last line of the card holds **Copy link** and **Open in new tab**. Move off the link and the card, and it closes 300 ms later. Shift, the arrow keys and Copy keep it open. Any other key closes it.
+The last line of the card holds **Copy link** and **Open in new tab**. When a link's text is its own address, the line also offers **Use page title** — needs a document you can edit. Move off the link and the card, and it closes 300 ms later. Shift, the arrow keys and Copy keep it open. Any other key closes it.
 
 Settings › Appearance › **Show link previews on hover** turns the cards off — needs an account. A touch screen has no hover, so a tap opens the click card instead.
 
@@ -346,7 +346,7 @@ A Stack Overflow question shows its answer count. It adds **Accepted answer** wh
 
 ## When a page shares nothing
 
-Some sites refuse to share a preview. Then the card puts the address first: the site name is the title, and the full path wraps under it. The last line says why there is no preview. [The New York Times](https://www.nytimes.com/) does not share previews — try it here.
+Some sites refuse to share a preview. Then the card puts the address first: the site name is the title, and the full path wraps under it. The last line says why there is no preview. [The New York Times](https://www.nytimes.com/) does not share previews — try it here. When the site blocked us or did not answer, the card also offers **View archived copy**. One click asks the Internet Archive for a saved copy, then shows a link that opens it.
 
 A link to a file gets its own card, with the file name as the title: [a sample PDF](https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf) says it is a PDF file — try it here. The card knows PDFs, documents, spreadsheets, slides, archives, pictures, audio and video.
 
@@ -362,7 +362,7 @@ One undo brings the address back, and a second removes the paste. ⌘+⇧+V (Ctr
 
 A title can never pose as another site. A page titled `paypal.com` that lives anywhere else keeps its address.
 
-Settings › Appearance › **Use page titles for pasted links** turns it off — needs an account.
+Settings › Appearance › **Use page titles for pasted links** turns it off, and **Use pad titles for pasted pad links** does the same for docs.plus links — needs an account.
 
 ## Built on an open extension
 

@@ -12,7 +12,7 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ### Added
 
-- `toStoredLink(value, { customValidator })` returns the link a form should store: the value when it is one whole link, without the trailing punctuation linkify leaves out, or `null`. `validateURL` is now `toStoredLink(…) !== null`, so the check and the stored value always agree.
+- `toStoredLink(value, { customValidator })` returns the link a form should store: the value when it is one whole link, without the trailing punctuation linkify leaves out, or `null`. `validateURL` is now `toStoredLink(…) !== null`, so the check and the stored value always agree ([#678](https://github.com/docs-plus/docs.plus/issues/678)).
 - The `linkIcon` option draws an icon at the start of every link. It takes a sync function that receives `{ href }` and returns a fresh element, or `null` for a plain link. Only safe hrefs reach it ([#513](https://github.com/docs-plus/docs.plus/issues/513)).
 - The `LinkIconContext` and `LinkIconResolver` types are root exports. `LinkIconResolver` types `linkIcon` and the hovercard's `siteIcon`.
 - `styles.css` sizes `.hyperlink-icon` to a `1em` box with a `0.25em` gap.
@@ -30,7 +30,7 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 - A `render` that throws logs one console error per editor, and the built-in card draws that state.
 - `openPreviewPopover(referenceElement, content)` shows `content` as the link preview under any element and returns the `Popover`. `openPreviewHyperlink` uses it. A host can call it for a link outside an editor, such as a chat message.
 - `focusPreviewFromKeyboard(restoreFocus)` is a root export. It moves focus into the open preview and gives it back once on close.
-- `linkIconFor(resolver, href)` runs a `linkIcon` resolver with the editor's guard and marks the result as a link icon. It never throws. It returns `null` for an unsafe href, a throw, or an element that is attached or holds text.
+- `linkIconFor(resolver, href)` runs a `linkIcon` resolver with the editor's guard and marks the result as a link icon. It never throws. It returns `null` for an unsafe href, a throw, or an element that already has a parent or holds text.
 - The render context gains `applyTitle()`. It swaps a link's text for the card's `data.title` in one undoable step, then hides the card. It is set only when the editor is editable, the link text is its own URL, and the title passes the paste-title rules. It checks the link again when called, so a co-editor's change stops it. The built-in card shows a **Use page title** button in its link line when it is set.
 - `HovercardOptions<D>` takes the host's own data type, so `render` reads typed host fields.
 - The request starts after a 150 ms rest on the link. The card opens at 500 ms at the earliest, and closes 300 ms after the pointer leaves the link and the card. Modifier keys, the arrows, Home, End, PageUp, PageDown, F1 to F12 and Mod-C keep it open. Every other key closes it.
@@ -52,10 +52,10 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 - In a read-only editor, Enter on a focused link opens its preview with focus inside it. Escape returns focus to the link.
 - Mod-click on a link (Cmd on macOS, Ctrl elsewhere) opens it in a new tab through `navigate`, with no preview.
 - Links keep the text I-beam at rest. While Mod is held, the `<html>` element gets `data-hyperlink-mod`. `styles.css` then shows the hand over links in editors with the new `hyperlink-click-scope` class. The click plugin adds that class, so `openOnClick: false` turns all of this off.
-- The `pasteTitle` option names a pasted bare URL after its page. The link appears at once with the URL as its text. The host's `fetchTitle({ href, editor, signal })` returns the title, and the package cleans it and puts it in place of the URL. Unset means off, and the package makes no request of its own.
+- The `pasteTitle` option names a pasted bare URL after its page. The link appears at once with the URL as its text. The host's `fetchTitle({ href, editor, signal })` returns the title, and the package cleans it and puts it in place of the URL. Unset means off, and the package makes no request of its own ([#681](https://github.com/docs-plus/docs.plus/issues/681)).
 - The swap is its own undo step, so one `Mod-z` restores the URL. `Mod-Shift-v` pastes the raw URL, and `shouldFetch({ href, editor })` can follow a user setting. With no answer in 4 s, the URL stays.
-- The title cleaner keeps a title that reads as another site's address out of the link. A link's own file name still passes when its extension is also a domain ending, so a pasted `…/archive.zip` can read `archive.zip`. The name must be one word and the extension, so `paypal.com%2Flogin.zip` keeps its URL.
-- The `PasteTitleOptions` and `PasteTitleContext` types are root exports. The new [Paste title](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/paste-title.md) page covers the rules, the resolver contract and a safe backend.
+- The title cleaner keeps a title that reads as another site's address out of the link. An email address counts as its domain, so `support@paypal.com` keeps the URL of a link to another host. A link's own file name still passes when its extension is also a domain ending, so a pasted `…/archive.zip` can read `archive.zip`. The name must be one word, one dot and the extension, so `paypal.com%2Flogin.zip` and `paypal.com.zip` keep their URL ([#682](https://github.com/docs-plus/docs.plus/issues/682)).
+- The `PasteTitleOptions` and `PasteTitleContext` types are root exports. The new [Paste title](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/paste-title.md) page covers the rules, the resolver contract and a safe backend ([#683](https://github.com/docs-plus/docs.plus/issues/683)).
 
 ### Changed
 

@@ -20,11 +20,11 @@ ESLint enforces parts of rules 1 and 4 via `no-restricted-imports` in `apps/hocu
 
 A reply that is not HTML gives a `media_type: 'document'` card. Its title is the decoded last path segment with its extension, such as `Q3 Report.pdf` (`filenameFromUrl` in `domain/stages/htmlScrape.ts`). A bad escape keeps the raw segment. The webapp's paste title shows this name, by maintainer ruling (2026-11-04).
 
-The stored value shape did not change, so the cache key prefix stays. A cache hit skips `capCard`, so a card stored before this rule keeps its old text until its TTL ends, at most 24 h.
+This rule alone did not change the stored value shape. A cache hit skips `capCard`. The move to `meta:v4` started the cache cold, so no card from before this rule is read.
 
 ## Facts
 
-A card may carry `facts`: at most three `{ icon, text }` rows, such as "12.3k" stars or "Posted Oct 31". `icon` is one of the names in `FACT_ICONS` (`domain/types.ts`); the docs.plus web card (`WebLinkCard.tsx` in the webapp) draws one glyph per name, from its `LINK_FACT_ICONS` list, which must match. `capCard` drops an unknown icon and an empty text, and cuts each text to 64 code points.
+A card may carry `facts`: at most three `{ icon, text }` rows, such as "12.3k" stars or "Posted Oct 31". `icon` is one of the names in `FACT_ICONS` (`domain/types.ts`); the docs.plus web card draws one glyph per name through `FACT_ICON` in `WebLinkCard.tsx`, keyed on the webapp's `LINK_FACT_ICONS` list in `hyperlinkPopovers/types.ts`, which must match. `capCard` drops an unknown icon and an empty text, and cuts each text to 64 code points.
 
 - **Job postings.** `infra/jobPosting.ts` reads the first `JobPosting` in the page's JSON-LD. Its facts are the location, the work type (or the hiring organization) and the posting date. Job boards put this script in the body: Stripe 49 B after `</head`, Lever 8 KB after it. So the html stage reads past `</head` with `readPage`. It reads 256 KiB at most, within 1 s, inside the 1 MiB cap. Only `script[type="application/ld+json"]` is read there, and it feeds the facts only. Every card field still comes from the head. A late or failed tail is cut, never thrown, and the head card stays. When a cut tail gives no facts, the card gets the short TTL, because a later read may reach the posting. A tail cut by the 256 KiB limit is not retried.
 - **GitHub repositories.** `github.com/{owner}/{repo}` calls `api.github.com/repos/{owner}/{repo}`. The card gets `kind: 'repo'` and the owner avatar as the image. Its facts are stars, language and the last push. A private repository is a miss, so a token that can read one never shows it.
@@ -48,7 +48,7 @@ A docs.plus pad link can be scraped like any page, and its card holds the pad's 
 
 `GET /api/metadata/icon?origin=<origin>` returns one favicon. [API.md](../../../API.md#link-metadata) holds the full contract.
 
-- **Origin only.** The query names a bare origin, never a page. The route fetches `<origin>/favicon.ico` first.
+- **Origin only.** The query names a bare origin, never a page. The route fetches `/favicon.ico` of the reduced site origin first (see the next rule).
 - **Site, not host.** `iconSiteOrigin` (`domain/icon.ts`) reduces the origin to its registrable domain before any lookup, by the ICANN list only. A private suffix such as `github.io` would let an attacker choose the label below it, so it is not used. A host label can carry data that an agent was tricked into writing, and a DNS lookup alone sends it out. The cost: a subdomain site shows its parent site's icon.
 - **HTML step.** When that file misses, `domain/readHead.ts` reads the head of `<origin>/`: 64 KiB at most, cut at `</head`. `domain/iconLinks.ts` scans that text. Its small regex scanner picks one `rel=icon` or `apple-touch-icon` href and skips SVG and `data:`. It is not the page scraper (`infra/headScraper.ts`): that reads the card fields, and prefers large logos. The page, the href and every redirect go through `safeFetch`.
 - **One timer.** Each hop has its own `AbortController` under the route's one 3 s timer. An over-cap read then aborts only its own hop, and the HTML step can still run.

@@ -498,7 +498,8 @@ export const documentsPaths: OpenApiPaths = {
         }),
         '400': { $ref: '#/components/responses/ValidationError' },
         '404': { $ref: '#/components/responses/NotFound' },
-        '429': rateLimitedRef
+        '429': rateLimitedRef,
+        '500': { $ref: '#/components/responses/InternalError' }
       }
     }
   },

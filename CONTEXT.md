@@ -31,7 +31,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **Command jump** — Mod+Shift+K opens a dialog of places and owned pads. It moves the reader; it inserts nothing. Not the Slash menu.
 - **Link icon** — the 1em element before a pad link's text, class `hyperlink-icon`, from `padLinkIcon`: the docs.plus logo, a mail or phone glyph, or the site's favicon. Not stored in the document.
   _Avoid_: favicon (for the element), inline icon, decoration, widget
-- **Hovercard** — the desktop pad card that opens when the pointer rests on an external link. It shows the page's picture, site, title and description, all of it fetched by our server, never straight from the linked site. Read-only; a click opens the link preview instead. Not on the phone or in chat.
+- **Hovercard** — the desktop pad card that opens when the pointer rests on a link: a web link, another pad, or a part of this pad. A web card shows the page's picture, title, up to three facts and description, all fetched by our server, never straight from the linked site. A docs.plus card comes from the open pad or from our own server. Its only edit is Use page title. A click on the link opens the link preview instead. Not on the phone or in chat.
   _Avoid_: hover card, link tooltip, preview (the click popover)
 - **Page image** — the one picture `GET /api/metadata` names for a page, as `image.url`. It can come from `og:image`, an oEmbed `thumbnail_url`, or a site handler such as the GitHub avatar or the Reddit or Wikipedia thumbnail. `GET /api/metadata/image` relays it. User-facing text says "the page's picture".
   _Avoid_: social image, share card, og:image (for the value), hovercard picture
