@@ -1,7 +1,10 @@
 import { Icons } from '@components/icons/registry'
 import { InternalLinkChip } from '@components/TipTap/hyperlinkPopovers/components/InternalLinkChip'
 import { padNavigate } from '@components/TipTap/hyperlinkPopovers/hrefEventHandler'
-import { linkDestination } from '@components/TipTap/hyperlinkPopovers/internalDocumentLink'
+import {
+  describeDestination,
+  linkDestination
+} from '@components/TipTap/hyperlinkPopovers/internalDocumentLink'
 import { runInternalDocumentLink } from '@components/TipTap/hyperlinkPopovers/internalDocumentLinkActions'
 import { ContextMenuDivider } from '@components/ui/ContextMenu'
 import { ContextMenuRowButton } from '@components/ui/ContextMenuRowButton'
@@ -22,7 +25,7 @@ type Props = {
 export function ComposerLinkPreviewDialog({ href, onEdit, onRemove, onClose }: Props) {
   const padEditor = useStore((s) => s.settings.editor.instance)
   const destination = useMemo(() => linkDestination(href), [href])
-  const internalLink = destination.kind === 'here' ? destination.link : null
+  const descriptor = describeDestination(destination, padEditor ?? null)
 
   const { copy, copied } = useCopyToClipboard({
     successMessage: null,
@@ -30,14 +33,15 @@ export function ComposerLinkPreviewDialog({ href, onEdit, onRemove, onClose }: P
   })
 
   const handleGo = () => {
-    if (!internalLink) return
+    if (destination.kind !== 'here') return
     onClose()
-    runInternalDocumentLink(internalLink)
+    runInternalDocumentLink(destination.link)
   }
 
   // C6: a plain open, so `navigateHref` routes another pad in place and opens an external
-  // page in a new tab (#359, PWA guard). Close first: the close pops history, which would undo a route.
-  const canOpen = destination.kind === 'pad' || destination.kind === 'web'
+  // page or `/new` in a new tab (#359, PWA guard). Close first: the close pops history,
+  // which would undo a route.
+  const canOpen = destination.kind !== 'here' && destination.kind !== 'other'
   const handleOpen = () => {
     onClose()
     padNavigate(href, { newTab: false })
@@ -46,8 +50,8 @@ export function ComposerLinkPreviewDialog({ href, onEdit, onRemove, onClose }: P
   return (
     <ComposerLinkModalShell title="Link options" onClose={onClose}>
       <div data-testid="composer-link-preview" className="flex flex-col gap-4">
-        {internalLink ? (
-          <InternalLinkChip link={internalLink} editor={padEditor ?? null} hideFilterSublabel />
+        {descriptor ? (
+          <InternalLinkChip destination={destination} descriptor={descriptor} hideFilterSublabel />
         ) : (
           <p className="truncate text-sm" title={href}>
             {href}
@@ -63,7 +67,7 @@ export function ComposerLinkPreviewDialog({ href, onEdit, onRemove, onClose }: P
               Open link
             </ContextMenuRowButton>
           )}
-          {internalLink && (
+          {destination.kind === 'here' && (
             <ContextMenuRowButton
               icon={<Icons.chevronRight size={16} aria-hidden />}
               onClick={handleGo}

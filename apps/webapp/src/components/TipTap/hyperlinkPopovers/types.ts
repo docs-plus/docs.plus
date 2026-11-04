@@ -224,10 +224,14 @@ export type WebCardData = Pick<LinkCard, 'description' | 'image' | 'kind' | 'fac
   title: string
 }
 
-/** Where a link goes from the open pad: a place in it, another pad, a web page, or an app scheme. */
+/**
+ * Where a link goes from the open pad: a place in it, another pad, a fresh pad (`/new`),
+ * a web page, or an app scheme.
+ */
 export type LinkDestination =
   | { kind: 'here'; link: InternalDocumentLink }
   | { kind: 'pad'; pad: PadFacets }
+  | { kind: 'newPad' }
   | { kind: 'web' }
   | { kind: 'other' }
 
@@ -245,8 +249,9 @@ export interface InternalLinkDescriptor {
 }
 
 export interface InternalLinkChipProps {
-  link: InternalDocumentLink
-  editor: Editor | null
+  destination: LinkDestination
+  /** From `describeDestination`; a surface draws this chip only when it gives one. */
+  descriptor: InternalLinkDescriptor
   /** Filter links only: the composer dialog leaves out "In this document". */
   hideFilterSublabel?: boolean
 }

@@ -4,7 +4,7 @@ import {
   getSpecialUrlInfo,
   type SpecialUrlType
 } from '@docs.plus/extension-hyperlink'
-import { type Editor, isMacOS } from '@tiptap/core'
+import { isMacOS } from '@tiptap/core'
 import { getSiteIconUrl } from '@utils/link-helpers'
 import { lucideSvgString } from '@utils/lucideSvgString'
 import type { IconType } from 'react-icons'
@@ -12,9 +12,9 @@ import type { IconType } from 'react-icons'
 import { fetchMetadata } from './fetchMetadata'
 import { FILTER_MODE_LABEL_CLASS, FILTER_TERM_PILL_CLASS } from './filterTermPill'
 import { hrefEventHandler } from './hrefEventHandler'
-import { describeInternalDocumentLink, linkDestination } from './internalDocumentLink'
+import { linkDestination } from './internalDocumentLink'
 import { runInternalDocumentLink } from './internalDocumentLinkActions'
-import type { InternalDocumentLink } from './types'
+import type { InternalDocumentLink, InternalLinkDescriptor } from './types'
 
 /**
  * Preview popover only; pad link icons come from `padLinkIcon`. `Partial` is deliberate. For
@@ -165,54 +165,70 @@ export const observeDetachment = (elements: HTMLElement[], onDetach: () => void)
   observer.observe(document.body, { childList: true, subtree: true })
 }
 
-/**
- * Imperative DOM (not React) so it slots into the existing
- * `.hyperlink-preview-popover` without a mount, like `createMetadataContent`.
- * A filter shows every term (C4): the button stays one control, so only spans go inside it.
- */
-export const createInternalLinkChip = (
-  link: InternalDocumentLink,
-  editor: Editor | null
-): HTMLElement => {
-  const { label, sublabel, icon, accessibleName, modeLabel } = describeInternalDocumentLink(
-    link,
-    editor
-  )
-
+const chipShell = (
+  { label, icon, accessibleName }: InternalLinkDescriptor,
+  onClick: () => void
+): { chip: HTMLElement; iconEl: HTMLElement; title: HTMLElement } => {
   const chip = createHTMLElement('button', {
     className: 'internal-link-chip',
     ariaLabel: accessibleName
   })
+  chip.addEventListener('click', onClick)
   const iconEl = createHTMLElement('span', {
     className: 'chip-icon',
     innerHTML: lucideSvgString(icon, 18)
   })
   const title = createHTMLElement('span', { className: 'chip-title', textContent: label })
-  chip.addEventListener('click', () => runInternalDocumentLink(link))
+  return { chip, iconEl, title }
+}
 
-  if (link.kind === 'filter') {
-    chip.classList.add('internal-link-chip--filter')
-    const header = createHTMLElement('span', { className: 'chip-header' })
-    header.append(iconEl, title)
-    if (modeLabel) {
-      header.append(
-        createHTMLElement('span', { className: FILTER_MODE_LABEL_CLASS, textContent: modeLabel })
-      )
-    }
-    const terms = createHTMLElement('span', { className: 'chip-terms' })
-    terms.append(
-      ...link.terms.map((term) =>
-        createHTMLElement('span', { className: FILTER_TERM_PILL_CLASS, textContent: term })
-      )
-    )
-    chip.append(header, terms)
-    return chip
-  }
-
+/**
+ * Imperative DOM (not React) so it slots into the existing
+ * `.hyperlink-preview-popover` without a mount, like `createMetadataContent`.
+ * The `/new` chip uses it with its own action.
+ */
+export const createLinkChip = (
+  descriptor: InternalLinkDescriptor,
+  onClick: () => void
+): HTMLElement => {
+  const { chip, iconEl, title } = chipShell(descriptor, onClick)
   // A long heading or chat name is cut with an ellipsis; the tooltip shows it whole.
-  title.title = label
+  title.title = descriptor.label
   const text = createHTMLElement('span', { className: 'chip-text' })
-  text.append(title, createHTMLElement('span', { className: 'chip-sub', textContent: sublabel }))
+  text.append(
+    title,
+    createHTMLElement('span', { className: 'chip-sub', textContent: descriptor.sublabel })
+  )
   chip.append(iconEl, text)
+  return chip
+}
+
+/** A filter shows every term (C4): the button stays one control, so only spans go inside it. */
+export const createInternalLinkChip = (
+  link: InternalDocumentLink,
+  descriptor: InternalLinkDescriptor
+): HTMLElement => {
+  const run = () => runInternalDocumentLink(link)
+  if (link.kind !== 'filter') return createLinkChip(descriptor, run)
+
+  const { chip, iconEl, title } = chipShell(descriptor, run)
+  chip.classList.add('internal-link-chip--filter')
+  const header = createHTMLElement('span', { className: 'chip-header' })
+  header.append(iconEl, title)
+  if (descriptor.modeLabel) {
+    header.append(
+      createHTMLElement('span', {
+        className: FILTER_MODE_LABEL_CLASS,
+        textContent: descriptor.modeLabel
+      })
+    )
+  }
+  const terms = createHTMLElement('span', { className: 'chip-terms' })
+  terms.append(
+    ...link.terms.map((term) =>
+      createHTMLElement('span', { className: FILTER_TERM_PILL_CLASS, textContent: term })
+    )
+  )
+  chip.append(header, terms)
   return chip
 }

@@ -176,4 +176,17 @@ describe('linkDestination', () => {
     expect(kind('/')).toBe('other')
     expect(kind('http://[bad')).toBe('other')
   })
+
+  it('names same-origin /new a new pad, and no other reserved slug or host', () => {
+    const kind = (href: string) => linkDestination(href, '/pad-a').kind
+
+    expect(kind('/new')).toBe('newPad')
+    expect(kind(`${window.location.origin}/new`)).toBe('newPad')
+    expect(kind('/new/')).toBe('newPad')
+    expect(kind('/new?x')).toBe('newPad')
+    expect(kind('/new#h')).toBe('newPad')
+    expect(kind('https://other.host/new')).toBe('web')
+    expect(kind('/new/extra')).toBe('other')
+    expect(kind('/privacy')).toBe('other')
+  })
 })

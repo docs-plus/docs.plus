@@ -29,6 +29,14 @@ export const INTERNAL_KIND_NAME: Record<InternalDocumentLink['kind'], string> = 
   history: 'Version history'
 }
 
+/** The chip for a `/new` link. The command jump row uses the same label and icon. */
+export const NEW_PAD_LINK: InternalLinkDescriptor = {
+  label: 'New document',
+  sublabel: 'Opens a blank document in a new tab',
+  icon: Icons.plus,
+  accessibleName: 'Open a new blank document in a new tab.'
+}
+
 /**
  * The one place in a pad an address names: the History hash, else `padUrlCore.place`.
  * `href` is what a filter link opens.
@@ -66,6 +74,15 @@ const anotherPad = (href: string): PadFacets | null => {
   return /\.[a-z0-9]+$/i.test(new URL(href, window.location.origin).pathname) ? null : pad
 }
 
+/**
+ * Same-origin `/new`, which `pages/new.tsx` answers with a fresh random pad.
+ * It is not a place yet, so it gets its own kind. Other reserved slugs stay as they are.
+ */
+const isNewPad = (href: string): boolean => {
+  const pad = padUrlCore.parse(href, window.location.origin)
+  return !!pad?.sameOrigin && pad.slug === 'new' && pad.terms.length === 0
+}
+
 /** The one order of the link rules. This pad comes first, because `anotherPad` accepts it too. */
 export const linkDestination = (
   href: string,
@@ -73,9 +90,19 @@ export const linkDestination = (
 ): LinkDestination => {
   const link = classifyInternalDocumentLink(href, pathname)
   if (link) return { kind: 'here', link }
+  if (isNewPad(href)) return { kind: 'newPad' }
   const pad = anotherPad(href)
   if (pad) return { kind: 'pad', pad }
   return isWebHref(href) ? { kind: 'web' } : { kind: 'other' }
+}
+
+/** The chip for a destination that has one: `/new` or a place in this pad. Else `null`. */
+export const describeDestination = (
+  destination: LinkDestination,
+  editor: Editor | null
+): InternalLinkDescriptor | null => {
+  if (destination.kind === 'newPad') return NEW_PAD_LINK
+  return destination.kind === 'here' ? describeInternalDocumentLink(destination.link, editor) : null
 }
 
 /** Resolve a heading/channel `toc-id` to its heading text. */

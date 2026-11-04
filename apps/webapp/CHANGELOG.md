@@ -74,7 +74,9 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   "Open archived copy" link that opens it in a new tab. The link goes to archive.org only on
   that click.
 - A link whose text is its own web address shows a **Use page title** button on its hover card.
-  One click puts the page title in place of the address, and one undo brings the address back.
+  One click puts the page title in place of the address and leaves the caret after it, so one
+  undo brings the address back. The hover card's icon buttons, Use page title, Copy link and Open in new tab, now show a
+  tooltip on hover.
   It shows only on a pad you can edit, for example on a link typed or pasted as a plain address
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - A web link pasted on its own into a pad shows the page title in place of its address
@@ -179,6 +181,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- A `/new` link in a pad now says what it does. Its click preview shows a "New document"
+  chip that reads "Opens a blank document in a new tab", on desktop, in the phone sheet and in
+  the chat composer dialog. The chip opens `/new` in a new tab, so the reader keeps their
+  place, and the link shows the docs.plus logo. Before, the preview showed a bare "/new" with a
+  broken site icon. `https://<app host>/new` works the same way.
 - Desktop link Edit now finds the link after a co-editor types above it. Before, Apply did
   nothing in that case ([#678](https://github.com/docs-plus/docs.plus/issues/678)).
 - **The Replace with a file warning names History.** It said there was no undo. History keeps

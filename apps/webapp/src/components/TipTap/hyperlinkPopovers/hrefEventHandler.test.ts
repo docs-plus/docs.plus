@@ -38,6 +38,19 @@ describe('navigateHref', () => {
     expect(Router.push).toHaveBeenCalledTimes(1)
     expect(open).toHaveBeenCalledTimes(2)
   })
+
+  it('opens /new in a new tab, so the reader keeps their place', () => {
+    history.pushState({}, '', '/pad-a')
+    const open = jest.fn()
+    window.open = open
+
+    navigateHref('/new')
+    navigateHref('http://localhost/new')
+
+    expect(Router.push).not.toHaveBeenCalled()
+    expect(open).toHaveBeenNthCalledWith(1, '/new', '_blank', expect.any(String))
+    expect(open).toHaveBeenNthCalledWith(2, 'http://localhost/new', '_blank', expect.any(String))
+  })
 })
 
 describe('hrefEventHandler', () => {

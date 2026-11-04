@@ -14,9 +14,11 @@ import type { Editor } from '@tiptap/core'
 import { lucideSvgString } from '@utils/lucideSvgString'
 import { COPY_FADE_HOLD_MS, prefersReducedMotion } from '@utils/motion'
 
-import { classifyInternalDocumentLink, describeInternalDocumentLink } from './internalDocumentLink'
+import { navigateHref } from './hrefEventHandler'
+import { describeDestination, linkDestination } from './internalDocumentLink'
 import {
   createInternalLinkChip,
+  createLinkChip,
   observeDetachment,
   type PreviewContext,
   renderMetadataInto
@@ -160,30 +162,38 @@ const buildDesktopPopover = (
 
   // Internal (same-document) links render a named destination chip and run
   // in place; no external metadata fetch. Copy still yields the canonical URL.
-  const internalLink = classifyInternalDocumentLink(href, window.location.pathname)
-  if (internalLink?.kind === 'filter') {
-    // The pills take the full width, so the actions move to a footer row (C6).
-    popover.classList.add('hyperlink-preview-popover--column')
-    const footer = createHTMLElement('div', { className: 'hyperlink-preview-footer' })
-    footer.append(
-      createHTMLElement('span', {
-        className: 'footer-label',
-        textContent: describeInternalDocumentLink(internalLink, editor).sublabel
-      }),
-      copyButton,
-      ...editControls
-    )
-    popover.append(createInternalLinkChip(internalLink, editor), footer)
-    return popover
-  }
-  if (internalLink) {
-    popover.append(createInternalLinkChip(internalLink, editor), copyButton, ...editControls)
+  // `/new` gets the same chip; its action opens a new tab.
+  const destination = linkDestination(href)
+  const descriptor = describeDestination(destination, editor)
+  if (!descriptor) {
+    const metadataContainer = createHTMLElement('div', { className: 'metadata' })
+    renderMetadataInto(metadataContainer, ctx)
+    popover.append(metadataContainer, copyButton, ...editControls)
     return popover
   }
 
-  const metadataContainer = createHTMLElement('div', { className: 'metadata' })
-  renderMetadataInto(metadataContainer, ctx)
-  popover.append(metadataContainer, copyButton, ...editControls)
+  const link = destination.kind === 'here' ? destination.link : null
+  // A chip is an action, so it closes the preview first, as `runInternalDocumentLink` does.
+  const chip = link
+    ? createInternalLinkChip(link, descriptor)
+    : createLinkChip(descriptor, () => {
+        getDefaultController().close()
+        navigateHref(href)
+      })
+  if (link?.kind !== 'filter') {
+    popover.append(chip, copyButton, ...editControls)
+    return popover
+  }
+
+  // The pills take the full width, so the actions move to a footer row (C6).
+  popover.classList.add('hyperlink-preview-popover--column')
+  const footer = createHTMLElement('div', { className: 'hyperlink-preview-footer' })
+  footer.append(
+    createHTMLElement('span', { className: 'footer-label', textContent: descriptor.sublabel }),
+    copyButton,
+    ...editControls
+  )
+  popover.append(chip, footer)
   return popover
 }
 

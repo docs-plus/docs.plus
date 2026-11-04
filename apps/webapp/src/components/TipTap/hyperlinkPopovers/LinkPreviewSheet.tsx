@@ -10,7 +10,7 @@ import { twMerge } from '@utils/twMerge'
 import { Fragment, useMemo, useState } from 'react'
 
 import { InternalLinkChip } from './components/InternalLinkChip'
-import { classifyInternalDocumentLink } from './internalDocumentLink'
+import { describeDestination, linkDestination } from './internalDocumentLink'
 import { buildLinkPreviewActions } from './linkPreviewActions'
 import { useLinkMetadata } from './useLinkMetadata'
 
@@ -92,10 +92,8 @@ const LinkPreviewSheet = ({ data: payload }: LinkPreviewSheetProps) => {
     schedule()
   }
 
-  const internalLink = useMemo(
-    () => classifyInternalDocumentLink(href, window.location.pathname),
-    [href]
-  )
+  const destination = useMemo(() => linkDestination(href), [href])
+  const descriptor = describeDestination(destination, editor)
 
   const actions = buildLinkPreviewActions({ payload, closeSheet, switchSheet, onCopySuccess })
 
@@ -103,8 +101,8 @@ const LinkPreviewSheet = ({ data: payload }: LinkPreviewSheetProps) => {
     <SheetLayout title="Link" onClose={closeSheet}>
       <div className={`pt-3 ${sheetBodyPadClassName}`}>
         <div className="border-base-300 border-b pb-3">
-          {internalLink ? (
-            <InternalLinkChip link={internalLink} editor={editor} />
+          {descriptor ? (
+            <InternalLinkChip destination={destination} descriptor={descriptor} />
           ) : (
             <ExternalLinkHeader data={payload} />
           )}

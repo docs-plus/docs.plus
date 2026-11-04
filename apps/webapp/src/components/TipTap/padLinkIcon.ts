@@ -49,10 +49,12 @@ const kindIcon = (kind: InternalDocumentLink['kind']): HTMLElement => {
   return el
 }
 
-/** Pad resolver: same-pad kind glyph, the logo for another pad, mail and phone, then the favicon. */
+/** Pad resolver: same-pad kind glyph, the logo for another or a new pad, mail and phone, then the favicon. */
 export const padLinkIcon = (ctx: LinkIconContext): HTMLElement | null => {
   const destination = destinationOf(ctx.href)
   if (destination.kind === 'here') return kindIcon(destination.link.kind)
-  if (destination.kind === 'pad') return logoMap({ href: LOGO_HREF })
+  if (destination.kind === 'pad' || destination.kind === 'newPad') {
+    return logoMap({ href: LOGO_HREF })
+  }
   return appScheme(ctx) ?? fetchIcon(ctx)
 }

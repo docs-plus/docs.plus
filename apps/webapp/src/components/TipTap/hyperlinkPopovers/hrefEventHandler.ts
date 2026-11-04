@@ -17,8 +17,8 @@ import { runInternalDocumentLink } from './internalDocumentLinkActions'
 
 /**
  * A plain open. Destinations inside the current document run in place. A same-origin
- * link to another pad routes in place with `Router.push` (#359). Everything else opens
- * in a new tab. A new-tab intent goes through `padNavigate` instead.
+ * link to another pad routes in place with `Router.push` (#359). Everything else, `/new`
+ * included, opens in a new tab. A new-tab intent goes through `padNavigate` instead.
  */
 export const navigateHref = (href: string, isAllowedUri?: (uri: string) => boolean): void => {
   // Defense-in-depth — `parseHTML`/`renderHTML` already strip dangerous

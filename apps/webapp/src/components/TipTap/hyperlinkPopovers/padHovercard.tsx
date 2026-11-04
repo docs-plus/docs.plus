@@ -42,7 +42,11 @@ export const padHovercard = {
     }
     return fetchMetadata(href).then(toWebData)
   },
-  shouldShow: ({ href }) => linkPreviewOn('showOnHover') && linkDestination(href).kind !== 'other',
+  // `/new` has no page to preview yet; its click chip says what it does.
+  shouldShow: ({ href }) => {
+    const { kind } = linkDestination(href)
+    return linkPreviewOn('showOnHover') && kind !== 'other' && kind !== 'newPad'
+  },
   render: (ctx) => {
     const { href, open } = ctx
     const { kind } = linkDestination(href)

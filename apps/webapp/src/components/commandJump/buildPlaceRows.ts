@@ -1,6 +1,7 @@
 import { selectPadOwnsKeyboard } from '@components/chatroom/utils/selectPadOwnsKeyboard'
 import type { TabType } from '@components/settings/types'
 import { canOpenFind } from '@components/TipTap/find/canOpenFind'
+import { NEW_PAD_LINK } from '@components/TipTap/hyperlinkPopovers/internalDocumentLink'
 import { filterOpenRequest } from '@components/TipTap/toolbar/desktop/popoverOpenRequest'
 import { openOverlayHash } from '@hooks/useHashOverlay'
 import { Icons } from '@icons'
@@ -90,7 +91,12 @@ export function buildPlaceRows(ctx: PlaceContext): PlaceRow[] {
   }
 
   rows.push(
-    { id: 'new', label: 'New document', icon: Icons.plus, run: () => ctx.navigate('/new') },
+    {
+      id: 'new',
+      label: NEW_PAD_LINK.label,
+      icon: NEW_PAD_LINK.icon,
+      run: () => ctx.navigate('/new')
+    },
     { id: 'demo', label: 'Demo', icon: Icons.fileOpen, run: () => ctx.navigate('/demo') }
   )
 
