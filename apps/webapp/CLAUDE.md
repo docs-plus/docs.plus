@@ -309,7 +309,7 @@ Follow industry overlay UX (Material, Apple HIG, Radix/shadcn) and dim-not-lift 
 - **A file link takes its file name and format** (maintainer ruling, 2026-11-04). For a non-HTML reply the server's title is the decoded last path segment, such as `Q3 Report.pdf`. Do not add a `card.file` check to `padPasteTitle.ts` to keep the URL; that was offered and declined. A file name that reads as a domain (`archive.zip`) passes the engine's spoof check only as the link's own file name.
 - `shouldFetch` calls `linkPreviewOn('pasteTitles')` from `linkPreviewStore.ts` at call time, never through a hook. The hover gate calls the same reader. Settings shows it as the second "Link previews" row.
 - `pages/privacy.tsx` says that a link pasted into a document goes to our server. Update that sentence if paste title reaches another surface, such as chat.
-- Run `paste-title.cy.ts` on every Tiptap or y-tiptap bump.
+- Run `paste-title.cy.ts` on every Tiptap or y-tiptap bump. No CI job runs it (maintainer ruling, 2026-11-04: keep it manual), because it needs `make dev-local`. From `apps/webapp`: `env -u ELECTRON_RUN_AS_NODE BASE_URL=http://localhost:3000 bunx cypress run --browser chrome --spec cypress/e2e/document/paste-title.cy.ts`. It is the only check of undo under y-undo.
 
 ### TOC And Heading Actions
 
