@@ -1,3 +1,5 @@
+import { parse } from 'tldts'
+
 import { ICON_HTML_MAX_BYTES, pickIconHref } from './iconLinks'
 import { readHead } from './readHead'
 import { fetchImage, isMiss, openHop, statusMiss } from './relay'
@@ -17,6 +19,18 @@ export const isIconOrigin = (raw: string): boolean => {
   } catch {
     return false
   }
+}
+
+/**
+ * The site's origin for its icon: the registrable domain, by the ICANN suffix list only. A host
+ * label can carry data an agent was tricked into writing, and even a DNS lookup of
+ * `<data>.attacker.example` sends it out. An IP passes as is. Null when no domain applies.
+ */
+export const iconSiteOrigin = (origin: string): string | null => {
+  const url = new URL(origin)
+  const host = parse(url.hostname)
+  if (host.isIp) return origin
+  return host.domain ? `${url.protocol}//${host.domain}` : null
 }
 
 // The page head names the icon when `/favicon.ico` has none, as on notion.so.

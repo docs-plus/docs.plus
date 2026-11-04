@@ -1,6 +1,6 @@
 import type { Context } from 'hono'
 
-import { fetchSiteIcon } from '../domain/icon'
+import { fetchSiteIcon, iconSiteOrigin } from '../domain/icon'
 import { isMiss } from '../domain/relay'
 import type { Miss, RelayedImage } from '../domain/types'
 
@@ -22,11 +22,15 @@ export const createIconController = ({ iconMaxBytes }: { iconMaxBytes: number })
         'Cache-Control': kind === 'error' ? ERROR_MISS_CACHE_HEADER : CLEAN_MISS_CACHE_HEADER
       })
 
+    // Before any lookup: the requested host may hold data, and only its site is fetched.
+    const site = iconSiteOrigin(origin)
+    if (!site) return miss('clean')
+
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), ICON_TIMEOUT_MS)
 
     try {
-      const icon = await fetchSiteIcon(origin, controller.signal, iconMaxBytes)
+      const icon = await fetchSiteIcon(site, controller.signal, iconMaxBytes)
       return isMiss(icon) ? miss(icon) : hit(c, icon)
     } catch {
       return miss('error')
