@@ -1,7 +1,7 @@
-import { normalizeHref } from '@docs.plus/extension-hyperlink'
+import { type HovercardFact, normalizeHref } from '@docs.plus/extension-hyperlink'
 import { apiBaseUrl } from '@utils/apiBaseUrl'
-import { isWebHref } from '@utils/link-helpers'
 
+import { linkDestination } from './internalDocumentLink'
 import type { LinkCard } from './types'
 
 interface MetadataResponse {
@@ -10,6 +10,9 @@ interface MetadataResponse {
   title: string
   description?: string
   image?: { url: string }
+  kind?: unknown
+  facts?: unknown
+  fallback?: unknown
 }
 
 interface ErrorResponse {
@@ -30,12 +33,13 @@ const inFlight = new Map<string, Promise<LinkCard | null>>()
 
 /**
  * One string is both the cache key and the `?url=` value. The fragment never changes the
- * page, so it is dropped. `null` means the server cannot fetch it (mailto:, tel:, app schemes).
+ * page, so it is dropped. `null` means no request: mailto:, tel:, app schemes, and every
+ * same-origin pad, whose answer depends on the reader (Private), so a URL key must not hold it.
  */
 const metadataKey = (href: string): string | null => {
   try {
     const url = new URL(normalizeHref(href))
-    if (!isWebHref(url)) return null
+    if (linkDestination(url.href).kind !== 'web') return null
     url.hash = ''
     return url.href
   } catch {
@@ -64,6 +68,35 @@ export const getCachedMetadata = (href: string): LinkCard | null | undefined => 
   return key === null ? null : readEntry(key)
 }
 
+// A `Record`, so the compiler flags an icon the extension adds or drops.
+const KNOWN_FACT_ICONS: Record<HovercardFact['icon'], true> = {
+  location: true,
+  work: true,
+  posted: true,
+  stars: true,
+  language: true,
+  updated: true,
+  answers: true,
+  accepted: true
+}
+
+const isFact = (value: unknown): value is HovercardFact => {
+  const fact = value as { icon?: unknown; text?: unknown } | null
+  return (
+    typeof fact?.icon === 'string' &&
+    Object.hasOwn(KNOWN_FACT_ICONS, fact.icon) &&
+    typeof fact.text === 'string' &&
+    fact.text.length > 0
+  )
+}
+
+/** An icon this build cannot draw is dropped, so a newer server never breaks the card. */
+const toFacts = (value: unknown): HovercardFact[] | undefined => {
+  if (!Array.isArray(value)) return undefined
+  const facts = value.filter(isFact).map(({ icon, text }) => ({ icon, text }))
+  return facts.length > 0 ? facts : undefined
+}
+
 /**
  * The page image goes through our server, so the linked site never sees the reader. The
  * server keeps only http(s) image URLs. Field by field, so the raw image URL is never kept.
@@ -74,7 +107,10 @@ const toLinkCard = (key: string, data: MetadataResponse): LinkCard => ({
   description: data.description,
   image: data.image?.url
     ? { url: `${apiBaseUrl()}/metadata/image?url=${encodeURIComponent(key)}` }
-    : undefined
+    : undefined,
+  fallback: data.fallback === true ? true : undefined,
+  kind: data.kind === 'repo' ? 'repo' : undefined,
+  facts: toFacts(data.facts)
 })
 
 /**

@@ -1,5 +1,6 @@
+import type { HovercardFact } from '@docs.plus/extension-hyperlink'
 import type { Editor } from '@tiptap/core'
-import type { FilterMode, PadChat, PadFacets } from '@types'
+import type { PadFacets, PadPlace } from '@types'
 import type { IconType } from 'react-icons'
 
 export type HyperlinkSurface = 'pad' | 'composer'
@@ -151,26 +152,27 @@ export interface ApplyHyperlinkCommandOpts {
 }
 
 /**
- * A hyperlink pointing back into the current document. `classify` maps a raw
- * href to one of these (or `null` for external). The `filter` variant carries
- * the original href so `run` opens it with `padUrl.go({ kind: 'filterOpen' })`.
+ * A place in a pad: this one, or another. The `filter` variant carries the original
+ * href, so `run` opens it with `padUrl.go({ kind: 'filterOpen' })`.
  */
 export type InternalDocumentLink =
-  | { kind: 'document' }
-  | { kind: 'heading'; headingId: string }
-  | ({ kind: 'chat' } & PadChat)
-  | { kind: 'filter'; terms: string[]; mode: FilterMode; href: string }
+  | Exclude<PadPlace, { kind: 'filter' }>
+  | (Extract<PadPlace, { kind: 'filter' }> & { href: string })
   | { kind: 'history'; version: number | null }
 
 /**
  * A metadata answer as the cache holds it. `image.url` is already our image route, so no
  * caller can reach the linked site's own image URL. `url` is the server's canonical page URL.
+ * `fallback` marks the server's host-only card: `title` is then just the host.
  */
 export interface LinkCard {
   url: string
   title: string
   description?: string
   image?: { url: string }
+  fallback?: true
+  kind?: 'repo'
+  facts?: HovercardFact[]
 }
 
 /** Where a link goes from the open pad: a place in it, another pad, a web page, or an app scheme. */
@@ -179,6 +181,9 @@ export type LinkDestination =
   | { kind: 'pad'; pad: PadFacets }
   | { kind: 'web' }
   | { kind: 'other' }
+
+/** A docs.plus link: the ones that get the webapp's pad card. */
+export type PadLink = Extract<LinkDestination, { kind: 'pad' | 'here' }>
 
 export interface InternalLinkDescriptor {
   label: string

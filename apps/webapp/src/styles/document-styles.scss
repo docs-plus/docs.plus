@@ -96,6 +96,8 @@
   --hl-fg: var(--color-base-content);
   --hl-muted: color-mix(in oklch, var(--color-base-content) 70%, transparent);
   --hl-font: var(--font-sans);
+  --hl-hover: var(--color-base-300);
+  --hl-skeleton: var(--color-base-300);
 }
 
 .hyperlink-preview-popover {

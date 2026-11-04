@@ -151,6 +151,7 @@ function getDescendantIds(sections: SectionInfo[], matchedIds: Set<string>): Set
   return descendants
 }
 
+// `filterFacts` in apps/hocuspocus.server/src/modules/social-card/domain/hovercard.ts mirrors this; change both together.
 export function filterSections(
   doc: PMNode,
   slugs: string[],

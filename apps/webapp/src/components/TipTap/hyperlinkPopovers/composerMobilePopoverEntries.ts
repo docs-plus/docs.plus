@@ -3,13 +3,12 @@
 import { useComposerLinkDialogStore } from '@components/chatroom/components/MessageComposer/stores/composerLinkDialogStore'
 import { resolveComposerCreateSelection } from '@components/chatroom/components/MessageComposer/stores/composerLinkSelectionRef'
 import {
-  buildPreviewOptionsFromAnchor,
   type CreateHyperlinkOptions,
   type EditHyperlinkOptions,
   type PreviewHyperlinkOptions
 } from '@docs.plus/extension-hyperlink'
 
-import { getHyperlinkDisplayText } from './linkMarkUtils'
+import { buildEditRequest } from './buildEditRequest'
 
 export function previewComposerHyperlink(options: PreviewHyperlinkOptions): HTMLElement | null {
   const { link, editor, nodePos, attrs } = options
@@ -49,18 +48,13 @@ export function editHyperlinkComposerMobile(opts: EditHyperlinkOptions): HTMLEle
     console.warn('[composerMobilePopoverEntries] editHyperlinkComposerMobile: missing nodePos')
     return null
   }
-  const { attrs } = buildPreviewOptionsFromAnchor({
-    editor: opts.editor,
-    link: opts.link,
-    validate: opts.validate,
-    isAllowedUri: opts.isAllowedUri
-  })
+  const { initialHref, initialText } = buildEditRequest(opts)
   useComposerLinkDialogStore.getState().openEdit({
     editor: opts.editor,
     nodePos,
     validate: opts.validate,
-    initialHref: attrs.href ?? '',
-    initialText: getHyperlinkDisplayText(opts.editor, { nodePos, link: opts.link })
+    initialHref,
+    initialText
   })
   return null
 }

@@ -72,7 +72,7 @@ Distinguish **docked** pad regions from **floating** overlays. Docked = TOC colu
 - The canonical mobile sheet system is `apps/webapp/src/components/BottomSheet.tsx`, wrapping `react-modal-sheet`.
 - Sheets register through `useSheetStore` with `SheetType` + `SheetDataMap`.
 - New mobile UI surfaces add a `SheetType` variant, a typed `SheetDataMap` entry, and an entry in `SHEETS` in `components/BottomSheet.tsx`. Each entry holds `render` and that sheet's props. A sheet traps focus by default (`role="dialog"`, `aria-modal`, Escape closes) and needs an `ariaLabel`. `trapFocus: false` opts out and keeps the keyboard up, as `linkEditor` and the slash sheet do. Do not build a parallel sheet system beside it, imperative-DOM or otherwise.
-- Tiptap extension imperative-DOM popovers connect to React sheets through extension `popovers` config, gated by `settings.deviceDetect.isMobile` in `TipTap.tsx`.
+- Tiptap extension imperative-DOM popovers connect to React sheets through extension `popovers` config, gated by `settings.editor.isMobile` in `TipTap.tsx`.
 - **A `Sheet` portals to `document.body` unless it receives a `mountPoint`** — the library calls `createPortal(sheet, mountPoint ?? document.body)`. Where the React element sits says nothing about where its DOM lands. A `Sheet` rendered inside the mobile flex shell never joins that flex layout. Moving the component that renders it moves the React element only. The library also gates its keyboard hook on `isOpen && avoidKeyboard`, so a closed sheet attaches no `visualViewport` listeners.
 - A trapped sheet moves focus into itself on open, which lowers the phone keyboard. Keyboard dismissal beyond that stays a per-sheet entry-point decision. Do not add more of it in `useSheetStore` or `BottomSheet`.
 - **A `trapFocus: false` sheet skips keyboard avoidance on Chromium (#251).** The slash sheet and `linkEditor` keep the pad's keyboard up. Where `'virtualKeyboard' in navigator`, react-modal-sheet's avoidance sets `overlaysContent`. The viewport then stops shrinking, `isKeyboardOpen` turns false, and `useEditableDocControl` leaves edit mode. `BottomSheet` therefore passes `avoidKeyboard: false` for these sheets there. It pins the sheet root to `--visual-viewport-offset-top` and `--visual-viewport-height`, so the sheet sits above the keyboard. Safari has no such API and keeps avoidance. Do not turn avoidance back on for these sheets. The keyboard API cannot replace it either: in overlay mode `boundingRect.height` stayed 0 with the keyboard up (measured 2026-11-03).
@@ -290,6 +290,14 @@ Follow industry overlay UX (Material, Apple HIG, Radix/shadcn) and dim-not-lift 
 - Without `#history?version=`, the sidebar treats the latest version as active.
 - Every entry to history page, including editor <-> history navigation, must resync sidebar selection from current hash + store.
 
+### docs.plus Link Hovercard
+
+- **A docs.plus link gets a webapp card, never the extension's** (maintainer ruling, 2026-11-03: webapp only; update 2026-11-04: the extension exports one generic rule, `keepsHovercardOpen`, and nothing docs.plus-specific). The code is `components/TipTap/hyperlinkPopovers/padLinkCard/`. `DesktopEditor` mounts `PadLinkHovercard` only while a provider exists, so history and `/editor` get none. `padHovercard.shouldShow` leaves these links to it.
+- It copies the extension card's timing: a 150 ms dwell, a 500 ms open, a house skeleton, a 4 s give-up and a 300 ms close. It never opens over another extension popover. It uses no `FloatingFocusManager`, because its `markOthers` would mark the editor and reload its embeds. Its close keys come from the extension's `keepsHovercardOpen` root export (the one extension change, ruled 2026-11-04). A load that fails before the open shows no card, as in the extension.
+- A same-pad heading or filter reads the open editor, with no request. Every other kind calls `GET /api/documents/:slug/hovercard` with only the winning kind's params, and the reader's token. The answer depends on the reader, so it never enters the `fetchMetadata` cache.
+- A heading card shows no message count when `messages` is null. The editor holds no per-heading total, and the route omits the count when its chat read fails.
+- The look is the approved board "docs.plus link previews" (2026-11-03): title first with no icon beside it, a plain-text breadcrumb of parents only, a hairline, then facts, the section rail and the link line. Chat facts are counts and dates only, never text or names.
+
 ### TOC And Heading Actions
 
 - **Toc vocabulary is canonical.** Keep the `Toc*` / `toc__*` / `TOC_*` names and the `components/toc/` home — never rebrand to Document Outline / `Outline*` (paths or exports). Deepen the feature in place under `toc/` (structure + interfaces); do not rename/move the folder. Prefer a shell-facing public barrel (`TocDesktop` / `TocMobile` / `TocHeader`, optionally `TOC_CLASSES`) over re-exporting presence, scroll-spy, unread, or move helpers from `toc/index.ts`.
@@ -355,7 +363,7 @@ Follow industry overlay UX (Material, Apple HIG, Radix/shadcn) and dim-not-lift 
 
 ### Social Card Head
 
-- **`card=1` only on a full page load.** `documentServerSideProps.ts` sends it, never on an `x-nextjs-data` read, so a client-side jump never pays for a card. REST owns every card rule; see `apps/hocuspocus.server/CLAUDE.md` §Social Preview Card.
+- **`card=1` only on a full page load.** `documentServerSideProps.ts` sends it, never on an `x-nextjs-data` read, so a client-side jump never pays for a card. REST owns every card rule; see `apps/hocuspocus.server/CLAUDE.md` §Social Preview Card. The query carries only the keys of the one place the link opens: `?version=` first, else `padUrlCore.place` (filter, then chat, then heading).
 - **The Fallback card URL lives in two places.** `PAD_FALLBACK_IMAGE` in `src/pages/_app.tsx` and `fallbackImageUrl` in `apps/hocuspocus.server/src/config/env.ts`. Its `?v=` is the first 8 characters of the file's sha256. Change both when the PNG changes.
 - **`?version=` is for servers only.** `historyShareUrl.ts` writes it beside the History hash, and `adoptVersionQuery` strips it on arrival, keyed on `asPath`. Do not read it anywhere else in the app.
 

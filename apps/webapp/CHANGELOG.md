@@ -22,7 +22,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   ([#663](https://github.com/docs-plus/docs.plus/issues/663)). A full page load asks REST for
   the pad's card with `card=1`. `og:image`, `twitter:image` and their alt text then point at that
   card. A pad with no card gets the static `icons/og-card-pad-1200x630.png`. A description that
-  equals the Pad title or the slug is replaced by the product description.
+  equals the Pad title or the slug is replaced by the product description. The card query
+  carries only the keys of the place the link opens.
 - A History share link now also carries `?version=<n>` in the address, so a server can draw
   that version's card ([#668](https://github.com/docs-plus/docs.plus/issues/668)). The pad
   takes the query off on arrival and opens History at that version, on a fresh load and on an
@@ -38,12 +39,24 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   used to open on a black screen ([#255](https://github.com/docs-plus/docs.plus/issues/255)).
 - On a desktop pad, resting the pointer on a link opens the hovercard
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)). The request starts after 150 ms,
-  and the card opens at 500 ms at the earliest. It shows the page's picture, site icon, host,
-  title and description, and all of it comes through our server. It is read-only. A press or most
-  keys close it. Its title opens an external page in a new tab, and another pad in the same
-  window. Mod-click and middle-click on the title open a new tab. A link to a part of this pad
-  gets no card. The phone, chat, history and `/editor` do not get it. The site icon and host come
-  from the link itself. Only the title, description and picture come from the page.
+  and the card opens at 500 ms at the earliest. It shows the page's picture, title, up to three
+  facts and description, and all of it comes through our server. A job page shows its place, work
+  type and posting date. A GitHub repository shows stars, language and last push. A Stack Overflow
+  question shows its answers. A press or most keys close the card. Its title opens an external
+  page in a new tab, and another pad in the same window. Mod-click and middle-click on the title
+  open a new tab. The phone, chat, history and `/editor` do not get it.
+- The card ends in a link line: the site icon, the host and the full path, then Copy link and
+  Open in new tab. The site icon and the link line come from the link itself. Only the title,
+  facts, description and picture come from the page.
+- A slow page opens the card with loading bars and the link line, then fills it in place. With
+  no data after 4 s, or when the site shares no preview, the card says "No preview for this page."
+  Before, a site that refused us showed its bare host as the title.
+- A docs.plus link has its own hovercard on the desktop pad. It covers a link to another pad, and
+  a link to a heading, heading chat, chat message, filter, version or version history, in this pad
+  or another one. The title says what the link opens, a quiet breadcrumb says where it lives, and
+  a few counts follow, such as sections, messages or versions. A filter card names its terms in
+  the title. A private pad you cannot open shows only "This document is private". Web links keep
+  the extension's card.
 - The card comes from the hyperlink extension's `hovercard` option. The pad passes its data and its
   gates, and maps the card's `--hl-*` tokens to the house tokens
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
@@ -82,6 +95,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- A link to another pad shows its address in the click preview and the phone sheet, not a
+  scraped title. The pad's own card is the hovercard, and it knows who is reading.
 - The privacy page now says how docs.plus uses, stores, shares and keeps the data that Google
   sign-in sends, and what closing an account removes. It says that names and profile photos are
   public, and it names DigitalOcean, the team mail for a new document, and Google Analytics

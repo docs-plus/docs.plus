@@ -19,8 +19,8 @@ interface LinkPreviewSheetProps {
 }
 
 /**
- * External-link header: unfurled favicon/title/description. Isolated in its
- * own component so the metadata fetch hook never runs for internal links.
+ * External-link header: unfurled favicon/title/description. Isolated so internal links never
+ * run the hook. Another pad does run it, gets no data (`metadataKey`), and shows the URL.
  */
 const ExternalLinkHeader = ({ data: { href } }: LinkPreviewSheetProps) => {
   const { status, data } = useLinkMetadata(href)

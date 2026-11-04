@@ -146,8 +146,7 @@ const buildDesktopPopover = (
     editor.chain().focus().unsetHyperlink().run()
   })
 
-  // Edit and Remove write to the document, so a read-only reader must not be
-  // offered them. Same gate the media toolbar already uses (mediaResizeControls).
+  // `view.editable` mirrors the pad lock, and stays on in the composer, which has no lock.
   const editControls = editor.view.editable ? [editButton, removeButton] : []
 
   // Internal (same-document) links render a named destination chip and run

@@ -30,9 +30,19 @@ export const INTERNAL_KIND_NAME: Record<InternalDocumentLink['kind'], string> = 
 }
 
 /**
- * Resolves to an in-document destination, or `null` for external. Precedence
- * is history → filter → chat → heading → bare document; the doc-slug match is
- * exact (not `startsWith`) and guarded by origin. Pad URL reads the old forms.
+ * The one place in a pad an address names: the History hash, else `padUrlCore.place`.
+ * `href` is what a filter link opens.
+ */
+export function classifyPadFacets(pad: PadFacets, href = pad.path): InternalDocumentLink {
+  const history = parseHistoryHash(pad.hash)
+  if (history.isHistory) return { kind: 'history', version: history.version }
+  const place = padUrlCore.place(pad)
+  return place.kind === 'filter' ? { ...place, href } : place
+}
+
+/**
+ * Resolves to an in-document destination, or `null` for external. The doc-slug
+ * match is exact (not `startsWith`) and guarded by origin. Pad URL reads the old forms.
  */
 export function classifyInternalDocumentLink(
   href: string,
@@ -46,15 +56,7 @@ export function classifyInternalDocumentLink(
   const currentDocSlug = padUrlCore.parse(currentPathname, base)?.slug
   if (!currentDocSlug || pad.slug !== currentDocSlug) return null
 
-  const history = parseHistoryHash(pad.hash)
-  if (history.isHistory) return { kind: 'history', version: history.version }
-
-  if (pad.terms.length > 0) {
-    return { kind: 'filter', terms: pad.terms, mode: pad.mode ?? 'or', href }
-  }
-  if (pad.chat) return { kind: 'chat', ...pad.chat }
-  if (pad.headingId) return { kind: 'heading', headingId: pad.headingId }
-  return { kind: 'document' }
+  return classifyPadFacets(pad, href)
 }
 
 /** The address of a same-origin pad, or `null`. A path with a file extension is a public file. */

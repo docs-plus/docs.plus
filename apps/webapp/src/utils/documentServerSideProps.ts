@@ -12,8 +12,8 @@ import { getDeviceInfo } from './getDeviceInfo'
 const AUTH_TIMEOUT_MS = 5000
 
 /**
- * Asks REST for the social card (`card=1`) with the link's sub-ids, read by the one Pad URL
- * parser. Only a full page load renders the head, so a client navigation asks for none.
+ * Asks REST for the social card (`card=1`) with the sub-ids of the one place the link opens
+ * (`?version=`, else `padUrlCore.place`). Only a full page load renders the head.
  * A person who opens a shared chat link waits on the chat read too, by design.
  */
 const cardQueryOf = (context: GetServerSidePropsContext): URLSearchParams | undefined => {
@@ -21,15 +21,21 @@ const cardQueryOf = (context: GetServerSidePropsContext): URLSearchParams | unde
   const facets = padUrlCore.parse(context.resolvedUrl, 'http://pad.invalid')
   if (!facets) return undefined
   const params = new URLSearchParams({ card: '1' })
-  if (facets.headingId) params.set('id', facets.headingId)
-  if (facets.chat) {
-    params.set('c', facets.chat.linkId)
-    if (facets.chat.messageId) params.set('m', facets.chat.messageId)
-  }
-  for (const term of facets.terms) params.append('t', term)
-  if (facets.mode === 'and') params.set('mode', 'and')
   const { version } = context.query
-  if (typeof version === 'string') params.set('version', version)
+  if (typeof version === 'string') {
+    params.set('version', version)
+    return params
+  }
+  const place = padUrlCore.place(facets)
+  if (place.kind === 'heading') params.set('id', place.headingId)
+  if (place.kind === 'chat') {
+    params.set('c', place.linkId)
+    if (place.messageId) params.set('m', place.messageId)
+  }
+  if (place.kind === 'filter') {
+    for (const term of place.terms) params.append('t', term)
+    if (place.mode === 'and') params.set('mode', 'and')
+  }
   return params
 }
 

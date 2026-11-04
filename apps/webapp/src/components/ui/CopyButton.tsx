@@ -22,6 +22,7 @@ export interface CopyButtonProps extends UseCopyToClipboardOptions {
   tooltip?: string
   circle?: boolean
   square?: boolean
+  tabIndex?: number
   onClick?: (text: string) => void
 }
 
@@ -54,6 +55,7 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
       tooltip,
       circle = false,
       square = false,
+      tabIndex,
       onClick,
       resetDelay,
       successMessage,
@@ -95,6 +97,7 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
       <button
         ref={ref}
         type="button"
+        tabIndex={tabIndex}
         aria-label={copied ? doneLabel : idleLabel}
         onClick={handleClick}
         disabled={copying}

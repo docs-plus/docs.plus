@@ -10,4 +10,11 @@ export * from './supabase'
 export * from './tiptap'
 export * from './toc'
 export type { ChatPaneMode, PanelSurfaceVariant } from './ui'
-export type { FilterMode, PadChange, PadChat, PadFacets, PadTarget } from '@docs.plus/pad-url'
+export type {
+  FilterMode,
+  PadChange,
+  PadChat,
+  PadFacets,
+  PadPlace,
+  PadTarget
+} from '@docs.plus/pad-url'

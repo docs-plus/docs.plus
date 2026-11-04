@@ -1,6 +1,7 @@
 import { Chatroom } from '@components/chatroom'
 import FindBar from '@components/TipTap/find/FindBar'
 import { HyperlinkPopoverPortal } from '@components/TipTap/hyperlinkPopovers/HyperlinkPopoverPortal'
+import { PadLinkHovercard } from '@components/TipTap/hyperlinkPopovers/padLinkCard/PadLinkHovercard'
 import EditorToolbar from '@components/TipTap/toolbar/desktop/EditorToolbar'
 import { useHeadingScrollSpy } from '@components/toc/hooks/useHeadingScrollSpy'
 import { TocTickRail } from '@components/toc/TocTickRail'
@@ -69,6 +70,8 @@ const DesktopEditor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)
   const documentId = useStore((state) => state.settings.metadata?.documentId)
   const isPrivate = useStore((state) => Boolean(state.settings.metadata?.isPrivate))
+  // A live pad only, as the extension card: history and the playground have no provider (A10).
+  const hasProvider = useStore((state) => Boolean(state.settings.hocuspocusProvider))
   // Session-only, like the tick rail. A pad switch keeps this layout mounted, so the
   // shown state names its pad and a switch reads it as hidden. A Private pad shows no QR.
   const [qrDocumentId, setQrDocumentId] = useState<string | null>(null)
@@ -173,6 +176,7 @@ const DesktopEditor = () => {
       </div>
 
       <HyperlinkPopoverPortal />
+      {hasProvider && <PadLinkHovercard />}
     </>
   )
 }
