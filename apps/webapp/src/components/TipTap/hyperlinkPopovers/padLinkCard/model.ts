@@ -59,10 +59,8 @@ export type CardFactIcon = 'sections' | 'messages' | 'date' | 'replies' | 'react
 
 type CardFact = { icon: CardFactIcon; text: string }
 
-/** What the card draws above its link line. */
+/** What a pad card draws above its link line once the route or the editor answers. */
 export type CardView =
-  | { state: 'loading' }
-  | { state: 'empty' }
   | { state: 'locked' }
   | {
       state: 'data'
@@ -195,7 +193,7 @@ const changeLine = (reply: Extract<CardReply, { kind: 'version' }>): string | nu
   return `${changed}: ${counted(wordsAdded, 'word')} added, ${wordsRemoved} removed.`
 }
 
-/** The rows and copy for one reply. No reply is the hook's no-preview line, never this. */
+/** The rows and copy for one reply. No reply is the card's no-preview line, never this. */
 export const toCardView = (reply: CardReply, now = new Date()): CardView => {
   if ('locked' in reply) return { state: 'locked' }
 

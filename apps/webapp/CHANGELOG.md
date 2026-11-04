@@ -55,14 +55,15 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   a link to a heading, heading chat, chat message, filter, version or version history, in this pad
   or another one. The title says what the link opens, a quiet breadcrumb says where it lives, and
   a few counts follow, such as sections, messages or versions. A filter card names its terms in
-  the title. A private pad you cannot open shows only "This document is private". Web links keep
-  the extension's card.
-- The card comes from the hyperlink extension's `hovercard` option. The pad passes its data and its
-  gates, and maps the card's `--hl-*` tokens to the house tokens
+  the title. A private pad you cannot open shows only "This document is private".
+- Both cards run on the hyperlink extension's `hovercard` engine, which owns the timing, keys and
+  frame. The pad draws its own content through the `render` option, so docs.plus never shows the
+  extension's built-in card. It maps the frame's `--hl-*` tokens to the house tokens
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - Settings → Appearance has a "Link previews" card with one switch, "Show link previews on
   hover" ([#242](https://github.com/docs-plus/docs.plus/issues/242)). It is stored per browser
-  and is on by default. It applies only while you are signed in.
+  and is on by default. It turns off web and docs.plus cards alike, and it applies only while
+  you are signed in.
 - A link to a part of this pad shows its kind icon: heading, chat, filter, version or top
   ([#174](https://github.com/docs-plus/docs.plus/issues/174)). A screen reader speaks the kind,
   such as "Heading". The link renders as a chip with a light primary tint. In headings and the

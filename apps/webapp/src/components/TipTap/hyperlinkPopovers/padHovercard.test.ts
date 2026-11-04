@@ -1,3 +1,5 @@
+import type { Editor } from '@tiptap/core'
+
 import { padHovercard } from './padHovercard'
 
 jest.mock('@stores', () => ({
@@ -5,7 +7,8 @@ jest.mock('@stores', () => ({
   selectIsSignedIn: () => false,
   useLinkPreviewStore: { getState: () => ({ showOnHover: true }) }
 }))
-jest.mock('./previewShared', () => ({ createSiteIcon: () => null }))
+// It loads the Supabase client, which needs env vars; a web link never calls it.
+jest.mock('./padLinkCard/loadCard', () => ({ loadCardView: jest.fn() }))
 
 const API = 'http://api.test/api'
 const fetchMock = jest.fn()
@@ -13,7 +16,7 @@ const fetchMock = jest.fn()
 const reply = (status: number, body: unknown) =>
   Promise.resolve({ ok: status >= 200 && status < 300, status, json: async () => body })
 
-const hover = (href: string) => padHovercard.fetchMetadata({ href })
+const hover = (href: string) => padHovercard.fetchMetadata({ href, editor: {} as Editor })
 
 beforeAll(() => {
   process.env.NEXT_PUBLIC_RESTAPI_URL = API
@@ -34,7 +37,7 @@ describe('padHovercard.fetchMetadata, a web page', () => {
     expect(await hover('https://a.example/')).toEqual({})
   })
 
-  test('a repo passes kind and only the known facts; the extension caps the count', async () => {
+  test('a repo passes kind and the first three known facts', async () => {
     fetchMock.mockReturnValue(
       reply(200, {
         success: true,
@@ -62,8 +65,7 @@ describe('padHovercard.fetchMetadata, a web page', () => {
       facts: [
         { icon: 'stars', text: '12' },
         { icon: 'language', text: 'Rust' },
-        { icon: 'updated', text: 'today' },
-        { icon: 'answers', text: 'fourth known' }
+        { icon: 'updated', text: 'today' }
       ]
     })
   })

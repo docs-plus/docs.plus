@@ -1,8 +1,8 @@
-import { type HovercardFact, normalizeHref } from '@docs.plus/extension-hyperlink'
+import { normalizeHref } from '@docs.plus/extension-hyperlink'
 import { apiBaseUrl } from '@utils/apiBaseUrl'
 
 import { linkDestination } from './internalDocumentLink'
-import type { LinkCard } from './types'
+import { LINK_FACT_ICONS, type LinkCard, type LinkFact } from './types'
 
 interface MetadataResponse {
   success: true
@@ -27,6 +27,7 @@ interface CacheEntry {
 }
 
 const CACHE_TTL_MS = 5 * 60 * 1000
+const FACTS_MAX = 3
 const REQUEST_TIMEOUT_MS = 15_000
 const sessionCache = new Map<string, CacheEntry>()
 const inFlight = new Map<string, Promise<LinkCard | null>>()
@@ -68,32 +69,25 @@ export const getCachedMetadata = (href: string): LinkCard | null | undefined => 
   return key === null ? null : readEntry(key)
 }
 
-// A `Record`, so the compiler flags an icon the extension adds or drops.
-const KNOWN_FACT_ICONS: Record<HovercardFact['icon'], true> = {
-  location: true,
-  work: true,
-  posted: true,
-  stars: true,
-  language: true,
-  updated: true,
-  answers: true,
-  accepted: true
-}
+const KNOWN_FACT_ICONS: ReadonlySet<string> = new Set(LINK_FACT_ICONS)
 
-const isFact = (value: unknown): value is HovercardFact => {
+const isFact = (value: unknown): value is LinkFact => {
   const fact = value as { icon?: unknown; text?: unknown } | null
   return (
     typeof fact?.icon === 'string' &&
-    Object.hasOwn(KNOWN_FACT_ICONS, fact.icon) &&
+    KNOWN_FACT_ICONS.has(fact.icon) &&
     typeof fact.text === 'string' &&
     fact.text.length > 0
   )
 }
 
 /** An icon this build cannot draw is dropped, so a newer server never breaks the card. */
-const toFacts = (value: unknown): HovercardFact[] | undefined => {
+const toFacts = (value: unknown): LinkFact[] | undefined => {
   if (!Array.isArray(value)) return undefined
-  const facts = value.filter(isFact).map(({ icon, text }) => ({ icon, text }))
+  const facts = value
+    .filter(isFact)
+    .slice(0, FACTS_MAX)
+    .map(({ icon, text }) => ({ icon, text }))
   return facts.length > 0 ? facts : undefined
 }
 

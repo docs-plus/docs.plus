@@ -332,7 +332,7 @@ A slow page opens the card with grey bars, and the content then replaces them in
 
 The last line of the card names the site, with **Copy link** and **Open in new tab**. Move off the link and the card, and it closes 300 ms later. Shift, the arrow keys and Copy keep it open. Any other key closes it.
 
-Settings › Appearance › **Show link previews on hover** turns off the cards for web links — needs an account. A touch screen has no hover, so a tap opens the click card instead.
+Settings › Appearance › **Show link previews on hover** turns the cards off — needs an account. A touch screen has no hover, so a tap opens the click card instead.
 
 ## Out to the web
 

@@ -1,4 +1,4 @@
-/** The extension draws one glyph per name, so the list is closed. */
+/** The webapp's web card draws one glyph per name (`LINK_FACT_ICONS`), so the list is closed. */
 export const FACT_ICONS = [
   'location',
   'work',

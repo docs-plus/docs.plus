@@ -1,4 +1,3 @@
-import type { HovercardFact } from '@docs.plus/extension-hyperlink'
 import type { Editor } from '@tiptap/core'
 import type { PadFacets, PadPlace } from '@types'
 import type { IconType } from 'react-icons'
@@ -172,7 +171,32 @@ export interface LinkCard {
   image?: { url: string }
   fallback?: true
   kind?: 'repo'
-  facts?: HovercardFact[]
+  facts?: LinkFact[]
+}
+
+/** The glyphs the web link card can draw before a fact. Keep in step with the server's `FACT_ICONS`. */
+export const LINK_FACT_ICONS = [
+  'location',
+  'work',
+  'posted',
+  'stars',
+  'language',
+  'updated',
+  'answers',
+  'accepted'
+] as const
+
+export type LinkFactIcon = (typeof LINK_FACT_ICONS)[number]
+
+/** One short line in the row under the title, such as a place or a star count. */
+export interface LinkFact {
+  icon: LinkFactIcon
+  text: string
+}
+
+/** What the web link card draws. A page with no title gets the no-preview line instead. */
+export type WebCardData = Pick<LinkCard, 'description' | 'image' | 'kind' | 'facts'> & {
+  title: string
 }
 
 /** Where a link goes from the open pad: a place in it, another pad, a web page, or an app scheme. */

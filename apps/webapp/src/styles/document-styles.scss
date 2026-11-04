@@ -85,19 +85,14 @@
   box-shadow: var(--shadow-overlay);
 }
 
-// The layout lives in the extension's `hovercard.css`; the pad maps its tokens to the same frame.
+// The frame lives in the extension's `hovercard.css`; the pad maps its tokens onto it.
 .hyperlink-hovercard {
   --hl-bg: var(--color-base-100);
   --hl-border: var(--color-base-300);
   --hl-radius: var(--radius-box);
-  --hl-radius-sm: var(--radius-field);
   --hl-shadow: var(--shadow-overlay);
-  --hl-well: var(--color-base-200);
   --hl-fg: var(--color-base-content);
-  --hl-muted: color-mix(in oklch, var(--color-base-content) 70%, transparent);
   --hl-font: var(--font-sans);
-  --hl-hover: var(--color-base-300);
-  --hl-skeleton: var(--color-base-300);
 }
 
 .hyperlink-preview-popover {
