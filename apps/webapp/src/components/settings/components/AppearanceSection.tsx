@@ -9,7 +9,13 @@ import {
 import { useRef } from 'react'
 import { LuCheck, LuLink, LuPalette } from 'react-icons/lu'
 
-import { DARK_THEMES, LIGHT_THEMES, type PickerTheme, type ThemeChoice } from '../constants'
+import {
+  DARK_THEMES,
+  LIGHT_THEMES,
+  pasteTitlesHelp,
+  type PickerTheme,
+  type ThemeChoice
+} from '../constants'
 import SettingsCard, { SettingsCardHeader } from './SettingsCard'
 
 // Flat traversal order for roving-tabindex arrow-key navigation (matches DOM order).
@@ -87,6 +93,8 @@ const AppearanceSection = () => {
   const setPreference = useThemeStore((s) => s.setPreference)
   const showOnHover = useLinkPreviewStore((s) => s.showOnHover)
   const setShowOnHover = useLinkPreviewStore((s) => s.setShowOnHover)
+  const pasteTitles = useLinkPreviewStore((s) => s.pasteTitles)
+  const setPasteTitles = useLinkPreviewStore((s) => s.setPasteTitles)
   const groupRef = useRef<HTMLDivElement>(null)
 
   // Roving tabindex: arrows move selection + focus through the flat order.
@@ -182,6 +190,13 @@ const AppearanceSection = () => {
             description="A card with the page title and picture opens when the pointer rests on a link."
             checked={showOnHover}
             onChange={setShowOnHover}
+          />
+          <ToggleRow
+            id="link-previews-paste"
+            label="Use page titles for pasted links"
+            description={pasteTitlesHelp()}
+            checked={pasteTitles}
+            onChange={setPasteTitles}
           />
         </div>
       </SettingsCard>

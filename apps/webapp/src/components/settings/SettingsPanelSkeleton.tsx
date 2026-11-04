@@ -38,6 +38,7 @@ import {
   type DocumentViewMode,
   LIGHT_THEMES,
   MAX_LINKS,
+  pasteTitlesHelp,
   readDocumentsViewMode,
   SETTINGS_TABS,
   supportRowsFor
@@ -330,6 +331,10 @@ export const AppearanceSkeleton = () => {
           <ToggleRowSkeleton
             label="Show link previews on hover"
             description="A card with the page title and picture opens when the pointer rests on a link."
+          />
+          <ToggleRowSkeleton
+            label="Use page titles for pasted links"
+            description={pasteTitlesHelp()}
           />
         </div>
       </SettingsCard>

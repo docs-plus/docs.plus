@@ -56,6 +56,7 @@ import { TitleDocument } from './extensions/title-document'
 import { getHyperlinkPopoverConfig } from './hyperlinkPopovers/getHyperlinkPopoverConfig'
 import { padNavigate } from './hyperlinkPopovers/hrefEventHandler'
 import { padHovercard } from './hyperlinkPopovers/padHovercard'
+import { padPasteTitle } from './hyperlinkPopovers/padPasteTitle'
 import { ListGapJoin } from './listGapJoin'
 import { ListKeymapWithoutTab } from './listKeymapWithoutTab'
 import { getMediaToolbarFactory } from './mediaPopovers/getMediaToolbarFactory'
@@ -252,7 +253,9 @@ const Editor = ({
       linkIcon: padLinkIcon,
       navigate: padNavigate,
       // Live pad on desktop only: history and the /editor playground have no provider (A10).
-      hovercard: provider && !isMobile ? padHovercard : undefined
+      hovercard: provider && !isMobile ? padHovercard : undefined,
+      // Live pad only, so /editor and history never fetch.
+      pasteTitle: provider ? padPasteTitle : undefined
     }),
     HyperMultimediaKit.configure({
       Image: { inline: true, allowBase64: true },

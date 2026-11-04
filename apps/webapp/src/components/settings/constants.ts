@@ -1,5 +1,6 @@
 import config from '@config'
 import type { ThemePreference } from '@stores'
+import { isMacOS } from '@tiptap/core'
 import { isDocumentReportPath } from '@utils/reportContent'
 import type { IconType } from 'react-icons'
 import {
@@ -19,6 +20,10 @@ import type { SupportRow, TabType } from './types'
 
 export const MAX_LINKS = 20
 export const MIN_PHONE_DIGITS = 7
+
+/** The Link previews row and its skeleton share it. Settings renders in the browser only. */
+export const pasteTitlesHelp = (): string =>
+  `A pasted web link shows the page title. ${isMacOS() ? '⌘+⇧+V' : 'Ctrl+Shift+V'} pastes the address as is.`
 
 export type DocumentViewMode = 'list' | 'grid'
 export const DOCUMENTS_VIEW_STORAGE_KEY = 'docsplus:my-docs-view'

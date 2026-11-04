@@ -111,15 +111,15 @@ export default function PrivacyPage() {
         </p>
         <p>
           A link preview, the hovercard and an embed thumbnail in chat or in Insert media work
-          another way. Adding a web link to your profile works this way too. Your browser sends the
-          full link to our server. Our server fetches the page. For the hovercard and embed
-          thumbnails, it also fetches the page's picture. So the site sees our server, not you. For
-          a GitHub repository or a Stack Overflow question, our server also asks api.github.com or
-          api.stackexchange.com, and sends only the repository or question named in the link. Our
-          server may pass on your browser's first language, such as en, so the page can answer in
-          it. Our server keeps the preview for up to a day, and the stored preview can hold the
-          link. A web link on your profile keeps its title and description with your profile until
-          you remove it.
+          another way. Adding a web link to your profile, or pasting one into a document, works this
+          way too. Your browser sends the full link to our server. Our server fetches the page. For
+          the hovercard and embed thumbnails, it also fetches the page's picture. So the site sees
+          our server, not you. For a GitHub repository or a Stack Overflow question, our server also
+          asks api.github.com or api.stackexchange.com, and sends only the repository or question
+          named in the link. Our server may pass on your browser's first language, such as en, so
+          the page can answer in it. Our server keeps the preview for up to a day, and the stored
+          preview can hold the link. A web link on your profile keeps its title and description with
+          your profile until you remove it.
         </p>
         <p>
           When you share a link to a public document in another app, such as Slack or X, that app

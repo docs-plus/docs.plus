@@ -60,10 +60,22 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   frame. The pad draws its own content through the `render` option, so docs.plus never shows the
   extension's built-in card. It maps the frame's `--hl-*` tokens to the house tokens
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
-- Settings → Appearance has a "Link previews" card with one switch, "Show link previews on
+- A web link with no preview now shows its full address and says why: the site does not share
+  previews, the page has no title or summary, or the site did not answer. A file link with no
+  preview names its type, such as a PDF or a spreadsheet. When a link's text names a
+  different site from the one it opens, the card shows a warning
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- Settings → Appearance has a "Link previews" card. Its first switch is "Show link previews on
   hover" ([#242](https://github.com/docs-plus/docs.plus/issues/242)). It is stored per browser
   and is on by default. It turns off web and docs.plus cards alike, and it applies only while
   you are signed in.
+- A web link pasted on its own into a pad shows the page title in place of its address
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)). The link appears at once with the
+  address, and the title replaces it when our server answers. One undo brings the address back.
+  ⌘+⇧+V (Ctrl+Shift+V) pastes the address as is. A link to a docs.plus pad keeps its address,
+  and so do the chat composer, history and `/editor`. The second "Link previews" switch, "Use page
+  titles for pasted links", turns it off. Like the first, it is per browser, on by default, and
+  applies only while you are signed in. The pasted link goes to our server, as for a link preview.
 - A link to a part of this pad shows its kind icon: heading, chat, filter, version or top
   ([#174](https://github.com/docs-plus/docs.plus/issues/174)). A screen reader speaks the kind,
   such as "Heading". The link renders as a chip with a light primary tint. In headings and the
@@ -105,6 +117,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - The privacy page now lists your data rights. It says how to download a document. It also says
   how to ask for a copy of your personal data, a correction, a deletion, or a limit on its use.
   The answer comes within one month.
+- The privacy page now says that a web link pasted into a document goes to our server, as a
+  link preview does. `LEGAL_UPDATED` is now 4 November 2026.
 - A plain click on a link to another pad now opens that pad in the same window, in the pad and
   in chat. Mod-click (Cmd on macOS, Ctrl elsewhere) and middle-click still open a new tab
   ([#359](https://github.com/docs-plus/docs.plus/issues/359)).
