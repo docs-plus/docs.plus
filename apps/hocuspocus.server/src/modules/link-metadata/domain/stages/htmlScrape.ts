@@ -64,9 +64,18 @@ const filenameFromUrl = (url: string): string => {
   try {
     const parsed = new URL(url)
     const last = parsed.pathname.split('/').filter(Boolean).pop()
-    return last || parsed.hostname
+    return last ? decodeSegment(last) : parsed.hostname
   } catch {
     return url
+  }
+}
+
+/** `Q3%20Report.pdf` reads as `Q3 Report.pdf`. A bad escape keeps the raw segment. */
+const decodeSegment = (segment: string): string => {
+  try {
+    return decodeURIComponent(segment)
+  } catch {
+    return segment
   }
 }
 

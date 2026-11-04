@@ -119,6 +119,9 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
   - A fallback card says why it has no preview, in `miss`: `blocked` (the page answered 4xx),
     `no-preview` (the page has no title) or `unreachable` (a 5xx, a timeout, a network error or an
     API rate limit). A cache hit returns the same `miss`. Any other card has none.
+  - A file link's title is its decoded file name with its extension, so `Q3%20Report.pdf` reads
+    `Q3 Report.pdf`. A bad escape keeps the raw name. Cards cached before this keep the raw name
+    until they expire, within 24 h.
   - New optional settings: `GITHUB_TOKEN` (public-repository read access only) and
     `STACKEXCHANGE_KEY`. Without them the shared quotas are 60 GitHub calls an hour and 300 Stack
     Exchange calls a day per server address.

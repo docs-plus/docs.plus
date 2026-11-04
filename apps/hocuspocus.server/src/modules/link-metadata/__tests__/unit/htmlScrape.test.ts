@@ -158,6 +158,23 @@ describe('runHtmlScrape', () => {
     expect(result).toMatchObject({ title: 'file.pdf', media_type: 'document' })
   })
 
+  test.each([
+    ['https://example.com/files/Q3%20Report.pdf', 'Q3 Report.pdf'],
+    ['https://example.com/files/r%C3%A9sum%C3%A9.docx', 'résumé.docx'],
+    ['https://example.com/files/100%25.pdf', '100%.pdf'],
+    ['https://example.com/files/bad%E0%A4%A.pdf', 'bad%E0%A4%A.pdf']
+  ])('decodes the file name of %s', async (url, title) => {
+    fetchSpy.mockResolvedValue(
+      new Response('PDF binary blob', {
+        status: 200,
+        headers: { 'content-type': 'application/pdf' }
+      })
+    )
+
+    const result = await runHtmlScrape(url, noopScraper, undefined)
+    expect(result).toMatchObject({ title, media_type: 'document' })
+  })
+
   test('uses response.url (post-redirect) as scraper base', async () => {
     const body = new TextEncoder().encode(html('utf-8', 'ok'))
     const fakeResponse = {
