@@ -21,6 +21,7 @@ historical Conventional Commits format. The project adheres to
 
 ### Internal
 
+- The bundled popover engine gains an optional `onRemove` callback on `createPopover`, which runs after the popover has left the DOM. This package does not use it, and its popovers behave as before.
 - The linked-image spec ignores `img.ProseMirror-separator`. TipTap 3.32 inserts that zero-size image inside a link.
 
 ## [2.2.0] — 2026-10-22

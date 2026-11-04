@@ -13,6 +13,7 @@ Versioning follows [Semantic Versioning](https://semver.org/) and commits follow
 ### Added
 
 - `PopoverKind` gains the `'hovercard'` literal, for the extension-hyperlink link hovercard.
+- `createPopover` takes an optional `onRemove` callback. It runs once, after the popover root has left the DOM: at the end of the exit fade, or at once on `destroy()`. `onHide` still runs as the hide starts.
 - `focusables(root)` returns the controls that Tab visits in a popover, in DOM order. An opener can use it to choose the first focus.
 
 ### Changed

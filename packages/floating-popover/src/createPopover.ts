@@ -46,7 +46,10 @@ type PopoverShellOptions = {
    */
   crossAxisShift?: boolean
   onShow?: () => void
+  /** Runs as the popover starts to hide, before its exit transition. */
   onHide?: () => void
+  /** Runs once, after the popover root has left the DOM: at the end of the exit, or on `destroy()`. */
+  onRemove?: () => void
 }
 
 export type PopoverOptions = PopoverAnchor & PopoverShellOptions
@@ -128,7 +131,8 @@ export function createPopover(options: PopoverOptions): Popover {
     ignoreOutsideClickOn,
     crossAxisShift = true,
     onShow,
-    onHide
+    onHide,
+    onRemove
   } = options
 
   // Defence-in-depth for `any`-typed and JS-only callers; the discriminated
@@ -241,9 +245,13 @@ export function createPopover(options: PopoverOptions): Popover {
     }
   }
 
+  let removed = false
   const finishHide = (): void => {
     cancelPendingRemoval()
     root.remove()
+    if (removed) return
+    removed = true
+    onRemove?.()
   }
 
   const hide = (): void => {
