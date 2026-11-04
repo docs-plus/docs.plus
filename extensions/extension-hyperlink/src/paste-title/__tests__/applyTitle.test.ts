@@ -52,6 +52,16 @@ describe('applyTitle', () => {
     expect(editor.getHTML()).toContain('href="https://example.com/a"')
   })
 
+  it('leaves the editor focused with the caret after the title, so Mod-Z undoes it', async () => {
+    const { editor, ctx, link } = setup(RAW)
+    applyTitle(ctx, link, 'https://example.com/a', 'The Page')!()
+    // "See " starts at 1, so the 8-character title ends at 13.
+    expect(editor.state.selection.from).toBe(13)
+    // Tiptap's focus command moves DOM focus on the next animation frame.
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(document.activeElement).toBe(editor.view.dom)
+  })
+
   it('offers nothing for a link with its own words', () => {
     const { ctx, link } = setup('<p><a href="https://example.com/a">our docs</a></p>')
     expect(applyTitle(ctx, link, 'https://example.com/a', 'The Page')).toBeUndefined()

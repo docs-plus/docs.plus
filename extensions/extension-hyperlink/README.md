@@ -130,7 +130,7 @@ editor.commands.openCreateHyperlinkPopover()
 
 ### Style document links
 
-The `styles.css` stylesheet skins the popovers only. The mark renders a plain `<a>` with no class, so style your document links yourself:
+The `styles.css` stylesheet skins the popovers and the hovercard's tooltips. The mark renders a plain `<a>` with no class, so style your document links yourself:
 
 ```ts
 Hyperlink.configure({ HTMLAttributes: { class: 'my-link' } })
@@ -182,6 +182,7 @@ The `hovercard` option shows a card when a mouse pointer rests on a link. Your `
 ```ts
 import { Hyperlink } from '@docs.plus/extension-hyperlink'
 import '@docs.plus/extension-hyperlink/hovercard.css'
+import '@docs.plus/extension-hyperlink/styles.css' // the card's tooltips
 
 Hyperlink.configure({
   hovercard: {

@@ -1,3 +1,4 @@
+import { hideTooltip } from '@docs.plus/floating-tooltip'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import type { EditorView } from '@tiptap/pm/view'
 
@@ -221,6 +222,8 @@ function createHovercardView(
       content: frame,
       placement: 'bottom-start',
       onHide: () => {
+        // A key press can close the card while the pointer rests on a button with its bubble up.
+        hideTooltip()
         if (card !== shown) return
         card = null
         clearTimeout(giveUpTimer)

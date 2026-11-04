@@ -16,6 +16,7 @@ The package makes no request of its own. Your `fetchMetadata` decides where the 
 ```ts
 import { Hyperlink } from '@docs.plus/extension-hyperlink'
 import '@docs.plus/extension-hyperlink/hovercard.css'
+import '@docs.plus/extension-hyperlink/styles.css'
 
 Hyperlink.configure({
   hovercard: {
@@ -27,7 +28,7 @@ Hyperlink.configure({
 })
 ```
 
-`hovercard.css` styles the frame and the built-in card. Without it, the card renders unstyled. See [Theming](#theming).
+`hovercard.css` styles the frame and the built-in card. Without it, the card renders unstyled. `styles.css` styles the tooltips on the built-in card's buttons, the same `.floating-tooltip` bubble the click preview uses. Without it, a tooltip shows as plain text and never hides. See [Theming](#theming).
 
 ## The built-in card
 
@@ -98,16 +99,16 @@ A `loading` card changes state once, to `data` or `empty`, in the same popover. 
 
 `HovercardRenderContext<D>`:
 
-| Field        | Type                             | Description                                                                                                                                                                                                                                                                                             |
-| ------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `href`       | `string`                         | The link's stored href, never `link.href`.                                                                                                                                                                                                                                                              |
-| `link`       | `HTMLAnchorElement`              | The link the pointer rests on. The card is anchored to it.                                                                                                                                                                                                                                              |
-| `editor`     | `Editor`                         | The editor that holds the link.                                                                                                                                                                                                                                                                         |
-| `state`      | `'loading' \| 'empty' \| 'data'` | See [States](#states).                                                                                                                                                                                                                                                                                  |
-| `data`       | `D`                              | Only when `state` is `'data'`. Your `fetchMetadata` answer, as it came.                                                                                                                                                                                                                                 |
-| `open`       | `(newTab: boolean) => void`      | Hides this link's card if it is open, then opens `href` through the read gate and `navigate`.                                                                                                                                                                                                           |
-| `copy`       | `() => Promise<boolean>`         | Copies `href`. Resolves `false` when the write fails.                                                                                                                                                                                                                                                   |
-| `applyTitle` | `(() => boolean) \| undefined`   | Swaps the link text for `data.title`, in one undoable step, then hides the card. Answers whether it did. Set only in the `data` state, when the editor is editable, the link text is its own URL, and the title passes the [paste title](./paste-title.md) rules. It checks the link again when called. |
+| Field        | Type                             | Description                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------ | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `href`       | `string`                         | The link's stored href, never `link.href`.                                                                                                                                                                                                                                                                                                                                                      |
+| `link`       | `HTMLAnchorElement`              | The link the pointer rests on. The card is anchored to it.                                                                                                                                                                                                                                                                                                                                      |
+| `editor`     | `Editor`                         | The editor that holds the link.                                                                                                                                                                                                                                                                                                                                                                 |
+| `state`      | `'loading' \| 'empty' \| 'data'` | See [States](#states).                                                                                                                                                                                                                                                                                                                                                                          |
+| `data`       | `D`                              | Only when `state` is `'data'`. Your `fetchMetadata` answer, as it came.                                                                                                                                                                                                                                                                                                                         |
+| `open`       | `(newTab: boolean) => void`      | Hides this link's card if it is open, then opens `href` through the read gate and `navigate`.                                                                                                                                                                                                                                                                                                   |
+| `copy`       | `() => Promise<boolean>`         | Copies `href`. Resolves `false` when the write fails.                                                                                                                                                                                                                                                                                                                                           |
+| `applyTitle` | `(() => boolean) \| undefined`   | Swaps the link text for `data.title`, in one undoable step, then hides the card. Answers whether it did. Set only in the `data` state, when the editor is editable, the link text is its own URL, and the title passes the [paste title](./paste-title.md) rules. It checks the link again when called. Then it focuses the editor with the caret after the new text, so Mod-Z undoes the swap. |
 
 Return one of three values:
 
@@ -143,7 +144,7 @@ The picture wait uses the same rule for a custom card: only data with both `titl
 - Handle `auxclick` too. A middle click on an `<a>` does not fire `click`, so call `preventDefault()` and `ctx.open(true)` for button 1.
 - Set `tabIndex = -1` on every control. Tab keeps its editor meaning, so no card control joins the Tab order.
 - Call `preventDefault()` on `mousedown` for every button. A press then keeps the caret in the editor.
-- Draw nothing outside the card, such as a tooltip. A pointer over it leaves the card and starts the 300 ms close.
+- A tooltip outside the card must set `pointer-events: none`, or a pointer over it starts the 300 ms close. The built-in card's tooltips use the `.floating-tooltip` skin from `styles.css`, which does.
 - Put text in with `textContent`, or a framework that escapes it. Treat every field of your data as untrusted.
 
 ### Example: plain DOM

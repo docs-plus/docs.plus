@@ -21,6 +21,8 @@ export function applyTitle(
     if (!swap) return false
     // The paste swap's own transaction, so y-undo and prosemirror-history see one step.
     dispatchSwap(ctx.editor, swap.range, swap.title)
+    // A reader who only hovered has no editor focus, so Mod-Z would miss the swap.
+    ctx.editor.commands.focus(swap.range.from + swap.title.length, { scrollIntoView: false })
     return true
   }
 }

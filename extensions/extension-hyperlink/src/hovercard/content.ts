@@ -1,3 +1,5 @@
+import { attachTooltip } from '@docs.plus/floating-tooltip'
+
 import { hasMod } from '../interactions/modKey'
 import type { LinkIconResolver } from '../link-icons/types'
 import { createHTMLElement } from '../utils/createHTMLElement'
@@ -232,6 +234,12 @@ const createLinkLine = (
   return line
 }
 
+// The `.floating-tooltip` skin (styles.css) sets `pointer-events: none`, so hovering the bubble never leaves the card.
+const withTooltips = (line: HTMLElement): Array<() => void> =>
+  Array.from(line.querySelectorAll('button'), (b) =>
+    attachTooltip(b, b.getAttribute('aria-label') ?? '')
+  )
+
 /** Drawn from the public render context, like a host card. Never from mark attrs. */
 export const createBuiltInCard = (
   ctx: HovercardRenderContext,
@@ -240,15 +248,30 @@ export const createBuiltInCard = (
 ): BuiltInCard => {
   const element = createHTMLElement('div')
   let main = createMain(ctx, picture)
-  element.append(main, createLinkLine(ctx, siteIcon))
+  let line = createLinkLine(ctx, siteIcon)
+  let detach = withTooltips(line)
+  let hasTitle = Boolean(ctx.applyTitle)
+  element.append(main, line)
+
+  // The engine calls this on close and on a swap to a host view; the shared bubble must not stay.
+  const destroy = (): void => detach.forEach((off) => off())
 
   return {
     element,
+    destroy,
     setBody: (next, nextPicture) => {
       const nextMain = createMain(next, nextPicture)
       nextMain.dataset.swapped = ''
       main.replaceWith(nextMain)
       main = nextMain
+      // A card that opened loading has no `applyTitle`; the data state may bring one.
+      if (Boolean(next.applyTitle) === hasTitle) return
+      destroy()
+      const nextLine = createLinkLine(next, siteIcon)
+      line.replaceWith(nextLine)
+      line = nextLine
+      detach = withTooltips(line)
+      hasTitle = Boolean(next.applyTitle)
     }
   }
 }

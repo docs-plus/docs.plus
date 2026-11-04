@@ -133,7 +133,7 @@ import '@docs.plus/extension-hyperlink/hovercard.css'
 
 `styles.css` does not include it, and the package's JavaScript never imports it. Without it, the card renders unstyled.
 
-The card reads these `--hl-*` tokens. `hovercard.css` carries a fallback for each, so it needs no `styles.css`:
+The card reads these `--hl-*` tokens. `hovercard.css` carries a fallback for each, so the card itself needs no `styles.css`. The tooltips on its buttons do, because the `.floating-tooltip` bubble is styled there:
 
 - `--hl-bg`, `--hl-fg`, `--hl-muted`, `--hl-border`, `--hl-hover`, `--hl-shadow`, `--hl-radius`, `--hl-radius-sm` and `--hl-font`. The fallbacks equal the defaults above. `--hl-hover` fills a hovered link-line button.
 
