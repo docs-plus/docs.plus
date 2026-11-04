@@ -328,9 +328,9 @@ Click a link on this page and a card opens under it, naming what sits on the oth
 
 On desktop, rest the mouse on a link and a card opens after half a second, with no click — try it here. The card asks for its content only after 150 ms, so a pointer that passes over a link costs nothing.
 
-A slow page opens the card with grey bars, and the content then replaces them in the same card. After 4 seconds with no answer, the card says the page has no preview.
+A slow page opens the card with grey bars, and the content then replaces them in the same card. After 4 seconds with no answer, the card shows the address and says the site shares no preview.
 
-The last line of the card names the site, with **Copy link** and **Open in new tab**. Move off the link and the card, and it closes 300 ms later. Shift, the arrow keys and Copy keep it open. Any other key closes it.
+The last line of the card holds **Copy link** and **Open in new tab**. Move off the link and the card, and it closes 300 ms later. Shift, the arrow keys and Copy keep it open. Any other key closes it.
 
 Settings › Appearance › **Show link previews on hover** turns the cards off — needs an account. A touch screen has no hover, so a tap opens the click card instead.
 
@@ -343,6 +343,14 @@ The card's title is itself a link, so one click on the title goes there — try 
 Middle-click a link to skip the card and open it in a new tab — try it here.
 
 A Stack Overflow question shows its answer count. It adds **Accepted answer** when one is accepted: [Why is conditional processing of a sorted array faster than of an unsorted array?](https://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-processing-an-unsorted-array) — try it here. A Wikipedia article shows its opening lines, and its lead picture when it has one: [Collaborative real-time editor](https://en.wikipedia.org/wiki/Collaborative_real-time_editor) — try it here. A job post shows where the job is, how it is worked, and when it was posted.
+
+## When a page shares nothing
+
+Some sites refuse to share a preview. Then the card puts the address first: the site name is the title, and the full path wraps under it. The last line says why there is no preview. [The New York Times](https://www.nytimes.com/) does not share previews — try it here.
+
+A link to a file gets its own card, with the file name as the title: [a sample PDF](https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf) says it is a PDF file — try it here. The card knows PDFs, documents, spreadsheets, slides, archives, pictures, audio and video.
+
+When a link's text names one site but the link opens another, the card warns you. This link reads [github.com](https://github-login.example.net/session) but opens another site — try it here.
 
 On mobile the card is a bottom sheet instead. Its four rows are Open link, Copy link, Edit link and Remove link. The first two work with no sign-in — try it here.
 
