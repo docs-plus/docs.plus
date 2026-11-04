@@ -1,6 +1,6 @@
 import { getDefaultController } from '../floating-popover'
 import type { CreateHyperlinkOptions } from '../hyperlink'
-import { createHTMLElement, wholeLink } from '../utils'
+import { createHTMLElement, toStoredLink } from '../utils'
 import { Link } from '../utils/icons'
 
 type HyperlinkElements = {
@@ -91,7 +91,7 @@ const setupEventListeners = (elements: HyperlinkElements, options: CreateHyperli
     // Pre-submit UX gate: shape + user `validate` only, and the stored value
     // drops trailing punctuation. The full XSS + `isAllowedUri` policy runs
     // inside `setHyperlink`; on rejection the popover stays open for correction.
-    const url = wholeLink(input.value, { customValidator: options.validate })
+    const url = toStoredLink(input.value, { customValidator: options.validate })
     if (!url) {
       showError()
       return

@@ -24,6 +24,9 @@ export {
 } from './openers'
 // The caret-inside-a-link test that Mod-K and Alt+Enter use, for host keymaps such as a composer.
 export { linkAtSelection } from './openers/linkAtSelection'
+// The preview for a link outside any editor, and the keyboard focus rule the editor's preview uses.
+export { focusPreviewFromKeyboard } from './openers/focusPreviewFromKeyboard'
+export { openPreviewPopover } from './openers/openPreviewPopover'
 // The platform Mod test (Cmd on macOS, Ctrl elsewhere) behind the package's Mod-click rule.
 export { hasMod } from './interactions/modKey'
 // The hovercard's close-key rule, for a host card that must close on the same keys.
@@ -34,16 +37,20 @@ export { createHyperlinkPopover, editHyperlinkPopover, previewHyperlinkPopover }
 // The bubble is per-bundle: pair attach and hide from the same package.
 export { attachTooltip, hideTooltip } from '@docs.plus/floating-tooltip'
 
-// Link icons: the argument type of HyperlinkOptions.linkIcon, and two resolver helpers.
+// Link icons: the argument type of HyperlinkOptions.linkIcon, two resolver helpers,
+// and the guarded call that a host uses outside an editor.
 export { linkIconFetcher } from './link-icons/linkIconFetcher'
+export { linkIconFor } from './link-icons/linkIconFor'
 export { linkIconMap } from './link-icons/linkIconMap'
-export type { LinkIconContext } from './link-icons/types'
+export type { LinkIconContext, LinkIconResolver } from './link-icons/types'
 
 // Hovercard: the shapes behind HyperlinkOptions.hovercard.
 export type {
+  HovercardContext,
   HovercardData,
   HovercardOptions,
   HovercardRenderContext,
+  HovercardShowContext,
   HovercardView
 } from './hovercard/types'
 

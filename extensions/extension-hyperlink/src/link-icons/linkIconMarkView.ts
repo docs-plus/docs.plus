@@ -3,8 +3,8 @@ import { DOMSerializer, type Mark } from '@tiptap/pm/model'
 import { Plugin } from '@tiptap/pm/state'
 import type { EditorView } from '@tiptap/pm/view'
 
-import { isSafeHref } from '../url-decisions'
 import { logger } from '../utils/logger'
+import { linkIconFor } from './linkIconFor'
 import type { LinkIconResolver } from './types'
 
 // Security: build <a> only through toDOM, with prosemirror-view's own arguments (viewdesc.ts:630).
@@ -50,40 +50,14 @@ export function linkIconMarkView(linkIcon?: LinkIconResolver): MarkViewRenderer 
   if (!linkIcon) return plainAnchor
   const cached = renderers.get(linkIcon)
   if (cached) return cached
-  let warned = false
-  const warn = (msg: string, e?: unknown) => {
-    if (!warned) {
-      warned = true
-      logger.error(msg, e)
-    }
-  }
-  const resolve = (href: unknown): HTMLElement | null => {
-    if (typeof href !== 'string' || !href || !isSafeHref(href)) return null // renderHTML blanks it to ''
-    let el: unknown
-    try {
-      el = linkIcon({ href })
-    } catch (e) {
-      warn('linkIcon threw; the link stays plain', e)
-      return null
-    }
-    // parentNode, not isConnected: prosemirror-view renders a paragraph's links before it attaches them
-    if (el instanceof HTMLElement && !el.parentNode && !el.textContent) return el
-    if (el != null) warn('linkIcon must return a fresh element with no text')
-    return null
-  }
   const renderer: MarkViewRenderer = ({ mark, view, inline }) => {
     const spec = drawAnchor(mark, inline),
-      icon = resolve(mark.attrs.href)
+      icon = linkIconFor(linkIcon, mark.attrs.href)
     if (!icon) return spec // plain link: the same DOM as today
     const { dom } = spec,
       hole = spec.contentDOM ?? dom,
       contentDOM = document.createElement('span')
-    icon.classList.add('hyperlink-icon')
-    // An icon that names itself stays spoken; any other is decoration.
-    if (icon.getAttribute('aria-label')) icon.setAttribute('role', 'img')
-    else icon.setAttribute('aria-hidden', 'true')
     icon.contentEditable = 'false' // ProseMirror sets this on widgets only
-    if (icon instanceof HTMLImageElement) icon.draggable = false
     hole.append(icon, contentDOM)
     let owned = dom.getAttributeNames()
     // Move stray text into contentDOM. insertBefore resets a caret inside it (DOM remove steps), so put it back.

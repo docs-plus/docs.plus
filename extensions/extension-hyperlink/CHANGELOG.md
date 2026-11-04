@@ -12,9 +12,9 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ### Added
 
-- `wholeLink(value, { customValidator })` returns the link a form should store: the value when it is one whole link, without the trailing punctuation linkify leaves out, or `null`. `validateURL` is now `wholeLink(…) !== null`, so the check and the stored value always agree.
+- `toStoredLink(value, { customValidator })` returns the link a form should store: the value when it is one whole link, without the trailing punctuation linkify leaves out, or `null`. `validateURL` is now `toStoredLink(…) !== null`, so the check and the stored value always agree.
 - The `linkIcon` option draws an icon at the start of every link. It takes a sync function that receives `{ href }` and returns a fresh element, or `null` for a plain link. Only safe hrefs reach it ([#513](https://github.com/docs-plus/docs.plus/issues/513)).
-- The `LinkIconContext` type is a root export.
+- The `LinkIconContext` and `LinkIconResolver` types are root exports. `LinkIconResolver` types `linkIcon` and the hovercard's `siteIcon`.
 - `styles.css` sizes `.hyperlink-icon` to a `1em` box with a `0.25em` gap.
 - `linkIconMap(entries)` builds a `linkIcon` function from an offline domain table. Subdomains match, the longest key wins, and `www.` is ignored ([#514](https://github.com/docs-plus/docs.plus/issues/514)).
 - `linkIconFetcher({ src, tile })` builds one `<img>` per link from the link's origin, for example through your own favicon route. It never requests a failed image URL again.
@@ -28,6 +28,10 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 - `render(ctx)` draws the card content inside the package's frame. It gets the state (`loading`, `data` or `empty`), the link, the editor, the host data, `open(newTab)` and `copy()`.
 - `render` returns an element, a `{ element, destroy }` view, or `null` to keep the built-in card for that state. The package calls `destroy` when it swaps the content, closes the card, or drops a pending open. On a close, `destroy` runs after the card has left the page, so a React card never empties while it fades.
 - A `render` that throws logs one console error per editor, and the built-in card draws that state.
+- `openPreviewPopover(referenceElement, content)` shows `content` as the link preview under any element and returns the `Popover`. `openPreviewHyperlink` uses it. A host can call it for a link outside an editor, such as a chat message.
+- `focusPreviewFromKeyboard(restoreFocus)` is a root export. It moves focus into the open preview and gives it back once on close.
+- `linkIconFor(resolver, href)` runs a `linkIcon` resolver with the editor's guard and marks the result as a link icon. It never throws. It returns `null` for an unsafe href, a throw, or an element that is attached or holds text.
+- The render context gains `applyTitle()`. It swaps a link's text for the card's `data.title` in one undoable step, then hides the card. It is set only when the editor is editable, the link text is its own URL, and the title passes the paste-title rules. It checks the link again when called, so a co-editor's change stops it. The built-in card shows a **Use page title** button in its link line when it is set.
 - `HovercardOptions<D>` takes the host's own data type, so `render` reads typed host fields.
 - The request starts after a 150 ms rest on the link. The card opens at 500 ms at the earliest, and closes 300 ms after the pointer leaves the link and the card. Modifier keys, the arrows, Home, End, PageUp, PageDown, F1 to F12 and Mod-C keep it open. Every other key closes it.
 - With no data at 500 ms, the card opens in the `loading` state, and the built-in card shows loading bars. The data replaces them in the same card. With no data at 4 s, or a `null` answer after the card opens, the card shows the `empty` state. A later answer leaves the open card alone.
@@ -35,7 +39,7 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 - The card shows only for a mouse on a fine pointer, and only for a link the composed gate allows. It never opens while another popover of this package is mounted.
 - A click on the built-in card title opens the link through `navigate`. A Mod-click or a middle click on it passes `newTab: true`.
 - `@docs.plus/extension-hyperlink/hovercard.css` styles the frame and the built-in card through `--hl-*` tokens. Three are new: `--hl-well`, `--hl-hovercard-width` and `--hl-skeleton`. The card also reads `--hl-hover`, with the `styles.css` default as its fallback.
-- The `HovercardOptions`, `HovercardData`, `HovercardRenderContext` and `HovercardView` types are root exports.
+- The `HovercardOptions`, `HovercardData`, `HovercardContext`, `HovercardShowContext`, `HovercardRenderContext` and `HovercardView` types are root exports. `HovercardContext` (`{ href, editor }`) is what `fetchMetadata` gets, and `HovercardShowContext` (`{ href, link }`) is what `shouldShow` gets.
 - The new [Hovercard](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/hovercard.md) page covers the built-in card, the data contract and `render`. It has a plain DOM example, a React example, the timing and the keys.
 - `PopoverKind` gains the `'hovercard'` literal.
 - `createPopover` takes an optional `onRemove` callback. It runs once, after the popover root has left the DOM: at the end of the exit fade, or at once on `destroy()`.
@@ -71,6 +75,7 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ### Fixed
 
+- The prebuilt edit popover sends the link text only when you change the Text field. A co-editor's new link text and its inner marks, such as bold, now survive a URL-only edit ([#643](https://github.com/docs-plus/docs.plus/issues/643)).
 - Tab and Shift-Tab in a popover skip a control that cannot take focus: one that is disabled, inside `[inert]`, not rendered, or at `tabindex="-1"`. Before, Tab onto a disabled Apply button left focus where it was.
 - Parsed and pasted `<a href>` now becomes `hyperlink` even when StarterKit's Link stays registered. The `a[href]` parse rule runs at priority 51, above the ProseMirror default of 50. Before, the mark registered first won, which was usually Link. A host that keeps Link to load stored `link` marks now gets a `hyperlink` mark, its icon and its popovers on paste ([#636](https://github.com/docs-plus/docs.plus/issues/636)).
 - `validateURL` and the link forms now accept only one whole link. Before, `hello google.com` passed and was stored as `https://hello google.com`. A raw space is refused for every scheme: `mailto:`, `tel:`, app links and catalog sites such as `github.com`. Trailing punctuation such as `google.com.` still passes the check, and the forms store the link without it: `google.com,` stores `https://google.com`, and `user@example.com.` stores `mailto:user@example.com`. A typed `Re:google.com` now links only `google.com`.

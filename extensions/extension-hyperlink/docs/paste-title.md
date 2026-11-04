@@ -149,6 +149,8 @@ The swap is one transaction. It goes through `closeHistory(tr)` from `@tiptap/pm
 | `preventAutolink` | Keeps autolink off the new text.                                         |
 | `pasteTitle`      | `true`. Lets your app tell the swap apart from an edit.                  |
 
+The hovercard's [`applyTitle`](./hovercard.md#draw-your-own-card) sends the same two transactions, so a click on **Use page title** undoes the same way and also carries `pasteTitle`.
+
 An empty transaction follows the swap. It also goes through `closeHistory(tr)` and carries `inputRule`. It closes the undo step, so typing after the swap is a step of its own. The swap never sets `addToHistory: false`: under Yjs that would make the paste impossible to undo.
 
 ```ts

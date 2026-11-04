@@ -1,4 +1,4 @@
-import { normalizeHref, wholeLink } from '@docs.plus/extension-hyperlink'
+import { normalizeHref, toStoredLink } from '@docs.plus/extension-hyperlink'
 import { padUrl } from '@services/padUrl'
 import {
   type FormEvent,
@@ -102,7 +102,7 @@ export function useHyperlinkEditorForm({
   }, [variant, mode, initialHref])
 
   const applyTyped = useCallback(() => {
-    const link = wholeLink(href, { customValidator: validate })
+    const link = toStoredLink(href, { customValidator: validate })
     if (!link) {
       setShowError(true)
       return

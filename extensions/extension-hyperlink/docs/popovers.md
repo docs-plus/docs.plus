@@ -248,6 +248,9 @@ function editHyperlink(options: EditHyperlinkOptions): HTMLElement {
   textInput.value = range ? doc.textBetween(range.from, range.to, '') : (link.textContent ?? '')
   textInput.placeholder = 'Link text'
 
+  // An unchanged Text field sends nothing, so a co-editor's new link text survives.
+  const initialText = textInput.value
+
   const hrefInput = document.createElement('input')
   hrefInput.type = 'url'
   hrefInput.value = href
@@ -285,7 +288,7 @@ function editHyperlink(options: EditHyperlinkOptions): HTMLElement {
       .chain()
       .focus()
       .extendMarkRange(markName)
-      .editHyperlink({ newURL, newText })
+      .editHyperlink({ newURL, newText: textInput.value !== initialText ? newText : undefined })
       .run()
     if (!ok) return
 

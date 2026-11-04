@@ -113,7 +113,7 @@ function endRun(state: PasteTitleState, run: Run): void {
   state.runs.delete(run)
 }
 
-function oneUrl(text: string): ReturnType<typeof find>[number] | null {
+export function oneUrl(text: string): ReturnType<typeof find>[number] | null {
   const links = find(text)
   return links.length === 1 && links[0].type === 'url' && links[0].value === text ? links[0] : null
 }
@@ -256,7 +256,7 @@ function swapWhenReady(ctx: LinkContext, state: PasteTitleState, run: Run, title
 
 // Undo then goes title (and later typing) → title → URL → nothing, in prosemirror-history and y-undo.
 // Never `addToHistory: false`: under Yjs it makes the paste impossible to undo.
-function dispatchSwap(editor: Editor, range: Range, title: string): void {
+export function dispatchSwap(editor: Editor, range: Range, title: string): void {
   const { state, view } = editor
   const marks = state.doc.nodeAt(range.from)?.marks ?? []
   const tr = state.tr

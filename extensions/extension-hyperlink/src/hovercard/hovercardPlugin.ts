@@ -4,6 +4,7 @@ import type { EditorView } from '@tiptap/pm/view'
 import { createPopover, getDefaultController, type Popover } from '../floating-popover'
 import { openLink } from '../interactions/openLink'
 import type { LinkContext } from '../interactions/types'
+import { applyTitle } from '../paste-title/applyTitle'
 import { copyToClipboard } from '../utils/copyToClipboard'
 import { createHTMLElement } from '../utils/createHTMLElement'
 import { logger } from '../utils/logger'
@@ -152,14 +153,30 @@ function createHovercardView(
     openLink(linkCtx, href, { newTab })
   }
 
-  const context = ({ link, href }: Target, state: State): HovercardRenderContext => ({
-    href,
-    link,
-    editor: linkCtx.editor,
-    open: open(href),
-    copy: () => copyToClipboard(href),
-    ...state
-  })
+  const titleFor = ({ link, href }: Target, state: State): (() => boolean) | undefined => {
+    const apply =
+      state.state === 'data' ? applyTitle(linkCtx, link, href, state.data.title) : undefined
+    if (!apply) return undefined
+    return () => {
+      const done = apply()
+      if (done && card?.href === href) hideCard()
+      return done
+    }
+  }
+
+  const context = (target: Target, state: State): HovercardRenderContext => {
+    const { link, href } = target
+    const apply = titleFor(target, state)
+    return {
+      href,
+      link,
+      editor: linkCtx.editor,
+      open: open(href),
+      copy: () => copyToClipboard(href),
+      ...(apply && { applyTitle: apply }),
+      ...state
+    }
+  }
 
   // A host view, or null for the built-in card. A throw logs once per editor.
   const renderHost = (ctx: HovercardRenderContext): HovercardView | null => {

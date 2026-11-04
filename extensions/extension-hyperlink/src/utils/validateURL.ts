@@ -115,7 +115,7 @@ const linkifyWhole = (trimmed: string) => {
  * the trailing punctuation that linkify leaves out (`google.com,` gives
  * `google.com`), or `null` when {@link validateURL} would refuse it.
  */
-export const wholeLink = (url: string, options?: ValidateURLOptions): string | null => {
+export const toStoredLink = (url: string, options?: ValidateURLOptions): string | null => {
   const trimmed = url.trim()
   if (!trimmed) return null
 
@@ -149,7 +149,7 @@ export const wholeLink = (url: string, options?: ValidateURLOptions): string | n
     if (isStandardWebScheme(found.link.href) && !hasPlausibleHost(found.link.href)) return null
     return found.text
   } catch (error) {
-    logger.error('wholeLink threw', error)
+    logger.error('toStoredLink threw', error)
     return null
   }
 }
@@ -160,7 +160,7 @@ export const wholeLink = (url: string, options?: ValidateURLOptions): string | n
  * one whole link. Rejects {@link DANGEROUS_SCHEME_RE}. See docs/url-handling.md.
  */
 export const validateURL = (url: string, options?: ValidateURLOptions): boolean =>
-  wholeLink(url, options) !== null
+  toStoredLink(url, options) !== null
 
 /** Module-internal; exported for unit tests only. */
 export const getURLScheme = (url: string): string | null => {

@@ -36,7 +36,7 @@ Top to bottom, the built-in card shows:
 1. The picture, in a full-width 1.91:1 well, cropped to fill it.
 2. The title, two lines at most. A click on it opens the link.
 3. The description, two lines at most.
-4. The link line: the site icon, the host and the path, and one **Copy link** button.
+4. The link line: the site icon, the host and the path, a **Use page title** button when `applyTitle` is set, and one **Copy link** button.
 
 Data with no `title` shows one line, "No preview for this page.", above the link line. Copy link writes the href to the clipboard and shows a check for 1500 ms. A refused write keeps the copy icon.
 
@@ -46,9 +46,9 @@ A click on the title opens the link through the [`navigate`](./api.md#options) o
 
 | Field           | Type                                                                       | Description                                                                                                                                                              |
 | --------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `fetchMetadata` | `(ctx: { href: string; editor: Editor }) => Promise<D \| null>`            | **Required.** Returns the card data. Before the card opens, `null`, a rejection or a throw shows no card. After it opens, they show the `empty` state.                   |
-| `siteIcon?`     | `(ctx: { href: string }) => HTMLElement \| null`                           | The icon in the built-in link line. Same contract as `linkIcon`: a fresh element with no text, or `null`. A throw shows no icon and logs once. A custom card ignores it. |
-| `shouldShow?`   | `(ctx: { href: string; link: HTMLAnchorElement }) => boolean`              | Return `false` to show no card for this link. It runs before any request. A throw shows no card and logs once per editor.                                                |
+| `fetchMetadata` | `(ctx: HovercardContext) => Promise<D \| null>`                            | **Required.** Returns the card data. Before the card opens, `null`, a rejection or a throw shows no card. After it opens, they show the `empty` state.                   |
+| `siteIcon?`     | `LinkIconResolver`                                                         | The icon in the built-in link line. Same contract as `linkIcon`: a fresh element with no text, or `null`. A throw shows no icon and logs once. A custom card ignores it. |
+| `shouldShow?`   | `(ctx: HovercardShowContext) => boolean`                                   | Return `false` to show no card for this link. It runs before any request. A throw shows no card and logs once per editor.                                                |
 | `render?`       | `(ctx: HovercardRenderContext<D>) => HTMLElement \| HovercardView \| null` | Draws the card content. `null` keeps the built-in card for this state. See [Draw your own card](#draw-your-own-card).                                                    |
 
 `editor` is the editor that holds the link. It helps when one page has two editors.
@@ -98,15 +98,16 @@ A `loading` card changes state once, to `data` or `empty`, in the same popover. 
 
 `HovercardRenderContext<D>`:
 
-| Field    | Type                             | Description                                                                                   |
-| -------- | -------------------------------- | --------------------------------------------------------------------------------------------- |
-| `href`   | `string`                         | The link's stored href, never `link.href`.                                                    |
-| `link`   | `HTMLAnchorElement`              | The link the pointer rests on. The card is anchored to it.                                    |
-| `editor` | `Editor`                         | The editor that holds the link.                                                               |
-| `state`  | `'loading' \| 'empty' \| 'data'` | See [States](#states).                                                                        |
-| `data`   | `D`                              | Only when `state` is `'data'`. Your `fetchMetadata` answer, as it came.                       |
-| `open`   | `(newTab: boolean) => void`      | Hides this link's card if it is open, then opens `href` through the read gate and `navigate`. |
-| `copy`   | `() => Promise<boolean>`         | Copies `href`. Resolves `false` when the write fails.                                         |
+| Field        | Type                             | Description                                                                                                                                                                                                                                                                                             |
+| ------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `href`       | `string`                         | The link's stored href, never `link.href`.                                                                                                                                                                                                                                                              |
+| `link`       | `HTMLAnchorElement`              | The link the pointer rests on. The card is anchored to it.                                                                                                                                                                                                                                              |
+| `editor`     | `Editor`                         | The editor that holds the link.                                                                                                                                                                                                                                                                         |
+| `state`      | `'loading' \| 'empty' \| 'data'` | See [States](#states).                                                                                                                                                                                                                                                                                  |
+| `data`       | `D`                              | Only when `state` is `'data'`. Your `fetchMetadata` answer, as it came.                                                                                                                                                                                                                                 |
+| `open`       | `(newTab: boolean) => void`      | Hides this link's card if it is open, then opens `href` through the read gate and `navigate`.                                                                                                                                                                                                           |
+| `copy`       | `() => Promise<boolean>`         | Copies `href`. Resolves `false` when the write fails.                                                                                                                                                                                                                                                   |
+| `applyTitle` | `(() => boolean) \| undefined`   | Swaps the link text for `data.title`, in one undoable step, then hides the card. Answers whether it did. Set only in the `data` state, when the editor is editable, the link text is its own URL, and the title passes the [paste title](./paste-title.md) rules. It checks the link again when called. |
 
 Return one of three values:
 

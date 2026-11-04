@@ -6,7 +6,7 @@ import {
   isSafeHref,
   validateURL,
   stripTrailingPunctuation,
-  wholeLink
+  toStoredLink
 } from '../validateURL'
 
 /**
@@ -216,7 +216,7 @@ describe('validateURL', () => {
   })
 })
 
-describe('wholeLink', () => {
+describe('toStoredLink', () => {
   // The forms store this value, so trailing punctuation never reaches the stored href.
   const cases: [string, string | null][] = [
     ['google.com,', 'google.com'],
@@ -235,7 +235,7 @@ describe('wholeLink', () => {
   ]
   for (const [input, expected] of cases) {
     it(`${JSON.stringify(input)} -> ${JSON.stringify(expected)}`, () => {
-      expect(wholeLink(input)).toBe(expected)
+      expect(toStoredLink(input)).toBe(expected)
     })
   }
 
@@ -249,7 +249,7 @@ describe('wholeLink', () => {
   it('gives customValidator the value it stores', () => {
     const seen: string[] = []
     const record = (url: string): boolean => (seen.push(url), true)
-    expect(wholeLink(' whatsapp://send. ', { customValidator: record })).toBe('whatsapp://send')
+    expect(toStoredLink(' whatsapp://send. ', { customValidator: record })).toBe('whatsapp://send')
     expect(seen).toEqual(['whatsapp://send'])
   })
 })

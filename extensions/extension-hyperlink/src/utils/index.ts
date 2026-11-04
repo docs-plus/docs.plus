@@ -12,7 +12,7 @@ export { getSpecialUrlInfo, type SpecialUrlInfo, type SpecialUrlType } from './s
 export {
   DANGEROUS_SCHEME_RE,
   isSafeHref,
+  toStoredLink,
   validateURL,
-  type ValidateURLOptions,
-  wholeLink
+  type ValidateURLOptions
 } from './validateURL'

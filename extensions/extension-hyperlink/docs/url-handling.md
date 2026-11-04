@@ -13,7 +13,7 @@ For any URL linkifyjs detects, the create form, the [markdown input rule](#markd
 
 Validation rejects a scheme-prefixed typo with no real host: `https://googlecom` fails. `http://localhost`, `https://127.0.0.1`, and any registered custom scheme pass.
 
-A link form value must be one whole link, so a sentence such as `hello google.com` is refused. A raw space is refused for every scheme, including `mailto:`. Encode it as `%20`. Trailing punctuation such as `google.com.` still passes the check, and the forms store the link without it. `wholeLink(value)` returns that stored value, or `null` when the check fails.
+A link form value must be one whole link, so a sentence such as `hello google.com` is refused. A raw space is refused for every scheme, including `mailto:`. Encode it as `%20`. Trailing punctuation such as `google.com.` still passes the check, and the forms store the link without it. `toStoredLink(value)` returns that stored value, or `null` when the check fails.
 
 `normalizeHref(raw, defaultProtocol?)` returns the canonical href the editor would store. Call it in your own popover to mirror the same canonicalization.
 

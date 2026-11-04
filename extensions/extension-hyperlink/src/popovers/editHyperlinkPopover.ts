@@ -3,7 +3,7 @@ import { getDefaultController } from '../floating-popover'
 import type { EditHyperlinkOptions } from '../hyperlink'
 import { buildPreviewOptionsFromAnchor } from '../openers/buildPreviewOptionsFromAnchor'
 import { openPreviewHyperlink } from '../openers/openPreviewHyperlink'
-import { createHTMLElement, wholeLink } from '../utils'
+import { createHTMLElement, toStoredLink } from '../utils'
 import { Link, Title } from '../utils/icons'
 import { getHyperlinkDisplayText } from './getHyperlinkDisplayText'
 
@@ -28,6 +28,7 @@ export default function editHyperlinkPopover(options: EditHyperlinkOptions): HTM
     }),
     placeholder: 'Enter link text'
   })
+  const initialText = linkTextInput.value
   const textError = createHTMLElement('div', {
     className: 'error-message',
     textContent: 'Please enter link text'
@@ -105,7 +106,7 @@ export default function editHyperlinkPopover(options: EditHyperlinkOptions): HTM
   form.addEventListener('submit', (e) => {
     e.preventDefault()
     const newText = linkTextInput.value.trim()
-    const newHref = wholeLink(hrefInput.value, { customValidator: validate })
+    const newHref = toStoredLink(hrefInput.value, { customValidator: validate })
     let hasErrors = false
     if (!newText) {
       showError(textWrapper, textError)
@@ -122,11 +123,13 @@ export default function editHyperlinkPopover(options: EditHyperlinkOptions): HTM
     // Second, the mark is gone at the stored selection (e.g. a collab peer removed
     // the link). Then there is nothing left to edit, so close instead of blaming the URL.
     const markName = options.markName ?? HYPERLINK_MARK_NAME
+    // An unchanged Text field sends nothing, so a co-editor's new link text and its marks survive.
+    const editedText = linkTextInput.value !== initialText ? newText : undefined
     const ok = editor
       .chain()
       .focus()
       .extendMarkRange(markName)
-      .editHyperlink({ newURL: newHref, newText })
+      .editHyperlink({ newURL: newHref, newText: editedText })
       .run()
     if (!ok) {
       if (!editor.isActive(markName)) {

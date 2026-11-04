@@ -1,7 +1,7 @@
 import { hasMod } from '../interactions/modKey'
 import type { LinkIconResolver } from '../link-icons/types'
 import { createHTMLElement } from '../utils/createHTMLElement'
-import { Check, Copy } from '../utils/icons'
+import { Check, Copy, Title } from '../utils/icons'
 import { logger } from '../utils/logger'
 import { normalizeHref } from '../utils/normalizeHref'
 import type { HovercardRenderContext, HovercardView } from './types'
@@ -191,8 +191,22 @@ const createCopyButton = (copy: HovercardRenderContext['copy']): HTMLButtonEleme
   return button
 }
 
+// Present only when the engine set `applyTitle`: the link text is its own URL.
+const createTitleButton = (applyTitle: () => boolean): HTMLButtonElement => {
+  const button = createHTMLElement('button', {
+    type: 'button',
+    className: 'hyperlink-hovercard__action',
+    tabIndex: -1,
+    innerHTML: Title({ size: ICON_SIZE })
+  })
+  button.setAttribute('aria-label', 'Use page title')
+  button.addEventListener('mousedown', (e) => e.preventDefault())
+  button.addEventListener('click', () => applyTitle())
+  return button
+}
+
 const createLinkLine = (
-  { href, copy }: HovercardRenderContext,
+  { href, copy, applyTitle }: HovercardRenderContext,
   siteIcon: LinkIconResolver | undefined
 ): HTMLElement => {
   const line = createHTMLElement('div', { className: 'hyperlink-hovercard__site' })
@@ -212,7 +226,9 @@ const createLinkLine = (
       createHTMLElement('span', { className: 'hyperlink-hovercard__path', textContent: rest })
     )
   }
-  line.append(url, createCopyButton(copy))
+  line.append(url)
+  if (applyTitle) line.append(createTitleButton(applyTitle))
+  line.append(createCopyButton(copy))
   return line
 }
 
