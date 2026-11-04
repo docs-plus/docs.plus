@@ -50,7 +50,7 @@ export const ensureLocalUser = (email: string, password: string) =>
       }
     })
 
-/** Signs in with a password and sets the session cookie on the app host. */
+/** Signs in with a password and sets the session cookie on the app host. Yields the user id. */
 export const signInLocalUser = (email: string, password: string) =>
   cy
     .env(['SUPABASE_ANON_KEY'])
@@ -78,4 +78,5 @@ export const signInLocalUser = (email: string, password: string) =>
           sameSite: 'lax'
         })
       }
+      return cy.wrap<string>(body.user.id)
     })

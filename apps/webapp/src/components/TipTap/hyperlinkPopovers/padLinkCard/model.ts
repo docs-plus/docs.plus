@@ -1,4 +1,5 @@
 import type { FilterMode } from '@docs.plus/pad-url'
+import { apiBaseUrl } from '@utils/apiBaseUrl'
 
 import type { InternalDocumentLink } from '../types'
 
@@ -319,4 +320,10 @@ export const cardQuery = (link: InternalDocumentLink): URLSearchParams => {
       break
   }
   return query
+}
+
+/** `GET /api/documents/:slug/hovercard` with only the params of one link kind. */
+export const hovercardUrl = (slug: string, query: URLSearchParams): string => {
+  const search = query.toString()
+  return `${apiBaseUrl()}/documents/${encodeURIComponent(slug)}/hovercard${search ? `?${search}` : ''}`
 }

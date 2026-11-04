@@ -358,7 +358,7 @@ On mobile the card is a bottom sheet instead. Its four rows are Open link, Copy 
 
 Copy a web address, paste it into a document, and the link takes **the page's title** in place of the long address — needs a document you can edit. The address shows at once, and the title replaces it when our server answers, usually within a second. Paste [https://github.com/docs-plus/docs.plus](https://github.com/docs-plus/docs.plus) into a page from [/new](/new) to see it.
 
-One undo brings the address back, and a second removes the paste. ⌘+⇧+V (Ctrl+Shift+V) pastes the address as it is. A file link takes its file name and format, so the sample PDF above reads `dummy.pdf`. A link to a docs.plus page keeps its address, and so does a link pasted in a chatroom.
+One undo brings the address back, and a second removes the paste. ⌘+⇧+V (Ctrl+Shift+V) pastes the address as it is. A file link takes its file name and format, so the sample PDF above reads `dummy.pdf`. A link to another docs.plus page takes that page's title, and a heading link reads like `Budget · Q3 launch plan`. A link to a Private page keeps its address, and so does a link pasted in a chatroom.
 
 A title can never pose as another site. A page titled `paypal.com` that lives anywhere else keeps its address.
 

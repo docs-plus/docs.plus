@@ -38,6 +38,7 @@ import {
   type DocumentViewMode,
   LIGHT_THEMES,
   MAX_LINKS,
+  PAD_PASTE_TITLES_HELP,
   pasteTitlesHelp,
   readDocumentsViewMode,
   SETTINGS_TABS,
@@ -335,6 +336,10 @@ export const AppearanceSkeleton = () => {
           <ToggleRowSkeleton
             label="Use page titles for pasted links"
             description={pasteTitlesHelp()}
+          />
+          <ToggleRowSkeleton
+            label="Use pad titles for pasted pad links"
+            description={PAD_PASTE_TITLES_HELP}
           />
         </div>
       </SettingsCard>

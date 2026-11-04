@@ -78,6 +78,23 @@ const documentDbTasks = {
     }
     return null
   },
+  // A metadata row with no content: enough for the hovercard route, which reads only this row.
+  insertPadMeta(meta: { slug: string; title: string; isPrivate: boolean; ownerId: string | null }) {
+    psql(
+      [
+        '-v',
+        `slug=${meta.slug}`,
+        '-v',
+        `title=${meta.title}`,
+        '-v',
+        `private=${meta.isPrivate}`,
+        '-v',
+        `owner=${meta.ownerId ?? ''}`
+      ],
+      `insert into "DocumentMetadata" (slug, title, "documentId", "isPrivate", "ownerId", "updatedAt") values (:'slug', :'title', :'slug', :'private'::boolean, nullif(:'owner', ''), now())`
+    )
+    return null
+  },
   deleteDocBySlug(slug: string): null {
     psql(
       ['-v', `slug=${slug}`],

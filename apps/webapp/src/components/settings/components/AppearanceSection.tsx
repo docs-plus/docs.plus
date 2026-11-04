@@ -12,6 +12,7 @@ import { LuCheck, LuLink, LuPalette } from 'react-icons/lu'
 import {
   DARK_THEMES,
   LIGHT_THEMES,
+  PAD_PASTE_TITLES_HELP,
   pasteTitlesHelp,
   type PickerTheme,
   type ThemeChoice
@@ -95,6 +96,8 @@ const AppearanceSection = () => {
   const setShowOnHover = useLinkPreviewStore((s) => s.setShowOnHover)
   const pasteTitles = useLinkPreviewStore((s) => s.pasteTitles)
   const setPasteTitles = useLinkPreviewStore((s) => s.setPasteTitles)
+  const padPasteTitles = useLinkPreviewStore((s) => s.padPasteTitles)
+  const setPadPasteTitles = useLinkPreviewStore((s) => s.setPadPasteTitles)
   const groupRef = useRef<HTMLDivElement>(null)
 
   // Roving tabindex: arrows move selection + focus through the flat order.
@@ -197,6 +200,13 @@ const AppearanceSection = () => {
             description={pasteTitlesHelp()}
             checked={pasteTitles}
             onChange={setPasteTitles}
+          />
+          <ToggleRow
+            id="link-previews-paste-pad"
+            label="Use pad titles for pasted pad links"
+            description={PAD_PASTE_TITLES_HELP}
+            checked={padPasteTitles}
+            onChange={setPadPasteTitles}
           />
         </div>
       </SettingsCard>

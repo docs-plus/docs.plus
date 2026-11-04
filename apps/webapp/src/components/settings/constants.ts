@@ -25,6 +25,9 @@ export const MIN_PHONE_DIGITS = 7
 export const pasteTitlesHelp = (): string =>
   `A pasted web link shows the page title. ${isMacOS() ? '⌘+⇧+V' : 'Ctrl+Shift+V'} pastes the address as is.`
 
+export const PAD_PASTE_TITLES_HELP =
+  'A pasted link to another pad shows its title. A link to a Private pad keeps its address.'
+
 export type DocumentViewMode = 'list' | 'grid'
 export const DOCUMENTS_VIEW_STORAGE_KEY = 'docsplus:my-docs-view'
 

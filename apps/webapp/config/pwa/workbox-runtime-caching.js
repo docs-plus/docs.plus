@@ -103,4 +103,12 @@ const mcpStatusProbeRule = {
   handler: 'NetworkOnly'
 }
 
-module.exports = [credentialedRequestRule, mcpStatusProbeRule, ...cache]
+// The pad card answers per reader, and a pasted pad link writes its anonymous title into
+// shared text. A cached reply could replay a title after the pad turned Private.
+const padHovercardRule = {
+  urlPattern: ({ url }) =>
+    url.pathname.includes('/api/documents/') && url.pathname.endsWith('/hovercard'),
+  handler: 'NetworkOnly'
+}
+
+module.exports = [credentialedRequestRule, mcpStatusProbeRule, padHovercardRule, ...cache]

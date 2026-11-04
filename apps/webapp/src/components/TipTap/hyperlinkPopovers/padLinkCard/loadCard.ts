@@ -1,14 +1,20 @@
 import { padUrl } from '@services/padUrl'
 import { useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
-import { apiBaseUrl } from '@utils/apiBaseUrl'
 import { supabaseClient } from '@utils/supabase'
 import { plainTitle } from '@utils/titleWrite'
 
 import { classifyPadFacets } from '../internalDocumentLink'
 import type { PadLink } from '../types'
 import { editorCardReply } from './editorCard'
-import { cardQuery, type CardReply, type CardView, parseCardReply, toCardView } from './model'
+import {
+  cardQuery,
+  type CardReply,
+  type CardView,
+  hovercardUrl,
+  parseCardReply,
+  toCardView
+} from './model'
 
 const REQUEST_TIMEOUT_MS = 8_000
 
@@ -20,8 +26,7 @@ const requestReply = async (slug: string, query: URLSearchParams): Promise<CardR
   const {
     data: { session }
   } = await supabaseClient.auth.getSession()
-  const search = query.toString()
-  const url = `${apiBaseUrl()}/documents/${encodeURIComponent(slug)}/hovercard${search ? `?${search}` : ''}`
+  const url = hovercardUrl(slug, query)
   const key = `${session?.user?.id ?? ''} ${url}`
   const running = inFlight.get(key)
   if (running) return running
