@@ -57,7 +57,10 @@
     a:has(> .hyperlink-icon[data-link-kind]) {
     padding-block: 0;
   }
+}
 
+// Pad links and posted chat message links draw one icon box.
+:is(.ProseMirror, .message--card__content) {
   .hyperlink-icon {
     display: inline-block;
     width: 1em;

@@ -151,13 +151,13 @@ export const renderMetadataInto = (container: HTMLElement, ctx: PreviewContext):
 }
 
 /**
- * Fires once on detachment by any trigger — backdrop tap, Escape, the
- * extension's outside-click listener, a `controller.reposition` swap. The
+ * Fires once, when the first of `elements` leaves the page by any trigger — backdrop tap,
+ * Escape, the extension's outside-click listener, a `controller.reposition` swap. The
  * extension exposes no "popover closed" event, hence the MutationObserver.
  */
-export const observeDetachment = (element: HTMLElement, onDetach: () => void): void => {
+export const observeDetachment = (elements: HTMLElement[], onDetach: () => void): void => {
   const observer = new MutationObserver(() => {
-    if (!element.isConnected) {
+    if (elements.some((element) => !element.isConnected)) {
       onDetach()
       observer.disconnect()
     }
@@ -170,7 +170,10 @@ export const observeDetachment = (element: HTMLElement, onDetach: () => void): v
  * `.hyperlink-preview-popover` without a mount, like `createMetadataContent`.
  * A filter shows every term (C4): the button stays one control, so only spans go inside it.
  */
-export const createInternalLinkChip = (link: InternalDocumentLink, editor: Editor): HTMLElement => {
+export const createInternalLinkChip = (
+  link: InternalDocumentLink,
+  editor: Editor | null
+): HTMLElement => {
   const { label, sublabel, icon, accessibleName, modeLabel } = describeInternalDocumentLink(
     link,
     editor

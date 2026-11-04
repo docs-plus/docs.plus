@@ -68,6 +68,8 @@ export function buildLinkPreviewActions({
       }
     }
   ]
+  // No `nodePos`: the link is not in the pad (a chat message), so there is no mark to change.
+  if (nodePos === undefined) return actions
   // Not `view.editable`: phone read mode turns it off for every reader. The durable lock marks a read-only document.
   if (isDocumentEditingLocked()) return actions
 

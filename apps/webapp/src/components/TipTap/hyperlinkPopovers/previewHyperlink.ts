@@ -3,8 +3,10 @@ import * as toast from '@components/toast'
 import {
   copyToClipboard,
   createHTMLElement,
+  focusPreviewFromKeyboard,
   getDefaultController,
   openEditHyperlink,
+  openPreviewPopover,
   type PreviewHyperlinkOptions
 } from '@docs.plus/extension-hyperlink'
 import { useSheetStore, useStore } from '@stores'
@@ -77,31 +79,18 @@ const buildAndObserveDesktopPopover = (
 ): HTMLElement => {
   const controller = new AbortController()
   const ctx: PreviewContext = { href, signal: controller.signal }
-  const element = buildDesktopPopover(ctx, options)
+  const element = buildDesktopPopover(ctx, options.editor, padEditControls(options))
 
-  observeDetachment(element, () => controller.abort())
+  observeDetachment([element], () => controller.abort())
 
   return element
 }
 
-/**
- * Keep the `.hyperlink-preview-popover` DOM/class contract intact — the
- * existing CSS and Cypress specs both select against it.
- */
-const buildDesktopPopover = (
-  ctx: PreviewContext,
-  options: PreviewHyperlinkOptions
-): HTMLElement => {
-  const { href } = ctx
+// `view.editable` mirrors the pad lock, and stays on in the composer, which has no lock.
+const padEditControls = (options: PreviewHyperlinkOptions): HTMLElement[] => {
   const { link, editor, nodePos, validate, isAllowedUri } = options
+  if (!editor.view.editable) return []
 
-  const popover = createHTMLElement('div', { className: 'hyperlink-preview-popover' })
-  const copyButton = createHTMLElement('button', {
-    className: 'copy',
-    title: 'Copy link',
-    ariaLabel: 'Copy link',
-    innerHTML: `<span class="swap" aria-hidden><span class="swap-on text-success">${lucideSvgString(Icons.check, 18)}</span><span class="swap-off">${lucideSvgString(Icons.copy, 18)}</span></span>`
-  })
   const editButton = createHTMLElement('button', {
     className: 'edit',
     title: 'Edit link',
@@ -113,6 +102,38 @@ const buildDesktopPopover = (
     title: 'Remove link',
     ariaLabel: 'Remove link',
     innerHTML: lucideSvgString(Icons.unlink, 18)
+  })
+
+  editButton.addEventListener('click', () => {
+    openEditHyperlink({ editor, link, validate, isAllowedUri, nodePos })
+  })
+
+  removeButton.addEventListener('click', () => {
+    getDefaultController().close()
+    editor.chain().focus().unsetHyperlink().run()
+  })
+
+  return [editButton, removeButton]
+}
+
+/**
+ * Keep the `.hyperlink-preview-popover` DOM/class contract intact — the
+ * existing CSS and Cypress specs both select against it. `editor` only names
+ * same-pad headings, so a link outside the pad passes the pad editor or `null`.
+ */
+const buildDesktopPopover = (
+  ctx: PreviewContext,
+  editor: Editor | null,
+  editControls: HTMLElement[]
+): HTMLElement => {
+  const { href } = ctx
+
+  const popover = createHTMLElement('div', { className: 'hyperlink-preview-popover' })
+  const copyButton = createHTMLElement('button', {
+    className: 'copy',
+    title: 'Copy link',
+    ariaLabel: 'Copy link',
+    innerHTML: `<span class="swap" aria-hidden><span class="swap-on text-success">${lucideSvgString(Icons.check, 18)}</span><span class="swap-off">${lucideSvgString(Icons.copy, 18)}</span></span>`
   })
 
   copyButton.addEventListener('click', () => {
@@ -136,18 +157,6 @@ const buildDesktopPopover = (
       ctx.signal.addEventListener('abort', () => window.clearTimeout(timer), { once: true })
     })
   })
-
-  editButton.addEventListener('click', () => {
-    openEditHyperlink({ editor, link, validate, isAllowedUri, nodePos })
-  })
-
-  removeButton.addEventListener('click', () => {
-    getDefaultController().close()
-    editor.chain().focus().unsetHyperlink().run()
-  })
-
-  // `view.editable` mirrors the pad lock, and stays on in the composer, which has no lock.
-  const editControls = editor.view.editable ? [editButton, removeButton] : []
 
   // Internal (same-document) links render a named destination chip and run
   // in place; no external metadata fetch. Copy still yields the canonical URL.
@@ -176,4 +185,39 @@ const buildDesktopPopover = (
   renderMetadataInto(metadataContainer, ctx)
   popover.append(metadataContainer, copyButton, ...editControls)
   return popover
+}
+
+/**
+ * The pad preview for a link outside any editor, such as a posted chat message.
+ * It has no mark, so it shows no Edit or Remove. Phone: the `linkPreview` sheet.
+ */
+export function previewLinkOutsideEditor(
+  anchor: HTMLAnchorElement,
+  href: string,
+  fromKeyboard: boolean
+): void {
+  const { isMobile, instance } = useStore.getState().settings.editor
+  const padEditor = instance ?? null
+  if (isMobile) {
+    useSheetStore.getState().openSheet('linkPreview', { href, editor: padEditor })
+    return
+  }
+
+  const controller = new AbortController()
+  const content = buildDesktopPopover({ href, signal: controller.signal }, padEditor, [])
+  const popover = openPreviewPopover(anchor, content)
+
+  // No mark `onDestroy` here: a list row that unmounts, or an edit echo, takes the anchor.
+  observeDetachment([popover.element, anchor], () => {
+    controller.abort()
+    const popovers = getDefaultController()
+    const state = popovers.getState()
+    if (state.kind === 'mounted' && state.element === popover.element) popovers.close()
+  })
+
+  if (fromKeyboard) {
+    focusPreviewFromKeyboard(() => {
+      if (anchor.isConnected) anchor.focus({ preventScroll: true })
+    })
+  }
 }

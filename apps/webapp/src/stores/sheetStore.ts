@@ -17,16 +17,13 @@ export interface SheetDataMap {
   bookmarks: Record<string, never>
   documentSettings: Record<string, never>
   /**
-   * Mobile hyperlink preview sheet payload. `editor` and `nodePos` let
-   * the sheet actions edit or unset the link, and let Back reopen the
-   * preview.
+   * Mobile hyperlink preview sheet payload. `editor` and `nodePos` let the sheet
+   * actions edit or unset the link, and let Back reopen the preview. A link outside
+   * the pad (a chat message) has no `nodePos`, so the sheet offers no Edit or Remove.
    */
-  linkPreview: {
-    href: string
-    editor: Editor
-    nodePos: number
-    isAllowedUri?: (uri: string) => boolean
-  }
+  linkPreview: { href: string; isAllowedUri?: (uri: string) => boolean } & (
+    { editor: Editor; nodePos: number } | { editor: Editor | null; nodePos?: undefined }
+  )
   linkEditor: {
     mode: 'create' | 'edit'
     /** Threaded from the extension adapter; mirrors the `linkPreview` payload. No global editor reads. */
