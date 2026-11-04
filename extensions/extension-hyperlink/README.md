@@ -175,7 +175,7 @@ A map entry may also be a `{ light, dark }` pair of image URLs, or a function th
 
 ### Show a card on hover
 
-The `hovercard` option shows a read-only card when a mouse pointer rests on a link. Your `fetchMetadata` returns the title, description and picture. The package makes no request of its own:
+The `hovercard` option shows a card when a mouse pointer rests on a link. Your `fetchMetadata` returns the title, description, picture and facts. The card ends with the link, Copy link and Open in new tab. The package makes no request of its own:
 
 ```ts
 import { Hyperlink } from '@docs.plus/extension-hyperlink'
@@ -191,7 +191,7 @@ Hyperlink.configure({
 })
 ```
 
-The request starts after a 150 ms rest on the link, and the card opens at 500 ms at the earliest. See [Hovercard](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md#hovercard) for the options, the timing and the keys that close it.
+The request starts after a 150 ms rest on the link, and the card opens at 500 ms at the earliest. A slow answer opens the card with loading bars, and the data replaces them in place. See [Hovercard](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md#hovercard) for the options, the timing and the keys that close it.
 
 ## Gallery
 

@@ -135,23 +135,31 @@ import '@docs.plus/extension-hyperlink/hovercard.css'
 
 The card reads these `--hl-*` tokens. `hovercard.css` carries a fallback for each, so it needs no `styles.css`:
 
-- `--hl-bg`, `--hl-fg`, `--hl-muted`, `--hl-border`, `--hl-shadow`, `--hl-radius`, `--hl-radius-sm` and `--hl-font`. The fallbacks equal the defaults above.
+- `--hl-bg`, `--hl-fg`, `--hl-muted`, `--hl-border`, `--hl-hover`, `--hl-shadow`, `--hl-radius`, `--hl-radius-sm` and `--hl-font`. The fallbacks equal the defaults above. `--hl-hover` fills a hovered link-line button.
 
-Three tokens are for the card only:
+These tokens are for the card only:
 
 - `--hl-well` is the fill behind a picture that is still loading. Default `light-dark(#f3f4f6, #374151)`.
+- `--hl-skeleton` is the fill of the loading bars. Default `light-dark(#dce3ed, #2d3f57)`.
 - `--hl-hovercard-width` is the card width. Default `24rem`, and never wider than `calc(100vw - 1rem)`.
 - `--hl-hovercard-thumb` is the thumbnail size. Default `4rem`.
 
-The picture fades in over 200 ms, and a failed cover well folds over 200 ms. Both transitions turn off under `prefers-reduced-motion: reduce`.
+The picture fades in over 200 ms, and a failed cover well folds over 200 ms. The data fades in over 120 ms when it replaces the loading bars, and the copy check cross-fades over 120 ms. All of them turn off under `prefers-reduced-motion: reduce`.
 
-| Class                               | Element                                                       |
-| ----------------------------------- | ------------------------------------------------------------- |
-| `.hyperlink-hovercard`              | Card root, inside `.floating-popover`.                        |
-| `.hyperlink-hovercard--thumb`       | Added to the root when the picture shows as a thumbnail.      |
-| `.hyperlink-hovercard__image`       | Picture well. `data-state` is `loading`, `ready` or `failed`. |
-| `.hyperlink-hovercard__body`        | Text column.                                                  |
-| `.hyperlink-hovercard__site`        | Site row: the `siteIcon` element, then the host name.         |
-| `.hyperlink-hovercard__site-icon`   | Added to the `siteIcon` element, a 16px circle.               |
-| `.hyperlink-hovercard__title`       | Title link, two lines at most.                                |
-| `.hyperlink-hovercard__description` | Description, three lines at most.                             |
+| Class                               | Element                                                                                       |
+| ----------------------------------- | --------------------------------------------------------------------------------------------- |
+| `.hyperlink-hovercard`              | Card root, inside `.floating-popover`.                                                        |
+| `.hyperlink-hovercard__main`        | Everything above the link line. `data-swapped` marks data that replaced the loading bars.     |
+| `.hyperlink-hovercard__main--thumb` | Added to `__main` when the picture shows as a thumbnail.                                      |
+| `.hyperlink-hovercard__main--tile`  | Added to `__main` when a `'repo'` picture shows as the owner tile.                            |
+| `.hyperlink-hovercard__image`       | Picture well. `data-state` is `loading`, `ready` or `failed`.                                 |
+| `.hyperlink-hovercard__body`        | Text column.                                                                                  |
+| `.hyperlink-hovercard__bar`         | One loading bar. The body holds three.                                                        |
+| `.hyperlink-hovercard__title`       | Title link, two lines at most.                                                                |
+| `.hyperlink-hovercard__facts`       | Facts row. Each `.hyperlink-hovercard__fact` holds an icon and its text.                      |
+| `.hyperlink-hovercard__description` | Description, two lines at most.                                                               |
+| `.hyperlink-hovercard__note`        | The no-preview line.                                                                          |
+| `.hyperlink-hovercard__site`        | Link line at the bottom of the card.                                                          |
+| `.hyperlink-hovercard__site-icon`   | Added to the `siteIcon` element, a 16px circle.                                               |
+| `.hyperlink-hovercard__url`         | Host and path, one line. Holds `.hyperlink-hovercard__host` and `.hyperlink-hovercard__path`. |
+| `.hyperlink-hovercard__action`      | Copy link and Open in new tab. Copy link gets `data-copied` for 1500 ms.                      |

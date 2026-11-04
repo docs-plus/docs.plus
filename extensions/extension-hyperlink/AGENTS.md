@@ -89,8 +89,9 @@ Moving selection across the link makes the floating toolbar think the user navig
 
 - `utils/index.ts` is the auditable public utility surface. Use explicit named re-exports only; no `export *`. Adding a public barrel export is a minor semver bump.
 - Module-internal helpers (`getURLScheme`, `isBarePhone`, `normalizeLinkifyHref`, `Link`, `Title`) are reachable from siblings but not through the package barrel.
-- The hovercard types `HovercardOptions`, `HovercardData` and `HovercardImageLayout` are root type exports. `chooseImageShape`, `keepsHovercardOpen` and the plugin stay internal.
+- The hovercard types `HovercardOptions`, `HovercardData`, `HovercardFact`, `HovercardFactIcon` and `HovercardImageLayout` are root type exports. A new fact icon widens `HovercardFactIcon`, so it needs a release, and the server's `FACT_ICONS` must match. `chooseImageShape` and the plugin stay internal.
 - `hasMod(event, isMac?)` is a root export (a minor bump). It lives in `interactions/modKey.ts` with `MODIFIER_KEYS` and `modKeyName`. The mod cursor uses all three. The hovercard key rule uses `hasMod` and `MODIFIER_KEYS`.
+- `keepsHovercardOpen(event, isMac?)` is a root export (a minor bump). It lives in `hovercard/rules.ts`. The webapp's docs.plus link card uses it, so both cards close on the same keys.
 - `linkAtSelection(state, markType)` is a root export (a minor bump). `Mod-k`, `Alt-Enter` and the webapp composer's Enter handler use it. It reads the mark type it is given, never `HYPERLINK_MARK_NAME`.
 - Internal constants live in `src/constants.ts` (`HYPERLINK_MARK_NAME`, `PREVENT_AUTOLINK_META`). Do not export them publicly.
 - `src/utils/findLinks.ts` contains pure linkify-result filtering with Bun tests in `utils/__tests__/findLinks.test.ts`.
@@ -111,15 +112,18 @@ Moving selection across the link makes the floating toolbar think the user navig
 
 ## Hovercard
 
-- `hovercard: HovercardOptions` adds one ProseMirror plugin (`src/hovercard/hovercardPlugin.ts`). Unset means no plugin. The pure rules live in `hovercard/rules.ts`; the card DOM lives in `hovercard/content.ts`.
+- `hovercard: HovercardOptions` adds one ProseMirror plugin (`src/hovercard/hovercardPlugin.ts`). Unset means no plugin. The pure rules live in `hovercard/rules.ts`; the card DOM lives in `hovercard/content.ts`, and the fact icons in `hovercard/icons.ts`.
+- Card order (maintainer approval, 2026-11-03): picture or repo owner tile, title, facts (at most 3), a two-line description, then the link line with Copy link and Open in new tab. No `title` shows "No preview for this page." Icons are built with `createElementNS`, never `innerHTML`.
+- Loading (ruled 2026-11-03): with no data at 500 ms the card opens with static bars and a live link line. Data fills the same popover with a 120 ms fade, and `autoUpdate` places the grown card again. At 4000 ms (`GIVE_UP_MS`) with no data, or a `null` answer after open, the body becomes the no-preview line, and a later answer is ignored.
+- The title and both buttons carry `tabIndex = -1`, and the buttons `preventDefault` on `mousedown`. Tab keeps its editor meaning; the keyboard path is the `Mod-k` preview. No tooltips on the buttons: a bubble outside the card would start the 300 ms close.
 - Every listener and timer lives in the plugin `view()`, and its `destroy()` removes them. So `editor.destroy()` and an unmount leave other editors alone. The listeners sit on the document, so `linkAt` accepts only a link inside this view.
-- Timing (spec A7): the request starts after a 150 ms dwell. The card opens at `max(enteredAt + 500, min(dataAt + 300, pictureSettledAt))`. Leaving the link drops the pending open but never cancels the request, so the host cache keeps the answer. Close delay is 300 ms. Do not add an `AbortController` on leave (ruling, 2026-10-27).
+- Timing (spec A7): the request starts after a 150 ms dwell. When data comes before 500 ms, the card opens at `max(enteredAt + 500, min(dataAt + 300, pictureSettledAt))`. Leaving the link drops the pending open but never cancels the request, so the host cache keeps the answer. Close delay is 300 ms. Do not add an `AbortController` on leave (ruling, 2026-10-27).
 - Keys (spec A8): `keepsHovercardOpen` keeps the card open for a bare Shift, Control, Alt, Meta, AltGraph or CapsLock. It also keeps it open for the arrow and page keys, F1–F12, and Mod-C. Mod-Shift-C and Mod-Alt-C close it. `compositionstart` and a `pointerdown` outside the card close it too.
 - Never adopt over another kind. `createPopover` adopts at once and destroys the current owner, so the plugin checks `isOtherPopoverOpen()` right before it builds a card. It closes only its own card.
 - The card loads only the URLs the host returns. The picture is exactly `data.image.url`, and no mark attr reaches the card. Text is set with `textContent`, and pictures load with `referrerPolicy: 'no-referrer'` set before `src`.
 - The plugin calls `fetchMetadata` once per dwell, with no cache of its own. Hosts dedupe `fetchMetadata` by URL, so a hover and the click that follows share one request.
 - Gates before any request: a mouse `pointerType`, `(hover: hover) and (pointer: fine)`, no button down, a stored `hyperlink` mark href, `urls.forRead`, then the host `shouldShow`. A throwing `shouldShow` shows no card and logs once per editor.
-- `imageLayout: 'adaptive'` uses `chooseImageShape`: a thumb under 1.3:1 or under 320px wide. A failed thumb fades in place (A5); a failed cover well folds away.
+- `imageLayout: 'adaptive'` uses `chooseImageShape`: a thumb under 1.3:1 or under 320px wide. A failed thumb or tile fades in place (A5); a failed cover well folds away.
 - Known limits, both ruled. A resting pointer gets no card until it re-enters. The open-popover check sees only this bundle's controller.
 - `hovercard.css` ships beside `styles.css` through the `./hovercard.css` export, and tsup copies it to `dist/`. Every colour reads a `--hl-*` token with a fallback.
 

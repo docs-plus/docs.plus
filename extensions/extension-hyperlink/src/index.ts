@@ -26,6 +26,8 @@ export {
 export { linkAtSelection } from './openers/linkAtSelection'
 // The platform Mod test (Cmd on macOS, Ctrl elsewhere) behind the package's Mod-click rule.
 export { hasMod } from './interactions/modKey'
+// The hovercard's close-key rule, for a host card that must close on the same keys.
+export { keepsHovercardOpen } from './hovercard/rules'
 export { createHyperlinkPopover, editHyperlinkPopover, previewHyperlinkPopover } from './popovers'
 // Tooltip primitive — the same hover/focus bubble the prebuilt popovers
 // put on their icon buttons, re-exported for BYO popover parity.
@@ -38,7 +40,13 @@ export { linkIconMap } from './link-icons/linkIconMap'
 export type { LinkIconContext } from './link-icons/types'
 
 // Hovercard: the shapes behind HyperlinkOptions.hovercard.
-export type { HovercardData, HovercardImageLayout, HovercardOptions } from './hovercard/types'
+export type {
+  HovercardData,
+  HovercardFact,
+  HovercardFactIcon,
+  HovercardImageLayout,
+  HovercardOptions
+} from './hovercard/types'
 
 // Utilities (validateURL, isSafeHref, …) re-exported for BYO popovers.
 export * from './utils'

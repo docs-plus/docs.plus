@@ -113,7 +113,32 @@ const HOVERCARD_PAGES: Record<string, HyperlinkModule.HovercardData> = {
     image: { url: picture('thumb'), width: 460, height: 460 }
   },
   'https://slow.example/': { title: 'Slow page', image: { url: picture('slow') } },
-  'https://xss.example/': { title: '<img src=x onerror=alert(1)>' }
+  'https://xss.example/': { title: '<img src=x onerror=alert(1)>' },
+  'https://facts.example/': {
+    title: 'Facts page',
+    description: 'A document with facts.',
+    facts: [
+      { icon: 'stars', text: '1.2k' },
+      { icon: 'language', text: 'TypeScript' },
+      { icon: 'updated', text: 'Updated 2 days ago' }
+    ]
+  },
+  'https://avatar.example/': {
+    kind: 'repo',
+    title: 'docs-plus/avatar',
+    image: { url: picture('avatar') }
+  },
+  'https://repo.example/': {
+    kind: 'repo',
+    title: 'docs-plus/docs.plus',
+    description: 'A repository with an owner picture.',
+    image: { url: picture('repo'), width: 460, height: 460 },
+    facts: [
+      { icon: 'stars', text: '1.2k' },
+      { icon: 'language', text: 'TypeScript' }
+    ]
+  },
+  'https://notitle.example/': { description: 'A page with no title.' }
 }
 const hovercardState = { calls: [] as string[], delayMs: 100 }
 const hovercard: HyperlinkModule.HovercardOptions | undefined =

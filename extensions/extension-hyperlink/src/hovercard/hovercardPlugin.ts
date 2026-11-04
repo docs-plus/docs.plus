@@ -5,9 +5,15 @@ import { createPopover, getDefaultController, type Popover } from '../floating-p
 import { openLink } from '../interactions/openLink'
 import type { LinkContext } from '../interactions/types'
 import { logger } from '../utils/logger'
-import { createHovercardContent, type PreloadedImage, preloadImage } from './content'
+import {
+  createHovercardContent,
+  type HovercardBody,
+  type HovercardContent,
+  type PreloadedImage,
+  preloadImage
+} from './content'
 import { chooseImageShape, keepsHovercardOpen } from './rules'
-import type { HovercardData, HovercardOptions } from './types'
+import type { HovercardData, HovercardOptions, ImageShape } from './types'
 
 const HOVERCARD_KIND = 'hovercard'
 // The dwell is also the herd guard: a pointer that only passes over a link sends no request.
@@ -17,6 +23,7 @@ const OPEN_AT_MS = 500
 const CLOSE_DELAY_MS = 300
 // A picture that settles inside this wait opens with the card, so few cards show the empty well.
 const IMAGE_WAIT_MS = 300
+const GIVE_UP_MS = 4000
 const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)'
 
 type Pending = {
@@ -30,6 +37,14 @@ type Pending = {
 }
 
 type Zone = HTMLAnchorElement | 'card' | null
+
+type Card = {
+  popover: Popover
+  link: HTMLAnchorElement
+  content: HovercardContent
+  /** The request a loading card still waits for. */
+  awaiting: Pending | null
+}
 
 /**
  * Desktop link hovercard. It opens only while no other popover kind is mounted,
@@ -50,11 +65,12 @@ function createHovercardView(
 ): { destroy: () => void } {
   const doc = view.dom.ownerDocument
   let zone: Zone = null
-  let card: { popover: Popover; link: HTMLAnchorElement } | null = null
+  let card: Card | null = null
   let pending: Pending | null = null
   let dwellTimer: ReturnType<typeof setTimeout> | undefined
   let openTimer: ReturnType<typeof setTimeout> | undefined
   let closeTimer: ReturnType<typeof setTimeout> | undefined
+  let giveUpTimer: ReturnType<typeof setTimeout> | undefined
   let warnedShouldShow = false
 
   const canHover = (): boolean => doc.defaultView?.matchMedia?.(FINE_POINTER_QUERY).matches ?? false
@@ -108,20 +124,35 @@ function createHovercardView(
     card?.popover.hide()
   }
 
-  const chooseShape = (data: HovercardData, picture?: PreloadedImage): 'cover' | 'thumb' => {
-    const layout = options.imageLayout ?? 'cover'
-    const size = data.image
-    if (size?.width && size.height) return chooseImageShape(layout, size)
-    if (picture?.settled === 'ready') {
-      const { naturalWidth: width, naturalHeight: height } = picture.img
-      return chooseImageShape(layout, { width, height })
-    }
-    return 'cover'
+  // The host's size wins; else the loaded picture's own size.
+  const chooseShape = (data: HovercardData, picture?: PreloadedImage): ImageShape => {
+    const size =
+      data.image?.width && data.image.height
+        ? data.image
+        : picture?.settled === 'ready'
+          ? { width: picture.img.naturalWidth, height: picture.img.naturalHeight }
+          : undefined
+    return chooseImageShape(options.imageLayout ?? 'cover', data.kind, size)
   }
 
-  const show = ({ link, href, data, picture }: Pending & { data: HovercardData }): void => {
-    const shape = chooseShape(data, picture)
-    const content = createHovercardContent(data, href, picture ?? null, shape, {
+  // A page with no title shows no picture, so its picture is never loaded.
+  const preloadFor = (data: HovercardData): PreloadedImage | undefined =>
+    data.title && data.image ? preloadImage(data.image.url) : undefined
+
+  const dataBody = (data: HovercardData, picture?: PreloadedImage): HovercardBody => {
+    const { title } = data
+    if (!title) return { state: 'empty' }
+    return {
+      state: 'data',
+      data: { ...data, title },
+      picture: picture ?? null,
+      shape: chooseShape(data, picture)
+    }
+  }
+
+  const show = (token: Pending, body: HovercardBody): void => {
+    const { link, href } = token
+    const content = createHovercardContent(href, body, {
       siteIcon: options.siteIcon,
       open: (target, newTab) => {
         hideCard()
@@ -130,26 +161,39 @@ function createHovercardView(
     })
     const popover = createPopover({
       referenceElement: link,
-      content,
+      content: content.element,
       placement: 'bottom-start',
       onHide: () => {
-        if (card?.popover === popover) card = null
+        content.dispose()
+        if (card?.popover !== popover) return
+        card = null
+        clearTimeout(giveUpTimer)
       }
     })
     getDefaultController().adopt(popover, HOVERCARD_KIND, {
       element: popover.element,
       referenceElement: link
     })
-    card = { popover, link }
+    card = { popover, link, content, awaiting: body.state === 'loading' ? token : null }
     popover.show()
+  }
+
+  // Swaps the loading body in the same popover. `autoUpdate` re-places the card as it grows.
+  const fill = (token: Pending, data: HovercardData | null): void => {
+    if (!card || card.awaiting !== token) return
+    card.awaiting = null
+    clearTimeout(giveUpTimer)
+    card.content.setBody(data ? dataBody(data, preloadFor(data)) : { state: 'empty' })
   }
 
   // `createPopover` adopts at once and would destroy a mounted preview, so check right before it.
   const open = (token: Pending): void => {
-    if (pending !== token || !token.data) return
+    if (pending !== token) return
     pending = null
     if (!token.link.isConnected || isOtherPopoverOpen()) return
-    show({ ...token, data: token.data })
+    if (token.data) return show(token, dataBody(token.data, token.picture))
+    show(token, { state: 'loading' })
+    giveUpTimer = setTimeout(() => fill(token, null), token.enteredAt + GIVE_UP_MS - Date.now())
   }
 
   // Opens at max(enteredAt + 500, min(dataAt + 300, pictureSettledAt)).
@@ -169,6 +213,7 @@ function createHovercardView(
   }
 
   const onData = (token: Pending, data: HovercardData | null): void => {
+    if (card?.awaiting === token) return fill(token, data)
     if (pending !== token) return
     if (!data) {
       pending = null
@@ -176,9 +221,8 @@ function createHovercardView(
     }
     token.data = data
     token.dataAt = Date.now()
-    const src = data.image?.url
-    if (src) {
-      const picture = preloadImage(src)
+    const picture = preloadFor(data)
+    if (picture) {
       token.picture = picture
       void picture.done.then(() => {
         token.pictureAt = Date.now()
@@ -193,12 +237,14 @@ function createHovercardView(
     const token: Pending = { link, href, enteredAt: Date.now() }
     pending = token
     dwellTimer = setTimeout(() => {
-      if (pending !== token || isOtherPopoverOpen()) return
+      if (pending !== token) return
+      if (isOtherPopoverOpen()) return dropPending()
       new Promise<HovercardData | null>((resolve) => resolve(options.fetchMetadata({ href }))).then(
         (data) => onData(token, data),
         () => onData(token, null)
       )
     }, DWELL_MS)
+    openTimer = setTimeout(() => open(token), OPEN_AT_MS)
   }
 
   const enterZone = (next: Zone, buttons: number): void => {
@@ -260,6 +306,7 @@ function createHovercardView(
       doc.removeEventListener('compositionstart', dismiss, true)
       dropPending()
       clearTimeout(closeTimer)
+      clearTimeout(giveUpTimer)
       zone = null
       card?.popover.destroy()
       card = null

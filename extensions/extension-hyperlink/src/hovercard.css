@@ -28,6 +28,8 @@
     Arial,
     sans-serif
   );
+  font-size: 13px;
+  line-height: 20px;
 }
 
 /* The page picture: a flush well at the 1.91:1 share-card ratio. */
@@ -55,32 +57,65 @@
   opacity: 0;
 }
 
-/* Thumb: a 64px tile beside the text. The text column never depends on the tile. */
-.hyperlink-hovercard--thumb {
+/* Thumb and tile: a small square picture beside the text. The text column never depends on it. */
+.hyperlink-hovercard__main--thumb,
+.hyperlink-hovercard__main--tile {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
   align-items: start;
+  padding: 12px;
 }
 
-.hyperlink-hovercard--thumb .hyperlink-hovercard__body {
-  grid-column: 1;
-  grid-row: 1;
+.hyperlink-hovercard__main--thumb .hyperlink-hovercard__body,
+.hyperlink-hovercard__main--tile .hyperlink-hovercard__body {
+  grid-area: body;
+  padding: 0;
 }
 
-.hyperlink-hovercard--thumb .hyperlink-hovercard__image {
+.hyperlink-hovercard__main--thumb .hyperlink-hovercard__image,
+.hyperlink-hovercard__main--tile .hyperlink-hovercard__image {
+  grid-area: image;
   box-sizing: border-box;
-  grid-column: 2;
-  grid-row: 1;
-  width: var(--hl-hovercard-thumb, 4rem);
-  height: var(--hl-hovercard-thumb, 4rem);
   aspect-ratio: auto;
-  margin: 12px 12px 0 0;
   border: 1px solid var(--hl-border, light-dark(#e5e7eb, #374151));
   border-radius: var(--hl-radius-sm, 8px);
 }
 
-.hyperlink-hovercard--thumb .hyperlink-hovercard__image img {
+/* Thumb: a 64px picture after the text. */
+.hyperlink-hovercard__main--thumb {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'body image';
+}
+
+.hyperlink-hovercard__main--thumb .hyperlink-hovercard__image {
+  width: var(--hl-hovercard-thumb, 4rem);
+  height: var(--hl-hovercard-thumb, 4rem);
+}
+
+.hyperlink-hovercard__main--thumb .hyperlink-hovercard__image img {
   object-position: center top;
+}
+
+/* Tile: a repo's 40px owner picture before the title. */
+.hyperlink-hovercard__main--tile {
+  grid-template-columns: 40px minmax(0, 1fr);
+  grid-template-areas: 'image body';
+}
+
+.hyperlink-hovercard__main--tile .hyperlink-hovercard__image {
+  width: 40px;
+  height: 40px;
+}
+
+/* A body that replaces the loading bars fades in. */
+.hyperlink-hovercard__main[data-swapped] {
+  animation: hyperlink-hovercard-fade-in 120ms ease-out;
+}
+
+@keyframes hyperlink-hovercard-fade-in {
+  from {
+    opacity: 0;
+  }
 }
 
 .hyperlink-hovercard__body {
@@ -91,21 +126,87 @@
   padding: 12px;
 }
 
+.hyperlink-hovercard__title {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--hl-fg, light-dark(#111827, #f3f4f6));
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.hyperlink-hovercard__title:hover {
+  text-decoration: underline;
+}
+
+.hyperlink-hovercard__fact svg {
+  flex-shrink: 0;
+}
+
+.hyperlink-hovercard__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 4px;
+  color: var(--hl-muted, light-dark(#6b7280, #9ca3af));
+}
+
+.hyperlink-hovercard__fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.hyperlink-hovercard__description,
+.hyperlink-hovercard__note {
+  margin: 0;
+  color: var(--hl-muted, light-dark(#6b7280, #9ca3af));
+}
+
+.hyperlink-hovercard__description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* Loading bars: static, in the line boxes of the title and two text lines. */
+.hyperlink-hovercard__bar {
+  display: block;
+  height: 12px;
+  margin: 4px 0;
+  border-radius: 4px;
+  background: var(--hl-skeleton, light-dark(#dce3ed, #2d3f57));
+}
+
+.hyperlink-hovercard__bar:first-child {
+  width: 72%;
+  height: 14px;
+  margin: 3px 0;
+}
+
+.hyperlink-hovercard__bar:last-child {
+  width: 58%;
+}
+
+/* The link line: site icon, host and path, then Copy link and Open in new tab. */
 .hyperlink-hovercard__site {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
-  font-size: 13px;
-  line-height: 20px;
+  min-height: 40px;
+  padding: 4px 4px 4px 12px;
+  border-top: 1px solid var(--hl-border, light-dark(#e5e7eb, #374151));
   color: var(--hl-muted, light-dark(#6b7280, #9ca3af));
-}
-
-.hyperlink-hovercard__site > span:last-child {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .hyperlink-hovercard__site-icon {
@@ -115,39 +216,60 @@
   border-radius: 50%;
 }
 
-.hyperlink-hovercard__title {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+.hyperlink-hovercard__url {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
-  overflow-wrap: anywhere;
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hyperlink-hovercard__host {
   color: var(--hl-fg, light-dark(#111827, #f3f4f6));
-  text-decoration: none;
 }
 
-.hyperlink-hovercard__title:hover {
-  text-decoration: underline;
-}
-
-.hyperlink-hovercard__description {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  overflow: hidden;
-  margin: 0;
-  font-size: 13px;
-  line-height: 20px;
+.hyperlink-hovercard__action {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--hl-radius-sm, 8px);
   color: var(--hl-muted, light-dark(#6b7280, #9ca3af));
+  cursor: pointer;
+}
+
+.hyperlink-hovercard__action:hover {
+  background: var(--hl-hover, light-dark(#f3f4f6, #374151));
+  color: var(--hl-fg, light-dark(#111827, #f3f4f6));
+}
+
+/* Copy swaps to a check: both icons share one cell and cross-fade. */
+.hyperlink-hovercard__action svg {
+  grid-area: 1 / 1;
+  transition: opacity 120ms ease-out;
+}
+
+.hyperlink-hovercard__action .hyperlink-hovercard__check,
+.hyperlink-hovercard__action[data-copied] svg:not(.hyperlink-hovercard__check) {
+  opacity: 0;
+}
+
+.hyperlink-hovercard__action[data-copied] .hyperlink-hovercard__check {
+  opacity: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hyperlink-hovercard__image,
-  .hyperlink-hovercard__image img {
+  .hyperlink-hovercard__image img,
+  .hyperlink-hovercard__action svg {
     transition: none;
+  }
+
+  .hyperlink-hovercard__main[data-swapped] {
+    animation: none;
   }
 }
