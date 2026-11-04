@@ -324,13 +324,25 @@ Filtered to this section? [Show the whole document](/demo).
 
 Click a link on this page and a card opens under it, naming what sits on the other end — try it here. Going there takes a second click, on the card. You see where a link leads **before you commit to leaving**.
 
+## Rest on a link
+
+On desktop, rest the mouse on a link and a card opens after half a second, with no click — try it here. The card asks for its content only after 150 ms, so a pointer that passes over a link costs nothing.
+
+A slow page opens the card with grey bars, and the content then replaces them in the same card. After 4 seconds with no answer, the card says the page has no preview.
+
+The last line of the card names the site, with **Copy link** and **Open in new tab**. Move off the link and the card, and it closes 300 ms later. Shift, the arrow keys and Copy keep it open. Any other key closes it.
+
+Settings › Appearance › **Show link previews on hover** turns off the cards for web links — needs an account. A touch screen has no hover, so a tap opens the click card instead.
+
 ## Out to the web
 
-[https://github.com/docs-plus/docs.plus](https://github.com/docs-plus/docs.plus) is an ordinary external link. Its card fills with **the page title and picture, held for 5 minutes**. Copy link sits on the card, and its icon turns into a check when the copy works — try it here. On desktop, Edit and Remove sit there too, but only on a document you can edit.
+[https://github.com/docs-plus/docs.plus](https://github.com/docs-plus/docs.plus) is an ordinary external link. Rest on it, and its card shows **the stars, the main language and the last update** — try it here. The owner's picture sits beside them as a small tile. Click it, and its card fills with **the page title and picture, held for 5 minutes**. Copy link sits on the card, and its icon turns into a check when the copy works — try it here. On desktop, Edit and Remove sit there too, but only on a document you can edit.
 
 The card's title is itself a link, so one click on the title goes there — try it here. When the fetch fails, that title falls back to the raw address, and the link still works.
 
 Middle-click a link to skip the card and open it in a new tab — try it here.
+
+A Stack Overflow question shows its answer count. It adds **Accepted answer** when one is accepted: [Why is conditional processing of a sorted array faster than of an unsorted array?](https://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-processing-an-unsorted-array) — try it here. A Wikipedia article shows its opening lines, and its lead picture when it has one: [Collaborative real-time editor](https://en.wikipedia.org/wiki/Collaborative_real-time_editor) — try it here. A job post shows where the job is, how it is worked, and when it was posted.
 
 On mobile the card is a bottom sheet instead. Its four rows are Open link, Copy link, Edit link and Remove link. The first two work with no sign-in — try it here.
 
@@ -343,6 +355,22 @@ A `mailto:` or `tel:` link has no page to fetch. The address becomes the title, 
 A link into this document never touches the network. It resolves on the spot, and the card shows a destination chip. Five kinds exist: **This document**, a quoted heading, **Chat**, **Filtered view · N terms**, and **Version N**.
 
 [/demo/crease](/demo/crease) is such a link. Its card carries a **Filtered view · 1 term** chip. Click the chip and the page folds in place — try it here. No reload, and no new tab.
+
+## Cards for docs.plus pages
+
+Rest on a link to a docs.plus page, and its card comes from the page itself, not from a scraped preview. It names the page, the headings above the target, and what sits there. A filter or a heading in this page reads the open page, so it asks the server nothing.
+
+[/demo/crease](/demo/crease) shows **Filter for “crease”**, how many sections the filter shows, and the first two. Every filter link on this page has a card like it — try it here.
+
+[Folding](/demo?id=HoKBe56adb5466L6) shows the heading, the headings above it, its subsections and its first lines — try it here.
+
+[The chatroom on Start here](/demo?chatroom=6adb5466z7HG78l0) shows how many messages it holds, and when the last one came — try it here. A card shows counts and dates only, never a message or a name.
+
+[This page's history](/demo#history) shows how many versions the page keeps, and the last save. [Version 1](/demo#history?version=1) shows when that version was saved — try it here.
+
+[The companion page](/demo-companion) is another docs.plus page. Its card shows the page title, its number of sections and the first two — try it here. Click it instead, and the card shows its address.
+
+[A Private page](/demo-private) shows only **This document is private**. Its title and text stay hidden from everyone but its owner — try it here.
 
 Filtered to this section? [Show the whole document](/demo).
 
