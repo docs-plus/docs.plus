@@ -28,7 +28,27 @@ export function cleanTitle(raw: string, link: { text: string; href: string }): s
 function spoofsHost(title: string, href: string): boolean {
   const [match] = find(title, 'url')
   if (!match || match.value !== title) return false
+  if (isOwnFileName(title, href)) return false
   return hostOf(match.href) !== hostOf(href)
+}
+
+// File types whose extension is also a top-level domain. Only these pass, so a page at
+// `evil.example/paypal.com` titled `paypal.com` still keeps its URL.
+const FILE_EXTENSION_TLDS = new Set(['ai', 'md', 'mov', 'pl', 'ps', 'py', 'rs', 'sh', 'so', 'zip'])
+
+// `archive.zip` reads as a domain, but naming the link's own file hides nothing.
+function isOwnFileName(title: string, href: string): boolean {
+  const extension = title.slice(title.lastIndexOf('.') + 1).toLowerCase()
+  return FILE_EXTENSION_TLDS.has(extension) && title === fileNameOf(href)
+}
+
+function fileNameOf(href: string): string | null {
+  try {
+    const last = new URL(href).pathname.split('/').filter(Boolean).pop()
+    return last ? decodeURIComponent(last) : null
+  } catch {
+    return null
+  }
 }
 
 function hostOf(href: string): string | null {

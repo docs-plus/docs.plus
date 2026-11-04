@@ -76,7 +76,7 @@ The package cleans every title before it swaps it in, so each host gets the same
 1. It trims the title and turns every run of white space into one space.
 2. It removes the C0 and C1 control characters and the bidi controls U+202A to U+202E, U+2066 to U+2069, U+200E, U+200F and U+061C.
 3. It cuts a title longer than 120 characters to 120 and adds `…`. It counts what a reader sees as one character, so an emoji is one.
-4. It keeps the URL when the title then has no visible character, or when it equals the URL or the href. It also keeps the URL when the title reads as the address of another site. A link to `evil.example` titled `paypal.com` keeps its URL.
+4. It keeps the URL when the title then has no visible character, or when it equals the URL or the href. It also keeps the URL when the title reads as the address of another site. A link to `evil.example` titled `paypal.com` keeps its URL. One exception: a link's own file name passes when its extension is also a domain ending (`.zip`, `.mov`, `.md`, `.py`, `.rs`, `.sh`, `.ai`, `.ps`, `.pl`, `.so`). So `…/archive.zip` titled `archive.zip` swaps.
 
 The engine keeps no cache. Cache titles by URL in your own code, so a paste of a known page answers at once.
 

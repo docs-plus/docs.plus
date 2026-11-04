@@ -48,6 +48,26 @@ describe('cleanTitle', () => {
     })
   }
 
+  it.each([
+    ['https://files.example.com/x/archive.zip', 'archive.zip'],
+    ['https://files.example.com/x/README.md', 'README.md'],
+    ['https://files.example.com/x/clip.mov', 'clip.mov'],
+    ['https://files.example.com/x/my%20script.py', 'my script.py']
+  ])("keeps the link's own file name when it reads as a domain: %s", (href, name) => {
+    expect(cleanTitle(name, { text: href, href })).toBe(name)
+  })
+
+  it('skips a domain-like file name that is not the link’s own', () => {
+    const href = 'https://files.example.com/x/archive.zip'
+    expect(cleanTitle('setup.zip', { text: href, href })).toBeNull()
+    expect(cleanTitle('paypal.com', { text: href, href })).toBeNull()
+  })
+
+  it('skips a page whose own path names another site', () => {
+    const href = 'https://evil.example/paypal.com'
+    expect(cleanTitle('paypal.com', { text: href, href })).toBeNull()
+  })
+
   it('compares the URL text and the href apart', () => {
     const bare = { text: 'example.com', href: 'https://example.com' }
     expect(cleanTitle('example.com', bare)).toBeNull()

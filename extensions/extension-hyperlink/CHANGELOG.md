@@ -50,6 +50,7 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 - Links keep the text I-beam at rest. While Mod is held, the `<html>` element gets `data-hyperlink-mod`. `styles.css` then shows the hand over links in editors with the new `hyperlink-click-scope` class. The click plugin adds that class, so `openOnClick: false` turns all of this off.
 - The `pasteTitle` option names a pasted bare URL after its page. The link appears at once with the URL as its text. The host's `fetchTitle({ href, editor, signal })` returns the title, and the package cleans it and puts it in place of the URL. Unset means off, and the package makes no request of its own.
 - The swap is its own undo step, so one `Mod-z` restores the URL. `Mod-Shift-v` pastes the raw URL, and `shouldFetch({ href, editor })` can follow a user setting. With no answer in 4 s, the URL stays.
+- The title cleaner keeps a title that reads as another site's address out of the link. A link's own file name still passes when its extension is also a domain ending, so a pasted `…/archive.zip` can read `archive.zip`.
 - The `PasteTitleOptions` and `PasteTitleContext` types are root exports. The new [Paste title](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/paste-title.md) page covers the rules, the resolver contract and a safe backend.
 
 ### Changed
