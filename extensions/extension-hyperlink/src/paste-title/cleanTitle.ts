@@ -36,8 +36,13 @@ function spoofsHost(title: string, href: string): boolean {
 // `evil.example/paypal.com` titled `paypal.com` still keeps its URL.
 const FILE_EXTENSION_TLDS = new Set(['ai', 'md', 'mov', 'pl', 'ps', 'py', 'rs', 'sh', 'so', 'zip'])
 
+// One name plus one extension, with no separator, so `paypal.com.zip` and a decoded
+// `paypal.com%2Flogin.zip` never pass as a file name.
+const PLAIN_FILE_NAME_RE = /^[^./\\?#@:]+\.[^./\\?#@:]+$/
+
 // `archive.zip` reads as a domain, but naming the link's own file hides nothing.
 function isOwnFileName(title: string, href: string): boolean {
+  if (!PLAIN_FILE_NAME_RE.test(title)) return false
   const extension = title.slice(title.lastIndexOf('.') + 1).toLowerCase()
   return FILE_EXTENSION_TLDS.has(extension) && title === fileNameOf(href)
 }
