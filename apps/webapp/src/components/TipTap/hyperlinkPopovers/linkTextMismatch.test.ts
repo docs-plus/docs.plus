@@ -20,7 +20,12 @@ describe('linkTextMismatch', () => {
     ['GitHub.com/docs', 'https://gitlab.com/', 'GitHub.com', 'gitlab.com'],
     ['www.example.nl', 'https://other.nl/', 'www.example.nl', 'other.nl'],
     ['  github.com  ', 'https://evil.net', 'github.com', 'evil.net'],
-    ['github.com.', 'https://evil.net/', 'github.com', 'evil.net']
+    ['github.com.', 'https://evil.net/', 'github.com', 'evil.net'],
+    // Look-alike letters: the text and the link name different hosts, and `opens` stays punycode.
+    ['раураl.com', 'https://paypal.com/', 'раураl.com', 'paypal.com'],
+    ['paypal.com', 'https://xn--l-7sba6dbr.com/', 'paypal.com', 'xn--l-7sba6dbr.com'],
+    ['wìnscp.net', 'https://winscp.net/', 'wìnscp.net', 'winscp.net'],
+    ['winscp.net', 'https://wìnscp.net/', 'winscp.net', 'xn--wnscp-tsa.net']
   ])('%s opening %s warns', (text, href, says, opens) => {
     expect(linkTextMismatch(text, href)).toEqual({ says, opens })
   })
