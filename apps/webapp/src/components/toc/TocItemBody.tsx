@@ -1,6 +1,6 @@
 import { useModal } from '@components/ui/ModalDrawer'
 import { Tooltip } from '@components/ui/Tooltip'
-import { useSortable } from '@dnd-kit/sortable'
+import type { useDraggable } from '@dnd-kit/core'
 import { Icons } from '@icons'
 import { padUrl } from '@services/padUrl'
 import { useChatStore, useFocusedHeadingStore } from '@stores'
@@ -12,11 +12,12 @@ import { tocActions } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
 import { TocRow } from './TocRow'
 import { TocRowTrail } from './TocRowTrail'
-import type { NestedTocNode } from './utils'
+import type { NestedTocNode } from './utils/buildNestedToc'
 
-export type TocItemBodySortable = Pick<
-  ReturnType<typeof useSortable>,
-  'setNodeRef' | 'attributes' | 'listeners' | 'isDragging'
+// No `attributes`: they announce a keyboard pickup, and the TOC has no keyboard drag.
+type TocItemBodyDraggable = Pick<
+  ReturnType<typeof useDraggable>,
+  'setNodeRef' | 'listeners' | 'isDragging'
 >
 
 type TocItemBodyProps = {
@@ -24,13 +25,13 @@ type TocItemBodyProps = {
   nestedNodes: NestedTocNode<TocItemType>[]
   onToggle: (id: string) => void
   variant: 'desktop' | 'mobile'
-  /** Desktop drag adapter — omitted on mobile (no SortableContext). */
-  sortable?: TocItemBodySortable
+  /** Desktop drag adapter — omitted on mobile. */
+  draggable?: TocItemBodyDraggable
   /** False for the Title and on a locked pad: the row renders no grip. */
   canDrag?: boolean
   activeId?: string | null
   collapsedIds?: Set<string>
-  /** Desktop only — recurse through the sortable shell. Mobile recurses here. */
+  /** Desktop only — recurse through the drag shell. Mobile recurses here. */
   renderChild?: (node: NestedTocNode<TocItemType>) => ReactNode
 }
 
@@ -39,7 +40,7 @@ function TocItemBodyComponent({
   nestedNodes,
   onToggle,
   variant,
-  sortable,
+  draggable,
   canDrag = false,
   activeId = null,
   collapsedIds,
@@ -52,7 +53,7 @@ function TocItemBodyComponent({
   const setFocusedHeadingWithLock = useFocusedHeadingStore((s) => s.setFocusedHeadingWithLock)
 
   const hasChildren = nestedNodes.length > 0
-  const isDragging = Boolean(sortable?.isDragging)
+  const isDragging = Boolean(draggable?.isDragging)
   const isGhosted =
     isDesktop && (isDragging || (activeId && collapsedIds ? collapsedIds.has(item.id) : false))
 
@@ -114,7 +115,7 @@ function TocItemBodyComponent({
   )
 
   const leading =
-    isDesktop && sortable ? (
+    isDesktop && draggable ? (
       <>
         <span className={TOC_CLASSES.levelBadge}>H{item.level}</span>
         {canDrag && (
@@ -124,8 +125,7 @@ function TocItemBodyComponent({
                 type="button"
                 className={TOC_CLASSES.dragHandle}
                 aria-label="Drag to reorder"
-                {...sortable.attributes}
-                {...sortable.listeners}
+                {...draggable.listeners}
                 onClick={(e) => e.preventDefault()}>
                 <Icons.gripVertical size={16} aria-hidden className="stroke-[1.75]" />
               </button>
@@ -145,7 +145,7 @@ function TocItemBodyComponent({
     )
 
   return (
-    <li ref={sortable?.setNodeRef} className={liClassName} data-id={item.id}>
+    <li ref={draggable?.setNodeRef} className={liClassName} data-id={item.id}>
       <TocRow
         headingId={item.id}
         title={item.textContent}
@@ -162,9 +162,7 @@ function TocItemBodyComponent({
             headingId={item.id}
             isActive={isActive}
             showPresence={isDesktop}
-            iconSize={20}
             tooltipPlacement={isDesktop ? 'left' : 'top'}
-            iconClassName={twMerge(TOC_CLASSES.chatIcon, isDesktop && 'cursor-pointer fill-none')}
             onChatClick={handleChatClick}
           />
         }

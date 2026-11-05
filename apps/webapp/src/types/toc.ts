@@ -10,15 +10,11 @@ export interface TocItem {
   isTitle: boolean
 }
 
-export interface TocContextMenuState {
-  headingId: string | null
-  isOpen: boolean
-}
-
 /** One top-level heading as a tree node. `parentId` null means the root. */
 export interface TocOutlineNode {
   id: string
   level: number
+  text: string
   pos: number
   sectionTo: number
   parentId: string | null
@@ -35,16 +31,17 @@ export interface TocTreeAddress {
 export type TocTreeMoveRefusal =
   'locked' | 'not-found' | 'title-fixed' | 'above-title' | 'inside-own-set' | 'no-room' | 'noop'
 
+/** Where a drag lets go: between two visible rows, or onto a row to nest inside it. */
+export type TocDropTarget =
+  { kind: 'gap'; upperId: string | null; lowerId: string | null } | { kind: 'inside'; id: string }
+
 export interface TocTreeMovePlan {
   ok: true
-  sourceId: string
   /** The source section `[from, to)` in the planned document. */
   from: number
   to: number
   /** Where the section goes, before the delete is mapped. */
   insertPos: number
-  /** Start of the moved section after the move; selection maps by `landedFrom - from`. */
-  landedFrom: number
   L: number
   d: number
   parentId: string | null

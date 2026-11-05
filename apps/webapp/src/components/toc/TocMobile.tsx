@@ -1,21 +1,18 @@
 import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
-import React, { useMemo } from 'react'
+import React from 'react'
 
 import { useToc, useTocAutoScroll } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
 import { TocEmptyState } from './TocEmptyState'
 import { TocItemBody } from './TocItemBody'
-import { buildNestedToc } from './utils'
 
 interface TocMobileProps {
   className?: string
 }
 
 function TocMobileComponent({ className = '' }: TocMobileProps) {
-  const { items, toggleSection } = useToc()
+  const { items, nested: nestedItems, toggleSection } = useToc()
   useTocAutoScroll()
-
-  const nestedItems = useMemo(() => buildNestedToc(items), [items])
 
   return (
     <div className={className}>

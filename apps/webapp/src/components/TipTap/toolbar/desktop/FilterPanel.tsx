@@ -1,6 +1,7 @@
 import { PanelSurfaceShell } from '@components/PanelSurfaceShell'
 import { SheetPrimaryFooter } from '@components/SheetPrimaryFooter'
 import FilterBar from '@components/TipTap/pad-title-section/FilterBar'
+import { tocRowMap } from '@components/toc/tocClasses'
 import Button from '@components/ui/Button'
 import TextInput from '@components/ui/TextInput'
 import Toggle from '@components/ui/Toggle'
@@ -20,8 +21,10 @@ const MAX_SUGGESTIONS = 8
 const optionId = (index: number) => `filter-suggestion-${index}`
 
 const highlightTocSections = (sectionIds: Set<string>): void => {
-  document.querySelectorAll('.tiptap__toc .toc__item .toc__row').forEach((el) => {
-    const match = sectionIds.has(el.getAttribute('data-id') ?? '')
+  const toc = document.querySelector('.tiptap__toc')
+  if (!toc) return
+  tocRowMap(toc).forEach((el, id) => {
+    const match = sectionIds.has(id)
     el.classList.toggle('bg-warning/20', match)
     el.classList.toggle('text-base-content', !match)
   })

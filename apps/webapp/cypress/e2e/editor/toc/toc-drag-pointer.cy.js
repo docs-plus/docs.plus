@@ -31,6 +31,22 @@ const hoverBelow = (text) =>
     cy.get('body').realMouseMove(box.left + 40, box.bottom - 3, moveOpts)
   })
 
+const hoverMiddle = (text) =>
+  row(text).then(($row) => {
+    const box = $row[0].getBoundingClientRect()
+    cy.get('body').realMouseMove(box.left + 40, box.top + box.height / 2, moveOpts)
+  })
+
+const releaseOn = (text) =>
+  row(text).then(($row) => {
+    const box = $row[0].getBoundingClientRect()
+    cy.get('body').realMouseUp({
+      x: box.left + 40,
+      y: box.top + box.height / 2,
+      scrollBehavior: false
+    })
+  })
+
 const drop = () =>
   cy.get('.toc-drop-indicator-portal').then(($line) => {
     const y = Number($line.attr('data-y'))
@@ -110,7 +126,7 @@ describe('TOC drag by pointer', () => {
 
   it('moves sub-headings with a promoted section', () => {
     pickUp('Alpha One')
-    hoverAbove('Bravo')
+    hoverAbove('Charlie')
     // A root-level child of the Title lands under the Title's own rail.
     cy.getTocItem('Pointer Title').find('> ul.toc__children').should('have.class', 'is-drop-parent')
     drop()
@@ -118,10 +134,10 @@ describe('TOC drag by pointer', () => {
     outline().should('deep.equal', [
       '1:Pointer Title',
       '2:Alpha',
-      '2:Alpha One',
-      '3:Alpha One Deep',
       '2:Bravo',
       '3:Bravo One',
+      '2:Alpha One',
+      '3:Alpha One Deep',
       '2:Charlie'
     ])
   })
@@ -191,5 +207,53 @@ describe('TOC drag by pointer', () => {
     cy.get('body').realMouseUp({ x: 60, y: 5, scrollBehavior: false })
     cy.get('body').should('not.have.css', 'cursor', 'no-drop')
     outline().its(1).should('equal', '2:Alpha')
+  })
+
+  it('changes nothing when a last child is dropped back in its own place', () => {
+    pickUp('Bravo One')
+    hoverBelow('Bravo')
+    cy.get('.toc-drop-indicator-portal').should('not.exist')
+    cy.get('body').should('have.css', 'cursor', 'grabbing')
+    cy.get('body').realMouseUp({ x: 60, y: 5, scrollBehavior: false })
+    outline().should('deep.equal', [
+      '1:Pointer Title',
+      '2:Alpha',
+      '3:Alpha One',
+      '4:Alpha One Deep',
+      '2:Bravo',
+      '3:Bravo One',
+      '2:Charlie'
+    ])
+  })
+
+  it('nests a section inside a leaf row when dropped onto it', () => {
+    pickUp('Charlie')
+    hoverMiddle('Bravo One')
+    row('Bravo One').should('have.class', 'is-drop-target')
+    cy.get('.toc-drop-indicator-portal').should('not.exist')
+    releaseOn('Bravo One')
+    row('Bravo One').should('not.have.class', 'is-drop-target')
+    outline().should('deep.equal', [
+      '1:Pointer Title',
+      '2:Alpha',
+      '3:Alpha One',
+      '4:Alpha One Deep',
+      '2:Bravo',
+      '3:Bravo One',
+      '4:Charlie'
+    ])
+  })
+
+  it('shows an empty heading as a placeholder row', () => {
+    cy.window().then((win) => {
+      const editor = win._editor
+      editor
+        .chain()
+        .insertContentAt(editor.state.doc.content.size, { type: 'heading', attrs: { level: 2 } })
+        .run()
+    })
+    cy.get('.toc__item .toc__link')
+      .contains(/^Heading 2$/)
+      .should('have.class', 'text-[var(--pad-placeholder-ink)]')
   })
 })

@@ -5,8 +5,7 @@ import { HyperlinkPopoverPortal } from '@components/TipTap/hyperlinkPopovers/Hyp
 import editorConfig from '@components/TipTap/TipTap'
 import EditorToolbar from '@components/TipTap/toolbar/desktop/EditorToolbar'
 import { TocDesktop } from '@components/toc/TocDesktop'
-import { applyTreeMove } from '@components/toc/utils/applyTreeMove'
-import { addressForGap, planTreeMove } from '@components/toc/utils/planTreeMove'
+import { commitTocMove, planTocMove } from '@components/toc/utils/tocMove'
 import { GlobalDialog } from '@components/ui/GlobalDialog'
 import { useAuthStore, useStore } from '@stores'
 import { Editor, EditorContent as TiptapEditor, useEditor } from '@tiptap/react'
@@ -24,7 +23,11 @@ declare global {
     _createDocumentFromStructure?: (structure: any) => boolean
     _editor?: Editor
     /** `after` means after the target's whole section; the slot sets the level. */
-    _moveHeading?: (sourceId: string, targetId: string, position: 'before' | 'after') => boolean
+    _moveHeading?: (
+      sourceId: string,
+      targetId: string,
+      position: 'before' | 'after' | 'inside'
+    ) => boolean
     _getMarkdown?: () => string
     _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
     /** Cypress escape hatch: lets specs seed Zustand state (e.g. `metadata.documentId` to enable bookmark RPC). Playground-only — production routes never touch this. */
@@ -78,15 +81,19 @@ const EditorPlayground = ({ localPersistence, docName }: EditorPlaygroundProps) 
     window._editor = editor
     window._createDocumentFromStructure = createDocumentFromStructure({ editor })
 
+    // Same seam as the drag, so specs that use it test the drag's own lock rule.
     window._moveHeading = (sourceId, targetId, position) => {
-      const doc = editor.state.doc
-      const address =
-        position === 'before'
-          ? addressForGap(doc, null, targetId)
-          : addressForGap(doc, targetId, null)
-      const plan = address && planTreeMove(doc, sourceId, address, { locked: !editor.isEditable })
+      const plan = planTocMove(
+        editor,
+        sourceId,
+        position === 'inside'
+          ? { kind: 'inside', id: targetId }
+          : position === 'before'
+            ? { kind: 'gap', upperId: null, lowerId: targetId }
+            : { kind: 'gap', upperId: targetId, lowerId: null }
+      )
       if (!plan?.ok) return false
-      applyTreeMove(editor, plan)
+      commitTocMove(editor, plan)
       return true
     }
 

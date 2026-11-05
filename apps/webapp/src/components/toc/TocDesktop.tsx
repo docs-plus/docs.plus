@@ -1,21 +1,20 @@
 import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
 import { ContextMenu } from '@components/ui/ContextMenu'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
-import { SortableContext } from '@dnd-kit/sortable'
 import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { Icons } from '@icons'
 import { useAuthStore, useStore } from '@stores'
-import React, { useCallback, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
-import { DropIndicatorPortal, noCollisions, restrictToVerticalAxis } from './dnd'
+import { DropIndicatorPortal } from './dnd/DropIndicatorPortal'
+import { noCollisions, restrictToVerticalAxis } from './dnd/utils'
 import { useToc, useTocAutoScroll, useTocDrag } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
 import { TocContextMenu } from './TocContextMenu'
 import { TocEmptyState } from './TocEmptyState'
 import { TocHeader } from './TocHeader'
 import { TocItemDesktop } from './TocItemDesktop'
-import { buildNestedToc } from './utils'
 
 interface TocDesktopProps {
   className?: string
@@ -23,23 +22,22 @@ interface TocDesktopProps {
 
 function removeContextMenuActiveClass() {
   document
-    .querySelectorAll(`.toc__item .${TOC_CLASSES.row}.${TOC_CLASSES.contextMenuActive}`)
-    .forEach((item) => {
-      item.classList.remove(TOC_CLASSES.contextMenuActive)
-    })
+    .querySelectorAll(`.${TOC_CLASSES.item} > .${TOC_CLASSES.row}.${TOC_CLASSES.contextMenuActive}`)
+    .forEach((row) => row.classList.remove(TOC_CLASSES.contextMenuActive))
 }
 
 function TocDesktopComponent({ className = '' }: TocDesktopProps) {
-  const { items, toggleSection } = useToc()
+  const { items, nested: nestedItems, toggleSection } = useToc()
   const contextMenuRef = useRef<HTMLDivElement>(null)
-  const overlayRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
 
   useTocAutoScroll()
 
   const profileId = useAuthStore((s) => s.profile?.id)
   const locked = useStore((s) => selectDocumentEditingLocked(s.settings, profileId))
-  const { state, activeItem, sensors, handlers } = useTocDrag(items)
-  const { activeId, collapsedIds, descendantCount, gap, canDrop, sourceRect } = state
+  const { state, activeItem, sensors, handlers } = useTocDrag(items, listRef)
+  const { activeId, collapsedIds, line, sourceRect } = state
+  const descendantCount = collapsedIds.size
 
   const [contextMenuState, setContextMenuState] = useState<{
     headingId: string | null
@@ -50,7 +48,7 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
   })
 
   const handleBeforeShow = useCallback((target: Element) => {
-    const tocItem = target.closest('.toc__item')
+    const tocItem = target.closest(`.${TOC_CLASSES.item}`)
     if (!tocItem) return null
 
     removeContextMenuActiveClass()
@@ -60,7 +58,7 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
 
     setContextMenuState({ headingId: tocId, isOpen })
     tocItem
-      .querySelector(`.${TOC_CLASSES.row}[data-id="${tocId}"]`)
+      .querySelector(`:scope > .${TOC_CLASSES.row}`)
       ?.classList.add(TOC_CLASSES.contextMenuActive)
 
     return tocItem
@@ -71,8 +69,6 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
     removeContextMenuActiveClass()
   }, [])
 
-  const nestedItems = useMemo(() => buildNestedToc(items), [items])
-  const sortableIds = useMemo(() => items.map((i) => i.id), [items])
   const hasItems = items.length > 0
 
   const headerItem = (
@@ -97,33 +93,31 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
         collisionDetection={noCollisions}
         modifiers={[restrictToVerticalAxis]}
         {...handlers}>
-        <SortableContext items={sortableIds}>
-          <ul className={`${TOC_CLASSES.listMenu} ${activeId ? 'is-dragging' : ''}`}>
-            {headerItem}
-            <ContextMenu
-              aria-label="Section options"
-              parentRef={contextMenuRef}
-              onBeforeShow={handleBeforeShow}
-              onClose={handleContextMenuClose}>
-              <TocContextMenu
-                headingId={contextMenuState.headingId}
-                isOpen={contextMenuState.isOpen}
-                onToggle={toggleSection}
-              />
-            </ContextMenu>
-            {nestedItems.map(({ item, nodes }) => (
-              <TocItemDesktop
-                key={item.id}
-                item={item}
-                nestedNodes={nodes}
-                onToggle={toggleSection}
-                activeId={activeId}
-                collapsedIds={collapsedIds}
-                locked={locked}
-              />
-            ))}
-          </ul>
-        </SortableContext>
+        <ul ref={listRef} className={`${TOC_CLASSES.listMenu} ${activeId ? 'is-dragging' : ''}`}>
+          {headerItem}
+          <ContextMenu
+            aria-label="Section options"
+            parentRef={contextMenuRef}
+            onBeforeShow={handleBeforeShow}
+            onClose={handleContextMenuClose}>
+            <TocContextMenu
+              headingId={contextMenuState.headingId}
+              isOpen={contextMenuState.isOpen}
+              onToggle={toggleSection}
+            />
+          </ContextMenu>
+          {nestedItems.map(({ item, nodes }) => (
+            <TocItemDesktop
+              key={item.id}
+              item={item}
+              nestedNodes={nodes}
+              onToggle={toggleSection}
+              activeId={activeId}
+              collapsedIds={collapsedIds}
+              locked={locked}
+            />
+          ))}
+        </ul>
 
         {/* The scroller's fade mask would clip and fade the fixed drag card. */}
         {typeof document !== 'undefined' &&
@@ -132,7 +126,6 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
               {activeItem && (
                 <div className="toc-drag-wrapper">
                   <div
-                    ref={overlayRef}
                     className="toc-drag-card"
                     style={
                       sourceRect
@@ -157,12 +150,8 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
             document.body
           )}
 
-        {activeId && gap && canDrop && (
-          <DropIndicatorPortal
-            indicatorY={gap.indicatorY}
-            left={gap.rect.left}
-            width={gap.rect.width}
-          />
+        {activeId && line && (
+          <DropIndicatorPortal indicatorY={line.y} left={line.left} width={line.width} />
         )}
       </DndContext>
       <AppendHeadingButton className="mt-4" />

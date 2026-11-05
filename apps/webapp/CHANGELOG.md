@@ -135,7 +135,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   level picker are gone. The title row has no grip, nothing lands above it, and a locked pad
   starts no drag. While a drop is allowed, the rail of the list it joins turns blue. A refused
   slot shows no line and the "no drop" cursor. The drag card now hangs below the pointer, so
-  the line stays in view.
+  the line stays in view. Let go on the middle of a row, and the section nests inside it as
+  its last sub-section, with the row ringed in blue. A folded row opens to show it. Let go
+  where the section started, and nothing changes.
+- A heading with no text now has a TOC row, with a grey "Heading 2" style label. Before, it
+  had no row, so the TOC showed its sub-headings under the heading above it, and a drag
+  moved different headings from the ones it greyed out.
 - Links in posted chat messages show the same icons as links in the document
   ([#516](https://github.com/docs-plus/docs.plus/issues/516)). A click on a
   message link opens the link preview: a popover on a computer, the Link sheet on a phone.
@@ -193,6 +198,15 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   at the old place, and the next key typed into the following heading
   ([#520](https://github.com/docs-plus/docs.plus/issues/520)).
 - A TOC drop below a folded row now lands after that row's whole section, not inside it.
+- "Delete section" no longer shows on the title row or on a read-only pad. On the title row it
+  could delete the whole document.
+- The TOC scrolls the focused heading's own row into view again. Before, it scrolled the
+  whole section, so a parent row could stay out of sight.
+- After a click on a TOC row, the scroll spy no longer jumps back to an earlier heading.
+- A co-editor's edit inside a folded section no longer shows that block under the fold, and
+  no longer drops filter highlights.
+- The TOC is faster on long documents. Typing in a heading re-renders only its own row, a
+  drag measures the rows once, and the unread count no longer scans every chat per row.
 - A `/new` link in a pad now says what it does. Its click preview shows a "New document"
   chip that reads "Opens a blank document in a new tab", on desktop, in the phone sheet and in
   the chat composer dialog. The chip opens `/new` in a new tab, so the reader keeps their

@@ -12,7 +12,7 @@ type TocRowProps = {
   /** Scroll-spy — daisyUI `menu-focus` when not also chat-open */
   isFocused?: boolean
   title: string
-  /** Accessible name when `title` is blank, so the link is never unnamed. */
+  /** Shown in placeholder ink when `title` is blank, like the editor's empty-heading hint. */
   titleLabel?: string
   density?: 'desktop' | 'mobile'
   leading?: ReactNode
@@ -39,6 +39,7 @@ export function TocRow({
   onTitleClick,
   titleHref
 }: TocRowProps) {
+  const blank = !title.trim()
   return (
     <div
       className={twMerge(
@@ -58,10 +59,16 @@ export function TocRow({
           'min-w-0 text-pretty hyphens-auto whitespace-normal text-inherit no-underline'
         )}
         href={titleHref}
-        aria-label={title.trim() ? undefined : titleLabel}
         data-id={headingId}
         onClick={onTitleClick}>
-        <span className={twMerge(TOC_CLASSES.link, titleClassName)}>{title}</span>
+        <span
+          className={twMerge(
+            TOC_CLASSES.link,
+            titleClassName,
+            blank && titleLabel && 'text-[var(--pad-placeholder-ink)]'
+          )}>
+          {blank ? titleLabel : title}
+        </span>
       </a>
       {trail ?? <span />}
     </div>

@@ -194,7 +194,7 @@ _One row per heading. Fold from a row, and the page creases where the text went.
 
 ## What lands in a row
 
-A row carries the level of the heading and the text you typed. A heading with no text **gets no row**. An empty heading stays invisible to the table of contents until you name it.
+A row carries the level of the heading and the text you typed. A heading with no text still **gets a row**, with a grey label such as "Heading 2", the same hint the page shows. So the table of contents always matches the page.
 
 The table of contents has its own column. Drag the divider between that column and the page to resize it — try it here. The width runs from 240px to 46% of the column and page together. Your browser remembers a width above 240px. That gesture needs a mouse.
 
@@ -222,7 +222,7 @@ A filter folds sections for you. It saves your own folds first, and puts them ba
 
 ## Moving a section
 
-Drag the grip on a row up or down, and let go between two rows — needs a document you can edit. The slot sets the level: the section joins the list where the line sits, and the rail of the list it joins turns blue. The first line, the title, has no grip, and nothing can land above it.
+Drag the grip on a row up or down, and let go between two rows — needs a document you can edit. The slot sets the level: the section joins the list where the line sits, and the rail of the list it joins turns blue. Let go on the middle of a row instead, and the section goes inside that row, as its last sub-section. Let go where it started, and nothing changes. The first line, the title, has no grip, and nothing can land above it.
 
 ![A drag card over the table of contents, with the landing line and the rest of the section stacked behind it](/demo-assets/d7-drag.png)
 _The slot sets the order and the level. The whole section travels._

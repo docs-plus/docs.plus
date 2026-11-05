@@ -7,8 +7,8 @@ import type { Node as PMNode } from '@tiptap/pm/model'
 import { EditorState, TextSelection } from '@tiptap/pm/state'
 import type { TocTreeAddress } from '@types'
 
-import { treeMoveTransaction } from './applyTreeMove'
-import { addressForGap, outlineOf, planTreeMove } from './planTreeMove'
+import { outlineOf } from './outline'
+import { addressForTarget, planTreeMove, treeMoveTransaction } from './planTreeMove'
 
 const HeadingWithTocId = Heading.extend({
   addAttributes() {
@@ -49,6 +49,10 @@ function tree(doc: PMNode): string {
 }
 const levels = (doc: PMNode) => outlineOf(doc).map((n) => `${n.id}:${n.level}`)
 
+const gap = (doc: PMNode, upperId: string | null, lowerId: string | null) =>
+  addressForTarget(doc, { kind: 'gap', upperId, lowerId })
+const inside = (doc: PMNode, id: string) => addressForTarget(doc, { kind: 'inside', id })
+
 function move(doc: PMNode, sourceId: string, to: TocTreeAddress | null, locked = false) {
   if (!to) throw new Error('no address')
   const plan = planTreeMove(doc, sourceId, to, { locked })
@@ -59,39 +63,39 @@ function move(doc: PMNode, sourceId: string, to: TocTreeAddress | null, locked =
 describe('planTreeMove named cases', () => {
   it('moves sub-headings with a demoted section', () => {
     const doc = makeDoc([1, 'title'], [2, 'a'], 'x', [3, 'a1'], [2, 'b'], 'y', [3, 'b1'], [2, 'c'])
-    const out = move(doc, 'b', addressForGap(doc, 'a', 'a1'))
+    const out = move(doc, 'b', gap(doc, 'a', 'a1'))
     expect(tree(out.doc)).toBe('title{a{b{b1} a1} c}')
     expect(levels(out.doc)).toEqual(['title:1', 'a:2', 'b:3', 'b1:4', 'a1:3', 'c:2'])
   })
 
   it('moves sub-headings with a promoted section', () => {
     const doc = makeDoc([1, 'title'], [2, 'a'], [3, 'a1'], [4, 'a1a'], [3, 'a2'], [2, 'b'])
-    const out = move(doc, 'a1', addressForGap(doc, 'a2', 'b'))
+    const out = move(doc, 'a1', gap(doc, 'a2', 'b'))
     expect(tree(out.doc)).toBe('title{a{a2} a1{a1a} b}')
     expect(levels(out.doc)).toEqual(['title:1', 'a:2', 'a2:3', 'a1:2', 'a1a:3', 'b:2'])
   })
 
   it('never captures the following sibling', () => {
     const doc = makeDoc([1, 'title'], [2, 'a'], [2, 'b'], [2, 'c'])
-    expect(tree(move(doc, 'a', addressForGap(doc, 'b', 'c')).doc)).toBe('title{b a c}')
+    expect(tree(move(doc, 'a', gap(doc, 'b', 'c')).doc)).toBe('title{b a c}')
 
     // Skip level: the slot before an H4 child lands at H4, beside it, not over it.
     const skip = makeDoc([1, 'title'], [2, 'x'], [2, 't'], [4, 'c1'], [2, 'z'])
-    const out = move(skip, 'x', addressForGap(skip, 't', 'c1'))
+    const out = move(skip, 'x', gap(skip, 't', 'c1'))
     expect(tree(out.doc)).toBe('title{t{x c1} z}')
     expect(levels(out.doc)).toContain('x:4')
   })
 
   it('counts the index with the source still in place on a down-move', () => {
     const doc = makeDoc([1, 'title'], [2, 'a'], [2, 'b'], [2, 'c'], [2, 'd'])
-    expect(tree(move(doc, 'a', addressForGap(doc, 'c', 'd')).doc)).toBe('title{b c a d}')
-    expect(tree(move(doc, 'a', addressForGap(doc, 'd', null)).doc)).toBe('title{b c d a}')
+    expect(tree(move(doc, 'a', gap(doc, 'c', 'd')).doc)).toBe('title{b c a d}')
+    expect(tree(move(doc, 'a', gap(doc, 'd', null)).doc)).toBe('title{b c d a}')
   })
 
   it('keeps the Title fixed and lands nothing above it', () => {
     const doc = makeDoc([1, 'title'], [2, 'a'], [2, 'b'])
     expect(move(doc, 'title', { parentId: null, index: 1 }).reason).toBe('title-fixed')
-    expect(move(doc, 'b', addressForGap(doc, null, 'title')).reason).toBe('above-title')
+    expect(move(doc, 'b', gap(doc, null, 'title')).reason).toBe('above-title')
   })
 
   it('refuses a slot inside the moved set', () => {
@@ -102,7 +106,7 @@ describe('planTreeMove named cases', () => {
 
   it('derives a skipped level from the slot (H3 parent, H5 child)', () => {
     const doc = makeDoc([1, 'title'], [2, 'a'], [3, 'b'], [5, 'c'], [2, 'x'])
-    const out = move(doc, 'x', addressForGap(doc, 'b', 'c'))
+    const out = move(doc, 'x', gap(doc, 'b', 'c'))
     expect(tree(out.doc)).toBe('title{a{b{x c}}}')
     expect(levels(out.doc)).toContain('x:5')
   })
@@ -110,7 +114,7 @@ describe('planTreeMove named cases', () => {
   it('lands below a folded row after its whole section', () => {
     // Folded a1 has no visible row, so the gap below `a` is the gap before `b`.
     const doc = makeDoc([1, 'title'], [2, 'a'], [3, 'a1'], [2, 'b'], [2, 'y'])
-    expect(tree(move(doc, 'y', addressForGap(doc, 'a', 'b')).doc)).toBe('title{a{a1} y b}')
+    expect(tree(move(doc, 'y', gap(doc, 'a', 'b')).doc)).toBe('title{a{a1} y b}')
   })
 
   it('squashes the set at H6 without touching anything outside it', () => {
@@ -140,17 +144,32 @@ describe('planTreeMove named cases', () => {
   it('refuses an H6 parent and a locked pad', () => {
     const doc = makeDoc([1, 'title'], [2, 'a'], [6, 'f'], [2, 'b'])
     expect(move(doc, 'b', { parentId: 'f', index: 0 }).reason).toBe('no-room')
-    expect(move(doc, 'b', addressForGap(doc, 'a', 'f'), true).reason).toBe('locked')
+    expect(move(doc, 'b', gap(doc, 'a', 'f'), true).reason).toBe('locked')
   })
 
   it('is a noop at its own slot, and normalizes a deep first child there', () => {
     const doc = makeDoc([1, 'title'], [2, 'a'], [3, 'a1'], [2, 'b'])
-    expect(move(doc, 'b', addressForGap(doc, 'a1', 'b')).reason).toBe('noop')
-    expect(move(doc, 'a', addressForGap(doc, 'title', 'a')).reason).toBe('noop')
+    expect(move(doc, 'b', gap(doc, 'a1', 'b')).reason).toBe('noop')
+    expect(move(doc, 'a', gap(doc, 'title', 'a')).reason).toBe('noop')
 
     const deep = makeDoc([1, 'title'], [4, 'x'], [5, 'x1'])
-    const out = move(deep, 'x', addressForGap(deep, 'title', 'x'))
+    const out = move(deep, 'x', gap(deep, 'title', 'x'))
     expect(levels(out.doc)).toEqual(['title:1', 'x:2', 'x1:3'])
+  })
+
+  it('nests inside a leaf as its first child, and inside a parent as its last child', () => {
+    const doc = makeDoc([1, 'title'], [2, 'a'], [3, 'a1'], [2, 'b'], [2, 'c'], [3, 'c1'])
+    const leaf = move(doc, 'c', inside(doc, 'b'))
+    expect(tree(leaf.doc)).toBe('title{a{a1} b{c{c1}}}')
+    expect(levels(leaf.doc)).toContain('c1:4')
+    expect(tree(move(doc, 'b', inside(doc, 'a')).doc)).toBe('title{a{a1 b} c{c1}}')
+    expect(move(doc, 'a', inside(doc, 'a1')).reason).toBe('inside-own-set')
+  })
+
+  it('keeps an empty heading in the outline, so its sub-headings stay its children', () => {
+    const doc = makeDoc([1, 'title'], [2, 'a'], [2, 'e', ''], [3, 'b'])
+    expect(tree(doc)).toBe('title{a e{b}}')
+    expect(tree(move(doc, 'a', gap(doc, 'b', null)).doc)).toBe('title{e{b a}}')
   })
 
   it('keeps the caret in the moved text', () => {
@@ -214,7 +233,7 @@ describe('planTreeMove property', () => {
 
         for (let g = 0; g <= rows.length; g++) {
           const where = `seed ${seed} doc ${docNo} ${source.id} gap ${g}: ${tree(doc)}`
-          const address = addressForGap(doc, rows[g - 1]?.id ?? null, rows[g]?.id ?? null)!
+          const address = gap(doc, rows[g - 1]?.id ?? null, rows[g]?.id ?? null)!
           const plan = planTreeMove(doc, source.id, address, { locked: false })
           if (!plan.ok) {
             expect([where, plan.reason]).toEqual([where, g === 0 ? 'above-title' : 'noop'])

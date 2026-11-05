@@ -1,56 +1,55 @@
+import { headingFoldPluginKey } from '@components/TipTap/extensions/heading-fold'
 import { type DragStartEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
-import { isDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { useStore } from '@stores'
-import type { TocItem, TocTreeMoveResult } from '@types'
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import type { TocItem } from '@types'
+import { type RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
-import type { DragRow, DropGap } from '../dnd'
-import { findDropGap, getDescendantIds, getItemElement, measureDragRows } from '../dnd'
-import { TOC_CLASSES } from '../tocClasses'
-import { applyTreeMove } from '../utils/applyTreeMove'
-import { addressForGap, planTreeMove } from '../utils/planTreeMove'
+import {
+  type DragRow,
+  type DropTarget,
+  findDropTarget,
+  gapLine,
+  getDescendantIds,
+  measureDragRows,
+  toTocDropTarget
+} from '../dnd/utils'
+import { TOC_CLASSES, tocRowElement } from '../tocClasses'
+import { commitTocMove, planTocMove } from '../utils/tocMove'
 
 interface DragState {
   activeId: string | null
   collapsedIds: Set<string>
-  descendantCount: number
-  gap: DropGap | null
-  /** Parent the set lands under when the gap is allowed; null for root or a refusal. */
+  target: DropTarget | null
+  /** The gap line, when the target is an allowed gap. */
+  line: { y: number; left: number; width: number } | null
+  /** Parent the set lands under when the target is allowed; null for root or a refusal. */
   dropParentId: string | null
   canDrop: boolean
-  /** The gap is the set's own slot: no line, but not a refusal either (ruling 2026-11-04). */
-  isOwnSlot: boolean
+  /** The set's own place: no line, no move, and no refusal cursor (ruling 2026-11-05). */
+  isHome: boolean
   sourceRect: { width: number; height: number } | null
 }
 
 const initialState: DragState = {
   activeId: null,
   collapsedIds: new Set(),
-  descendantCount: 0,
-  gap: null,
+  target: null,
+  line: null,
   dropParentId: null,
   canDrop: false,
-  isOwnSlot: false,
+  isHome: false,
   sourceRect: null
 }
 
-// Reads the live document each time: a remote edit mid-drag moves every position.
-function planForGap(sourceId: string, gap: DropGap | null): TocTreeMoveResult | null {
-  const editor = useStore.getState().settings.editor.instance
-  if (!editor || editor.isDestroyed || !gap) return null
-  const doc = editor.state.doc
-  const address = addressForGap(doc, gap.upperId, gap.lowerId)
-  if (!address) return null
-  return planTreeMove(doc, sourceId, address, {
-    locked: isDocumentEditingLocked() || !editor.isEditable
-  })
-}
+const editorNow = () => useStore.getState().settings.editor.instance
 
-export function useTocDrag(items: TocItem[]) {
+export function useTocDrag(items: TocItem[], listRef: RefObject<HTMLElement | null>) {
   const [state, setState] = useState<DragState>(initialState)
   const pointerYRef = useRef(0)
   const rowsRef = useRef<DragRow[]>([])
-  const scrollRafRef = useRef<number | null>(null)
+  // Row index of the gap the set left; dropping there changes nothing.
+  const homeIndexRef = useRef(-1)
+  const frameRef = useRef<number | null>(null)
   const stateRef = useRef(state)
   stateRef.current = state
   const itemsRef = useRef(items)
@@ -60,26 +59,41 @@ export function useTocDrag(items: TocItem[]) {
 
   // After the ghost styles commit: they change row heights, so earlier rects are stale.
   useLayoutEffect(() => {
-    if (!state.activeId) return
+    const root = listRef.current
+    if (!state.activeId || !root) return
+    const sourceIndex = itemsRef.current.findIndex((i) => i.id === state.activeId)
     const moving = new Set([state.activeId, ...state.collapsedIds])
     const measure = () => {
-      rowsRef.current = measureDragRows(itemsRef.current, moving)
+      rowsRef.current = measureDragRows(root, itemsRef.current, moving)
+      const order = new Map(itemsRef.current.map((item, i) => [item.id, i]))
+      const after = rowsRef.current.findIndex((row) => (order.get(row.id) ?? 0) > sourceIndex)
+      homeIndexRef.current = after === -1 ? rowsRef.current.length : after
     }
     measure()
 
+    let scrollFrame: number | null = null
+    const onScroll = () => {
+      if (scrollFrame === null) {
+        scrollFrame = requestAnimationFrame(() => {
+          scrollFrame = null
+          measure()
+        })
+      }
+    }
     Object.assign(document.body.style, { userSelect: 'none' })
     const onMove = (e: PointerEvent) => (pointerYRef.current = e.clientY)
     window.addEventListener('pointermove', onMove)
-    document.addEventListener('scroll', measure, true)
+    document.addEventListener('scroll', onScroll, true)
 
     return () => {
+      if (scrollFrame !== null) cancelAnimationFrame(scrollFrame)
       window.removeEventListener('pointermove', onMove)
-      document.removeEventListener('scroll', measure, true)
+      document.removeEventListener('scroll', onScroll, true)
       Object.assign(document.body.style, { userSelect: '' })
     }
-  }, [state.activeId, state.collapsedIds])
+  }, [state.activeId, state.collapsedIds, listRef])
 
-  const refused = Boolean(state.activeId && state.gap && !state.canDrop && !state.isOwnSlot)
+  const refused = Boolean(state.activeId && state.target && !state.canDrop && !state.isHome)
   useEffect(() => {
     if (!state.activeId) return
     document.body.style.cursor = refused ? 'no-drop' : 'grabbing'
@@ -88,47 +102,56 @@ export function useTocDrag(items: TocItem[]) {
     }
   }, [state.activeId, refused])
 
-  // DS-12: the landing parent's nest rail turns primary; a root landing changes none.
+  // DS-12: the landing parent's nest rail turns primary. A drop onto a row also marks that row.
   useEffect(() => {
-    if (!state.dropParentId) return
-    const rail = document.querySelector(
-      `li.${TOC_CLASSES.item}[data-id="${state.dropParentId}"] > ul.${TOC_CLASSES.children}`
+    const root = listRef.current
+    if (!state.dropParentId || !root) return
+    const id = CSS.escape(state.dropParentId)
+    const rail = root.querySelector(
+      `li.${TOC_CLASSES.item}[data-id="${id}"] > ul.${TOC_CLASSES.children}`
     )
+    const row = state.target?.kind === 'inside' ? tocRowElement(state.dropParentId, root) : null
     rail?.classList.add(TOC_CLASSES.dropParent)
-    return () => rail?.classList.remove(TOC_CLASSES.dropParent)
-  }, [state.dropParentId])
+    row?.classList.add(TOC_CLASSES.dropTarget)
+    return () => {
+      rail?.classList.remove(TOC_CLASSES.dropParent)
+      row?.classList.remove(TOC_CLASSES.dropTarget)
+    }
+  }, [state.dropParentId, state.target?.kind, listRef])
 
   useEffect(() => {
     return () => {
-      if (scrollRafRef.current !== null) {
-        window.cancelAnimationFrame(scrollRafRef.current)
-        scrollRafRef.current = null
-      }
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current)
     }
   }, [])
 
   const resetState = useCallback(() => {
     rowsRef.current = []
+    homeIndexRef.current = -1
     setState(initialState)
   }, [])
+
+  // The list can empty mid-drag (a remote edit); DndContext then unmounts and never ends the drag.
+  useEffect(() => {
+    if (items.length === 0 && stateRef.current.activeId) resetState()
+  }, [items.length, resetState])
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       const id = String(event.active.id)
-      if (!items.some((i) => i.id === id)) return
+      const root = listRef.current
+      if (!root || !items.some((i) => i.id === id)) return
 
-      const el = getItemElement(id)
-      const collapsedIds = new Set(getDescendantIds(items, id))
+      const el = tocRowElement(id, root)
       pointerYRef.current = 0
       setState({
         ...initialState,
         activeId: id,
-        collapsedIds,
-        descendantCount: collapsedIds.size,
+        collapsedIds: new Set(getDescendantIds(items, id)),
         sourceRect: el ? { width: el.offsetWidth, height: el.offsetHeight } : null
       })
     },
-    [items]
+    [items, listRef]
   )
 
   const handleDragMove = useCallback(() => {
@@ -137,43 +160,55 @@ export function useTocDrag(items: TocItem[]) {
 
     setState((prev) => {
       if (!prev.activeId) return prev
-      const gap = findDropGap(pointerY, rowsRef.current, prev.gap)
-      const sameGap = gap?.upperId === prev.gap?.upperId && gap?.lowerId === prev.gap?.lowerId
-      if (sameGap) {
-        return gap?.indicatorY === prev.gap?.indicatorY ? prev : { ...prev, gap }
+      const rows = rowsRef.current
+      const target = findDropTarget(pointerY, rows, prev.target)
+      if (target === prev.target) {
+        // Same target, but a scroll may have moved the rows under the line.
+        const line = prev.canDrop && target ? gapLine(rows, target) : null
+        return line?.y === prev.line?.y ? prev : { ...prev, line }
       }
 
-      // Plan only when the gap changes, never per pointer move.
-      const plan = planForGap(prev.activeId, gap)
+      const isHome = target?.kind === 'gap' && target.index === homeIndexRef.current
+      // Plan only when the target changes, never per pointer move.
+      const plan =
+        target && !isHome ? planTocMove(editorNow(), prev.activeId, toTocDropTarget(target)) : null
+      const canDrop = Boolean(plan?.ok)
       // Keep collapsedIds Set identity so memoized rows bail on pointermove.
       return {
         ...prev,
-        gap,
-        canDrop: Boolean(plan?.ok),
-        isOwnSlot: plan?.ok === false && plan.reason === 'noop',
+        target,
+        isHome: isHome || (plan?.ok === false && plan.reason === 'noop'),
+        canDrop,
+        line: canDrop && target ? gapLine(rows, target) : null,
         dropParentId: plan?.ok ? plan.parentId : null
       }
     })
   }, [])
 
   const handleDragEnd = useCallback(() => {
-    const { activeId, gap, canDrop } = stateRef.current
+    const { activeId, target, canDrop } = stateRef.current
     resetState()
-    if (!activeId || !canDrop) return
+    if (!activeId || !target || !canDrop) return
 
-    const plan = planForGap(activeId, gap)
-    const editor = useStore.getState().settings.editor.instance
-    if (!plan?.ok || !editor) return
-    applyTreeMove(editor, plan)
+    const editor = editorNow()
+    const plan = planTocMove(editor, activeId, toTocDropTarget(target))
+    if (!editor || !plan?.ok) return
+    commitTocMove(editor, plan)
 
-    if (scrollRafRef.current !== null) window.cancelAnimationFrame(scrollRafRef.current)
-    scrollRafRef.current = window.requestAnimationFrame(() => {
-      scrollRafRef.current = null
-      document
-        .querySelector(`[data-toc-id="${activeId}"]`)
-        ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    // A drop onto a folded row opens it, so the moved section stays in view.
+    if (target.kind === 'inside') {
+      const folded = headingFoldPluginKey.getState(editor.state)?.foldedIds.has(target.id)
+      if (folded) editor.commands.toggleFold(target.id)
+    }
+
+    if (frameRef.current !== null) cancelAnimationFrame(frameRef.current)
+    frameRef.current = requestAnimationFrame(() => {
+      frameRef.current = null
+      const root = listRef.current
+      const row = root && tocRowElement(activeId, root)
+      row?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     })
-  }, [resetState])
+  }, [resetState, listRef])
 
   const handleDragCancel = useCallback(() => resetState(), [resetState])
 

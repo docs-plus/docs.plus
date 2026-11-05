@@ -28,7 +28,7 @@ bun run migrate:nested-to-flat
 - Editor uses a flat heading schema: `heading block*`.
 - Sections are decoration-based.
 - `attrs['toc-id']` renders as `data-toc-id`.
-- Section reorder is TOC-only via `useTocDrag` / `planTreeMove` + `applyTreeMove`, which calls `moveSection` (delete first, then insert). There is no in-editor heading drag handle extension.
+- Section reorder is TOC-only via `components/toc/utils/tocMove.ts`: `planTreeMove` plans, and `treeMoveTransaction` deletes first, then inserts, in one transaction. There is no in-editor heading drag handle extension.
 - Toolbar **Block style** (Title / Subtitle / H1–H6 / Normal) is outline role. Read and apply it through `TipTap/block-style/blockStyle`. Do not treat the H number as font size — that is HeadingScale. Names: [CONTEXT.md](../../../../../CONTEXT.md) §Pad outline.
 - **Clear formatting never changes Block style** (#392). One command, `ClearFormatting` in `TipTap/clearFormatting.ts`, serves the pad toolbar, the mobile format drawer, the chat composer and `Mod-\`. It removes every mark except `hyperlink` and `link`, in one transaction. A collapsed caret changes no text. It sets the stored marks to the caret's link marks only, so the next typed text is plain and a link is not split. Never call `clearNodes`, `setNode` or `lift` from it: a demoted heading loses its section, TOC row and Heading chat. The disabled state is `editor.can().clearFormatting()`. A selection or caret that holds only a link counts as nothing to clear. The pad and the composer both load it next to `ListGapJoin`.
 
@@ -57,9 +57,9 @@ bun run migrate:nested-to-flat
 - Plugin state is `{ fingerprint, decorations }`.
 - Fingerprint is top-level heading levels in order, e.g. `1,2,4,1,3`.
 - Map the decoration set while the fingerprint is unchanged. Rebuild fully when the fingerprint changes, or when mapping drops a decoration.
-- Detect a drop with the `onRemove` option of `DecorationSet.map`. A step that replaces a heading's tokens drops its node decoration: `setNodeMarkup` (UniqueID writes `toc-id` this way), `moveSection`, split, join and paste.
+- Detect a drop with the `onRemove` option of `DecorationSet.map`. A step that replaces a heading's tokens drops its node decoration: `setNodeMarkup` (UniqueID writes `toc-id` this way), a TOC move, a Yjs block replace, split, join and paste.
 - A Yjs change (remote, undo, redo) replaces only the changed top-level blocks (`@tiptap/y-tiptap` 3.0.10, #520). Mapping then drops only the decorations in that span, and a drop rebuilds the set. A full-document replace is y-tiptap's fallback path, and it drops every decoration. One full rebuild cost ~8.7 ms at 1501 headings (measured on y-tiptap 3.0.9, where every remote transaction replaced the whole document).
-- Do not gate on a y-sync key string. PluginKey adds a numeric suffix (`y-sync$1` in the live app), so the old `getMeta('y-sync$')` check never matched.
+- Do not gate on a y-sync key string. PluginKey adds a numeric suffix (`y-sync$1` in the live app), so the old `getMeta('y-sync$')` check never matched. HeadingFold and HeadingFilter use the same `onRemove` rebuild since 2026-11-05.
 - Do not replace this with fixed per-level point maps.
 - A heading that is not top-level (inside a blockquote or a table cell) gets no rank decoration. It falls back to a fixed size by HTML level in `_heading-node.scss`: 24, 22, 20, 18, 16 and 14pt for h1 to h6, the same range as the scale. Keep those fallbacks in step with the range.
 
