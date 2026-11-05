@@ -1,11 +1,14 @@
 import { useFocusedHeadingStore, useStore } from '@stores'
+import type { Node as PMNode } from '@tiptap/pm/model'
 import type { Transaction } from '@tiptap/pm/state'
+import { TIPTAP_NODES } from '@types'
 import { clampToContainerFraction } from '@utils/clampToContainerFraction'
 import { scrollNearestInScroller } from '@utils/scrollNearestInScroller'
 import debounce from 'lodash/debounce'
 import throttle from 'lodash/throttle'
 import { RefObject, useCallback, useEffect, useMemo, useRef } from 'react'
 
+import { TOC_CLASSES } from '../tocClasses'
 import { transactionRequiresTocRebuild } from '../utils/headingTransaction'
 
 /** Reading line: heading closest to this offset from the scroll container top wins */
@@ -29,18 +32,27 @@ function isHeadingWithTocId(el: Element): boolean {
   return el.matches(HEADING_WITH_TOC_ID_SELECTOR)
 }
 
-function getVisibleHeadingEntries(
-  container: HTMLElement,
-  visibleMap: Map<string, Element>
-): Array<{ id: string; el: Element }> {
-  const fromMap = Array.from(visibleMap.entries())
-    .filter(([, el]) => isHeadingWithTocId(el))
-    .map(([id, el]) => ({ id, el }))
+/** Top-level `id:level` list, the same headings the TOC rows come from. */
+function headingSignature(doc: PMNode): { signature: string; count: number } {
+  let signature = ''
+  let count = 0
+  doc.forEach((node) => {
+    if (node.type.name !== TIPTAP_NODES.HEADING_TYPE) return
+    const id = node.attrs['toc-id'] as string | null
+    if (!id) return
+    signature += `${id}:${node.attrs.level}|`
+    count++
+  })
+  return { signature, count }
+}
 
-  if (fromMap.length > 0) {
-    return fromMap
-  }
+interface ObservedHeadings {
+  /** Null when the DOM held fewer headings than the doc, so the next check rebuilds. */
+  signature: string | null
+  byId: Map<string, Element>
+}
 
+function scanVisibleHeadings(container: HTMLElement): Array<{ id: string; el: Element }> {
   const cr = container.getBoundingClientRect()
   const out: Array<{ id: string; el: Element }> = []
   container.querySelectorAll(HEADING_WITH_TOC_ID_SELECTOR).forEach((el) => {
@@ -56,6 +68,7 @@ function getVisibleHeadingEntries(
 export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | null>) {
   const observerRef = useRef<IntersectionObserver | null>(null)
   const visibleHeadingsRef = useRef<Map<string, Element>>(new Map())
+  const observedRef = useRef<ObservedHeadings | null>(null)
   const rafRef = useRef<number | null>(null)
   const setupRafIdsRef = useRef<number[]>([])
 
@@ -66,7 +79,16 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
     const container = scrollContainerRef.current
     if (!container) return
 
-    const entries = getVisibleHeadingEntries(container, visibleHeadingsRef.current)
+    let entries = Array.from(visibleHeadingsRef.current.entries())
+      .filter(([, el]) => isHeadingWithTocId(el))
+      .map(([id, el]) => ({ id, el }))
+    if (entries.length === 0) {
+      // Inside a long section no heading is in the top half. Keep the focus; the IO reports
+      // the next heading that crosses in. Scan only on first paint or when the focus is gone.
+      const focusedId = useFocusedHeadingStore.getState().focusedHeadingId
+      if (focusedId && observedRef.current?.byId.get(focusedId)?.isConnected) return
+      entries = scanVisibleHeadings(container)
+    }
     if (entries.length === 0) return
 
     const containerRect = container.getBoundingClientRect()
@@ -109,24 +131,32 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
     if (rafRef.current !== null) return
     rafRef.current = window.requestAnimationFrame(() => {
       rafRef.current = null
-      updateFocus()
+      // A TOC click can set the lock after this frame was queued.
+      if (!useFocusedHeadingStore.getState().isScrollLocked) updateFocus()
     })
   }, [updateFocus])
 
   const setupObserver = useCallback(() => {
     const container = scrollContainerRef.current
-    if (!container) return
+    if (!container || !editor || editor.isDestroyed) return
 
     observerRef.current?.disconnect()
+    observerRef.current = null
     visibleHeadingsRef.current.clear()
 
     const headings = container.querySelectorAll(HEADING_WITH_TOC_ID_SELECTOR)
+    const byId = new Map<string, Element>()
+    headings.forEach((el) => {
+      const id = el.getAttribute('data-toc-id')
+      if (id) byId.set(id, el)
+    })
+    const { signature, count } = headingSignature(editor.state.doc)
+    observedRef.current = { signature: byId.size < count ? null : signature, byId }
     if (headings.length === 0) return
 
     observerRef.current = new IntersectionObserver(
       (entries) => {
-        if (useFocusedHeadingStore.getState().isScrollLocked) return
-
+        // No lock check here: IO reports only changes, so a skipped entry leaves the map stale.
         for (const entry of entries) {
           const el = entry.target
           if (!isHeadingWithTocId(el)) continue
@@ -154,26 +184,45 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
       setupRafIdsRef.current.push(inner)
     })
     setupRafIdsRef.current.push(outer)
-  }, [scrollContainerRef, scheduleUpdateFocus])
+  }, [scrollContainerRef, scheduleUpdateFocus, editor])
 
-  const debouncedSetup = useMemo(() => debounce(setupObserver, 100), [setupObserver])
+  // Typing in a heading keeps its element, so the observations stay valid. Rebuild only when
+  // the id:level list changes, or when ProseMirror replaced an observed element (a non-level
+  // attr change, a remote y-sync replace, a restore).
+  const rebuildIfHeadingsChanged = useCallback(() => {
+    const observed = observedRef.current
+    if (observed && editor && !editor.isDestroyed) {
+      const unchanged =
+        observed.signature === headingSignature(editor.state.doc).signature &&
+        Array.from(observed.byId.values()).every((el) => el.isConnected)
+      if (unchanged) return
+    }
+    setupObserver()
+  }, [editor, setupObserver])
+
+  const debouncedRebuild = useMemo(
+    () => debounce(rebuildIfHeadingsChanged, 100),
+    [rebuildIfHeadingsChanged]
+  )
 
   useEffect(() => {
     if (!editor) return
-    debouncedSetup()
+    observedRef.current = null
+    debouncedRebuild()
 
     const onTransaction = ({ transaction }: { transaction: Transaction }) => {
-      // Body typing must not tear down IntersectionObserver — only heading structure/text.
+      // Cheap filter: only steps inside or across headings reach the id:level check.
       if (!transactionRequiresTocRebuild(transaction)) return
-      debouncedSetup()
+      debouncedRebuild()
     }
     editor.on('transaction', onTransaction)
 
     return () => {
       editor.off('transaction', onTransaction)
-      debouncedSetup.cancel()
+      debouncedRebuild.cancel()
       observerRef.current?.disconnect()
       observerRef.current = null
+      observedRef.current = null
       if (rafRef.current !== null) {
         window.cancelAnimationFrame(rafRef.current)
         rafRef.current = null
@@ -181,7 +230,7 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
       for (const id of setupRafIdsRef.current) window.cancelAnimationFrame(id)
       setupRafIdsRef.current = []
     }
-  }, [editor, debouncedSetup])
+  }, [editor, debouncedRebuild])
 
   useEffect(() => {
     const container = scrollContainerRef.current
@@ -224,12 +273,13 @@ function tocItemSelector(id: string): string {
   return `.toc__item[data-id="${id.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"]`
 }
 
-/** Scroll the row link, not the whole `li`. Parent items wrap a tall nested `ul`, so
- * `li.scrollIntoView` often keeps the top row (and focus rail) above the viewport. */
+/** Scroll the row, not the whole `li`. Parent items wrap a tall nested `ul`, so
+ * `li.scrollIntoView` often keeps the top row (and focus rail) above the viewport.
+ * The lookup starts at the TOC root, so it does not walk the editor DOM. */
 function tocRowScrollTarget(id: string): Element | null {
-  const li = document.querySelector(tocItemSelector(id))
+  const li = document.querySelector('.tiptap__toc')?.querySelector(tocItemSelector(id))
   if (!li) return null
-  return li.querySelector(':scope > a') ?? li
+  return li.querySelector(`:scope > .${TOC_CLASSES.row}`) ?? li
 }
 
 /** Align TOC scroller to spy focus without re-rendering the outline tree. */
