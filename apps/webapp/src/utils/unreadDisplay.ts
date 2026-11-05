@@ -19,6 +19,23 @@ export function resolveUnreadCount(channelId: string, source: UnreadCountSource)
   return source.channels.get(channelId)?.unread_message_count ?? 0
 }
 
+// Every TOC row runs this on each chat-store update. Immer gives `channels` a new
+// identity only when channels change, so the index builds once per change.
+const byHeadingCache = new WeakMap<UnreadCountSource['channels'], Map<string, string>>()
+
+const getByHeading = (channels: UnreadCountSource['channels']): Map<string, string> => {
+  let by = byHeadingCache.get(channels)
+  if (by) return by
+  by = new Map<string, string>()
+  for (const [channelId, row] of channels) {
+    const headingId = row?.heading_id
+    // Keep the first row in Map order, so the winner matches a linear scan.
+    if (headingId && !by.has(headingId)) by.set(headingId, channelId)
+  }
+  byHeadingCache.set(channels, by)
+  return by
+}
+
 /**
  * The store keys rows by channel id, and a heading-side reader has a toc-id (#402).
  * An old row keeps id = heading_id, so the direct hit is the common case.
@@ -26,10 +43,7 @@ export function resolveUnreadCount(channelId: string, source: UnreadCountSource)
 function headingChannelId(headingId: string, channels: UnreadCountSource['channels']): string {
   if (!headingId) return ''
   if (channels.get(headingId)?.heading_id === headingId) return headingId
-  for (const [channelId, row] of channels) {
-    if (row?.heading_id === headingId) return channelId
-  }
-  return ''
+  return getByHeading(channels).get(headingId) ?? ''
 }
 
 /** Unread for a heading's chat, through its channel row in this document. */
