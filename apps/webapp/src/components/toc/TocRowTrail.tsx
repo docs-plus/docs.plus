@@ -12,10 +12,8 @@ import { TOC_CLASSES } from './tocClasses'
 type TocRowTrailProps = {
   headingId: string
   isActive: boolean
-  /** Desktop shows usersPresence; mobile header/rows omit the stack. */
+  /** Desktop rows: presence stack and pointer cursor. Phone rows omit both. */
   showPresence?: boolean
-  iconSize?: number
-  iconClassName?: string
   triggerClassName?: string
   onChatClick: (e: MouseEvent) => void
   tooltipPlacement?: 'top' | 'left'
@@ -26,8 +24,6 @@ export function TocRowTrail({
   headingId,
   isActive,
   showPresence = false,
-  iconSize = 20,
-  iconClassName,
   triggerClassName,
   onChatClick,
   tooltipPlacement = 'top',
@@ -54,8 +50,12 @@ export function TocRowTrail({
             <UnreadBadge count={unreadCount} size="sm" variant="error" />
           ) : (
             <Icons.chatroom
-              className={twMerge(iconClassName, isActive && TOC_CLASSES.chatIconActive)}
-              size={iconSize}
+              className={twMerge(
+                TOC_CLASSES.chatIcon,
+                showPresence && 'cursor-pointer',
+                isActive && TOC_CLASSES.chatIconActive
+              )}
+              size={20}
             />
           )}
         </button>

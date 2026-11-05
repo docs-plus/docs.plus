@@ -1,14 +1,14 @@
 /// <reference types="cypress" />
 
-// Window globals the app publishes at runtime; see src/pages/editor.tsx and Controllers.tsx.
+// Window globals the app publishes at runtime; see src/components/pages/editor/EditorPlayground.tsx and Controllers.tsx.
 type SelectionLevel = 'element' | 'parent' | 'section' | 'heading' | 'list' | 'document'
 
 interface EditorWindow {
-  /** TipTap editor instance – set in editor.tsx */
+  /** TipTap editor instance – set in EditorPlayground.tsx */
   _editor?: import('@tiptap/core').Editor
-  /** Programmatic document builder – set in editor.tsx */
+  /** Programmatic document builder – set in EditorPlayground.tsx */
   _createDocumentFromStructure?: (doc: Record<string, unknown>) => boolean
-  /** Programmatic heading move – set in editor.tsx; the slot sets the level */
+  /** Programmatic heading move – set in EditorPlayground.tsx; the slot sets the level */
   _moveHeading?: (sourceId: string, targetId: string, position: 'before' | 'after') => boolean
   /** Hierarchical selection helpers – set in Controllers.tsx */
   _editorSelect?: (level: SelectionLevel) => void
@@ -17,7 +17,7 @@ interface EditorWindow {
   /** Markdown helpers – available when @tiptap/markdown is loaded */
   _getMarkdown?: () => string
   _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
-  /** Zustand store handle – set in editor.tsx so specs can seed slices the playground doesn't populate naturally (e.g. `metadata.documentId`). */
+  /** Zustand store handle – set in EditorPlayground.tsx so specs can seed slices the playground doesn't populate naturally (e.g. `metadata.documentId`). */
   _store?: {
     getState: () => {
       setWorkspaceSetting: (key: string, value: unknown) => void
@@ -922,14 +922,6 @@ declare global {
         }
       ): Chainable<void>
 
-      verifyTocStructure(
-        expectedStructure: Array<{
-          text: string
-          level: number
-          children?: Array<{ text: string; level: number; children?: any[] }>
-        }>
-      ): Chainable<void>
-
       waitForToc(): Chainable<JQuery<HTMLElement>>
     }
   }
@@ -977,40 +969,5 @@ Cypress.Commands.add(
         cy.wait(300)
       })
     })
-  }
-)
-
-Cypress.Commands.add(
-  'verifyTocStructure',
-  (
-    expectedStructure: Array<{
-      text: string
-      level: number
-      children?: Array<{ text: string; level: number; children?: any[] }>
-    }>
-  ) => {
-    function verifyItems(items: typeof expectedStructure, parentSelector: string = '.toc__list') {
-      items.forEach((expected, index) => {
-        cy.get(parentSelector)
-          .find('> .toc__item')
-          .eq(index)
-          .within(() => {
-            cy.get('> a .toc__link').should('contain.text', expected.text)
-
-            cy.root().should('have.attr', 'data-level', String(expected.level))
-
-            if (expected.children && expected.children.length > 0) {
-              cy.get('> ul.toc__list').should('exist')
-              verifyItems(expected.children, '> ul.toc__list')
-            }
-          })
-      })
-    }
-
-    cy.get('.toc__list')
-      .first()
-      .within(() => {
-        verifyItems(expectedStructure)
-      })
   }
 )

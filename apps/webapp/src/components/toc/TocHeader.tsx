@@ -1,6 +1,5 @@
 import { useModal } from '@components/ui/ModalDrawer'
 import { selectDocumentId, useChatStore, useStore } from '@stores'
-import { twMerge } from '@utils/twMerge'
 
 import { tocActions } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
@@ -41,13 +40,8 @@ export function TocHeader({ variant }: TocHeaderProps) {
       headingId={workspaceId}
       isActive={isActive}
       showPresence={variant === 'desktop'}
-      iconSize={20}
       maxAvatars={3}
       triggerClassName={variant === 'mobile' ? 'size-8 rounded-full' : undefined}
-      iconClassName={twMerge(
-        TOC_CLASSES.chatIcon,
-        variant === 'desktop' && 'cursor-pointer fill-none'
-      )}
       onChatClick={handleChatClick}
     />
   ) : null

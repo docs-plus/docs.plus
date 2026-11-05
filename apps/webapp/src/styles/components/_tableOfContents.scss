@@ -1,10 +1,5 @@
-/**
- * Table of Contents Styles
- *
- * Row padding / hover / radius / active / focus / nest come from daisyUI `.menu`
- * (`menu-active` / `menu-focus`). This file owns sticky header, fold chevron,
- * chat-icon accent, and ghost/drag row states. Drag overlay → `_tocDrag.scss`.
- */
+// Row padding, hover and nest come from daisyUI `.menu`. This file adds only what the
+// menu lacks: the sticky header, fold, chat accent and ghost rows. Drag card: `_tocDrag.scss`.
 
 @use './tocDrag';
 
@@ -109,7 +104,6 @@
   }
 
   &.is-dragging > .toc__row {
-    background-color: var(--color-base-200) !important;
     border-color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
   }
 }
