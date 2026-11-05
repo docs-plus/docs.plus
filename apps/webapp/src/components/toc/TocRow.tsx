@@ -51,7 +51,7 @@ export function TocRow({
       )}
       data-id={headingId}>
       {/* Always three grid children so menu’s auto column lands on the title. */}
-      <span className="flex shrink-0 items-center gap-1">{leading}</span>
+      <span className="flex shrink-0 items-center">{leading}</span>
       <a
         className={twMerge(
           TOC_CLASSES.rowLink,

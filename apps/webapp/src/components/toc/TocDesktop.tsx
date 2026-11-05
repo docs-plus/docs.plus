@@ -1,19 +1,20 @@
 import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
 import { ContextMenu } from '@components/ui/ContextMenu'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { SortableContext } from '@dnd-kit/sortable'
+import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { Icons } from '@icons'
+import { useAuthStore, useStore } from '@stores'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
-import { DropIndicatorPortal, pointerYCollision, tocDragModifier } from './dnd'
+import { DropIndicatorPortal, noCollisions, restrictToVerticalAxis } from './dnd'
 import { useToc, useTocAutoScroll, useTocDrag } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
 import { TocContextMenu } from './TocContextMenu'
 import { TocEmptyState } from './TocEmptyState'
 import { TocHeader } from './TocHeader'
 import { TocItemDesktop } from './TocItemDesktop'
-import { TocLevelPicker } from './TocLevelPicker'
 import { buildNestedToc } from './utils'
 
 interface TocDesktopProps {
@@ -35,16 +36,10 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
 
   useTocAutoScroll()
 
-  const { state, activeItem, flatItems, sensors, handlers } = useTocDrag(items)
-  const {
-    activeId,
-    projectedLevel,
-    originalLevel,
-    collapsedIds,
-    descendantCount,
-    dropTarget,
-    sourceRect
-  } = state
+  const profileId = useAuthStore((s) => s.profile?.id)
+  const locked = useStore((s) => selectDocumentEditingLocked(s.settings, profileId))
+  const { state, activeItem, sensors, handlers } = useTocDrag(items)
+  const { activeId, collapsedIds, descendantCount, gap, canDrop, sourceRect } = state
 
   const [contextMenuState, setContextMenuState] = useState<{
     headingId: string | null
@@ -77,7 +72,7 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
   }, [])
 
   const nestedItems = useMemo(() => buildNestedToc(items), [items])
-  const sortableIds = useMemo(() => flatItems.map((f) => f.id), [flatItems])
+  const sortableIds = useMemo(() => items.map((i) => i.id), [items])
   const hasItems = items.length > 0
 
   const headerItem = (
@@ -99,10 +94,10 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
     <div className={className} ref={contextMenuRef}>
       <DndContext
         sensors={sensors}
-        collisionDetection={pointerYCollision}
-        modifiers={[tocDragModifier]}
+        collisionDetection={noCollisions}
+        modifiers={[restrictToVerticalAxis]}
         {...handlers}>
-        <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+        <SortableContext items={sortableIds}>
           <ul className={`${TOC_CLASSES.listMenu} ${activeId ? 'is-dragging' : ''}`}>
             {headerItem}
             <ContextMenu
@@ -124,6 +119,7 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
                 onToggle={toggleSection}
                 activeId={activeId}
                 collapsedIds={collapsedIds}
+                locked={locked}
               />
             ))}
           </ul>
@@ -135,8 +131,6 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
             <DragOverlay dropAnimation={null} zIndex={60}>
               {activeItem && (
                 <div className="toc-drag-wrapper">
-                  <TocLevelPicker level={originalLevel} projectedLevel={projectedLevel} />
-
                   <div
                     ref={overlayRef}
                     className="toc-drag-card"
@@ -163,11 +157,11 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
             document.body
           )}
 
-        {activeId && dropTarget.id && dropTarget.indicatorY !== null && dropTarget.rect && (
+        {activeId && gap && canDrop && (
           <DropIndicatorPortal
-            indicatorY={dropTarget.indicatorY}
-            left={dropTarget.rect.left}
-            width={dropTarget.rect.width}
+            indicatorY={gap.indicatorY}
+            left={gap.rect.left}
+            width={gap.rect.width}
           />
         )}
       </DndContext>

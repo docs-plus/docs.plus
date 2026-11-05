@@ -128,6 +128,14 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- A desktop TOC drag now moves a section like a folder in a file manager
+  ([#499](https://github.com/docs-plus/docs.plus/issues/499)). Let go between two rows, and
+  the slot sets the level. Every sub-heading shifts by the same step and stops at H6. A move
+  never pulls the headings that follow into the section. The sideways level offset and the
+  level picker are gone. The title row has no grip, nothing lands above it, and a locked pad
+  starts no drag. While a drop is allowed, the rail of the list it joins turns blue. A refused
+  slot shows no line and the "no drop" cursor. The drag card now hangs below the pointer, so
+  the line stays in view.
 - Links in posted chat messages show the same icons as links in the document
   ([#516](https://github.com/docs-plus/docs.plus/issues/516)). A click on a
   message link opens the link preview: a popover on a computer, the Link sheet on a phone.
@@ -181,6 +189,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- A caret inside a section you drag in the TOC now moves with the section. Before, it stayed
+  at the old place, and the next key typed into the following heading
+  ([#520](https://github.com/docs-plus/docs.plus/issues/520)).
+- A TOC drop below a folded row now lands after that row's whole section, not inside it.
 - A `/new` link in a pad now says what it does. Its click preview shows a "New document"
   chip that reads "Opens a blank document in a new tab", on desktop, in the phone sheet and in
   the chat composer dialog. The chip opens `/new` in a new tab, so the reader keeps their

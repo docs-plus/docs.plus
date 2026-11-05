@@ -98,7 +98,7 @@ The lock **stops at the document body**. Every chat control on this page still w
 
 The text is fixed. The talk is not.
 
-The table of contents is the exception. Its drag grip and its Delete section entry still respond on this page. Both write into the document — needs a document you can edit. The server refuses what they send, so **do not press them here**. Delete section asks you to confirm first, so press Cancel if you open it.
+The table of contents has no drag grip here, because a locked page refuses every move. Its Delete section entry is the exception. It still responds on this page and writes into the document — needs a document you can edit. The server refuses what it sends, so **do not press it here**. Delete section asks you to confirm first, so press Cancel if you open it.
 
 Open the chatroom on this heading and say what you would use a per-heading chatroom for — needs an account.
 
@@ -222,12 +222,12 @@ A filter folds sections for you. It saves your own folds first, and puts them ba
 
 ## Moving a section
 
-Drag the grip on a row up or down to set the order — needs a document you can edit. Drag it sideways to set the depth. Each 24px step is one level, three steps at most, clamped between H1 and H6.
+Drag the grip on a row up or down, and let go between two rows — needs a document you can edit. The slot sets the level: the section joins the list where the line sits, and the rail of the list it joins turns blue. The first line, the title, has no grip, and nothing can land above it.
 
 ![A drag card over the table of contents, with the landing line and the rest of the section stacked behind it](/demo-assets/d7-drag.png)
-_Up or down sets the order. Sideways sets the depth. The whole section travels._
+_The slot sets the order and the level. The whole section travels._
 
-**The whole section travels**: the heading, its body text, its media, and every sub-heading under it. One undo step puts it back. The new level is written to the dragged heading alone, so sub-headings keep the levels they had.
+**The whole section travels**: the heading, its body text, its media, and every sub-heading under it. One undo step puts it back. Every sub-heading shifts by the same number of levels as the dragged heading, and stops at H6. A move never pulls the headings that follow into the section.
 
 The grip is desktop only.
 

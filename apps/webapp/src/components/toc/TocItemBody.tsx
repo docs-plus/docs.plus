@@ -6,11 +6,10 @@ import { padUrl } from '@services/padUrl'
 import { useChatStore, useFocusedHeadingStore } from '@stores'
 import type { TocItem as TocItemType } from '@types'
 import { twMerge } from '@utils/twMerge'
-import { memo, type MouseEvent, type ReactNode, useCallback, useState } from 'react'
+import { memo, type MouseEvent, type ReactNode, useCallback } from 'react'
 
 import { tocActions } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
-import { TocLevelPicker } from './TocLevelPicker'
 import { TocRow } from './TocRow'
 import { TocRowTrail } from './TocRowTrail'
 import type { NestedTocNode } from './utils'
@@ -27,6 +26,8 @@ type TocItemBodyProps = {
   variant: 'desktop' | 'mobile'
   /** Desktop drag adapter — omitted on mobile (no SortableContext). */
   sortable?: TocItemBodySortable
+  /** False for the Title and on a locked pad: the row renders no grip. */
+  canDrag?: boolean
   activeId?: string | null
   collapsedIds?: Set<string>
   /** Desktop only — recurse through the sortable shell. Mobile recurses here. */
@@ -39,6 +40,7 @@ function TocItemBodyComponent({
   onToggle,
   variant,
   sortable,
+  canDrag = false,
   activeId = null,
   collapsedIds,
   renderChild
@@ -53,7 +55,6 @@ function TocItemBodyComponent({
   const isDragging = Boolean(sortable?.isDragging)
   const isGhosted =
     isDesktop && (isDragging || (activeId && collapsedIds ? collapsedIds.has(item.id) : false))
-  const [isHoveringHandle, setIsHoveringHandle] = useState(false)
 
   const handleClick = useCallback(
     (e: MouseEvent) => {
@@ -92,8 +93,8 @@ function TocItemBodyComponent({
   )
 
   const foldSize = isDesktop ? 'size-5' : 'size-11 min-h-11 min-w-11'
-  // A leaf keeps a blank slot of the fold size, so rows of one heading level
-  // share one title start. Without it the leaf title moves left.
+  // A desktop leaf has no fold slot, so its title takes the space (ruling update
+  // 2026-11-04, #373). A phone leaf keeps its blank 44px slot.
   const fold = hasChildren ? (
     <button
       type="button"
@@ -108,7 +109,7 @@ function TocItemBodyComponent({
       aria-label={item.open ? 'Collapse section' : 'Expand section'}>
       <Icons.chevronRight size={18} className="fill-none stroke-current" aria-hidden />
     </button>
-  ) : (
+  ) : isDesktop ? null : (
     <span aria-hidden="true" className={twMerge('shrink-0', foldSize)} />
   )
 
@@ -116,22 +117,21 @@ function TocItemBodyComponent({
     isDesktop && sortable ? (
       <>
         <span className={TOC_CLASSES.levelBadge}>H{item.level}</span>
-        <span className="relative flex shrink-0 items-center self-stretch">
-          <Tooltip title="Drag to reorder" placement="bottom">
-            <button
-              type="button"
-              className={TOC_CLASSES.dragHandle}
-              aria-label="Drag to reorder"
-              {...sortable.attributes}
-              {...sortable.listeners}
-              onMouseEnter={() => setIsHoveringHandle(true)}
-              onMouseLeave={() => setIsHoveringHandle(false)}
-              onClick={(e) => e.preventDefault()}>
-              <Icons.gripVertical size={16} aria-hidden className="stroke-[1.75]" />
-            </button>
-          </Tooltip>
-          {isHoveringHandle && !isDragging && <TocLevelPicker level={item.level} mode="preview" />}
-        </span>
+        {canDrag && (
+          <span className="relative flex shrink-0 items-center self-stretch">
+            <Tooltip title="Drag to reorder" placement="bottom">
+              <button
+                type="button"
+                className={TOC_CLASSES.dragHandle}
+                aria-label="Drag to reorder"
+                {...sortable.attributes}
+                {...sortable.listeners}
+                onClick={(e) => e.preventDefault()}>
+                <Icons.gripVertical size={16} aria-hidden className="stroke-[1.75]" />
+              </button>
+            </Tooltip>
+          </span>
+        )}
         {hasChildren ? (
           <Tooltip title="Toggle" placement="top">
             {fold}

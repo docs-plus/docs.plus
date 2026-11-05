@@ -32,7 +32,8 @@ function tocItemsEqual(a: TocItem[], b: TocItem[]): boolean {
       left.id !== right.id ||
       left.level !== right.level ||
       left.textContent !== right.textContent ||
-      left.open !== right.open
+      left.open !== right.open ||
+      left.isTitle !== right.isTitle
     ) {
       return false
     }
@@ -83,7 +84,8 @@ export function useToc() {
         id: headingId,
         level: node.attrs.level as number,
         textContent: node.textContent,
-        open: isOpen
+        open: isOpen,
+        isTitle: i === 0 && node.attrs.level === 1
       })
     }
 

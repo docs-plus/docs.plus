@@ -13,6 +13,7 @@ interface TocItemDesktopProps {
   onToggle: (id: string) => void
   activeId?: string | null
   collapsedIds?: Set<string>
+  locked: boolean
 }
 
 /** Desktop sortable shell — only adapter that may call `useSortable`. */
@@ -21,11 +22,14 @@ function TocItemDesktopComponent({
   nestedNodes,
   onToggle,
   activeId = null,
-  collapsedIds = EMPTY_COLLAPSED
+  collapsedIds = EMPTY_COLLAPSED,
+  locked
 }: TocItemDesktopProps) {
+  // R3: the Title never moves; a locked pad starts no drag.
+  const canDrag = !item.isTitle && !locked
   const sortable = useSortable({
     id: item.id,
-    disabled: collapsedIds.has(item.id)
+    disabled: !canDrag || collapsedIds.has(item.id)
   })
 
   return (
@@ -35,6 +39,7 @@ function TocItemDesktopComponent({
       onToggle={onToggle}
       variant="desktop"
       sortable={sortable}
+      canDrag={canDrag}
       activeId={activeId}
       collapsedIds={collapsedIds}
       renderChild={({ item: childItem, nodes: grandNodes }) => (
@@ -45,6 +50,7 @@ function TocItemDesktopComponent({
           onToggle={onToggle}
           activeId={activeId}
           collapsedIds={collapsedIds}
+          locked={locked}
         />
       )}
     />

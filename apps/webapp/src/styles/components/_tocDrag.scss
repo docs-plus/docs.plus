@@ -1,5 +1,5 @@
 /**
- * TOC drag overlay / grip / level picker — intentional SCSS island (not daisyUI menu).
+ * TOC drag overlay / grip / drop rail — intentional SCSS island (not daisyUI menu).
  * Loaded from `_tableOfContents.scss`.
  */
 
@@ -57,13 +57,6 @@
   }
 }
 
-.toc__level-picker {
-  position: absolute;
-  left: 0;
-  bottom: calc(100% + 4px);
-  z-index: 20;
-}
-
 .toc__level-badge {
   display: none;
   position: absolute;
@@ -85,77 +78,14 @@
 
 .toc-drag-wrapper {
   pointer-events: none;
-  transform: translate(-12px, -36px);
+  // The card hangs just below the pointer, so the drop line and rail stay in view.
+  transform: translate(-12px, calc(50% + 6px));
 }
 
-.toc-drag-levels {
-  display: flex;
-  gap: 2px;
-  margin-bottom: 4px;
-  background: var(--color-base-100);
-  border: 1px solid var(--color-base-300);
-  border-radius: var(--radius-box);
-  padding: 2px;
-  box-shadow: var(--shadow-overlay);
-  width: fit-content;
-}
-
-.toc-drag-level {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 18px;
-  padding: 0 4px;
-  font-size: 0.65rem;
-  font-weight: 600;
-  // Live options take idle ink; /40 is only for disabled.
-  color: color-mix(in oklch, var(--color-base-content) 70%, transparent);
-  background: transparent;
-  border-radius: var(--radius-field);
-  transition:
-    background-color var(--motion-overlay-in, 120ms) var(--motion-ease-enter, ease-out),
-    color var(--motion-overlay-in, 120ms) var(--motion-ease-enter, ease-out);
-
-  &.original {
-    border: 1px solid var(--color-docsy);
-    color: var(--color-docsy);
-    transform: scale(1.1);
-    margin: 0 16px;
-
-    &::before,
-    &::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      width: 12px;
-      height: 1px;
-      background: var(--color-base-content);
-    }
-
-    &::before {
-      right: 100%;
-      margin-right: 1px;
-    }
-
-    &::after {
-      left: 100%;
-      margin-left: 1px;
-    }
-
-    &:not(.active)::before,
-    &:not(.active)::after {
-      background: var(--color-docsy);
-    }
-  }
-
-  // Inverse pair: base-100 ink on a base-content fill holds contrast in every theme.
-  &.active {
-    color: var(--color-base-100);
-    background: var(--color-base-content);
-    position: relative;
-    border-color: transparent;
-  }
+// DS-12 (ruling 2026-11-04): the landing parent's nest rail while a gap is targeted.
+.toc__children.is-drop-parent::before {
+  background-color: var(--color-primary);
+  opacity: 1;
 }
 
 .toc-drag-card {

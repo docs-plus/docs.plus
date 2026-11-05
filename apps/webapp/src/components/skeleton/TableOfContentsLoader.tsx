@@ -7,10 +7,10 @@ import React, { type ReactNode } from 'react'
 // styles first.
 type RowProps = { widthClassName: string; hasChildren?: boolean }
 
-// The caret slot stays blank under the option-A ruling (2026-10-09), so it ignores `hasChildren`.
-const DesktopRow = ({ widthClassName }: RowProps) => (
-  <div className="flex min-h-8 items-center gap-2 px-3 py-1.5">
-    <span className="ms-1 size-5 shrink-0" />
+// A parent keeps a blank caret slot (option-A ruling, 2026-10-09); a leaf has none (#373 update).
+const DesktopRow = ({ widthClassName, hasChildren }: RowProps) => (
+  <div className="flex min-h-8 items-center gap-1 px-3 py-1.5">
+    {hasChildren ? <span className="size-5 shrink-0" /> : <span />}
     <div className={`skeleton h-3.5 max-w-full ${widthClassName}`} />
     <span className="size-6 shrink-0" />
   </div>
@@ -36,7 +36,7 @@ const MobileRow = ({ widthClassName, hasChildren }: RowProps) => (
 )
 
 const Nest = ({ children }: { children: ReactNode }) => (
-  <div className="before:bg-base-content/10 relative ms-4 before:absolute before:inset-y-3 before:start-2.5 before:w-[var(--border)]">
+  <div className="before:bg-base-content/10 relative ms-4 ps-2 before:absolute before:inset-y-3 before:start-0 before:w-[var(--border)]">
     {children}
   </div>
 )
@@ -98,7 +98,7 @@ const TableOfContentsLoader = ({ density = 'desktop' }: TableOfContentsLoaderPro
     <div className="flex h-full min-h-0 w-full flex-col">
       <div className="ps-2.5 pe-1.5">
         <div className="border-base-300 mb-1 border-b pt-2 pb-1">
-          <div className="flex min-h-8 items-center gap-2 px-3 py-1.5">
+          <div className="flex min-h-8 items-center gap-1 px-3 py-1.5">
             <span />
             <div className="skeleton h-4 w-36 max-w-full" />
             <span className="size-6 shrink-0" />

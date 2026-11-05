@@ -8,13 +8,8 @@ interface EditorWindow {
   _editor?: import('@tiptap/core').Editor
   /** Programmatic document builder – set in editor.tsx */
   _createDocumentFromStructure?: (doc: Record<string, unknown>) => boolean
-  /** Programmatic heading move – set in editor.tsx */
-  _moveHeading?: (
-    sourceId: string,
-    targetId: string,
-    position: 'before' | 'after',
-    level?: number
-  ) => boolean
+  /** Programmatic heading move – set in editor.tsx; the slot sets the level */
+  _moveHeading?: (sourceId: string, targetId: string, position: 'before' | 'after') => boolean
   /** Hierarchical selection helpers – set in Controllers.tsx */
   _editorSelect?: (level: SelectionLevel) => void
   _editorSelectAndCopy?: (level: SelectionLevel) => void
@@ -924,7 +919,6 @@ declare global {
         targetText: string,
         options?: {
           position?: 'before' | 'after'
-          level?: number
         }
       ): Chainable<void>
 
@@ -952,12 +946,8 @@ Cypress.Commands.add('getTocItem', (headingText: string) => {
 /** Calls the editor directly via `window._moveHeading` to bypass dnd-kit. */
 Cypress.Commands.add(
   'dragTocItem',
-  (
-    sourceText: string,
-    targetText: string,
-    options: { position?: 'before' | 'after'; level?: number } = {}
-  ) => {
-    const { position = 'after', level } = options
+  (sourceText: string, targetText: string, options: { position?: 'before' | 'after' } = {}) => {
+    const { position = 'after' } = options
 
     cy.getTocItem(sourceText).then(($source) => {
       const sourceId = $source.attr('data-id')
@@ -977,7 +967,7 @@ Cypress.Commands.add(
             throw new Error('window._moveHeading is not available. Make sure editor is loaded.')
           }
 
-          const success = win._moveHeading(sourceId, targetId, position, level)
+          const success = win._moveHeading(sourceId, targetId, position)
           if (!success) {
             throw new Error(`Failed to move heading "${sourceText}" to "${targetText}"`)
           }

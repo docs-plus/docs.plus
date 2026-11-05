@@ -16,13 +16,14 @@ export const TOC_CLASSES = {
   rowLink: 'toc__row-link',
   link: 'toc__link',
   children: 'toc__children',
+  /** DS-12: on the landing parent's child list while a drag targets a gap. */
+  dropParent: 'is-drop-parent',
   foldBtn: 'toc__fold-btn',
   chatTrigger: 'toc__chat-trigger',
   chatIcon: 'toc__chat-icon',
   /** Chat open — theme-aware accent (SCSS → `--color-docsy`), never `text-accent`. */
   chatIconActive: 'toc__chat-icon--active',
   levelBadge: 'toc__level-badge',
-  levelPicker: 'toc__level-picker',
   /** Drag grip — desktop: row hover (+ focus-visible); mobile: always on. */
   dragHandle: 'toc-drag-handle',
   contextMenuActive: 'context-menu-active'

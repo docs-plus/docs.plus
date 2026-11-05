@@ -48,7 +48,7 @@ Sign in with Google or an email link when you need more. You need an account to 
 
 **A chatroom on every heading.** Ask a question under a section, and the answer stays with that section. Nobody has to guess which part you meant. On desktop, select a passage to comment on it, and the comment posts in that heading's chatroom. Reply in thread turns a message into a new heading. [Open a chatroom in the demo](https://docs.plus/demo/notifications).
 
-**Find the busy sections.** The table of contents shows a message count beside each heading with messages. Sign in, and each count shows only what you have not read. On desktop, faces show who has each chatroom open, and you can drag a row to move its whole section. Drag it sideways to change its level. [Try it in the demo](https://docs.plus/demo/invisible).
+**Find the busy sections.** The table of contents shows a message count beside each heading with messages. Sign in, and each count shows only what you have not read. On desktop, faces show who has each chatroom open, and you can drag a row to move its whole section. The slot you drop it in sets its level. [Try it in the demo](https://docs.plus/demo/invisible).
 
 **Send the exact view you mean.** Filter a document by a word, and it folds to the sections that contain it. The filter is part of the link, so you can send that view to someone. Here is [the demo, filtered to "spotify"](https://docs.plus/demo/spotify).
 

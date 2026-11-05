@@ -21,16 +21,13 @@
   overflow: visible;
 }
 
+// Desktop title sits 4px from the fold (menu default 8px); the phone keeps the default.
+.m_desktop .toc__list.menu .toc__row {
+  column-gap: 0.25rem;
+}
+
 .tiptap__toc {
   padding-top: 8px;
-
-  .toc__list.menu :where(li ul) {
-    padding: 0;
-  }
-
-  .toc__list.menu :where(li ul):before {
-    inset-inline-start: 10px;
-  }
 
   .toc__list.is-dragging {
     user-select: none;

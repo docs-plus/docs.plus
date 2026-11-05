@@ -5,7 +5,8 @@ import { HyperlinkPopoverPortal } from '@components/TipTap/hyperlinkPopovers/Hyp
 import editorConfig from '@components/TipTap/TipTap'
 import EditorToolbar from '@components/TipTap/toolbar/desktop/EditorToolbar'
 import { TocDesktop } from '@components/toc/TocDesktop'
-import { moveHeadingSection } from '@components/toc/utils/moveHeading'
+import { applyTreeMove } from '@components/toc/utils/applyTreeMove'
+import { addressForGap, planTreeMove } from '@components/toc/utils/planTreeMove'
 import { GlobalDialog } from '@components/ui/GlobalDialog'
 import { useAuthStore, useStore } from '@stores'
 import { Editor, EditorContent as TiptapEditor, useEditor } from '@tiptap/react'
@@ -22,12 +23,8 @@ declare global {
   interface Window {
     _createDocumentFromStructure?: (structure: any) => boolean
     _editor?: Editor
-    _moveHeading?: (
-      sourceId: string,
-      targetId: string,
-      position: 'before' | 'after',
-      newLevel?: number
-    ) => boolean
+    /** `after` means after the target's whole section; the slot sets the level. */
+    _moveHeading?: (sourceId: string, targetId: string, position: 'before' | 'after') => boolean
     _getMarkdown?: () => string
     _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
     /** Cypress escape hatch: lets specs seed Zustand state (e.g. `metadata.documentId` to enable bookmark RPC). Playground-only — production routes never touch this. */
@@ -81,14 +78,16 @@ const EditorPlayground = ({ localPersistence, docName }: EditorPlaygroundProps) 
     window._editor = editor
     window._createDocumentFromStructure = createDocumentFromStructure({ editor })
 
-    window._moveHeading = (sourceId, targetId, position, newLevel) => {
-      return moveHeadingSection({
-        editor,
-        sourceId,
-        targetId,
-        position,
-        newLevel
-      })
+    window._moveHeading = (sourceId, targetId, position) => {
+      const doc = editor.state.doc
+      const address =
+        position === 'before'
+          ? addressForGap(doc, null, targetId)
+          : addressForGap(doc, targetId, null)
+      const plan = address && planTreeMove(doc, sourceId, address, { locked: !editor.isEditable })
+      if (!plan?.ok) return false
+      applyTreeMove(editor, plan)
+      return true
     }
 
     window._getMarkdown = () => editor.getMarkdown()

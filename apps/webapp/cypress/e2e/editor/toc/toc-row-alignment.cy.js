@@ -8,15 +8,22 @@ const rowLink = ($list, text) => {
   return link.closest('.toc__row-link')
 }
 
-// Retries until the row in `state` has its class and both titles start at one x.
+// Retries until the row in `state` has its class and the leaf title starts one
+// fold width left of the parent title (desktop leaf has no slot, #373 update 2026-11-04).
 const shouldAlign = (state) =>
   cy.get('.toc__list').should(($list) => {
     if (state) {
       expect(rowLink($list, state.text).closest('.toc__row'), state.text).to.have.class(state.cls)
     }
-    const parentX = rowLink($list, 'Parent Row').getBoundingClientRect().left
+    const parent = rowLink($list, 'Parent Row')
+    const foldWidth = parent
+      .closest('.toc__row')
+      .querySelector('button.toc__fold-btn')
+      .getBoundingClientRect().width
+    const parentX = parent.getBoundingClientRect().left
     const leafX = rowLink($list, 'Leaf Row').getBoundingClientRect().left
-    expect(Math.abs(parentX - leafX)).to.be.below(0.5)
+    expect(foldWidth).to.be.above(0)
+    expect(parentX - leafX).to.be.closeTo(foldWidth, 0.5)
   })
 
 describe('TOC row alignment', () => {
@@ -36,7 +43,7 @@ describe('TOC row alignment', () => {
     cy.waitForToc()
   })
 
-  it('starts a leaf title where a parent title of the same level starts, in every row state', () => {
+  it('starts a leaf title one fold width left of a parent title, in every row state', () => {
     shouldAlign()
     cy.getTocItem('Parent Row')
       .find('> .toc__row button.toc__fold-btn')
