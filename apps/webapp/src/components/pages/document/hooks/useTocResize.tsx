@@ -4,9 +4,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 
 export const TOC_MIN_WIDTH = 240
 /** Max TOC width as a fraction of the editor workspace (`.editor` row). */
-export const TOC_MAX_WIDTH_RATIO = 0.46
+const TOC_MAX_WIDTH_RATIO = 0.46
 export const TOC_DEFAULT_WIDTH = 320
-export const TOC_WIDTH_STORAGE_KEY = 'docsy:toc-width'
+const TOC_WIDTH_STORAGE_KEY = 'docsy:toc-width'
 export const TOC_RAIL_WIDTH = 32
 export const TOC_SNAP_WIDTH = 120
 
@@ -26,7 +26,7 @@ type TocReleaseStep =
     }
 
 /** Intended drag + last-wide + clamp → next mode, Painted width, tocWidth. */
-export const stepTocRelease = (
+const stepTocRelease = (
   intended: number | null,
   lastWide: number,
   dragMax: number,
@@ -62,7 +62,7 @@ export const stepTocRelease = (
   }
 }
 
-export const getTocMaxWidth = (containerWidth: number): number => {
+const getTocMaxWidth = (containerWidth: number): number => {
   if (containerWidth <= 0) return TOC_DEFAULT_WIDTH
   return Math.max(TOC_MIN_WIDTH, Math.floor(containerWidth * TOC_MAX_WIDTH_RATIO))
 }
@@ -73,7 +73,7 @@ export const clampTocWidth = (width: number, containerWidth: number): number => 
 }
 
 /** Width of the `.pad .editor` flex row — shared by live resize + slug skeleton. */
-export const readEditorWorkspaceWidth = (): number => {
+const readEditorWorkspaceWidth = (): number => {
   if (typeof document === 'undefined') return 0
   const editor = document.querySelector('.pad .editor')
   return editor?.getBoundingClientRect().width ?? 0
@@ -128,6 +128,8 @@ export const useTocResize = () => {
   const intendedWidthRef = useRef<number | null>(null)
   const dragMaxWidthRef = useRef(0)
   const modeRef = useRef<TocMode>('wide')
+  const pendingClientXRef = useRef<number | null>(null)
+  const moveFrameRef = useRef<number | null>(null)
 
   modeRef.current = mode
   const isRail = mode === 'rail'
@@ -230,8 +232,8 @@ export const useTocResize = () => {
     return () => window.clearTimeout(id)
   }, [mode, paint])
 
-  const handleMouseMove = useCallback((event: MouseEvent) => {
-    const intended = initialPaintedWidthRef.current + (event.clientX - dragStartXRef.current)
+  const applyPointer = useCallback((clientX: number) => {
+    const intended = initialPaintedWidthRef.current + (clientX - dragStartXRef.current)
     intendedWidthRef.current = intended
 
     if (intended < TOC_MIN_WIDTH) {
@@ -244,7 +246,35 @@ export const useTocResize = () => {
     setPaint(next)
   }, [])
 
+  const cancelMoveFrame = useCallback(() => {
+    if (moveFrameRef.current == null) return
+    cancelAnimationFrame(moveFrameRef.current)
+    moveFrameRef.current = null
+  }, [])
+
+  const flushMove = useCallback(() => {
+    cancelMoveFrame()
+    const clientX = pendingClientXRef.current
+    pendingClientXRef.current = null
+    if (clientX != null) applyPointer(clientX)
+  }, [applyPointer, cancelMoveFrame])
+
+  // A mouse can fire several moves per frame; paint once per frame from the latest one.
+  const handleMouseMove = useCallback(
+    (event: MouseEvent) => {
+      pendingClientXRef.current = event.clientX
+      if (moveFrameRef.current != null) return
+      moveFrameRef.current = requestAnimationFrame(() => {
+        moveFrameRef.current = null
+        flushMove()
+      })
+    },
+    [flushMove]
+  )
+
   const handleMouseUp = useCallback(() => {
+    // Release must see the last pointer position, not the last painted frame.
+    flushMove()
     const intended = intendedWidthRef.current
     intendedWidthRef.current = null
     clearResizeCursor()
@@ -269,7 +299,7 @@ export const useTocResize = () => {
     }
     setPaint(step.paint)
     setMode(step.mode)
-  }, [handleMouseMove, reduced])
+  }, [flushMove, handleMouseMove, reduced])
 
   const handleMouseDown = useCallback(
     (event: React.MouseEvent) => {
@@ -295,9 +325,11 @@ export const useTocResize = () => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
       document.removeEventListener('pointercancel', handleMouseUp)
+      cancelMoveFrame()
+      pendingClientXRef.current = null
       clearResizeCursor()
     }
-  }, [handleMouseMove, handleMouseUp])
+  }, [cancelMoveFrame, handleMouseMove, handleMouseUp])
 
   const openWide = useCallback(() => {
     const remembered = rememberedWideWidth(lastWideWidthRef.current)
@@ -325,5 +357,3 @@ export const useTocResize = () => {
     openWide
   }
 }
-
-export default useTocResize
