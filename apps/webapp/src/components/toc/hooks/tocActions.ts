@@ -1,10 +1,9 @@
-import { computeSection } from '@components/TipTap/extensions/shared'
 import * as toast from '@components/toast'
 import { openConfirmDialog } from '@components/ui/dialogs/ConfirmDialog'
+import { isDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { padUrl } from '@services/padUrl'
 import { useStore } from '@stores'
-import { TIPTAP_NODES } from '@types'
 import { copyLinkToClipboard } from '@utils/clipboard'
 import PubSub from 'pubsub-js'
 
@@ -12,35 +11,26 @@ import {
   navigateToDocTitle as navigateToDocTitleAction,
   navigateToHeading as navigateToHeadingAction
 } from '../utils/navigateToHeading'
+import { outlineOf } from '../utils/outline'
 
 function editorOrNull() {
   return useStore.getState().settings.editor.instance
 }
 
-/** Reads the editor at confirm time, not at open, so it acts on the live instance. */
+/**
+ * Reads the editor at confirm time, not at open, so it acts on the live instance.
+ * The Title's section runs to the next H1 or the doc end, so deleting it could empty the pad.
+ * tr.delete mutates even a non-editable editor, so the lock check must happen here.
+ */
 function removeSectionNow(headingId: string): void {
   const editor = editorOrNull()
-  if (!editor) return
+  if (!editor || editor.isDestroyed) return
+  if (isDocumentEditingLocked() || !editor.isEditable) return
 
-  const doc = editor.state.doc
-  let offset = 0
+  const node = outlineOf(editor.state.doc).find((n) => n.id === headingId)
+  if (!node || node.isTitle) return
 
-  for (let i = 0; i < doc.content.childCount; i++) {
-    const child = doc.content.child(i)
-    const pos = offset
-    offset += child.nodeSize
-
-    if (
-      child.type.name === TIPTAP_NODES.HEADING_TYPE &&
-      (child.attrs['toc-id'] as string) === headingId
-    ) {
-      const section = computeSection(doc, pos, child.attrs.level as number, i)
-      const tr = editor.state.tr
-      tr.delete(section.from, section.to)
-      editor.view.dispatch(tr)
-      return
-    }
-  }
+  editor.view.dispatch(editor.state.tr.delete(node.pos, node.sectionTo))
 }
 
 /** Call-time getState — one stable object, no per-row subscriptions. */
@@ -81,12 +71,9 @@ export const tocActions = {
     const editor = editorOrNull()
     if (!headingId || !editor) return
 
-    const headingElement = document.querySelector(
-      `:is(h1,h2,h3,h4,h5,h6)[data-toc-id="${headingId}"]`
-    ) as HTMLElement | null
-    if (!headingElement) return
-
-    const headingText = (headingElement.innerText || headingElement.textContent || '').trim()
+    const headingText = outlineOf(editor.state.doc)
+      .find((n) => n.id === headingId)
+      ?.text.trim()
     if (!headingText) return
 
     void padUrl.go({ kind: 'focus', headingId, term: headingText })

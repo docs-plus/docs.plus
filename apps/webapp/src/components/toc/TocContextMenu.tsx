@@ -4,9 +4,12 @@ import {
   MenuItem,
   useContextMenuContext
 } from '@components/ui/ContextMenu'
+import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { Icons } from '@icons'
+import { useAuthStore, useStore } from '@stores'
 
 import { tocActions } from './hooks'
+import { outlineOf } from './utils/outline'
 
 interface TocContextMenuProps {
   headingId: string | null
@@ -16,8 +19,16 @@ interface TocContextMenuProps {
 
 export function TocContextMenu({ headingId, isOpen, onToggle }: TocContextMenuProps) {
   const { setIsOpen } = useContextMenuContext()
+  const editor = useStore((s) => s.settings.editor.instance)
+  const profileId = useAuthStore((s) => s.profile?.id)
+  const locked = useStore((s) => selectDocumentEditingLocked(s.settings, profileId))
 
   if (!headingId) return null
+
+  // Same rule as removeSectionNow, so the menu never offers a delete that does nothing.
+  // Read at render: the menu re-renders on each open, so the doc is current.
+  const target = editor ? outlineOf(editor.state.doc).find((n) => n.id === headingId) : undefined
+  const canDelete = !locked && !!editor?.isEditable && !!target && !target.isTitle
 
   const menuItems = [
     {
@@ -55,17 +66,21 @@ export function TocContextMenu({ headingId, isOpen, onToggle }: TocContextMenuPr
         </MenuItem>
       ))}
 
-      <ContextMenuDivider />
+      {canDelete && (
+        <>
+          <ContextMenuDivider />
 
-      <MenuItem
-        onClick={() => {
-          tocActions.deleteSection(headingId)
-          setIsOpen(false)
-        }}>
-        <ContextMenuRow icon={<Icons.trash size={16} />} variant="danger">
-          Delete section
-        </ContextMenuRow>
-      </MenuItem>
+          <MenuItem
+            onClick={() => {
+              tocActions.deleteSection(headingId)
+              setIsOpen(false)
+            }}>
+            <ContextMenuRow icon={<Icons.trash size={16} />} variant="danger">
+              Delete section
+            </ContextMenuRow>
+          </MenuItem>
+        </>
+      )}
     </>
   )
 }
