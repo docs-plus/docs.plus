@@ -28,17 +28,19 @@ import {
 } from 'react'
 
 import { tocActions, useToc } from './hooks'
+import {
+  planRail,
+  railLayout,
+  railSpyScrollTop,
+  railTickBudget,
+  TICK_ROW_PX
+} from './rail/planRail'
 import { mountSectionPreview } from './utils/sectionPreviewClone'
 
 const PREVIEW_OPEN_MS = 80
-const TICK_OVERSCAN = 16
 const RAIL_USER_SCROLL_LOCK_MS = 800
-const RAIL_SPY_CONTEXT_TICKS = 8
-const RAIL_MAX_VIEWPORT_RATIO = 0.84
 const TICK_HOVER_SLOP_PX = 72
 const TICK_APPROACH_GROW = 0.78
-// Must match the tick button's h-2 (8px).
-const TICK_ROW_PX = 8
 const TICK_WIDTH = {
   idle: 10,
   far: 13,
@@ -67,142 +69,13 @@ type RailGeometry = {
   firstTop: number
 }
 
-function visibleRailItems(items: TocItem[]): TocItem[] {
-  const out: TocItem[] = []
-  let hideDeeperThan: number | null = null
-  for (const item of items) {
-    if (hideDeeperThan != null && item.level > hideDeeperThan) continue
-    out.push(item)
-    hideDeeperThan = item.open ? null : item.level
-  }
-  return out
-}
-
-function maxRailTicks(navH: number, viewH: number) {
-  const vh = viewH > 0 ? viewH : window.innerHeight
-  if (vh <= 0 && navH <= 0) return Number.POSITIVE_INFINITY
-  const viewCap = vh > 0 ? vh * RAIL_MAX_VIEWPORT_RATIO : navH
-  const measured = navH > 0 ? Math.min(navH, viewCap) : viewCap
-  return Math.max(1, Math.floor(measured / TICK_ROW_PX))
-}
-
-function deepestKeptLevel(items: TocItem[], maxTicks: number) {
-  let deepest = 1
-  for (const item of items) {
-    if (item.level > deepest) deepest = item.level
-  }
-  if (!Number.isFinite(maxTicks) || items.length <= maxTicks) return deepest
-
-  let kept = items.length
-  while (kept > maxTicks && deepest > 1) {
-    deepest -= 1
-    kept = 0
-    for (const item of items) {
-      if (item.level <= deepest) kept += 1
-    }
-  }
-  return deepest
-}
-
-function sectionRootIndex(items: TocItem[], spyId: string | null, cap: number) {
-  const spyAt = spyId ? items.findIndex((item) => item.id === spyId) : -1
-  const from = spyAt >= 0 ? spyAt : 0
-  for (let i = from; i >= 0; i--) {
-    if (items[i].level <= cap) return i
-  }
-  return 0
-}
-
-function fillDeeperAroundSpy(
-  items: TocItem[],
-  cap: number,
-  extra: number,
-  spyId: string | null
-): TocItem[] {
-  if (extra <= 0) return []
-  const root = sectionRootIndex(items, spyId, cap)
-  const picked: TocItem[] = []
-  const take = (start: number, end: number) => {
-    for (let i = start; i < end && picked.length < extra; i++) {
-      if (items[i].level > cap) picked.push(items[i])
-    }
-  }
-  take(root + 1, items.length)
-  take(0, root)
-  return picked
-}
-
-function fitRailItems(items: TocItem[], maxTicks: number, spyId: string | null): TocItem[] {
-  if (!Number.isFinite(maxTicks) || items.length <= maxTicks) return items
-  const cap = deepestKeptLevel(items, maxTicks)
-  const keep = new Set<string>()
-  for (const item of items) {
-    if (item.level <= cap) keep.add(item.id)
-  }
-  const extra = maxTicks - keep.size
-  for (const item of fillDeeperAroundSpy(items, cap, extra, spyId)) {
-    keep.add(item.id)
-  }
-  return items.filter((item) => keep.has(item.id))
-}
-
-function visibleSpyId(items: TocItem[], visible: TocItem[], id: string | null): string | null {
-  if (!id) return null
-  if (visible.some((item) => item.id === id)) return id
-  const idx = items.findIndex((item) => item.id === id)
-  if (idx < 0) return null
-  let need = items[idx].level
-  for (let i = idx - 1; i >= 0; i--) {
-    const ancestor = items[i]
-    if (ancestor.level >= need) continue
-    need = ancestor.level
-    if (visible.some((item) => item.id === ancestor.id)) return ancestor.id
-  }
-  return null
-}
-
-function railWindow(scrollTop: number, height: number, count: number) {
-  if (count === 0) return { start: 0, end: 0 }
-  const row = TICK_ROW_PX
-  const overscan = TICK_OVERSCAN
-  const start = Math.max(0, Math.floor(scrollTop / row) - overscan)
-  const end = Math.min(count, Math.ceil((scrollTop + (height || 640)) / row) + overscan)
-  return { start, end }
-}
-
-function railStackOffset(railH: number, stackH: number): number {
-  if (stackH <= 0 || railH <= 0) return 0
-  const room = railH - stackH
-  if (room <= 0) return 0
-  return Math.floor(room / 2)
-}
-
-function clampScroll(next: number, max: number) {
-  return Math.max(0, Math.min(max, next))
-}
-
-function railSpyScrollTop(index: number, count: number, innerH: number, current: number) {
-  const row = TICK_ROW_PX
-  const total = count * row
-  const maxScroll = Math.max(0, total - innerH)
-  if (maxScroll === 0) return 0
-
-  const rowTop = index * row
-  const rowBottom = rowTop + row
-  const rowMid = rowTop + row / 2
-  const viewTop = current
-  const viewBottom = current + innerH
-  const pad = Math.min(RAIL_SPY_CONTEXT_TICKS * row, Math.floor(innerH / 4))
-
-  if (rowBottom < viewTop || rowTop > viewBottom) {
-    return clampScroll(rowMid - innerH / 2, maxScroll)
-  }
-  if (rowTop >= viewTop + pad && rowBottom <= viewBottom - pad) return current
-  if (rowTop < viewTop + pad) return clampScroll(rowTop - pad, maxScroll)
-  return clampScroll(rowBottom + pad - innerH, maxScroll)
+function tickLabel(item: TocItem): string {
+  return item.textContent.trim() || `Heading ${item.level}`
 }
 
 function alignRailToSpy(nav: HTMLElement, index: number, count: number) {
+  // A rail that cannot scroll already sits at 0, which is all the full path could set.
+  if (nav.scrollHeight <= nav.clientHeight) return
   const style = getComputedStyle(nav)
   const padTop = parseFloat(style.paddingTop) || 0
   const padBottom = parseFloat(style.paddingBottom) || 0
@@ -348,6 +221,8 @@ function useTickHoverProximity(
     let x = 0
     let y = 0
     let sawPointer = false
+    // Horizontal span from the last pick. Never cache firstTop: the stack tween moves it.
+    let span: { left: number; right: number } | null = null
 
     const commit = (next: TickHoverState) => {
       const last = lastRef.current
@@ -368,7 +243,14 @@ function useTickHoverProximity(
       if (!list.length) return
 
       const rail = readRailGeometry(nav)
-      const inBand = y >= rail.top && y <= rail.bottom
+      span = { left: rail.left, right: rail.right }
+      // A short centered stack leaves empty rail above and below; that space is not a tick.
+      const stackTop = Math.max(rail.top, rail.firstTop - TICK_HOVER_SLOP_PX)
+      const stackBottom = Math.min(
+        rail.bottom,
+        rail.firstTop + list.length * TICK_ROW_PX + TICK_HOVER_SLOP_PX
+      )
+      const inBand = y >= stackTop && y <= stackBottom
       const pastRight = x - rail.right
       const inRail = inBand && x >= rail.left && x <= rail.right
       const inSlop = inBand && pastRight > 0 && pastRight <= TICK_HOVER_SLOP_PX
@@ -412,6 +294,7 @@ function useTickHoverProximity(
     }
 
     const refresh = () => {
+      span = null
       if (sawPointer) schedulePick()
     }
 
@@ -425,6 +308,15 @@ function useTickHoverProximity(
       sawPointer = true
       x = event.clientX
       y = event.clientY
+      // Skip only moves where pick would commit nothing: far in x, idle, focus elsewhere.
+      if (
+        span &&
+        (x < span.left || x > span.right + TICK_HOVER_SLOP_PX) &&
+        !(lastRef.current.id || lastRef.current.grow) &&
+        !nav.contains(document.activeElement)
+      ) {
+        return
+      }
       schedulePick()
     }
 
@@ -653,24 +545,23 @@ export function TocTickRail({ onOpenWide }: { onOpenWide: () => void }) {
   const viewport = useRailViewport(navRef, items.length)
   const focusedHeadingId = useFocusedHeadingStore((s) => s.focusedHeadingId)
   const chatHeadingId = useChatStore((s) => s.chatRoom.headingId)
-  const folded = useMemo(() => visibleRailItems(items), [items])
-  const maxTicks = maxRailTicks(viewport.height, viewport.viewH)
+  const plan = useMemo(() => planRail(items), [items])
+  const maxTicks = railTickBudget(viewport.height, viewport.viewH)
   const spyForFit = focusedHeadingId ?? chatHeadingId ?? null
-  const visible = useMemo(
-    () => fitRailItems(folded, maxTicks, spyForFit),
-    [folded, maxTicks, spyForFit]
-  )
-  const spyTickId = visibleSpyId(items, visible, focusedHeadingId ?? null)
-  const chatTickId = visibleSpyId(items, visible, chatHeadingId ?? null)
+  const visible = useMemo(() => plan.fit(maxTicks, spyForFit), [plan, maxTicks, spyForFit])
+  const spyTickId = plan.tickFor(visible, focusedHeadingId ?? null)
+  const chatTickId = plan.tickFor(visible, chatHeadingId ?? null)
   const [hover, setHover] = useState<TickHoverState>(HOVER_IDLE)
   const hoverRef = useRef(hover)
   const setHoverAndRef = useCallback((next: TickHoverState) => {
     hoverRef.current = next
     setHover(next)
   }, [])
-  const { start, end } = railWindow(viewport.scrollTop, viewport.height, visible.length)
-  const stackH = visible.length * TICK_ROW_PX
-  const stackOffset = railStackOffset(viewport.height, stackH)
+  const { start, end, stackH, stackOffset } = railLayout({
+    count: visible.length,
+    scrollTop: viewport.scrollTop,
+    height: viewport.height
+  })
   const [slideStack, setSlideStack] = useState(false)
   const [previewAnchor, setPreviewAnchor] = useState<HTMLElement | null>(null)
   const hoverIndex = hover.id ? visible.findIndex((item) => item.id === hover.id) : -1
@@ -679,9 +570,8 @@ export function TocTickRail({ onOpenWide }: { onOpenWide: () => void }) {
   const previewIntentId = hover.id && hover.inRail ? hover.id : null
   const [previewOpenId, setPreviewOpenId] = useState<string | null>(null)
   const previewOpen = previewOpenId != null && previewOpenId === previewIntentId
-  const previewLabel = previewOpenId
-    ? (visible.find((item) => item.id === previewOpenId)?.textContent ?? '')
-    : ''
+  const previewItem = previewOpenId ? visible.find((item) => item.id === previewOpenId) : null
+  const previewLabel = previewItem ? tickLabel(previewItem) : ''
   useLayoutEffect(() => {
     if (!previewOpenId) return
     const el = navRef.current?.querySelector<HTMLElement>(
@@ -768,7 +658,7 @@ export function TocTickRail({ onOpenWide }: { onOpenWide: () => void }) {
                   style={{ top: index * TICK_ROW_PX, height: TICK_ROW_PX }}>
                   <TocTick
                     id={item.id}
-                    label={item.textContent}
+                    label={tickLabel(item)}
                     kind={kind}
                     grow={grow}
                     durationMs={isProximity ? proximityDurationMs : 0}
