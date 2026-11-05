@@ -360,24 +360,17 @@ export function createHeadingFoldPlugin(
 
         if (!tr.docChanged) return prev
 
-        // Force full rebuild on Yjs remote transactions
-        if (tr.getMeta('y-sync$')) {
-          const pruned = pruneStaleIds(prev, tr.doc)
-          return {
-            ...pruned,
-            decos: buildFoldDecorations(tr.doc, pruned),
-            skipPersist: prev.skipPersist
-          }
-        }
-
-        if (canMapDecorations(tr, tr.before)) {
+        if (canMapDecorations(tr, tr.before) || !transactionAffectsNodeType(tr, 'heading')) {
           if (prev.foldedIds.size === 0) return prev
-          return { ...prev, decos: prev.decos.map(tr.mapping, tr.doc) }
-        }
-
-        if (!transactionAffectsNodeType(tr, 'heading')) {
-          if (prev.foldedIds.size === 0) return prev
-          return { ...prev, decos: prev.decos.map(tr.mapping, tr.doc) }
+          // A Yjs change (remote, undo, redo) replaces whole top-level blocks. That drops
+          // their hidden node decoration, so the block would show. Rebuild on any drop.
+          let dropped = false
+          const decos = prev.decos.map(tr.mapping, tr.doc, {
+            onRemove: () => {
+              dropped = true
+            }
+          })
+          if (!dropped) return { ...prev, decos }
         }
 
         const pruned = pruneStaleIds(prev, tr.doc)

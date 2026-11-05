@@ -131,24 +131,19 @@ export function createHeadingFilterPlugin(
 
         const isActive = prev.slugs.length > 0
 
-        // Force full rebuild on Yjs remote transactions
-        if (tr.getMeta('y-sync$')) {
-          if (!isActive) {
-            const sections = findAllSections(tr.doc)
-            return {
-              ...prev,
-              matchedSectionIds: new Set(sections.map((s) => s.id)),
-              totalSections: sections.length
-            }
-          }
-          return computeNewState({ slugs: prev.slugs, mode: prev.mode }, tr.doc)
-        }
-
         // Mappable steps and non-heading edits never change section membership;
         // either keep prev or just remap the highlight decorations.
         if (canMapDecorations(tr, tr.before) || !transactionAffectsNodeType(tr, 'heading')) {
           if (!isActive) return prev
-          return { ...prev, decos: prev.decos.map(tr.mapping, tr.doc) }
+          // A Yjs change replaces whole blocks and drops their highlights. Rebuild only the
+          // highlights: recomputing matched ids would re-fold sections mid-edit.
+          let dropped = false
+          const decos = prev.decos.map(tr.mapping, tr.doc, {
+            onRemove: () => {
+              dropped = true
+            }
+          })
+          return { ...prev, decos: dropped ? buildFilterDecorations(tr.doc, prev.slugs) : decos }
         }
 
         if (!isActive) {
