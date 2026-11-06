@@ -218,7 +218,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'A social card request was shed to the static image ({{ $labels.outcome }}). slot-shed means the render queue of 4 was full: consider 16. chat-shed means the chat read cap of 4 was full. See the "Social preview card" row on App Performance.'
+          summary: 'A social card request was shed to the static image ({{ $labels.outcome }}). slot-shed means the render queue (`createRenderSlot` in social-card/http/router.ts) was full. chat-shed means the chat read cap (`CHAT_READS_IN_FLIGHT`) was full. See the "Social preview card" row on App Performance.'
         data:
           - refId: A
             relativeTimeRange: { from: 3600, to: 0 }
