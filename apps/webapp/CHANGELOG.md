@@ -18,6 +18,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Added
 
+- The tick rail section preview is now a card you can use
+  ([#645](https://github.com/docs-plus/docs.plus/issues/645)). Move from a tick into its card,
+  and the card stays open along the way. A chat button at the top right opens that heading's
+  chat, or closes it when it is already open. The keyboard can focus the tick, Tab into the card
+  and leave it with Escape. Embeds in the card never play. A video shows its own poster, and
+  other embeds show a still tile with their icon. So a preview sends nothing to the embed host.
 - The pad page head names a share image
   ([#663](https://github.com/docs-plus/docs.plus/issues/663)). A full page load asks REST for
   the pad's card with `card=1`. `og:image`, `twitter:image` and their alt text then point at that
@@ -128,6 +134,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- A paste from the same pad keeps each heading's `toc-id`
+  ([#700](https://github.com/docs-plus/docs.plus/issues/700)). So a full cut and paste, or a
+  select-all paste, keeps heading chats and `?id=` links. Copied HTML now names its pad. When an
+  id is already in use, the original keeps it and the pasted copy takes a new one. A paste from
+  another pad or another site still takes new ids.
 - A desktop TOC drag now moves a section like a folder in a file manager
   ([#499](https://github.com/docs-plus/docs.plus/issues/499)). Let go between two rows, and
   the slot sets the level. Every sub-heading shifts by the same step and stops at H6. A move
@@ -195,6 +206,22 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- A heading link now lands on its heading, even when a fold or a Filter hides it
+  ([#338](https://github.com/docs-plus/docs.plus/issues/338)). A click opens only the sections
+  that hide the heading, for this session, and scrolls it to the top of the pad. Folds saved on
+  the device do not change, so a reload folds them again. A cold `?id=` link now waits for sync
+  and the Filter, then lands the same way. Saved folds now also survive a pad reload. Before,
+  the empty doc before sync cleared them.
+- A Settings file replace keeps more heading chats, `?id=` links and folds
+  ([#474](https://github.com/docs-plus/docs.plus/issues/474)). A heading now keeps its id when
+  only its level changes, or when it is renamed and its section text is unique and unchanged.
+  Two sections that swap places no longer trade the ids of their same-named sub-headings. The
+  replace card now names each heading that has a chat and will lose it.
+- Two people who move one TOC section at the same time no longer leave two copies of it
+  ([#510](https://github.com/docs-plus/docs.plus/issues/510)). After a merge, an editable
+  client deletes a copy that equals the first, and gives a different copy a new heading id. So
+  two sections no longer keep sharing a chat room, a fold or a digest pairing. A co-editor's caret in a
+  sub-heading now stays put when a move changes its level.
 - A caret inside a section you drag in the TOC now moves with the section. Before, it stayed
   at the old place, and the next key typed into the following heading
   ([#520](https://github.com/docs-plus/docs.plus/issues/520)).
