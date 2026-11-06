@@ -1,22 +1,10 @@
-import { popoverPanelClassName } from '@components/ui/Popover'
 import { Tooltip } from '@components/ui/Tooltip'
-import { useOverlayTransition } from '@components/ui/useOverlayTransition'
-import {
-  autoUpdate,
-  flip,
-  FloatingPortal,
-  limitShift,
-  offset,
-  shift,
-  useFloating
-} from '@floating-ui/react'
 import { Icons } from '@icons'
 import { useChatStore, useFocusedHeadingStore } from '@stores'
 import type { TocItem } from '@types'
 import { MOTION_OVERLAY_IN_MS, prefersReducedMotion } from '@utils/motion'
 import { twMerge } from '@utils/twMerge'
 import {
-  type KeyboardEvent,
   memo,
   type RefObject,
   useCallback,
@@ -35,9 +23,9 @@ import {
   railTickBudget,
   TICK_ROW_PX
 } from './rail/planRail'
-import { mountSectionPreview } from './utils/sectionPreviewClone'
+import { TocSectionPreview } from './rail/TocSectionPreview'
+import { type RailPreviewApi, useRailPreview } from './rail/useRailPreview'
 
-const PREVIEW_OPEN_MS = 80
 const RAIL_USER_SCROLL_LOCK_MS = 800
 const TICK_HOVER_SLOP_PX = 72
 const TICK_APPROACH_GROW = 0.78
@@ -119,95 +107,11 @@ function tickDashClass(kind: TickKind): string {
   }
 }
 
-// Line boxes match the clone's text-sm leading-snug title and text-xs leading-relaxed body.
-function PreviewSkeleton() {
-  return (
-    <div className="px-2.5 pt-2 pb-1.5" aria-hidden>
-      <div className="mb-1 flex h-[1.203125rem] items-center">
-        <div className="skeleton h-3.5 w-3/5" />
-      </div>
-      <div className="flex h-[1.21875rem] items-center">
-        <div className="skeleton h-3 w-full" />
-      </div>
-      <div className="flex h-[1.21875rem] items-center">
-        <div className="skeleton h-3 w-4/5" />
-      </div>
-    </div>
-  )
-}
-
-function TocSectionPreview({
-  open,
-  headingId,
-  label,
-  referenceEl
-}: {
-  open: boolean
-  headingId: string | null
-  label: string
-  referenceEl: HTMLElement | null
-}) {
-  const { refs, floatingStyles, context } = useFloating({
-    placement: 'right',
-    strategy: 'fixed',
-    transform: false,
-    open,
-    middleware: [
-      offset(6),
-      flip({ padding: 8 }),
-      shift({ padding: 8, limiter: limitShift({ offset: 16 }) })
-    ],
-    whileElementsMounted: autoUpdate
-  })
-  const { isMounted, styles: transitionStyles } = useOverlayTransition(context, {
-    closeMs: 0
-  })
-  const [host, setHost] = useState<HTMLDivElement | null>(null)
-  // `blank`: the section gave the clone nothing to show, so the card stays hidden.
-  const [fill, setFill] = useState<'pending' | 'filled' | 'blank'>('pending')
-
-  useLayoutEffect(() => {
-    refs.setReference(referenceEl)
-  }, [referenceEl, refs])
-
-  useLayoutEffect(() => {
-    if (!isMounted || !open || !headingId || !host) {
-      setFill('pending')
-      host?.replaceChildren()
-      return
-    }
-    mountSectionPreview(host, headingId, label)
-    setFill(host.childNodes.length ? 'filled' : 'blank')
-    return () => {
-      host.replaceChildren()
-    }
-  }, [headingId, host, isMounted, label, open])
-
-  if (!isMounted) return null
-
-  return (
-    <FloatingPortal>
-      <div
-        ref={refs.setFloating}
-        aria-hidden
-        style={{ ...floatingStyles, ...transitionStyles }}
-        className={twMerge(
-          popoverPanelClassName,
-          'pointer-events-none w-64 max-w-[min(16rem,calc(100vw-3rem))] overflow-hidden p-0',
-          // Hide, never unmount: the host must stay mounted for the next heading.
-          fill === 'blank' && 'hidden'
-        )}>
-        {fill === 'pending' && <PreviewSkeleton />}
-        <div ref={setHost} className="flex min-h-0 flex-col" />
-      </div>
-    </FloatingPortal>
-  )
-}
-
 function useTickHoverProximity(
   navRef: RefObject<HTMLElement | null>,
   items: TocItem[],
-  setHover: (next: TickHoverState) => void
+  setHover: (next: TickHoverState) => void,
+  preview: RailPreviewApi
 ) {
   const lastRef = useRef(HOVER_IDLE)
   const itemsRef = useRef(items)
@@ -240,10 +144,16 @@ function useTickHoverProximity(
     const pick = () => {
       pickRaf = 0
       const list = itemsRef.current
-      if (!list.length) return
-
       const rail = readRailGeometry(nav)
       span = { left: rail.left, right: rail.right }
+
+      // Only a real tick row owns the preview; the band below is for dash growth only.
+      const onRail = x >= rail.left && x <= rail.right && y >= rail.top && y <= rail.bottom
+      const row = Math.floor((y - rail.firstTop) / TICK_ROW_PX)
+      const tickId = onRail && row >= 0 && row < list.length ? list[row].id : null
+      preview.pointer(onRail ? { kind: 'rail', x, y, tickId } : { kind: 'off', x, y })
+      if (!list.length) return
+
       // A short centered stack leaves empty rail above and below; that space is not a tick.
       const stackTop = Math.max(rail.top, rail.firstTop - TICK_HOVER_SLOP_PX)
       const stackBottom = Math.min(
@@ -256,20 +166,6 @@ function useTickHoverProximity(
       const inSlop = inBand && pastRight > 0 && pastRight <= TICK_HOVER_SLOP_PX
 
       if (!inRail && !inSlop) {
-        const active = document.activeElement
-        if (
-          active instanceof HTMLElement &&
-          nav.contains(active) &&
-          active.hasAttribute('data-toc-id') &&
-          active.matches(':focus-visible')
-        ) {
-          commit({
-            id: active.getAttribute('data-toc-id'),
-            grow: 1,
-            inRail: true
-          })
-          return
-        }
         if (lastRef.current.id || lastRef.current.grow) commit(HOVER_IDLE)
         return
       }
@@ -308,12 +204,12 @@ function useTickHoverProximity(
       sawPointer = true
       x = event.clientX
       y = event.clientY
-      // Skip only moves where pick would commit nothing: far in x, idle, focus elsewhere.
+      // Skip only moves where pick would change nothing: far in x, idle, no preview work.
       if (
         span &&
         (x < span.left || x > span.right + TICK_HOVER_SLOP_PX) &&
         !(lastRef.current.id || lastRef.current.grow) &&
-        !nav.contains(document.activeElement)
+        !preview.isBusy()
       ) {
         return
       }
@@ -323,6 +219,7 @@ function useTickHoverProximity(
     const onLeaveWindow = (event: PointerEvent) => {
       if (event.relatedTarget != null) return
       commit(HOVER_IDLE)
+      preview.pointer({ kind: 'gone' })
     }
 
     window.addEventListener('pointermove', onMove, { passive: true })
@@ -336,7 +233,7 @@ function useTickHoverProximity(
       document.removeEventListener('pointerout', onLeaveWindow)
       if (pickRaf) cancelAnimationFrame(pickRaf)
     }
-  }, [navRef, setHover])
+  }, [navRef, preview, setHover])
 }
 
 function useChatRailReserve() {
@@ -422,7 +319,7 @@ function useRailViewport(navRef: RefObject<HTMLElement | null>, itemCount: numbe
 function useRailSpyFollow(
   navRef: RefObject<HTMLElement | null>,
   visible: TocItem[],
-  skipRef: RefObject<TickHoverState>,
+  pausedRef: RefObject<boolean>,
   spyTickId: string | null
 ) {
   const userScrollAtRef = useRef(0)
@@ -444,13 +341,12 @@ function useRailSpyFollow(
   useLayoutEffect(() => {
     const nav = navRef.current
     if (!nav || !spyTickId) return
-    const skip = skipRef.current
-    if (skip.inRail) return
+    if (pausedRef.current) return
     if (Date.now() - userScrollAtRef.current < RAIL_USER_SCROLL_LOCK_MS) return
     const index = visible.findIndex((item) => item.id === spyTickId)
     if (index < 0) return
     alignRailToSpy(nav, index, visible.length)
-  }, [navRef, skipRef, spyTickId, visible])
+  }, [navRef, pausedRef, spyTickId, visible])
 }
 
 const TocTick = memo(function TocTick({
@@ -459,14 +355,14 @@ const TocTick = memo(function TocTick({
   kind,
   grow,
   durationMs,
-  onHover
+  preview
 }: {
   id: string
   label: string
   kind: TickKind
   grow: number
   durationMs: number
-  onHover: (next: TickHoverState) => void
+  preview: RailPreviewApi
 }) {
   const setFocusedHeadingWithLock = useFocusedHeadingStore((s) => s.setFocusedHeadingWithLock)
 
@@ -475,19 +371,6 @@ const TocTick = memo(function TocTick({
     tocActions.navigateToHeading(id, { openChat: false })
   }, [id, setFocusedHeadingWithLock])
 
-  const enterRail = useCallback(() => {
-    onHover({ id, grow: 1, inRail: true })
-  }, [id, onHover])
-
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLButtonElement>) => {
-      if (event.key !== 'Escape') return
-      event.stopPropagation()
-      onHover(HOVER_IDLE)
-    },
-    [onHover]
-  )
-
   return (
     <button
       type="button"
@@ -495,13 +378,9 @@ const TocTick = memo(function TocTick({
       aria-label={kind === 'chat' ? `${label}, chat open` : label}
       aria-current={kind === 'focused' ? 'true' : undefined}
       className="focus-visible:ring-primary flex h-2 w-full shrink-0 items-center justify-start px-0.5 focus-visible:ring-1 focus-visible:outline-none"
-      onFocusCapture={enterRail}
-      onBlur={(event) => {
-        const nav = event.currentTarget.closest('nav')
-        if (nav?.contains(event.relatedTarget as Node | null)) return
-        onHover(HOVER_IDLE)
-      }}
-      onKeyDown={handleKeyDown}
+      onFocus={(event) => preview.tickFocus(event, id)}
+      onBlur={(event) => preview.tickBlur(event, id)}
+      onKeyDown={(event) => preview.tickKeyDown(event, id)}
       onClick={handleClick}>
       <span
         data-toc-tick=""
@@ -552,11 +431,6 @@ export function TocTickRail({ onOpenWide }: { onOpenWide: () => void }) {
   const spyTickId = plan.tickFor(visible, focusedHeadingId ?? null)
   const chatTickId = plan.tickFor(visible, chatHeadingId ?? null)
   const [hover, setHover] = useState<TickHoverState>(HOVER_IDLE)
-  const hoverRef = useRef(hover)
-  const setHoverAndRef = useCallback((next: TickHoverState) => {
-    hoverRef.current = next
-    setHover(next)
-  }, [])
   const { start, end, stackH, stackOffset } = railLayout({
     count: visible.length,
     scrollTop: viewport.scrollTop,
@@ -567,35 +441,35 @@ export function TocTickRail({ onOpenWide }: { onOpenWide: () => void }) {
   const hoverIndex = hover.id ? visible.findIndex((item) => item.id === hover.id) : -1
   const reduced = prefersReducedMotion()
   const proximityDurationMs = !reduced && hover.inRail ? MOTION_OVERLAY_IN_MS : 0
-  const previewIntentId = hover.id && hover.inRail ? hover.id : null
-  const [previewOpenId, setPreviewOpenId] = useState<string | null>(null)
-  const previewOpen = previewOpenId != null && previewOpenId === previewIntentId
-  const previewItem = previewOpenId ? visible.find((item) => item.id === previewOpenId) : null
+  const { openId: previewId, api: preview, cardRef, actionRef } = useRailPreview(navRef)
+  const previewItem = previewId ? visible.find((item) => item.id === previewId) : null
   const previewLabel = previewItem ? tickLabel(previewItem) : ''
+  // Spy follow must not scroll the rail under a reader who is using it or its card.
+  const spyPausedRef = useRef(false)
+  spyPausedRef.current = hover.inRail || previewId != null
+
+  // A heading that left the rail, or a tick that scrolled out of view, takes its card with it.
   useLayoutEffect(() => {
-    if (!previewOpenId) return
-    const el = navRef.current?.querySelector<HTMLElement>(
-      `[data-toc-id="${CSS.escape(previewOpenId)}"] [data-toc-tick]`
-    )
-    if (el) setPreviewAnchor(el)
-  }, [previewOpenId])
-
-  useEffect(() => {
-    if (hover.id && !visible.some((item) => item.id === hover.id)) setHoverAndRef(HOVER_IDLE)
-  }, [hover.id, setHoverAndRef, visible])
-
-  useEffect(() => {
-    if (!previewIntentId) {
-      setPreviewOpenId(null)
+    const nav = navRef.current
+    if (!previewId || !nav) {
+      setPreviewAnchor(null)
       return
     }
-    setPreviewOpenId(null)
-    const timer = window.setTimeout(
-      () => setPreviewOpenId(previewIntentId),
-      reduced ? 0 : PREVIEW_OPEN_MS
+    const el = nav.querySelector<HTMLElement>(
+      `[data-toc-id="${CSS.escape(previewId)}"] [data-toc-tick]`
     )
-    return () => window.clearTimeout(timer)
-  }, [previewIntentId, reduced])
+    const box = el?.getBoundingClientRect()
+    const rail = nav.getBoundingClientRect()
+    if (!el || !box || box.bottom < rail.top || box.top > rail.bottom) {
+      preview.drop()
+      return
+    }
+    setPreviewAnchor(el)
+  }, [navRef, preview, previewId, start, end, viewport.scrollTop, viewport.height, visible])
+
+  useEffect(() => {
+    if (hover.id && !visible.some((item) => item.id === hover.id)) setHover(HOVER_IDLE)
+  }, [hover.id, setHover, visible])
 
   useLayoutEffect(() => {
     if (reduced || chatReserve.dragging || viewport.height <= 0) {
@@ -607,8 +481,8 @@ export function TocTickRail({ onOpenWide }: { onOpenWide: () => void }) {
     return () => window.cancelAnimationFrame(id)
   }, [chatReserve.dragging, reduced, slideStack, viewport.height])
 
-  useTickHoverProximity(navRef, visible, setHoverAndRef)
-  useRailSpyFollow(navRef, visible, hoverRef, spyTickId)
+  useTickHoverProximity(navRef, visible, setHover, preview)
+  useRailSpyFollow(navRef, visible, spyPausedRef, spyTickId)
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
@@ -644,13 +518,14 @@ export function TocTickRail({ onOpenWide }: { onOpenWide: () => void }) {
               const index = start + offset
               const kind = tickKind({
                 isChatOpen: chatTickId === item.id,
-                isOpen: hover.id === item.id,
+                isOpen: hover.id === item.id || previewId === item.id,
                 isFocused: spyTickId === item.id,
                 neighbor: hoverIndex >= 0 ? neighborKind(Math.abs(index - hoverIndex)) : null
               })
               const isProximity =
                 kind === 'hover' || kind === 'near' || kind === 'mid' || kind === 'far'
-              const grow = isProximity ? hover.grow : kind === 'idle' ? 0 : 1
+              const grow =
+                previewId === item.id ? 1 : isProximity ? hover.grow : kind === 'idle' ? 0 : 1
               return (
                 <div
                   key={item.id}
@@ -662,7 +537,7 @@ export function TocTickRail({ onOpenWide }: { onOpenWide: () => void }) {
                     kind={kind}
                     grow={grow}
                     durationMs={isProximity ? proximityDurationMs : 0}
-                    onHover={setHoverAndRef}
+                    preview={preview}
                   />
                 </div>
               )
@@ -671,10 +546,12 @@ export function TocTickRail({ onOpenWide }: { onOpenWide: () => void }) {
         </div>
       </nav>
       <TocSectionPreview
-        open={previewOpen}
-        headingId={previewOpenId}
+        headingId={previewId}
         label={previewLabel}
         referenceEl={previewAnchor}
+        api={preview}
+        cardRef={cardRef}
+        actionRef={actionRef}
       />
     </div>
   )

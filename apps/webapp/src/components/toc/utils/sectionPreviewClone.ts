@@ -1,6 +1,7 @@
+import type { MediaNodeType } from '@docs.plus/extension-hypermultimedia'
 import { useStore } from '@stores'
 
-// Hover-preview clone of a section: strips live widgets, keeps text and one media well.
+// Section preview clone: strips live widgets, keeps text and one still media cover.
 const PREVIEW_MAX_BLOCKS = 5
 
 const PREVIEW_STRIP_SEL = [
@@ -20,13 +21,32 @@ const PREVIEW_STRIP_SEL = [
   '.hm-caption',
   '.hm-loading-shell',
   '.hm-loading-shell__overlay',
-  // Each of these holds a focusable control, and the clone is aria-hidden.
   '.mermaid-diagram__head',
   '.mermaid-diagram__error',
   '.pele-zoom'
 ].join(',')
 
-const PREVIEW_MEDIA_SEL = 'img, video, audio, iframe'
+const MEDIA_ROOT_SEL = '[class*="hypermultimedia--"]'
+const MEDIA_KIND = /hypermultimedia--([a-z]+)__content/
+// Live players: each one would reload from its host on every preview open.
+const LIVE_MEDIA_SEL = 'iframe, video, audio, embed, object'
+
+export type PreviewMedia =
+  { kind: 'image'; el: HTMLElement } | { kind: 'tile'; type: MediaNodeType | null }
+
+export type SectionPreview = {
+  heading: HTMLElement | null
+  body: HTMLElement | null
+  media: PreviewMedia | null
+}
+
+let inertDoc: Document | null = null
+
+/** A copy in a document with no browsing context, so no iframe or media starts to load. */
+function inertCopy(source: HTMLElement): HTMLElement {
+  inertDoc ??= document.implementation.createHTMLDocument('')
+  return inertDoc.importNode(source, true)
+}
 
 function headingLevel(el: Element): number | null {
   const tag = el.tagName
@@ -59,26 +79,45 @@ function collectSectionElements(headingId: string): HTMLElement[] {
   return out
 }
 
-function isMediaRoot(el: HTMLElement): boolean {
-  return el.matches('[class*="hypermultimedia--"]') || el.matches(PREVIEW_MEDIA_SEL)
+function safePoster(value: string | null): string | null {
+  if (!value) return null
+  try {
+    const url = new URL(value, window.location.href)
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null
+  } catch {
+    return null
+  }
 }
 
-function hasPreviewMedia(el: HTMLElement): boolean {
-  return el.matches(PREVIEW_MEDIA_SEL) || el.querySelector(PREVIEW_MEDIA_SEL) != null
+/** A video keeps the poster it already holds; every other live player goes. */
+function replaceLiveMedia(root: HTMLElement) {
+  root.querySelectorAll(LIVE_MEDIA_SEL).forEach((node) => {
+    const poster = node.tagName === 'VIDEO' ? safePoster(node.getAttribute('poster')) : null
+    if (!poster) {
+      node.remove()
+      return
+    }
+    const img = node.ownerDocument.createElement('img')
+    img.alt = ''
+    img.src = poster
+    node.replaceWith(img)
+  })
+}
+
+function isMediaRoot(el: HTMLElement): boolean {
+  return el.matches(MEDIA_ROOT_SEL) || el.matches('img')
 }
 
 function takeFirstMedia(root: HTMLElement): HTMLElement | null {
   if (isMediaRoot(root)) return root
   const media =
-    root.querySelector<HTMLElement>('[class*="hypermultimedia--"]') ??
-    root.querySelector<HTMLElement>(PREVIEW_MEDIA_SEL)
+    root.querySelector<HTMLElement>(MEDIA_ROOT_SEL) ?? root.querySelector<HTMLElement>('img')
   media?.remove()
   return media ?? null
 }
 
 function stripLeftoverMedia(root: HTMLElement) {
-  root.querySelectorAll('[class*="hypermultimedia--"]').forEach((node) => node.remove())
-  root.querySelectorAll(PREVIEW_MEDIA_SEL).forEach((node) => node.remove())
+  root.querySelectorAll(`${MEDIA_ROOT_SEL}, img`).forEach((node) => node.remove())
 }
 
 function isPreviewNoise(el: HTMLElement): boolean {
@@ -87,7 +126,7 @@ function isPreviewNoise(el: HTMLElement): boolean {
 
 function prunePreviewEmpties(root: HTMLElement) {
   root.querySelectorAll<HTMLElement>('p, div').forEach((el) => {
-    if (el.querySelector(PREVIEW_MEDIA_SEL) || el.matches('[class*="hypermultimedia"]')) return
+    if (el.querySelector('img') || el.matches(MEDIA_ROOT_SEL)) return
     if (isPreviewNoise(el)) el.remove()
   })
 }
@@ -103,7 +142,7 @@ function fitPreviewMediaCover(node: HTMLElement) {
   }
   apply(node)
   node.querySelectorAll<HTMLElement>('[class*="hypermultimedia"], .hm-media-host').forEach(apply)
-  node.querySelectorAll<HTMLElement>(PREVIEW_MEDIA_SEL).forEach((el) => {
+  node.querySelectorAll<HTMLElement>('img').forEach((el) => {
     el.removeAttribute('width')
     el.removeAttribute('height')
     apply(el)
@@ -111,8 +150,25 @@ function fitPreviewMediaCover(node: HTMLElement) {
   })
 }
 
+function mediaKind(root: HTMLElement): MediaNodeType | null {
+  for (const el of [root, ...root.querySelectorAll(MEDIA_ROOT_SEL)]) {
+    const kind = MEDIA_KIND.exec(el.getAttribute('class') ?? '')?.[1]
+    if (kind) return kind as MediaNodeType
+  }
+  return null
+}
+
+function toPreviewMedia(root: HTMLElement): PreviewMedia {
+  if (root.matches('img') || root.querySelector('img')) {
+    fitPreviewMediaCover(root)
+    return { kind: 'image', el: root }
+  }
+  return { kind: 'tile', type: mediaKind(root) }
+}
+
 function preparePreviewClone(source: HTMLElement): HTMLElement {
-  const clone = source.cloneNode(true) as HTMLElement
+  const clone = inertCopy(source)
+  replaceLiveMedia(clone)
   clone.removeAttribute('id')
   clone.removeAttribute('data-toc-id')
   clone.removeAttribute('contenteditable')
@@ -122,43 +178,21 @@ function preparePreviewClone(source: HTMLElement): HTMLElement {
   clone.querySelectorAll('[contenteditable]').forEach((node) => {
     node.removeAttribute('contenteditable')
   })
-  clone.querySelectorAll('video, audio').forEach((media) => {
-    const el = media as HTMLMediaElement
-    el.removeAttribute('autoplay')
-    el.controls = false
-    el.preload = 'metadata'
-    el.pause()
-  })
-  clone.querySelectorAll('iframe').forEach((frame) => {
-    frame.setAttribute('tabindex', '-1')
-    frame.setAttribute('loading', 'lazy')
-  })
-  clone.querySelectorAll('svg.pele').forEach((svg) => svg.setAttribute('tabindex', '-1'))
-  // Duplicate ids would clash with the live diagram. Its url(#id) refs still resolve to it.
-  clone.querySelectorAll('.mermaid-diagram [id]').forEach((node) => node.removeAttribute('id'))
+  // Duplicate ids would clash with the live page. A diagram's url(#id) refs still resolve to it.
+  clone.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'))
   return clone
 }
 
-export function mountSectionPreview(host: HTMLElement, headingId: string, fallback: string) {
-  host.replaceChildren()
-  const sources = collectSectionElements(headingId)
-  if (!sources.length) {
-    host.textContent = fallback
-    return
-  }
-
-  const prose = document.createElement('div')
-  prose.className =
-    'tiptap ProseMirror text-base-content min-h-0 px-2.5 pt-2 pb-1.5 text-xs leading-relaxed [&_.ha-wrap]:hidden [&_a]:text-primary [&_hr]:hidden [&_ol]:my-0.5 [&_pre]:p-1.5 [&_pre]:text-[10px] [&_ul]:my-0.5 [&_:is(h1,h2,h3,h4,h5,h6)]:!mt-0 [&_:is(h1,h2,h3,h4,h5,h6)]:!mb-1 [&_:is(h1,h2,h3,h4,h5,h6)]:!pr-0 [&_:is(h1,h2,h3,h4,h5,h6)]:!line-clamp-2 [&_:is(h1,h2,h3,h4,h5,h6)]:!text-sm [&_:is(h1,h2,h3,h4,h5,h6)]:!font-semibold [&_:is(h1,h2,h3,h4,h5,h6)]:!leading-snug [&_:is(h1,h2,h3,h4,h5,h6)]:!text-base-content'
-  const body = document.createElement('div')
-  body.className = 'text-base-content/70 [overflow-wrap:anywhere] line-clamp-3 [&_p]:!my-0'
+/** Heading, excerpt and first media of one section, cloned from the live editor. */
+export function buildSectionPreview(headingId: string): SectionPreview {
   let heading: HTMLElement | null = null
-  let media: HTMLElement | null = null
+  let media: PreviewMedia | null = null
+  const body = document.createElement('div')
 
-  for (const source of sources) {
+  for (const source of collectSectionElements(headingId)) {
     const clone = preparePreviewClone(source)
     const taken = takeFirstMedia(clone)
-    if (taken && !media && hasPreviewMedia(taken)) media = taken
+    if (taken && !media) media = toPreviewMedia(taken)
     if (taken === clone) continue
     stripLeftoverMedia(clone)
     prunePreviewEmpties(clone)
@@ -170,16 +204,5 @@ export function mountSectionPreview(host: HTMLElement, headingId: string, fallba
     body.appendChild(clone)
   }
 
-  if (heading) prose.appendChild(heading)
-  if (body.childNodes.length && !isPreviewNoise(body)) prose.appendChild(body)
-  if (!prose.childNodes.length && fallback) prose.textContent = fallback
-  if (prose.childNodes.length) host.appendChild(prose)
-
-  if (media && hasPreviewMedia(media)) {
-    const well = document.createElement('div')
-    well.className = 'bg-base-200 h-24 w-full overflow-hidden'
-    fitPreviewMediaCover(media)
-    well.appendChild(media)
-    host.appendChild(well)
-  }
+  return { heading, body: isPreviewNoise(body) ? null : body, media }
 }
