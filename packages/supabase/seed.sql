@@ -2300,7 +2300,7 @@ declare
     pending_email record;
     enqueued int := 0;
     skipped int := 0;
-    doc_slug text;
+    doc_workspace_id varchar(36);
 begin
     for pending_email in
         select
@@ -2371,11 +2371,11 @@ begin
             continue;
         end if;
 
-        -- Get document slug
-        doc_slug := null;
+        -- Get the documentId (channels.workspace_id, exact case)
+        doc_workspace_id := null;
         if pending_email.channel_id is not null then
             begin
-                select slug into doc_slug
+                select workspace_id into doc_workspace_id
                 from public.channels
                 where id = pending_email.channel_id
                 limit 1;
@@ -2404,7 +2404,8 @@ begin
                 'notification_type', pending_email.notification_type,
                 'message_preview', coalesce(pending_email.message_preview, ''),
                 'channel_id', pending_email.channel_id,
-                'document_slug', doc_slug,
+                'workspace_id', doc_workspace_id,
+                'message_id', pending_email.message_id::text,
                 'enqueued_at', now()::text
             )
         );
@@ -2531,6 +2532,8 @@ begin
         -- Collect notification data for locked items (only unread)
         select jsonb_agg(
             jsonb_build_object(
+                -- The server settles each mail's own rows by this, not the whole list.
+                'queue_id', eq.id,
                 'notification_type', n.type,
                 'sender_name', coalesce(s.display_name, 'Someone'),
                 'sender_avatar_url', s.avatar_url,
