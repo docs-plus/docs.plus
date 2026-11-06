@@ -660,8 +660,10 @@ jobs:
       # The base image floats on oven/bun:1-slim and CI pins a version, so they
       # drift apart on each Bun release (#650). Warn only; never fail a deploy.
       - name: 🥟 Compare image Bun with CI Bun
+        continue-on-error: true
         run: |
           want=$(sed -n "s/^ *default: '\(1\.[0-9]*\.[0-9]*\)'$/\1/p" .github/actions/setup-bun/action.yml)
+          [ -n "$want" ] || { echo "::warning::Could not read the Bun pin from .github/actions/setup-bun/action.yml."; exit 0; }
           got=$(docker run --rm --entrypoint bun "docsplus-rest-api:${DEPLOY_TAG}" --version || echo unknown)
           echo "Image Bun ${got}, CI Bun ${want}" >> "$GITHUB_STEP_SUMMARY"
           [ "$got" = "$want" ] || echo "::warning::Image runs Bun ${got}; CI tests ${want}. Bump setup-bun and lockstep-guard.yml."
