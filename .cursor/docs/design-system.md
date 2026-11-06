@@ -1363,7 +1363,7 @@ content — sweep of `apps/webapp/src` (shims `styles/globals.scss`, `styles/_da
 
 ### Social preview card (REST PNG) — both
 
-image — `apps/hocuspocus.server/src/modules/social-card/` (frame in `apps/hocuspocus.server/src/modules/social-card/domain/frame.ts`, fit in `apps/hocuspocus.server/src/modules/social-card/domain/fit.ts`, the Takumi renderer in `apps/hocuspocus.server/src/modules/social-card/infra/renderer.ts`). Catalog row added on the maintainer's R9 ruling, 2026-11-01 (#663). The card reuses existing light-theme tokens at 2.5x; it adds no token, species, size or radius.
+image — `apps/hocuspocus.server/src/modules/social-card/` (frame in `apps/hocuspocus.server/src/modules/social-card/render/frame.ts`, fit in `apps/hocuspocus.server/src/modules/social-card/render/fit.ts`, the Takumi renderer in `apps/hocuspocus.server/src/modules/social-card/infra/renderer.ts`). Catalog row added on the maintainer's R9 ruling, 2026-11-01 (#663). The card reuses existing light-theme tokens at 2.5x; it adds no token, species, size or radius.
 
 | State      | Recipe                                                                                                                                                                                                                                                                                                                                      |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
