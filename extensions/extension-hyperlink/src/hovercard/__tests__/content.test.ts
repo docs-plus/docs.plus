@@ -55,7 +55,7 @@ describe('built-in card link line', () => {
     cards.push(card.element)
     expect(card.element.querySelector('[aria-label="Use page title"]')).toBeNull()
 
-    card.setBody?.(ctx, null)
+    card.setBody(ctx, null)
     const title = card.element.querySelector('[aria-label="Use page title"]')
     expect(title).not.toBeNull()
     expect(await hoverLabel(title!)).toBe('Use page title')

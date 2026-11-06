@@ -48,7 +48,7 @@ Pick one. Setting both works, because they compose and a URL must pass both, but
 
 `isSafeHref` plus your `validate` and `isAllowedUri` hooks form the composed gate. The package docs use that name.
 
-`validateURL(url, { customValidator })` is a different tool. It is the form-level shape check the prebuilt popovers run before they call a command. It runs `isSafeHref` first, then the shape check, then your `customValidator`. The value must be one whole link: a sentence or a raw space is refused, and trailing punctuation such as `google.com.` still passes the check. `toStoredLink(url, { customValidator })` runs the same check and returns the link to store, without that punctuation, or `null`. A custom popover stores `normalizeHref(toStoredLink(value))`, as the prebuilt ones do.
+`validateURL(url, { customValidator })` is a different tool. It is the form-level shape check the prebuilt popovers run before they call a command. It runs `isSafeHref` first, then the shape check, then your `customValidator`. The value must be one whole link: a sentence or a raw space is refused, and trailing punctuation such as `google.com.` still passes the check. `toStoredLink(url, { customValidator })` runs the same check and returns the link to store, without that punctuation, or `null`. `customValidator` gets the value `toStoredLink` would return: trimmed, without trailing punctuation, with a leading `//` kept. A custom popover stores `normalizeHref(toStoredLink(value))`, as the prebuilt ones do.
 
 ### Link icons
 

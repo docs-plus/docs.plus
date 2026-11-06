@@ -6,7 +6,7 @@ export interface HovercardData {
   /** The built-in card shows "No preview for this page." without it. */
   title?: string
   description?: string
-  image?: { url: string; width?: number; height?: number }
+  image?: { url: string }
 }
 
 /** What `fetchMetadata` gets. */

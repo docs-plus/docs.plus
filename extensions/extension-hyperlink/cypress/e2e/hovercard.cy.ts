@@ -49,6 +49,11 @@ const DOC =
   '<p><a href="https://late.example/">Late</a> and <a href="https://notitle.example/">Notitle</a> ' +
   'and <a href="https://deep.example/docs/page?q=1#top">Deep</a></p>'
 
+// A link whose whole text is its own URL, so the card offers Use page title.
+const RAW_DOC =
+  '<p>Plain text with no link at all.</p>' +
+  '<p>See <a href="https://wide.example/">https://wide.example/</a> here.</p>'
+
 const stub = (): Cypress.Chainable<HovercardStub> =>
   cy.window().then((win) => (win as HovercardWindow)._hovercard)
 
@@ -79,9 +84,9 @@ const waitForPicture = (alias: `@${string}`): void => {
   flush()
 }
 
-const visitHovercard = (mode: 'on' | 'custom' = 'on', extra = ''): void => {
+const visitHovercard = (mode: 'on' | 'custom' = 'on', extra = '', doc = DOC): void => {
   cy.visitPlayground({ query: `hovercard=${mode}${extra}` })
-  cy.setEditorContent(DOC)
+  cy.setEditorContent(doc)
   // Real key presses reach the page only while it has focus.
   cy.focusEditor()
   // Start every test off the links. A pointer that already rests on a link gets no pointerover.
@@ -355,6 +360,23 @@ describe('hovercard — the link line', () => {
     cy.document().then((doc) => {
       expect(doc.activeElement?.closest('.floating-popover')).to.equal(null)
     })
+  })
+})
+
+describe('hovercard — Use page title', () => {
+  beforeEach(() => {
+    cy.intercept(pictureRoute('wide'), { body: svg(1200, 630), headers: SVG_HEADERS })
+    visitHovercard('on', '', RAW_DOC)
+  })
+
+  it('swaps the raw URL for the page title, keeps the href and hides the card', () => {
+    openCard('https://wide.example/')
+    cy.get(`${CARD} button[aria-label="Use page title"]`).click()
+    cy.get(SHOWN_CARD).should('not.exist')
+    cy.get('#editor a')
+      .should('have.length', 1)
+      .and('have.text', 'Wide page')
+      .and('have.attr', 'href', 'https://wide.example/')
   })
 })
 

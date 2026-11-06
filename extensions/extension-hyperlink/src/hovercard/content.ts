@@ -1,10 +1,10 @@
 import { attachTooltip } from '@docs.plus/floating-tooltip'
 
 import { hasMod } from '../interactions/modKey'
+import { linkIconFor } from '../link-icons/linkIconFor'
 import type { LinkIconResolver } from '../link-icons/types'
 import { createHTMLElement } from '../utils/createHTMLElement'
 import { Check, Copy, Title } from '../utils/icons'
-import { logger } from '../utils/logger'
 import { normalizeHref } from '../utils/normalizeHref'
 import type { HovercardRenderContext, HovercardView } from './types'
 
@@ -22,7 +22,10 @@ export type PreloadedImage = {
   done: Promise<void>
 }
 
-/** The built-in card. `setBody` replaces everything above the link line, so the link line stays. */
+/**
+ * The built-in card. `setBody` replaces everything above the link line. It rebuilds the link line
+ * only when a card that opened loading gains the Use page title button.
+ */
 export type BuiltInCard = HovercardView & {
   setBody: (ctx: HovercardRenderContext, picture: PreloadedImage | null) => void
 }
@@ -74,30 +77,6 @@ const createImageWell = (image: PreloadedImage): HTMLElement | null => {
     })
   }
   return well
-}
-
-const warnedResolvers = new WeakSet<object>()
-
-// Same contract as `linkIcon`: a fresh element with no text, else no icon.
-const resolveSiteIcon = (
-  siteIcon: LinkIconResolver | undefined,
-  href: string
-): HTMLElement | null => {
-  if (!siteIcon) return null
-  let el: unknown
-  try {
-    el = siteIcon({ href })
-  } catch (e) {
-    if (!warnedResolvers.has(siteIcon)) logger.error('siteIcon threw; the card shows no icon', e)
-    warnedResolvers.add(siteIcon)
-    return null
-  }
-  if (el instanceof HTMLElement && !el.parentNode && !el.textContent) return el
-  if (el != null && !warnedResolvers.has(siteIcon)) {
-    warnedResolvers.add(siteIcon)
-    logger.error('siteIcon must return a fresh element with no text')
-  }
-  return null
 }
 
 const urlParts = (href: string): { host: string; rest: string } => {
@@ -162,18 +141,23 @@ const createMain = (ctx: HovercardRenderContext, picture: PreloadedImage | null)
   return main
 }
 
-const createCopyButton = (copy: HovercardRenderContext['copy']): HTMLButtonElement => {
-  // Static icon strings only: no host data ever reaches `innerHTML`.
+// `iconHtml` takes static icon strings only: no host data ever reaches `innerHTML`.
+const actionButton = (label: string, iconHtml: string): HTMLButtonElement => {
   const button = createHTMLElement('button', {
     type: 'button',
     className: 'hyperlink-hovercard__action',
     tabIndex: -1,
-    innerHTML: Copy({ size: ICON_SIZE }) + Check({ size: ICON_SIZE })
+    innerHTML: iconHtml
   })
-  button.lastElementChild?.classList.add('hyperlink-hovercard__check')
-  button.setAttribute('aria-label', 'Copy link')
+  button.setAttribute('aria-label', label)
   // A press must not take focus, so the caret stays in the editor.
   button.addEventListener('mousedown', (e) => e.preventDefault())
+  return button
+}
+
+const createCopyButton = (copy: HovercardRenderContext['copy']): HTMLButtonElement => {
+  const button = actionButton('Copy link', Copy({ size: ICON_SIZE }) + Check({ size: ICON_SIZE }))
+  button.lastElementChild?.classList.add('hyperlink-hovercard__check')
 
   let timer: ReturnType<typeof setTimeout> | undefined
   const reset = (): void => {
@@ -195,14 +179,7 @@ const createCopyButton = (copy: HovercardRenderContext['copy']): HTMLButtonEleme
 
 // Present only when the engine set `applyTitle`: the link text is its own URL.
 const createTitleButton = (applyTitle: () => boolean): HTMLButtonElement => {
-  const button = createHTMLElement('button', {
-    type: 'button',
-    className: 'hyperlink-hovercard__action',
-    tabIndex: -1,
-    innerHTML: Title({ size: ICON_SIZE })
-  })
-  button.setAttribute('aria-label', 'Use page title')
-  button.addEventListener('mousedown', (e) => e.preventDefault())
+  const button = actionButton('Use page title', Title({ size: ICON_SIZE }))
   button.addEventListener('click', () => applyTitle())
   return button
 }
@@ -212,9 +189,11 @@ const createLinkLine = (
   siteIcon: LinkIconResolver | undefined
 ): HTMLElement => {
   const line = createHTMLElement('div', { className: 'hyperlink-hovercard__site' })
-  const icon = resolveSiteIcon(siteIcon, href)
+  const icon = siteIcon ? linkIconFor(siteIcon, href) : null
   if (icon) {
     icon.classList.add('hyperlink-hovercard__site-icon')
+    // The host text beside it already names the site, so the icon is always decoration.
+    icon.removeAttribute('role')
     icon.setAttribute('aria-hidden', 'true')
     line.append(icon)
   }
@@ -234,7 +213,8 @@ const createLinkLine = (
   return line
 }
 
-// The `.floating-tooltip` skin (styles.css) sets `pointer-events: none`, so hovering the bubble never leaves the card.
+// The `.floating-tooltip` skin (styles.css) sets `pointer-events: none`, so hovering the bubble
+// never leaves the card.
 const withTooltips = (line: HTMLElement): Array<() => void> =>
   Array.from(line.querySelectorAll('button'), (b) =>
     attachTooltip(b, b.getAttribute('aria-label') ?? '')
@@ -250,7 +230,6 @@ export const createBuiltInCard = (
   let main = createMain(ctx, picture)
   let line = createLinkLine(ctx, siteIcon)
   let detach = withTooltips(line)
-  let hasTitle = Boolean(ctx.applyTitle)
   element.append(main, line)
 
   // The engine calls this on close and on a swap to a host view; the shared bubble must not stay.
@@ -264,14 +243,13 @@ export const createBuiltInCard = (
       nextMain.dataset.swapped = ''
       main.replaceWith(nextMain)
       main = nextMain
-      // A card that opened loading has no `applyTitle`; the data state may bring one.
-      if (Boolean(next.applyTitle) === hasTitle) return
+      // Only a card that opened loading gets `setBody`, and only its data state brings `applyTitle`.
+      if (!next.applyTitle) return
       destroy()
       const nextLine = createLinkLine(next, siteIcon)
       line.replaceWith(nextLine)
       line = nextLine
       detach = withTooltips(line)
-      hasTitle = Boolean(next.applyTitle)
     }
   }
 }

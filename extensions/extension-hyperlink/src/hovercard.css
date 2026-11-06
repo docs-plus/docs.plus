@@ -129,7 +129,7 @@
   width: 58%;
 }
 
-/* The link line: site icon, host and path, then Copy link. */
+/* The link line: site icon, host and path, then the action buttons. */
 .hyperlink-hovercard__site {
   box-sizing: border-box;
   display: flex;

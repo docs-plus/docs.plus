@@ -9,7 +9,7 @@ import { applyTitle } from '../paste-title/applyTitle'
 import { copyToClipboard } from '../utils/copyToClipboard'
 import { createHTMLElement } from '../utils/createHTMLElement'
 import { logger } from '../utils/logger'
-import { createBuiltInCard, type PreloadedImage, preloadImage } from './content'
+import { type BuiltInCard, createBuiltInCard, type PreloadedImage, preloadImage } from './content'
 import { keepsHovercardOpen } from './rules'
 import type {
   HovercardData,
@@ -29,10 +29,8 @@ const IMAGE_WAIT_MS = 300
 const GIVE_UP_MS = 4000
 const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)'
 
-/** What a card shows. Only the built-in card has `setBody`, which keeps its link line on a swap. */
-type Drawn = HovercardView & {
-  setBody?: (ctx: HovercardRenderContext, picture: PreloadedImage | null) => void
-}
+/** What a card shows: a host view, or the built-in card with its `setBody`. */
+type Drawn = HovercardView & Partial<Pick<BuiltInCard, 'setBody'>>
 
 type Target = { link: HTMLAnchorElement; href: string }
 
@@ -196,7 +194,7 @@ function createHovercardView(
   const builtIn = (ctx: HovercardRenderContext, picture: PreloadedImage | null): Drawn =>
     createBuiltInCard(ctx, picture, options.siteIcon)
 
-  // Built-in to built-in keeps the link line. Any host view replaces the whole content.
+  // Built-in to built-in goes through `setBody`. Any host view replaces the whole content.
   const swap = (shown: Card, ctx: HovercardRenderContext, picture: PreloadedImage | null): void => {
     const view = renderHost(ctx)
     const old = shown.drawn
@@ -294,7 +292,10 @@ function createHovercardView(
     }
     token.data = data
     token.dataAt = Date.now()
-    token.view = renderHost(context(token, { state: 'data', data })) ?? undefined
+    // Without `render`, `openPending` builds the context itself, so skip `applyTitle`'s checks here.
+    if (options.render) {
+      token.view = renderHost(context(token, { state: 'data', data })) ?? undefined
+    }
     const picture = preloadFor(data)
     if (picture) {
       token.picture = picture

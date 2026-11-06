@@ -1,7 +1,8 @@
 import '../../link-icons/__tests__/setupDom'
 
 import { afterEach, describe, expect, it } from 'bun:test'
-import { Editor, Node } from '@tiptap/core'
+import { Editor, Extension, Node } from '@tiptap/core'
+import { history, undo } from '@tiptap/pm/history'
 
 import { Hyperlink } from '../../hyperlink'
 import { createLinkContext } from '../../interactions/createLinkContext'
@@ -16,6 +17,7 @@ const Paragraph = Node.create({
   renderHTML: () => ['p', 0]
 })
 const Text = Node.create({ name: 'text', group: 'inline' })
+const History = Extension.create({ name: 'testHistory', addProseMirrorPlugins: () => [history()] })
 
 const editors: Editor[] = []
 afterEach(() => {
@@ -27,7 +29,7 @@ function setup(html: string) {
   document.body.append(element)
   const editor = new Editor({
     element,
-    extensions: [Doc, Paragraph, Text, Hyperlink.configure({})],
+    extensions: [Doc, Paragraph, Text, History, Hyperlink.configure({})],
     content: html
   })
   editors.push(editor)
@@ -45,11 +47,15 @@ const RAW = '<p>See <a href="https://example.com/a">https://example.com/a</a> no
 describe('applyTitle', () => {
   it('swaps a raw URL for the cleaned page title, in one undoable step', () => {
     const { editor, ctx, link } = setup(RAW)
+    const before = editor.getHTML()
     const apply = applyTitle(ctx, link, 'https://example.com/a', '  The\nPage  ')
     expect(apply).toBeDefined()
     expect(apply!()).toBe(true)
     expect(editor.getText()).toBe('See The Page now')
     expect(editor.getHTML()).toContain('href="https://example.com/a"')
+
+    expect(undo(editor.state, editor.view.dispatch)).toBe(true)
+    expect(editor.getHTML()).toBe(before)
   })
 
   it('leaves the editor focused with the caret after the title, so Mod-Z undoes it', async () => {

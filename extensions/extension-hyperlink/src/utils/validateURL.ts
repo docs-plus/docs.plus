@@ -60,6 +60,7 @@ export const stripTrailingPunctuation = (text: string): string => {
 }
 
 export type ValidateURLOptions = {
+  /** Gets the value `toStoredLink` returns: trimmed, no trailing punctuation, a leading `//` kept. */
   customValidator?: (url: string) => boolean
 }
 
@@ -142,7 +143,7 @@ export const toStoredLink = (url: string, options?: ValidateURLOptions): string 
 
     const found = linkifyWhole(trimmed)
     if (!found?.link.href) return null
-    if (options?.customValidator && !options.customValidator(found.link.value)) return null
+    if (options?.customValidator && !options.customValidator(found.text)) return null
 
     // linkifyjs waves through anything scheme-shaped — require a plausible
     // host for web schemes so typos like `https://googlecom` are rejected.

@@ -104,7 +104,7 @@ const HOVERCARD_PAGES: Record<string, HyperlinkModule.HovercardData> = {
   'https://wide.example/': {
     title: 'Wide page',
     description: 'A page with a wide share picture.',
-    image: { url: picture('wide'), width: 1200, height: 630 }
+    image: { url: picture('wide') }
   },
   'https://slow.example/': { title: 'Slow page', image: { url: picture('slow') } },
   'https://xss.example/': { title: '<img src=x onerror=alert(1)>' },
@@ -113,7 +113,7 @@ const HOVERCARD_PAGES: Record<string, HyperlinkModule.HovercardData> = {
   'https://docs.plus/': {
     title: 'docs.plus',
     description: 'Documents with a chat for every heading.',
-    image: { url: picture('gallery'), width: 1200, height: 630 }
+    image: { url: picture('gallery') }
   }
 }
 

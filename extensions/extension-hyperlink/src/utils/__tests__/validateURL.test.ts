@@ -250,7 +250,8 @@ describe('toStoredLink', () => {
     const seen: string[] = []
     const record = (url: string): boolean => (seen.push(url), true)
     expect(toStoredLink(' whatsapp://send. ', { customValidator: record })).toBe('whatsapp://send')
-    expect(seen).toEqual(['whatsapp://send'])
+    expect(toStoredLink('//example.com/x.', { customValidator: record })).toBe('//example.com/x')
+    expect(seen).toEqual(['whatsapp://send', '//example.com/x'])
   })
 })
 

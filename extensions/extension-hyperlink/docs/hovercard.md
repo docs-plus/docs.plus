@@ -58,11 +58,11 @@ A click on the title opens the link through the [`navigate`](./api.md#options) o
 
 `HovercardData` is the shape the built-in card reads. Every field is optional:
 
-| Field         | Type                                               | Description                                                                                                 |
-| ------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `title`       | `string`                                           | The title. Without it, the built-in card shows "No preview for this page."                                  |
-| `description` | `string`                                           | Two lines at most.                                                                                          |
-| `image`       | `{ url: string; width?: number; height?: number }` | The picture. The card loads exactly `url`. Route pictures through your own server, so readers stay private. |
+| Field         | Type              | Description                                                                                                 |
+| ------------- | ----------------- | ----------------------------------------------------------------------------------------------------------- |
+| `title`       | `string`          | The title. Without it, the built-in card shows "No preview for this page."                                  |
+| `description` | `string`          | Two lines at most.                                                                                          |
+| `image`       | `{ url: string }` | The picture. The card loads exactly `url`. Route pictures through your own server, so readers stay private. |
 
 A custom card can need more fields. `HovercardOptions<D>` takes your own data type, and `render` then gets `ctx.data` as `D`:
 

@@ -4,8 +4,8 @@ import { isMacOS } from '@tiptap/core'
 export const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'AltGraph', 'CapsLock'])
 
 /** The `KeyboardEvent.key` of the platform Mod key. */
-export function modKeyName(isMac: boolean = isMacOS()): 'Meta' | 'Control' {
-  return isMac ? 'Meta' : 'Control'
+export function modKeyName(): 'Meta' | 'Control' {
+  return isMacOS() ? 'Meta' : 'Control'
 }
 
 /** True when the platform Mod key is held: Cmd on macOS, Ctrl elsewhere. */
