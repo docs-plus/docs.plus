@@ -134,4 +134,22 @@ describe('carryHeadingIds', () => {
     ).map((record, i) => ({ ...record, preferredId: ['a', 'a', 'x', null][i] }))
     expect(pickHeadingIds(old, incoming)).toEqual(['a', null, null, null])
   })
+
+  // The pad-wide chat room uses the documentId as its heading_id, so no heading may hold it.
+  it('never gives an old heading the documentId as its id', () => {
+    const result = carryHeadingIds(
+      doc(heading(1, 'Title', 'doc-1'), heading(2, 'Kept', 'b')),
+      doc(heading(1, 'Title'), heading(2, 'Kept')),
+      'doc-1'
+    )
+    expect(idsOf(result)).toEqual([null, 'b'])
+  })
+
+  it('never keeps a preferred id equal to the documentId', () => {
+    const old = headingRecords(doc(heading(2, 'Alpha', 'doc-1'), heading(2, 'Beta', 'b')))
+    const incoming = headingRecords(doc(heading(2, 'Alpha'), heading(2, 'Beta'))).map(
+      (record, i) => ({ ...record, preferredId: ['doc-1', 'b'][i] })
+    )
+    expect(pickHeadingIds(old, incoming, 'doc-1')).toEqual([null, 'b'])
+  })
 })

@@ -63,16 +63,19 @@ const countBy = (records: HeadingRecord[], key: (h: HeadingRecord) => string) =>
  * The old `toc-id` for each incoming heading, or `null` for a new id. Each tier runs over
  * every heading before the next tier starts, so a weak match never takes an id from a
  * strong one. Each old id goes at most once. Titles are never fuzzy-matched.
+ * `reservedId` (the pad's documentId, the pad-wide chat) is never given out.
  */
 export const pickHeadingIds = (
   old: HeadingRecord[],
-  incoming: HeadingRecord[]
+  incoming: HeadingRecord[],
+  reservedId: string | null = null
 ): (string | null)[] => {
   // Only the first copy of a repeated old id can be picked, so no id goes out twice.
+  // An old heading that wrongly holds the reserved id never passes it on.
   const oldIds = new Set<string>()
   const candidates: HeadingRecord[] = []
   for (const h of old) {
-    if (h.id === null || oldIds.has(h.id)) continue
+    if (h.id === null || h.id === reservedId || oldIds.has(h.id)) continue
     oldIds.add(h.id)
     candidates.push(h)
   }
@@ -82,7 +85,8 @@ export const pickHeadingIds = (
     incoming.map((h) => ({
       preferredId: h.preferredId && oldIds.has(h.preferredId) ? h.preferredId : null
     })),
-    new Set()
+    new Set(),
+    reservedId ? [reservedId] : []
   )
   picked.forEach((id) => id && used.add(id))
 
@@ -123,9 +127,13 @@ export const pickHeadingIds = (
 }
 
 /** What a replace does to the old headings: the ones whose id it carries, and the rest. */
-export const headingIdPlan = (current: JSONContent, imported: JSONContent) => {
+export const headingIdPlan = (
+  current: JSONContent,
+  imported: JSONContent,
+  reservedId: string | null = null
+) => {
   const old = headingRecords(current)
-  const carried = new Set(pickHeadingIds(old, headingRecords(imported)))
+  const carried = new Set(pickHeadingIds(old, headingRecords(imported), reservedId))
   const withId = old.filter((h) => h.id !== null)
   return {
     kept: withId.filter((h) => carried.has(h.id)),
@@ -138,8 +146,12 @@ export const headingIdPlan = (current: JSONContent, imported: JSONContent) => {
  * by it. So each imported top-level heading takes an old id through `pickHeadingIds`.
  * A heading with no match loses any id it came with, and `UniqueID` gives it a new one.
  */
-export const carryHeadingIds = (current: JSONContent, imported: JSONContent): JSONContent => {
-  const picked = pickHeadingIds(headingRecords(current), headingRecords(imported))
+export const carryHeadingIds = (
+  current: JSONContent,
+  imported: JSONContent,
+  reservedId: string | null = null
+): JSONContent => {
+  const picked = pickHeadingIds(headingRecords(current), headingRecords(imported), reservedId)
   let index = 0
   return {
     ...imported,

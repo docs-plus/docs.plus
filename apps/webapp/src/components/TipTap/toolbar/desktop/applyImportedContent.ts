@@ -3,6 +3,7 @@ import type { Editor } from '@tiptap/core'
 import { yUndoPluginKey } from '@tiptap/y-tiptap'
 
 import { sanitizeJsonContent } from '../../extensions/markdown-paste/markdownPastePlugin'
+import { padIdOf } from '../../extensions/pad-unique-id/pad-unique-id'
 import { carryHeadingIds, headingIdPlan } from './carryHeadingIds'
 import { commitImportedImageSizes } from './commitImportedImageSizes'
 
@@ -14,7 +15,9 @@ export const applyImportedContent = async (
   editor: Editor,
   content: ImportedDocument['content']
 ): Promise<void> => {
-  editor.commands.setContent(carryHeadingIds(editor.getJSON(), sanitizeJsonContent(content)))
+  editor.commands.setContent(
+    carryHeadingIds(editor.getJSON(), sanitizeJsonContent(content), padIdOf(editor))
+  )
   await commitImportedImageSizes(editor)
   // Replace rewrites the whole document, so an undo into the pre-import state
   // lands on a mix of both.
@@ -23,4 +26,4 @@ export const applyImportedContent = async (
 
 /** The staged card's preview: the same id pick the replace makes, on the pad as it is now. */
 export const planImportedHeadingIds = (editor: Editor, content: ImportedDocument['content']) =>
-  headingIdPlan(editor.getJSON(), sanitizeJsonContent(content))
+  headingIdPlan(editor.getJSON(), sanitizeJsonContent(content), padIdOf(editor))
