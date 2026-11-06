@@ -21,8 +21,10 @@ This package is private and ships inside docs.plus, so each heading names the do
 
 ### Migration
 
-Push six of this release's seven migrations with the backend and webapp deploy. The deploy order,
-the held `20261026120000` and the `check-grants.sql` runs are in the Migration section of this
+Push six of this release's eight migrations with the backend and webapp deploy. Hold
+`20261026120000`. Push `20261103120000` only after the backend is live
+([#661](https://github.com/docs-plus/docs.plus/issues/661)). The deploy order and the
+`check-grants.sql` runs are in the Migration section of this
 release in [`apps/hocuspocus.server/CHANGELOG.md`](../../apps/hocuspocus.server/CHANGELOG.md#migration).
 
 Rename the parameters and the result column in every caller of the three functions:

@@ -12,8 +12,8 @@ This app is private and ships inside docs.plus, so each heading names the docs.p
 
 ### Security
 
-- The dashboard runs Next.js 16.4.3, for the October Next.js advisories. Redeploy the dashboard.
-- **Error reports stay on the narrow collection baseline.** `@sentry/nextjs` is `11.9.0`, and
+- The dashboard runs Next.js 16.4.4, for the October Next.js advisories. Redeploy the dashboard.
+- **Error reports stay on the narrow collection baseline.** `@sentry/nextjs` is `11.10.0`, and
   `withSentryConfig` loads from `@sentry/nextjs/config`. Sentry 11 sends cookies and request
   bodies by default. `sentryDataCollection.ts` keeps the version 10 limits, and MCP tool text
   stays off.

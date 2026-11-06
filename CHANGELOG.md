@@ -28,7 +28,8 @@ This file is the product changelog. Every app, package and extension keeps its o
 **If you self-host.** Read the [hocuspocus Migration](apps/hocuspocus.server/CHANGELOG.md#migration)
 before you deploy, and follow its order. It pushes six Supabase migrations with the backend and
 frontend deploy, and holds `20261026120000`
-([#570](https://github.com/docs-plus/docs.plus/issues/570)). Until both sides land, the member
+([#570](https://github.com/docs-plus/docs.plus/issues/570)). It pushes `20261103120000` only after the
+backend is live ([#661](https://github.com/docs-plus/docs.plus/issues/661)). Until `20261023120000` and the backend both land, the member
 faces, the roster and the admin member counts fail
 ([#574](https://github.com/docs-plus/docs.plus/issues/574)).
 [`packages/supabase/CHANGELOG.md`](packages/supabase/CHANGELOG.md) says what each migration does.
@@ -159,8 +160,11 @@ faces, the roster and the admin member counts fail
 
 ### Security
 
-- The webapp runs Next.js 15.5.28 and DOMPurify 3.4.17. The admin dashboard runs Next.js 16.4.3. Redeploy both apps.
-- **Sentry stays on the narrow collection baseline.** `@sentry/nextjs` and `@sentry/bun` are `11.9.0`. `withSentryConfig` loads from `@sentry/nextjs/config`. `dataCollection` keeps the version 10 limits. MCP tool text stays off. A live GlitchTip event is still unproven.
+- A table `colspan` is clamped to 64 on every export and on DOCX import, so one stored huge value
+  can no longer make an export stop the REST process. Detail in
+  [`apps/hocuspocus.server/CHANGELOG.md`](apps/hocuspocus.server/CHANGELOG.md).
+- The webapp runs Next.js 15.5.28 and DOMPurify 3.4.17. The admin dashboard runs Next.js 16.4.4. Redeploy both apps.
+- **Sentry stays on the narrow collection baseline.** `@sentry/nextjs` and `@sentry/bun` are `11.10.0`. `withSentryConfig` loads from `@sentry/nextjs/config`. `dataCollection` keeps the version 10 limits. MCP tool text stays off. A live GlitchTip event is still unproven.
 - **An erased account can no longer write back its profile, preferences or push devices.**
   Needs Supabase migration `20261024120000`
   ([#579](https://github.com/docs-plus/docs.plus/issues/579)).
