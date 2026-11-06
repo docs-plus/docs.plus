@@ -2,19 +2,6 @@
 
 const NO_EXTENSION = 'https://picsum.photos/id/1/200/100'
 
-const pasteHtml = (html: string) => {
-  cy.window().then((win) => {
-    const dt = new win.DataTransfer()
-    dt.setData('text/html', html)
-    dt.setData('text/plain', '')
-    cy.get('#editor .ProseMirror').trigger('paste', {
-      clipboardData: dt,
-      bubbles: true,
-      cancelable: true
-    })
-  })
-}
-
 describe('image src without a file extension (#637)', () => {
   beforeEach(() => {
     cy.intercept('GET', NO_EXTENSION, { statusCode: 404, body: '' })
@@ -29,7 +16,7 @@ describe('image src without a file extension (#637)', () => {
   })
 
   it('keeps an <img> from an HTML paste', () => {
-    pasteHtml(`<p>before</p><img src="${NO_EXTENSION}" alt="photo"><p>after</p>`)
+    cy.pasteHtml(`<p>before</p><img src="${NO_EXTENSION}" alt="photo"><p>after</p>`)
     cy.nodeCount('image').should('eq', 1)
     cy.nodeAttr('image', 'src').should('eq', NO_EXTENSION)
   })

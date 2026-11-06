@@ -45,7 +45,6 @@ export function createImageNodeView(options: ImageOptions, editor: Editor) {
       if (value !== undefined && value !== null) img.setAttribute(key, String(value))
     })
 
-    const sourceHost = imageSourceHost(node.attrs.src)
     const { dom: loadingHost, controller } = wrapMediaWithLoadingShell(
       editor,
       {
@@ -53,7 +52,7 @@ export function createImageNodeView(options: ImageOptions, editor: Editor) {
         width: dims.width,
         height: dims.height,
         // Say where the image comes from, so the reader can tell a dead link from a bug.
-        errorDetail: sourceHost ? `From ${sourceHost}. The link may be broken.` : undefined
+        sourceHost: imageSourceHost(node.attrs.src)
       },
       img,
       {

@@ -1,7 +1,11 @@
 import type { Editor } from '@tiptap/core'
 
 import { getKitStorage } from '../kitStorage'
-import { createDefaultMediaLoadingShell, DEFAULT_ERROR_MESSAGES } from './defaultShell'
+import {
+  createDefaultMediaLoadingShell,
+  DEFAULT_ERROR_MESSAGES,
+  sourceHostDetail
+} from './defaultShell'
 import { syncResponsiveMediaHost } from './syncLayout'
 import type {
   MediaLoadingController,
@@ -130,8 +134,8 @@ export function wrapMediaWithLoadingShell(
       const messageEl = overlay.querySelector('.hm-loading-shell__message')
       if (messageEl) messageEl.textContent = text
       else {
-        const detail = context.errorDetail
-        const label = detail ? `${text.replace(/\.$/, '')}. ${detail}` : text
+        const site = context.sourceHost
+        const label = site ? `${text}. ${sourceHostDetail(site)}` : text
         overlay.setAttribute('aria-label', label)
         host.setAttribute('aria-label', label)
       }

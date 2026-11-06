@@ -8,11 +8,15 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- `MediaLoadingShellContext` gains an optional `sourceHost` field. The built-in shell names that site under the error message ([#637](https://github.com/docs-plus/docs.plus/issues/637)).
+
 ### Changed
 
 - The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.0`. It was `^3.31.3`.
 - A popover reads its Tab cycle on each Tab, so a control that renders after it opens joins the cycle.
-- A failed image shows "Couldn’t load this image" and a second line that names the site, for example "From picsum.photos. The link may be broken." The broken-image glyph is hidden. Other media show "Couldn’t load this video", "…audio" or "…embed". Before, every kind showed "Could not load media". `MediaLoadingShellContext` gains an optional `errorDetail` field for that second line ([#637](https://github.com/docs-plus/docs.plus/issues/637)).
+- A failed image shows "Couldn’t load this image" and a second line that names the site, for example "From picsum.photos. The link may be broken." The broken-image glyph is hidden. Other media show "Couldn’t load this video", "…audio" or "…embed". Before, every kind showed "Could not load media" ([#637](https://github.com/docs-plus/docs.plus/issues/637)).
 
 ### Fixed
 

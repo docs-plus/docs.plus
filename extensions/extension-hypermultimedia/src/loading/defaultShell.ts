@@ -7,6 +7,9 @@ const DEFAULT_MESSAGES: Record<MediaLoadingKind, string> = {
   embed: 'Loading embed…'
 }
 
+/** The line under a failed media's error message. */
+export const sourceHostDetail = (host: string): string => `From ${host}. The link may be broken.`
+
 export const DEFAULT_ERROR_MESSAGES: Record<MediaLoadingKind, string> = {
   image: 'Couldn’t load this image',
   video: 'Couldn’t load this video',
@@ -42,10 +45,10 @@ export function createDefaultMediaLoadingShell(context: MediaLoadingShellContext
   message.textContent = context.message ?? DEFAULT_MESSAGES[context.kind]
   body.append(message)
 
-  if (context.errorDetail) {
+  if (context.sourceHost) {
     const detail = document.createElement('span')
     detail.className = 'hm-loading-shell__detail'
-    detail.textContent = context.errorDetail
+    detail.textContent = sourceHostDetail(context.sourceHost)
     body.append(detail)
   }
 

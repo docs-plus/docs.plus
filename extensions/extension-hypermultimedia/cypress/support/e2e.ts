@@ -40,6 +40,7 @@ declare global {
       nodeCount(typeName: string): Chainable<number>
       setEditorContent(html: string): Chainable<void>
       pastePlainText(text: string): Chainable<void>
+      pasteHtml(html: string): Chainable<void>
       /** Paste a PNG file like a screenshot (fires editorFileUpload in the extension). */
       pasteImageFile(count?: number): Chainable<void>
       insertSizedImage(width: number, height: number): Chainable<void>
@@ -134,17 +135,23 @@ Cypress.Commands.add('setEditorContent', (html: string) => {
   })
 })
 
-Cypress.Commands.add('pastePlainText', (text: string) => {
+const pasteData = (data: Record<string, string>) => {
   cy.window().then((win) => {
     const dt = new win.DataTransfer()
-    dt.setData('text/plain', text)
+    for (const [type, value] of Object.entries(data)) dt.setData(type, value)
     cy.get('#editor .ProseMirror').trigger('paste', {
       clipboardData: dt,
       bubbles: true,
       cancelable: true
     })
   })
-})
+}
+
+Cypress.Commands.add('pastePlainText', (text: string) => pasteData({ 'text/plain': text }))
+
+Cypress.Commands.add('pasteHtml', (html: string) =>
+  pasteData({ 'text/html': html, 'text/plain': '' })
+)
 
 /** 1×1 PNG — enough for HyperImagePastePlugin to detect image/* on the clipboard. */
 export const TINY_PNG_BASE64 =
