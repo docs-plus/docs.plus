@@ -1,5 +1,6 @@
 import { CHAT_OPEN } from '@services/eventsHub'
 import { padUrl } from '@services/padUrl'
+import { useFocusedHeadingStore } from '@stores'
 import { scrollToHeading as scrollPadHeading } from '@utils/scrollToHeading'
 import PubSub from 'pubsub-js'
 
@@ -13,7 +14,12 @@ export function navigateToHeading(headingId: string, options: NavigateToHeadingO
 
   void padUrl.go({ kind: 'heading', headingId })
 
-  scrollPadHeading(headingId, { behavior: 'smooth', block: 'start' })
+  // The click's spy lock holds until the heading lands, so focus stays on the clicked row.
+  scrollPadHeading(headingId, {
+    behavior: 'smooth',
+    block: 'start',
+    onSettled: useFocusedHeadingStore.getState().releaseScrollLock
+  })
 
   if (openChat) {
     PubSub.publish(CHAT_OPEN, { headingId })
