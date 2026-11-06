@@ -122,7 +122,25 @@
 }
 
 .hm-media-host[data-hm-loading='error'] .hm-loading-shell__message {
+  font-weight: 600;
   color: var(--hm-loading-error, #b91c1c);
+}
+
+.hm-loading-shell__detail {
+  display: none;
+  max-width: 100%;
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+  color: var(--hm-loading-message, #6b7280);
+}
+
+.hm-media-host[data-hm-loading='error'] .hm-loading-shell__detail {
+  display: block;
+}
+
+/* Hide the broken-image glyph. Opacity, not visibility, so screen readers keep the alt. */
+.hm-media-host[data-hm-loading='error'] .hm-media-slot > img {
+  opacity: 0;
 }
 
 .hm-loading-shell__spinner {

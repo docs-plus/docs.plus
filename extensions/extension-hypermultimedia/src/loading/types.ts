@@ -7,9 +7,11 @@ export interface MediaLoadingShellContext {
   height: number
   provider?: string
   message?: string
+  /** A line shown under the error message only, such as where the media comes from. */
+  errorDetail?: string
 }
 
-/** Include `.hm-loading-shell__message` if `markError` should update visible text. */
+/** Include `.hm-loading-shell__message` if `markError` should update visible text; draw `errorDetail` yourself. */
 export type MediaLoadingShellFactory = (context: MediaLoadingShellContext) => HTMLElement
 
 /** `true` = built-in shell; `false` = off; function = custom overlay root. */

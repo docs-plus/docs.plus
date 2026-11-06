@@ -7,6 +7,13 @@ const DEFAULT_MESSAGES: Record<MediaLoadingKind, string> = {
   embed: 'Loading embed…'
 }
 
+export const DEFAULT_ERROR_MESSAGES: Record<MediaLoadingKind, string> = {
+  image: 'Couldn’t load this image',
+  video: 'Couldn’t load this video',
+  audio: 'Couldn’t load this audio',
+  embed: 'Couldn’t load this embed'
+}
+
 export function createDefaultMediaLoadingShell(context: MediaLoadingShellContext): HTMLElement {
   const overlay = document.createElement('div')
   overlay.className = 'hm-loading-shell__overlay'
@@ -34,6 +41,13 @@ export function createDefaultMediaLoadingShell(context: MediaLoadingShellContext
   message.className = 'hm-loading-shell__message'
   message.textContent = context.message ?? DEFAULT_MESSAGES[context.kind]
   body.append(message)
+
+  if (context.errorDetail) {
+    const detail = document.createElement('span')
+    detail.className = 'hm-loading-shell__detail'
+    detail.textContent = context.errorDetail
+    body.append(detail)
+  }
 
   const spinner = document.createElement('span')
   spinner.className = 'hm-loading-shell__spinner'

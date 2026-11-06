@@ -80,9 +80,9 @@ export const importDocx = async (
       const reason = err instanceof Error ? err.message : String(err)
       throw new Error(`Image ${index} (${image.contentType}) could not be uploaded: ${reason}`)
     }
-    // The editor's image node only parses a URL whose path ends in an image
-    // extension. An extension-less upload URL therefore leaves an empty paragraph
-    // and no message, which is the exact silent drop this pipeline exists to prevent.
+    // Stricter than the image node on purpose: since #637 it keeps any absolute
+    // http(s) <img>. Our own upload URLs always end in an image extension, so a URL
+    // without one means the upload went wrong, and we say so instead of storing it.
     if (!isImageUrl(src)) {
       throw new Error(`Image ${index} was dropped: ${src} is not a readable image URL.`)
     }

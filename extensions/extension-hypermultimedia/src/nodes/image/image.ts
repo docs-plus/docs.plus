@@ -20,7 +20,7 @@ import { mediaLayoutCss } from '../../utils/layoutStyle'
 import { keyIdAttribute } from '../../utils/media-node-attrs'
 import { isSafeMediaSrc } from '../../utils/mediaUrl'
 import { generateShortId } from '../../utils/utils'
-import { inputRegex, isImageUrl } from './helper'
+import { inputRegex, isImageElementSrc } from './helper'
 import { createImageNodeView } from './nodeView'
 import { HyperImagePastePlugin } from './plugin'
 import type { ImageOptions } from './types'
@@ -134,7 +134,7 @@ export const Image = Node.create<ImageOptions>({
 
   parseHTML() {
     const acceptSrc = (src: string | null): boolean =>
-      !!src && (this.options.allowBase64 || !src.startsWith('data:')) && isImageUrl(src)
+      !!src && (this.options.allowBase64 || !src.startsWith('data:')) && isImageElementSrc(src)
     return [
       {
         tag: 'figure[data-hm-figure]',

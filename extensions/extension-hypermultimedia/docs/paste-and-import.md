@@ -81,4 +81,4 @@ document.addEventListener('editorFileUpload', (event) => {
 
 Insert sequentially when your handler awaits anything first, such as an upload or an image decode. Otherwise the nodes land in completion order rather than clipboard order.
 
-Without a listener, the paste handler drops pasted image files silently. A pasted image **URL** in plain text inserts an `image` node directly, and a `data:` URL follows the `allowBase64` option.
+Without a listener, the paste handler drops pasted image files silently. A pasted image **URL** in plain text inserts an `image` node directly, and a `data:` URL follows the `allowBase64` option. That URL must end in an image file extension, or it stays text. Pasted or imported HTML is different: an `<img>` keeps any absolute `http(s)` or `//` `src`, with or without an extension, because the tag already says it is an image.

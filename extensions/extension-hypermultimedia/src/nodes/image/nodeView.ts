@@ -12,6 +12,7 @@ import {
   wrapMediaWithLoadingShell
 } from '../../loading'
 import { ignoreNodeViewSubtreeMutation } from '../../utils/ignoreNodeViewMutation'
+import { imageSourceHost } from './helper'
 import type { ImageOptions } from './types'
 
 export function createImageNodeView(options: ImageOptions, editor: Editor) {
@@ -44,9 +45,16 @@ export function createImageNodeView(options: ImageOptions, editor: Editor) {
       if (value !== undefined && value !== null) img.setAttribute(key, String(value))
     })
 
+    const sourceHost = imageSourceHost(node.attrs.src)
     const { dom: loadingHost, controller } = wrapMediaWithLoadingShell(
       editor,
-      { kind: 'image', width: dims.width, height: dims.height },
+      {
+        kind: 'image',
+        width: dims.width,
+        height: dims.height,
+        // Say where the image comes from, so the reader can tell a dead link from a bug.
+        errorDetail: sourceHost ? `From ${sourceHost}. The link may be broken.` : undefined
+      },
       img,
       {
         bindLoad: {

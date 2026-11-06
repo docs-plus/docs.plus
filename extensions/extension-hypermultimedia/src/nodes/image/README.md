@@ -104,7 +104,8 @@ and audio also expose a Download action.
 
 Two clipboard paths, both handled by `HyperImagePastePlugin` (wired automatically):
 
-- **Image URL as plain text** → inserts an `image` node directly. `data:` URLs follow `allowBase64`.
+- **Image URL as plain text** → inserts an `image` node directly, when the URL ends in an image file extension. A URL with no extension stays text. `data:` URLs follow `allowBase64`.
+- **HTML with an `<img>`** → keeps any absolute `http(s)` or `//` `src`, with or without a file extension, because the tag already says it is an image. Relative and unsafe `src` values are dropped.
 - **Image file** (screenshot, copied image) → the plugin calls `preventDefault()` and dispatches one `CustomEvent('editorFileUpload')` on `document` with `{ files, editor }` in `detail`, carrying every image on the clipboard. The host uploads (or creates a blob URL) and inserts the nodes itself:
 
 ```js

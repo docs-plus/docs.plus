@@ -47,7 +47,8 @@ describe('media loading shell', () => {
     })
     cy.expectMediaLoadingPending()
     cy.wait('@brokenImage')
-    cy.expectMediaLoadingError('Could not load media')
+    cy.expectMediaLoadingError('Couldn’t load this image')
+    cy.get('#editor .hm-loading-shell__detail').should('contain.text', 'From example.com.')
     cy.get('#editor img[src="' + BROKEN_IMAGE + '"]').should('exist')
   })
 

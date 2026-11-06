@@ -44,7 +44,7 @@ describe('preload="none" media', () => {
     cy.getEditor().then((editor) => {
       editor.commands.setVideo({ src: 'https://example.com/missing.mp4', width: 320, height: 180 })
     })
-    cy.expectMediaLoadingError('Could not load media', VIDEO_SCOPE)
+    cy.expectMediaLoadingError('Couldn’t load this video', VIDEO_SCOPE)
   })
 })
 

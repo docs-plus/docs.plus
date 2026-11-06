@@ -81,3 +81,4 @@ These names are the stable styling contract. A custom toolbar, a custom action a
 | `.hm-loading-shell` / `.hm-loading-shell__overlay`                      | Overlay root. The kit stamps this on the built-in overlay and on a custom one.       |
 | `.hm-loading-shell__body`                                               | Row holding the provider label, message and spinner.                                 |
 | `.hm-loading-shell__provider` / `__message` / `__shimmer` / `__spinner` | Provider label, status text, shimmer sweep, spinner.                                 |
+| `.hm-loading-shell__detail`                                             | Second line under an error message. A failed image names the site it comes from.     |
