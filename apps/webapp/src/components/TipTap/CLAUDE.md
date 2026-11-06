@@ -26,7 +26,13 @@ bun run migrate:nested-to-flat
   - Tier 1: level, text and parent path (the ancestor heading texts, by the `outlineOf` rule). Tier 2: level and text. Tier 3: text at any level.
   - Tier 4: a non-empty section text that appears exactly once on each side (a rename).
   - Tiers 1 to 3 skip empty headings and break a tie by section text, then document order. Never fuzzy-match titles.
-  - An unmatched heading drops any id it came with, and `UniqueID` gives it a new one. The staged card names each heading that has a chat room and loses it (`headingIdPlan`). Exported files carry no ids (parked).
+  - An unmatched heading drops any id it came with, and `UniqueID` gives it a new one. The staged card names each heading whose chat holds messages and loses it (`headingIdPlan`); an empty room loses nothing, so it is not named (ruling 2026-11-06). Exported files carry no ids (parked).
+  - The matcher never gives out the pad's documentId (`padIdOf(editor)`), at any tier. An old heading that wrongly holds it does not pass it on.
+- **A paste or drag from the same pad keeps heading `toc-id`s** (`PadUniqueID` in `extensions/pad-unique-id/`; #700, ruled 2026-11-06). Copy and cut stamp `data-docsplus-pad` on the first element of the clipboard HTML.
+  - A paste counts as same-pad only when a parsed element carries the mark with this pad's id. Text that spells the mark does not count.
+  - An internal drop is same-pad through `view.dragging`. The kept slice is rebuilt with new node objects, so a drag-copy re-keys the copy and a drag-move keeps the id.
+  - Only a free id is kept (`keepPreferredIds`). The pad's documentId is reserved for every writer, because the pad-wide chat room uses it as its `heading_id` (`04-channels.sql:42`). Compare it exactly, with no case change.
+  - The mark carries the raw documentId. The id is not a secret: "No endpoint is protected by id-unguessability" (`apps/hocuspocus.server/CLAUDE.md`). A hash was weighed and rejected (research 2026-11-06).
 
 ### Heading Schema
 

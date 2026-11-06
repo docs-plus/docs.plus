@@ -206,6 +206,14 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- Dragging text that holds a heading to another place in the same pad now keeps the heading's
+  chat and links. A drag-copy gives only the copy a new id.
+- A paste or a file replace never lets a heading take the pad's own id, which belongs to the
+  pad-wide chat. The server refuses it on content writes too.
+- Before a file replace, the confirm card names only headings whose chat holds messages. An
+  opened but empty chat has nothing to lose.
+- The tick-rail preview's chat button now says how many messages are unread, for screen
+  readers.
 - A heading link now lands on its heading, even when a fold or a Filter hides it
   ([#338](https://github.com/docs-plus/docs.plus/issues/338)). A click opens only the sections
   that hide the heading, for this session, and scrolls it to the top of the pad. Folds saved on
