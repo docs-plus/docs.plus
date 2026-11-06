@@ -11,8 +11,8 @@ import {
   cardQuery,
   type CardReply,
   type CardView,
+  fetchCardReply,
   hovercardUrl,
-  parseCardReply,
   toCardView
 } from './model'
 
@@ -26,19 +26,16 @@ const requestReply = async (slug: string, query: URLSearchParams): Promise<CardR
   const {
     data: { session }
   } = await supabaseClient.auth.getSession()
-  const url = hovercardUrl(slug, query)
-  const key = `${session?.user?.id ?? ''} ${url}`
+  const key = `${session?.user.id ?? ''} ${hovercardUrl(slug, query)}`
   const running = inFlight.get(key)
   if (running) return running
 
   const headers: Record<string, string> = {}
   if (session?.access_token) headers.token = session.access_token
-  const request = fetch(url, { headers, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })
-    .then(async (response) => {
-      if (!response.ok) return null
-      const body: { data?: unknown } | null = await response.json()
-      return parseCardReply(body?.data)
-    })
+  const request = fetchCardReply(slug, query, {
+    headers,
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+  })
     .catch(() => null)
     .finally(() => inFlight.delete(key))
   inFlight.set(key, request)
@@ -47,7 +44,7 @@ const requestReply = async (slug: string, query: URLSearchParams): Promise<CardR
 
 /** The Pad title as the server picks it: a title still equal to the slug gives way to the Title. */
 const openPadTitle = (editor: Editor, slug: string): string => {
-  const title = plainTitle(useStore.getState().settings.metadata?.title ?? '').trim()
+  const title = plainTitle(useStore.getState().settings.metadata.title ?? '').trim()
   if (title && title !== slug) return title
   return editor.state.doc.firstChild?.textContent.trim() || title
 }

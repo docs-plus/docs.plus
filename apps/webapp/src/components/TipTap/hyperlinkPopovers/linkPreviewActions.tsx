@@ -9,9 +9,9 @@ import type { ReactNode } from 'react'
 import { applyEdit } from './commands/applyEdit'
 import { removeHyperlinkAtPos } from './commands/removeHyperlinkAtPos'
 import { navigateHref } from './hrefEventHandler'
-import { classifyInternalDocumentLink } from './internalDocumentLink'
 import { runInternalDocumentLink } from './internalDocumentLinkActions'
 import { getHyperlinkDisplayText } from './linkMarkUtils'
+import type { LinkDestination } from './types'
 
 const ICON_SIZE = 16
 
@@ -25,6 +25,7 @@ export interface LinkPreviewAction {
 
 type BuildLinkPreviewActionsArgs = {
   payload: SheetDataMap['linkPreview']
+  destination: LinkDestination
   closeSheet: () => void
   switchSheet: ReturnType<typeof useSheetStore.getState>['switchSheet']
   onCopySuccess: () => void
@@ -32,12 +33,13 @@ type BuildLinkPreviewActionsArgs = {
 
 export function buildLinkPreviewActions({
   payload,
+  destination,
   closeSheet,
   switchSheet,
   onCopySuccess
 }: BuildLinkPreviewActionsArgs): LinkPreviewAction[] {
   const { href, editor, nodePos, isAllowedUri } = payload
-  const internalLink = classifyInternalDocumentLink(href, window.location.pathname)
+  const internalLink = destination.kind === 'here' ? destination.link : null
 
   const openAction: LinkPreviewAction = {
     key: 'open',

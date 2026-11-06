@@ -4,7 +4,7 @@ import type { PadFacets } from '@types'
 
 import { fetchMetadata } from './fetchMetadata'
 import { classifyPadFacets, linkDestination } from './internalDocumentLink'
-import { cardQuery, hovercardUrl, parseCardReply } from './padLinkCard/model'
+import { cardQuery, fetchCardReply } from './padLinkCard/model'
 
 /**
  * The swap writes text every reader sees, so this asks as nobody: no token, no cookie.
@@ -13,13 +13,7 @@ import { cardQuery, hovercardUrl, parseCardReply } from './padLinkCard/model'
 const publicPadTitle = async (pad: PadFacets, signal: AbortSignal): Promise<string | null> => {
   const link = classifyPadFacets(pad)
   if (link.kind !== 'document' && link.kind !== 'heading') return null
-  const response = await fetch(hovercardUrl(pad.slug, cardQuery(link)), {
-    credentials: 'omit',
-    signal
-  })
-  if (!response.ok) return null
-  const body: { data?: unknown } | null = await response.json()
-  const reply = parseCardReply(body?.data)
+  const reply = await fetchCardReply(pad.slug, cardQuery(link), { credentials: 'omit', signal })
   if (!reply || 'locked' in reply) return null
   if (reply.kind === 'pad') return reply.title
   return reply.kind === 'heading' ? `${reply.title} · ${reply.padTitle}` : null

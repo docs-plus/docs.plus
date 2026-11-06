@@ -1,5 +1,5 @@
 import Button, { quietActionClassName } from '@components/ui/Button'
-import { type MouseEvent, type ReactNode, useState } from 'react'
+import { type ReactNode, useState } from 'react'
 
 import { fetchArchivedCopy } from './fetchMetadata'
 import { LinkIcon } from './HovercardLinkLine'
@@ -36,9 +36,6 @@ export function NoPreviewCard({ href, title, path, miss, onOpen, children }: Pro
   )
 }
 
-// Keeps the caret in the editor, as Use page title does.
-const keepEditorFocus = (event: MouseEvent) => event.preventDefault()
-
 /**
  * Asks the archive on click only. A hit becomes a plain link: a tab opened after the request
  * would meet the popup blocker. `fetchArchivedCopy` passes only `https://web.archive.org/web/`.
@@ -60,7 +57,6 @@ function ArchivedCopyAction({ href }: { href: string }) {
         target="_blank"
         rel="noopener noreferrer"
         tabIndex={-1}
-        onMouseDown={keepEditorFocus}
         className={`${quietActionClassName} self-start`}>
         Open archived copy
       </a>
@@ -73,7 +69,6 @@ function ArchivedCopyAction({ href }: { href: string }) {
         variant="quiet"
         tabIndex={-1}
         loading={copy === 'busy'}
-        onMouseDown={keepEditorFocus}
         onClick={find}
         className="self-start">
         View archived copy

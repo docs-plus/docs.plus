@@ -103,8 +103,8 @@ export const HeadingScale = Extension.create({
 
             if (fingerprint === prev.fingerprint) {
               // A step that replaces a heading's tokens (setNodeMarkup, a TOC move, split, paste)
-              // drops its node decoration instead of moving it. A Yjs change replaces the whole
-              // document, so it always drops. Rebuild when anything drops.
+              // drops its node decoration instead of moving it. A Yjs change replaces the changed
+              // blocks, so their decorations drop. Rebuild when anything drops.
               let dropped = false
               const decorations = prev.decorations.map(tr.mapping, doc, {
                 onRemove: () => {

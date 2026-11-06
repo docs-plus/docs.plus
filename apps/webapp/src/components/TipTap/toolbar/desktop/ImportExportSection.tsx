@@ -7,6 +7,7 @@ import {
   pickExportTarget
 } from '@api'
 import { isVisitor } from '@components/auth/isVisitor'
+import { headingLabel } from '@components/TipTap/placeholders'
 import * as toast from '@components/toast'
 import { Banner } from '@components/ui/Banner'
 import Button from '@components/ui/Button'
@@ -18,7 +19,6 @@ import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import React, { useState } from 'react'
 
 import { applyImportedContent, planImportedHeadingIds } from './applyImportedContent'
-import type { HeadingRecord } from './carryHeadingIds'
 
 interface ImportExportSectionProps {
   editor: Editor | null | undefined
@@ -58,9 +58,6 @@ type ImportStage =
 const WARNINGS_SHOWN = 5
 const NAMES_SHOWN = 5
 
-// An empty heading reads the way its TOC row does.
-const headingName = (heading: HeadingRecord) => heading.text || `Heading ${heading.level}`
-
 /**
  * Names only the headings whose chat holds messages and loses them. `null` when no heading
  * has one. The pad already holds every channel of the document, so this needs no request.
@@ -69,15 +66,15 @@ const headingChatLine = (
   plan: ReturnType<typeof planImportedHeadingIds>,
   roomHeadingIds: Set<string>
 ): string | null => {
-  const keep = plan.kept.filter((heading) => roomHeadingIds.has(heading.id as string)).length
-  const lose = plan.dropped.filter((heading) => roomHeadingIds.has(heading.id as string))
+  const keep = plan.kept.filter((heading) => roomHeadingIds.has(heading.id)).length
+  const lose = plan.dropped.filter((heading) => roomHeadingIds.has(heading.id))
   if (!lose.length) {
     if (!keep) return null
     return keep === 1
       ? 'The heading with a chat keeps it.'
       : `All ${keep} headings with a chat keep it.`
   }
-  const names = lose.slice(0, NAMES_SHOWN).map(headingName)
+  const names = lose.slice(0, NAMES_SHOWN).map(headingLabel)
   if (lose.length > NAMES_SHOWN) names.push(`and ${lose.length - NAMES_SHOWN} more`)
   const kept =
     keep === 1 ? '1 heading keeps its chat. ' : keep ? `${keep} headings keep their chat. ` : ''

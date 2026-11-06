@@ -1,6 +1,6 @@
 import type { JSONContent } from '@tiptap/core'
 
-import { carryHeadingIds, headingRecords, pickHeadingIds } from './carryHeadingIds'
+import { carryHeadingIds, headingIdPlan } from './carryHeadingIds'
 
 const heading = (level: number, text: string, id?: string): JSONContent => ({
   type: 'heading',
@@ -127,14 +127,6 @@ describe('carryHeadingIds', () => {
     expect(idsOf(result)).toEqual([null])
   })
 
-  it('takes a preferred id first, only from the old set, and only once', () => {
-    const old = headingRecords(doc(heading(2, 'Alpha', 'a'), heading(2, 'Beta', 'b')))
-    const incoming = headingRecords(
-      doc(heading(2, 'Beta'), heading(2, 'Alpha'), heading(2, 'Gamma'), heading(2, 'Delta'))
-    ).map((record, i) => ({ ...record, preferredId: ['a', 'a', 'x', null][i] }))
-    expect(pickHeadingIds(old, incoming)).toEqual(['a', null, null, null])
-  })
-
   // The pad-wide chat room uses the documentId as its heading_id, so no heading may hold it.
   it('never gives an old heading the documentId as its id', () => {
     const result = carryHeadingIds(
@@ -145,11 +137,13 @@ describe('carryHeadingIds', () => {
     expect(idsOf(result)).toEqual([null, 'b'])
   })
 
-  it('never keeps a preferred id equal to the documentId', () => {
-    const old = headingRecords(doc(heading(2, 'Alpha', 'doc-1'), heading(2, 'Beta', 'b')))
-    const incoming = headingRecords(doc(heading(2, 'Alpha'), heading(2, 'Beta'))).map(
-      (record, i) => ({ ...record, preferredId: ['doc-1', 'b'][i] })
+  // A repeated id names one chat, so the staged line must count it once.
+  it('plans a repeated old id once, by its first copy', () => {
+    const plan = headingIdPlan(
+      doc(heading(2, 'Alpha', 'a'), heading(2, 'Alpha copy', 'a'), heading(2, 'Beta', 'b')),
+      doc(heading(2, 'Alpha'))
     )
-    expect(pickHeadingIds(old, incoming, 'doc-1')).toEqual([null, 'b'])
+    expect(plan.kept.map((h) => h.text)).toEqual(['Alpha'])
+    expect(plan.dropped.map((h) => h.text)).toEqual(['Beta'])
   })
 })

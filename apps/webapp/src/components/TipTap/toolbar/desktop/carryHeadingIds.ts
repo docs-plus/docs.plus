@@ -1,7 +1,5 @@
 import type { JSONContent } from '@tiptap/core'
 
-import { keepPreferredIds } from '../../extensions/shared/keep-preferred-ids'
-
 /** One top-level heading, read the way the id matcher compares two of them. */
 export interface HeadingRecord {
   level: number
@@ -11,8 +9,6 @@ export interface HeadingRecord {
   /** Plain text up to the next heading, whitespace collapsed. */
   body: string
   id: string | null
-  /** Tier 0 input for paste (#700). A replace never sets it. */
-  preferredId?: string | null
 }
 
 // Inline children join with nothing, so marks never split a word. Blocks join with a space.
@@ -26,7 +22,7 @@ const plainText = (node: JSONContent): string => {
 
 const collapse = (text: string) => text.replace(/\s+/g, ' ').trim()
 
-export const headingRecords = (doc: JSONContent): HeadingRecord[] => {
+const headingRecords = (doc: JSONContent): HeadingRecord[] => {
   const records: HeadingRecord[] = []
   const bodies: string[][] = []
   const stack: HeadingRecord[] = []
@@ -59,42 +55,39 @@ const countBy = (records: HeadingRecord[], key: (h: HeadingRecord) => string) =>
   return counts
 }
 
+type IdHeading = HeadingRecord & { id: string }
+
+/** The old headings that own an id: only the first copy of a repeated id, so no id goes out twice. */
+const firstCopies = (old: HeadingRecord[]): IdHeading[] => {
+  const seen = new Set<string>()
+  return old.filter((h): h is IdHeading => {
+    if (h.id === null || seen.has(h.id)) return false
+    seen.add(h.id)
+    return true
+  })
+}
+
 /**
  * The old `toc-id` for each incoming heading, or `null` for a new id. Each tier runs over
  * every heading before the next tier starts, so a weak match never takes an id from a
  * strong one. Each old id goes at most once. Titles are never fuzzy-matched.
  * `reservedId` (the pad's documentId, the pad-wide chat) is never given out.
  */
-export const pickHeadingIds = (
+const pickHeadingIds = (
   old: HeadingRecord[],
   incoming: HeadingRecord[],
-  reservedId: string | null = null
+  reservedId: string | null
 ): (string | null)[] => {
-  // Only the first copy of a repeated old id can be picked, so no id goes out twice.
   // An old heading that wrongly holds the reserved id never passes it on.
-  const oldIds = new Set<string>()
-  const candidates: HeadingRecord[] = []
-  for (const h of old) {
-    if (h.id === null || h.id === reservedId || oldIds.has(h.id)) continue
-    oldIds.add(h.id)
-    candidates.push(h)
-  }
+  const candidates = firstCopies(old).filter((h) => h.id !== reservedId)
   const used = new Set<string>()
-
-  const picked = keepPreferredIds(
-    incoming.map((h) => ({
-      preferredId: h.preferredId && oldIds.has(h.preferredId) ? h.preferredId : null
-    })),
-    new Set(),
-    reservedId ? [reservedId] : []
-  )
-  picked.forEach((id) => id && used.add(id))
+  const picked = incoming.map((): string | null => null)
 
   const tier = (key: (h: HeadingRecord) => string | null) => {
-    const free = new Map<string, HeadingRecord[]>()
+    const free = new Map<string, IdHeading[]>()
     for (const h of candidates) {
       const k = key(h)
-      if (k !== null && !used.has(h.id as string)) free.set(k, [...(free.get(k) ?? []), h])
+      if (k !== null && !used.has(h.id)) free.set(k, [...(free.get(k) ?? []), h])
     }
     // A same-body old heading wins a tie, then document order.
     for (const sameBody of [true, false]) {
@@ -103,12 +96,10 @@ export const pickHeadingIds = (
         const match =
           k === null
             ? undefined
-            : free
-                .get(k)
-                ?.find((o) => !used.has(o.id as string) && (!sameBody || o.body === h.body))
+            : free.get(k)?.find((o) => !used.has(o.id) && (!sameBody || o.body === h.body))
         if (!match) return
         picked[i] = match.id
-        used.add(match.id as string)
+        used.add(match.id)
       })
     }
   }
@@ -126,7 +117,10 @@ export const pickHeadingIds = (
   return picked
 }
 
-/** What a replace does to the old headings: the ones whose id it carries, and the rest. */
+/**
+ * What a replace does to the old headings: the ones whose id it carries, and the rest.
+ * A repeated id counts once (its first copy), so the staged line never names a chat twice.
+ */
 export const headingIdPlan = (
   current: JSONContent,
   imported: JSONContent,
@@ -134,7 +128,7 @@ export const headingIdPlan = (
 ) => {
   const old = headingRecords(current)
   const carried = new Set(pickHeadingIds(old, headingRecords(imported), reservedId))
-  const withId = old.filter((h) => h.id !== null)
+  const withId = firstCopies(old)
   return {
     kept: withId.filter((h) => carried.has(h.id)),
     dropped: withId.filter((h) => !carried.has(h.id))

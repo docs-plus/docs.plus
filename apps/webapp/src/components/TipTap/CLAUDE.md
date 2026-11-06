@@ -22,7 +22,7 @@ bun run migrate:nested-to-flat
 - Invoking the script path from an arbitrary cwd can break Bun resolution of `yjs` for `@hocuspocus/transformer`.
 - **Settings Markdown replace writes natural picture size in the browser.** After `setContent`, `commitImportedImageSizes` loads unsized images and stamps `keyId` plus natural width and height. Do not call `fitLayoutToEditorColumn` at apply time. A load miss leaves attrs empty. The import JSON and a `PATCH` stay unsized. Markdown import never makes the server fetch pictures.
 - **A whole-document replace keeps heading `toc-id`s with a tiered matcher** (`pickHeadingIds` in `carryHeadingIds.ts`, called from `applyImportedContent`; #474, ruled 2026-11-06). Heading chats, `?id=` links, folds and the digest pair by that id. Each tier runs over every top-level heading before the next one starts, and each old id goes at most once.
-  - Tier 0: a `preferredId` that the old document holds. It is for paste (#700) and goes through `keepPreferredIds`. A replace never sets it.
+  - Paste does not use this matcher. It keeps ids through `pastedDuplicatePositions` in `pad-unique-id.ts` (see the paste bullet below).
   - Tier 1: level, text and parent path (the ancestor heading texts, by the `outlineOf` rule). Tier 2: level and text. Tier 3: text at any level.
   - Tier 4: a non-empty section text that appears exactly once on each side (a rename).
   - Tiers 1 to 3 skip empty headings and break a tie by section text, then document order. Never fuzzy-match titles.
@@ -31,7 +31,7 @@ bun run migrate:nested-to-flat
 - **A paste or drag from the same pad keeps heading `toc-id`s** (`PadUniqueID` in `extensions/pad-unique-id/`; #700, ruled 2026-11-06). Copy and cut stamp `data-docsplus-pad` on the first element of the clipboard HTML.
   - A paste counts as same-pad only when a parsed element carries the mark with this pad's id. Text that spells the mark does not count.
   - An internal drop is same-pad through `view.dragging`. The kept slice is rebuilt with new node objects, so a drag-copy re-keys the copy and a drag-move keeps the id.
-  - Only a free id is kept (`keepPreferredIds`). The pad's documentId is reserved for every writer, because the pad-wide chat room uses it as its `heading_id` (`04-channels.sql:42`). Compare it exactly, with no case change.
+  - Only a free id is kept (`pastedDuplicatePositions`). The pad's documentId is reserved for every writer, because the pad-wide chat room uses it as its `heading_id` (`04-channels.sql:42`). Compare it exactly, with no case change.
   - The mark carries the raw documentId. The id is not a secret: "No endpoint is protected by id-unguessability" (`apps/hocuspocus.server/CLAUDE.md`). A hash was weighed and rejected (research 2026-11-06).
 
 ### Heading Schema

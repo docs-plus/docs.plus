@@ -95,7 +95,13 @@ const LinkPreviewSheet = ({ data: payload }: LinkPreviewSheetProps) => {
   const destination = useMemo(() => linkDestination(href), [href])
   const descriptor = describeDestination(destination, editor)
 
-  const actions = buildLinkPreviewActions({ payload, closeSheet, switchSheet, onCopySuccess })
+  const actions = buildLinkPreviewActions({
+    payload,
+    destination,
+    closeSheet,
+    switchSheet,
+    onCopySuccess
+  })
 
   return (
     <SheetLayout title="Link" onClose={closeSheet}>

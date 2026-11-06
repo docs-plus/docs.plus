@@ -2,108 +2,94 @@
 
 import type { Editor } from '@tiptap/core'
 
-import {
-  classifyInternalDocumentLink,
-  describeInternalDocumentLink,
-  linkDestination
-} from './internalDocumentLink'
+import { describeInternalDocumentLink, linkDestination } from './internalDocumentLink'
 
 const origin = window.location.origin
 const here = '/test'
+const destinationOf = (href: string) => linkDestination(href, here)
+const atHere = (link: unknown) => ({ kind: 'here', link })
 
-describe('classifyInternalDocumentLink', () => {
-  it('classifies a heading deep link by id (ignores the breadcrumb h param)', () => {
-    expect(classifyInternalDocumentLink(`${origin}/test?h=a%3Eb&id=h-setup`, here)).toEqual({
-      kind: 'heading',
-      headingId: 'h-setup'
-    })
+describe('linkDestination in this pad', () => {
+  it('reads a heading deep link by id (ignores the breadcrumb h param)', () => {
+    expect(destinationOf(`${origin}/test?h=a%3Eb&id=h-setup`)).toEqual(
+      atHere({ kind: 'heading', headingId: 'h-setup' })
+    )
   })
 
-  it('classifies the canonical chat dialect with and without a message', () => {
-    expect(classifyInternalDocumentLink(`${origin}/test?chatroom=c1&msg_id=m1`, here)).toEqual({
-      kind: 'chat',
-      linkId: 'c1',
-      messageId: 'm1'
-    })
-    expect(classifyInternalDocumentLink(`${origin}/test?chatroom=c1`, here)).toEqual({
-      kind: 'chat',
-      linkId: 'c1',
-      messageId: undefined
-    })
+  it('reads the canonical chat dialect with and without a message', () => {
+    expect(destinationOf(`${origin}/test?chatroom=c1&msg_id=m1`)).toEqual(
+      atHere({ kind: 'chat', linkId: 'c1', messageId: 'm1' })
+    )
+    expect(destinationOf(`${origin}/test?chatroom=c1`)).toEqual(
+      atHere({ kind: 'chat', linkId: 'c1', messageId: undefined })
+    )
   })
 
   it('translates the legacy act=ch chat dialect', () => {
-    expect(classifyInternalDocumentLink(`${origin}/test?act=ch&c_id=c2&m_id=m2`, here)).toEqual({
-      kind: 'chat',
-      linkId: 'c2',
-      messageId: 'm2'
-    })
+    expect(destinationOf(`${origin}/test?act=ch&c_id=c2&m_id=m2`)).toEqual(
+      atHere({ kind: 'chat', linkId: 'c2', messageId: 'm2' })
+    )
   })
 
-  it('classifies filter path segments and the and/or mode', () => {
-    expect(classifyInternalDocumentLink(`${origin}/test/apple`, here)).toEqual({
-      kind: 'filter',
-      terms: ['apple'],
-      mode: 'or',
-      href: `${origin}/test/apple`
-    })
-    expect(classifyInternalDocumentLink(`${origin}/test/apple/carrot?mode=and`, here)).toEqual({
-      kind: 'filter',
-      terms: ['apple', 'carrot'],
-      mode: 'and',
-      href: `${origin}/test/apple/carrot?mode=and`
-    })
-    expect(classifyInternalDocumentLink(`${origin}/test/apple%20pie`, here)).toEqual({
-      kind: 'filter',
-      terms: ['apple pie'],
-      mode: 'or',
-      href: `${origin}/test/apple%20pie`
-    })
+  it('reads filter path segments and the and/or mode', () => {
+    expect(destinationOf(`${origin}/test/apple`)).toEqual(
+      atHere({ kind: 'filter', terms: ['apple'], mode: 'or', href: `${origin}/test/apple` })
+    )
+    expect(destinationOf(`${origin}/test/apple/carrot?mode=and`)).toEqual(
+      atHere({
+        kind: 'filter',
+        terms: ['apple', 'carrot'],
+        mode: 'and',
+        href: `${origin}/test/apple/carrot?mode=and`
+      })
+    )
+    expect(destinationOf(`${origin}/test/apple%20pie`)).toEqual(
+      atHere({
+        kind: 'filter',
+        terms: ['apple pie'],
+        mode: 'or',
+        href: `${origin}/test/apple%20pie`
+      })
+    )
   })
 
   it('keeps a filter segment raw when it is not valid percent-encoding', () => {
-    expect(classifyInternalDocumentLink(`${origin}/test/%E0`, here)).toEqual({
-      kind: 'filter',
-      terms: ['%E0'],
-      mode: 'or',
-      href: `${origin}/test/%E0`
-    })
-    expect(classifyInternalDocumentLink(`${origin}/test/%E0/apple%20pie`, here)).toMatchObject({
-      terms: ['%E0', 'apple pie']
-    })
+    expect(destinationOf(`${origin}/test/%E0`)).toEqual(
+      atHere({ kind: 'filter', terms: ['%E0'], mode: 'or', href: `${origin}/test/%E0` })
+    )
+    expect(destinationOf(`${origin}/test/%E0/apple%20pie`)).toMatchObject(
+      atHere(expect.objectContaining({ terms: ['%E0', 'apple pie'] }))
+    )
   })
 
-  it('classifies history hashes, tolerating a missing or invalid version', () => {
-    expect(classifyInternalDocumentLink(`${origin}/test#history?version=194`, here)).toEqual({
-      kind: 'history',
-      version: 194
-    })
-    expect(classifyInternalDocumentLink(`${origin}/test#history`, here)).toEqual({
-      kind: 'history',
-      version: null
-    })
-    expect(classifyInternalDocumentLink(`${origin}/test#history?version=foo`, here)).toEqual({
-      kind: 'history',
-      version: null
-    })
+  it('reads history hashes, tolerating a missing or invalid version', () => {
+    expect(destinationOf(`${origin}/test#history?version=194`)).toEqual(
+      atHere({ kind: 'history', version: 194 })
+    )
+    expect(destinationOf(`${origin}/test#history`)).toEqual(
+      atHere({ kind: 'history', version: null })
+    )
+    expect(destinationOf(`${origin}/test#history?version=foo`)).toEqual(
+      atHere({ kind: 'history', version: null })
+    )
   })
 
-  it('classifies a bare same-document link as the document itself', () => {
-    expect(classifyInternalDocumentLink(`${origin}/test`, here)).toEqual({ kind: 'document' })
+  it('reads a bare same-document link as the document itself', () => {
+    expect(destinationOf(`${origin}/test`)).toEqual(atHere({ kind: 'document' }))
   })
 
-  it('returns null for a different document (exact slug match, not startsWith)', () => {
-    expect(classifyInternalDocumentLink(`${origin}/other?id=x`, here)).toBeNull()
-    expect(classifyInternalDocumentLink(`${origin}/testing?id=x`, here)).toBeNull()
+  it('is not here for a different document (exact slug match, not startsWith)', () => {
+    expect(destinationOf(`${origin}/other?id=x`).kind).toBe('pad')
+    expect(destinationOf(`${origin}/testing?id=x`).kind).toBe('pad')
   })
 
-  it('returns null for external origins and non-http schemes', () => {
-    expect(classifyInternalDocumentLink(`https://evil.example/test?id=x`, here)).toBeNull()
-    expect(classifyInternalDocumentLink(`mailto:hi@example.com`, here)).toBeNull()
+  it('is not here for external origins and non-http schemes', () => {
+    expect(destinationOf(`https://evil.example/test?id=x`).kind).toBe('web')
+    expect(destinationOf(`mailto:hi@example.com`).kind).toBe('other')
   })
 
-  it('returns null for an unparseable href', () => {
-    expect(classifyInternalDocumentLink('http://', here)).toBeNull()
+  it('is not here for an unparseable href', () => {
+    expect(destinationOf('http://').kind).toBe('other')
   })
 })
 
@@ -167,6 +153,8 @@ describe('linkDestination', () => {
 
     expect(kind('/pad-a')).toBe('here')
     expect(kind(`${window.location.origin}/pad-a?id=h1`)).toBe('here')
+    // This pad wins over the file rule: the dotted segment is a filter term.
+    expect(kind('/pad-a/notes.md')).toBe('here')
     expect(kind(`${window.location.origin}/other-pad`)).toBe('pad')
     expect(kind('/other-pad')).toBe('pad')
     expect(kind('https://docs.plus/other-pad')).toBe('web')

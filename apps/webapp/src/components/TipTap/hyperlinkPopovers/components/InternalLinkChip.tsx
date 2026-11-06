@@ -1,7 +1,6 @@
 import { FILTER_MODE_LABEL_CLASS } from '../filterTermPill'
 import type { InternalLinkChipProps } from '../types'
 import { FilterTermPills } from './FilterTermPills'
-import { LinkChip } from './LinkChip'
 
 /**
  * Named destination header for the mobile preview sheet and composer link dialog: `/new` or
@@ -14,15 +13,18 @@ export function InternalLinkChip({
   hideFilterSublabel
 }: InternalLinkChipProps) {
   const { label, sublabel, icon: Icon, modeLabel } = descriptor
+  const tile = (
+    <span className="bg-base-200 text-base-content/70 rounded-field inline-flex size-10 shrink-0 items-center justify-center">
+      <Icon size={20} aria-hidden />
+    </span>
+  )
 
   if (destination.kind === 'here' && destination.link.kind === 'filter') {
     // Pills line up under the title: `size-10` tile + `gap-3` = `pl-13`.
     return (
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center gap-3">
-          <span className="bg-base-200 text-base-content/70 rounded-field inline-flex size-10 shrink-0 items-center justify-center">
-            <Icon size={20} aria-hidden />
-          </span>
+          {tile}
           <span className="text-base-content min-w-0 truncate text-base font-semibold">
             {label}
           </span>
@@ -38,5 +40,13 @@ export function InternalLinkChip({
     )
   }
 
-  return <LinkChip descriptor={descriptor} />
+  return (
+    <div className="flex items-center gap-3">
+      {tile}
+      <div className="flex min-w-0 flex-col">
+        <span className="text-base-content truncate text-base font-semibold">{label}</span>
+        <span className="text-base-content/60 text-meta truncate">{sublabel}</span>
+      </div>
+    </div>
+  )
 }

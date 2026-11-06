@@ -1,5 +1,5 @@
 /** Decodes a URL part for reading. A malformed escape stays as written. */
-export const decodeForReading = (raw: string): string => {
+const decodeForReading = (raw: string): string => {
   try {
     return decodeURI(raw)
   } catch {

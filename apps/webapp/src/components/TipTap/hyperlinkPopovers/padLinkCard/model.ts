@@ -327,3 +327,19 @@ export const hovercardUrl = (slug: string, query: URLSearchParams): string => {
   const search = query.toString()
   return `${apiBaseUrl()}/documents/${encodeURIComponent(slug)}/hovercard${search ? `?${search}` : ''}`
 }
+
+/**
+ * One call to the card route. `null` for a non-2xx answer or a body that is not a card.
+ * A network error or an abort still throws: each caller keeps its own request options and
+ * its own catch. Loads no Supabase, so the paste title stays token-free.
+ */
+export const fetchCardReply = async (
+  slug: string,
+  query: URLSearchParams,
+  init: RequestInit
+): Promise<CardReply | null> => {
+  const response = await fetch(hovercardUrl(slug, query), init)
+  if (!response.ok) return null
+  const body: { data?: unknown } | null = await response.json()
+  return parseCardReply(body?.data)
+}

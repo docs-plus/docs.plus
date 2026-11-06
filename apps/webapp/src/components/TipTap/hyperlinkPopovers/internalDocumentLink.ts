@@ -10,7 +10,7 @@ import type { IconType } from 'react-icons'
 import type { InternalDocumentLink, InternalLinkDescriptor, LinkDestination } from './types'
 
 // Side-effectful execution lives in `internalDocumentLinkActions.ts`; this
-// module stays import-light so `classify` is testable without the app's
+// module stays import-light so `linkDestination` is testable without the app's
 // store/Supabase graph.
 
 export const INTERNAL_KIND_ICON: Record<InternalDocumentLink['kind'], IconType> = {
@@ -48,51 +48,29 @@ export function classifyPadFacets(pad: PadFacets, href = pad.path): InternalDocu
   return place.kind === 'filter' ? { ...place, href } : place
 }
 
-/**
- * Resolves to an in-document destination, or `null` for external. The doc-slug
- * match is exact (not `startsWith`) and guarded by origin. Pad URL reads the old forms.
- */
-export function classifyInternalDocumentLink(
-  href: string,
-  currentPathname: string
-): InternalDocumentLink | null {
-  const origin = typeof window !== 'undefined' ? window.location.origin : undefined
-  const base = origin ?? 'http://localhost'
-  const pad = padUrlCore.parse(href, base)
-  if (!pad || (origin && !pad.sameOrigin)) return null
-
-  const currentDocSlug = padUrlCore.parse(currentPathname, base)?.slug
-  if (!currentDocSlug || pad.slug !== currentDocSlug) return null
-
-  return classifyPadFacets(pad, href)
-}
-
-/** The address of a same-origin pad, or `null`. A path with a file extension is a public file. */
-const anotherPad = (href: string): PadFacets | null => {
-  const pad = padUrlCore.parse(href, window.location.origin)
-  if (!pad?.sameOrigin || !pad.slug || isReservedSlug(pad.slug)) return null
-  return /\.[a-z0-9]+$/i.test(new URL(href, window.location.origin).pathname) ? null : pad
-}
+// A path that ends in a file extension is a public file, such as `/badges/x.svg`.
+const FILE_PATH = /\.[a-z0-9]+$/i
 
 /**
- * Same-origin `/new`, which `pages/new.tsx` answers with a fresh random pad.
- * It is not a place yet, so it gets its own kind. Other reserved slugs stay as they are.
+ * The one order of the link rules, on one parse of `href`. This pad comes first, because
+ * the another-pad rule accepts it too. Its slug match is exact, not `startsWith`. Same-origin
+ * `/new` with no filter terms is `newPad` (`pages/new.tsx`). Other reserved slugs are not pads.
  */
-const isNewPad = (href: string): boolean => {
-  const pad = padUrlCore.parse(href, window.location.origin)
-  return !!pad?.sameOrigin && pad.slug === 'new' && pad.terms.length === 0
-}
-
-/** The one order of the link rules. This pad comes first, because `anotherPad` accepts it too. */
 export const linkDestination = (
   href: string,
   pathname = window.location.pathname
 ): LinkDestination => {
-  const link = classifyInternalDocumentLink(href, pathname)
-  if (link) return { kind: 'here', link }
-  if (isNewPad(href)) return { kind: 'newPad' }
-  const pad = anotherPad(href)
-  if (pad) return { kind: 'pad', pad }
+  const origin = window.location.origin
+  const pad = padUrlCore.parse(href, origin)
+  if (pad?.sameOrigin) {
+    const hereSlug = padUrlCore.parse(pathname, origin)?.slug
+    if (hereSlug && pad.slug === hereSlug)
+      return { kind: 'here', link: classifyPadFacets(pad, href) }
+    if (pad.slug === 'new' && pad.terms.length === 0) return { kind: 'newPad' }
+    // `path` is pathname, search and hash; a pathname never holds a raw `?` or `#`.
+    const filePath = FILE_PATH.test(pad.path.split(/[?#]/)[0])
+    if (pad.slug && !isReservedSlug(pad.slug) && !filePath) return { kind: 'pad', pad }
+  }
   return isWebHref(href) ? { kind: 'web' } : { kind: 'other' }
 }
 

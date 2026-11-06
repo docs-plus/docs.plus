@@ -76,7 +76,6 @@ export function HovercardLinkLine({ href, pad, reason, onApplyTitle, onOpen }: P
           type="button"
           tabIndex={-1}
           aria-label="Use page title"
-          onMouseDown={(event) => event.preventDefault()}
           onClick={onApplyTitle}
           className="btn btn-ghost btn-sm btn-square text-base-content/70 hover:text-base-content shrink-0">
           <Icons.textFormat size={ICON_SIZE} aria-hidden className="stroke-[1.75]" />
