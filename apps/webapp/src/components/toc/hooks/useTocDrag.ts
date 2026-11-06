@@ -27,7 +27,15 @@ interface DragState {
   canDrop: boolean
   /** The set's own place: no line, no move, and no refusal cursor (ruling 2026-11-05). */
   isHome: boolean
-  sourceRect: { width: number; height: number } | null
+  /** Row size, plus the grip's box relative to the dragged `li`, where the card is placed. */
+  sourceRect: {
+    width: number
+    height: number
+    gripX: number
+    gripY: number
+    gripW: number
+    gripH: number
+  } | null
 }
 
 const initialState: DragState = {
@@ -42,6 +50,20 @@ const initialState: DragState = {
 }
 
 const editorNow = () => useStore.getState().settings.editor.instance
+
+// DragOverlay places the card at the dragged `li`, so the held grip copies its real offset.
+function measureSource(row: HTMLElement): NonNullable<DragState['sourceRect']> {
+  const li = (row.parentElement ?? row).getBoundingClientRect()
+  const grip = row.querySelector(`.${TOC_CLASSES.dragHandle}`)?.getBoundingClientRect()
+  return {
+    width: row.offsetWidth,
+    height: row.offsetHeight,
+    gripX: grip ? grip.left - li.left : 0,
+    gripY: grip ? grip.top - li.top : 0,
+    gripW: grip?.width ?? 0,
+    gripH: grip?.height ?? 0
+  }
+}
 
 export function useTocDrag(items: TocItem[], listRef: RefObject<HTMLElement | null>) {
   const [state, setState] = useState<DragState>(initialState)
@@ -148,7 +170,7 @@ export function useTocDrag(items: TocItem[], listRef: RefObject<HTMLElement | nu
         ...initialState,
         activeId: id,
         collapsedIds: new Set(getDescendantIds(items, id)),
-        sourceRect: el ? { width: el.offsetWidth, height: el.offsetHeight } : null
+        sourceRect: el ? measureSource(el) : null
       })
     },
     [items, listRef]

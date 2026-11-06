@@ -78,8 +78,14 @@
 
 .toc-drag-wrapper {
   pointer-events: none;
-  // The card hangs just below the pointer, so the drop line and rail stay in view.
-  transform: translate(-12px, calc(50% + 6px));
+}
+
+// The card keeps the grip where it was grabbed, so the pointer never jumps off it
+// (ruling 2026-11-06, which reverses the 2026-11-04 offset card).
+.toc-drag-card > .toc-drag-handle {
+  cursor: grabbing;
+  color: var(--color-base-content);
+  box-shadow: var(--toc-grip-shadow-lift, 0 1px 2px color-mix(in oklch, black 14%, transparent));
 }
 
 // DS-12 (ruling 2026-11-04): the landing parent's nest rail while a gap is targeted.

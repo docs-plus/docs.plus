@@ -132,6 +132,24 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
                         ? { width: sourceRect.width, minHeight: sourceRect.height, height: 'auto' }
                         : undefined
                     }>
+                    <span
+                      className={TOC_CLASSES.dragHandle}
+                      aria-hidden="true"
+                      style={
+                        sourceRect
+                          ? {
+                              // Offsets are from the card's padding box, inside its 1px border.
+                              left: sourceRect.gripX - 1,
+                              top: sourceRect.gripY - 1,
+                              width: sourceRect.gripW,
+                              minWidth: sourceRect.gripW,
+                              height: sourceRect.gripH,
+                              transform: 'none'
+                            }
+                          : undefined
+                      }>
+                      <Icons.gripVertical size={16} className="stroke-[1.75]" />
+                    </span>
                     {descendantCount > 0 && <Icons.listTree className="toc-tree-icon" size={14} />}
                     <span className="toc__link wrap-anywhere">{activeItem.textContent}</span>
                     {descendantCount > 0 && (

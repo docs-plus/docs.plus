@@ -91,6 +91,23 @@ describe('TOC drag by pointer', () => {
     grip('Bravo').should('exist')
   })
 
+  it('keeps the grip under the pointer when a drag starts', () => {
+    grip('Bravo').then(($grip) => {
+      const box = $grip[0].getBoundingClientRect()
+      const x = box.left + box.width / 2
+      const y = box.top + box.height / 2
+      pickUp('Bravo')
+      // dnd-kit moves the card from the move after the one that starts the drag.
+      cy.get('body').realMouseMove(x, y + 20, moveOpts)
+      cy.get('.toc-drag-card > .toc-drag-handle').should(($held) => {
+        const held = $held[0].getBoundingClientRect()
+        expect(held.left + held.width / 2).to.be.closeTo(x, 1.5)
+        expect(held.top + held.height / 2).to.be.closeTo(y + 20, 1.5)
+      })
+      cy.get('body').realMouseUp({ x: 60, y: 5, scrollBehavior: false })
+    })
+  })
+
   it('derives the level from the gap and moves sub-headings with a demoted section', () => {
     pickUp('Bravo')
     hoverAbove('Alpha One')
