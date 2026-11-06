@@ -5,9 +5,11 @@ import { ReplaceAroundStep, ReplaceStep } from '@tiptap/pm/transform'
  * O(k) over changed ranges, not the whole doc. Cheap path after
  * `canMapDecorations` fails: map if this type was not inserted or deleted;
  * rebuild only when that type's structure actually changed.
+ * Step i's positions refer to `tr.docs[i]`, not `tr.before`.
  */
 export function transactionAffectsNodeType(tr: Transaction, typeName: string): boolean {
-  for (const step of tr.steps) {
+  for (let i = 0; i < tr.steps.length; i++) {
+    const step = tr.steps[i]
     if (!(step instanceof ReplaceStep) && !(step instanceof ReplaceAroundStep)) {
       return true
     }
@@ -27,9 +29,10 @@ export function transactionAffectsNodeType(tr: Transaction, typeName: string): b
     if (found) return true
 
     if (step.from < step.to) {
-      const clampedTo = Math.min(step.to, tr.before.content.size)
+      const stepDoc = tr.docs[i]
+      const clampedTo = Math.min(step.to, stepDoc.content.size)
       if (step.from < clampedTo) {
-        tr.before.nodesBetween(step.from, clampedTo, (node) => {
+        stepDoc.nodesBetween(step.from, clampedTo, (node) => {
           if (node.type.name === typeName) {
             found = true
             return false
