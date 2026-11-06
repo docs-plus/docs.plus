@@ -150,6 +150,12 @@ faces, the roster and the admin member counts fail
   link that opened the sheet, the page behind a sheet stays hidden from screen readers, and
   Shift+Tab wraps inside the sheet ([#248](https://github.com/docs-plus/docs.plus/issues/248),
   [#310](https://github.com/docs-plus/docs.plus/issues/310)).
+- **Pasted images no longer vanish.** An image whose address has no file extension, as many
+  image sites and CDNs serve, was dropped on paste and on HTML import with no warning. It now
+  stays. An image that fails to load says "Couldn’t load this image" and names the site it comes
+  from, in place of the browser's broken-image icon
+  ([#637](https://github.com/docs-plus/docs.plus/issues/637)). Detail in
+  [`extension-hypermultimedia`](extensions/extension-hypermultimedia/CHANGELOG.md).
 
 ### Security
 

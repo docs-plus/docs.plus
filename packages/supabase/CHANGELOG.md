@@ -86,6 +86,10 @@ Pass the documentId exactly as stored. Do not pass `lower(documentId)` or the sl
   `document_access` clauses in `10-0-func-helpers.sql` differ. `check-grants.sql` and
   `check-grant-allowlists.ts` flag a SELECT grant to `authenticated` on `users.email` or
   `users.notification_preferences`.
+- **`seed.sql` matches the scripts again.** The email payload scripts changed on 2026-10-31 and
+  2026-11-03, but `seed.sql` was not rebuilt. The policy test job checks the match before it
+  starts, so its first run failed before any test ran. A local reset also seeded the old
+  functions. It was rebuilt with `generate-seed.ts`.
 
 ## [2.2.0] — 2026-10-22
 
