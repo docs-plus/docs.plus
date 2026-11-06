@@ -62,6 +62,8 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 
 ### Added
 
+- DOCX import has a new warning code, `tracked-changes-accepted`. A file with tracked
+  changes imports with every change accepted, and the import says so.
 - `GET /api/metadata/archive?url=` asks the Wayback Machine for the closest copy of a page. It
   answers only `https://web.archive.org/web/` snapshots, never saves a page, and never sends a
   docs.plus pad link. A hit is cached 1 h and no copy 10 min; an archive that does not answer is
@@ -169,8 +171,8 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
   was lost. It also reads `name="og:*"` tags and meta names in any case, which metascraper missed.
   MDN, go.dev and Dropbox now get a picture, and 163.com and Ryanair a description. It keeps the page's own quote marks, and it no longer reads author or date from body
   text such as bylines. `src/modules/link-metadata/BENCHMARK.md` holds the numbers and the method.
-  The read stops at `</head`, and the scraper reads no body rule, so one page always gives the
-  same card. A page whose only title is a body `h1` now gets the fallback card.
+  Card fields come from the head only, and the read stops at the head end. A job page also
+  reads body JSON-LD, for its facts only. A page whose only title is a body `h1` now gets the fallback card.
 - **Link-metadata fetches name docs.plus and read less
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).**
   - Every outbound link-metadata request names docs.plus truthfully. The html stage no longer
@@ -201,6 +203,8 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 
 ### Fixed
 
+- A content write (`PATCH /content`, create with content, MCP) now gives a new id to a heading
+  whose `toc-id` equals the pad's `documentId`. That id belongs to the pad-wide chat room.
 - The admin MCP Usage page no longer fails with a 500 when no OAuth app is registered. With no clients,
   GoTrue answers `{}` instead of an empty list, and the server now reads that as no apps.
 
@@ -253,6 +257,9 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 
 ### Security
 
+- **A table `colspan` is clamped to `MAX_TABLE_SPAN` (64) on every export and on DOCX import.**
+  Before, only ODT export clamped it. One stored huge value could make each later DOCX or
+  Markdown export allocate gigabytes and stop the REST process.
 - **The favicon route fetches only a link's registrable domain.** An AI agent can be tricked
   into writing a link such as `https://<data>.attacker.example` into a pad. Every reader's pad then
   asked `GET /api/metadata/icon` for that origin, and the server looked up and fetched the full host,
@@ -314,7 +321,7 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 - `@sentry/bun` is `11.9.0`. The init uses the same `dataCollection` baseline as the webapp.
 - Prisma is `7.10.1` ([#198](https://github.com/docs-plus/docs.plus/issues/198)). `prisma.config.ts` holds the schema path and the database URL. The client generates into `src/generated/prisma`, which is gitignored.
 - The root overrides pin `prosemirror-model` `1.25.12`, `prosemirror-transform` `1.12.2`, and `prosemirror-view` `1.42.6`.
-- `prosemirror-changeset` stays `2.4.1`. `@tiptap/pm` 3.32.0 asks for `^2.4.4`. Later versions halve `MAX_DIFF_SIZE`.
+- `prosemirror-changeset` stays `2.4.1`. `@tiptap/pm` 3.32.2 asks for `^2.4.4`. Later versions halve `MAX_DIFF_SIZE`.
 - Link metadata: `domain/routes.ts` holds the route paths, and `domain/relay.ts` holds the image fetch and the byte sniff. `domain/icon.ts` keeps the icon steps.
 - Concurrent filter hovercards on one pad share one head read and one decode. Each hover used
   to read and decode up to 1 MiB on its own. Nothing is kept after the read settles.
