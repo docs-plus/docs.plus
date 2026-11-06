@@ -23,7 +23,7 @@ function snapshotFoldState(state: HeadingFoldSlice): FoldSnapshot {
   return state ? { foldedIds: state.foldedIds, animating: state.animating } : NO_FOLDS
 }
 
-const sameItem = (a: TocItem | undefined, b: TocItem) =>
+const sameItem = (a: TocItem | undefined, b: TocItem): a is TocItem =>
   a !== undefined &&
   a.id === b.id &&
   a.level === b.level &&
@@ -42,7 +42,7 @@ function reuseItems(prev: TocItem[], next: TocItem[]): TocItem[] {
       return item
     }
     if (prev[i] !== old) changed = true
-    return old as TocItem
+    return old
   })
   return changed ? merged : prev
 }

@@ -12,14 +12,14 @@ export type NavigateToHeadingOptions = {
 export function navigateToHeading(headingId: string, options: NavigateToHeadingOptions = {}): void {
   const { openChat = false } = options
 
+  // The spy lock holds until the heading lands, so focus stays on the clicked row.
+  // Taken and released here, so no caller path can skip the release.
+  const { setFocusedHeadingWithLock, releaseScrollLock } = useFocusedHeadingStore.getState()
+  setFocusedHeadingWithLock(headingId)
+
   void padUrl.go({ kind: 'heading', headingId })
 
-  // The click's spy lock holds until the heading lands, so focus stays on the clicked row.
-  scrollPadHeading(headingId, {
-    behavior: 'smooth',
-    block: 'start',
-    onSettled: useFocusedHeadingStore.getState().releaseScrollLock
-  })
+  scrollPadHeading(headingId, { behavior: 'smooth', block: 'start', onSettled: releaseScrollLock })
 
   if (openChat) {
     PubSub.publish(CHAT_OPEN, { headingId })

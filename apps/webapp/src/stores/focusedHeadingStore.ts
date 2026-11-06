@@ -5,7 +5,7 @@ interface FocusedHeadingStore {
   isScrollLocked: boolean
   setFocusedHeadingId: (id: string | null) => void
   /** Locks scroll spy while a programmatic scroll lands. */
-  setFocusedHeadingWithLock: (id: string | null, lockDuration?: number) => void
+  setFocusedHeadingWithLock: (id: string | null) => void
   releaseScrollLock: () => void
 }
 
@@ -18,13 +18,13 @@ export const useFocusedHeadingStore = create<FocusedHeadingStore>((set) => ({
   focusedHeadingId: null,
   isScrollLocked: false,
   setFocusedHeadingId: (id) => set({ focusedHeadingId: id }),
-  setFocusedHeadingWithLock: (id, lockDuration = SCROLL_LOCK_MAX_MS) => {
+  setFocusedHeadingWithLock: (id) => {
     if (scrollLockTimeout) clearTimeout(scrollLockTimeout)
     set({ focusedHeadingId: id, isScrollLocked: true })
     scrollLockTimeout = setTimeout(() => {
       set({ isScrollLocked: false })
       scrollLockTimeout = null
-    }, lockDuration)
+    }, SCROLL_LOCK_MAX_MS)
   },
   releaseScrollLock: () => {
     if (scrollLockTimeout) clearTimeout(scrollLockTimeout)

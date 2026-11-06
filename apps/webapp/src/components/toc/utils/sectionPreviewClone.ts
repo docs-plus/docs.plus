@@ -1,3 +1,4 @@
+import { MEDIA_INSERT_REGISTRY } from '@components/TipTap/mediaPopovers/mediaInsert'
 import type { MediaNodeType } from '@docs.plus/extension-hypermultimedia'
 import { useStore } from '@stores'
 
@@ -150,10 +151,13 @@ function fitPreviewMediaCover(node: HTMLElement) {
   })
 }
 
+const isMediaNodeType = (kind: string): kind is MediaNodeType =>
+  Object.hasOwn(MEDIA_INSERT_REGISTRY, kind)
+
 function mediaKind(root: HTMLElement): MediaNodeType | null {
   for (const el of [root, ...root.querySelectorAll(MEDIA_ROOT_SEL)]) {
     const kind = MEDIA_KIND.exec(el.getAttribute('class') ?? '')?.[1]
-    if (kind) return kind as MediaNodeType
+    if (kind && isMediaNodeType(kind)) return kind
   }
   return null
 }

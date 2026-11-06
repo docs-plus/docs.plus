@@ -9,10 +9,8 @@ import {
 } from '@tiptap/pm/model'
 import { Plugin, PluginKey, type Transaction } from '@tiptap/pm/state'
 
-import { keepPreferredIds } from '../shared/keep-preferred-ids'
-
 /** Stamped on the first element of copied HTML, so a paste can tell it came from this pad. */
-export const PAD_CLIPBOARD_ATTR = 'data-docsplus-pad'
+const PAD_CLIPBOARD_ATTR = 'data-docsplus-pad'
 
 export interface PadUniqueIDOptions extends UniqueIDOptions {
   /** The open pad's documentId. Without it every paste takes new ids, as upstream does. */
@@ -42,8 +40,7 @@ class PadClipboardSerializer extends DOMSerializer {
 }
 
 /** True only when an element of the parsed HTML carries this pad's mark, never mere text. */
-export const hasPadMark = (html: string, padId: string): boolean => {
-  if (typeof DOMParser === 'undefined') return false
+const hasPadMark = (html: string, padId: string): boolean => {
   const dom = new DOMParser().parseFromString(html, 'text/html')
   // The whole fragment: ProseMirror wraps list and table slices, so the mark can sit deep.
   return dom.querySelector(`[${PAD_CLIPBOARD_ATTR}]`)?.getAttribute(PAD_CLIPBOARD_ATTR) === padId
@@ -68,31 +65,37 @@ const isPasteOrDrop = (tr: Transaction): boolean => {
 /**
  * Positions of pasted nodes that must take a new id. A node the paste left untouched is
  * the same object in both docs; it keeps its id, so a paste cannot move another
- * heading's chat. The pasted nodes share what is left through `keepPreferredIds`.
+ * heading's chat. The pasted nodes share what is left, first copy first.
  */
-export const pastedDuplicatePositions = (
+const pastedDuplicatePositions = (
   before: ProseMirrorNode,
   after: ProseMirrorNode,
   types: readonly string[],
   attributeName: string,
-  reserved: Iterable<string> = []
+  reserved: Iterable<string>
 ): number[] => {
   const untouched = new Set<ProseMirrorNode>()
   before.descendants((node) => {
     if (types.includes(node.type.name)) untouched.add(node)
   })
 
-  const liveElsewhere = new Set<string>()
-  const pasted: { pos: number; preferredId: string }[] = []
+  const taken = new Set<string>(reserved)
+  const pasted: { pos: number; id: string }[] = []
   after.descendants((node, pos) => {
     const id = node.attrs[attributeName]
     if (!types.includes(node.type.name) || typeof id !== 'string' || id === '') return
-    if (untouched.has(node)) liveElsewhere.add(id)
-    else pasted.push({ pos, preferredId: id })
+    if (untouched.has(node)) taken.add(id)
+    else pasted.push({ pos, id })
   })
 
-  const kept = keepPreferredIds(pasted, liveElsewhere, reserved)
-  return pasted.filter((_, i) => kept[i] === null).map(({ pos }) => pos)
+  // A pasted id is free when no untouched node holds it, it is not reserved, and no earlier
+  // pasted node took it. Only the nodes that lose return, to take a new id.
+  const lost: number[] = []
+  for (const { pos, id } of pasted) {
+    if (taken.has(id)) lost.push(pos)
+    else taken.add(id)
+  }
+  return lost
 }
 
 /**

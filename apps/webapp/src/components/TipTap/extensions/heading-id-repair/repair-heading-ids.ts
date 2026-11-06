@@ -153,7 +153,7 @@ export function planHeadingIdRepair(blocks: readonly RepairBlock[]): HeadingIdRe
 
 const isElement = (node: XmlElement | XmlText | XmlHook): node is XmlElement => 'nodeName' in node
 
-export function readRepairBlocks(fragment: XmlFragment): RepairBlock[] {
+function readRepairBlocks(fragment: XmlFragment): RepairBlock[] {
   return fragment.toArray().map((node) => {
     const element = isElement(node) ? node : null
     const heading = element?.nodeName === 'heading'

@@ -1,3 +1,4 @@
+import { headingLabel } from '@components/TipTap/placeholders'
 import { Tooltip } from '@components/ui/Tooltip'
 import { Icons } from '@icons'
 import { useChatStore, useFocusedHeadingStore } from '@stores'
@@ -58,7 +59,7 @@ type RailGeometry = {
 }
 
 function tickLabel(item: TocItem): string {
-  return item.textContent.trim() || `Heading ${item.level}`
+  return headingLabel({ text: item.textContent, level: item.level })
 }
 
 function alignRailToSpy(nav: HTMLElement, index: number, count: number) {
@@ -170,10 +171,8 @@ function useTickHoverProximity(
         return
       }
 
-      const index = Math.max(
-        0,
-        Math.min(list.length - 1, Math.round((y - rail.firstTop - TICK_ROW_PX / 2) / TICK_ROW_PX))
-      )
+      // The band reaches past the stack, so clamp the row to the nearest tick.
+      const index = Math.max(0, Math.min(list.length - 1, row))
       const id = list[index]?.id ?? null
 
       if (inRail) {
@@ -364,12 +363,9 @@ const TocTick = memo(function TocTick({
   durationMs: number
   preview: RailPreviewApi
 }) {
-  const setFocusedHeadingWithLock = useFocusedHeadingStore((s) => s.setFocusedHeadingWithLock)
-
   const handleClick = useCallback(() => {
-    setFocusedHeadingWithLock(id)
     tocActions.navigateToHeading(id, { openChat: false })
-  }, [id, setFocusedHeadingWithLock])
+  }, [id])
 
   return (
     <button

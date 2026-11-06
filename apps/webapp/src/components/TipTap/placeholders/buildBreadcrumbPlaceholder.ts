@@ -1,5 +1,7 @@
 import type { PlaceholderRenderProps } from '@docs.plus/extension-placeholder'
 
+import { emptyHeadingLabel, headingLabel } from './headingLabel'
+
 export type BreadcrumbScope = 'top-level' | 'all-blocks'
 
 export interface BreadcrumbPlaceholderOptions {
@@ -35,9 +37,7 @@ export function truncateSegment(text: string, max: number = SEGMENT_MAX_LENGTH):
 
 /** Empty or whitespace-only heading text falls back to `Heading N`. */
 export function formatHeadingSegment(entry: HeadingEntry): string {
-  const trimmed = entry.text.trim()
-  const raw = trimmed.length > 0 ? trimmed : `Heading ${entry.level}`
-  return truncateSegment(raw, SEGMENT_MAX_LENGTH)
+  return truncateSegment(headingLabel(entry), SEGMENT_MAX_LENGTH)
 }
 
 /**
@@ -77,7 +77,7 @@ interface TailContext {
  */
 export function resolveTailSegment(ctx: TailContext): string {
   if (ctx.nodeName === 'heading' && typeof ctx.headingLevel === 'number') {
-    return `Heading ${ctx.headingLevel}`
+    return emptyHeadingLabel(ctx.headingLevel)
   }
   if (ctx.nodeName === 'paragraph') {
     return ctx.isSubtitle ? 'Subtitle' : ''

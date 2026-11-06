@@ -1,15 +1,15 @@
 import { useFocusedHeadingStore, useStore } from '@stores'
 import type { Node as PMNode } from '@tiptap/pm/model'
 import type { Transaction } from '@tiptap/pm/state'
-import { TIPTAP_NODES } from '@types'
 import { clampToContainerFraction } from '@utils/clampToContainerFraction'
 import { scrollNearestInScroller } from '@utils/scrollNearestInScroller'
 import debounce from 'lodash/debounce'
 import throttle from 'lodash/throttle'
 import { RefObject, useCallback, useEffect, useMemo, useRef } from 'react'
 
-import { TOC_CLASSES } from '../tocClasses'
+import { tocRowElement } from '../tocClasses'
 import { transactionRequiresTocRebuild } from '../utils/headingTransaction'
+import { outlineOf } from '../utils/outline'
 
 /** Reading line: heading closest to this offset from the scroll container top wins */
 const SPY_ANCHOR_PX = 60
@@ -34,16 +34,8 @@ function isHeadingWithTocId(el: Element): boolean {
 
 /** Top-level `id:level` list, the same headings the TOC rows come from. */
 function headingSignature(doc: PMNode): { signature: string; count: number } {
-  let signature = ''
-  let count = 0
-  doc.forEach((node) => {
-    if (node.type.name !== TIPTAP_NODES.HEADING_TYPE) return
-    const id = node.attrs['toc-id'] as string | null
-    if (!id) return
-    signature += `${id}:${node.attrs.level}|`
-    count++
-  })
-  return { signature, count }
+  const outline = outlineOf(doc)
+  return { signature: outline.map((n) => `${n.id}:${n.level}`).join('|'), count: outline.length }
 }
 
 interface ObservedHeadings {
@@ -266,20 +258,12 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
   }, [scrollContainerRef, scheduleUpdateFocus])
 }
 
-function tocItemSelector(id: string): string {
-  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
-    return `.toc__item[data-id="${CSS.escape(id)}"]`
-  }
-  return `.toc__item[data-id="${id.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"]`
-}
-
 /** Scroll the row, not the whole `li`. Parent items wrap a tall nested `ul`, so
  * `li.scrollIntoView` often keeps the top row (and focus rail) above the viewport.
  * The lookup starts at the TOC root, so it does not walk the editor DOM. */
 function tocRowScrollTarget(id: string): Element | null {
-  const li = document.querySelector('.tiptap__toc')?.querySelector(tocItemSelector(id))
-  if (!li) return null
-  return li.querySelector(`:scope > .${TOC_CLASSES.row}`) ?? li
+  const root = document.querySelector('.tiptap__toc')
+  return root ? tocRowElement(id, root) : null
 }
 
 /** Align TOC scroller to spy focus without re-rendering the outline tree. */

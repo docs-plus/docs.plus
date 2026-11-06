@@ -15,6 +15,7 @@ import {
 } from '@floating-ui/react'
 import { useHistoryDismiss } from '@hooks/useHistoryDismiss'
 import { type SheetData, type SheetDataMap, sheetTransitionHandlers, useSheetStore } from '@stores'
+import { tabbablesIn } from '@utils/tabbables'
 import { twMerge } from '@utils/twMerge'
 import { useMotionValueEvent } from 'motion/react'
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
@@ -132,25 +133,6 @@ const SHEETS: { [K in keyof SheetDataMap]: SheetEntry<K> } = {
 }
 
 const DEFAULT_SHEET_PROPS: Partial<SheetProps> = { id: 'bottom_sheet' }
-
-const TABBABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]'
-
-/** Tab stops in DOM order. A radio group is one stop, its checked radio, as the browser does. */
-const tabbablesIn = (root: HTMLElement): HTMLElement[] =>
-  Array.from(root.querySelectorAll<HTMLElement>(TABBABLE)).filter(
-    (el) =>
-      el.tabIndex >= 0 &&
-      el.getClientRects().length > 0 &&
-      !el.closest('[inert], [aria-hidden="true"]') &&
-      !(
-        el instanceof HTMLInputElement &&
-        el.type === 'radio' &&
-        el.name &&
-        !el.checked &&
-        root.querySelector(`input[type="radio"][name="${CSS.escape(el.name)}"]:checked`)
-      )
-  )
 
 /** Focuses the first of `items` that takes focus; collapsed content can refuse it. */
 const focusFirstTaking = (items: HTMLElement[]): void => {
@@ -294,12 +276,12 @@ const BottomSheet = () => {
       escapeKey: _escapeKey,
       ...props
     } = SHEETS[activeSheet]
-    return keepsPadKeyboard ? { ...props, avoidKeyboard: false } : props
-  }, [activeSheet, keepsPadKeyboard])
+    return props
+  }, [activeSheet])
 
   return (
     <Sheet
-      avoidKeyboard
+      avoidKeyboard={!keepsPadKeyboard}
       className={twMerge(
         'bottom-sheet !z-50',
         keepsPadKeyboard &&

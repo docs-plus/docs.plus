@@ -50,10 +50,3 @@ export function outlineOf(doc: PMNode): TocOutlineNode[] {
   outlineCache.set(doc, outline)
   return outline
 }
-
-/** The set a move or delete acts on: the heading and every outline node inside its section. */
-export function sectionNodes(outline: TocOutlineNode[], id: string): TocOutlineNode[] {
-  const head = outline.find((n) => n.id === id)
-  if (!head) return []
-  return outline.filter((n) => n.pos >= head.pos && n.pos < head.sectionTo)
-}

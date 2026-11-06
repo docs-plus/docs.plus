@@ -1,3 +1,4 @@
+import { tabbablesIn } from '@utils/tabbables'
 import {
   type FocusEvent,
   type KeyboardEvent,
@@ -9,32 +10,24 @@ import {
 } from 'react'
 
 import { tocActions } from '../hooks'
-import { inPreviewCorridor, type Point } from './previewCorridor'
+import { inBox, inPreviewCorridor, type Point } from './previewCorridor'
 
 /** Dwell on one tick before its card opens. Reduced motion keeps it: it is input, not motion. */
-export const PREVIEW_OPEN_MS = 80
+const PREVIEW_OPEN_MS = 80
 /** Grace after the pointer leaves the tick, the corridor and the card. */
-export const PREVIEW_CLOSE_MS = 120
+const PREVIEW_CLOSE_MS = 120
 
-export type RailPointerSample =
+type RailPointerSample =
   | { kind: 'rail'; x: number; y: number; tickId: string | null }
   | { kind: 'off'; x: number; y: number }
   | { kind: 'gone' }
 
 type Suppressed = { id: string; pointer: boolean; focus: boolean }
 
-const TABBABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-
 function focusNextAfter(from: HTMLElement, skip: HTMLElement | null): boolean {
-  const all = Array.from(document.querySelectorAll<HTMLElement>(TABBABLE))
-  const next = all.find(
+  const next = tabbablesIn(document).find(
     (el) =>
-      from.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING &&
-      !skip?.contains(el) &&
-      el.tabIndex >= 0 &&
-      !el.closest('[inert]') &&
-      el.getClientRects().length > 0
+      from.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING && !skip?.contains(el)
   )
   if (!next) return false
   next.focus()
@@ -142,12 +135,7 @@ export function useRailPreview(navRef: RefObject<HTMLElement | null>) {
           point != null &&
           card != null &&
           card.width > 0 &&
-          (from
-            ? inPreviewCorridor(point, from, card)
-            : point.x >= card.left &&
-              point.x <= card.right &&
-              point.y >= card.top &&
-              point.y <= card.bottom)
+          (from ? inPreviewCorridor(point, from, card) : inBox(point, card))
       }
 
       // Keyboard focus owns the heading: scrubbing cannot replace its card.

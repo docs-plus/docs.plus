@@ -14,8 +14,10 @@ export const TOC_CLASSES = {
   row: 'toc__row',
   rowLink: 'toc__row-link',
   link: 'toc__link',
+  /** An empty heading's `Heading N` label, in the editor's placeholder ink. */
+  placeholderTitle: 'text-[var(--pad-placeholder-ink)]',
   children: 'toc__children',
-  /** DS-12: on the landing parent's child list while a drag targets a gap. */
+  /** DS-12: on the landing parent's child list while an allowed target is held. */
   dropParent: 'is-drop-parent',
   /** On the row a drag will nest inside (drop onto a row). */
   dropTarget: 'is-drop-target',
@@ -32,10 +34,15 @@ export const TOC_CLASSES = {
 
 const rowSelector = `li.${TOC_CLASSES.item} > .${TOC_CLASSES.row}`
 
-/** The heading row for `id`. Scope it to the TOC: rail ticks and editor headings share ids. */
+/** The heading's `li` for `id`. Scope it to the TOC: rail ticks and editor headings share ids. */
+export function tocItemElement(id: string, root: ParentNode): HTMLLIElement | null {
+  return root.querySelector<HTMLLIElement>(`li.${TOC_CLASSES.item}[data-id="${CSS.escape(id)}"]`)
+}
+
+/** The heading row for `id`, under its `li`. */
 export function tocRowElement(id: string, root: ParentNode): HTMLElement | null {
-  return root.querySelector<HTMLElement>(
-    `li.${TOC_CLASSES.item}[data-id="${CSS.escape(id)}"] > .${TOC_CLASSES.row}`
+  return (
+    tocItemElement(id, root)?.querySelector<HTMLElement>(`:scope > .${TOC_CLASSES.row}`) ?? null
   )
 }
 

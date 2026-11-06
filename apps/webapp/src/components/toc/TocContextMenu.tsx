@@ -8,8 +8,7 @@ import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { Icons } from '@icons'
 import { useAuthStore, useStore } from '@stores'
 
-import { tocActions } from './hooks'
-import { outlineOf } from './utils/outline'
+import { canDeleteSection, tocActions } from './hooks'
 
 interface TocContextMenuProps {
   headingId: string | null
@@ -25,10 +24,9 @@ export function TocContextMenu({ headingId, isOpen, onToggle }: TocContextMenuPr
 
   if (!headingId) return null
 
-  // Same rule as removeSectionNow, so the menu never offers a delete that does nothing.
   // Read at render: the menu re-renders on each open, so the doc is current.
-  const target = editor ? outlineOf(editor.state.doc).find((n) => n.id === headingId) : undefined
-  const canDelete = !locked && !!editor?.isEditable && !!target && !target.isTitle
+  // `locked` re-renders an open menu when the pad lock flips.
+  const canDelete = !locked && canDeleteSection(editor, headingId)
 
   const menuItems = [
     {

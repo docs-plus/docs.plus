@@ -8,14 +8,14 @@ const RAIL_MAX_VIEWPORT_RATIO = 0.84
 
 export type RailItem = Pick<TocItem, 'id' | 'level' | 'open'>
 
-export type RailPlan<T extends RailItem> = {
+type RailPlan<T extends RailItem> = {
   /** Ticks that fit `maxTicks`. Returns the folded list itself when it all fits. */
   fit: (maxTicks: number, spyId: string | null) => T[]
   /** The tick that stands for `id`: itself, else its nearest visible ancestor. */
   tickFor: (visible: T[], id: string | null) => string | null
 }
 
-export type RailLayout = {
+type RailLayout = {
   start: number
   end: number
   stackH: number

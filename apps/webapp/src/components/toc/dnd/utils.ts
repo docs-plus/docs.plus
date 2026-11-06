@@ -91,7 +91,7 @@ export function findDropTarget(
   return near ? current : next
 }
 
-export const sameTarget = (a: DropTarget | null, b: DropTarget | null) =>
+const sameTarget = (a: DropTarget | null, b: DropTarget | null) =>
   a === b ||
   (a !== null &&
     b !== null &&

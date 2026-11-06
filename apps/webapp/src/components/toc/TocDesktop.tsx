@@ -1,9 +1,11 @@
 import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
+import { headingLabel } from '@components/TipTap/placeholders'
 import { ContextMenu } from '@components/ui/ContextMenu'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { Icons } from '@icons'
 import { useAuthStore, useStore } from '@stores'
+import { twMerge } from '@utils/twMerge'
 import React, { useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -151,7 +153,15 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
                       <Icons.gripVertical size={16} className="stroke-[1.75]" />
                     </span>
                     {descendantCount > 0 && <Icons.listTree className="toc-tree-icon" size={14} />}
-                    <span className="toc__link wrap-anywhere">{activeItem.textContent}</span>
+                    <span
+                      className={twMerge(
+                        TOC_CLASSES.link,
+                        'wrap-anywhere',
+                        // `!`: `.toc-drag-card .toc__link` sets its own colour, unlayered.
+                        !activeItem.textContent.trim() && 'text-[var(--pad-placeholder-ink)]!'
+                      )}>
+                      {headingLabel({ text: activeItem.textContent, level: activeItem.level })}
+                    </span>
                     {descendantCount > 0 && (
                       <span className="toc-descendant-badge">+{descendantCount}</span>
                     )}

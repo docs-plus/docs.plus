@@ -2,9 +2,9 @@ export type Point = { x: number; y: number }
 export type Box = { left: number; top: number; right: number; bottom: number }
 
 /** Slack around the corridor edges, so slow or wobbly travel to the card still holds it. */
-export const PREVIEW_CORRIDOR_BUFFER_PX = 8
+const PREVIEW_CORRIDOR_BUFFER_PX = 8
 
-function inBox(p: Point, box: Box): boolean {
+export function inBox(p: Point, box: Box): boolean {
   return p.x >= box.left && p.x <= box.right && p.y >= box.top && p.y <= box.bottom
 }
 

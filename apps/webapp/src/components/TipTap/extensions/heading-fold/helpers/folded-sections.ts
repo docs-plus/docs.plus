@@ -2,13 +2,20 @@ import type { Node as PMNode } from '@tiptap/pm/model'
 
 import { computeSection } from '../../shared'
 
+/** A folded section: `headingEnd` is the caret spot at the heading's end, `to` the section end. */
+interface FoldedSection {
+  id: string
+  headingEnd: number
+  to: number
+}
+
 /** Folded sections whose hidden body holds `pos`, outermost first. */
 export function foldedSectionsAt(
   doc: PMNode,
   pos: number,
   foldedIds: Set<string>
-): { id: string; headingEnd: number }[] {
-  const found: { id: string; headingEnd: number }[] = []
+): FoldedSection[] {
+  const found: FoldedSection[] = []
   if (foldedIds.size === 0) return found
 
   let offset = 0
@@ -23,7 +30,7 @@ export function foldedSectionsAt(
     if (!id || !foldedIds.has(id) || pos < offset) continue
 
     const { to } = computeSection(doc, nodePos, child.attrs.level as number, i)
-    if (pos < to) found.push({ id, headingEnd: offset - 1 })
+    if (pos < to) found.push({ id, headingEnd: offset - 1, to })
   }
   return found
 }

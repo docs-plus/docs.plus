@@ -271,6 +271,18 @@ describe('TOC drag by pointer', () => {
     })
     cy.get('.toc__item .toc__link')
       .contains(/^Heading 2$/)
-      .should('have.class', 'text-[var(--pad-placeholder-ink)]')
+      .should(($el) => {
+        // Resolve the token through a probe in the same spot, so the theme picks the value.
+        const el = $el[0]
+        const win = el.ownerDocument.defaultView
+        const probe = el.ownerDocument.createElement('span')
+        probe.style.color = 'var(--pad-placeholder-ink)'
+        el.parentElement.appendChild(probe)
+        const placeholder = win.getComputedStyle(probe).color
+        const ink = win.getComputedStyle(el.parentElement).color
+        probe.remove()
+        expect(placeholder).not.to.equal(ink)
+        expect(win.getComputedStyle(el).color).to.equal(placeholder)
+      })
   })
 })

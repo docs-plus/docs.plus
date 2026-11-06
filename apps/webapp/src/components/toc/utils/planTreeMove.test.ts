@@ -228,7 +228,7 @@ describe('treeMoveTransaction with a live peer', () => {
     const plan = planTreeMove(moverView.state.doc, 'x', inside(moverView.state.doc, 'a')!, {
       locked: false
     })
-    if (!plan.ok || plan.d !== 1) throw new Error('expected a +1 shift')
+    if (!plan.ok || plan.levelShift !== 1) throw new Error('expected a +1 shift')
     moverView.dispatch(treeMoveTransaction(moverView.state, plan))
 
     expect(levels(peerView.state.doc)).toEqual(['title:1', 'a:2', 'x:3', 'x1:4', 'z:2'])
@@ -276,14 +276,12 @@ describe('planTreeMove property', () => {
     for (let docNo = 0; docNo < 300; docNo++) {
       const doc = randomDoc(rand)
       const before = outlineOf(doc)
-      const byId = new Map(before.map((n) => [n.id, n]))
-      const visible = (id: string) => doc.nodeAt(byId.get(id)!.pos)!.textContent !== ''
 
       for (const source of before) {
-        if (source.isTitle || !visible(source.id)) continue
+        if (source.isTitle) continue
         const inSet = (n: { pos: number }) => n.pos >= source.pos && n.pos < source.sectionTo
         const setIds = before.filter(inSet).map((n) => n.id)
-        const rows = before.filter((n) => !inSet(n) && visible(n.id))
+        const rows = before.filter((n) => !inSet(n))
 
         for (let g = 0; g <= rows.length; g++) {
           const where = `seed ${seed} doc ${docNo} ${source.id} gap ${g}: ${tree(doc)}`
@@ -318,7 +316,7 @@ describe('planTreeMove property', () => {
               expect([where, n.id, moved.level]).toEqual([
                 where,
                 n.id,
-                Math.min(6, Math.max(1, n.level + plan.d))
+                Math.min(6, Math.max(1, n.level + plan.levelShift))
               ])
             } else {
               expect([where, n.id, moved.parentId, moved.level]).toEqual([
@@ -331,7 +329,11 @@ describe('planTreeMove property', () => {
           }
 
           const landed = after.get(source.id)!
-          expect([where, landed.parentId, landed.level]).toEqual([where, address.parentId, plan.L])
+          expect([where, landed.parentId, landed.level]).toEqual([
+            where,
+            address.parentId,
+            source.level + plan.levelShift
+          ])
           expect([where, after.get('title')!.pos, after.get('title')!.level]).toEqual([where, 0, 1])
           expect([where, tr.selection.from]).toEqual([where, landed.pos + 1])
         }

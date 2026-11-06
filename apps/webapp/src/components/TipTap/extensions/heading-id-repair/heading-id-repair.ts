@@ -17,9 +17,8 @@ export interface HeadingIdRepairOptions {
 }
 
 /** The Yjs origin of a repair. y-undo tracks only its own origin, so no undo stack holds it. */
-export const HEADING_ID_REPAIR_ORIGIN = new PluginKey('headingIdRepair')
+const HEADING_ID_REPAIR_ORIGIN = new PluginKey('headingIdRepair')
 
-const SYNC_RETRY_MS = 1000
 const reported = new Set<string>()
 
 const topLevelHeadingIds = (doc: PMNode): (string | null)[] => {
@@ -48,13 +47,20 @@ export const HeadingIdRepair = Extension.create<HeadingIdRepairOptions>({
     const { editor } = this
     const { documentId } = this.options
     let timer: ReturnType<typeof setTimeout> | null = null
+    let stopWaiting: (() => void) | null = null
 
     const repair = () => {
       timer = null
       if (editor.isDestroyed || isTocMoveLocked(editor)) return
-      // Before the first server sync the client sees only its own mirror.
+      // Before the first server sync the client sees only its own mirror, so wait for it.
+      // A sync that never lands costs one idle listener, not a poll.
       if (useStore.getState().settings.editor.providerSyncing) {
-        timer = setTimeout(repair, SYNC_RETRY_MS)
+        stopWaiting ??= useStore.subscribe((state) => {
+          if (state.settings.editor.providerSyncing) return
+          stopWaiting?.()
+          stopWaiting = null
+          timer ??= setTimeout(repair, 0)
+        })
         return
       }
       const sync = ySyncPluginKey.getState(editor.state)
@@ -98,6 +104,8 @@ export const HeadingIdRepair = Extension.create<HeadingIdRepairOptions>({
           destroy: () => {
             if (timer) clearTimeout(timer)
             timer = null
+            stopWaiting?.()
+            stopWaiting = null
           }
         })
       })

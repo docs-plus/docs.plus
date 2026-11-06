@@ -4,6 +4,7 @@ import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view'
 
 import { canMapDecorations, computeSection, transactionAffectsNodeType } from '../shared'
 import { saveFoldedIds } from './helpers/fold-storage'
+import { foldedSectionsAt } from './helpers/folded-sections'
 
 export type HeadingFoldMeta =
   | { type: 'toggle'; id: string; contentHeight?: number }
@@ -252,29 +253,6 @@ function pruneStaleIds(
   return { foldedIds, contentHeights, animating, sessionOpen }
 }
 
-function isPositionFolded(
-  doc: PMNode,
-  pos: number,
-  foldedIds: Set<string>
-): { folded: boolean; sectionFrom: number; sectionTo: number } {
-  let offset = 0
-
-  for (let i = 0; i < doc.content.childCount; i++) {
-    const child = doc.content.child(i)
-    const nodePos = offset
-    offset += child.nodeSize
-
-    if (child.type.name === 'heading' && foldedIds.has(child.attrs['toc-id'] as string)) {
-      const section = computeSection(doc, nodePos, child.attrs.level as number, i)
-      const contentStart = nodePos + child.nodeSize
-      if (pos >= contentStart && pos < section.to) {
-        return { folded: true, sectionFrom: nodePos, sectionTo: section.to }
-      }
-    }
-  }
-  return { folded: false, sectionFrom: -1, sectionTo: -1 }
-}
-
 export function createHeadingFoldPlugin(
   options: HeadingFoldPluginOptions
 ): Plugin<HeadingFoldState> {
@@ -449,24 +427,19 @@ export function createHeadingFoldPlugin(
           ? currentOffset + doc.content.child(currentIndex).nodeSize
           : currentOffset - doc.content.child(nextIndex).nodeSize
 
-        const check = isPositionFolded(doc, nextPos + 1, pluginState.foldedIds)
-        if (!check.folded) return false
+        const [outer] = foldedSectionsAt(doc, nextPos + 1, pluginState.foldedIds)
+        if (!outer) return false
 
         if (isDown) {
-          const targetPos = check.sectionTo
-          if (targetPos < doc.content.size) {
-            const $pos = doc.resolve(Math.min(targetPos + 1, doc.content.size))
+          if (outer.to < doc.content.size) {
+            const $pos = doc.resolve(Math.min(outer.to + 1, doc.content.size))
             const tr = view.state.tr.setSelection(TextSelection.near($pos))
             view.dispatch(tr.scrollIntoView())
           }
         } else {
-          const headingNode = doc.nodeAt(check.sectionFrom)
-          if (headingNode) {
-            const headingEnd = check.sectionFrom + headingNode.nodeSize - 1
-            const $pos = doc.resolve(headingEnd)
-            const tr = view.state.tr.setSelection(TextSelection.near($pos))
-            view.dispatch(tr.scrollIntoView())
-          }
+          const $pos = doc.resolve(outer.headingEnd)
+          const tr = view.state.tr.setSelection(TextSelection.near($pos))
+          view.dispatch(tr.scrollIntoView())
         }
 
         return true

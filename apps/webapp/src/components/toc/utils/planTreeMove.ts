@@ -30,7 +30,8 @@ export function addressForTarget(doc: PMNode, target: TocDropTarget): TocTreeAdd
 
 /**
  * Pure. Lands the source set at `to` without re-parenting any heading outside it
- * (R2 overturn): `L = clamp(source, lo, hi)` and every set heading shifts by `d`.
+ * (R2 overturn): the source lands at `clamp(source, lo, hi)`, and every set heading
+ * shifts by the same `levelShift`.
  */
 export function planTreeMove(
   doc: PMNode,
@@ -65,23 +66,22 @@ export function planTreeMove(
   const hi = S ? S.level : lo
   if (lo > hi) return { ok: false, reason: 'no-room' }
 
-  const L = clamp(source.level, lo, hi)
+  const level = clamp(source.level, lo, hi)
   const isOwnSlot =
     source.parentId === to.parentId && (index === source.index || index === source.index + 1)
-  if (isOwnSlot && L === source.level) return { ok: false, reason: 'noop' }
+  if (isOwnSlot && level === source.level) return { ok: false, reason: 'noop' }
 
   return {
     ok: true,
     from: source.pos,
     to: source.sectionTo,
     insertPos: N ? N.pos : parent ? parent.sectionTo : doc.content.size,
-    L,
-    d: L - source.level,
+    levelShift: level - source.level,
     parentId: to.parentId
   }
 }
 
-export const clampHeadingLevel = (level: number) => clamp(level, MIN_LEVEL, MAX_LEVEL)
+const clampHeadingLevel = (level: number) => clamp(level, MIN_LEVEL, MAX_LEVEL)
 
 /**
  * Pure: the plan must come from `state.doc`. One transaction, so one undo step.
@@ -91,15 +91,15 @@ export const clampHeadingLevel = (level: number) => clamp(level, MIN_LEVEL, MAX_
  */
 export function treeMoveTransaction(state: EditorState, plan: TocTreeMovePlan): Transaction {
   const { doc, selection } = state
-  const { from, to, d } = plan
+  const { from, to, levelShift } = plan
   const tr = state.tr.delete(from, to)
   const landedFrom = tr.mapping.map(plan.insertPos)
   tr.insert(landedFrom, doc.slice(from, to).content)
 
-  if (d !== 0) {
+  if (levelShift !== 0) {
     tr.doc.nodesBetween(landedFrom, landedFrom + (to - from), (node, pos) => {
       if (node.type.name === TIPTAP_NODES.HEADING_TYPE) {
-        const level = clampHeadingLevel((node.attrs.level as number) + d)
+        const level = clampHeadingLevel((node.attrs.level as number) + levelShift)
         tr.setNodeMarkup(pos, undefined, { ...node.attrs, level })
       }
       return false

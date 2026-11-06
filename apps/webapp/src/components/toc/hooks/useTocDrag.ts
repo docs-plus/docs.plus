@@ -13,7 +13,7 @@ import {
   measureDragRows,
   toTocDropTarget
 } from '../dnd/utils'
-import { TOC_CLASSES, tocRowElement } from '../tocClasses'
+import { TOC_CLASSES, tocItemElement, tocRowElement } from '../tocClasses'
 import { commitTocMove, planTocMove } from '../utils/tocMove'
 
 interface DragState {
@@ -102,7 +102,7 @@ export function useTocDrag(items: TocItem[], listRef: RefObject<HTMLElement | nu
         })
       }
     }
-    Object.assign(document.body.style, { userSelect: 'none' })
+    document.body.style.userSelect = 'none'
     const onMove = (e: PointerEvent) => (pointerYRef.current = e.clientY)
     window.addEventListener('pointermove', onMove)
     document.addEventListener('scroll', onScroll, true)
@@ -111,7 +111,7 @@ export function useTocDrag(items: TocItem[], listRef: RefObject<HTMLElement | nu
       if (scrollFrame !== null) cancelAnimationFrame(scrollFrame)
       window.removeEventListener('pointermove', onMove)
       document.removeEventListener('scroll', onScroll, true)
-      Object.assign(document.body.style, { userSelect: '' })
+      document.body.style.userSelect = ''
     }
   }, [state.activeId, state.collapsedIds, listRef])
 
@@ -128,9 +128,8 @@ export function useTocDrag(items: TocItem[], listRef: RefObject<HTMLElement | nu
   useEffect(() => {
     const root = listRef.current
     if (!state.dropParentId || !root) return
-    const id = CSS.escape(state.dropParentId)
-    const rail = root.querySelector(
-      `li.${TOC_CLASSES.item}[data-id="${id}"] > ul.${TOC_CLASSES.children}`
+    const rail = tocItemElement(state.dropParentId, root)?.querySelector(
+      `:scope > ul.${TOC_CLASSES.children}`
     )
     const row = state.target?.kind === 'inside' ? tocRowElement(state.dropParentId, root) : null
     rail?.classList.add(TOC_CLASSES.dropParent)

@@ -1,3 +1,4 @@
+import { headingLabel } from '@components/TipTap/placeholders'
 import { useModal } from '@components/ui/ModalDrawer'
 import { Tooltip } from '@components/ui/Tooltip'
 import type { useDraggable } from '@dnd-kit/core'
@@ -50,7 +51,6 @@ function TocItemBodyComponent({
   const isFocused = useFocusedHeadingStore((s) => s.focusedHeadingId === item.id)
   const isActive = useChatStore((state) => state.chatRoom.headingId === item.id)
   const modal = useModal()
-  const setFocusedHeadingWithLock = useFocusedHeadingStore((s) => s.setFocusedHeadingWithLock)
 
   const hasChildren = nestedNodes.length > 0
   const isDragging = Boolean(draggable?.isDragging)
@@ -60,11 +60,10 @@ function TocItemBodyComponent({
   const handleClick = useCallback(
     (e: MouseEvent) => {
       e.preventDefault()
-      setFocusedHeadingWithLock(item.id)
       tocActions.navigateToHeading(item.id, { openChat: isDesktop })
       if (!isDesktop) modal?.close?.()
     },
-    [item.id, setFocusedHeadingWithLock, isDesktop, modal]
+    [item.id, isDesktop, modal]
   )
 
   const handleToggle = useCallback(
@@ -148,9 +147,8 @@ function TocItemBodyComponent({
     <li ref={draggable?.setNodeRef} className={liClassName} data-id={item.id}>
       <TocRow
         headingId={item.id}
-        title={item.textContent}
-        // Same word the editor placeholder shows on an empty heading.
-        titleLabel={`Heading ${item.level}`}
+        title={headingLabel({ text: item.textContent, level: item.level })}
+        titleIsPlaceholder={!item.textContent.trim()}
         density={variant}
         isActive={isActive}
         isFocused={isFocused}

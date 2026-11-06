@@ -58,8 +58,7 @@ function MediaWell({ media }: { media: PreviewMedia }) {
   if (media.kind === 'image') {
     return <CloneHost node={media.el} className="bg-base-200 h-24 w-full overflow-hidden" />
   }
-  const Icon =
-    MEDIA_INSERT_REGISTRY[media.type ?? 'video']?.Icon ?? MEDIA_INSERT_REGISTRY.video.Icon
+  const { Icon } = MEDIA_INSERT_REGISTRY[media.type ?? 'video']
   return (
     <div
       aria-hidden

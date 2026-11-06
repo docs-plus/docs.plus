@@ -12,8 +12,8 @@ type TocRowProps = {
   /** Scroll-spy — daisyUI `menu-focus` when not also chat-open */
   isFocused?: boolean
   title: string
-  /** Shown in placeholder ink when `title` is blank, like the editor's empty-heading hint. */
-  titleLabel?: string
+  /** `title` is the `Heading N` fallback of an empty heading: paint it in placeholder ink. */
+  titleIsPlaceholder?: boolean
   density?: 'desktop' | 'mobile'
   leading?: ReactNode
   trail?: ReactNode
@@ -32,14 +32,13 @@ export function TocRow({
   isActive,
   isFocused,
   title,
-  titleLabel,
+  titleIsPlaceholder = false,
   density = 'desktop',
   leading,
   trail,
   onTitleClick,
   titleHref
 }: TocRowProps) {
-  const blank = !title.trim()
   return (
     <div
       className={twMerge(
@@ -65,9 +64,9 @@ export function TocRow({
           className={twMerge(
             TOC_CLASSES.link,
             titleClassName,
-            blank && titleLabel && 'text-[var(--pad-placeholder-ink)]'
+            titleIsPlaceholder && TOC_CLASSES.placeholderTitle
           )}>
-          {blank ? titleLabel : title}
+          {title}
         </span>
       </a>
       {trail ?? <span />}

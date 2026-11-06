@@ -2,7 +2,10 @@ import { scrollElementInMobilePadEditor } from './scrollMobilePadEditor'
 
 export type ScrollToHeadingOptions = {
   behavior?: ScrollBehavior
-  /** Mobile pad helper only implements start|nearest; desktop uses native scrollIntoView. */
+  /**
+   * Mobile pad helper only implements start|nearest. On desktop, `start` scrolls
+   * `.editorWrapper` by hand (#309) and `nearest` uses native scrollIntoView.
+   */
   block?: 'start' | 'nearest'
   /** Runs once, when the heading has landed or the reader took over the scroll. */
   onSettled?: () => void

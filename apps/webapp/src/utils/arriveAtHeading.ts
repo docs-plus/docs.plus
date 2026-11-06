@@ -3,6 +3,7 @@ import {
   type HeadingFoldMeta,
   headingFoldPluginKey
 } from '@components/TipTap/extensions/heading-fold'
+import { outlineOf } from '@components/toc/utils/outline'
 import { useStore } from '@stores'
 
 import { scrollToHeading } from './scrollToHeading'
@@ -16,15 +17,9 @@ export function arriveAtHeading(headingId: string): void {
   if (!editor || editor.isDestroyed) return
 
   const { doc } = editor.state
-  let headingPos = -1
-  let offset = 0
-  // `toc-id` is on links and tables too, so match top-level headings only.
-  for (let i = 0; i < doc.childCount && headingPos < 0; i++) {
-    const child = doc.child(i)
-    if (child.type.name === 'heading' && child.attrs['toc-id'] === headingId) headingPos = offset
-    offset += child.nodeSize
-  }
-  if (headingPos < 0) return
+  // `toc-id` is on links and tables too; the outline holds top-level headings only.
+  const headingPos = outlineOf(doc).find((n) => n.id === headingId)?.pos
+  if (headingPos === undefined) return
 
   const foldedIds = headingFoldPluginKey.getState(editor.state)?.foldedIds
   const hiding = foldedIds ? foldedSectionsAt(doc, headingPos, foldedIds) : []

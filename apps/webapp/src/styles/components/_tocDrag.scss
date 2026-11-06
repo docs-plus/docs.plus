@@ -88,7 +88,7 @@
   box-shadow: var(--toc-grip-shadow-lift, 0 1px 2px color-mix(in oklch, black 14%, transparent));
 }
 
-// DS-12 (ruling 2026-11-04): the landing parent's nest rail while a gap is targeted.
+// DS-12 (ruling 2026-11-04): the landing parent's nest rail while an allowed target is held.
 .toc__children.is-drop-parent::before {
   background-color: var(--color-primary);
   opacity: 1;

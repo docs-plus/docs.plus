@@ -42,8 +42,8 @@ export interface TocTreeMovePlan {
   to: number
   /** Where the section goes, before the delete is mapped. */
   insertPos: number
-  L: number
-  d: number
+  /** Added to every heading level in the set; the source lands at its level plus this. */
+  levelShift: number
   parentId: string | null
 }
 

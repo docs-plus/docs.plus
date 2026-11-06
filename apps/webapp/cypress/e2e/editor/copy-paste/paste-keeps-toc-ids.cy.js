@@ -1,10 +1,8 @@
 /* eslint-disable no-undef */
 /**
- * #700: a paste from the same pad keeps each heading's `toc-id`, because heading chats
- * and `?id=` links pair by it. An id already in use stays on the original, and the pasted
- * copy takes a new one. A paste from another pad or site takes new ids.
- *
- * `realPress` sends Meta+C as a bare key, and Chrome on macOS copies only through its edit
+ * #700: a same-pad paste keeps each heading's `toc-id`, because heading chats and `?id=`
+ * links pair by it. A pasted copy of a taken id, and any paste from elsewhere, gets a new id.
+ * `realPress` sends Meta+C as a bare key, and Chrome on macOS copies only through edit
  * commands. So each chord goes through CDP with its command, on the real clipboard.
  */
 
