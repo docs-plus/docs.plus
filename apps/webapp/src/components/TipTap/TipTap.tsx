@@ -45,6 +45,7 @@ import { CaretFind, foldedIdsIncludingFind } from './extensions/caret-find'
 import { CodeBlockLowlight } from './extensions/code-block-lowlight'
 import { HeadingFilter } from './extensions/heading-filter'
 import { HeadingFold, type HeadingFoldMeta, headingFoldPluginKey } from './extensions/heading-fold'
+import { HeadingIdRepair } from './extensions/heading-id-repair'
 import { HeadingScale } from './extensions/heading-scale'
 import { HeadingActionsExtension } from './extensions/HeadingActions'
 import { Highlight } from './extensions/highlight'
@@ -344,7 +345,8 @@ const Editor = ({
       Collaboration.configure({
         document: provider.document
       }),
-      CollaborationCaret.configure(CollaborationCaretConfig)
+      CollaborationCaret.configure(CollaborationCaretConfig),
+      HeadingIdRepair.configure({ documentId: docName })
     ]
   }
 }

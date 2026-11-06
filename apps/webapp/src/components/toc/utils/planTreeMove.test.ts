@@ -4,8 +4,11 @@ import Heading from '@tiptap/extension-heading'
 import Paragraph from '@tiptap/extension-paragraph'
 import Text from '@tiptap/extension-text'
 import type { Node as PMNode } from '@tiptap/pm/model'
-import { EditorState, TextSelection } from '@tiptap/pm/state'
+import { EditorState, Selection, TextSelection } from '@tiptap/pm/state'
+import { EditorView } from '@tiptap/pm/view'
+import { prosemirrorToYXmlFragment, ySyncPlugin } from '@tiptap/y-tiptap'
 import type { TocTreeAddress } from '@types'
+import * as Y from 'yjs'
 
 import { outlineOf } from './outline'
 import { addressForTarget, planTreeMove, treeMoveTransaction } from './planTreeMove'
@@ -182,6 +185,57 @@ describe('planTreeMove named cases', () => {
     const $caret = tr.doc.resolve(tr.selection.from)
     expect($caret.parent.textContent).toBe('bravo body')
     expect($caret.parentOffset).toBe(2)
+  })
+})
+
+describe('treeMoveTransaction with a live peer', () => {
+  // #510: rebuilt headings made y-sync re-create them, so the peer's caret jumped to Z.
+  it("keeps an online peer's caret in a shifted sub-heading", () => {
+    const start = makeDoc(
+      [1, 'title'],
+      [2, 'a'],
+      'a0',
+      [2, 'x', 'Xhead'],
+      'x0',
+      [3, 'x1', 'X1head'],
+      'x1text',
+      [2, 'z'],
+      'z0'
+    )
+    const mover = new Y.Doc()
+    const peer = new Y.Doc()
+    prosemirrorToYXmlFragment(start, mover.getXmlFragment('default'))
+    Y.applyUpdate(peer, Y.encodeStateAsUpdate(mover))
+    mover.on('update', (update: Uint8Array) => Y.applyUpdate(peer, update, 'relay'))
+    const viewOf = (ydoc: Y.Doc) =>
+      new EditorView(document.createElement('div'), {
+        state: EditorState.create({
+          schema,
+          plugins: [ySyncPlugin(ydoc.getXmlFragment('default'))]
+        })
+      })
+    const moverView = viewOf(mover)
+    const peerView = viewOf(peer)
+
+    let at = 0
+    peerView.state.doc.forEach((n, offset) => {
+      if (n.textContent === 'X1head') at = offset + 3
+    })
+    peerView.dispatch(
+      peerView.state.tr.setSelection(Selection.near(peerView.state.doc.resolve(at)))
+    )
+
+    const plan = planTreeMove(moverView.state.doc, 'x', inside(moverView.state.doc, 'a')!, {
+      locked: false
+    })
+    if (!plan.ok || plan.d !== 1) throw new Error('expected a +1 shift')
+    moverView.dispatch(treeMoveTransaction(moverView.state, plan))
+
+    expect(levels(peerView.state.doc)).toEqual(['title:1', 'a:2', 'x:3', 'x1:4', 'z:2'])
+    const { $head } = peerView.state.selection
+    expect([$head.parent.textContent, $head.parentOffset]).toEqual(['X1head', 2])
+    moverView.destroy()
+    peerView.destroy()
   })
 })
 
