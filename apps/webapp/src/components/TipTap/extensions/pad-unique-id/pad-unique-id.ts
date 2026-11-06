@@ -1,9 +1,11 @@
+import type { Editor } from '@tiptap/core'
 import { UniqueID, type UniqueIDOptions } from '@tiptap/extension-unique-id'
 import {
   DOMSerializer,
-  type Fragment,
+  Fragment,
   type Node as ProseMirrorNode,
-  type Schema
+  type Schema,
+  Slice
 } from '@tiptap/pm/model'
 import { Plugin, PluginKey, type Transaction } from '@tiptap/pm/state'
 
@@ -39,6 +41,25 @@ class PadClipboardSerializer extends DOMSerializer {
   }
 }
 
+/** True only when an element of the parsed HTML carries this pad's mark, never mere text. */
+export const hasPadMark = (html: string, padId: string): boolean => {
+  if (typeof DOMParser === 'undefined') return false
+  const dom = new DOMParser().parseFromString(html, 'text/html')
+  // The whole fragment: ProseMirror wraps list and table slices, so the mark can sit deep.
+  return dom.querySelector(`[${PAD_CLIPBOARD_ATTR}]`)?.getAttribute(PAD_CLIPBOARD_ATTR) === padId
+}
+
+/** The editor's pad id, which every writer reserves; `null` off a pad. */
+export const padIdOf = (editor: Editor): string | null =>
+  editor.extensionManager.extensions.find((e) => e.name === PadUniqueID.name)?.options.padId ?? null
+
+// A drag slice reuses the doc's own node objects, which would read as untouched below.
+const freshNodes = (fragment: Fragment): Fragment => {
+  const list: ProseMirrorNode[] = []
+  fragment.forEach((node) => list.push(node.isText ? node : node.copy(freshNodes(node.content))))
+  return Fragment.from(list)
+}
+
 const isPasteOrDrop = (tr: Transaction): boolean => {
   const event = tr.getMeta('uiEvent')
   return event === 'paste' || event === 'drop'
@@ -53,7 +74,8 @@ export const pastedDuplicatePositions = (
   before: ProseMirrorNode,
   after: ProseMirrorNode,
   types: readonly string[],
-  attributeName: string
+  attributeName: string,
+  reserved: Iterable<string> = []
 ): number[] => {
   const untouched = new Set<ProseMirrorNode>()
   before.descendants((node) => {
@@ -69,14 +91,14 @@ export const pastedDuplicatePositions = (
     else pasted.push({ pos, preferredId: id })
   })
 
-  const kept = keepPreferredIds(pasted, liveElsewhere)
+  const kept = keepPreferredIds(pasted, liveElsewhere, reserved)
   return pasted.filter((_, i) => kept[i] === null).map(({ pos }) => pos)
 }
 
 /**
- * Upstream UniqueID strips every pasted id. Heading chats and `?id=` links pair by
- * `toc-id`, so a paste from this same pad keeps its ids (#700). An id that then
- * appears twice goes to the pasted copy, which takes a new one.
+ * Upstream UniqueID strips every pasted or dropped id. Heading chats and `?id=` links pair
+ * by `toc-id`, so a paste or drag from this same pad keeps its ids (#700). A pasted id
+ * that is taken, or equals the pad's documentId (the pad-wide chat), is replaced.
  */
 export const PadUniqueID = UniqueID.extend<PadUniqueIDOptions>({
   addOptions() {
@@ -102,7 +124,9 @@ export const PadUniqueID = UniqueID.extend<PadUniqueIDOptions>({
           const stripped = stripIds.call(uniqueId, slice, view, plain)
           const keep = fromThisPad
           fromThisPad = false
-          return keep ? slice : stripped
+          return keep
+            ? new Slice(freshNodes(slice.content), slice.openStart, slice.openEnd)
+            : stripped
         }
       }
     })
@@ -112,8 +136,15 @@ export const PadUniqueID = UniqueID.extend<PadUniqueIDOptions>({
       props: {
         clipboardSerializer: new PadClipboardSerializer(this.editor.schema, padId),
         transformPastedHTML: (html) => {
-          fromThisPad = html.includes(`${PAD_CLIPBOARD_ATTR}="${padId}"`)
+          fromThisPad = hasPadMark(html, padId)
           return html
+        },
+        handleDOMEvents: {
+          // An internal drop skips transformPastedHTML; an outside drop's HTML still sets it.
+          drop: (view) => {
+            fromThisPad = view.dragging != null
+            return false
+          }
         }
       },
       appendTransaction: (transactions, oldState, newState) => {
@@ -121,7 +152,13 @@ export const PadUniqueID = UniqueID.extend<PadUniqueIDOptions>({
         // A peer's change is theirs to key; re-keying it here would fork the two clients.
         if (filterTransaction && transactions.some((tr) => !filterTransaction(tr))) return null
 
-        const positions = pastedDuplicatePositions(oldState.doc, newState.doc, types, attributeName)
+        const positions = pastedDuplicatePositions(
+          oldState.doc,
+          newState.doc,
+          types,
+          attributeName,
+          [padId]
+        )
         if (positions.length === 0) return null
 
         const { tr } = newState

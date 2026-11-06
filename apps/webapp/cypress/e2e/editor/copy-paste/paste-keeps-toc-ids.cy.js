@@ -63,6 +63,40 @@ const focusEditor = (where) => {
   cy.window().then((win) => win._editor.commands.focus(where))
 }
 
+/** The pad id the editor stamps and reserves, read from the editor itself. */
+const padIdOf = (win) =>
+  win._editor.extensionManager.extensions.find((e) => e.name === 'uniqueID').options.padId
+
+/**
+ * Drags the Beta section (end of "Body a" to end of "Body b") to the end of "Body g".
+ * Synthetic DragEvents: a real CDP drag needs `Input.setInterceptDrags`.
+ */
+const dragBetaToEnd = ({ copy }) => {
+  cy.window().then((win) => {
+    const editor = win._editor
+    editor.commands.setTextSelection({ from: textEnd(win, 'Body a'), to: textEnd(win, 'Body b') })
+    const dataTransfer = new win.DataTransfer()
+    // A built DataTransfer pins effectAllowed to "none". A real drag keeps ProseMirror's
+    // "copyMove", which is what makes upstream UniqueID strip ids on the drop.
+    let effectAllowed = 'uninitialized'
+    Object.defineProperty(dataTransfer, 'effectAllowed', {
+      get: () => effectAllowed,
+      set: (value) => (effectAllowed = value)
+    })
+    const fire = (target, type, init = {}) =>
+      target.dispatchEvent(
+        new win.DragEvent(type, { bubbles: true, cancelable: true, dataTransfer, ...init })
+      )
+    fire(editor.view.dom.querySelector('h2:nth-of-type(2)'), 'dragstart')
+    const at = editor.view.coordsAtPos(textEnd(win, 'Body g'))
+    const point = { clientX: at.left, clientY: (at.top + at.bottom) / 2 }
+    const target = win.document.elementFromPoint(point.clientX, point.clientY)
+    fire(target, 'dragover', point)
+    // ProseMirror reads the copy key at drop: Alt on macOS, Ctrl elsewhere.
+    fire(target, 'drop', { ...point, altKey: copy, ctrlKey: copy })
+  })
+}
+
 const expectAllUnique = (list) => {
   const ids = list.map((h) => h.id)
   expect(ids.every(Boolean), 'every heading has an id').to.equal(true)
@@ -197,6 +231,75 @@ describe('Paste keeps heading toc-ids from the same pad (#700)', () => {
           after.filter((h) => ids.has(h.id)),
           'ids kept from the site'
         ).to.be.empty
+        expectAllUnique(after)
+      })
+    })
+  })
+
+  it("another pad's paste re-keys even when its text spells this pad's mark", () => {
+    openPad(freshName('mark-text'))
+    seed()
+    cy.window().then((win) => {
+      // The mark as text, unescaped, as innerHTML writes a quote in a text node. A slice
+      // opens into the caret's paragraph, so forged HTML leads with a paragraph.
+      const html = `<p data-docsplus-pad="other-pad">Lead</p><h2 data-toc-id="forged-xyz">Forged</h2><p>data-docsplus-pad="${padIdOf(win)}"</p>`
+      focusEditor('end')
+      cy.pasteWithMimeTypes({ 'text/html': html })
+    })
+    cy.get(`${EDITOR} h2`).should('contain', 'Forged')
+    headings().then((after) => {
+      expect(after.map((h) => h.id)).not.to.include('forged-xyz')
+      expectAllUnique(after)
+    })
+  })
+
+  it("a paste with this pad's mark never keeps the documentId as a heading id", () => {
+    openPad(freshName('reserved'))
+    seed()
+    cy.window().then((win) => {
+      const padId = padIdOf(win)
+      cy.wrap(padId).as('padId')
+      focusEditor('end')
+      cy.pasteWithMimeTypes({
+        'text/html': `<p data-docsplus-pad="${padId}">Lead</p><h2 data-toc-id="${padId}">Forged</h2><p>x</p>`
+      })
+    })
+    cy.get(`${EDITOR} h2`).should('contain', 'Forged')
+    cy.get('@padId').then((padId) =>
+      headings().then((after) => {
+        expect(after.map((h) => h.id)).not.to.include(padId)
+        expectAllUnique(after)
+      })
+    )
+  })
+
+  it('a drag-move inside the pad keeps the heading id', () => {
+    openPad(freshName('drag-move'))
+    seed()
+    headings().then((original) => {
+      focusEditor('end')
+      dragBetaToEnd({ copy: false })
+      cy.get(`${EDITOR} > :last-child`).should('have.text', 'Body b')
+      headings().then((after) => {
+        expect(after.map((h) => h.text)).to.deep.equal(['Pad Title', 'Alpha', 'Gamma', 'Beta'])
+        const ids = Object.fromEntries(after.map((h) => [h.text, h.id]))
+        original.forEach((h) => expect(ids[h.text], h.text).to.equal(h.id))
+      })
+    })
+  })
+
+  it('a drag-copy inside the pad re-keys only the copy', () => {
+    openPad(freshName('drag-copy'))
+    seed()
+    headings().then((original) => {
+      const beta = original.find((h) => h.text === 'Beta')
+      focusEditor('end')
+      dragBetaToEnd({ copy: true })
+      cy.get(`${EDITOR} h2`).should('have.length', 3)
+      headings().then((after) => {
+        const betas = after.filter((h) => h.text === 'Beta')
+        expect(betas[0].id, 'the original Beta').to.equal(beta.id)
+        expect(betas[1].id, 'the dropped copy').not.to.equal(beta.id)
         expectAllUnique(after)
       })
     })
