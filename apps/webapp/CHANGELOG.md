@@ -134,10 +134,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   never pulls the headings that follow into the section. The sideways level offset and the
   level picker are gone. The title row has no grip, nothing lands above it, and a locked pad
   starts no drag. While a drop is allowed, the rail of the list it joins turns blue. A refused
-  slot shows no line and the "no drop" cursor. The drag card now hangs below the pointer, so
-  the line stays in view. Let go on the middle of a row, and the section nests inside it as
-  its last sub-section, with the row ringed in blue. A folded row opens to show it. Let go
-  where the section started, and nothing changes.
+  slot shows no line and the "no drop" cursor. The drag card stays where the row was, with its
+  grip under the pointer, so the pointer no longer jumps off the grip when a drag starts. The
+  drop line paints over the card. Let go on the middle of a row, and the section nests inside
+  it as its last sub-section, with the row ringed in blue. A folded row opens to show it. Let
+  go where the section started, and nothing changes.
 - A heading with no text now has a TOC row, with a grey "Heading 2" style label. Before, it
   had no row, so the TOC showed its sub-headings under the heading above it, and a drag
   moved different headings from the ones it greyed out.
@@ -203,6 +204,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - The TOC scrolls the focused heading's own row into view again. Before, it scrolled the
   whole section, so a parent row could stay out of sight.
 - After a click on a TOC row, the scroll spy no longer jumps back to an earlier heading.
+- A click on a TOC row now lands its heading at the top on a long pad. Before, diagrams and
+  media that rendered during the scroll pushed the heading down, so it stopped short and
+  another row took focus.
+- A multi-step change that deletes a heading now always rebuilds folds and filter highlights.
 - A co-editor's edit inside a folded section no longer shows that block under the fold, and
   no longer drops filter highlights.
 - The TOC is faster on long documents. Typing in a heading re-renders only its own row, a
