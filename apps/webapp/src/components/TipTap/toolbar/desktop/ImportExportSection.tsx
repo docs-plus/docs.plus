@@ -12,11 +12,13 @@ import { Banner } from '@components/ui/Banner'
 import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
 import { Icons } from '@icons'
+import { useChatStore } from '@stores'
 import type { Editor } from '@tiptap/core'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import React, { useState } from 'react'
 
-import { applyImportedContent } from './applyImportedContent'
+import { applyImportedContent, planImportedHeadingIds } from './applyImportedContent'
+import type { HeadingRecord } from './carryHeadingIds'
 
 interface ImportExportSectionProps {
   editor: Editor | null | undefined
@@ -47,13 +49,51 @@ type RowId = (typeof EXPORT_ROWS)[number]['id']
 type ImportStage =
   | { step: 'idle' }
   | { step: 'converting'; filename: string }
-  | { step: 'staged'; filename: string; result: ImportedDocument }
-  | { step: 'applying'; filename: string; result: ImportedDocument }
+  | { step: 'staged'; filename: string; result: ImportedDocument; chatLine: string | null }
+  | { step: 'applying'; filename: string; result: ImportedDocument; chatLine: string | null }
   | { step: 'done'; filename: string; warnings: ConversionWarning[] }
   | { step: 'failed'; message: string }
 
 // A malformed Word file can produce dozens of mammoth messages, and the panel is 28rem wide.
 const WARNINGS_SHOWN = 5
+const NAMES_SHOWN = 5
+
+// An empty heading reads the way its TOC row does.
+const headingName = (heading: HeadingRecord) => heading.text || `Heading ${heading.level}`
+
+/**
+ * Names only the headings that have a chat room and lose it. `null` when no heading has
+ * one. The pad already holds every channel of the document, so this needs no request.
+ */
+const headingChatLine = (
+  plan: ReturnType<typeof planImportedHeadingIds>,
+  roomHeadingIds: Set<string>
+): string | null => {
+  const keep = plan.kept.filter((heading) => roomHeadingIds.has(heading.id as string)).length
+  const lose = plan.dropped.filter((heading) => roomHeadingIds.has(heading.id as string))
+  if (!lose.length) {
+    if (!keep) return null
+    return keep === 1
+      ? 'The heading with a chat keeps it.'
+      : `All ${keep} headings with a chat keep it.`
+  }
+  const names = lose.slice(0, NAMES_SHOWN).map(headingName)
+  if (lose.length > NAMES_SHOWN) names.push(`and ${lose.length - NAMES_SHOWN} more`)
+  const kept =
+    keep === 1 ? '1 heading keeps its chat. ' : keep ? `${keep} headings keep their chat. ` : ''
+  const lost = keep
+    ? `${lose.length} ${lose.length === 1 ? 'loses' : 'lose'} it`
+    : `${lose.length} ${lose.length === 1 ? 'heading loses its' : 'headings lose their'} chat`
+  return `${kept}${lost}: ${names.join(', ')}.`
+}
+
+const roomHeadingIds = () => {
+  const ids = new Set<string>()
+  for (const channel of useChatStore.getState().channels.values()) {
+    if (channel?.heading_id) ids.add(channel.heading_id)
+  }
+  return ids
+}
 
 const WarningList = ({
   heading,
@@ -127,7 +167,11 @@ const ImportExportSection = ({
     setStage({ step: 'converting', filename: file.name })
     try {
       const result = await importDocument(documentId, file)
-      setStage({ step: 'staged', filename: file.name, result })
+      // Read once at staging. The replace picks again on the pad as it is then.
+      const chatLine = editor
+        ? headingChatLine(planImportedHeadingIds(editor, result.content), roomHeadingIds())
+        : null
+      setStage({ step: 'staged', filename: file.name, result, chatLine })
     } catch (error) {
       setStage({
         step: 'failed',
@@ -284,9 +328,11 @@ const ImportExportSection = ({
             <p className="text-base-content/70 mt-3 text-sm">
               This replaces the whole document for everyone in it, right now. Undo can’t reverse it,
               but History keeps earlier versions, and you can restore one. Edits from the last
-              minute may not be in History yet. A heading keeps its chat room, folds and section
-              links only when its level and text stay the same.
+              minute may not be in History yet.
             </p>
+            {stage.chatLine ? (
+              <p className="text-base-content/70 mt-2 text-sm">{stage.chatLine}</p>
+            ) : null}
 
             <div className="mt-3 flex flex-wrap justify-end gap-2">
               <Button

@@ -202,9 +202,9 @@ export interface ImportControllerDeps {
 }
 
 /**
- * No database write and no content mutation — the caller applies the result
- * through `PATCH /content`. Admission still costs write access, because a
- * locked document's readers can never apply the result.
+ * No database write and no content mutation. The webapp applies the result in
+ * the browser, through its own editor. Admission still costs write access,
+ * because a locked document's readers can never apply the result.
  */
 export const createPostImportHandler =
   (deps: ImportControllerDeps) =>

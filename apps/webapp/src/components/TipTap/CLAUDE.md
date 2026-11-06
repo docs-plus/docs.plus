@@ -21,7 +21,12 @@ bun run migrate:nested-to-flat
 
 - Invoking the script path from an arbitrary cwd can break Bun resolution of `yjs` for `@hocuspocus/transformer`.
 - **Settings Markdown replace writes natural picture size in the browser.** After `setContent`, `commitImportedImageSizes` loads unsized images and stamps `keyId` plus natural width and height. Do not call `fitLayoutToEditorColumn` at apply time. A load miss leaves attrs empty. The import JSON and a `PATCH` stay unsized. Markdown import never makes the server fetch pictures.
-- **A whole-document replace keeps heading `toc-id`s by level and text** (`carryHeadingIds`, called from `applyImportedContent`). Heading chats, `?id=` links and the digest pair by that id. A renamed or new heading takes a new id from `UniqueID`.
+- **A whole-document replace keeps heading `toc-id`s with a tiered matcher** (`pickHeadingIds` in `carryHeadingIds.ts`, called from `applyImportedContent`; #474, ruled 2026-11-06). Heading chats, `?id=` links, folds and the digest pair by that id. Each tier runs over every top-level heading before the next one starts, and each old id goes at most once.
+  - Tier 0: a `preferredId` that the old document holds. It is for paste (#700) and goes through `keepPreferredIds`. A replace never sets it.
+  - Tier 1: level, text and parent path (the ancestor heading texts, by the `outlineOf` rule). Tier 2: level and text. Tier 3: text at any level.
+  - Tier 4: a non-empty section text that appears exactly once on each side (a rename).
+  - Tiers 1 to 3 skip empty headings and break a tie by section text, then document order. Never fuzzy-match titles.
+  - An unmatched heading drops any id it came with, and `UniqueID` gives it a new one. The staged card names each heading that has a chat room and loses it (`headingIdPlan`). Exported files carry no ids (parked).
 
 ### Heading Schema
 

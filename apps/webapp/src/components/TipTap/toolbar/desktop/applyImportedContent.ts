@@ -3,7 +3,7 @@ import type { Editor } from '@tiptap/core'
 import { yUndoPluginKey } from '@tiptap/y-tiptap'
 
 import { sanitizeJsonContent } from '../../extensions/markdown-paste/markdownPastePlugin'
-import { carryHeadingIds } from './carryHeadingIds'
+import { carryHeadingIds, headingIdPlan } from './carryHeadingIds'
 import { commitImportedImageSizes } from './commitImportedImageSizes'
 
 /**
@@ -20,3 +20,7 @@ export const applyImportedContent = async (
   // lands on a mix of both.
   if (!editor.isDestroyed) yUndoPluginKey.getState(editor.state)?.undoManager.clear()
 }
+
+/** The staged card's preview: the same id pick the replace makes, on the pad as it is now. */
+export const planImportedHeadingIds = (editor: Editor, content: ImportedDocument['content']) =>
+  headingIdPlan(editor.getJSON(), sanitizeJsonContent(content))
