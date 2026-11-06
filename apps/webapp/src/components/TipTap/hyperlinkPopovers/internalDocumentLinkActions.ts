@@ -2,7 +2,7 @@ import { pushAppUrlThenNotifyHashChange } from '@components/pages/history/histor
 import { getDefaultController } from '@docs.plus/extension-hyperlink'
 import { openChatFromLink } from '@services/openChatFromLink'
 import { padUrl } from '@services/padUrl'
-import { scrollToHeading } from '@utils/scrollToHeading'
+import { arriveAtHeading } from '@utils/arriveAtHeading'
 
 import type { InternalDocumentLink } from './types'
 
@@ -28,7 +28,7 @@ export function runInternalDocumentLink(link: InternalDocumentLink): void {
       scrollDocumentToTop()
       return
     case 'heading':
-      scrollToHeading(link.headingId)
+      arriveAtHeading(link.headingId)
       return
     case 'chat':
       void openChatFromLink(link.linkId, {

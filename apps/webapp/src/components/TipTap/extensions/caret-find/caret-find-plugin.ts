@@ -9,8 +9,7 @@ import {
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { scrollElementInMobilePadEditor } from '@utils/scrollMobilePadEditor'
 
-import { type HeadingFoldMeta, headingFoldPluginKey } from '../heading-fold'
-import { computeSection } from '../shared'
+import { foldedSectionsAt, type HeadingFoldMeta, headingFoldPluginKey } from '../heading-fold'
 
 export const CARET_FIND_HIT_CAP = 9999
 // Paint only a window around the current hit, so a huge count stays cheap to draw.
@@ -104,32 +103,6 @@ function findHits(
   return { hits, capped }
 }
 
-/** Folded sections whose hidden body holds `pos`, outermost first. */
-function foldedSectionsAt(
-  doc: PMNode,
-  pos: number,
-  foldedIds: Set<string>
-): { id: string; headingEnd: number }[] {
-  const found: { id: string; headingEnd: number }[] = []
-  if (foldedIds.size === 0) return found
-
-  let offset = 0
-  for (let i = 0; i < doc.childCount; i++) {
-    const child = doc.child(i)
-    const nodePos = offset
-    offset += child.nodeSize
-    if (nodePos > pos) break
-    if (child.type.name !== 'heading') continue
-
-    const id = child.attrs['toc-id'] as string | undefined
-    if (!id || !foldedIds.has(id) || pos < offset) continue
-
-    const { to } = computeSection(doc, nodePos, child.attrs.level as number, i)
-    if (pos < to) found.push({ id, headingEnd: offset - 1 })
-  }
-  return found
-}
-
 function sameIds(a: Set<string>, b: Set<string>): boolean {
   if (a.size !== b.size) return false
   for (const id of a) if (!b.has(id)) return false
@@ -190,11 +163,18 @@ function revealHit(
   return { current: index, opened, restorePersist, revealSeq: find.revealSeq + 1 }
 }
 
-/** Folded ids plus the sections Find opened, so a Filter restore never saves them open. */
+/**
+ * Folded ids plus the sections Find or a heading link opened for the session, so a
+ * Filter restore never saves them open.
+ */
 export function foldedIdsIncludingFind(state: EditorState): Set<string> {
-  const folded = headingFoldPluginKey.getState(state)?.foldedIds ?? new Set<string>()
-  const opened = caretFindPluginKey.getState(state)?.opened
-  return opened?.size ? new Set([...folded, ...opened]) : folded
+  const fold = headingFoldPluginKey.getState(state)
+  const folded = fold?.foldedIds ?? new Set<string>()
+  const opened = [
+    ...(caretFindPluginKey.getState(state)?.opened ?? []),
+    ...(fold?.sessionOpen ?? [])
+  ]
+  return opened.length ? new Set([...folded, ...opened]) : folded
 }
 
 /** A short selection inside one textblock, as find text; null otherwise. */

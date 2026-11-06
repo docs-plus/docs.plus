@@ -31,11 +31,18 @@ function escapeAttr(value: string): string {
 function scrollHeading(
   heading: Element,
   behavior: ScrollBehavior,
-  block: 'start' | 'nearest'
+  block: 'start' | 'nearest',
+  scroller: HTMLElement | null
 ): void {
-  if (!scrollElementInMobilePadEditor(heading, { behavior, block })) {
-    heading.scrollIntoView({ behavior, block, inline: 'nearest' })
+  if (scrollElementInMobilePadEditor(heading, { behavior, block })) return
+  if (block === 'start' && scroller) {
+    // Not scrollIntoView: Chrome moves the Tab start point with it, past the skip link (#309).
+    const viewTop = scroller.getBoundingClientRect().top + scroller.clientTop
+    const top = scroller.scrollTop + heading.getBoundingClientRect().top - viewTop
+    scroller.scrollTo({ top, behavior })
+    return
   }
+  heading.scrollIntoView({ behavior, block, inline: 'nearest' })
 }
 
 /**
@@ -69,7 +76,7 @@ function landOnHeading(heading: Element, scroller: HTMLElement, onSettled?: () =
     if (!canMove || corrections >= MAX_CORRECTIONS) return finish()
     corrections++
     const before = scroller.scrollTop
-    scrollHeading(heading, 'instant', 'start')
+    scrollHeading(heading, 'instant', 'start', scroller)
     if (scroller.scrollTop === before) return finish()
     waitForIdle()
   }
@@ -103,7 +110,7 @@ export function scrollToHeading(headingId: string, options: ScrollToHeadingOptio
     return
   }
   const scroller = headingSection.closest<HTMLElement>('.editorWrapper')
-  scrollHeading(headingSection, behavior, block)
+  scrollHeading(headingSection, behavior, block, scroller)
   if (block === 'start' && scroller) landOnHeading(headingSection, scroller, onSettled)
   else onSettled?.()
 }

@@ -5,6 +5,7 @@ import { useStore } from '@stores'
 import { useEditor } from '@tiptap/react'
 import { useEffect } from 'react'
 
+import useArriveAtUrlHeading from './useArriveAtUrlHeading'
 import useCheckUrlAndOpenHeadingChat from './useCheckUrlAndOpenHeadingChat'
 import useEditorEditableState from './useEditorEditableState'
 import useHandleDraftOnFocus from './useHandleDraftOnFocus'
@@ -27,6 +28,7 @@ const useEditorAndProvider = ({ provider }: { provider: HocuspocusProvider }) =>
   useProviderAwareness()
   useEditorEditableState()
   useApplyFilters()
+  useArriveAtUrlHeading()
 
   useEffect(() => {
     if (!editor) return

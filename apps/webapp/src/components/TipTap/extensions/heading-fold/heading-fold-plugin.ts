@@ -9,6 +9,7 @@ export type HeadingFoldMeta =
   | { type: 'toggle'; id: string; contentHeight?: number }
   | { type: 'set'; ids: Set<string>; persist?: boolean }
   | { type: 'endAnimation'; id: string }
+  | { type: 'reveal'; ids: Set<string> }
 
 interface HeadingFoldState {
   foldedIds: Set<string>
@@ -16,6 +17,8 @@ interface HeadingFoldState {
   animating: Map<string, 'folding' | 'unfolding'>
   decos: DecorationSet
   skipPersist: boolean
+  /** Saved folds a heading link opened for this session. The save still counts them folded. */
+  sessionOpen: Set<string>
 }
 
 export interface HeadingFoldPluginOptions {
@@ -208,41 +211,45 @@ function buildFoldDecorations(
   return decorations.length > 0 ? DecorationSet.create(doc, decorations) : DecorationSet.empty
 }
 
+function headingIds(doc: PMNode): Set<string> {
+  const ids = new Set<string>()
+  doc.forEach((node) => {
+    if (node.type.name === 'heading' && node.attrs['toc-id'])
+      ids.add(node.attrs['toc-id'] as string)
+  })
+  return ids
+}
+
+/**
+ * Drops folds of headings this edit removed. Other folds stay, even when their heading is
+ * missing. On a cold load the saved folds come before the synced content.
+ */
 function pruneStaleIds(
   state: Omit<HeadingFoldState, 'decos' | 'skipPersist'>,
-  doc: PMNode
+  doc: PMNode,
+  before: PMNode
 ): Omit<HeadingFoldState, 'decos' | 'skipPersist'> {
-  if (state.foldedIds.size === 0) return state
+  if (state.foldedIds.size === 0 && state.sessionOpen.size === 0) return state
 
-  const liveIds = new Set<string>()
-  doc.forEach((node) => {
-    if (node.type.name === 'heading' && node.attrs['toc-id']) {
-      liveIds.add(node.attrs['toc-id'] as string)
-    }
-  })
-
-  let anyStale = false
-  for (const id of state.foldedIds) {
-    if (!liveIds.has(id)) {
-      anyStale = true
-      break
-    }
-  }
-  if (!anyStale) return state
+  const liveIds = headingIds(doc)
+  const beforeIds = headingIds(before)
+  const isStale = (id: string) => beforeIds.has(id) && !liveIds.has(id)
+  if (![...state.foldedIds, ...state.sessionOpen].some(isStale)) return state
 
   const foldedIds = new Set<string>()
   const contentHeights = new Map(state.contentHeights)
   const animating = new Map(state.animating)
 
   for (const id of state.foldedIds) {
-    if (liveIds.has(id)) {
+    if (!isStale(id)) {
       foldedIds.add(id)
     } else {
       contentHeights.delete(id)
       animating.delete(id)
     }
   }
-  return { foldedIds, contentHeights, animating }
+  const sessionOpen = new Set([...state.sessionOpen].filter((id) => !isStale(id)))
+  return { foldedIds, contentHeights, animating, sessionOpen }
 }
 
 function isPositionFolded(
@@ -284,7 +291,7 @@ export function createHeadingFoldPlugin(
         const foldedIds = new Set(options.initialFoldedIds)
         const contentHeights = new Map<string, number>()
         const animating = new Map<string, 'folding' | 'unfolding'>()
-        const base = { foldedIds, contentHeights, animating }
+        const base = { foldedIds, contentHeights, animating, sessionOpen: new Set<string>() }
         return {
           ...base,
           decos: buildFoldDecorations(doc, base),
@@ -314,7 +321,10 @@ export function createHeadingFoldPlugin(
               animating.set(meta.id, 'folding')
             }
 
-            const base = { foldedIds, contentHeights, animating }
+            // A hand toggle owns this section's saved state again.
+            const sessionOpen = new Set(prev.sessionOpen)
+            sessionOpen.delete(meta.id)
+            const base = { foldedIds, contentHeights, animating, sessionOpen }
             return {
               ...base,
               decos: buildFoldDecorations(tr.doc, base),
@@ -336,7 +346,7 @@ export function createHeadingFoldPlugin(
               contentHeights.delete(meta.id)
             }
 
-            const base = { foldedIds, contentHeights, animating }
+            const base = { foldedIds, contentHeights, animating, sessionOpen: prev.sessionOpen }
             return {
               ...base,
               decos: buildFoldDecorations(tr.doc, base),
@@ -348,12 +358,34 @@ export function createHeadingFoldPlugin(
             const base = {
               foldedIds: meta.ids,
               contentHeights: new Map<string, number>(),
-              animating: new Map<string, 'folding' | 'unfolding'>()
+              animating: new Map<string, 'folding' | 'unfolding'>(),
+              sessionOpen: new Set([...prev.sessionOpen].filter((id) => !meta.ids.has(id)))
             }
             return {
               ...base,
               decos: buildFoldDecorations(tr.doc, base),
               skipPersist: meta.persist === false
+            }
+          }
+
+          // No animation, so the target shows before the scroll. Under a Filter or Find
+          // fold layout the opened ids are not saved folds, so they stay out of sessionOpen.
+          if (meta.type === 'reveal') {
+            const foldedIds = new Set([...prev.foldedIds].filter((id) => !meta.ids.has(id)))
+            const contentHeights = new Map(prev.contentHeights)
+            const animating = new Map(prev.animating)
+            for (const id of meta.ids) {
+              contentHeights.delete(id)
+              animating.delete(id)
+            }
+            const sessionOpen = prev.skipPersist
+              ? prev.sessionOpen
+              : new Set([...prev.sessionOpen, ...meta.ids])
+            const base = { foldedIds, contentHeights, animating, sessionOpen }
+            return {
+              ...base,
+              decos: buildFoldDecorations(tr.doc, base),
+              skipPersist: prev.skipPersist
             }
           }
         }
@@ -373,7 +405,7 @@ export function createHeadingFoldPlugin(
           if (!dropped) return { ...prev, decos }
         }
 
-        const pruned = pruneStaleIds(prev, tr.doc)
+        const pruned = pruneStaleIds(prev, tr.doc, tr.before)
         return {
           ...pruned,
           decos: buildFoldDecorations(tr.doc, pruned),
@@ -484,7 +516,11 @@ export function createHeadingFoldPlugin(
           if (foldChanged) {
             options.onFoldChange?.(foldedIds)
             if (!currentState.skipPersist) {
-              saveFoldedIds(options.documentId, foldedIds)
+              const { sessionOpen } = currentState
+              saveFoldedIds(
+                options.documentId,
+                sessionOpen.size ? new Set([...foldedIds, ...sessionOpen]) : foldedIds
+              )
             }
             prevFoldedIds = new Set(foldedIds)
           }

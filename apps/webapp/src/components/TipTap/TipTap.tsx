@@ -6,7 +6,6 @@ import { InlineCode } from '@docs.plus/extension-inline-code'
 import { Mermaid, type MermaidStateEvent } from '@docs.plus/extension-mermaid'
 import { Placeholder } from '@docs.plus/extension-placeholder'
 import type { HocuspocusProvider } from '@hocuspocus/provider'
-import { padUrl } from '@services/padUrl'
 import { useStore } from '@stores'
 import { authStore } from '@stores'
 import { Collaboration, isChangeOrigin } from '@tiptap/extension-collaboration'
@@ -25,8 +24,6 @@ import { TIPTAP_NODES, type Transaction } from '@types'
 import { type CaretUser, getCursorUser } from '@utils/getCursorUser'
 import { captureMessageOnce } from '@utils/observability'
 import { sanitizeDiagramSvg } from '@utils/sanitizeContent'
-import { scrollElementInMobilePadEditor } from '@utils/scrollMobilePadEditor'
-import { scrollNearestInScroller } from '@utils/scrollNearestInScroller'
 import bash from 'highlight.js/lib/languages/bash'
 import css from 'highlight.js/lib/languages/css'
 import js from 'highlight.js/lib/languages/javascript'
@@ -106,20 +103,6 @@ const reportDiagramState = (event: MermaidStateEvent): void => {
       extra: { message: event.error?.message.slice(0, 200), online: navigator.onLine }
     })
   }
-}
-
-const scrollDown = () => {
-  const id = padUrl.read()?.headingId
-
-  if (!id) return
-  setTimeout(() => {
-    const el = document.querySelector(`[data-toc-id="${CSS.escape(id)}"]`)
-    if (!el) return
-    if (!scrollElementInMobilePadEditor(el, { block: 'nearest', behavior: 'auto' })) {
-      // Not scrollIntoView: it moves Chrome's focus starting point past the skip link (#309).
-      scrollNearestInScroller(el)
-    }
-  }, 200)
 }
 
 const Editor = ({
@@ -318,7 +301,6 @@ const Editor = ({
   const CollaborationCaretConfig = getCollaborationCaretConfig(provider)
 
   return {
-    onCreate: scrollDown,
     enableContentCheck: true,
     onContentError({ editor, error, disableCollaboration }) {
       console.error('onContentError', error)
