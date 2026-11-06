@@ -17,7 +17,6 @@ import { Superscript } from '@tiptap/extension-superscript'
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
 import { TextAlign } from '@tiptap/extension-text-align'
 import { Typography } from '@tiptap/extension-typography'
-import { UniqueID } from '@tiptap/extension-unique-id'
 import { UndoRedo } from '@tiptap/extensions'
 import { Markdown } from '@tiptap/markdown'
 import { UseEditorOptions } from '@tiptap/react'
@@ -50,6 +49,7 @@ import { HeadingScale } from './extensions/heading-scale'
 import { HeadingActionsExtension } from './extensions/HeadingActions'
 import { Highlight } from './extensions/highlight'
 import { MarkdownPaste } from './extensions/markdown-paste'
+import { PadUniqueID } from './extensions/pad-unique-id'
 import { ParagraphStyle } from './extensions/paragraph-style'
 import { SlashMenu } from './extensions/slash-menu'
 import { TitleDocument } from './extensions/title-document'
@@ -182,11 +182,12 @@ const Editor = ({
 
     TitleDocument,
 
-    UniqueID.configure({
+    PadUniqueID.configure({
       attributeName: 'toc-id',
       types: [TIPTAP_NODES.HEADING_TYPE, TIPTAP_NODES.HYPERLINK_TYPE, TIPTAP_NODES.TABLE_TYPE],
       filterTransaction: (transaction: Transaction) => !isChangeOrigin(transaction),
-      generateID: () => headingTableUid.stamp(16)
+      generateID: () => headingTableUid.stamp(16),
+      padId: docName
     }),
 
     HeadingScale,
