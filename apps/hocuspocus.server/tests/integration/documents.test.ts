@@ -26,6 +26,7 @@ import * as dns from 'node:dns/promises'
 import { readdir } from 'fs/promises'
 import path from 'path'
 import { Hono } from 'hono'
+import pino from 'pino'
 import * as Y from 'yjs'
 import { searchDocuments } from '../../src/api/services/documents.service'
 import documentsRouter from '../../src/api/routers/documents.router'
@@ -40,6 +41,7 @@ import {
   stubGetUser,
   useTempLocalStore
 } from '../helpers/test-server'
+import { createMemoryRedis } from '../helpers/memory-redis'
 import {
   validDocument,
   invalidDocument,
@@ -1805,18 +1807,6 @@ describe('Documents API', () => {
     let fetchSpy: ReturnType<typeof spyOn>
     let dnsSpy: ReturnType<typeof spyOn>
 
-    // The two ioredis calls the cache adapter makes, over one in-memory store.
-    const memoryRedis = () => {
-      const values = new Map<string, string>()
-      return {
-        get: async (key: string) => values.get(key) ?? null,
-        set: async (key: string, value: string) => {
-          values.set(key, value)
-          return 'OK'
-        }
-      }
-    }
-
     beforeEach(() => {
       fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(
         (async () =>
@@ -1838,8 +1828,8 @@ describe('Documents API', () => {
 
     test('every cached URL form of the pad loses its title', async () => {
       const metadata = linkMetadata.init({
-        redis: memoryRedis() as any,
-        logger: (await import('pino')).default({ level: 'silent' }),
+        redis: createMemoryRedis(),
+        logger: pino({ level: 'silent' }),
         padSlugOf: (url) => padSlugOfUrl(url, HOSTS)
       })
       const forgets: Promise<void>[] = []

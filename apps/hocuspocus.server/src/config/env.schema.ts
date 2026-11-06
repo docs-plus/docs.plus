@@ -58,8 +58,19 @@ export const envSchema = z.object({
   // the result is persisted into document content. No default: an unset value must
   // drop imported images, never guess an origin nobody can resolve.
   PUBLIC_RESTAPI_URL: z.string().optional(),
-  // The hosts that serve pads. Empty means the APP_URL host and its `www.` form.
-  APP_HOSTS: commaSeparatedList,
+  // The hosts that serve pads. Empty means the APP_URL host and its `www.` form. A scheme or a
+  // port would never equal `URL.hostname`, so a Private pad's cached card would never go.
+  APP_HOSTS: commaSeparatedList.pipe(
+    z.array(
+      z.string().refine((h) => {
+        try {
+          return new URL(`https://${h}`).hostname === h.toLowerCase()
+        } catch {
+          return false
+        }
+      }, 'must be a bare host name, with no scheme, port or path')
+    )
+  ),
 
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 

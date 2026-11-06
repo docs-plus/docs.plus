@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import { Hono } from 'hono'
 import pino from 'pino'
 
+import { createMemoryRedis } from '../../../../../tests/helpers/memory-redis'
 import type { OwnImage } from '../../domain/types'
 import { init } from '../../module'
 
@@ -27,20 +28,8 @@ const readBody = async (response: Response): Promise<WireBody> =>
 
 const silentLogger = pino({ level: 'silent' })
 
-const makeMockRedis = () => {
-  const store = new Map<string, string>()
-  return {
-    get: async (key: string) => store.get(key) ?? null,
-    // ioredis signature: set(key, value, 'EX', ttlSeconds) — accept and ignore TTL args
-    set: async (key: string, value: string, ..._rest: unknown[]) => {
-      store.set(key, value)
-      return 'OK'
-    }
-  } as any
-}
-
 const buildApp = (ownImage?: OwnImage) => {
-  const { router } = init({ redis: makeMockRedis(), logger: silentLogger, ownImage })
+  const { router } = init({ redis: createMemoryRedis(), logger: silentLogger, ownImage })
   const app = new Hono()
   app.route('/api/metadata', router)
   return app
@@ -419,7 +408,7 @@ describe('routed fetch (integration)', () => {
     // One app per test, so a second request can hit the first one's cache.
     const archiveApp = () => {
       const { router } = init({
-        redis: makeMockRedis(),
+        redis: createMemoryRedis(),
         logger: silentLogger,
         padSlugOf: (url) => (new URL(url).hostname === 'docs.plus' ? 'pad' : null)
       })

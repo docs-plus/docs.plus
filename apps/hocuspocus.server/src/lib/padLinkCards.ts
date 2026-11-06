@@ -1,13 +1,13 @@
 import { normalizeSlug } from './slug'
 
-/**
- * Hides a pad's cached link cards when its access narrows. `src/index.ts` binds it to
- * link-metadata's `forgetPad`. Unbound, as in the worker, it does nothing.
- */
 type ForgetPad = (slugKey: string) => Promise<void>
 
 let forgetPad: ForgetPad | null = null
 
+/**
+ * Hides a pad's cached link cards when its access narrows. `src/index.ts` binds it to
+ * link-metadata's `forgetPad`. Unbound, as in the worker, it does nothing.
+ */
 export const setPadCardForgetter = (fn: ForgetPad | null): void => {
   forgetPad = fn
 }
@@ -18,6 +18,6 @@ export const forgetPadCards = async (slug: string): Promise<void> => {
   try {
     await forgetPad(normalizeSlug(slug))
   } catch {
-    // `forgetPad` logs its own failures; this only keeps a bad slug from reaching the write.
+    // The bound function may reject; callers never await this.
   }
 }

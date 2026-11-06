@@ -91,7 +91,7 @@ export const getDocumentBySlug = async (c: AppContext): Promise<Response> => {
 
   try {
     const withCard = wantsCard(c.req, config.socialCard.kinds)
-    const doc = await documentsService.getDocumentBySlug(prisma, docName, { cardData: withCard })
+    const doc = await documentsService.getDocumentBySlug(prisma, docName, withCard)
 
     if (!doc) {
       return ok(c, await documentsService.createDraftDocument(prisma, docName))

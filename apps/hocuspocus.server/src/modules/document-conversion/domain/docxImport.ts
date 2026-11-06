@@ -58,9 +58,8 @@ const TRACKED_CHANGES_WARNING: ConversionWarning = {
 }
 
 /**
- * Nothing here touches the document: the caller owns persistence and the
- * read-only lock stays with `PATCH /content`. Embedded images are the one
- * side effect — `uploadImage` rehosts them to storage.
+ * No database write and no content mutation: the caller applies the result.
+ * Embedded images are the one side effect — `uploadImage` rehosts them to storage.
  */
 export const importDocx = async (
   buffer: Buffer,
@@ -89,16 +88,17 @@ export const importDocx = async (
     return { src }
   })
 
-  const { value: html, messages } = await mammoth.convertToHtml(
-    { buffer },
-    { styleMap: DOCX_STYLE_MAP, convertImage }
-  )
+  // Two independent reads of one archive, so the scan need not wait out the image uploads.
+  const [{ value: html, messages }, tracked] = await Promise.all([
+    mammoth.convertToHtml({ buffer }, { styleMap: DOCX_STYLE_MAP, convertImage }),
+    hasTrackedChanges(buffer)
+  ])
 
   const { doc, branch } = ensureTitleHeading(clampColspans(parseDocumentHtml(html)), fallbackTitle)
   const title = titleHeadingText(doc) || fallbackTitle.trim()
   const warnings = messages.map(toWarning)
   // First, because the panel lists only the first few warnings.
-  if (await hasTrackedChanges(buffer)) warnings.unshift(TRACKED_CHANGES_WARNING)
+  if (tracked) warnings.unshift(TRACKED_CHANGES_WARNING)
   const titled = titleHeadingWarning(branch, title)
   if (titled) warnings.push(titled)
 

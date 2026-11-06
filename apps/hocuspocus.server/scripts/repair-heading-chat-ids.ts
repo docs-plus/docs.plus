@@ -148,10 +148,15 @@ const applyRow = async (row: PlanRow): Promise<void> => {
 const main = async (): Promise<void> => {
   if (!documentId) throw new Error('Pass a documentId')
   const rows = plan(documentId, await readHeadings(documentId), await readRooms(documentId))
-  console.table(
-    rows.map(({ roomId: _room, newerRoomId: _newer, ...row }) => row),
-    ['oldHeadingId', 'heading', 'currentTocId', 'messages', 'newerMessages', 'action', 'reason']
-  )
+  console.table(rows, [
+    'oldHeadingId',
+    'heading',
+    'currentTocId',
+    'messages',
+    'newerMessages',
+    'action',
+    'reason'
+  ])
   if (!APPLY) {
     console.log(`Dry run: ${rows.length} orphaned rooms with messages. Nothing written.`)
     return
