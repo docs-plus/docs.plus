@@ -62,8 +62,8 @@ const NAMES_SHOWN = 5
 const headingName = (heading: HeadingRecord) => heading.text || `Heading ${heading.level}`
 
 /**
- * Names only the headings that have a chat room and lose it. `null` when no heading has
- * one. The pad already holds every channel of the document, so this needs no request.
+ * Names only the headings whose chat holds messages and loses them. `null` when no heading
+ * has one. The pad already holds every channel of the document, so this needs no request.
  */
 const headingChatLine = (
   plan: ReturnType<typeof planImportedHeadingIds>,
@@ -87,10 +87,14 @@ const headingChatLine = (
   return `${kept}${lost}: ${names.join(', ')}.`
 }
 
+// Opening a chat creates its room, so only a room that holds a message has anything to lose.
 const roomHeadingIds = () => {
   const ids = new Set<string>()
   for (const channel of useChatStore.getState().channels.values()) {
-    if (channel?.heading_id) ids.add(channel.heading_id)
+    const hasMessages = (channel?.count?.message_count ?? 0) > 0 || !!channel?.last_message_preview
+    // The pad-wide room's heading_id is the documentId (workspace_id); no heading owns it.
+    const padWide = channel?.heading_id === channel?.workspace_id
+    if (channel?.heading_id && hasMessages && !padWide) ids.add(channel.heading_id)
   }
   return ids
 }
