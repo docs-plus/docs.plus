@@ -21,6 +21,16 @@
   column-gap: 0.25rem;
 }
 
+// A wrapped desktop title keeps its fold, grip and chat on its first line (ruling 2026-11-06).
+// The link is a flex box, so the title span starts at the row's top edge, like the fold.
+.m_desktop .toc__item > .toc__row {
+  align-items: flex-start;
+
+  > .toc__row-link {
+    display: flex;
+  }
+}
+
 .tiptap__toc {
   padding-top: 8px;
 
@@ -75,7 +85,7 @@
 
   > .toc__row {
     position: relative;
-    // Vertically center leading/title/trail; matters on multi-line (wrapped) rows.
+    // Phones keep center: a top-aligned one-line title would sit high in the 44px row.
     align-items: center;
     -webkit-user-drag: none;
 
