@@ -45,7 +45,10 @@ export const createApplyContent = (
           scratch = new Y.Doc()
           return undefined
         }
-        const encoded = encodeContent(content, { requireTitleHeading: mode === 'replace' })
+        const encoded = encodeContent(content, {
+          requireTitleHeading: mode === 'replace',
+          documentId
+        })
         if (!encoded.ok) return { status: 'invalid-content', detail: encoded.detail }
         scratch = encoded.scratch
         return undefined

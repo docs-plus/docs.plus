@@ -45,9 +45,10 @@ export const startsWithTitleHeading = (content: unknown): boolean => {
  */
 const boundAndStampIdentity = (
   root: Record<string, unknown>,
-  enforceSizeCaps: boolean
+  enforceSizeCaps: boolean,
+  documentId: string | undefined
 ): { ok: true } | { ok: false; detail: string } => {
-  const seenTocIds = new Set<string>()
+  const seenTocIds = new Set<string>(documentId ? [documentId] : [])
   const stack: { node: Record<string, unknown>; depth: number }[] = [{ node: root, depth: 0 }]
   let nodes = 0
 
@@ -101,11 +102,18 @@ export const encodeContent = (
      * Structural checks still run. Default on.
      */
     enforceSizeCaps?: boolean
+    /**
+     * Counts as an id already taken. It is the pad-wide chat room's `heading_id`,
+     * so a heading holding it would bind that room. Restore leaves it out: it
+     * replays a snapshot's own ids.
+     */
+    documentId?: string
   }
 ): EncodeOutcome => {
   const bounded = boundAndStampIdentity(
     payload as unknown as Record<string, unknown>,
-    options.enforceSizeCaps ?? true
+    options.enforceSizeCaps ?? true,
+    options.documentId
   )
   if (!bounded.ok) return invalid(bounded.detail)
 

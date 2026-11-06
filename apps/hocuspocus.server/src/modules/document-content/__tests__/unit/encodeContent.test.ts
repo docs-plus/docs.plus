@@ -251,6 +251,32 @@ describe('encodeContent — toc-id identity stamping', () => {
     expect(second).not.toBe(first)
     expect(second).toMatch(/^[0-9A-Za-z]{16}$/)
   })
+
+  // The documentId is the pad-wide chat room's heading_id. A heading holding it
+  // would bind that room.
+  test('restamps a heading whose toc-id equals the documentId', () => {
+    const documentId = 'padDocumentId000001'
+    const payload = doc(
+      {
+        type: 'heading',
+        attrs: { level: 1, 'toc-id': documentId },
+        content: [{ type: 'text', text: 'A' }]
+      },
+      {
+        type: 'heading',
+        attrs: { level: 2, 'toc-id': 'keptHeadingId000' },
+        content: [{ type: 'text', text: 'B' }]
+      }
+    )
+    const result = encodeContent(payload, { requireTitleHeading: true, documentId })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+
+    const encoded = decode(result.scratch)
+    expect(encoded.content[0].attrs['toc-id']).not.toBe(documentId)
+    expect(encoded.content[0].attrs['toc-id']).toMatch(/^[0-9A-Za-z]{16}$/)
+    expect(encoded.content[1].attrs['toc-id']).toBe('keptHeadingId000')
+  })
 })
 
 describe('encodeContent — availability caps', () => {

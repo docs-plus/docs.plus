@@ -87,12 +87,13 @@ export const createDocumentWithContent = async (
   prisma: PrismaClient,
   params: CreateWithContentParams
 ): Promise<CreateOutcome> => {
-  const encoded = encodeContent(params.content, { requireTitleHeading: true })
+  // Minted before the encode, so the encode can refuse it as a heading id.
+  const documentId = new ShortUniqueId().stamp(19)
+  const encoded = encodeContent(params.content, { requireTitleHeading: true, documentId })
   if (!encoded.ok) return { status: 'invalid-content', detail: encoded.detail }
 
   const data = Buffer.from(Y.encodeStateAsUpdate(encoded.scratch))
   const newSlug = slugify(params.slug.toLowerCase(), { lower: true, strict: true })
-  const documentId = new ShortUniqueId().stamp(19)
 
   const write = (slug: string) =>
     prisma.$transaction(async (tx) => {
