@@ -5,17 +5,17 @@
 import { Job, Queue, Worker } from 'bullmq'
 
 import { config } from '../config/env'
+import { computeVersionChangeSummary } from '../modules/social-card/domain/versionChangeSummary'
 import { toBullMQConnection } from '../types/redis.types'
 import { CHANGE_SUMMARY_QUEUE_NAME } from './changeSummaryQueueName'
 import { queueLogger } from './logger'
-import { changeSummaryWritesTotal, recordJobOutcome } from './metrics'
+import { type ChangeSummaryOutcome, changeSummaryWritesTotal, recordJobOutcome } from './metrics'
 import { prisma } from './prisma'
 import {
   bullmqConnectionOptions,
   bullmqWorkerConnectionOptions,
   createRedisConnection
 } from './redis'
-import { computeVersionChangeSummary } from './versionChangeSummary'
 
 interface ChangeSummaryJob {
   documentId: string
@@ -23,6 +23,8 @@ interface ChangeSummaryJob {
 }
 
 const ATTEMPTS = 2
+
+const count = (outcome: ChangeSummaryOutcome) => changeSummaryWritesTotal.inc({ outcome })
 
 // Opened on first use (an enqueue, or the worker's depth sample), so REST opens no socket.
 let queue: Queue<ChangeSummaryJob> | null = null
@@ -47,7 +49,7 @@ export const getChangeSummaryQueue = (): Queue<ChangeSummaryJob> => {
 
 /**
  * Never throws: a summary that is never written leaves null, and the card falls back.
- * Only the Version card reads the summary, and each job decodes two snapshots.
+ * The Version card and the hovercard's version reply read it; each job decodes two snapshots.
  */
 export const enqueueChangeSummary = (job: ChangeSummaryJob): void => {
   if (!config.socialCard.kinds.has('version')) return
@@ -72,7 +74,7 @@ const summarize = async ({ documentId, version }: ChangeSummaryJob): Promise<voi
   `
   const head = rows[0]
   if (head?.version !== version) {
-    changeSummaryWritesTotal.inc({ outcome: 'skipped' })
+    count('skipped')
     return
   }
   const summary = computeVersionChangeSummary(head.data, rows[1]?.data ?? null, (err, tocId) =>
@@ -83,7 +85,7 @@ const summarize = async ({ documentId, version }: ChangeSummaryJob): Promise<voi
     UPDATE "Documents" SET "changeSummary" = CAST(${JSON.stringify(summary)} AS jsonb)
     WHERE "documentId" = ${documentId} AND version = ${version}
   `
-  changeSummaryWritesTotal.inc({ outcome: written > 0 ? 'ok' : 'skipped' })
+  count(written > 0 ? 'ok' : 'skipped')
 }
 
 export const createChangeSummaryWorker = () => {
@@ -100,9 +102,7 @@ export const createChangeSummaryWorker = () => {
   worker.on('failed', (job, err) => {
     recordJobOutcome(worker.name, 'failed')
     // This event fires on every attempt, after `moveToFailed` counted it, so the last sees ATTEMPTS.
-    if (job && job.attemptsMade >= ATTEMPTS) {
-      changeSummaryWritesTotal.inc({ outcome: 'failed' })
-    }
+    if (job && job.attemptsMade >= ATTEMPTS) count('failed')
     queueLogger.warn({ jobId: job?.id, err }, 'Version change summary failed')
   })
   worker.on('error', (err) => queueLogger.error({ err }, 'Change summary worker error'))

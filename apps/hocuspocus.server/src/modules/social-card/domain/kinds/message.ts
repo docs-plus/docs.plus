@@ -2,9 +2,9 @@ import { container, image, text } from '@takumi-rs/helpers'
 import { extractEmojis } from '@takumi-rs/helpers/emoji'
 
 import { cardDate, plural } from '../../../../lib/cardText'
+import { countBucket, over, read, row, stack, strokeSvg, T } from '../../render/frame'
+import { inBubble, outBubble } from '../../render/parts'
 import type { IsDrawable } from '../eligibility'
-import { countBucket, over, read, row, stack, strokeSvg, T } from '../frame'
-import { inBubble, outBubble } from '../parts'
 import { chatFrame, innerWidth, roomName } from './chatPanel'
 import type { KindResolver } from './types'
 

@@ -1,11 +1,11 @@
-// `frame`, `fit` and `parts` are the render layer: they build and measure Takumi trees, so they
-// import the renderer and the assets. The kind resolvers stay free of both.
+// `render/` holds `frame`, `fit` and `parts`: they build and measure Takumi trees, so they import
+// the renderer and the assets. `domain/` never imports `infra/renderer` or `infra/assets` directly.
 import type { Node } from '@takumi-rs/core'
 import { container, image, text } from '@takumi-rs/helpers'
 
+import type { CardKind } from '../domain/cardRequest'
 import { LOGO_SRC, registerSvg } from '../infra/assets'
 import { CARD_FONT, CARD_HEIGHT, CARD_WIDTH } from '../infra/renderer'
-import type { CardKind } from './cardRequest'
 
 // The card is the app at 2.5x, in its light theme tokens (apps/webapp/src/styles/globals.scss).
 const S = 2.5
@@ -100,7 +100,7 @@ const SHEET_BLEED = 30
 export const CONTENT_W = 956
 export const BODY_H = 386
 export const READ_LH = T.size.read * T.lineHeight.read
-/** One 45 px read line. */
+/** One read line box, rounded up to a whole pixel. */
 export const LINE_H = Math.ceil(READ_LH)
 /** One TOC nest step. */
 export const NEST = T.space[5]

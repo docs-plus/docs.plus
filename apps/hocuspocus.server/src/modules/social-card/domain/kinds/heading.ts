@@ -1,6 +1,15 @@
-import { cutLine, fitHead, LADDER } from '../fit'
-import { BODY_H, cardFrame, CONTENT_W, LINE_H, muted, READ_LH, T, titleNode } from '../frame'
-import { altSentences, blockLines, firstLines, lineValue, namedSection } from '../parts'
+import { cutLine, fitHead, LADDER } from '../../render/fit'
+import {
+  BODY_H,
+  cardFrame,
+  CONTENT_W,
+  LINE_H,
+  muted,
+  READ_LH,
+  T,
+  titleNode
+} from '../../render/frame'
+import { altSentences, blockLines, firstLines, lineValue, namedSection } from '../../render/parts'
 import type { KindResolver } from './types'
 
 /** The Document card for one section: the pad name, the heading as the title, its first blocks. */

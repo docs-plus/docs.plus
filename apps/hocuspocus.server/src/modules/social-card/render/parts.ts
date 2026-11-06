@@ -1,7 +1,9 @@
 import type { Node } from '@takumi-rs/core'
 import { container, image } from '@takumi-rs/helpers'
 
-import { type IsDrawable, LINK_WORD, usableLine } from './eligibility'
+import { type IsDrawable, LINK_WORD, usableLine } from '../domain/eligibility'
+import type { CardSource } from '../domain/kinds/types'
+import type { ListKind, StoredBlock, StoredOutlineItem } from '../domain/storedData'
 import { cutLine, cutLines } from './fit'
 import {
   CONTENT_W,
@@ -16,8 +18,6 @@ import {
   T,
   titleNode
 } from './frame'
-import type { CardSource } from './kinds/types'
-import type { ListKind, StoredBlock, StoredOutlineItem } from './storedData'
 
 /** One drawable first-block line: a paragraph, or one list item with its marker. */
 export interface BlockLine {
@@ -165,10 +165,16 @@ const rail = () =>
   })
 
 /** One TOC row: a hairline rail per nest step, then the heading cut at a word. */
-export const outlineRow = async (text: string, depth: number, width = CONTENT_W): Promise<Node> => {
-  const fit = await cutLine(text, width - depth * NEST)
+export const outlineRow = async (text: string, depth: number): Promise<Node> => {
+  const fit = await cutLine(text, CONTENT_W - depth * NEST)
   return container({
-    style: { display: 'flex', alignItems: 'center', height: LINE_H, width, flexShrink: 0 },
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      height: LINE_H,
+      width: CONTENT_W,
+      flexShrink: 0
+    },
     children: [
       ...Array.from({ length: depth }, rail),
       container({

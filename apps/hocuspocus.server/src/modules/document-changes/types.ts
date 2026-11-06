@@ -66,13 +66,16 @@ export interface SectionNode extends SectionChange {
   children: SectionNode[]
 }
 
-export interface ChangeSummary {
+export interface SectionChangeCounts {
   sectionsAdded: number
   sectionsRemoved: number
   sectionsModified: number
   sectionsMoved: number
   wordsAdded: number
   wordsRemoved: number
+}
+
+export interface ChangeSummary extends SectionChangeCounts {
   versions: number
   triggers: string[]
   contributors: ProfileLite[]

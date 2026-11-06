@@ -1,4 +1,5 @@
-import { TOC_ID_ATTR } from '../modules/document-content/types'
+import { sanitizePlainText } from '../../../lib/sanitizePlainText'
+import { TOC_ID_ATTR } from '../../document-content/types'
 import {
   graphemesOf,
   type ListKind,
@@ -10,8 +11,7 @@ import {
   type StoredCardData,
   type StoredOutline,
   type StoredOutlineItem
-} from '../modules/social-card/domain/storedData'
-import { sanitizePlainText } from './sanitizePlainText'
+} from './storedData'
 
 export type PmNode = {
   type?: string
@@ -38,6 +38,20 @@ const textOf = (node: PmNode): string => {
     else if (next.type === 'hardBreak') out += ' '
     else if (Array.isArray(next.content)) {
       for (let i = next.content.length - 1; i >= 0; i -= 1) stack.push(next.content[i])
+    }
+  }
+  return out
+}
+
+/** Text node strings under `nodes`, in order, uncut. Iterative for the same reason as `textOf`. */
+export const textNodes = (nodes: PmNode[]): string[] => {
+  const out: string[] = []
+  const stack = [...nodes].reverse()
+  while (stack.length > 0) {
+    const node = stack.pop() as PmNode
+    if (typeof node.text === 'string') out.push(node.text)
+    else if (Array.isArray(node.content)) {
+      for (let i = node.content.length - 1; i >= 0; i -= 1) stack.push(node.content[i])
     }
   }
   return out

@@ -16,7 +16,7 @@ const CHAT_READ_TIMEOUT_MS = 300
 const MEMO_MS = 60_000
 const MEMO_MAX = 1000
 export const CHAT_READS_IN_FLIGHT = 4
-// Matches the "10+" in `countBucket` (domain/frame.ts): a card never shows a larger count.
+// Matches the "10+" in `countBucket` (render/frame.ts): a card never shows a larger count.
 const COUNT_CAP = 10
 
 const toFacts = (documentId: string, room: ChatRoom): ChatFacts => ({
@@ -75,10 +75,7 @@ export const createChatRead = (
         messageId,
         timeoutMs
       })
-      if (read.status === 'rejected') {
-        count('rejected')
-        return null
-      }
+      // No `rejected` arm: the id check below runs before this read, so it never sees one.
       if (read.status !== 'ok') {
         count(read.status === 'timeout' ? 'timeout' : 'error')
         return 'unavailable'

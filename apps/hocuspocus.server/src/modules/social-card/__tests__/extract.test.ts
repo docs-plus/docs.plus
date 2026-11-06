@@ -1,11 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
-import {
-  OUTLINE_MAX_ITEMS,
-  parseCardData,
-  STORED_LINE_MAX
-} from '../../modules/social-card/domain/storedData'
-import { cardDataFromPmJson, storedLine } from '../cardData'
+import { OUTLINE_MAX_ITEMS, parseCardData, STORED_LINE_MAX } from '../domain/storedData'
+import { cardDataFromPmJson, storedLine } from '../domain/extract'
 
 const text = (value: string) => ({ type: 'text', text: value })
 const heading = (value: string, level: number, id?: string) => ({

@@ -75,13 +75,6 @@ export const getPadHeadWithin = async (
   return rows[0] ?? null
 }
 
-/** One version row without its snapshot. */
-export const getVersionFacts = (prisma: PrismaClient, documentId: string, version: number) =>
-  prisma.documents.findUnique({
-    where: { Documents_documentId_version_unique: { documentId, version } },
-    select: { createdAt: true, commitMessage: true, changeSummary: true }
-  })
-
 /** The version count and the head's save time; the count is the one the history list shows. */
 export const getHistoryFacts = async (prisma: PrismaClient, documentId: string) => {
   const [versions, head] = await Promise.all([

@@ -37,7 +37,6 @@ export interface ChatFacts {
 }
 
 export interface VersionFacts {
-  version: number
   createdAt: Date
   summary: StoredChangeSummary
 }

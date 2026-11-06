@@ -3,9 +3,10 @@
  * (counts only); `--apply` writes. A write lands only while the version it read is still the head.
  * Production: a one-off `docker run --rm --memory 768m` container, never `rest-api` or the worker.
  */
-import { cardDataFromPmJson } from '../src/lib/cardData'
-import { decodePmJson, writeCardData } from '../src/lib/documentGridPreview'
+import { ydocToPmJson } from '../src/lib/nested-flat-migration'
 import { prisma } from '../src/lib/prisma'
+import { cardDataFromPmJson } from '../src/modules/social-card/domain/extract'
+import { writeCardData } from '../src/modules/social-card/infra/cardDataWrite'
 
 const APPLY = process.argv.includes('--apply')
 const BATCH = 50
@@ -42,12 +43,12 @@ for (const [index, { documentId, cardData }] of pads.entries()) {
     continue
   }
 
-  const json = decodePmJson(head.data)
-  if (json === null) {
+  const decoded = ydocToPmJson(head.data)
+  if (!decoded.ok) {
     counts.undecodable += 1
     continue
   }
-  const card = cardDataFromPmJson(json)
+  const card = cardDataFromPmJson(decoded.json)
   if (card.blocks.length > 0) counts.withBlocks += 1
   if (card.outline) counts.withOutline += 1
   else counts.outlineDropped += 1

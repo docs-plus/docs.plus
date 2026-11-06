@@ -31,8 +31,9 @@ export type PlanRowResult =
 export function ydocToPmJson(
   data: Buffer | Uint8Array
 ): { ok: true; json: Record<string, unknown> } | { ok: false; error: unknown } {
+  // The doc never leaves this function, so it is freed here for every caller.
+  const ydoc = new Y.Doc()
   try {
-    const ydoc = new Y.Doc()
     const buffer = data instanceof Buffer ? new Uint8Array(data) : data
     Y.applyUpdate(ydoc, buffer)
     const json = TiptapTransformer.fromYdoc(ydoc, 'default') as Record<string, unknown> | null
@@ -42,6 +43,8 @@ export function ydocToPmJson(
     return { ok: true, json }
   } catch (error) {
     return { ok: false, error }
+  } finally {
+    ydoc.destroy()
   }
 }
 

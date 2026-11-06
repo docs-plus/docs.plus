@@ -247,7 +247,7 @@ export const retentionLeaseTotal = new Counter({
 // alerts cannot see it. `refused` is an ineligible pad; `fallback` is a kind switched off.
 // `chat-unavailable` is a chat read that timed out or failed; `chat-shed` hit the read cap.
 // `hit`, `render` and `not-modified` split the 200s and 304s, so the cache can be sized.
-export const SOCIAL_CARD_OUTCOMES = [
+const SOCIAL_CARD_OUTCOMES = [
   'hit',
   'render',
   'not-modified',
@@ -269,7 +269,7 @@ export const socialCardRequestsTotal = new Counter({
 
 // `timeout`, `error` and `shed` are indefinite: the card route then sends the static image.
 // `joined` shared a read already in flight for the same key.
-export const CHAT_READ_OUTCOMES = [
+const CHAT_READ_OUTCOMES = [
   'ok',
   'missing',
   'rejected',
@@ -307,7 +307,8 @@ export const socialCardChatReadSeconds = new Histogram({
 
 // `skipped` changed no row: the data was the same, or a newer head won. `nulled` is a fail-closed
 // write after an extract error; `failed` means even that write failed.
-export const CARD_DATA_WRITE_OUTCOMES = ['ok', 'skipped', 'nulled', 'failed'] as const
+const CARD_DATA_WRITE_OUTCOMES = ['ok', 'skipped', 'nulled', 'failed'] as const
+export type CardDataWriteOutcome = (typeof CARD_DATA_WRITE_OUTCOMES)[number]
 
 export const socialCardDataWritesTotal = new Counter({
   name: 'social_card_data_writes_total',
@@ -317,7 +318,8 @@ export const socialCardDataWritesTotal = new Counter({
 })
 
 // `skipped`: retention removed the version, or its row is gone.
-export const CHANGE_SUMMARY_OUTCOMES = ['ok', 'skipped', 'failed'] as const
+const CHANGE_SUMMARY_OUTCOMES = ['ok', 'skipped', 'failed'] as const
+export type ChangeSummaryOutcome = (typeof CHANGE_SUMMARY_OUTCOMES)[number]
 
 export const changeSummaryWritesTotal = new Counter({
   name: 'change_summary_writes_total',

@@ -10,8 +10,8 @@ import { isDrawable } from './assets'
 import { createChatRead } from './chatRead'
 import { createVersionRead } from './versionRead'
 
-/** The chat and version reads behind every card. One set per process, so their guards are shared. */
-let reads: CardReads | null = null
+// One chat read per process: its memo, cap and single flight must be shared by every card.
+let chat: CardReads['chat'] | null = null
 
 /** `resolveCard` with this process's reads and font check: the route and the slug read share it. */
 export const resolveStoredCard = (args: {
@@ -20,6 +20,7 @@ export const resolveStoredCard = (args: {
   query: CardQuery
   kinds: ReadonlySet<CardKind>
 }): Promise<CardResult> => {
-  reads ??= { chat: createChatRead(), version: createVersionRead(args.prisma) }
+  chat ??= createChatRead()
+  const reads = { chat, version: createVersionRead(args.prisma) }
   return resolveCard({ row: args.row, query: args.query, kinds: args.kinds, reads, isDrawable })
 }

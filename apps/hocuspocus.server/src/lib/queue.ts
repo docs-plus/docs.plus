@@ -2,6 +2,7 @@ import { Job, Queue, Worker } from 'bullmq'
 import * as Y from 'yjs'
 
 import { config } from '../config/env'
+import { refreshCardData } from '../modules/social-card/infra/cardDataWrite'
 import type {
   DeadLetterJobData,
   EnqueueStoreDocumentParams,
@@ -16,6 +17,7 @@ import { sendNewDocumentNotification } from './email/document-notification'
 import { captureUnknown } from './instrument'
 import { queueLogger } from './logger'
 import { recordJobOutcome } from './metrics'
+import { ydocToPmJson } from './nested-flat-migration'
 import { firstEditOwner } from './ownerAccess'
 import { prisma } from './prisma'
 import {
@@ -505,11 +507,11 @@ export const createDocumentWorker = () => {
         enqueueChangeSummary({ documentId: data.documentName, version })
 
         try {
-          await refreshDocumentGridPreview(prisma, {
-            documentId: data.documentName,
-            version,
-            data: versionData
-          })
+          // One decode feeds both writes; the card write never throws.
+          const decoded = ydocToPmJson(versionData)
+          const json = decoded.ok ? decoded.json : null
+          await refreshCardData(prisma, { documentId: data.documentName, version, json })
+          await refreshDocumentGridPreview(prisma, { documentId: data.documentName, json })
         } catch (err) {
           queueLogger.warn(
             { err, documentId: data.documentName },

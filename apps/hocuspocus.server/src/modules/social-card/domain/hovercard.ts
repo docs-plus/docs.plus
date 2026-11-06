@@ -1,7 +1,7 @@
 import { padUrlCore } from '@docs.plus/pad-url'
 
-import { type PmNode, storedLine, tocIdOf, topNodes } from '../../../lib/cardData'
 import { keptTerms, MESSAGE_ID, type QuerySource, SUB_ID, VERSION } from './cardRequest'
+import { storedLine, textNodes, tocIdOf, topNodes } from './extract'
 import type { StoredBlock, StoredOutline } from './storedData'
 
 /** How many lines, section titles or shown sections one card lists. */
@@ -87,20 +87,6 @@ interface Section {
   title: string
   /** The heading text node strings, then the body's, as the client walks them. */
   texts: string[]
-}
-
-/** Text node strings under `nodes`, in order. Iterative: a stored snapshot's depth is not bounded. */
-const textNodes = (nodes: PmNode[]): string[] => {
-  const out: string[] = []
-  const stack = [...nodes].reverse()
-  while (stack.length > 0) {
-    const node = stack.pop() as PmNode
-    if (typeof node.text === 'string') out.push(node.text)
-    else if (Array.isArray(node.content)) {
-      for (let i = node.content.length - 1; i >= 0; i -= 1) stack.push(node.content[i])
-    }
-  }
-  return out
 }
 
 /** `findAllSections`: every top-level heading with a toc-id except child 0, the Title. */

@@ -2,8 +2,7 @@ import { padUrlCore } from '@docs.plus/pad-url'
 import { container } from '@takumi-rs/helpers'
 
 import { plural } from '../../../../lib/cardText'
-import { type IsDrawable, usableLine } from '../eligibility'
-import { cutLine, fitHead, HEAD_LINE, LADDER, widthOf } from '../fit'
+import { cutLine, fitHead, HEAD_LINE, LADDER, widthOf } from '../../render/fit'
 import {
   BODY_H,
   cardFrame,
@@ -17,8 +16,9 @@ import {
   read,
   row,
   T
-} from '../frame'
-import { outlineRow, tocHeader } from '../parts'
+} from '../../render/frame'
+import { outlineRow, tocHeader } from '../../render/parts'
+import { type IsDrawable, usableLine } from '../eligibility'
 import type { StoredOutlineItem } from '../storedData'
 import type { KindResolver } from './types'
 
@@ -44,8 +44,8 @@ const wholeWords = (text: string, match: RegExpExecArray): string => {
 }
 
 /**
- * Matches the terms against the stored headings, as the app's filter does. A term with no
- * match draws no chip, so a made-up URL cannot print its own words.
+ * Matches the terms against the stored headings only; the app's filter also reads section
+ * bodies. A term with no match draws no chip, so a made-up URL cannot print its own words.
  */
 export const matchFilter = (
   items: StoredOutlineItem[],

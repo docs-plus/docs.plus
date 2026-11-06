@@ -10,24 +10,16 @@ import type {
   ComputeOutcome,
   ComputeRequest,
   ProfileLite,
-  Section,
   SectionChange,
   WindowRow
 } from '../types'
 import { buildSectionTree } from './buildSectionTree'
-import { diffSections } from './diffSections'
-import { movedTocIds, pairSections } from './pairSections'
-import { segmentSections } from './segmentSections'
+import { compareDocs, noSectionChanges } from './compareDocs'
 
 /** A factory, not a constant: a shared `triggers` or `contributors` array that one
  *  caller sorted or pushed into would corrupt every later request in the process. */
 const emptySummary = (): ChangeSummary => ({
-  sectionsAdded: 0,
-  sectionsRemoved: 0,
-  sectionsModified: 0,
-  sectionsMoved: 0,
-  wordsAdded: 0,
-  wordsRemoved: 0,
+  ...noSectionChanges(),
   versions: 0,
   triggers: [],
   contributors: []
@@ -45,19 +37,6 @@ const anyChanged = (summary: ChangeSummary): boolean =>
     summary.sectionsModified +
     summary.sectionsMoved >
   0
-
-const rollUp = (sections: SectionChange[], window: ChangeSummary): ChangeSummary => {
-  const summary = { ...window }
-  for (const section of sections) {
-    if (section.status === 'added') summary.sectionsAdded += 1
-    else if (section.status === 'removed') summary.sectionsRemoved += 1
-    else if (section.status === 'modified') summary.sectionsModified += 1
-    else if (section.status === 'moved') summary.sectionsMoved += 1
-    summary.wordsAdded += section.magnitude?.wordsAdded ?? 0
-    summary.wordsRemoved += section.magnitude?.wordsRemoved ?? 0
-  }
-  return summary
-}
 
 /**
  * Read-only compute over two stored snapshots. The deps are a subset with no auth
@@ -109,10 +88,9 @@ export const createComputeDocumentChanges = (deps: ComputeDeps): ComputeDocument
     const respond = (
       outcome: string,
       anchors: { baseline: AnchorRef | null; head: AnchorRef | null },
-      window: ChangeSummary,
+      summary: ChangeSummary,
       sections: SectionChange[]
     ): ComputeOutcome => {
-      const summary = rollUp(sections, window)
       const changed = anyChanged(summary)
       deps.logger.info(
         { documentId, scope, outcome, changed, durationMs: Date.now() - startedAt },
@@ -166,21 +144,20 @@ export const createComputeDocumentChanges = (deps: ComputeDeps): ComputeDocument
 
     const headJson = readContent(headBytes.data, 'json')
     if (!headJson.ok) return { ok: false, reason: 'undecodable', error: headJson.error }
-    let baselineSections: Section[] = []
+    let baselineJson: TiptapDocJson | null = null
     if (baselineBytes) {
-      const baselineJson = readContent(baselineBytes.data, 'json')
-      if (!baselineJson.ok) return { ok: false, reason: 'undecodable', error: baselineJson.error }
-      baselineSections = segmentSections(baselineJson.content as TiptapDocJson)
+      const read = readContent(baselineBytes.data, 'json')
+      if (!read.ok) return { ok: false, reason: 'undecodable', error: read.error }
+      baselineJson = read.content as TiptapDocJson
     }
 
-    const headSections = segmentSections(headJson.content as TiptapDocJson)
-    const pairs = pairSections(baselineSections, headSections)
-    const sections = diffSections(
-      pairs,
+    const { sections, counts } = compareDocs(
+      baselineJson,
+      headJson.content as TiptapDocJson,
       (error, tocId) =>
-        deps.logger.warn({ err: error, documentId, tocId }, 'Section magnitude failed'),
-      movedTocIds(baselineSections, pairs)
+        deps.logger.warn({ err: error, documentId, tocId }, 'Section magnitude failed')
     )
-    return respond('computed', anchors, summary, sections)
+    // The window carries zero counts, so the compared counts replace them.
+    return respond('computed', anchors, { ...summary, ...counts }, sections)
   }
 }

@@ -1,8 +1,8 @@
 import { container, text } from '@takumi-rs/helpers'
 
+import { graphemesOf } from '../domain/storedData'
 import { CARD_FONT, measureFirstChild } from '../infra/renderer'
 import { T } from './frame'
-import { graphemesOf } from './storedData'
 
 // Wide enough that no stored line (80 graphemes) wraps.
 const PROBE_W = 8000

@@ -1,7 +1,6 @@
 import type { Node } from '@takumi-rs/core'
 
-import type { CardKind } from '../cardRequest'
-import { cutLine, fitHead, LADDER } from '../fit'
+import { cutLine, fitHead, LADDER } from '../../render/fit'
 import {
   BODY_H,
   cardFrame,
@@ -17,8 +16,9 @@ import {
   stack,
   T,
   titleNode
-} from '../frame'
-import { conversation, namedSection } from '../parts'
+} from '../../render/frame'
+import { conversation, namedSection } from '../../render/parts'
+import type { CardKind } from '../cardRequest'
 import type { CardSource } from './types'
 
 /**

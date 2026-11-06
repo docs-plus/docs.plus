@@ -18,6 +18,7 @@ import {
 import { parseChangeSummary, type StoredOutline } from '../domain/storedData'
 import * as reads from '../infra/hovercardReads'
 import { createSingleFlight } from '../infra/renderGuards'
+import { readVersionRow } from '../infra/versionRead'
 
 // Larger heads skip the filter kind: a decode costs about 16x the snapshot in heap.
 const HOVERCARD_FILTER_MAX_BYTES = 1024 * 1024
@@ -116,7 +117,7 @@ const hovercardDetail = async (input: HovercardInput): Promise<HovercardDetail |
       }
     }
     case 'version': {
-      const row = await reads.getVersionFacts(prisma, documentId, request.version)
+      const row = await readVersionRow(prisma, documentId, request.version)
       if (!row) return null
       const summary = parseChangeSummary(row.changeSummary)
       return {

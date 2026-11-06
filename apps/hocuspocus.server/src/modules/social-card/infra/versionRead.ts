@@ -3,16 +3,20 @@ import type { CardReads } from '../domain/resolveCard'
 import { parseChangeSummary } from '../domain/storedData'
 
 /**
- * The version row behind the Version card (#669). It never selects `data`, so the request
- * path decodes no snapshot. A thinned row or a summary not yet written reads null.
+ * One version row without `data`, so the request path decodes no snapshot. The Version card
+ * and the hovercard's version reply both read it. A thinned row reads null.
  */
+export const readVersionRow = (prisma: PrismaClient, documentId: string, version: number) =>
+  prisma.documents.findUnique({
+    where: { Documents_documentId_version_unique: { documentId, version } },
+    select: { createdAt: true, commitMessage: true, changeSummary: true }
+  })
+
+/** The Version card's read (#669). A summary not yet written reads null. */
 export const createVersionRead =
   (prisma: PrismaClient): CardReads['version'] =>
   async (documentId, version) => {
-    const row = await prisma.documents.findUnique({
-      where: { Documents_documentId_version_unique: { documentId, version } },
-      select: { createdAt: true, changeSummary: true }
-    })
+    const row = await readVersionRow(prisma, documentId, version)
     const summary = row && parseChangeSummary(row.changeSummary)
-    return summary ? { version, createdAt: row.createdAt, summary } : null
+    return summary ? { createdAt: row.createdAt, summary } : null
   }

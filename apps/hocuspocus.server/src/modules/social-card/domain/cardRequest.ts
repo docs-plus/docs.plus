@@ -26,7 +26,7 @@ export const SUB_ID = /^[A-Za-z0-9_-]{1,36}$/
 export const MESSAGE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 export const VERSION = /^[1-9]\d{0,8}$/
 // The term cap: a filter link with more terms or longer terms gets the Document card.
-const MAX_TERMS = 4
+export const MAX_TERMS = 4
 export const MAX_TERM_CHARS = 60
 
 /** The trimmed, non-empty terms, or null when none is left or one cap is passed. */
@@ -55,7 +55,7 @@ export const parseCardQuery = (req: QuerySource): CardQuery => {
   if (c && SUB_ID.test(c)) {
     query.c = c
     const m = req.query('m')
-    if (m && SUB_ID.test(m)) query.m = m
+    if (m && MESSAGE_ID.test(m)) query.m = m
   }
   const terms = keptTerms(req.queries('t') ?? [], MAX_TERMS)
   if (terms) {
