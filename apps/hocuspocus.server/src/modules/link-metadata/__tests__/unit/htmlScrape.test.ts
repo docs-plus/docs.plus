@@ -79,6 +79,18 @@ describe('runHtmlScrape', () => {
       expect(typeof card === 'object' && card.facts).toEqual([{ icon: 'work', text: 'Internship' }])
       expect(bodies).toEqual([])
     })
+
+    test('never reads the body when the head posting gives no facts', async () => {
+      fetchSpy.mockResolvedValue(
+        page(
+          `<html><head><title>Job</title>${posting({})}</head><body>${posting({ employmentType: 'INTERN' })}</body></html>`
+        )
+      )
+      const { bodies, scraper } = recording()
+      const card = await runHtmlScrape('https://example.com/careers/42', scraper, 'en')
+      expect(typeof card === 'object' && card.facts).toBeUndefined()
+      expect(bodies).toEqual([])
+    })
   })
 
   test('sends the cache-key language subtag and the honest User-Agent', async () => {
@@ -222,33 +234,6 @@ describe('runHtmlScrape', () => {
     const result = await runHtmlScrape('https://example.com', scraper, undefined)
     expect(result).toMatchObject({ title: 'scraped' })
     expect(receivedLength).toBe(1024 * 1024)
-  })
-
-  test('cuts at a mixed-case </head> split across chunks', async () => {
-    const encoder = new TextEncoder()
-    let pulls = 0
-    const stream = new ReadableStream<Uint8Array>({
-      pull(controller) {
-        pulls++
-        if (pulls === 1) controller.enqueue(encoder.encode('<html><head><title>x</title></He'))
-        else if (pulls === 2) controller.enqueue(encoder.encode('Ad><body>'))
-        else controller.enqueue(new Uint8Array(64 * 1024))
-      }
-    })
-    fetchSpy.mockResolvedValue(
-      new Response(stream, { status: 200, headers: { 'content-type': 'text/html' } })
-    )
-
-    let receivedHtml = ''
-    const scraper: Scraper = {
-      jobFacts: () => undefined,
-      scrape: async ({ html: h }) => {
-        receivedHtml = h
-        return { title: 'x' }
-      }
-    }
-    await runHtmlScrape('https://example.com', scraper, undefined)
-    expect(receivedHtml).toBe('<html><head><title>x</title>')
   })
 
   test('stops pulling the stream at the 1 MiB cap', async () => {

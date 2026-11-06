@@ -48,6 +48,12 @@ describe('runSpecialHandler', () => {
   })
 
   describe('github', () => {
+    test('a reserved first segment such as /orgs/x is not a repository and spends no call', async () => {
+      expect(await special('https://github.com/orgs/docs-plus')).toBeNull()
+      expect(await special('https://github.com/Topics/editor')).toBeNull()
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
     test('fetches api.github.com/repos/{owner}/{repo} and normalizes', async () => {
       fetchSpy.mockResolvedValue(
         new Response(
@@ -76,7 +82,7 @@ describe('runSpecialHandler', () => {
     })
 
     test('maps a recorded repo to a repo card with stars, language and the last push', async () => {
-      fetchSpy.mockResolvedValue(json(githubRepo))
+      fetchSpy.mockResolvedValue(json({ ...githubRepo, updated_at: '2026-11-05T09:00:00Z' }))
       const result = await card('https://github.com/docs-plus/docs.plus')
 
       expect(result.kind).toBe('repo')

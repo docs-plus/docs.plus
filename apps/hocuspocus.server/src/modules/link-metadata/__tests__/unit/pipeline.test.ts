@@ -6,7 +6,6 @@ import type {
   CacheEntry,
   HtmlMiss,
   LinkMiss,
-  Scraper,
   SpecialMiss,
   StageResult
 } from '../../domain/types'
@@ -37,7 +36,6 @@ const ok = (title: string): NonNullable<StageResult> => ({
   title
 })
 
-const noopScraper: Scraper = { scrape: async () => ({}), jobFacts: () => undefined }
 // The html stage never returns null; a miss is a reason string.
 const noHtml = async () => 'no-title' as const
 
@@ -47,7 +45,6 @@ describe('runPipeline', () => {
       requestedUrl: 'not a url',
       acceptLanguage: undefined,
       cache: fakeCache(),
-      scraper: noopScraper,
       stages: { oembed: async () => null, special: async () => null, html: noHtml }
     })
     expect(result.kind).toBe('error')
@@ -59,7 +56,6 @@ describe('runPipeline', () => {
       requestedUrl: 'http://192.168.1.1',
       acceptLanguage: undefined,
       cache: fakeCache(),
-      scraper: noopScraper,
       stages: { oembed: async () => null, special: async () => null, html: noHtml }
     })
     expect(result.kind).toBe('error')
@@ -78,7 +74,6 @@ describe('runPipeline', () => {
       requestedUrl: 'https://example.com/',
       acceptLanguage: 'en',
       cache: cache2,
-      scraper: noopScraper,
       stages: { oembed, special: async () => null, html: noHtml }
     })
 
@@ -92,7 +87,7 @@ describe('runPipeline', () => {
 
   test('returns first-hit stage and writes positive cache', async () => {
     const cache = fakeCache()
-    const { cacheKey } = await import('../../domain/stages/cache')
+    const { cacheKey, CACHE_TTL_POSITIVE_SECONDS } = await import('../../domain/stages/cache')
     const oembed = mock(async () => ok('oembed'))
     const special = mock(async () => ok('special'))
     const html = mock(async () => ok('html'))
@@ -101,7 +96,6 @@ describe('runPipeline', () => {
       requestedUrl: 'https://example.com/',
       acceptLanguage: 'en',
       cache,
-      scraper: noopScraper,
       stages: { oembed, special, html }
     })
 
@@ -110,6 +104,7 @@ describe('runPipeline', () => {
     expect(special).not.toHaveBeenCalled()
     expect(html).not.toHaveBeenCalled()
     expect(await cache.get(cacheKey('https://example.com/', 'en'))).not.toBeNull()
+    expect(cache.lastTtl).toBe(CACHE_TTL_POSITIVE_SECONDS)
   })
 
   test('falls through when earlier stages return null', async () => {
@@ -120,7 +115,6 @@ describe('runPipeline', () => {
       requestedUrl: 'https://example.com/',
       acceptLanguage: 'en',
       cache,
-      scraper: noopScraper,
       stages: { oembed: async () => null, special: async () => null, html }
     })
 
@@ -137,7 +131,6 @@ describe('runPipeline', () => {
       requestedUrl: 'https://example.com/',
       acceptLanguage: 'en',
       cache,
-      scraper: noopScraper,
       stages: { oembed: async () => null, special: async () => null, html: noHtml }
     })
 
@@ -155,7 +148,6 @@ describe('runPipeline', () => {
       requestedUrl: 'https://EXAMPLE.com/?utm_source=x',
       acceptLanguage: 'en',
       cache,
-      scraper: noopScraper,
       stages: { oembed: async () => null, special: async () => null, html: noHtml }
     })
 
@@ -182,7 +174,6 @@ describe('runPipeline', () => {
       requestedUrl: 'https://example.com/?utm_source=x',
       acceptLanguage: 'en',
       cache,
-      scraper: noopScraper,
       stages: { oembed: async () => null, special: async () => null, html }
     })
 
@@ -223,7 +214,6 @@ describe('runPipeline', () => {
       requestedUrl: 'https://example.com/',
       acceptLanguage: 'en',
       cache: fakeCache(),
-      scraper: noopScraper,
       stages: { oembed: async () => null, special: async () => null, html }
     })
     if (result.kind !== 'success') throw new Error('expected success')
@@ -251,7 +241,6 @@ describe('runPipeline', () => {
       requestedUrl: 'https://example.com/',
       acceptLanguage: 'en',
       cache,
-      scraper: noopScraper,
       stages: { oembed: async () => null, special: async () => null, html }
     })
     if (result.kind !== 'success') throw new Error('expected success')
@@ -269,7 +258,6 @@ describe('runPipeline', () => {
         requestedUrl: 'https://github.com/docs-plus/docs.plus',
         acceptLanguage: 'en',
         cache,
-        scraper: noopScraper,
         stages: {
           oembed: async () => null,
           special: async () => 'rate-limit' as const,
@@ -300,7 +288,6 @@ describe('runPipeline', () => {
       requestedUrl: 'https://jobs.lever.co/acme/1',
       acceptLanguage: 'en',
       cache,
-      scraper: noopScraper,
       stages: {
         oembed: async () => null,
         special: async () => null,
@@ -321,7 +308,6 @@ describe('runPipeline', () => {
       requestedUrl: 'https://example.com/',
       acceptLanguage: 'en',
       cache,
-      scraper: noopScraper,
       stages: { oembed, special: async () => null, html: noHtml }
     })
     expect(result.kind).toBe('success')
@@ -335,7 +321,6 @@ describe('runPipeline', () => {
       requestedUrl: 'https://example.com/',
       acceptLanguage: 'en',
       cache: fakeCache(),
-      scraper: noopScraper,
       stages: { oembed: async () => null, special: async () => null, html: noHtml },
       onStage: (e) => events.push({ stage: e.stage, hit: e.hit })
     })
@@ -349,7 +334,6 @@ describe('runPipeline', () => {
       requestedUrl: 'https://example.com/',
       acceptLanguage: 'en',
       cache: fakeCache(),
-      scraper: noopScraper,
       stages: {
         oembed: async () => null,
         special: async () => null,
@@ -378,7 +362,6 @@ describe('runPipeline', () => {
           requestedUrl: 'https://example.com/',
           acceptLanguage: 'en',
           cache,
-          scraper: noopScraper,
           stages: {
             oembed: async () => null,
             special: async () => specialMiss,
@@ -398,14 +381,14 @@ describe('runPipeline', () => {
       requestedUrl: 'https://example.com/',
       acceptLanguage: 'en',
       cache: fakeCache(),
-      scraper: noopScraper,
       stages: {
         oembed: async () => null,
         special: async () => 'timeout' as const,
         html: async () => ok('Page')
       }
     })
-    expect(result.kind === 'success' && 'miss' in result).toBe(false)
+    expect(result.kind).toBe('success')
+    expect('miss' in result).toBe(false)
   })
 
   // A short link that redirects into a pad would keep the pad's title outside its generation.
@@ -417,7 +400,6 @@ describe('runPipeline', () => {
         requestedUrl: 'https://short.example/x',
         acceptLanguage: 'en',
         cache,
-        scraper: noopScraper,
         stages: { oembed: async () => null, special: async () => null, html },
         padSlugOf: (url) => (new URL(url).hostname === 'docs.plus' ? 'launch-plan' : null)
       })

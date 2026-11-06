@@ -43,6 +43,12 @@ export const pathParam = (
   schema: JsonSchema = { type: 'string' }
 ): OpenApiParameter => ({ name, in: 'path', required: true, description, schema })
 
+export const queryParam = (
+  name: string,
+  description: string,
+  schema: JsonSchema = { type: 'string' }
+): OpenApiParameter => ({ name, in: 'query', required: false, description, schema })
+
 export const dataEnvelope = (data: JsonSchema): JsonSchema => ({
   type: 'object',
   properties: { success: { type: 'boolean', const: true }, data },

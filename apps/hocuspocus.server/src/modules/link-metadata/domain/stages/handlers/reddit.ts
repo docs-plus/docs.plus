@@ -1,6 +1,6 @@
+import { readApiJson } from '../../readApiJson'
 import { safeFetch } from '../../ssrf'
 import { BOT_USER_AGENT, type StageResult } from '../../types'
-import { readApiJson } from './readApiJson'
 
 export const matchesReddit = (host: string, path: string): boolean =>
   /(^|\.)reddit\.com$/.test(host) && /^\/r\/[^/]+\/comments\//.test(path)

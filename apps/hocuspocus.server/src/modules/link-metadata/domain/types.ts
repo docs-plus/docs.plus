@@ -61,7 +61,7 @@ export interface MetadataResponse {
   published_at?: string
   modified_at?: string
   kind?: (typeof LINK_KINDS)[number]
-  /** At most three. */
+  /** At most `FACTS_MAX`. */
   facts?: Fact[]
   /** Every stage missed, and the card names the host only. */
   fallback?: true
@@ -144,6 +144,9 @@ export type Miss = 'clean' | 'error'
 /** Reads an image URL this process serves itself, without the network; null for any other URL. */
 export type OwnImage = (url: string) => Promise<Response> | null
 
+/** The slug key of the docs.plus pad a URL opens, or null. */
+export type PadSlugOf = (url: string) => string | null
+
 export interface Cache {
   get(key: string): Promise<CacheEntry | null>
   set(key: string, value: CacheEntry, ttlSeconds: number): Promise<void>
@@ -165,6 +168,8 @@ export interface Scraper {
     date?: string
     lang?: string
     facts?: Fact[]
+    /** The head holds a JobPosting, even one that gave no facts. */
+    jobPosting?: boolean
   }>
   /** JobPosting facts from the JSON-LD scripts in `body`, the bytes after the head. */
   jobFacts(body: string): Fact[] | undefined

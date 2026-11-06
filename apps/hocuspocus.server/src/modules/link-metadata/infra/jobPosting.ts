@@ -41,30 +41,20 @@ const str = (value: unknown): string | undefined => {
 const nameOf = (value: unknown): string | undefined =>
   str(value) ?? (isNode(value) ? str(value.name) : undefined)
 
-const regionNames = (() => {
-  try {
-    return new Intl.DisplayNames(['en'], { type: 'region' })
-  } catch {
-    return null
-  }
-})()
+const regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
 
 /** "DE" reads "Germany". Any other value, "USA" included, stays as written. */
 const country = (value: unknown): string | undefined => {
   const name = nameOf(value)
   if (!name || !/^[A-Z]{2}$/.test(name)) return name
-  try {
-    return regionNames?.of(name) ?? name
-  } catch {
-    return name
-  }
+  return regionNames.of(name) ?? name
 }
 
 const isJobPosting = (node: Node): boolean =>
   list(node['@type']).some((type) => type === 'JobPosting')
 
 /** Top-level nodes, top-level arrays and `@graph` items. No deeper walk, so nesting costs nothing. */
-const findJobPosting = (roots: unknown[]): Node | undefined => {
+export const findJobPosting = (roots: unknown[]): Node | undefined => {
   for (const json of roots) {
     const tops = Array.isArray(json) ? json.slice(0, NODES_CAP) : [json]
     for (const root of tops) {
@@ -120,17 +110,22 @@ const location = (posting: Node): string | undefined => {
 const work = (posting: Node): string | undefined => {
   const types = list(posting.employmentType)
     .map((type) =>
-      typeof type === 'string' ? EMPLOYMENT[type.replace(/[^a-z]/gi, '').toUpperCase()] : undefined
+      typeof type === 'string'
+        ? EMPLOYMENT[
+            type
+              .slice(0, VALUE_CAP)
+              .replace(/[^a-z]/gi, '')
+              .toUpperCase()
+          ]
+        : undefined
     )
     .filter((type): type is string => type !== undefined)
   if (types.length > 0) return [...new Set(types)].slice(0, 2).join(', ')
   return nameOf(posting.hiringOrganization)
 }
 
-/** The facts of the first JobPosting in the parsed JSON-LD scripts of a head or a body. */
-export const jobPostingFacts = (roots: unknown[], now: Date): Fact[] | undefined => {
-  const posting = findJobPosting(roots)
-  if (!posting) return undefined
+/** The facts of one JobPosting node, from `findJobPosting`. */
+export const postingFacts = (posting: Node, now: Date): Fact[] | undefined => {
   const facts: Fact[] = []
   const where = location(posting)
   if (where) facts.push({ icon: 'location', text: where })
@@ -139,4 +134,10 @@ export const jobPostingFacts = (roots: unknown[], now: Date): Fact[] | undefined
   const posted = factDate(posting.datePosted, now)
   if (posted) facts.push({ icon: 'posted', text: `Posted ${posted}` })
   return facts.length > 0 ? facts : undefined
+}
+
+/** The facts of the first JobPosting in the parsed JSON-LD scripts of a head or a body. */
+export const jobPostingFacts = (roots: unknown[], now: Date): Fact[] | undefined => {
+  const posting = findJobPosting(roots)
+  return posting ? postingFacts(posting, now) : undefined
 }

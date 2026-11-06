@@ -1,6 +1,6 @@
+import { readApiJson } from '../../readApiJson'
 import { safeFetch } from '../../ssrf'
 import { LINK_PREVIEW_USER_AGENT, type StageResult } from '../../types'
-import { readApiJson } from './readApiJson'
 
 const WIKI_HOST = /^([a-z-]+)\.wikipedia\.org$/
 const WIKI_PATH = /^\/wiki\/([^/]+)\/?$/

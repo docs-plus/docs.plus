@@ -2,8 +2,10 @@ import type { Context } from 'hono'
 
 import { runPipeline } from '../domain/pipeline'
 import { fetchImage, isMiss, sniffImageType } from '../domain/relay'
-import type { Miss, RelayedImage } from '../domain/types'
+import type { Miss, OwnImage, RelayedImage } from '../domain/types'
 import type { ControllerDeps } from './controller'
+
+export type ImageControllerDeps = ControllerDeps & { ownImage?: OwnImage }
 
 const IMAGE_TIMEOUT_MS = 5000
 const IMAGE_MAX_BYTES = 2 * 1024 * 1024
@@ -15,7 +17,7 @@ const MISS_CACHE_HEADER = 'public, max-age=600'
  * never contacts the linked site. The image is PNG, ICO, GIF, JPEG or WebP, up to 2 MiB,
  * fetched through the SSRF guard. SVG never passes. A miss is an empty 204.
  */
-export const createImageController = (deps: ControllerDeps) => {
+export const createImageController = (deps: ImageControllerDeps) => {
   // A pad link names this REST's own card. Read in process, it skips Traefik and the card bucket.
   const relay = async (src: string, signal: AbortSignal): Promise<RelayedImage | Miss> => {
     const own = deps.ownImage?.(src)
@@ -40,14 +42,13 @@ export const createImageController = (deps: ControllerDeps) => {
       requestedUrl: url,
       acceptLanguage: c.req.header('accept-language') ?? undefined,
       cache: deps.cache,
-      scraper: deps.scraper,
       stages: deps.stages,
       publicUrl: deps.publicUrl,
       padSlugOf: deps.padSlugOf
     })
     const src = result.kind === 'success' ? result.payload.image?.url : undefined
     if (!src) return miss()
-    // A card built after a rate limit may name another image once the API answers again.
+    // A card built after a special-stage miss or a cut body read may name another image later.
     const retry = result.kind === 'success' && result.retry
 
     const controller = new AbortController()

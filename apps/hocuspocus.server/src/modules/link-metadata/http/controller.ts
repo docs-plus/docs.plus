@@ -2,16 +2,14 @@ import type { Context } from 'hono'
 import type { Logger } from 'pino'
 
 import { type PipelineStages, runPipeline, type StageEvent } from '../domain/pipeline'
-import type { Cache, ErrorResponse, MetadataResponse, OwnImage, Scraper } from '../domain/types'
+import type { Cache, ErrorResponse, MetadataResponse, PadSlugOf } from '../domain/types'
 
 export interface ControllerDeps {
   cache: Cache
-  scraper: Scraper
   stages: PipelineStages
   logger: Logger
   publicUrl: string | null
-  ownImage?: OwnImage
-  padSlugOf?: (url: string) => string | null
+  padSlugOf?: PadSlugOf
 }
 
 const POSITIVE_CACHE_HEADER = 'public, max-age=3600, stale-while-revalidate=86400'
@@ -28,7 +26,6 @@ export const createController = (deps: ControllerDeps) => {
       requestedUrl,
       acceptLanguage,
       cache: deps.cache,
-      scraper: deps.scraper,
       stages: deps.stages,
       publicUrl: deps.publicUrl,
       padSlugOf: deps.padSlugOf,

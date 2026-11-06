@@ -3,62 +3,49 @@ import { randomUUID } from 'node:crypto'
 import type { RedisClient } from '../../../types/redis.types'
 import type { ArchiveCache, ArchiveSnapshot, Cache, CacheEntry } from '../domain/types'
 
-/** The `ArchiveCache` port on the same client. Failures are swallowed, like the card cache. */
-export const createArchiveCache = (redis: RedisClient | null): ArchiveCache => ({
-  get: async (key) => {
+/**
+ * JSON values under a TTL. A failed or disabled read is null and a failed write is dropped, so
+ * a Redis blip never breaks a request: both caches are best-effort.
+ */
+const jsonStore = (redis: RedisClient | null) => ({
+  get: async <T>(key: string): Promise<T | null> => {
     try {
       const raw = redis ? await redis.get(key) : null
-      return raw ? (JSON.parse(raw) as { snapshot: ArchiveSnapshot | null }) : null
+      return raw ? (JSON.parse(raw) as T) : null
     } catch {
       return null
     }
   },
-  set: async (key, snapshot, ttlSeconds) => {
+  set: async (key: string, value: unknown, ttlSeconds: number): Promise<void> => {
     try {
-      await redis?.set(key, JSON.stringify({ snapshot }), 'EX', ttlSeconds)
+      await redis?.set(key, JSON.stringify(value), 'EX', ttlSeconds)
     } catch {
       /* swallow — cache is best-effort */
     }
   }
 })
 
+/** The `ArchiveCache` port on the same client. */
+export const createArchiveCache = (redis: RedisClient | null): ArchiveCache => {
+  const store = jsonStore(redis)
+  return {
+    get: (key) => store.get<{ snapshot: ArchiveSnapshot | null }>(key),
+    set: (key, snapshot, ttlSeconds) => store.set(key, { snapshot }, ttlSeconds)
+  }
+}
+
 /**
- * Implements the `Cache` port using ioredis. A failed `get` or `set` is swallowed, so a
- * Redis blip never breaks a metadata fetch. The generation calls reject, so the pipeline
- * skips a pad's cache and `forgetPad` logs the failure.
+ * Implements the `Cache` port using ioredis. The generation calls reject, so the pipeline
+ * skips a pad's cache and `forgetPad` logs the failure. With Redis off, every pad is at `0`.
  */
 export const createRedisCache = (redis: RedisClient | null): Cache => {
-  if (!redis) {
-    return {
-      get: async () => null,
-      set: async () => {
-        /* no-op when Redis is disabled */
-      },
-      generation: async () => '0',
-      newGeneration: async () => {}
-    }
-  }
-
+  const store = jsonStore(redis)
   return {
-    get: async (key) => {
-      try {
-        const raw = await redis.get(key)
-        if (!raw) return null
-        return JSON.parse(raw) as CacheEntry
-      } catch {
-        return null
-      }
-    },
-    set: async (key, value, ttlSeconds) => {
-      try {
-        await redis.set(key, JSON.stringify(value), 'EX', ttlSeconds)
-      } catch {
-        /* swallow — cache is best-effort */
-      }
-    },
-    generation: async (key) => (await redis.get(key)) ?? '0',
+    get: (key) => store.get<CacheEntry>(key),
+    set: (key, value, ttlSeconds) => store.set(key, value, ttlSeconds),
+    generation: async (key) => (redis ? ((await redis.get(key)) ?? '0') : '0'),
     newGeneration: async (key, ttlSeconds) => {
-      await redis.set(key, randomUUID(), 'EX', ttlSeconds)
+      await redis?.set(key, randomUUID(), 'EX', ttlSeconds)
     }
   }
 }

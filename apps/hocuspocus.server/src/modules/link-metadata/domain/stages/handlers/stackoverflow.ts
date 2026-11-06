@@ -1,7 +1,7 @@
 import { plural } from '../../../../../lib/cardText'
+import { readApiJson } from '../../readApiJson'
 import { safeFetch } from '../../ssrf'
 import { type Fact, LINK_PREVIEW_USER_AGENT, type SpecialMiss, type StageResult } from '../../types'
-import { readApiJson } from './readApiJson'
 
 const QUESTION_PATH = /^\/questions\/(\d{1,12})(?:\/|$)/
 // Stack Exchange's own error ids: throttle_violation, internal_error, temporarily_unavailable.

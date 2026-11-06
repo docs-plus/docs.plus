@@ -10,7 +10,7 @@ import {
 import { primaryLangSubtag } from './cache'
 
 // Bounds the bytes read and parsed; a 5 MiB parse cost about 850 ms and 116 MiB of heap.
-// The head scraper's slowest crafted 1 MiB input measured 17 to 18 ms on 2026-11-04 (BENCHMARK.md).
+// The head scraper's slowest crafted 1 MiB input measured 29 to 33 ms on 2026-11-06 (BENCHMARK.md).
 const MAX_PAGE_BYTES = 1024 * 1024
 // Job boards put JobPosting JSON-LD in the body: Stripe 49 B after `</head`, Lever 8 KB.
 // Reading it cost 300 to 700 ms a page, so only a job-looking URL with no head posting reads it.
@@ -151,7 +151,7 @@ export const runHtmlScrape = async (
     if (!meta.title) return 'no-title'
     let facts = meta.facts
     let retry = false
-    if (!facts && (looksLikeJobPage(canonicalUrl) || looksLikeJobPage(baseUrl))) {
+    if (!meta.jobPosting && (looksLikeJobPage(canonicalUrl) || looksLikeJobPage(baseUrl))) {
       const tail = await page.readTail(JSON_LD_TAIL)
       facts = scraper.jobFacts(decodeBody(tail.bytes, charset))
       // The posting may sit past where a late or failed read stopped; a later read may find it.

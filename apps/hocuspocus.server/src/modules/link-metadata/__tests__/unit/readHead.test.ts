@@ -16,23 +16,6 @@ const read = async (response: Response, cap: number): Promise<string> =>
   new TextDecoder().decode(await readHead(response, new AbortController(), cap))
 
 describe('readHead', () => {
-  test('cuts at </head, even when the tag spans two chunks', async () => {
-    const head = await read(
-      streamOf('<head><link rel=icon href=/a.png></HE', 'AD><body>', '<link rel=icon href=/b.png>'),
-      1024
-    )
-    expect(head).toBe('<head><link rel=icon href=/a.png>')
-  })
-
-  test('gives the same bytes however the network splits the page', async () => {
-    // The card is cached for 24 h, so one page must never give two cards.
-    const page = '<head><title>T</title></head><body><h1 class="title">B</h1></body>'
-    const whole = await read(streamOf(page), 1024)
-    const split = await read(streamOf(page.slice(0, 30), page.slice(30)), 1024)
-    expect(split).toBe(whole)
-    expect(whole).toBe('<head><title>T</title>')
-  })
-
   test('keeps the first cap bytes of a head with no end', async () => {
     expect(await read(streamOf('a'.repeat(10), 'b'.repeat(10)), 15)).toBe(
       'a'.repeat(10) + 'b'.repeat(5)
@@ -47,11 +30,19 @@ describe('readHead', () => {
       return { head: text(head), tail: text((await readTail(tail)).bytes) }
     }
 
-    test('splits at </head the same way however the network splits the page', async () => {
-      const html =
+    // The card is cached for 24 h, so one page must never give two cards.
+    test.each([
+      [
+        '</head>',
         '<head><title>T</title></HEAD><body><script type="application/ld+json">{}</script>'
+      ],
+      [
+        '<body with no </head>',
+        '<head><title>T</title><BODY><script type="application/ld+json">{}</script>'
+      ]
+    ])('splits at %s the same way however the network splits the page', async (_, html) => {
       const whole = await page(streamOf(html))
-      for (let at = 1; at < html.length; at += 7) {
+      for (let at = 1; at < html.length; at += 1) {
         expect(await page(streamOf(html.slice(0, at), html.slice(at)))).toEqual(whole)
       }
       expect(whole).toEqual({ head: '<head><title>T</title>', tail: html.slice(22) })

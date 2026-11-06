@@ -1,7 +1,7 @@
 import { decodeHTML } from 'entities'
 
 import type { Scraper } from '../domain/types'
-import { jobPostingFacts } from './jobPosting'
+import { findJobPosting, jobPostingFacts, postingFacts } from './jobPosting'
 
 // Every captured value stops here, before any decode, JSON or regex work.
 const VALUE_CAP = 4096
@@ -75,7 +75,7 @@ const jsonLdCapture = () => {
 
 /**
  * One pass over the head with one element handler and one document-level text handler.
- * `readPage` cuts at `</head`, so a `<title>` the cut left open settles at the end.
+ * `readPage` cuts at the head end (`</head` or `<body`), so a `<title>` the cut left open settles at the end.
  */
 const collect = (html: string) => {
   const elements: Element[] = []
@@ -430,12 +430,14 @@ export const createHeadScraper = (): Scraper => ({
       () => toLang(htmlLang)
     )
 
-    const facts = jobPostingFacts(roots, new Date())
+    const posting = findJobPosting(roots)
+    const facts = posting ? postingFacts(posting, new Date()) : undefined
+    const jobPosting = posting !== undefined
 
-    return { title, description, image, logo, author, publisher, date, lang, facts }
+    return { title, description, image, logo, author, publisher, date, lang, facts, jobPosting }
   },
 
-  // The one rule that reads past `</head`, with one narrow selector.
+  // The one rule that reads past the head end (`</head` or `<body`), with one narrow selector.
   jobFacts: (body) => {
     const jsonLd = jsonLdCapture()
     new HTMLRewriter()

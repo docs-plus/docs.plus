@@ -1,9 +1,30 @@
 import { compactCount, factDate } from '../../facts'
+import { readApiJson } from '../../readApiJson'
 import { safeFetch } from '../../ssrf'
 import { type Fact, LINK_PREVIEW_USER_AGENT, type SpecialMiss, type StageResult } from '../../types'
-import { readApiJson } from './readApiJson'
 
 const REPO_PATH = /^\/([^/]+)\/([^/]+)\/?$/
+// github.com serves its own pages at these first segments, so such a URL never opens a
+// repository. Asking the API would spend one call of the anonymous 60-an-hour budget on a 404.
+const NOT_OWNERS = new Set([
+  'about',
+  'apps',
+  'collections',
+  'enterprise',
+  'events',
+  'explore',
+  'features',
+  'join',
+  'login',
+  'marketplace',
+  'notifications',
+  'orgs',
+  'pricing',
+  'settings',
+  'sponsors',
+  'topics',
+  'trending'
+])
 
 export const matchesGithub = (
   host: string,
@@ -11,7 +32,7 @@ export const matchesGithub = (
 ): { owner: string; repo: string } | null => {
   if (host !== 'github.com' && host !== 'www.github.com') return null
   const m = REPO_PATH.exec(path)
-  return m ? { owner: m[1], repo: m[2] } : null
+  return m && !NOT_OWNERS.has(m[1].toLowerCase()) ? { owner: m[1], repo: m[2] } : null
 }
 
 interface RepoJson {

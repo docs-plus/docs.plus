@@ -4,12 +4,12 @@ import type { Logger } from 'pino'
 import { archiveCacheKey, lookupSnapshot } from '../domain/archive'
 import { canonicalize } from '../domain/canonicalize'
 import { isSafeUrl } from '../domain/ssrf'
-import type { ArchiveCache, ArchiveResponse, ErrorResponse } from '../domain/types'
+import type { ArchiveCache, ArchiveResponse, ErrorResponse, PadSlugOf } from '../domain/types'
 
-export interface ArchiveControllerDeps {
+interface ArchiveControllerDeps {
   archiveCache: ArchiveCache
   logger: Logger
-  padSlugOf?: (url: string) => string | null
+  padSlugOf?: PadSlugOf
 }
 
 // Under the client's own 5 s wait, so a slow archive answers `unreachable` before the client gives up.

@@ -11,6 +11,7 @@ import { join } from 'node:path'
 import { decodeHTML } from 'entities'
 
 import { pickIconHref } from '../src/modules/link-metadata/domain/iconLinks'
+import { firstHeadEnd } from '../src/modules/link-metadata/domain/readHead'
 import { runHtmlScrape } from '../src/modules/link-metadata/domain/stages/htmlScrape'
 import type { Scraper } from '../src/modules/link-metadata/domain/types'
 import { createHeadScraper } from '../src/modules/link-metadata/infra/headScraper'
@@ -19,7 +20,7 @@ type Fields = Awaited<ReturnType<Scraper['scrape']>>
 type Page = { requested: string; url: string; file: string; sha256: string; bytes: number }
 
 // In production these hosts are answered by oEmbed or a special handler, never by the html stage.
-const NOT_HTML_STAGE = ['youtube.com', 'x.com', 'github.com', 'wikipedia.org']
+const NOT_HTML_STAGE = ['youtube.com', 'x.com', 'github.com', 'wikipedia.org', 'stackoverflow.com']
 
 const ROOT = join(import.meta.dir, '../../..')
 const sha256 = (text: string) => createHash('sha256').update(text).digest('hex')
@@ -52,6 +53,8 @@ const environment = () => ({
   dirty: sh(['git', '-C', ROOT, 'status', '--porcelain']).length > 0,
   code: {
     headScraper: fileHash('apps/hocuspocus.server/src/modules/link-metadata/infra/headScraper.ts'),
+    jobPosting: fileHash('apps/hocuspocus.server/src/modules/link-metadata/infra/jobPosting.ts'),
+    readHead: fileHash('apps/hocuspocus.server/src/modules/link-metadata/domain/readHead.ts'),
     script: fileHash('apps/hocuspocus.server/scripts/bench-link-extractor.ts'),
     bunLock: fileHash('bun.lock')
   },
@@ -146,14 +149,15 @@ const quantile = (values: number[], q: number) => {
 const ms = (ns: number) => Number((ns / 1e6).toFixed(3))
 const round = (value: number, digits: number) => Number(value.toFixed(digits))
 
-// Split as `readPage` does: the head pass reads up to `</head`, the JSON-LD tail pass the rest.
-// The tail is not cut to the production 256 KiB, so its time is an upper bound.
+// Split as `readPage` does: the head pass reads up to the first `</head` or `<body`, the JSON-LD
+// tail pass the rest. The tail is not cut to the production 256 KiB, so its time is an upper bound.
 const timeOnce = async (scraper: Scraper, page: string, url: string) => {
-  const at = page.toLowerCase().indexOf('</head')
+  const at = firstHeadEnd(page.toLowerCase())
   const html = at === -1 ? page : page.slice(0, at)
   const body = at === -1 ? undefined : page.slice(at)
   const start = Bun.nanoseconds()
-  // Production reads the tail only on a job URL with no head posting; timing both is the worst case.
+  // An attack page times both passes, the worst case. A frozen corpus page is head only, so
+  // `run` times the head pass alone.
   await scraper.scrape({ html, url })
   if (body !== undefined) scraper.jobFacts(body)
   return Bun.nanoseconds() - start
@@ -230,12 +234,15 @@ const runCorpus = async (dir: string, iterations: number, set: string) => {
 const page = (head: string, body = '') => `<html><head>${head}</head><body>${body}</body></html>`
 const ldJson = (value: unknown) =>
   `<script type="application/ld+json">${JSON.stringify(value)}</script>`
+// The tags the removed body rules read (h1 titles, page images, logos, bylines). Only the JSON-LD
+// tail pass sees them now.
+const REMOVED_RULE_TAGS =
+  '<article><h1 class="post-title">"a<a href="/"><img alt="x" src="/a.png"><i class=logo>'
 // Each builder takes a unit count; `buildExact` scales it so the input lands near a byte target.
 const VECTORS: Record<string, (n: number) => string> = {
   'og:title quotes': (n) => page(`<meta property="og:title" content="${'&quot;a '.repeat(n)}">`),
   '<title> quotes': (n) => page(`<title>${'"a '.repeat(n)}</title>`),
   '<title> dashes (publisher loop)': (n) => page(`<title>${'- '.repeat(n)}</title>`),
-  'h1.post-title quotes': (n) => page('', `<h1 class="post-title">${'"a '.repeat(n)}</h1>`),
   'JSON-LD headline quotes': (n) => page(ldJson({ headline: '"a '.repeat(n) })),
   'description whitespace run': (n) =>
     page(`<meta name="description" content="A${' '.repeat(n)}x">`),
@@ -257,19 +264,11 @@ const VECTORS: Record<string, (n: number) => string> = {
   },
   'entity run': (n) => page(`<title>${'&amp;'.repeat(n)}</title>`),
   'deep tag nesting': (n) => page('', '<div>'.repeat(n)),
-  'nested article, then img': (n) =>
-    page('', '<article>'.repeat(n) + '<img src="/a.png">'.repeat(n)),
-  'nested .logo, then img[alt]': (n) =>
-    page('', '<div class="logo">'.repeat(n) + '<img alt="x" src="/a.png">'.repeat(n)),
-  'nested h1.title, then a': (n) =>
-    page('', '<h1 class="title">'.repeat(n) + '<a href="/">x</a>'.repeat(n)),
   'no </head>': (n) => `<html><head><title>${'"a '.repeat(n)}`,
-  'flood: bare <a>': (n) => page('', '<a>'.repeat(n)),
-  'flood: <a href>': (n) => page('', '<a href>'.repeat(n)),
-  'flood: <article>': (n) => page('', '<article>'.repeat(n)),
-  'flood: <img src>': (n) => page('', '<img src>'.repeat(n)),
-  'flood: <i itemprop>': (n) => page('', '<i itemprop>'.repeat(n)),
-  'flood: <i class=logo>': (n) => page('', '<i class=logo>'.repeat(n)),
+  'body: flood of removed-rule tags': (n) => page('', REMOVED_RULE_TAGS.repeat(n)),
+  'flood: <i itemprop>': (n) => page('<i itemprop>'.repeat(n)),
+  'JSON-LD huge employmentType': (n) =>
+    page(ldJson({ '@type': 'JobPosting', employmentType: 'FULL_TIME '.repeat(n) })),
   'body: huge JSON-LD script': (n) =>
     page('', ldJson({ '@type': 'JobPosting', d: 'w '.repeat(n) })),
   'body: deep JSON-LD nesting': (n) =>

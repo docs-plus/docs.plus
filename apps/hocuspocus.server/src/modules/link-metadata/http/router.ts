@@ -4,13 +4,12 @@ import { Hono } from 'hono'
 import { LINK_ARCHIVE_ROUTE, LINK_ICON_ROUTE, LINK_IMAGE_ROUTE } from '../domain/routes'
 import type { ArchiveCache, ErrorResponse } from '../domain/types'
 import { createArchiveController } from './archiveController'
-import type { ControllerDeps } from './controller'
 import { createController } from './controller'
 import { CLEAN_MISS_CACHE_HEADER, createIconController } from './iconController'
-import { createImageController } from './imageController'
+import { createImageController, type ImageControllerDeps } from './imageController'
 import { iconQuerySchema, metadataQuerySchema } from './schema'
 
-export type RouterDeps = ControllerDeps & { iconMaxBytes: number; archiveCache: ArchiveCache }
+export type RouterDeps = ImageControllerDeps & { iconMaxBytes: number; archiveCache: ArchiveCache }
 
 // Custom error hook so a missing/malformed `?url=` returns the same
 // ErrorResponse shape as the controller's hand-rolled errors. Without

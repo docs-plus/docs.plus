@@ -1200,7 +1200,7 @@ Success (`200`) returns the `MetadataResponse` contract from `src/modules/link-m
 
 A fallback result's `favicon`, when present, is this server's `GET /api/metadata/icon` URL for the site's origin.
 
-Optional `kind` (`repo` only; a plain page has none) and `facts` (at most three `{ icon, text }`). `icon` is one of `location`, `work`, `posted`, `stars`, `language`, `updated`, `answers` or `accepted`. `fallback: true` marks the fallback card, also on a cache hit. A card built after a miss that may clear soon gets the short negative `Cache-Control`. The short entry stays 10 minutes in Redis and sends `public, max-age=600`. Any other card stays 24 h in Redis and sends `public, max-age=3600, stale-while-revalidate=86400`.
+Optional `kind` (`repo` only; a plain page has none) and `facts` (at most three `{ icon, text }`). `icon` is one of `location`, `work`, `posted`, `stars`, `language`, `updated`, `answers` or `accepted`. `fallback: true` marks the fallback card, also on a cache hit. A card built after a miss that may clear soon, such as a special-stage miss or a cut body read, gets the short negative `Cache-Control`. The short entry stays 10 minutes in Redis and sends `public, max-age=600`. Any other card stays 24 h in Redis and sends `public, max-age=3600, stale-while-revalidate=86400`.
 
 A fallback card may carry `miss`, which says why there is no preview. A cache hit returns the same value, and any other card has none.
 
@@ -1228,7 +1228,7 @@ Returns the favicon for one origin's site. The server first reduces `origin` to 
 
 The server fetches `<origin>/favicon.ico` through the same SSRF guard, with `User-Agent: DocsplusBot/1.0` and `Accept: image/*`. It forwards no caller header. `HEAD` runs the same handler and sends no body.
 
-Sometimes `/favicon.ico` misses: a status that is not 2xx, bytes that are not an image, or a body over the cap. The server then reads the HTML page `<origin>/`, at most 64 KiB, and stops at `</head>`. It takes the `href` of `<link rel="icon">`, `rel="shortcut icon"` or `rel="apple-touch-icon"`, resolved against the page URL. It prefers `rel="icon"`, then PNG or ICO, then the size nearest 32 px. It skips SVG and `data:` URLs, and fetches one href. A thrown favicon fetch, such as a DNS error, a timeout or the SSRF guard, ends the request without the HTML step.
+Sometimes `/favicon.ico` misses: a status that is not 2xx, bytes that are not an image, or a body over the cap. The server then reads the HTML page `<origin>/`, at most 64 KiB, and stops at the head end (`</head` or `<body`). It takes the `href` of `<link rel="icon">`, `rel="shortcut icon"` or `rel="apple-touch-icon"`, resolved against the page URL. It prefers `rel="icon"`, then PNG or ICO, then the size nearest 32 px. It skips SVG and `data:` URLs, and fetches one href. A thrown favicon fetch, such as a DNS error, a timeout or the SSRF guard, ends the request without the HTML step.
 
 The page, the chosen href and every redirect go through the same SSRF guard and the same byte cap. One 3 s timer covers every hop, the DNS checks and every body read.
 
@@ -1263,6 +1263,7 @@ The server runs the same pipeline as `GET /api/metadata`, usually a cache hit, a
 | Status | Body                                       | `Cache-Control`         | When                                                                                                                             |
 | ------ | ------------------------------------------ | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `200`  | The image bytes                            | `public, max-age=86400` | The bytes are PNG, ICO, GIF, JPEG or WebP. `Content-Type` comes from the bytes, never from the upstream site.                    |
+| `200`  | The image bytes                            | `public, max-age=600`   | As above, when the page card was built after a special-stage miss or a cut body read.                                            |
 | `400`  | `{ success, code, message }`, module shape | none                    | `INVALID_URL`: `url` is missing or not a valid http(s) URL.                                                                      |
 | `204`  | Empty                                      | `public, max-age=600`   | No image: a fallback page, no page image, the SSRF guard, a timeout, a non-2xx answer, SVG or other bytes, or an oversized body. |
 

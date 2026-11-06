@@ -38,7 +38,7 @@ differences are the cut style: metascraper ends a cut with `…`, headScraper wi
 author and date rows are body-text rules, such as bylines, that headScraper does not read on
 purpose. These comparisons ran before the `name="og:*"` fix, which only adds values.
 
-These comparisons also ran before 2026-11-01. Since then `readHead` cuts at `</head`, and
+These comparisons also ran before 2026-11-01. Since then `readHead` cuts at the first `</head` or `<body`, and
 headScraper reads no body rule. A page whose title sits only in a body `h1` now gives `no-title`.
 
 ### Crafted pages
@@ -143,6 +143,11 @@ passed the whole page to the head pass. Timed that way again, `flood: <article>`
 2026-10-27 is not known. The tail no longer skips a script over 128 KiB before parse, so deep
 body nesting now parses and costs about 10 to 15 ms. The 512 KiB JSON-LD text cap still cuts a
 huge script, which then fails to parse at once. The machine is the one above, on Bun 1.4.4.
+
+On 2026-11-06 the head ends at the first `</head` or `<body`, and the vectors aimed at the
+removed body rules became one body flood. `flood: <i itemprop>` moved into the head, where
+production reads it. That is a new measure, not a code change. It is now the slowest input:
+33.3, 29.0, 29.7, 29.7 and 33.1 ms at 1 MiB. `many meta tags` took 20.2 to 21.1 ms. Bun 1.4.4.
 
 Reading the tail costs download time. Warm, on one laptop, Stripe's job page took 115 to 125 ms
 for the head and about 490 ms with the tail. Wikipedia took 125 to 141 ms, and 448 to 797 ms.

@@ -8,7 +8,7 @@ import { PAD_GENERATION_TTL_SECONDS, padGenerationKey } from './domain/stages/ca
 import { runSpecialHandler } from './domain/stages/handlers'
 import { runHtmlScrape } from './domain/stages/htmlScrape'
 import { runOembed } from './domain/stages/oembed'
-import type { ApiKeys, OwnImage } from './domain/types'
+import type { ApiKeys, OwnImage, PadSlugOf } from './domain/types'
 import { createRouter } from './http/router'
 import { createHeadScraper } from './infra/headScraper'
 import { createArchiveCache, createRedisCache } from './infra/redisCache'
@@ -21,7 +21,7 @@ export interface InitDeps {
   ownImage?: OwnImage
   apiKeys?: ApiKeys
   /** The slug key of the docs.plus pad a URL opens, or null. Without it, no card is a pad card. */
-  padSlugOf?: (url: string) => string | null
+  padSlugOf?: PadSlugOf
 }
 
 export interface InitResult {
@@ -41,12 +41,12 @@ export const init = (deps: InitDeps): InitResult => {
   const stages = {
     oembed: runOembed,
     special: (canonicalUrl: string) => runSpecialHandler(canonicalUrl, apiKeys, decodeHTML),
-    html: runHtmlScrape
+    html: (canonicalUrl: string, acceptLanguage: string | undefined) =>
+      runHtmlScrape(canonicalUrl, scraper, acceptLanguage)
   }
 
   const router = createRouter({
     cache,
-    scraper,
     stages,
     logger: deps.logger,
     iconMaxBytes: deps.iconMaxBytes ?? ICON_MAX_BYTES_DEFAULT,

@@ -9,7 +9,7 @@ export const linkMetadataPaths: OpenApiPaths = {
       operationId: 'getLinkMetadata',
       summary: 'Unfurl a URL',
       description:
-        "Runs a cache → oEmbed → special → HTML-scrape pipeline with SSRF protection. Honors `Accept-Language`. Each `200` answer sets `Cache-Control` (positive for hits, short negative for fallbacks) and `Vary: Accept-Language`. Errors use this module's own top-level `code` / `message` shape, not the house envelope. A fallback card may carry `miss`, the reason it has no preview. A docs.plus pad link's cached cards are never read again once the pad turns Private, moves to Trash or is erased: its cache key carries a per-pad generation, and that change sets a new one. A page that redirects into a pad is not cached.",
+        "Runs a cache → oEmbed → special → HTML-scrape pipeline with SSRF protection. Honors `Accept-Language`. Each `200` answer sets `Cache-Control` and `Vary: Accept-Language`. `Cache-Control` is one hour for a card. It is ten minutes for a fallback, and for a card built after a special-stage miss that may clear soon or a cut body read. Errors use this module's own top-level `code` / `message` shape, not the house envelope. A fallback card may carry `miss`, the reason it has no preview. A docs.plus pad link's cached cards are never read again once the pad turns Private, moves to Trash or is erased: its cache key carries a per-pad generation, and that change sets a new one. A page that redirects into a pad is not cached.",
       tags: ['Link metadata'],
       security: [{}],
       // The zod `.refine()` scheme guard has no JSON Schema equivalent, so it is
@@ -52,7 +52,8 @@ export const linkMetadataPaths: OpenApiPaths = {
       }),
       responses: {
         '200': {
-          description: 'The image bytes. Cached for one day.',
+          description:
+            'The image bytes. Cached for one day. The cache is ten minutes when the page card was built after a special-stage miss that may clear soon or a cut body read.',
           content: { 'image/*': { schema: { type: 'string', format: 'binary' } } },
           headers: {
             'Cache-Control': { schema: { type: 'string' } },

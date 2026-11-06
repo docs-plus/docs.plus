@@ -1,7 +1,5 @@
 import { createHash } from 'node:crypto'
 
-import type { Cache, CacheEntry } from '../types'
-
 export const CACHE_TTL_POSITIVE_SECONDS = 24 * 60 * 60
 export const CACHE_TTL_NEGATIVE_SECONDS = 10 * 60
 
@@ -35,13 +33,3 @@ export const PAD_GENERATION_TTL_SECONDS = 2 * CACHE_TTL_POSITIVE_SECONDS
 
 /** One generation per pad slug key. A new generation hides every entry under the old one. */
 export const padGenerationKey = (slugKey: string): string => `meta:pad-gen:${slugKey}`
-
-export const writeCache = async (
-  cache: Cache,
-  key: string,
-  value: CacheEntry,
-  kind: 'positive' | 'negative'
-): Promise<void> => {
-  const ttl = kind === 'positive' ? CACHE_TTL_POSITIVE_SECONDS : CACHE_TTL_NEGATIVE_SECONDS
-  await cache.set(key, value, ttl)
-}

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 
+import { readApiJson } from './readApiJson'
 import { safeFetch } from './ssrf'
-import { readApiJson } from './stages/handlers/readApiJson'
 import { type ArchiveMiss, type ArchiveSnapshot, LINK_PREVIEW_USER_AGENT } from './types'
 
 const AVAILABILITY_ENDPOINT = 'https://archive.org/wayback/available'
@@ -19,14 +19,14 @@ export const archiveCacheKey = (canonicalUrl: string): string =>
   `meta:archive:v1:${createHash('sha1').update(canonicalUrl).digest('hex')}`
 
 /** The read-only lookup. Save Page Now (`/save/`) is never called: we do not archive pages. */
-export const availabilityUrl = (pageUrl: string): string =>
+const availabilityUrl = (pageUrl: string): string =>
   `${AVAILABILITY_ENDPOINT}?url=${encodeURIComponent(pageUrl)}`
 
 /**
  * The API names snapshots with `http://`, so the scheme is upgraded before the check.
  * Anything off `https://web.archive.org/web/` is refused, parsed rather than prefix-matched.
  */
-export const snapshotUrl = (raw: unknown): string | null => {
+const snapshotUrl = (raw: unknown): string | null => {
   if (typeof raw !== 'string') return null
   let url: URL
   try {
@@ -40,7 +40,7 @@ export const snapshotUrl = (raw: unknown): string | null => {
 }
 
 /** `YYYYMMDDhhmmss`, in UTC, to ISO 8601. */
-export const snapshotTime = (raw: unknown): string | null => {
+const snapshotTime = (raw: unknown): string | null => {
   const m = typeof raw === 'string' ? WAYBACK_TIMESTAMP.exec(raw) : null
   if (!m) return null
   const date = new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}Z`)

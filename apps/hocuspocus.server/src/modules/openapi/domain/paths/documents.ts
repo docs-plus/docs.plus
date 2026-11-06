@@ -9,7 +9,7 @@ import {
   userIdQuerySchema
 } from '../../../../schemas/document.schema'
 import { MAX_DUPLICATE_MEDIA_OBJECTS } from '../../../../schemas/hypermultimedia.schema'
-import { MAX_TERM_CHARS } from '../../../social-card/domain/cardRequest'
+import { MAX_TERM_CHARS, MAX_TERMS } from '../../../social-card/domain/cardRequest'
 import { HOVERCARD_LIST, HOVERCARD_MAX_TERMS } from '../../../social-card/domain/hovercard'
 import type {
   JsonSchema,
@@ -23,6 +23,7 @@ import {
   dataEnvelope,
   DOCUMENT_ID_NOTE,
   pathParam,
+  queryParam,
   toJsonSchema,
   toParameters
 } from '../jsonSchema'
@@ -66,29 +67,17 @@ const ownedLifecycle = (
   }
 })
 
-const query = (
-  name: string,
-  description: string,
-  schema: JsonSchema = { type: 'string' }
-): OpenApiParameter => ({
-  name,
-  in: 'query',
-  required: false,
-  description,
-  schema
-})
-
 /** The social card sub-ids. The slug read and the card image URL take the same keys. */
 const cardQueryParams: OpenApiParameter[] = [
-  query('id', 'Heading `toc-id` from the pad link (`id=`): a Heading card.'),
-  query('c', 'Chat room link id, a channel id or a heading id (`chatroom=`).'),
-  query('m', 'Message id (`msg_id=`), read only with `c`: a Message card.'),
-  query('t', 'One filter term per value, at most 4: a Filter card.', {
+  queryParam('id', 'Heading `toc-id` from the pad link (`id=`): a Heading card.'),
+  queryParam('c', 'Chat room link id, a channel id or a heading id (`chatroom=`).'),
+  queryParam('m', 'Message id (`msg_id=`), read only with `c`: a Message card.'),
+  queryParam('t', `One filter term per value, at most ${MAX_TERMS}: a Filter card.`, {
     type: 'array',
     items: { type: 'string' }
   }),
-  query('mode', 'Filter mode; only `and` is carried.', { type: 'string', enum: ['and'] }),
-  query('version', 'History version number: a Version card.', { type: 'integer', minimum: 1 })
+  queryParam('mode', 'Filter mode; only `and` is carried.', { type: 'string', enum: ['and'] }),
+  queryParam('version', 'History version number: a Version card.', { type: 'integer', minimum: 1 })
 ]
 
 const socialCard: JsonSchema = {
@@ -171,7 +160,7 @@ export const documentsPaths: OpenApiPaths = {
         ...toParameters(userIdQuerySchema, 'query', {
           userId: 'Accepted for access context; owner identity always comes from the token subject.'
         }),
-        query(
+        queryParam(
           'card',
           '`1` asks for the social preview card. The webapp sends it on a full page load only.',
           { type: 'string', enum: ['1'] }
@@ -382,20 +371,20 @@ export const documentsPaths: OpenApiPaths = {
       security: optionalUserSecurity,
       parameters: [
         pathParam('docName', 'The document **slug**.'),
-        query('id', 'Heading `toc-id` (`id=` in the pad link).'),
-        query('chatroom', 'Chat room link id: a heading `toc-id` or a channel id.'),
-        query('msg_id', 'Message uuid, read only with `chatroom`.'),
-        query(
+        queryParam('id', 'Heading `toc-id` (`id=` in the pad link).'),
+        queryParam('chatroom', 'Chat room link id: a heading `toc-id` or a channel id.'),
+        queryParam('msg_id', 'Message uuid, read only with `chatroom`.'),
+        queryParam(
           'terms',
           `One filter term per \`terms\` key, as in the pad URL path. At most ${HOVERCARD_MAX_TERMS}, each at most ${MAX_TERM_CHARS} characters.`,
           { type: 'array', items: { type: 'string' } }
         ),
-        query('mode', 'Filter mode. A missing value is `or`, as in the app.', {
+        queryParam('mode', 'Filter mode. A missing value is `or`, as in the app.', {
           type: 'string',
           enum: ['and', 'or']
         }),
-        query('version', 'History version number.', { type: 'integer', minimum: 1 }),
-        query('history', 'The History link.', { type: 'string', enum: ['1'] })
+        queryParam('version', 'History version number.', { type: 'integer', minimum: 1 }),
+        queryParam('history', 'The History link.', { type: 'string', enum: ['1'] })
       ],
       responses: {
         '200': okEnvelope('The card for the link kind, or a locked notice.', {
@@ -514,7 +503,7 @@ export const documentsPaths: OpenApiPaths = {
       parameters: [
         pathParam('documentId', DOCUMENT_ID_NOTE),
         ...cardQueryParams,
-        query('v', 'The card version from the slug read. Ignored by the server.')
+        queryParam('v', 'The card version from the slug read. Ignored by the server.')
       ],
       responses: {
         '200': {

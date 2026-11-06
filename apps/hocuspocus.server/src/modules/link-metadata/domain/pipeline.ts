@@ -1,9 +1,15 @@
 import { canonicalize } from './canonicalize'
 import { isSafeUrl } from './ssrf'
-import { cacheKey, padGenerationKey, writeCache } from './stages/cache'
+import {
+  CACHE_TTL_NEGATIVE_SECONDS,
+  CACHE_TTL_POSITIVE_SECONDS,
+  cacheKey,
+  padGenerationKey
+} from './stages/cache'
 import { runFallback } from './stages/fallback'
 import {
   type Cache,
+  type CacheEntry,
   type ErrorResponse,
   type Fact,
   FACT_ICONS,
@@ -13,7 +19,7 @@ import {
   type HtmlMiss,
   LINK_KINDS,
   type LinkMiss,
-  type Scraper,
+  type PadSlugOf,
   type SpecialMiss,
   type StageResult
 } from './types'
@@ -21,11 +27,7 @@ import {
 export interface PipelineStages {
   oembed: (canonicalUrl: string) => Promise<StageResult>
   special: (canonicalUrl: string) => Promise<StageResult | SpecialMiss>
-  html: (
-    canonicalUrl: string,
-    scraper: Scraper,
-    acceptLanguage: string | undefined
-  ) => Promise<HtmlCard | HtmlMiss>
+  html: (canonicalUrl: string, acceptLanguage: string | undefined) => Promise<HtmlCard | HtmlMiss>
 }
 
 export interface StageEvent {
@@ -39,11 +41,10 @@ export interface PipelineInput {
   requestedUrl: string
   acceptLanguage: string | undefined
   cache: Cache
-  scraper: Scraper
   stages: PipelineStages
   publicUrl?: string | null
   /** The slug key of the pad a URL opens; its cards join that pad's group. */
-  padSlugOf?: (url: string) => string | null
+  padSlugOf?: PadSlugOf
   /** Optional logger hook the controller wires up; pipeline stays framework-free. */
   onStage?: (event: StageEvent) => void
 }
@@ -96,13 +97,13 @@ const WHITESPACE_RUN = /\s+/g
 // eslint-disable-next-line no-control-regex -- matching them is the whole point
 const CONTROL_CHARS = /[\u0000-\u001F\u007F-\u009F\u200E\u200F\u202A-\u202E\u2066-\u2069]/g
 
-const clean = (value: string): string =>
-  value.replace(WHITESPACE_RUN, ' ').replace(CONTROL_CHARS, '').replace(WHITESPACE_RUN, ' ').trim()
-
 /**
  * Whitespace collapses before the strip, so a newline stays a word break, and again after,
  * so a stripped mark leaves one space. The cut counts what is left.
  */
+const clean = (value: string): string =>
+  value.replace(WHITESPACE_RUN, ' ').replace(CONTROL_CHARS, '').replace(WHITESPACE_RUN, ' ').trim()
+
 const text = (value: unknown, max: number): string | undefined =>
   typeof value === 'string' ? cut(clean(value), max) : undefined
 
@@ -209,8 +210,7 @@ const keyFor = async (
 }
 
 export const runPipeline = async (input: PipelineInput): Promise<PipelineResult> => {
-  const { requestedUrl, acceptLanguage, cache, scraper, stages, publicUrl, padSlugOf, onStage } =
-    input
+  const { requestedUrl, acceptLanguage, cache, stages, publicUrl, padSlugOf, onStage } = input
 
   if (!isSafeUrl(requestedUrl)) {
     let parsed: URL | null = null
@@ -248,10 +248,7 @@ export const runPipeline = async (input: PipelineInput): Promise<PipelineResult>
     const start = Date.now()
     let outcome: HtmlCard | null | HtmlMiss | SpecialMiss
     try {
-      outcome =
-        name === 'html'
-          ? await stages.html(canonical, scraper, acceptLanguage)
-          : await stages[name](canonical)
+      outcome = await stages[name](canonical, acceptLanguage)
     } catch {
       // A misbehaving stage must not block the fallback. Treat throws as misses.
       outcome = null
@@ -272,11 +269,10 @@ export const runPipeline = async (input: PipelineInput): Promise<PipelineResult>
       // A redirect into a pad must not store that pad's title outside its generation.
       const landedOn = padSlugOf?.(card.url) ?? null
       if (key && (!landedOn || landedOn === padSlug)) {
-        await writeCache(
-          cache,
+        await cache.set(
           key,
           retry ? { ...card, retry: true } : card,
-          retry ? 'negative' : 'positive'
+          retry ? CACHE_TTL_NEGATIVE_SECONDS : CACHE_TTL_POSITIVE_SECONDS
         )
       }
       return {
@@ -292,7 +288,8 @@ export const runPipeline = async (input: PipelineInput): Promise<PipelineResult>
   const card = capCard(runFallback(canonical, publicUrl), canonical)
   const miss = missReason ? LINK_MISS_OF[missReason] : undefined
   if (key) {
-    await writeCache(cache, key, { ...card, fallback: true, ...(miss ? { miss } : {}) }, 'negative')
+    const entry: CacheEntry = { ...card, fallback: true, ...(miss ? { miss } : {}) }
+    await cache.set(key, entry, CACHE_TTL_NEGATIVE_SECONDS)
   }
   onStage?.({ stage: 'fallback', hit: true, durationMs: 0 })
   return {

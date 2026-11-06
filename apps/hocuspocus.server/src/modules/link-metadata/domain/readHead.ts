@@ -1,6 +1,8 @@
-const HEAD_CLOSE = '</head'
+// A page may omit `</head>`; its `<body` still ends the head, so the body never reaches it.
+const HEAD_ENDS = ['</head', '<body']
+const CARRY = Math.max(...HEAD_ENDS.map((end) => end.length))
 
-/** How far past `</head` the html stage reads, for JSON-LD scripts only. */
+/** How far past the head end the html stage reads, for JSON-LD scripts only. */
 export interface TailLimit {
   bytes: number
   ms: number
@@ -12,9 +14,15 @@ type Reader = {
 
 const EMPTY = new Uint8Array(0)
 
+/** The first head end in `text`, or -1. */
+export const firstHeadEnd = (text: string): number => {
+  const found = HEAD_ENDS.map((end) => text.indexOf(end)).filter((at) => at !== -1)
+  return found.length > 0 ? Math.min(...found) : -1
+}
+
 /**
- * Reads until the first `</head`, or `cap`. `bytes` may run past `headEnd`, because a chunk
- * can hold both. `done` means the stream ended. The search reads latin1, so one char is
+ * Reads until the first `</head` or `<body`, or `cap`. `bytes` may run past `headEnd`, because a
+ * chunk can hold both. `done` means the stream ended. The search reads latin1, so one char is
  * one byte, and the cut never depends on how the network split the page.
  */
 const readToHeadEnd = async (
@@ -32,7 +40,7 @@ const readToHeadEnd = async (
     total += chunk.byteLength
     const window =
       carry + Buffer.from(chunk.buffer, chunk.byteOffset, chunk.byteLength).toString('latin1')
-    const at = window.toLowerCase().indexOf(HEAD_CLOSE)
+    const at = firstHeadEnd(window.toLowerCase())
     if (at !== -1) {
       return {
         bytes: Buffer.concat(chunks, total),
@@ -40,13 +48,13 @@ const readToHeadEnd = async (
         done: false
       }
     }
-    carry = window.slice(-HEAD_CLOSE.length)
+    carry = window.slice(-CARRY)
   }
   return { bytes: Buffer.concat(chunks, total), headEnd: total, done: false }
 }
 
 /**
- * The head, and `readTail` to read on past `</head`: `tail.bytes` at most, within `tail.ms`,
+ * The head, and `readTail` to read on past the head end: `tail.bytes` at most, within `tail.ms`,
  * never past `cap`. A late or failed tail is `cut`, not thrown, because a second try may read
  * more. The caller aborts `hop` when it is done; that ends the read and frees the socket.
  */
@@ -88,7 +96,7 @@ export const readPage = async (
 }
 
 /**
- * The bytes before the first `</head`, or the first `cap` bytes. The caller aborts `hop`
+ * The bytes before the first `</head` or `<body`, or the first `cap` bytes. The caller aborts `hop`
  * after this, so the rest is never downloaded.
  */
 export const readHead = async (

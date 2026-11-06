@@ -1,40 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import {
-  CACHE_TTL_NEGATIVE_SECONDS,
-  CACHE_TTL_POSITIVE_SECONDS,
-  cacheKey,
-  writeCache
-} from '../../domain/stages/cache'
-import type { Cache, CacheEntry, StageResult } from '../../domain/types'
-
-interface FakeCache extends Cache {
-  store: Map<string, CacheEntry>
-  lastTtl: number
-}
-
-const makeFakeCache = (): FakeCache => {
-  const store = new Map<string, CacheEntry>()
-  const fake: FakeCache = {
-    store,
-    lastTtl: -1,
-    get: async (key) => store.get(key) ?? null,
-    set: async (key, value, ttl) => {
-      store.set(key, value)
-      fake.lastTtl = ttl
-    },
-    generation: async () => '0',
-    newGeneration: async () => {}
-  }
-  return fake
-}
-
-const sample: NonNullable<StageResult> = {
-  success: true,
-  url: 'https://example.com/x',
-  requested_url: 'https://example.com/x',
-  title: 'Example'
-}
+import { cacheKey } from '../../domain/stages/cache'
 
 describe('cacheKey', () => {
   test('uses meta:v4: prefix, sha1 of the canonical url, and the primary lang subtag', () => {
@@ -65,19 +31,5 @@ describe('cacheKey', () => {
 
   test('two different langs produce different keys', () => {
     expect(cacheKey('https://a.com', 'en')).not.toBe(cacheKey('https://a.com', 'fr'))
-  })
-})
-
-describe('writeCache', () => {
-  test('stores a positive result with positive TTL', async () => {
-    const cache = makeFakeCache()
-    await writeCache(cache, cacheKey('https://example.com', 'en'), sample, 'positive')
-    expect(cache.lastTtl).toBe(CACHE_TTL_POSITIVE_SECONDS)
-  })
-
-  test('stores a fallback result with negative TTL', async () => {
-    const cache = makeFakeCache()
-    await writeCache(cache, cacheKey('https://example.com', 'en'), sample, 'negative')
-    expect(cache.lastTtl).toBe(CACHE_TTL_NEGATIVE_SECONDS)
   })
 })
