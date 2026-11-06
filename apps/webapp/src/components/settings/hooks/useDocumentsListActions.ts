@@ -47,16 +47,16 @@ export function useDocumentsListActions({ userId, docs }: DocumentsListActionsIn
   }, [docs.length])
 
   const focusRowAt = useCallback((index: number) => {
-    const buttons = listRef.current?.querySelectorAll<HTMLElement>('[data-doc-row-button]')
-    if (!buttons?.length) return
-    const next = Math.max(0, Math.min(index, buttons.length - 1))
+    const links = listRef.current?.querySelectorAll<HTMLElement>('[data-doc-row-link]')
+    if (!links?.length) return
+    const next = Math.max(0, Math.min(index, links.length - 1))
     setActiveIndex(next)
-    buttons[next]?.focus()
+    links[next]?.focus()
   }, [])
 
   const handleListKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
-    // Only from a row nav button — never while the rename input (same <ul>) is focused.
-    if (!(e.target as HTMLElement).matches('[data-doc-row-button]')) return
+    // Only from a row link — never while the rename input (same <ul>) is focused.
+    if (!(e.target as HTMLElement).matches('[data-doc-row-link]')) return
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       focusRowAt(activeIndex + 1)

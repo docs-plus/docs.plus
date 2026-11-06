@@ -9,7 +9,7 @@ import { HOME_SITE_URL } from '@components/pages/home/homeMetadata'
 import { MutationCache, onlineManager, QueryCache, QueryClient } from '@tanstack/react-query'
 import { trackEvent } from '@utils/analytics'
 import { installChunkLoadRecovery } from '@utils/chunkLoadRecovery'
-import type { DocumentCard } from '@utils/fetchDocument'
+import type { DocumentMetadata } from '@utils/fetchDocument'
 import { captureUnknown } from '@utils/observability'
 import { getRoutePolicy, isDocumentAsPath } from '@utils/routePolicy'
 import { MotionConfig } from 'motion/react'
@@ -57,14 +57,10 @@ const Header = () => {
 const DOCUMENT_OG_DESCRIPTION =
   'docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge efficiently.'
 
-interface DocumentHeadMetadata {
-  documentId?: string
-  title?: string
-  description?: string
-  slug?: string
-  isPrivate?: boolean
-  card?: DocumentCard
-}
+type DocumentHeadMetadata = Pick<
+  DocumentMetadata,
+  'documentId' | 'title' | 'description' | 'slug' | 'isPrivate' | 'card'
+>
 
 const sameText = (a: string | undefined, b: string | undefined) =>
   !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase()
@@ -88,7 +84,7 @@ const PAD_FALLBACK_IMAGE = {
 
 // The card is served by REST; its `v` changes whenever anything it draws changes.
 const headImage = ({ documentId, card }: DocumentHeadMetadata) =>
-  documentId && card && process.env.NEXT_PUBLIC_RESTAPI_URL
+  card && process.env.NEXT_PUBLIC_RESTAPI_URL
     ? {
         url: `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${encodeURIComponent(documentId)}/card.png?${card.query}`,
         alt: card.alt

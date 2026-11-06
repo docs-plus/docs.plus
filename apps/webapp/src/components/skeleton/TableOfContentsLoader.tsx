@@ -7,7 +7,7 @@ import React, { type ReactNode } from 'react'
 // styles first.
 type RowProps = { widthClassName: string; hasChildren?: boolean }
 
-// A parent keeps a blank caret slot (option-A ruling, 2026-10-09); a leaf has none (#373 update).
+// A parent keeps a blank caret slot (option-A ruling, 2026-10-09); a leaf has none (#373).
 const DesktopRow = ({ widthClassName, hasChildren }: RowProps) => (
   <div className="flex min-h-8 items-center gap-1 px-3 py-1.5">
     {hasChildren ? <span className="size-5 shrink-0" /> : <span />}

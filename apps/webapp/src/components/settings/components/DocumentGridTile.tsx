@@ -1,14 +1,12 @@
-import { padUrl } from '@services/padUrl'
-import { useRouter } from 'next/router'
 import { LuEye, LuLock, LuStar } from 'react-icons/lu'
 
 import type { DocumentsListScope } from '../documentsQueryKey'
+import { useDocumentLink } from '../hooks/useDocumentLink'
 import { type DocumentMembersEntry } from '../hooks/useDocumentMembers'
 import { openRenameDocumentDialog } from '../openRenameDocumentDialog'
 import type { OwnedDocument } from '../types'
 import { documentDisplayName } from '../utils/documentDisplayName'
 import { documentListDate } from '../utils/documentListDate'
-import { isPlainLeftClick } from '../utils/isPlainLeftClick'
 import DocumentMembersCluster from './DocumentMembersCluster'
 import DocumentPreviewPaper from './DocumentPreviewPaper'
 import DocumentRowMenu from './DocumentRowMenu'
@@ -35,20 +33,13 @@ function DocumentGridTile({
   onActivate,
   onDelete
 }: DocumentGridTileProps) {
-  const router = useRouter()
   const label = documentDisplayName(doc)
   const date = documentListDate(doc, scope.sortKey)
   // An old server omits isOwner, and it answers the owned list only.
   const isOwner = doc.isOwner !== false
   const ownerName = isOwner ? null : doc.owner?.display_name
 
-  const href = padUrl.link({ kind: 'document', slug: doc.slug }, 'path')
-  const open = (e: React.MouseEvent) => {
-    if (!isPlainLeftClick(e)) return
-    e.preventDefault()
-    router.push(href)
-    onOpenDocument?.()
-  }
+  const { href, onClick: open } = useDocumentLink(doc.slug, onOpenDocument)
 
   const openRenameDialog = () => openRenameDocumentDialog(doc, scope)
 
@@ -56,7 +47,7 @@ function DocumentGridTile({
     <div className="rounded-box border-base-300 bg-base-100 hover:bg-base-200 focus-within:ring-primary relative flex flex-col border transition-colors focus-within:ring-2">
       <a
         href={href}
-        data-doc-row-button
+        data-doc-row-link
         tabIndex={isActive ? 0 : -1}
         onClick={open}
         onFocus={() => onActivate(index)}

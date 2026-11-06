@@ -21,6 +21,9 @@ import type { SupportRow, TabType } from './types'
 export const MAX_LINKS = 20
 export const MIN_PHONE_DIGITS = 7
 
+export const PASTE_TITLES_LABEL = 'Use page titles for pasted links'
+export const PAD_PASTE_TITLES_LABEL = 'Use pad titles for pasted pad links'
+
 /** The Link previews row and its skeleton share it. Settings renders in the browser only. */
 export const pasteTitlesHelp = (): string =>
   `A pasted web link shows the page title. ${isMacOS() ? '⌘+⇧+V' : 'Ctrl+Shift+V'} pastes the address as is.`

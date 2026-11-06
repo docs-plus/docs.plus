@@ -76,7 +76,6 @@ describe('paste title for a link to another pad (full stack)', () => {
   const padCard = () =>
     cy.intercept({ method: 'GET', pathname: `/api/documents/${target}/hovercard` }).as('padCard')
 
-  // A new line in a fresh pad, then the paste of the target pad's address.
   const pasteTargetLink = () => {
     cy.visit(`${BASE}/${source}`)
     pad().should('be.visible').click()

@@ -13,6 +13,8 @@ import {
   DARK_THEMES,
   LIGHT_THEMES,
   PAD_PASTE_TITLES_HELP,
+  PAD_PASTE_TITLES_LABEL,
+  PASTE_TITLES_LABEL,
   pasteTitlesHelp,
   type PickerTheme,
   type ThemeChoice
@@ -196,14 +198,14 @@ const AppearanceSection = () => {
           />
           <ToggleRow
             id="link-previews-paste"
-            label="Use page titles for pasted links"
+            label={PASTE_TITLES_LABEL}
             description={pasteTitlesHelp()}
             checked={pasteTitles}
             onChange={setPasteTitles}
           />
           <ToggleRow
             id="link-previews-paste-pad"
-            label="Use pad titles for pasted pad links"
+            label={PAD_PASTE_TITLES_LABEL}
             description={PAD_PASTE_TITLES_HELP}
             checked={padPasteTitles}
             onChange={setPadPasteTitles}

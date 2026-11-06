@@ -39,6 +39,8 @@ import {
   LIGHT_THEMES,
   MAX_LINKS,
   PAD_PASTE_TITLES_HELP,
+  PAD_PASTE_TITLES_LABEL,
+  PASTE_TITLES_LABEL,
   pasteTitlesHelp,
   readDocumentsViewMode,
   SETTINGS_TABS,
@@ -333,14 +335,8 @@ export const AppearanceSkeleton = () => {
             label="Show link previews on hover"
             description="A card with the page title and picture opens when the pointer rests on a link."
           />
-          <ToggleRowSkeleton
-            label="Use page titles for pasted links"
-            description={pasteTitlesHelp()}
-          />
-          <ToggleRowSkeleton
-            label="Use pad titles for pasted pad links"
-            description={PAD_PASTE_TITLES_HELP}
-          />
+          <ToggleRowSkeleton label={PASTE_TITLES_LABEL} description={pasteTitlesHelp()} />
+          <ToggleRowSkeleton label={PAD_PASTE_TITLES_LABEL} description={PAD_PASTE_TITLES_HELP} />
         </div>
       </SettingsCard>
     </div>

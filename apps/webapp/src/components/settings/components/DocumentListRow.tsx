@@ -1,17 +1,15 @@
 import TextInput from '@components/ui/TextInput'
-import { padUrl } from '@services/padUrl'
-import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
 import { LuFileText } from 'react-icons/lu'
 
 import type { DocumentsListScope } from '../documentsQueryKey'
 import useCommitDocumentRename from '../hooks/useCommitDocumentRename'
+import { useDocumentLink } from '../hooks/useDocumentLink'
 import { type DocumentMembersEntry } from '../hooks/useDocumentMembers'
 import { openRenameDocumentDialog } from '../openRenameDocumentDialog'
 import type { OwnedDocument } from '../types'
 import { documentDisplayName } from '../utils/documentDisplayName'
 import { documentListDate } from '../utils/documentListDate'
-import { isPlainLeftClick } from '../utils/isPlainLeftClick'
 import DocumentMembersCluster from './DocumentMembersCluster'
 import DocumentRowLabel from './DocumentRowLabel'
 import DocumentRowMenu from './DocumentRowMenu'
@@ -44,7 +42,6 @@ function DocumentListRow({
   onDelete,
   renameInDialog
 }: DocumentListRowProps) {
-  const router = useRouter()
   const label = documentDisplayName(doc)
   const date = documentListDate(doc, scope.sortKey)
   // Another person's row names its owner. An ownerless row has no name to show.
@@ -55,7 +52,7 @@ function DocumentListRow({
   const { commit } = useCommitDocumentRename(scope)
   const [isRenaming, setIsRenaming] = useState(false)
   const [draft, setDraft] = useState('')
-  const buttonRef = useRef<HTMLAnchorElement>(null)
+  const linkRef = useRef<HTMLAnchorElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   // Enter commits then blurs the unmounting input, which would commit again — latch once.
   const finishedRef = useRef(false)
@@ -81,7 +78,7 @@ function DocumentListRow({
     return () => clearTimeout(timer)
   }, [isRenaming])
 
-  // Return focus to the row button once the input is gone.
+  // Return focus to the row link once the input is gone.
   useEffect(() => {
     if (isRenaming) {
       wasRenamingRef.current = true
@@ -90,18 +87,12 @@ function DocumentListRow({
     if (wasRenamingRef.current) {
       wasRenamingRef.current = false
       // Defer to the next frame so the committing Enter keystroke fully settles before
-      // focus lands on the button — otherwise that same Enter activates it (navigates).
-      requestAnimationFrame(() => buttonRef.current?.focus())
+      // focus lands on the link — otherwise that same Enter activates it (navigates).
+      requestAnimationFrame(() => linkRef.current?.focus())
     }
   }, [isRenaming])
 
-  const href = padUrl.link({ kind: 'document', slug: doc.slug }, 'path')
-  const open = (e: React.MouseEvent) => {
-    if (!isPlainLeftClick(e)) return
-    e.preventDefault()
-    router.push(href)
-    onOpenDocument?.()
-  }
+  const { href, onClick: open } = useDocumentLink(doc.slug, onOpenDocument)
 
   const commitAndExit = () => {
     if (finishedRef.current) return
@@ -129,7 +120,7 @@ function DocumentListRow({
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
             // Stop the key here: without it the committing Enter bubbles/defaults into the
-            // row button (focused on exit) and navigates into the doc, leaving the modal.
+            // row link (focused on exit) and navigates into the doc, leaving the modal.
             if (e.key === 'Enter') {
               e.preventDefault()
               e.stopPropagation()
@@ -154,9 +145,9 @@ function DocumentListRow({
       {/* The link's `after:` box covers the whole row; sibling buttons sit above it. */}
       <div className="hover:bg-base-200 md:rounded-field relative flex items-center gap-1 pr-1 transition-colors [&>button]:relative">
         <a
-          ref={buttonRef}
+          ref={linkRef}
           href={href}
-          data-doc-row-button
+          data-doc-row-link
           tabIndex={isActive ? 0 : -1}
           onClick={open}
           onFocus={() => onActivate(index)}

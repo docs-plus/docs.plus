@@ -23,11 +23,7 @@ declare global {
     _createDocumentFromStructure?: (structure: any) => boolean
     _editor?: Editor
     /** `after` means after the target's whole section; the slot sets the level. */
-    _moveHeading?: (
-      sourceId: string,
-      targetId: string,
-      position: 'before' | 'after' | 'inside'
-    ) => boolean
+    _moveHeading?: (sourceId: string, targetId: string, position: 'before' | 'after') => boolean
     _getMarkdown?: () => string
     _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
     /** Cypress escape hatch: lets specs seed Zustand state (e.g. `metadata.documentId` to enable bookmark RPC). Playground-only — production routes never touch this. */
@@ -86,11 +82,9 @@ const EditorPlayground = ({ localPersistence, docName }: EditorPlaygroundProps) 
       const plan = planTocMove(
         editor,
         sourceId,
-        position === 'inside'
-          ? { kind: 'inside', id: targetId }
-          : position === 'before'
-            ? { kind: 'gap', upperId: null, lowerId: targetId }
-            : { kind: 'gap', upperId: targetId, lowerId: null }
+        position === 'before'
+          ? { kind: 'gap', upperId: null, lowerId: targetId }
+          : { kind: 'gap', upperId: targetId, lowerId: null }
       )
       if (!plan?.ok) return false
       commitTocMove(editor, plan)
