@@ -15,6 +15,7 @@ import {
 import { useHeadingUnreadCount } from '@hooks/useUnreadCount'
 import { Icons } from '@icons'
 import { useChatStore } from '@stores'
+import { formatCappedCount } from '@utils/formatCappedCount'
 import { twMerge } from '@utils/twMerge'
 import { type RefObject, useLayoutEffect, useRef, useState } from 'react'
 
@@ -91,7 +92,14 @@ function PreviewChatAction({
       ref={actionRef}
       type="button"
       data-toc-rail-preview-chat=""
-      aria-label={isActive ? 'Close chatroom' : `Open chatroom for ${label}`}
+      // The name replaces the badge, so it carries the count a keyboard user would miss.
+      aria-label={
+        isActive
+          ? 'Close chatroom'
+          : unreadCount > 0
+            ? `Open chatroom for ${label}, ${formatCappedCount(unreadCount)} unread`
+            : `Open chatroom for ${label}`
+      }
       className="btn btn-ghost btn-sm btn-square -mt-1.5 -mr-1.5 shrink-0"
       onClick={onClick}>
       {unreadCount > 0 ? (
