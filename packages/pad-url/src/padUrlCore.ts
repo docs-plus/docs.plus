@@ -188,7 +188,10 @@ function parse(href: string, origin: string): PadFacets | null {
   }
 }
 
-/** The order the app opens a link in: filter, then chat, then heading. A filter path keeps `id=`, and the filter wins. */
+/**
+ * The order the app opens a link in: filter, then chat, then heading.
+ * A filter path keeps `id=`, and the filter wins.
+ */
 function place(pad: PadFacets): PadPlace {
   if (pad.terms.length > 0) return { kind: 'filter', terms: pad.terms, mode: pad.mode ?? 'or' }
   if (pad.chat) return { kind: 'chat', ...pad.chat }
