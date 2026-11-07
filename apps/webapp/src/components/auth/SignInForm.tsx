@@ -75,6 +75,8 @@ const SignInForm = ({ returnTo, touch = false, children }: SignInFormProps) => {
   }
 
   const returnToEmailStep = () => {
+    // A resend in flight would land after this and mark the new address as sent.
+    if (emailBusy) return
     setFocusEmail(true)
     setEmailSent(false)
     setSentNotice('')
@@ -224,7 +226,11 @@ const SignInForm = ({ returnTo, touch = false, children }: SignInFormProps) => {
             <li>It signs you in wherever it opens, even inside your mail app.</li>
             <li>No email after a minute? Check your spam folder.</li>
           </ul>
-          {emailError ? <FieldHelp error>{emailError}</FieldHelp> : null}
+          {emailError ? (
+            <FieldHelp error role="alert">
+              {emailError}
+            </FieldHelp>
+          ) : null}
           <Button
             shape="block"
             className={buttonHeight}
@@ -237,7 +243,12 @@ const SignInForm = ({ returnTo, touch = false, children }: SignInFormProps) => {
       ),
       // The pressed Send button unmounts here; without this, focus falls to `body`.
       back: (
-        <Button ref={backRef} variant="quiet" onClick={returnToEmailStep} autoFocus>
+        <Button
+          ref={backRef}
+          variant="quiet"
+          onClick={returnToEmailStep}
+          aria-disabled={emailBusy || undefined}
+          autoFocus>
           Use a different email
         </Button>
       )
