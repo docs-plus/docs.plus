@@ -208,11 +208,18 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 - Email sign-in now works when the link opens in another browser, such as a mail app's
   own browser. Before, the link signed in nowhere and showed only a vague error, so people
-  asked again and hit the send limit. The link now carries `#token_hash=`, and the app signs
-  in with `verifyOtp`, which needs no code verifier. Sign-in errors are now plain words
-  under the field: the send limit shows a countdown on "Send a new link", and a spent or
-  old link explains itself with a Sign in action. `/auth/error` shows the sign-in form
-  instead of a Back button that did nothing in a new tab.
+  asked again and hit the send limit. The link now carries `#token_hash=`, and
+  `components/auth/authLanding.ts` signs in with `verifyOtp`, which needs no code verifier.
+  Sign-in errors are now plain words under the field. The send limit shows a countdown on
+  "Send a new link", and a spent link explains itself with a Sign in action. A failed Google
+  sign-in no longer reads as an email problem. A sign-in started on a page with a hash, such as
+  `#history?version=3`, now gets a working link. `/auth/error` shows the sign-in form instead of
+  a Back button that did nothing in a new tab.
+- Sign-in, presence and the notification bell no longer stop when the browser wrongly reports
+  offline. Chrome can hold `navigator.onLine` at false after a Mac sleeps, while requests still
+  work. The Supabase client refused every request while the flag was false, so email and Google
+  sign-in failed with nothing in any log, and people showed as offline. No network work waits on
+  the flag now; a request made while really offline fails on its own.
 
 - Dragging an empty heading in the outline now shows "Heading N" on the drag card, as its row
   does. Before, the card was blank.

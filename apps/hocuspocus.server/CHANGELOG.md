@@ -201,6 +201,9 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 
 ### Removed
 
+- `templates/`, the three Supabase Auth mail templates. They moved to
+  `packages/supabase/templates/`, because the Supabase CLI accepts no template path outside
+  `packages/`. See the [supabase changelog](../../packages/supabase/CHANGELOG.md).
 - `metascraper`, its nine plugins, `@metascraper/helpers` and the root `overrides` pin ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
   Their `jsdom`, `re2`, `chrono-node` and `mime@4` copies leave the server tree with them. The
   pin existed because those helpers crashed REST at boot on Bun. `entities` 7.0.1 now decodes

@@ -34,6 +34,11 @@ faces, the roster and the admin member counts fail
 ([#574](https://github.com/docs-plus/docs.plus/issues/574)).
 [`packages/supabase/CHANGELOG.md`](packages/supabase/CHANGELOG.md) says what each migration does.
 
+The Supabase Auth mail templates moved to
+[`packages/supabase/templates/`](packages/supabase/templates/). After the frontend deploy, paste
+`magic-link.html` into **Magic Link** and `confirm-signup.html` into **Confirm signup**. Paste
+them after the deploy, not before: the new links need the new frontend.
+
 `APP_HOSTS` must now hold bare host names, such as `docs.plus,new.docs.plus`. A scheme, a port or a
 path stops the server at boot. See [hocuspocus Changed](apps/hocuspocus.server/CHANGELOG.md#changed).
 
@@ -61,6 +66,36 @@ path stops the server at boot. See [hocuspocus Changed](apps/hocuspocus.server/C
   shows the page's picture, site, title and description. Our server fetches all of it, so your
   browser sends nothing to the linked site. A click still opens the link preview
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- A docs.plus link has its own hovercard on the desktop pad. It covers a link to another pad, a
+  heading, a chat, a message, a filter or a version. A Private pad you cannot open shows only
+  "This document is private" ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- A web link with no preview says why, and warns when its text names another site. When the site
+  blocked our server or did not answer, **View archived copy** asks the Wayback Machine for the
+  closest copy ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- A link whose text is its own web address shows a **Use page title** button on its hovercard.
+  One click puts the page title in place of the address
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- A web link pasted on its own into a pad shows the page title in place of its address
+  ([#681](https://github.com/docs-plus/docs.plus/issues/681)). One undo brings the address back.
+  ⌘+⇧+V (Ctrl+Shift+V) pastes the address as is.
+- A link to another docs.plus pad, pasted on its own into a pad, shows that pad's title
+  ([#680](https://github.com/docs-plus/docs.plus/issues/680)). A link to a Private pad keeps its
+  address.
+- Settings → Appearance has a "Link previews" card with three switches: hovercards, page titles
+  for pasted links, and pad titles for pasted pad links. Each switch is on by default, is stored
+  per browser, and applies only while you are signed in.
+- A link to a part of this pad shows as a chip with its kind icon: heading, chat, filter, version
+  or top ([#174](https://github.com/docs-plus/docs.plus/issues/174)). A filter link's preview
+  names every term.
+- With the caret inside a link, Mod+K opens its preview and Alt+Enter opens the link. Mod-click
+  opens a new tab. Links show the hand cursor only while Mod is held.
+- The tick rail section preview is now a card you can use
+  ([#645](https://github.com/docs-plus/docs.plus/issues/645)). Its chat button opens that
+  heading's chat. The keyboard can Tab into the card and leave it with Escape.
+- A History share link carries `?version=<n>`, so it opens History at that version, and the server
+  can draw that version's card ([#668](https://github.com/docs-plus/docs.plus/issues/668)).
+- DOCX import accepts every tracked change in a file and says so, with the new warning code
+  `tracked-changes-accepted`.
 
 ### Changed
 
@@ -105,9 +140,22 @@ path stops the server at boot. See [hocuspocus Changed](apps/hocuspocus.server/C
   like a breadcrumb, `…/demo?h=docs.plus-demo>whats-new>docs.plus-2.2.0&id=…`, and a filter link like
   `/demo/draw-a-diagram`. A link you copy no longer carries your open filter or chat
   ([#646](https://github.com/docs-plus/docs.plus/issues/646)).
+- A desktop TOC drag now moves a section like a folder in a file manager
+  ([#499](https://github.com/docs-plus/docs.plus/issues/499)). The drop slot sets the level. A
+  drop on the middle of a row nests the section inside that row.
+- A paste from the same pad keeps each heading's id, so a full cut and paste keeps heading chats
+  and `?id=` links ([#700](https://github.com/docs-plus/docs.plus/issues/700)).
+- A heading with no text now has a TOC row, with a grey label such as "Heading 2".
+- A plain click on a link to another pad opens that pad in the same window.
 
 ### Fixed
 
+- **Email sign-in works from any browser.** A sign-in link opened in a mail app's own browser,
+  such as Gmail's, signed in nowhere. The link now signs in wherever it opens, and sign-in
+  errors say what to do next.
+- **Sign-in no longer stops when the browser wrongly says offline.** Chrome can report offline
+  after a Mac sleeps while the network works. Email sign-in, Google sign-in and online status
+  then failed until Chrome restarted.
 - **Chat emails open the right pad.** An immediate chat email opened the home page, and a digest
   link could open a new empty pad. An immediate chat email now opens the pad at the message, and a
   digest opens the pad's chat ([#647](https://github.com/docs-plus/docs.plus/issues/647)).
