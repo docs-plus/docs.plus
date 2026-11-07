@@ -4,6 +4,9 @@ import {
   isAuthRetryableFetchError
 } from '@supabase/supabase-js'
 
+/** Mirrors the dashboard's Email OTP expiration (3600 s) and the templates' sentence. */
+export const LINK_LIFETIME = '1 hour'
+
 export interface SignInProblem {
   message: string
   /** Set only when Supabase named the wait, so the form can count it down. */
@@ -11,6 +14,7 @@ export interface SignInProblem {
 }
 
 const OFFLINE = "We couldn't reach docs.plus. Check your connection and try again."
+const SPENT_LINK = `This sign-in link no longer works. A link works once, for ${LINK_LIFETIME}. Sign in again to get a new one.`
 const RETRY_AFTER = /after (\d+) seconds?/i
 
 /** Supabase writes the wait only into the 429 text, so this is the one message read. */
@@ -53,29 +57,26 @@ export function describeEmailLinkError(error: unknown): SignInProblem {
   }
 }
 
-/** Why a returning sign-in link (`?code=`) did not sign this browser in. */
-export function describeLinkLandingError(error: unknown): string {
-  // The verifier is missing in another browser, and also after an older email's link
-  // spent it here (each request replaces it; measured with @supabase/ssr 0.12.7).
-  if (isAuthPKCECodeVerifierMissingError(error)) {
-    return "This older sign-in link can't sign you in here. Sign in again: the new link works in any browser."
-  }
-  // A newer request replaced this browser's verifier, so an older email's code no longer matches.
-  if (
-    isAuthError(error) &&
-    (error.code === 'validation_failed' || error.code === 'bad_code_verifier')
-  ) {
-    return 'This link is from an older email. Sign in again: the new link works in any browser.'
-  }
+/** Why the email link's `#token_hash` did not sign in. Only this path may name the email. */
+export function describeTokenHashError(error: unknown): string {
+  if (isAuthRetryableFetchError(error) || !isAuthError(error)) return OFFLINE
+  return error.code === 'otp_expired'
+    ? SPENT_LINK
+    : "This sign-in link didn't work. Sign in again to get a new one."
+}
+
+/** Why a `?code=` return did not sign in. Google uses this path too, so it names neither. */
+export function describeCodeExchangeError(error: unknown): string {
   if (isAuthRetryableFetchError(error)) {
     return "Sign-in didn't finish because docs.plus could not be reached. Check your connection and sign in again."
   }
-  return 'This sign-in link has expired or was already used. Sign in again to get a new link.'
+  // The verifier lives in the browser that started sign-in.
+  return isAuthPKCECodeVerifierMissingError(error)
+    ? "Sign-in didn't finish in this browser. Sign in again here."
+    : "Sign-in didn't finish. Sign in again."
 }
 
-/** Why Supabase sent the reader back with `?error_code=` instead of a session. */
-export function describeLinkErrorCode(code: string): string {
-  return code === 'otp_expired'
-    ? 'This sign-in link no longer works. A link works once, for 1 hour. Sign in again to get a new one.'
-    : "Sign-in didn't finish. Sign in again to get a new link."
+/** Why Auth sent the reader back with `?error_code=`. Only `otp_expired` is email-only. */
+export function describeReturnErrorCode(code: string): string {
+  return code === 'otp_expired' ? SPENT_LINK : "Sign-in didn't finish. Sign in again."
 }

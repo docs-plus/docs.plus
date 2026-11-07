@@ -233,7 +233,7 @@ Supabase Auth sends sign-in links itself, from its own SMTP settings. The email 
 5. Open **Authentication > Emails > Templates**. Paste each branded template from [`packages/supabase/templates/`](../../packages/supabase/templates/): `magic-link.html` into **Magic Link**, `confirm-signup.html` into **Confirm signup**, and `change-email-address.html` into **Change Email Address**. The default templates are a bare link, and spam filters distrust that on a new domain. The sign-in templates also link back with `#token_hash=` rather than the default PKCE link, so the link works in any browser or mail app. Keep that link when you rename things. Before you paste, replace each `docs.plus` in a template with your own name. It appears in the title, the header, the body, the footer link and the copyright line.
 6. Keep click tracking off on the sending domain. Tracking rewrites the link, and the rewritten sign-in link fails.
 
-The templates say that the link expires in 1 hour. If you change **Email OTP expiration**, change that sentence too.
+The templates say that the link expires in 1 hour, and so does the sign-in form (`LINK_LIFETIME` in `apps/webapp/src/components/auth/signInErrors.ts`). If you change **Email OTP expiration**, change both.
 
 ### Your privacy duties
 

@@ -5,9 +5,10 @@ import {
 } from '@supabase/supabase-js'
 
 import {
+  describeCodeExchangeError,
   describeEmailLinkError,
-  describeLinkErrorCode,
-  describeLinkLandingError
+  describeReturnErrorCode,
+  describeTokenHashError
 } from './signInErrors'
 
 const apiError = (code: string, message = 'server text', status = 400) =>
@@ -72,28 +73,29 @@ describe('describeEmailLinkError', () => {
   })
 })
 
-describe('describeLinkLandingError', () => {
-  it('sends an old PKCE link back to a fresh sign-in', () => {
-    expect(describeLinkLandingError(new AuthPKCECodeVerifierMissingError())).toMatch(
-      /works in any browser/
+describe('describeTokenHashError', () => {
+  it('explains a spent link and a network failure', () => {
+    expect(describeTokenHashError(apiError('otp_expired', 'x', 403))).toMatch(/works once/)
+    expect(describeTokenHashError(new AuthRetryableFetchError('Load failed', 0))).toMatch(
+      /couldn't reach/
     )
-  })
-
-  it('names an older email when the code no longer matches the verifier', () => {
-    expect(describeLinkLandingError(apiError('validation_failed'))).toMatch(/from an older email/)
-  })
-
-  it('separates a network failure from a spent link', () => {
-    expect(describeLinkLandingError(new AuthRetryableFetchError('Load failed', 0))).toMatch(
-      /could not be reached/
-    )
-    expect(describeLinkLandingError(apiError('flow_state_expired'))).toMatch(/expired/)
   })
 })
 
-describe('describeLinkErrorCode', () => {
-  it('explains a spent link and stays generic for anything else', () => {
-    expect(describeLinkErrorCode('otp_expired')).toMatch(/works once, for 1 hour/)
-    expect(describeLinkErrorCode('server_error')).not.toMatch(/works once/)
+describe('the paths Google shares', () => {
+  // Google sign-in returns through `?code=` and `?error_code=` too.
+  it('never names an email or a link on a `?code=` return', () => {
+    for (const error of [
+      new AuthPKCECodeVerifierMissingError(),
+      apiError('validation_failed'),
+      new AuthRetryableFetchError('Load failed', 0)
+    ]) {
+      expect(describeCodeExchangeError(error)).not.toMatch(/email|link/i)
+    }
+  })
+
+  it('keeps email wording for `otp_expired` only', () => {
+    expect(describeReturnErrorCode('otp_expired')).toMatch(/sign-in link/)
+    expect(describeReturnErrorCode('access_denied')).not.toMatch(/email|link/i)
   })
 })
