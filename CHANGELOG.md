@@ -45,11 +45,12 @@ path stops the server at boot. See [hocuspocus Changed](apps/hocuspocus.server/C
 ### Added
 
 - A shared pad link now shows a docs.plus card in chat apps and on social sites
-  ([#663](https://github.com/docs-plus/docs.plus/issues/663)). At first every pad link shows
-  one static card. The server can also draw a card for each pad: its title with its outline or
-  first lines, a section, a chat room, a message, a version, or a filter. Each kind turns on
-  with `SOCIAL_CARD_KINDS`. A card never shows a name, a face or message text, and a Private pad
-  never gets one.
+  ([#663](https://github.com/docs-plus/docs.plus/issues/663)). A public pad with an owner shows
+  its real content: its name, its first paragraph or its section names, and an "Open the
+  document" link. From 3 members the card also says "N people joined". Every other pad link
+  shows the docs.plus homepage card. A section, a chat room, a message, a version or a filter
+  link can get a card of its own, and each kind turns on with `SOCIAL_CARD_KINDS`. A card never
+  shows a name, a face or message text, and a Private pad never gets one.
 - When a pad's description only repeats its title or address, the link preview shows the
   docs.plus description instead.
 - The server icon route `GET /api/metadata/icon` finds a site's icon for pad links. It
@@ -150,6 +151,8 @@ path stops the server at boot. See [hocuspocus Changed](apps/hocuspocus.server/C
 
 ### Fixed
 
+- **Folded sections open again.** A folded section stayed shut. A click on its fold in the pad
+  or on its arrow in the table of contents did nothing.
 - **Email sign-in works from any browser.** A sign-in link opened in a mail app's own browser,
   such as Gmail's, signed in nowhere. The link now signs in wherever it opens, and sign-in
   errors say what to do next.

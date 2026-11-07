@@ -209,6 +209,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- A fold opens again from its crinkle and from its TOC arrow. Tiptap's unmount and mount
+  rebuild the editor view but keep the fold plugin, and the pad rebuilds it on load. The plugin
+  held one `destroyed` flag for every view, so after the first rebuild no end-of-animation timer
+  landed. Each fold stayed in `animating`, and `toggle` ignores a section while it animates. The
+  flag, the timers and the previous-state snapshot now belong to each view
+  (`heading-fold-plugin.ts`).
 - Email sign-in now works when the link opens in another browser, such as a mail app's
   own browser. Before, the link signed in nowhere and showed only a vague error, so people
   asked again and hit the send limit. The link now carries `#token_hash=`, and
@@ -375,6 +381,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Internal
 
+- `heading-fold-plugin.test.ts` rebuilds the editor view and checks that a fold still opens and
+  closes. The fold spec `heading-fold-unfold.cy.js` no longer checks unfold with `contain`, which
+  passes on hidden text. It reads the crinkle phase and text visibility, and adds an unfold by a
+  click on the crinkle.
 - One module, Pad URL (`services/padUrl.ts`, over the shared package `@docs.plus/pad-url`), builds,
   writes and reads every pad address. `link` builds from the pad's own address, `go` changes the
   address bar and picks the history writer, and `read` also parses old link forms. It replaces
