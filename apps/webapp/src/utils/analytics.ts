@@ -31,5 +31,9 @@ export const trackSignUpOnce = (session: Session | null): void => {
     // No storage (private mode) — skip rather than refire on every load.
     return
   }
-  trackEvent('sign_up', { method: user.app_metadata?.provider ?? 'email' })
+  // The email link reloads the page right after sign-in; a beacon survives the unload.
+  trackEvent('sign_up', {
+    method: user.app_metadata?.provider ?? 'email',
+    transport_type: 'beacon'
+  })
 }
