@@ -6,7 +6,7 @@ import { AppQueryClientRoot } from '@components/AppQueryClientRoot'
 import BottomSheet from '@components/BottomSheet'
 import GoogleAnalytics from '@components/GoogleAnalytics'
 import { HOME_SITE_URL } from '@components/pages/home/homeMetadata'
-import { MutationCache, onlineManager, QueryCache, QueryClient } from '@tanstack/react-query'
+import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
 import { trackEvent } from '@utils/analytics'
 import { installChunkLoadRecovery } from '@utils/chunkLoadRecovery'
 import type { DocumentMetadata } from '@utils/fetchDocument'
@@ -157,8 +157,8 @@ export default function MyApp({
 }) {
   const router = useRouter()
   const [queryClient] = useState(() => {
-    // TanStack assumes online until an 'offline' event, so a page opened offline would send and fail.
-    if (typeof window !== 'undefined' && !navigator.onLine) onlineManager.setOnline(false)
+    // No `onlineManager.setOnline(navigator.onLine)` seed: a stale false flag paused every
+    // query until an 'online' event that never came. A query sent offline just fails.
     return new QueryClient({
       queryCache: new QueryCache({
         onError: (error) => captureUnknown(error, { tags: { surface: 'react-query' } })

@@ -36,10 +36,6 @@ export const uploadFileToStorageWithProgress = async (
   contentType?: string,
   { onProgress, signal }: StorageUploadProgress = {}
 ): Promise<{ data: { path: string } | null; error: Error | null }> => {
-  if (!navigator.onLine) {
-    return { data: null, error: new Error('Network offline') }
-  }
-
   const {
     data: { session }
   } = await supabaseClient.auth.getSession()

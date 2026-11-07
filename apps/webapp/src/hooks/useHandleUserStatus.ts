@@ -24,7 +24,6 @@ export const useHandleUserStatus = (enabled = true) => {
     })
 
     const writeStatus = async (status: 'ONLINE' | 'OFFLINE') => {
-      if (!navigator.onLine) return // the global fetch rejects offline; skip to keep the log quiet
       const { error } = await updateUser(userId, { status })
       if (error) console.warn(`Status write ${status} failed`, error.message)
     }

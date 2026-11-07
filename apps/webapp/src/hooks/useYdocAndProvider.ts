@@ -350,7 +350,8 @@ const useYdocAndProvider = ({
       // offline edit does. providerSyncing stays false through a disconnect.
       if (!useStore.getState().settings.editor.providerSyncing) requestPersistentStorage()
       if (!isSyncedRef.current) return
-      if (typeof navigator !== 'undefined' && !navigator.onLine) return
+      // The socket's own state, not `navigator.onLine`, which can be stale after sleep.
+      if (useStore.getState().settings.providerStatus === 'offline') return
       if (authStoppedRef.current) return
 
       if (syncedTimeoutRef.current) {

@@ -29,19 +29,9 @@ export const useOnAuthStateChange = () => {
   )
 
   useEffect(() => {
-    if (!navigator.onLine) {
-      setLoading(false)
-      return
-    }
-
     setLoading(true)
     const stopMediaRetry = retryMediaAfterSession()
     const { data } = supabaseClient.auth.onAuthStateChange((event, session) => {
-      if (!navigator.onLine) {
-        setLoading(false)
-        return
-      }
-
       if (
         (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') &&
         session?.access_token

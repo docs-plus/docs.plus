@@ -13,20 +13,14 @@ export function createClient() {
         params: {
           eventsPerSecond: 30
         },
-        reconnectAfterMs: (tries: number) => {
-          if (!navigator.onLine) {
-            return 60_000
-          }
-          return Math.min(1000 * Math.pow(2, tries), 10000)
-        }
+        // No `navigator.onLine` branch: Chrome can hold it false after sleep while the
+        // network works, which turned a 10 s retry into a 60 s one (2026-11-07).
+        reconnectAfterMs: (tries: number) => Math.min(1000 * Math.pow(2, tries), 10000)
       },
       global: {
-        fetch: async (url, options = {}) => {
-          if (!navigator.onLine) {
-            return Promise.reject(new Error('Network offline'))
-          }
-          return supabaseFetch(url, options)
-        }
+        // No `navigator.onLine` guard: a stale false flag refused every Supabase call,
+        // sign-in included, with nothing in any log (2026-11-07). Offline fails on its own.
+        fetch: (url, options = {}) => supabaseFetch(url, options)
       }
     }
   )

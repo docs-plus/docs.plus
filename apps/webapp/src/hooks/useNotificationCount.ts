@@ -80,8 +80,6 @@ export const useNotificationCount = ({ workspaceId }: UseNotificationCountProps)
       PubSub.unsubscribe(pushToken)
     }
 
-    if (!navigator.onLine) return stop
-
     const unsubscribe = subscribePrivateTopic(`notifications:${profile.id}`, (channel) => {
       channel.on('broadcast', { event: 'INSERT' }, (data: NotificationBroadcastPayload) => {
         const payload = data.payload

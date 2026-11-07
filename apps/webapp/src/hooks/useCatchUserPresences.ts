@@ -36,9 +36,6 @@ export const useCatchUserPresences = (enabled = true) => {
     if (!enabled) return
     if (!workspaceId) return
 
-    // Skip subscriptions if offline (prevents retry spam)
-    if (!navigator.onLine) return
-
     const channelMembersHandler = (payload: RealtimePostgresChangesPayload<ChannelMemberRow>) => {
       if (payload.table !== 'channel_members') return
       const row = payload.new as ChannelMemberRow
@@ -110,11 +107,6 @@ export const useCatchUserPresences = (enabled = true) => {
 
     messageSubscription.subscribe(async (status) => {
       if (status !== 'SUBSCRIBED') return
-
-      if (!navigator.onLine) {
-        messageSubscription.unsubscribe()
-        return
-      }
 
       anonymousSubscription.current?.unsubscribe()
 
