@@ -52,7 +52,8 @@ describe('describeEmailLinkError', () => {
     ['email_address_invalid', /real email address/],
     ['validation_failed', /valid email/],
     ['email_address_not_authorized', /can't send email/],
-    ['otp_disabled', /off right now/]
+    ['otp_disabled', /off right now/],
+    ['signup_disabled', /new accounts/]
   ])('maps %s by its code', (code, expected) => {
     expect(describeEmailLinkError(apiError(code)).message).toMatch(expected)
   })

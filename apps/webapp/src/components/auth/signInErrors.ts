@@ -49,6 +49,8 @@ export function describeEmailLinkError(error: unknown): SignInProblem {
     case 'email_address_not_authorized':
       return { message: "We can't send email to this address. Continue with Google instead." }
     case 'signup_disabled':
+      // Google is closed to new accounts too, so it is no way out here.
+      return { message: "We can't create new accounts right now. Check the email address." }
     case 'email_provider_disabled':
     case 'otp_disabled':
       return { message: 'Email sign-in is off right now. Continue with Google instead.' }
