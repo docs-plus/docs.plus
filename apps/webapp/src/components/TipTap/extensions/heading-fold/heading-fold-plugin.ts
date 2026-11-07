@@ -256,11 +256,6 @@ function pruneStaleIds(
 export function createHeadingFoldPlugin(
   options: HeadingFoldPluginOptions
 ): Plugin<HeadingFoldState> {
-  let destroyed = false
-  let prevFoldedIds = new Set(options.initialFoldedIds)
-  let prevAnimating = new Map<string, 'folding' | 'unfolding'>()
-  const pendingTimers = new Map<string, ReturnType<typeof setTimeout>>()
-
   return new Plugin<HeadingFoldState>({
     key: headingFoldPluginKey,
 
@@ -446,7 +441,30 @@ export function createHeadingFoldPlugin(
       }
     },
 
-    view() {
+    // Tiptap's unmount and mount rebuild the view but keep this plugin, so lifecycle state
+    // lives per view. A shared `destroyed` flag stuck every later fold in `animating`.
+    view(editorView) {
+      let destroyed = false
+      const pendingTimers = new Map<string, ReturnType<typeof setTimeout>>()
+      const initial = headingFoldPluginKey.getState(editorView.state)
+      let prevFoldedIds = new Set(initial?.foldedIds)
+      let prevAnimating = new Map(initial?.animating)
+
+      const scheduleEnd = (view: EditorView, id: string) => {
+        if (pendingTimers.has(id)) clearTimeout(pendingTimers.get(id))
+        const timer = setTimeout(() => {
+          if (destroyed) return
+          pendingTimers.delete(id)
+          const { tr } = view.state
+          tr.setMeta(headingFoldPluginKey, { type: 'endAnimation', id })
+          view.dispatch(tr)
+        }, FOLD_ANIMATION_MS + ANIMATION_SAFETY_MS)
+        pendingTimers.set(id, timer)
+      }
+
+      // The old view's destroy cleared its timers, so finish what it left mid-animation.
+      for (const id of prevAnimating.keys()) scheduleEnd(editorView, id)
+
       return {
         update(view) {
           const currentState = headingFoldPluginKey.getState(view.state)
@@ -461,18 +479,7 @@ export function createHeadingFoldPlugin(
           for (const id of animating.keys()) {
             if (!prevAnimating.has(id)) {
               animChanged = true
-              if (pendingTimers.has(id)) clearTimeout(pendingTimers.get(id))
-              const timer = setTimeout(() => {
-                if (destroyed) return
-                pendingTimers.delete(id)
-                const { tr } = view.state
-                tr.setMeta(headingFoldPluginKey, {
-                  type: 'endAnimation',
-                  id
-                })
-                view.dispatch(tr)
-              }, FOLD_ANIMATION_MS + ANIMATION_SAFETY_MS)
-              pendingTimers.set(id, timer)
+              scheduleEnd(view, id)
             }
           }
 
