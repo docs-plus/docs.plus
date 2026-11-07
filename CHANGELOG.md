@@ -34,6 +34,9 @@ faces, the roster and the admin member counts fail
 ([#574](https://github.com/docs-plus/docs.plus/issues/574)).
 [`packages/supabase/CHANGELOG.md`](packages/supabase/CHANGELOG.md) says what each migration does.
 
+`APP_HOSTS` must now hold bare host names, such as `docs.plus,new.docs.plus`. A scheme, a port or a
+path stops the server at boot. See [hocuspocus Changed](apps/hocuspocus.server/CHANGELOG.md#changed).
+
 ### Added
 
 - A shared pad link now shows a docs.plus card in chat apps and on social sites
@@ -189,6 +192,8 @@ faces, the roster and the admin member counts fail
 
 ### Internal
 
+- The App Performance dashboard plots the card chat read p95 on its own seconds axis. The
+  deploy's Bun version check can no longer fail a deploy; it only warns.
 - The `commit-msg` hook checks only the first line of a message, and caps it at 72 characters.
   Before, a body line that looked like a subject let a bad subject pass. The hook also rejects
   AI attribution, such as `Co-authored-by: Cursor`, and "Generated with" banners. A human

@@ -159,6 +159,12 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 
 ### Changed
 
+- **`APP_HOSTS` must hold bare host names.** An entry with a scheme, a port or a path, such as
+  `https://docs.plus` or `docs.plus:443`, now stops the server at boot. Before, such an entry
+  never matched a pad URL, so a Private pad's cached link card lived out its 24 h TTL with no
+  warning. Check the value before you deploy.
+- The JSON-LD tail of a job page is read only when the head holds no JobPosting at all. A head
+  posting with no usable facts no longer costs up to 1 s on the tail.
 - **Every pad link the server sends goes through `src/lib/padLink.ts`, over the shared
   package `@docs.plus/pad-url`.** Push, email, digest, the content-change notice, the
   new-document mail and MCP use it. MCP `create_document` renames reserved slugs through the
@@ -203,6 +209,13 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 
 ### Fixed
 
+- **A link card's page head now ends at the first `<body` as well as at `</head`.** A page that
+  left out `</head>` sent its body, up to 1 MiB, to the head scraper, and body tags could fill
+  card fields.
+- A GitHub link to a reserved path, such as `/orgs/x` or `/topics/x`, no longer spends a call
+  from the anonymous 60-an-hour budget on a 404.
+- A social card link whose `m` is not a message id now draws the Chat card, as the hovercard
+  does. Before, it fell back to the Document card.
 - A content write (`PATCH /content`, create with content, MCP) now gives a new id to a heading
   whose `toc-id` equals the pad's `documentId`. That id belongs to the pad-wide chat room.
 - The admin MCP Usage page no longer fails with a 500 when no OAuth app is registered. With no clients,

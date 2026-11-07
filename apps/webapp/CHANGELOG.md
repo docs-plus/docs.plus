@@ -206,6 +206,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- Dragging an empty heading in the outline now shows "Heading N" on the drag card, as its row
+  does. Before, the card was blank.
+- Tab from the outline's section preview no longer lands on content hidden from screen readers.
+  The preview and the bottom sheets now share one tab-order rule.
+- After a failed first sync, the heading-id repair waits for sync to finish instead of retrying
+  every second until the pad closes.
 - Dragging text that holds a heading to another place in the same pad now keeps the heading's
   chat and links. A drag-copy gives only the copy a new id.
 - A paste or a file replace never lets a heading take the pad's own id, which belongs to the
