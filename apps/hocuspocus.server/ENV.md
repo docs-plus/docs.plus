@@ -183,6 +183,7 @@ Read by `src/lib/prisma.ts` from the validated config only. There are no runtime
 - **Trade-off.** At 16 KiB, 38% to 40% of probed origins show no icon. At 32 KiB or more, 28% show none. Source: two laptop runs, 60 origins each, a plain fetch with no SSRF guard. On 2026-10-26 LinkedIn's `favicon.ico` measured 24,838 B and Figma's 16,958 B, so the default rose to 32768.
 - **To change it on a plain Compose host,** set `LINK_ICON_MAX_BYTES` in `.env.production`. Then run `docker compose -f docker-compose.prod.yml --env-file .env.production up -d --force-recreate rest-api` at the repo root.
 - **On a host that `prod.docs.plus.yml` deploys,** set it in the host env file that the workflow copies to `.env.production` (`ENV_SOURCE`). Then deploy again.
+- **Give `GITHUB_TOKEN` an expiry of 366 days or less.** The `docs-plus` organization answers a fine-grained token that lives longer with 403. The GitHub stage reads a 403 as a spent rate limit, so links to that organization's repos lose their repository facts. Other repositories still work. Seen on production, 2026-11-07.
 - **Proxy log.** `scripts/traefik/traefik.yml` drops query strings from the Traefik access log. So an icon miss logs no `?origin=` there. That setting needs Traefik v3.6.18 or later.
 
 ## Social card

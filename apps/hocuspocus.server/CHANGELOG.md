@@ -131,7 +131,9 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
     the cache cold, so no card keeps the raw name.
   - New optional settings: `GITHUB_TOKEN` (public-repository read access only) and
     `STACKEXCHANGE_KEY`. Without them the shared quotas are 60 GitHub calls an hour and 300 Stack
-    Exchange calls a day per server address.
+    Exchange calls a day per server address. Give the GitHub token an expiry of 366 days or less.
+    The `docs-plus` organization refuses a longer-lived token, so links to its repos lose their
+    repository facts.
   - `GET /api/documents/:docName/hovercard` answers the docs.plus link card for every pad link
     kind: pad, heading, heading chat, message, filter, version and History. The query keys are
     `id`, `chatroom`, `msg_id`, `terms`, `mode`, `version` and `history`, and every open reply carries
