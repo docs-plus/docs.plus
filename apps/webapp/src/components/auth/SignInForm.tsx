@@ -2,7 +2,9 @@ import { signInWithOAuth } from '@api'
 import { PageCardIdentity, PageCardIdentityRow } from '@components/PageCard'
 import * as toast from '@components/toast'
 import { Avatar } from '@components/ui/Avatar'
+import { Banner } from '@components/ui/Banner'
 import Button from '@components/ui/Button'
+import { FieldHelp } from '@components/ui/FieldHelp'
 import TextInput from '@components/ui/TextInput'
 import { supabaseClient } from '@utils/supabase'
 import { twMerge } from '@utils/twMerge'
@@ -14,6 +16,23 @@ import {
   type LastSignedInAccount,
   readSignedInAccount
 } from './lastSignedInAccount'
+import { describeEmailLinkError } from './signInErrors'
+
+/** Production Auth refuses a second link to one address inside this window. */
+const RESEND_COOLDOWN_S = 60
+
+/** Seconds left until `until` (epoch ms), ticking once a second while above zero. */
+function useSecondsLeft(until: number) {
+  // The clock is read at render, so a new `until` counts from the real now.
+  const [, setTick] = useState(0)
+  const left = Math.max(0, Math.ceil((until - Date.now()) / 1000))
+  useEffect(() => {
+    if (left === 0) return
+    const id = window.setTimeout(() => setTick((n) => n + 1), 1000)
+    return () => window.clearTimeout(id)
+  }, [left, until])
+  return left
+}
 
 /** What a host frames: the dialog puts `back` in its footer strip, the sheet in its body. */
 interface SignInParts {
@@ -25,7 +44,7 @@ interface SignInParts {
 }
 
 interface SignInFormProps {
-  /** Post-auth return URL (pathname+search); when set the OAuth/magic-link redirect lands here. */
+  /** Post-auth return URL (pathname+search); the OAuth and email-link sign-ins land here. */
   returnTo?: string
   /** Sheet host: taller touch targets for the buttons and the field. */
   touch?: boolean
@@ -39,6 +58,11 @@ const SignInForm = ({ returnTo, touch = false, children }: SignInFormProps) => {
   const [emailBusy, setEmailBusy] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
   const [focusEmail, setFocusEmail] = useState(false)
+  // Set when Auth refused a send because a link to this address just left.
+  const [sentNotice, setSentNotice] = useState('')
+  const [resendError, setResendError] = useState('')
+  const [resendAt, setResendAt] = useState(0)
+  const resendIn = useSecondsLeft(resendAt)
   // Read after mount, never during render: localStorage does not exist on the
   // server, and reading it inline would make the markup differ on hydration.
   const [lastAccount, setLastAccount] = useState<LastSignedInAccount | null>(null)
@@ -52,6 +76,8 @@ const SignInForm = ({ returnTo, touch = false, children }: SignInFormProps) => {
   const returnToEmailStep = () => {
     setFocusEmail(true)
     setEmailSent(false)
+    setSentNotice('')
+    setResendError('')
   }
 
   const isAnyLoading = googleBusy || emailBusy
@@ -78,63 +104,97 @@ const SignInForm = ({ returnTo, touch = false, children }: SignInFormProps) => {
       }
     } catch (error) {
       console.error('Authentication error:', error)
-      toast.Error('Authentication error: ' + error)
+      toast.Error("Couldn't start Google sign-in. Check your connection and try again.")
       setGoogleBusy(false)
+    }
+  }
+
+  /** One send for the first link and every resend. `error` is the inline line, or ''. */
+  const sendLink = async (email: string): Promise<{ sent: boolean; error: string }> => {
+    // The mail links back here with `#token_hash=`, so keep the full return context
+    // (deep-link / open_heading_chat params), like OAuth. The env is an optional base override.
+    const redirectBase =
+      process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT || window.location.origin
+    const returnPath = returnTo ?? window.location.pathname + window.location.search
+
+    let error: unknown
+    try {
+      ;({ error } = await supabaseClient.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: new URL(returnPath, redirectBase).href }
+      }))
+    } catch (thrown) {
+      error = thrown
+    }
+    if (!error) {
+      setSentNotice('')
+      setResendAt(Date.now() + RESEND_COOLDOWN_S * 1000)
+      setEmailSent(true)
+      return { sent: true, error: '' }
+    }
+
+    console.warn('Sign-in link send failed:', error)
+    const problem = describeEmailLinkError(error)
+    if (problem.retryInSeconds) {
+      // A link to this address left moments ago: show it as sent and count down.
+      setSentNotice(problem.message)
+      setResendAt(Date.now() + problem.retryInSeconds * 1000)
+      setEmailSent(true)
+      return { sent: false, error: '' }
+    }
+    return { sent: false, error: problem.message }
+  }
+
+  /** The house regex and an MX check; a failed check never blocks sign-in. */
+  const looksDeliverable = async (email: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_RESTAPI_URL}/email/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      })
+      if (!res.ok) return true
+      const data = (await res.json()) as { isValid?: boolean }
+      return data.isValid !== false
+    } catch (error) {
+      console.warn('Email check failed:', error)
+      return true
     }
   }
 
   const handleSignInWithEmail = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (magicLinkEmail.length === 0) {
+    const email = magicLinkEmail.trim()
+    if (email.length === 0) {
       setEmailError('Enter your email.')
       return
     }
 
     setEmailBusy(true)
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_RESTAPI_URL}/email/validate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: magicLinkEmail })
-      })
-      const data = (await res.json()) as { isValid?: boolean }
-      if (!data.isValid) {
-        setEmailError('Enter a valid email.')
+      if (!(await looksDeliverable(email))) {
+        setEmailError('Enter a valid email. Check the spelling after the @.')
         return
       }
-
-      setEmailError('')
-
-      // Preserve the full return context (deep-link / open_heading_chat params)
-      // like the OAuth path. The env is an optional base override; without it we
-      // use this origin, so a build that misses the arg cannot send "undefined".
-      const redirectBase =
-        process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT || window.location.origin
-      const returnPath = returnTo ?? window.location.pathname + window.location.search
-
-      const { error } = await supabaseClient.auth.signInWithOtp({
-        email: magicLinkEmail,
-        options: {
-          emailRedirectTo: new URL(returnPath, redirectBase).href
-        }
-      })
-
-      if (error) {
-        console.error(error)
-        toast.Error('Error signing in with email: ' + error.message)
-        return
-      }
-
-      setEmailSent(true)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Enter a valid email.'
-      setEmailError(message)
-      console.error('Failed to validate email:', error)
+      setEmailError((await sendLink(email)).error)
     } finally {
       setEmailBusy(false)
     }
   }
+
+  const handleResend = async () => {
+    setEmailBusy(true)
+    try {
+      const { sent, error } = await sendLink(magicLinkEmail.trim())
+      setResendError(error)
+      if (sent) toast.Success('New link sent. Check your inbox.')
+    } finally {
+      setEmailBusy(false)
+    }
+  }
+
+  const buttonHeight = touch ? 'min-h-12' : undefined
 
   if (emailSent) {
     return children({
@@ -142,11 +202,30 @@ const SignInForm = ({ returnTo, touch = false, children }: SignInFormProps) => {
       title: 'Check your email',
       description: (
         <>
-          We sent a link to{' '}
+          We sent a sign-in link to{' '}
           <span className="text-base-content font-semibold [overflow-wrap:anywhere]">
             {magicLinkEmail}
           </span>
           .
+        </>
+      ),
+      body: (
+        <>
+          {sentNotice ? <Banner tone="info">{sentNotice}</Banner> : null}
+          <ul className="text-base-content/70 flex list-disc flex-col gap-1 ps-5 text-sm">
+            <li>The link works once, for 1 hour.</li>
+            <li>It signs you in wherever it opens, even inside your mail app.</li>
+            <li>No email after a minute? Check your spam folder.</li>
+          </ul>
+          {resendError ? <FieldHelp error>{resendError}</FieldHelp> : null}
+          <Button
+            shape="block"
+            className={buttonHeight}
+            onClick={handleResend}
+            loading={emailBusy}
+            disabled={emailBusy || resendIn > 0}>
+            {resendIn > 0 ? `Send a new link in ${resendIn} s` : 'Send a new link'}
+          </Button>
         </>
       ),
       // The pressed Send button unmounts here; without this, focus falls to `body`.
@@ -157,8 +236,6 @@ const SignInForm = ({ returnTo, touch = false, children }: SignInFormProps) => {
       )
     })
   }
-
-  const buttonHeight = touch ? 'min-h-12' : undefined
 
   return children({
     sent: false,
@@ -231,7 +308,7 @@ const SignInForm = ({ returnTo, touch = false, children }: SignInFormProps) => {
             onChange={(e) => setMagicLinkEmail(e.target.value)}
             disabled={isAnyLoading}
             error={Boolean(emailError)}
-            helperText={emailError || 'We will email a link. No password.'}
+            helperText={emailError || 'We will email you a sign-in link. No password.'}
           />
 
           <Button

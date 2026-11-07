@@ -1,47 +1,64 @@
+import SignInForm from '@components/auth/SignInForm'
 import { HomepageLink, PageCard } from '@components/PageCard'
 import { LEGAL_CONTACT_EMAIL } from '@components/pages/legal/legalMetadata'
+import { Banner } from '@components/ui/Banner'
 import Button, { quietActionClassName } from '@components/ui/Button'
+import { supabaseClient } from '@utils/supabase'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import { LuCircleAlert } from 'react-icons/lu'
+import { useEffect, useState } from 'react'
 
 const AuthErrorPage = () => {
   const router = useRouter()
+  // A spent link usually opens after the reader already signed in with a newer one.
+  const [signedIn, setSignedIn] = useState(false)
+  useEffect(() => {
+    supabaseClient.auth.getSession().then(({ data }) => setSignedIn(Boolean(data.session)))
+  }, [])
+
   // proxy.ts forwards only `error_code`; getServerSideProps fills the query on first render.
   // URL text is never shown, so a crafted link cannot put its own words on this page.
-  const message =
-    router.query.error_code === 'otp_expired'
-      ? 'This sign-in link has expired or was already used. Request a new link and try again.'
-      : 'Sign-in did not finish. Try again, or contact support if it keeps failing.'
+  const expired = router.query.error_code === 'otp_expired'
+  const title = expired ? 'This sign-in link no longer works' : 'Sign-in did not finish'
+  const reason = expired
+    ? 'A sign-in link works once, for 1 hour.'
+    : 'Something went wrong while signing you in.'
 
-  const handleRetry = () => {
-    router.back()
-  }
+  const ways = (
+    <>
+      <a href={`mailto:${LEGAL_CONTACT_EMAIL}`} className={quietActionClassName}>
+        Contact support
+      </a>
+      <HomepageLink />
+    </>
+  )
 
   return (
     <>
       <Head>
-        <title>Authentication error — docs.plus</title>
+        <title>{`${title} — docs.plus`}</title>
       </Head>
-      <PageCard
-        title="Authentication error"
-        description="Something went wrong during authentication."
-        actions={
-          <>
-            <a href={`mailto:${LEGAL_CONTACT_EMAIL}`} className={quietActionClassName}>
-              Contact support
-            </a>
-            <HomepageLink />
-          </>
-        }>
-        <div className="alert alert-soft alert-error items-start px-3 py-2 text-sm">
-          <LuCircleAlert size={16} className="text-error mt-0.5 shrink-0" aria-hidden />
-          <p className="text-base-content">{message}</p>
-        </div>
-        <Button variant="primary" shape="block" onClick={handleRetry}>
-          Try again
-        </Button>
-      </PageCard>
+      {signedIn ? (
+        <PageCard title="You're already signed in" description={reason} actions={ways}>
+          <Banner tone="info">You don&apos;t need this link. Your account is open here.</Banner>
+          <Button variant="primary" shape="block" onClick={() => router.push('/')}>
+            Continue to docs.plus
+          </Button>
+        </PageCard>
+      ) : (
+        // The original page is lost by here, so a sign-in from this card lands home.
+        <SignInForm returnTo="/">
+          {({ sent, title: sentTitle, description, body, back }) => (
+            <PageCard
+              title={sent ? sentTitle : title}
+              description={sent ? description : `${reason} Send a new link below.`}
+              actions={ways}>
+              {body}
+              {back ? <div className="self-start">{back}</div> : null}
+            </PageCard>
+          )}
+        </SignInForm>
+      )}
     </>
   )
 }

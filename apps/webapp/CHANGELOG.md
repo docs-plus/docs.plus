@@ -206,6 +206,14 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- Email sign-in now works when the link opens in another browser, such as a mail app's
+  own browser. Before, the link signed in nowhere and showed only a vague error, so people
+  asked again and hit the send limit. The link now carries `#token_hash=`, and the app signs
+  in with `verifyOtp`, which needs no code verifier. Sign-in errors are now plain words
+  under the field: the send limit shows a countdown on "Send a new link", and a spent or
+  old link explains itself with a Sign in action. `/auth/error` shows the sign-in form
+  instead of a Back button that did nothing in a new tab.
+
 - Dragging an empty heading in the outline now shows "Heading N" on the drag card, as its row
   does. Before, the card was blank.
 - Tab from the outline's section preview no longer lands on content hidden from screen readers.
