@@ -1787,7 +1787,7 @@
       "id": 58,
       "type": "timeseries",
       "title": "Card Requests by Outcome",
-      "description": "social_card_requests_total. hit, render and not-modified are served cards. fallback, chat-shed, chat-unavailable, slot-shed and error answer a 302 to the static image. refused is the one 404.",
+      "description": "social_card_requests_total. hit, render and not-modified are served cards. fallback, chat-shed, chat-unavailable, slot-shed and error answer a 302 to the Fallback card. refused is the one 404.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"

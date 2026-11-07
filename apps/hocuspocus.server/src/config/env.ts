@@ -91,7 +91,7 @@ export const config = {
     kinds: new Set(env.SOCIAL_CARD_KINDS),
     // The Fallback card the page head names when a pad has no card. `v` is the file's hash; the
     // same URL is in `apps/webapp/src/pages/_app.tsx`, so change both together.
-    fallbackImageUrl: `${appUrl}/icons/og-card-pad-1200x630.png?v=3fff4849`
+    fallbackImageUrl: `${appUrl}/icons/og-card-1280x640.png?v=8164407d`
   },
 
   supabase: {

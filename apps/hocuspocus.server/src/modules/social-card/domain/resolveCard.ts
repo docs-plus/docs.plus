@@ -1,7 +1,7 @@
 import { padLink } from '../../../lib/padLink'
 import type { CardKind, CardQuery } from './cardRequest'
 import { cardVersion } from './cardVersion'
-import { type CardRow, drawnPadName, drawnTitle, type IsDrawable } from './eligibility'
+import { cardName, type CardRow, type IsDrawable } from './eligibility'
 import { resolveChat } from './kinds/chat'
 import { resolveDocument } from './kinds/document'
 import { resolveFilter } from './kinds/filter'
@@ -9,11 +9,10 @@ import { resolveHeading } from './kinds/heading'
 import { resolveMessage } from './kinds/message'
 import type { CardFacts, ChatFacts, DrawnCard, KindResolver, VersionFacts } from './kinds/types'
 import { resolveVersion } from './kinds/version'
-import { parseCardData } from './storedData'
+import { parseCardData, type StoredOutline } from './storedData'
 
-/** The row columns a card reads: the eligibility fields, the slug and the stored card data. */
+/** The row columns a card reads: the eligibility fields and the stored card data. */
 export interface CardSourceRow extends CardRow {
-  slug: string
   cardData: unknown
 }
 
@@ -31,7 +30,7 @@ export const CARD_ROW_SELECT = {
 /** A read that may succeed on a retry. It is never remembered, and never drawn as another kind. */
 export type Indefinite = 'shed' | 'unavailable'
 
-/** The two reads a card may need. Null is a definite miss. */
+/** The reads a card may need. Null is a definite miss, except for `members`. */
 export interface CardReads {
   chat: (
     documentId: string,
@@ -39,6 +38,8 @@ export interface CardReads {
     messageId?: string
   ) => Promise<ChatFacts | null | Indefinite>
   version: (documentId: string, version: number) => Promise<VersionFacts | null>
+  /** The pad's member count. Null on any failure: the card then draws with no count. */
+  members: (documentId: string) => Promise<number | null>
 }
 
 export interface ResolvedCard extends DrawnCard {
@@ -70,20 +71,28 @@ const requestedKind = (query: CardQuery): { kind: CardKind; query: CardQuery } =
   return { kind: 'document', query: {} }
 }
 
-const NO_FACTS: CardFacts = { chat: null, version: null }
+const NO_FACTS: CardFacts = { chat: null, version: null, members: null }
 
 const readFacts = async (
   documentId: string,
   kind: CardKind,
   query: CardQuery,
-  reads: CardReads
+  reads: CardReads,
+  outline: StoredOutline | null
 ): Promise<CardFacts | Indefinite> => {
   if ((kind === 'chat' || kind === 'message') && query.c) {
     const chat = await reads.chat(documentId, query.c, query.m)
-    return typeof chat === 'string' ? chat : { chat, version: null }
+    return typeof chat === 'string' ? chat : { ...NO_FACTS, chat }
+  }
+  if (kind === 'heading' && query.id) {
+    // A heading the outline does not hold draws no card, so it spends no read and no slot.
+    if (outline && !outline.items.some((item) => item.id === query.id)) return NO_FACTS
+    // The count is extra on a Heading card, so a failed read draws the card without it.
+    const chat = await reads.chat(documentId, query.id)
+    return { ...NO_FACTS, chat: typeof chat === 'string' ? null : chat }
   }
   if (kind === 'version' && query.version) {
-    return { chat: null, version: await reads.version(documentId, query.version) }
+    return { ...NO_FACTS, version: await reads.version(documentId, query.version) }
   }
   return NO_FACTS
 }
@@ -99,7 +108,7 @@ const pathOf = (slug: string, kind: CardKind, query: CardQuery): string => {
 
 /**
  * `unavailable`: the link's own read failed for now. The route then sends the short-cached
- * static image, never another kind's 200; the page head may draw `documentCard` instead.
+ * Fallback card, never another kind's 200; the page head may draw `documentCard` instead.
  */
 export type CardResult =
   | { status: 'refused' }
@@ -119,14 +128,14 @@ export const resolveCard = async (args: {
   isDrawable: IsDrawable
 }): Promise<CardResult> => {
   const { row, kinds, reads, isDrawable } = args
-  const padTitle = drawnTitle(row, isDrawable)
-  if (!row || !padTitle) return { status: 'refused' }
-
-  const stored = parseCardData(row.cardData)
+  const stored = row ? parseCardData(row.cardData) : null
   const outline = stored?.outline ?? null
+  const named = cardName(row, outline?.title ?? null, isDrawable)
+  if (!row || !named) return { status: 'refused' }
+
   const base = {
-    padTitle,
-    padName: drawnPadName(padTitle, row.slug, outline?.title ?? null, isDrawable),
+    padName: named.name,
+    renamed: named.renamed,
     blocks: stored?.blocks ?? null,
     outline,
     isDrawable
@@ -148,14 +157,19 @@ export const resolveCard = async (args: {
   }
 
   const wanted = requestedKind(args.query)
-  const facts =
+  // Runs beside the kind's own read, so a fallback to the Document card adds no second wait.
+  const [facts, members] = await Promise.all([
     wanted.kind !== 'document' && kinds.has(wanted.kind)
-      ? await readFacts(row.documentId, wanted.kind, wanted.query, reads)
-      : null
+      ? readFacts(row.documentId, wanted.kind, wanted.query, reads, outline)
+      : null,
+    kinds.has('document') ? reads.members(row.documentId) : null
+  ])
   const first =
     facts && typeof facts !== 'string' ? await draw(wanted.kind, wanted.query, facts) : null
   if (first) return { status: 'ok', card: first }
-  const documentCard = kinds.has('document') ? await draw('document', {}, NO_FACTS) : null
+  const documentCard = kinds.has('document')
+    ? await draw('document', {}, { ...NO_FACTS, members })
+    : null
   if (typeof facts === 'string') return { status: 'unavailable', reason: facts, documentCard }
   return documentCard ? { status: 'ok', card: documentCard } : { status: 'off' }
 }

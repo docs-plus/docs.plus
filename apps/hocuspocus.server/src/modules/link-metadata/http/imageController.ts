@@ -23,7 +23,7 @@ export const createImageController = (deps: ImageControllerDeps) => {
     const own = deps.ownImage?.(src)
     if (!own) return fetchImage(src, signal, IMAGE_MAX_BYTES)
     const response = await own
-    // A shed or switched-off card points at the static image on the web app host.
+    // A shed or switched-off card points at the Fallback card on the web app host.
     const location = response.status === 302 ? response.headers.get('location') : null
     if (location) return fetchImage(location, signal, IMAGE_MAX_BYTES)
     if (!response.ok) return 'clean'

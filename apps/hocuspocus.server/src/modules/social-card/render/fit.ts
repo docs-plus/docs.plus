@@ -1,6 +1,6 @@
 import { container, text } from '@takumi-rs/helpers'
 
-import { graphemesOf } from '../domain/storedData'
+import { graphemesOf } from '../../../lib/cardText'
 import { CARD_FONT, measureFirstChild } from '../infra/renderer'
 import { T } from './frame'
 
@@ -13,7 +13,8 @@ const probe = (
   size: number,
   weight: number,
   lineHeight: number,
-  wrap: boolean
+  wrap: boolean,
+  letterSpacing = 0
 ) =>
   measureFirstChild(
     container({
@@ -31,6 +32,7 @@ const probe = (
             fontSize: size,
             fontWeight: weight,
             lineHeight,
+            letterSpacing,
             flexShrink: 0,
             ...(wrap ? { overflowWrap: 'anywhere' } : {})
           }
@@ -41,11 +43,8 @@ const probe = (
   )
 
 /** One-line advance width, with emoji drawn as Twemoji, as the render draws them. */
-export const widthOf = async (
-  line: string,
-  size: number = T.size.read,
-  weight: number = T.weight.regular
-): Promise<number> => (await probe(line, PROBE_W, size, weight, 1, false)).width
+export const widthOf = async (line: string, size: number, weight: number): Promise<number> =>
+  (await probe(line, PROBE_W, size, weight, 1, false)).width
 
 /** The longest grapheme prefix, plus "…", that `fits` accepts; "…" alone when none does. */
 const longestPrefix = async (line: string, fits: (candidate: string) => Promise<boolean>) => {
@@ -77,103 +76,97 @@ interface LinesStyle {
   size: number
   weight: number
   lineHeight: number
+  letterSpacing?: number
 }
+
+// A line that holds a Twemoji is about 2.5% of the font size taller than a text line, so an
+// emoji must not cost a step. Each line may run 10% over its box, at most 0.4 of a box in all:
+// under half a box for any line count, so an extra line never fits and the count rounds true.
+const EMOJI_LINE_SLACK = 0.1
+const EMOJI_SLACK_MAX = 0.4
 
 /** The longest grapheme prefix, plus "…" when cut, that wraps into at most `lines` lines. */
 const fitLines = async (line: string, o: LinesStyle) => {
   const lineBox = o.size * o.lineHeight
-  const max = o.lines * lineBox + 0.5
+  const max = (o.lines + Math.min(o.lines * EMOJI_LINE_SLACK, EMOJI_SLACK_MAX)) * lineBox
   const height = async (candidate: string) =>
-    (await probe(candidate, o.width, o.size, o.weight, o.lineHeight, true)).height
+    (await probe(candidate, o.width, o.size, o.weight, o.lineHeight, true, o.letterSpacing)).height
   const full = await height(line)
   if (full <= max) return { text: line, cut: false, lines: Math.round(full / lineBox) }
   const best = await longestPrefix(line, async (candidate) => (await height(candidate)) <= max)
   return { text: best, cut: true, lines: o.lines }
 }
 
-/** Moves a cut back to the last space, unless that drops more than 40% of the kept text. */
-const backOff = (cut: string): string | null => {
+/**
+ * Moves a cut back to the last space, unless that drops more than 40% of the kept text. A stop
+ * before the "…" goes too, so a cut never reads "line.…".
+ */
+const backOff = (cut: string): string => {
   const kept = cut.replace(/…$/u, '').trimEnd()
   const space = kept.lastIndexOf(' ')
-  if (space <= 0 || kept.length - space > Math.max(4, kept.length * 0.4)) return null
-  return kept.slice(0, space).replace(/[\s,;:·—–-]+$/u, '') + '…'
+  const back = space > 0 && kept.length - space <= Math.max(4, kept.length * 0.4)
+  const text = back ? kept.slice(0, space).replace(/[\s,;:·—–-]+$/u, '') : kept
+  return text.replace(/\.+$/u, '') + '…'
 }
 
 /** One line, cut at a word when it can be. */
 export const cutLine = async (
   line: string,
   max: number,
-  size: number = T.size.read,
-  weight: number = T.weight.regular
+  size: number,
+  weight: number
 ): Promise<{ text: string; cut: boolean }> => {
   const fit = await fitOneLine(line, max, size, weight)
-  return fit.cut ? { text: backOff(fit.text) ?? fit.text, cut: true } : fit
+  return fit.cut ? { text: backOff(fit.text), cut: true } : fit
 }
 
-/** Up to `lines` read lines, cut at a word when it can be. */
-export const cutLines = async (line: string, width: number, lines: number) => {
-  const fit = await fitLines(line, {
-    width,
-    lines,
-    size: T.size.read,
-    weight: T.weight.regular,
-    lineHeight: T.lineHeight.read
-  })
-  return fit.cut ? { ...fit, text: backOff(fit.text) ?? fit.text } : fit
+interface TextStyle {
+  size: number
+  weight: number
+  lineHeight: number
 }
 
-/** Headline steps, all pad sizes at 2.5x, so no new type size enters the family. */
-export const LADDER = {
-  /** A lone Pad title: the pad Title 28pt, then the card title size. */
-  padTitle: [
-    { size: T.size.padTitle, lines: 2 },
-    { size: T.size.title, lines: 3 }
-  ],
-  /** The object of a part card (heading, room): a rank-1 heading 24pt, then the card title size. */
-  object: [
-    { size: T.size.padHeading, lines: 2 },
-    { size: T.size.title, lines: 3 }
-  ]
-} as const
+/** Up to `lines` lines, cut at a word when it can be. Pass `T.desc` for a card description. */
+export const cutLines = async (line: string, width: number, lines: number, style: TextStyle) => {
+  const fit = await fitLines(line, { width, lines, ...style })
+  return fit.cut ? { ...fit, text: backOff(fit.text) } : fit
+}
 
-/** One headline line at the first `object` step, so a token change cannot leave it stale. */
-export const HEAD_LINE = Math.round(LADDER.object[0].size * T.lineHeight.title)
+/** The width left for the foot's left part, beside the link and the gap. */
+export const footLeftWidth = async (link: string): Promise<number> =>
+  T.box.width - (await widthOf(link, T.link.size, T.link.weight)) - T.foot.gap
+
+// Half a pixel of rounding in a room must not cost the headline a line.
+const LINE_TOLERANCE = 0.5
+
+export const linesIn = (height: number, size: number): number =>
+  Math.floor((height + LINE_TOLERANCE) / (size * T.headline.lineHeight))
 
 interface Headline {
   text: string
   size: number
   lines: number
   cut: boolean
-  height: number
 }
 
-/**
- * The first step where the whole line fits in `maxHeight`; else the last step, cut at a word.
- * A step gets only the lines that fit in the height left for the headline.
- */
+/** The first step where the whole line fits in its lines; else the last step, cut at a word. */
 export const fitHead = async (
   line: string,
-  steps: readonly { size: number; lines: number }[],
-  width: number,
-  maxHeight: number
+  steps: readonly { size: number; lines: number }[]
 ): Promise<Headline> => {
-  const usable = steps
-    .map((s) => ({
-      size: s.size,
-      lines: Math.min(s.lines, Math.floor((maxHeight + 0.5) / (s.size * T.lineHeight.title)))
-    }))
-    .filter((s) => s.lines > 0)
-  for (const [i, step] of usable.entries()) {
+  const { width, weight, letterSpacing, lineHeight } = T.headline
+  for (const [i, step] of steps.entries()) {
     const fit = await fitLines(line, {
       width,
       lines: step.lines,
       size: step.size,
-      weight: T.weight.bold,
-      lineHeight: T.lineHeight.title
+      weight,
+      lineHeight,
+      letterSpacing
     })
-    if (fit.cut && i < usable.length - 1) continue
-    const text = fit.cut ? (backOff(fit.text) ?? fit.text) : fit.text
-    return { ...fit, text, size: step.size, height: fit.lines * step.size * T.lineHeight.title }
+    if (fit.cut && i < steps.length - 1) continue
+    const text = fit.cut ? backOff(fit.text) : fit.text
+    return { ...fit, text, size: step.size }
   }
   throw new Error('no headline step fits the card body')
 }

@@ -8,19 +8,19 @@ import { extractEmojis } from '@takumi-rs/helpers/emoji'
 const ASSET_DIR = join(import.meta.dir, '../../../../assets/social-card')
 
 export const LOGO_SRC = 'docsplus:logo'
+export const BACKGROUND_SRC = 'docsplus:card-background'
 
-// Icon SVGs the cards build in code. A src names its bytes for good, so a set is a no-op.
-const inlineSvgs = new Map<string, Buffer>()
-
-export const registerSvg = (src: string, svg: string): string => {
-  if (!inlineSvgs.has(src)) inlineSvgs.set(src, Buffer.from(svg))
-  return src
-}
+/** Inter draws the card. Arimo draws only the glyphs Inter lacks; Takumi falls back per glyph. */
+export const CARD_FONTS = [
+  { name: 'Inter', file: 'InterVariable.ttf' },
+  { name: 'Arimo', file: 'Arimo.ttf' }
+] as const
 
 interface Assets {
-  font: Buffer
+  fonts: { name: string; data: Buffer }[]
   cmap: Set<number>
   logo: Buffer
+  background: Buffer
   twemojiDir: string
 }
 
@@ -33,11 +33,15 @@ let assets: Assets | Error | null = null
 export const loadAssets = (): Assets => {
   if (!assets) {
     try {
-      const font = readFileSync(join(ASSET_DIR, 'Arimo.ttf'))
+      const fonts = CARD_FONTS.map(({ name, file }) => ({
+        name,
+        data: readFileSync(join(ASSET_DIR, file))
+      }))
       assets = {
-        font,
-        cmap: readCmap(font),
+        fonts,
+        cmap: new Set(fonts.flatMap(({ data }) => [...readCmap(data)])),
         logo: readFileSync(join(ASSET_DIR, 'logo.svg')),
+        background: readFileSync(join(ASSET_DIR, 'card-background.svg')),
         twemojiDir: dirname(Bun.resolveSync('@twemoji/svg/package.json', import.meta.dir))
       }
     } catch (err) {
@@ -48,7 +52,7 @@ export const loadAssets = (): Assets => {
   return assets
 }
 
-/** The code points Arimo maps (cmap format 12, else 3/1 format 4). Takumi draws a box for any other. */
+/** The code points one font maps (cmap format 12, else 3/1 format 4). Takumi boxes any other. */
 function readCmap(buf: Buffer): Set<number> {
   const u16 = (o: number) => buf.readUInt16BE(o)
   const u32 = (o: number) => buf.readUInt32BE(o)
@@ -115,9 +119,9 @@ const BIDI = /[‪-‮⁦-⁩]/u
 const ENGLISH = /^[\p{Script=Latin}\p{Script=Common}\p{Script=Inherited}]$/u
 
 /**
- * English-only rule for one drawn line. Each character is Latin, Common or Inherited and in the
- * font, or it is an emoji with a Twemoji file. The same helper splits emoji for the render, so
- * they agree.
+ * English-only rule for one drawn line. Each character is Latin, Common or Inherited and in a
+ * card font, or it is an emoji with a Twemoji file. The same helper splits emoji for the render,
+ * so they agree.
  */
 export const isDrawable = (line: string): boolean => {
   const { cmap } = loadAssets()
@@ -137,20 +141,19 @@ export const isDrawable = (line: string): boolean => {
   return walk(extractEmojis(text(line), 'twemoji'))
 }
 
-/** The image bytes a tree names: the logo, the inline icons and each Twemoji file. No network at render time. */
+/** The image bytes a tree names: the logo, the background and each Twemoji file. No network at render time. */
 export const collectImages = (node: Node, out: ImageSource[] = []): ImageSource[] => {
   if (
     node.type === 'image' &&
     typeof node.src === 'string' &&
     !out.some((i) => i.src === node.src)
   ) {
-    out.push({
-      src: node.src,
-      data:
-        node.src === LOGO_SRC
-          ? loadAssets().logo
-          : (inlineSvgs.get(node.src) ?? readFileSync(emojiFile(node.src)))
-    })
+    const { logo, background } = loadAssets()
+    const named: Partial<Record<string, Buffer>> = {
+      [LOGO_SRC]: logo,
+      [BACKGROUND_SRC]: background
+    }
+    out.push({ src: node.src, data: named[node.src] ?? readFileSync(emojiFile(node.src)) })
   }
   if (node.type === 'container') for (const child of node.children ?? []) collectImages(child, out)
   return out

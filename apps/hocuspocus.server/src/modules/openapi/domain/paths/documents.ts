@@ -87,10 +87,14 @@ const socialCard: JsonSchema = {
   properties: {
     query: { type: 'string', description: 'The card image query string, `v` included.' },
     title: { type: ['string', 'null'], description: '`og:title`; null keeps the Pad title.' },
+    description: {
+      type: ['string', 'null'],
+      description: "`og:description`; null keeps the page's own description."
+    },
     alt: { type: 'string', description: 'Image alt text, from drawn values only.' },
     path: { type: 'string', description: '`og:url` path for this card.' }
   },
-  required: ['query', 'title', 'alt', 'path']
+  required: ['query', 'title', 'description', 'alt', 'path']
 }
 
 export const documentsPaths: OpenApiPaths = {

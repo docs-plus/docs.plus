@@ -3,178 +3,109 @@
 import type { Node } from '@takumi-rs/core'
 import { container, image, text } from '@takumi-rs/helpers'
 
-import type { CardKind } from '../domain/cardRequest'
-import { LOGO_SRC, registerSvg } from '../infra/assets'
+import { BACKGROUND_SRC, LOGO_SRC } from '../infra/assets'
 import { CARD_FONT, CARD_HEIGHT, CARD_WIDTH } from '../infra/renderer'
 
-// The card is the app at 2.5x, in its light theme tokens (apps/webapp/src/styles/globals.scss).
-const S = 2.5
-
-const hexToRgb = (hex: string): number[] => {
-  const n = parseInt(hex.slice(1), 16)
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+// Drawn values at the full 1200 × 630 card size.
+const box = { x: 66, y: 58, width: 1068 }
+// The card's logo.svg keeps the 2688-unit square canvas of apps/webapp/public/icons/logo.svg,
+// so the logo box holds it whole; the inset pulls that canvas's blank left edge back.
+const wordmark = { size: 42, weight: 800, letterSpacing: -0.8, gap: 12, logo: 62, logoInset: -8 }
+// Inter's own line box is 1.21 of the font size; one-line text sets it, so its height is known.
+const eyebrow = { size: 36, weight: 700, lineHeight: 1.21, marginBottom: 14 }
+const people = {
+  dots: ['#1a73e8', '#16a34a', '#eab308', '#ea580c', '#dc2626'],
+  dot: 64,
+  ring: 6,
+  overlap: 18,
+  gap: 28,
+  size: 44,
+  weight: 800
 }
-const toHex = (rgb: number[]) => '#' + rgb.map((c) => c.toString(16).padStart(2, '0')).join('')
-
-/** Paints `fg` at `alpha` over an opaque ground, as a browser paints a `/70` class. */
-export const over = (fg: string, alpha: number, ground: string): string => {
-  const g = hexToRgb(ground)
-  return toHex(hexToRgb(fg).map((c, i) => Math.round(c * alpha + g[i] * (1 - alpha))))
+const chip = {
+  padY: 10,
+  padX: 26,
+  size: 34,
+  weight: 700,
+  lineHeight: 1.21,
+  border: 2,
+  gap: 18,
+  filterFill: '#dbe7fb',
+  filterInk: '#1557b0'
 }
-
-const toLinear = (c: number) => ((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
-const fromLinear = (c: number) =>
-  Math.round(
-    255 * Math.min(1, Math.max(0, c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055))
-  )
-const toOklab = (hex: string) => {
-  const [r, g, b] = hexToRgb(hex).map(toLinear)
-  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
-  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
-  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
-  return [
-    0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
-    1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
-    0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s
-  ]
-}
-const fromOklab = ([L, a, b]: number[]) => {
-  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3
-  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3
-  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3
-  return toHex(
-    [
-      4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
-      -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
-      -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s
-    ].map(fromLinear)
-  )
-}
-/** CSS `color-mix(in oklab, a, b p%)`, for the tokens the app defines that way. */
-export const mixOklab = (a: string, b: string, p: number): string => {
-  const A = toOklab(a)
-  const B = toOklab(b)
-  return fromOklab(A.map((v, i) => v * (1 - p) + B[i] * p))
-}
-
-const INK = '#0f172a' // --color-base-content
-const PRIMARY = '#1a73e8' // --color-primary
+/** The tallest foot: a fact chip, or the people dots. */
+const FOOT_H = Math.max(people.dot, 2 * (chip.padY + chip.border) + chip.size * chip.lineHeight)
+/** The least space above and below the middle, so it never touches the mark or the foot. */
+const MIDDLE_GAP = 16
 
 export const T = {
-  paper: '#ffffff', // --color-base-100
-  well: '#eef1f6', // --color-base-200
-  border: '#dce3ed', // --color-base-300
-  ink: INK,
-  ink70: 'rgba(15,23,42,0.7)', // text-base-content/70
-  primary: PRIMARY, // graphics only, never text
-  info: '#0284c7', // --color-info: the filter chips
-  successInk: mixOklab('#16a34a', INK, 0.4), // --success-ink
-  errorInk: mixOklab('#dc2626', INK, 0.25), // --error-ink
-  radiusBox: 10 * S,
-  radiusField: 8 * S,
-  hairline: 1 * S,
-  size: {
-    read: 18 * S,
-    title: 24 * S,
-    padHeading: ((24 * 4) / 3) * S,
-    padTitle: ((28 * 4) / 3) * S
+  paper: '#ffffff',
+  border: '#dce3ed',
+  ink: '#0f172a',
+  inkSoft: '#475569',
+  inkFaint: '#64748b',
+  /** Graphics and the link only. */
+  primary: '#1a73e8',
+  /** The content box; the rest of the card is margin. */
+  box,
+  /** The height the middle may fill: the eyebrow, the title and what sits under it. */
+  middle: CARD_HEIGHT - 2 * box.y - wordmark.logo - FOOT_H - 2 * MIDDLE_GAP,
+  headline: {
+    steps: [
+      { size: 104, lines: 2 },
+      { size: 88, lines: 2 },
+      { size: 72, lines: 3 }
+    ],
+    weight: 900,
+    letterSpacing: -3,
+    lineHeight: 1.02,
+    width: 1020
   },
-  lineHeight: { title: 1.15, read: 1.35 },
-  weight: { regular: 400, semibold: 600, bold: 700 },
-  space: { 1: 4 * S, 1.5: 6 * S, 2: 8 * S, 2.5: 10 * S, 3: 12 * S, 4: 16 * S, 5: 20 * S, 6: 24 * S }
+  desc: { size: 38, weight: 400, lineHeight: 1.28, marginTop: 20, width: 900 },
+  eyebrow,
+  wordmark,
+  people,
+  sections: { size: 36, weight: 600, lineHeight: 1.35 },
+  /** The filter card's chip row, and the matching section names under it. */
+  filter: { marginBottom: 22, size: 44, weight: 800 },
+  link: { size: 34, weight: 700 },
+  foot: { gap: 30 },
+  chip
 } as const
-
-const MARK_TOP = T.space[4]
-const MARK_H = 28 * S
-const PAD_X = T.space[6]
-const LOGO_H = 24 * S
-const LOGO_W = Math.round((LOGO_H * 1954.69) / 2508.26) // logo.svg viewBox
-const SHEET_GAP = T.space[3]
-const SHEET_TOP = MARK_TOP + MARK_H + SHEET_GAP
-// Text ends above y 590, inside the band a 2:1 crop keeps.
-const CONTENT_BOTTOM = 590
-// The sheet runs off the bottom edge, so its lower corners never show.
-const SHEET_BLEED = 30
-
-/** Measured body box: Takumi lays the 2.5 px sheet border out as 2 px per side. */
-export const CONTENT_W = 956
-export const BODY_H = 386
-export const READ_LH = T.size.read * T.lineHeight.read
-/** One read line box, rounded up to a whole pixel. */
-export const LINE_H = Math.ceil(READ_LH)
-/** One TOC nest step. */
-export const NEST = T.space[5]
-const HEAD_GAP = T.space[1]
-/** What the TOC header adds under its text. */
-export const HEAD_EXTRA = 2 * HEAD_GAP + T.hairline
-/** Gap between the page column and a side column. */
-export const COL_GAP = T.space[3]
-
-// Lucide paths as the app ships them (react-icons `lu`, stroke width 2).
-const LUCIDE = {
-  heading:
-    '<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>',
-  chatroom:
-    '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M13 8H7"/><path d="M17 12H7"/>',
-  filter: '<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
-  history:
-    '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>'
-} as const
-type IconName = keyof typeof LUCIDE
-
-/** A Lucide icon as an SVG image, with the colour baked in: an image has no `currentColor`. */
-export const icon = (name: IconName, size: number, opacity: number): Node => {
-  const src = `icon:${name}:${INK}:${opacity}`
-  registerSvg(
-    src,
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${INK}" stroke-opacity="${opacity}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${LUCIDE[name]}</svg>`
-  )
-  return image({ src, width: size, height: size, style: { flexShrink: 0 } })
-}
-
-/** Registers an inline SVG with its own stroke colour and returns its src: the reply glyph, the task check. */
-export const strokeSvg = (src: string, paths: string, stroke: string, strokeWidth: number) =>
-  registerSvg(
-    src,
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`
-  )
 
 interface TextOptions {
-  size?: number
-  weight?: number
+  size: number
+  weight: number
+  lineHeight: number
   color?: string
-  lineHeight?: number
   style?: Record<string, unknown>
 }
 
 /** One drawn line. Callers pass only lines that went through `usableLine`. */
-export const read = (line: string, o: TextOptions = {}): Node =>
+export const read = (line: string, o: TextOptions): Node =>
   text({
     text: line,
     style: {
-      fontSize: o.size ?? T.size.read,
-      fontWeight: o.weight ?? T.weight.regular,
+      fontSize: o.size,
+      fontWeight: o.weight,
       color: o.color ?? T.ink,
-      lineHeight: o.lineHeight ?? T.lineHeight.read,
+      lineHeight: o.lineHeight,
       flexShrink: 0,
       overflowWrap: 'anywhere',
       ...o.style
     }
   })
 
-export const muted = (line: string, style: Record<string, unknown> = {}, lineHeight?: number) =>
-  read(line, { color: T.ink70, lineHeight, style })
-
-/** A fitted headline at its ladder step. */
-export const titleNode = (
-  fit: { text: string; size: number },
-  style: Record<string, unknown> = {}
-) =>
+/**
+ * A fitted headline at its ladder step, drawn with the style `fitHead` measured. The width is
+ * set on the text: in a flex row, a text with no width never wraps and clips with no "…".
+ */
+export const titleNode = (fit: { text: string; size: number }): Node =>
   read(fit.text, {
     size: fit.size,
-    weight: T.weight.bold,
-    lineHeight: T.lineHeight.title,
-    style
+    weight: T.headline.weight,
+    lineHeight: T.headline.lineHeight,
+    style: { letterSpacing: T.headline.letterSpacing, width: T.headline.width }
   })
 
 export const row = (children: Node[], style: Record<string, unknown> = {}): Node =>
@@ -183,134 +114,183 @@ export const row = (children: Node[], style: Record<string, unknown> = {}): Node
     children
   })
 
-export const stack = (children: Node[], style: Record<string, unknown> = {}): Node =>
+const stack = (children: Node[], style: Record<string, unknown> = {}): Node =>
   container({
     style: { display: 'flex', flexDirection: 'column', flexShrink: 0, ...style },
     children
   })
 
-/** The page column on the left, a side column on the right. */
-export const split = (left: Node, right: Node, leftW: number): Node =>
-  container({
-    style: { display: 'flex', gap: COL_GAP, height: BODY_H, width: CONTENT_W, flexShrink: 0 },
-    children: [
-      container({
-        style: {
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          width: leftW,
-          flexShrink: 0
-        },
-        children: [left]
-      }),
-      right
-    ]
-  })
-
-/** The kind label the card carries at the top right. The Document card carries none. */
-const KIND_LABEL: Record<CardKind, { words: string; icon: IconName } | null> = {
-  document: null,
-  heading: { words: 'Heading', icon: 'heading' },
-  chat: { words: 'Chat', icon: 'chatroom' },
-  message: { words: 'Message', icon: 'chatroom' },
-  filter: { words: 'Filtered view', icon: 'filter' },
-  version: { words: 'Version history', icon: 'history' }
-}
-
-const kindLabel = (kind: CardKind): Node | null => {
-  const label = KIND_LABEL[kind]
-  if (!label) return null
-  return row(
-    [
-      icon(label.icon, 16 * S, 0.7),
-      read(label.words, { weight: T.weight.semibold, color: T.ink70, lineHeight: 1 })
-    ],
-    {
-      gap: T.space[2],
-      height: MARK_H,
-      paddingLeft: T.space[2.5],
-      paddingRight: T.space[3],
-      borderRadius: T.radiusField,
-      border: `${T.hairline}px solid ${T.border}`,
-      backgroundColor: T.paper,
-      marginLeft: 'auto'
-    }
-  )
-}
+/** One line that never wraps, at the line height the font gives. */
+const oneLine = (line: string, style: Record<string, unknown>): Node =>
+  text({ text: line, style: { flexShrink: 0, whiteSpace: 'nowrap', ...style } })
 
 /**
- * The family frame: the docs.plus mark and the kind label on the well, and a sheet that runs
- * off the bottom edge. `centre` centres the body in the sheet; `stack` puts it at the top.
+ * The content card: the glow background with the faint logo, then a column of the mark, the
+ * middle and the foot, spread from top to bottom. An `eyebrow` too long for one line ends in
+ * "…". The width left for `footLeft` is `footLeftWidth(link)`.
  */
-export const cardFrame = (
-  kind: CardKind,
-  body: Node[],
-  place: 'centre' | 'stack' = 'centre'
-): Node => {
-  const label = kindLabel(kind)
+export const cardFrame = (args: {
+  eyebrow?: string
+  title: Node
+  under?: Node[]
+  footLeft?: Node
+  link: string
+}): Node => {
+  const { box, wordmark } = T
   return container({
     style: {
       width: CARD_WIDTH,
       height: CARD_HEIGHT,
       display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: T.well,
-      paddingTop: MARK_TOP,
-      paddingLeft: PAD_X,
-      paddingRight: PAD_X,
+      position: 'relative',
       overflow: 'hidden',
-      fontFamily: CARD_FONT
+      fontFamily: CARD_FONT,
+      color: T.ink
     },
     children: [
-      row(
-        [
-          image({ src: LOGO_SRC, width: LOGO_W, height: LOGO_H }),
-          read('docs.plus', {
-            weight: T.weight.bold,
-            lineHeight: 1,
-            style: { marginLeft: T.space[2] }
-          }),
-          ...(label ? [label] : [])
-        ],
-        { height: MARK_H }
-      ),
+      image({
+        src: BACKGROUND_SRC,
+        width: CARD_WIDTH,
+        height: CARD_HEIGHT,
+        style: { position: 'absolute', left: 0, top: 0 }
+      }),
+      // Positioned too, so it paints after the background, not under it.
       container({
         style: {
+          position: 'relative',
+          width: CARD_WIDTH,
+          height: CARD_HEIGHT,
           display: 'flex',
           flexDirection: 'column',
-          flexShrink: 0,
-          marginTop: SHEET_GAP,
-          height: CARD_HEIGHT - SHEET_TOP + SHEET_BLEED,
-          paddingTop: PAD_X,
-          paddingLeft: PAD_X,
-          paddingRight: PAD_X,
-          paddingBottom: CARD_HEIGHT + SHEET_BLEED - CONTENT_BOTTOM,
-          backgroundColor: T.paper,
-          border: `${T.hairline}px solid ${T.border}`,
-          borderRadius: T.radiusBox,
-          ...(place === 'centre' ? { justifyContent: 'center' } : {})
+          justifyContent: 'space-between',
+          paddingTop: box.y,
+          paddingBottom: box.y,
+          paddingLeft: box.x,
+          paddingRight: CARD_WIDTH - box.x - box.width
         },
         children: [
-          container({
-            style: {
-              display: 'flex',
-              flexDirection: 'column',
-              flexGrow: 0,
-              flexShrink: 1,
-              minHeight: 0,
-              overflow: 'hidden'
-            },
-            children: body
-          })
+          row(
+            [
+              image({
+                src: LOGO_SRC,
+                width: wordmark.logo,
+                height: wordmark.logo,
+                style: { marginLeft: wordmark.logoInset }
+              }),
+              oneLine('docs.plus', {
+                fontSize: wordmark.size,
+                fontWeight: wordmark.weight,
+                letterSpacing: wordmark.letterSpacing
+              })
+            ],
+            { gap: wordmark.gap }
+          ),
+          stack(
+            [
+              ...(args.eyebrow
+                ? [
+                    oneLine(args.eyebrow, {
+                      fontSize: T.eyebrow.size,
+                      fontWeight: T.eyebrow.weight,
+                      lineHeight: T.eyebrow.lineHeight,
+                      color: T.inkFaint,
+                      marginBottom: T.eyebrow.marginBottom,
+                      maxWidth: box.width,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    })
+                  ]
+                : []),
+              args.title,
+              ...(args.under ?? [])
+            ],
+            { width: box.width }
+          ),
+          row(
+            [
+              ...(args.footLeft
+                ? [
+                    container({
+                      style: { display: 'flex', flexShrink: 1, minWidth: 0, overflow: 'hidden' },
+                      children: [args.footLeft]
+                    })
+                  ]
+                : []),
+              oneLine(args.link, {
+                fontSize: T.link.size,
+                fontWeight: T.link.weight,
+                color: T.primary,
+                marginLeft: 'auto'
+              })
+            ],
+            { width: box.width, gap: T.foot.gap }
+          )
         ]
       })
     ]
   })
 }
 
-/** The one count rule for values that grow: 1 to 9 exact, then "10+". Null for 0. */
-export const countBucket = (n: number): string | null => {
-  if (!Number.isFinite(n) || n <= 0) return null
-  return n >= 10 ? '10+' : String(Math.floor(n))
+/** Five plain colour dots, never faces, then the label. The row never wraps. */
+export const peopleRow = (label: string): Node => {
+  const p = T.people
+  return row(
+    [
+      row(
+        p.dots.map((colour, i) =>
+          container({
+            style: {
+              width: p.dot,
+              height: p.dot,
+              boxSizing: 'border-box',
+              borderRadius: 999,
+              border: `${p.ring}px solid ${T.paper}`,
+              backgroundColor: colour,
+              backgroundClip: 'padding-box',
+              marginLeft: i ? -p.overlap : 0,
+              flexShrink: 0
+            }
+          })
+        )
+      ),
+      oneLine(label, { fontSize: p.size, fontWeight: p.weight })
+    ],
+    { gap: p.gap }
+  )
 }
+
+const pill = (line: string, fill: string, edge: string, ink: string): Node =>
+  container({
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      flexShrink: 0,
+      paddingTop: T.chip.padY,
+      paddingBottom: T.chip.padY,
+      paddingLeft: T.chip.padX,
+      paddingRight: T.chip.padX,
+      borderRadius: 999,
+      border: `${T.chip.border}px solid ${edge}`,
+      backgroundColor: fill
+    },
+    children: [
+      oneLine(line, {
+        fontSize: T.chip.size,
+        fontWeight: T.chip.weight,
+        lineHeight: T.chip.lineHeight,
+        color: ink
+      })
+    ]
+  })
+
+/** A white pill with one fact: a count, a reaction, a change stat. */
+export const factChip = (line: string): Node => pill(line, T.paper, T.border, T.ink)
+
+/**
+ * One filter term, or the white `+N` chip after the last one shown. The term chip's border takes
+ * its fill colour, so both chips are the same height.
+ */
+export const filterChip = (line: string, more = false): Node =>
+  more
+    ? pill(line, T.paper, T.border, T.inkSoft)
+    : pill(line, T.chip.filterFill, T.chip.filterFill, T.chip.filterInk)

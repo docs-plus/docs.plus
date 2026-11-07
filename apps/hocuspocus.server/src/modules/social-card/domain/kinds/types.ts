@@ -6,10 +6,16 @@ import type { StoredBlock, StoredChangeSummary, StoredOutline } from '../storedD
 
 /** One eligible pad, with its stored card data parsed once. */
 export interface CardSource {
-  /** The Pad title, cleaned and drawable: what `og:title` keeps. */
-  padTitle: string
-  /** The name the card draws: the Pad title, or the Title when the Pad title equals the slug. */
+  /**
+   * The drawn name: the cleaned Pad title, or the Title heading when the name rule applies. Every
+   * kind's `og:title` formula uses it.
+   */
   padName: string
+  /**
+   * The name rule replaced the Pad title (a link-only Pad title, or one equal to the slug). Only
+   * then does the Document card's `og:title` change; else it keeps the raw Pad title.
+   */
+  renamed: boolean
   /** The pad's first blocks; null when the worker has not stored card data. */
   blocks: StoredBlock[] | null
   outline: StoredOutline | null
@@ -45,15 +51,19 @@ export interface VersionFacts {
 export interface CardFacts {
   chat: ChatFacts | null
   version: VersionFacts | null
+  /** People who joined the pad, for the Document card only. Null: not read, or the read failed. */
+  members: number | null
 }
 
 /** A card one kind can draw for this request. */
 export interface DrawnCard {
   kind: CardKind
-  /** Every drawn value, with a layout tag first. `cardVersion` hashes them. */
+  /** Every drawn value. `cardVersion` hashes them with the kind. */
   values: string[]
   /** `og:title`, or null to keep the Pad title. */
   ogTitle: string | null
+  /** The `og:description` sentence, or null to keep the page's own description. */
+  ogDescription: string | null
   /** The image alt text, from drawn values only. */
   alt: string
   build: () => Promise<Node>

@@ -243,10 +243,10 @@ export const retentionLeaseTotal = new Counter({
   registers: [register]
 })
 
-// A failed card answers a 302 to the static image, never a 5xx, so the HTTP error
-// alerts cannot see it. `refused` is an ineligible pad; `fallback` is a kind switched off.
-// `chat-unavailable` is a chat read that timed out or failed; `chat-shed` hit the read cap.
-// `hit`, `render` and `not-modified` split the 200s and 304s, so the cache can be sized.
+// A failed card answers a 302 to the Fallback card, never a 5xx, so the HTTP error alerts
+// cannot see it. `refused` is an ineligible pad; `fallback` is a kind switched off. `chat-shed`
+// hit the read cap; `chat-unavailable` is a Chat or Message card whose chat read timed out or
+// failed. `hit`, `render` and `not-modified` split the 200s and 304s, so the cache can be sized.
 const SOCIAL_CARD_OUTCOMES = [
   'hit',
   'render',
@@ -267,7 +267,8 @@ export const socialCardRequestsTotal = new Counter({
   registers: [register]
 })
 
-// `timeout`, `error` and `shed` are indefinite: the card route then sends the static image.
+// `timeout`, `error` and `shed` are indefinite. A Chat or Message link then gets the
+// Fallback card; a Heading card draws without its chat chip.
 // `joined` shared a read already in flight for the same key.
 const CHAT_READ_OUTCOMES = [
   'ok',
@@ -301,6 +302,26 @@ export const socialCardRenderSeconds = new Histogram({
 export const socialCardChatReadSeconds = new Histogram({
   name: 'social_card_chat_read_seconds',
   help: 'Anon chat read round trip in seconds, for reads that sent a query',
+  buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.5],
+  registers: [register]
+})
+
+// The service-role member count behind the Document card. `timeout`, `error` and `shed` draw
+// the card with no count; `joined` shared a read already in flight for the same pad.
+const MEMBER_READ_OUTCOMES = ['ok', 'memo', 'joined', 'timeout', 'error', 'shed'] as const
+export type MemberReadOutcome = (typeof MEMBER_READ_OUTCOMES)[number]
+
+export const socialCardMemberReadsTotal = new Counter({
+  name: 'social_card_member_reads_total',
+  help: 'Service-role member count reads behind a social card, by outcome',
+  labelNames: ['outcome'] as const,
+  registers: [register]
+})
+
+// Only reads that sent a query; a memo hit, a join or a shed costs no round trip.
+export const socialCardMemberReadSeconds = new Histogram({
+  name: 'social_card_member_read_seconds',
+  help: 'Member count read round trip in seconds, for reads that sent a query',
   buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.5],
   registers: [register]
 })
@@ -423,6 +444,9 @@ export const seedRestAlertSeries = (): void => {
   }
   for (const outcome of CHAT_READ_OUTCOMES) {
     socialCardChatReadsTotal.inc({ outcome }, 0)
+  }
+  for (const outcome of MEMBER_READ_OUTCOMES) {
+    socialCardMemberReadsTotal.inc({ outcome }, 0)
   }
 }
 

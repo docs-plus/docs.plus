@@ -1,7 +1,7 @@
+import { graphemesOf } from '../../../lib/cardText'
 import { sanitizePlainText } from '../../../lib/sanitizePlainText'
 import { TOC_ID_ATTR } from '../../document-content/types'
 import {
-  graphemesOf,
   type ListKind,
   OUTLINE_MAX_BYTES,
   OUTLINE_MAX_ITEMS,

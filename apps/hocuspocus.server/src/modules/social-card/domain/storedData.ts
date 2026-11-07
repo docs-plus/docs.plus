@@ -11,12 +11,6 @@ export const OUTLINE_MAX_ITEMS = 200
 /** Above this, the worker drops each section's blocks, then the whole outline if still too big. */
 export const OUTLINE_MAX_BYTES = 32 * 1024
 
-const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' })
-
-/** The one grapheme split for stored lines and for the card fit. */
-export const graphemesOf = (text: string): string[] =>
-  Array.from(segmenter.segment(text), (part) => part.segment)
-
 export type ListKind = 'bullet' | 'ordered' | 'task'
 
 /** One first block: a paragraph, or one list with its items. Pictures, code and embeds are not stored. */

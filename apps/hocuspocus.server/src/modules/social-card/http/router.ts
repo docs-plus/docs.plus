@@ -88,7 +88,7 @@ export const createRouter = (deps: RouterDeps): Hono => {
       })
       if (result.status === 'refused') return refuse(c)
       if (result.status === 'off') return toStaticImage(c, 'fallback')
-      // Another kind's 200 would stay in crawler caches for an hour; the static image is short-lived.
+      // Another kind's 200 would stay in crawler caches for an hour; the Fallback card is short-lived.
       if (result.status === 'unavailable')
         return toStaticImage(c, result.reason === 'shed' ? 'chat-shed' : 'chat-unavailable')
       const { card } = result

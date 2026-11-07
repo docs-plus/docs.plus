@@ -1,38 +1,34 @@
-import { plural } from '../../../../lib/cardText'
-import { countBucket } from '../../render/frame'
-import { inBubble, outBubble } from '../../render/parts'
-import { chatFrame, innerWidth, roomName } from './chatPanel'
+import { cardFrame, factChip } from '../../render/frame'
+import { eyebrowLine, fitMiddle } from '../../render/parts'
+import { altSentences, eyebrowText, messageCount, roomName } from './text'
 import type { KindResolver } from './types'
 
-const PANEL_W = 420
+const LINK = 'Join the conversation →'
+const UNDER = 'A conversation about this section.'
 
-/** The room name beside a small fixed conversation, with the bucketed message count. */
+/** A section's chat room: the room name as the title, with the bucketed message count. */
 export const resolveChat: KindResolver = async (source) => {
   const room = roomName(source)
-  const count = source.facts.chat?.count ?? 0
-  const bucket = countBucket(count)
-  if (!room || !bucket) return null
+  const count = source.facts.chat ? messageCount(source.facts.chat) : null
+  if (!room || !count) return null
+  const { padName } = source
+  const fact = `💬 ${count}`
 
-  const header = `${bucket} ${plural(count, 'message', 'messages')}`
-  const inner = innerWidth(PANEL_W)
   return {
     kind: 'chat',
-    values: ['chat-panel', source.padName, room, bucket],
-    ogTitle: `Chat: ${room} — ${source.padTitle}`,
-    alt: `Chat: ${room} — ${source.padName}. ${header}`,
-    build: () =>
-      chatFrame({
-        kind: 'chat',
-        padName: source.padName,
-        room,
-        panelWidth: PANEL_W,
-        header,
-        bubbles: [
-          inBubble(inner * 0.74, [100, 62]),
-          outBubble(inner * 0.52, [100]),
-          inBubble(inner * 0.46, [100]),
-          outBubble(inner * 0.7, [100, 48])
-        ]
+    values: [padName, room, fact],
+    ogTitle: `Chat: ${room} — ${padName}`,
+    ogDescription: `A conversation on a section of ${padName}. ${count}.`,
+    alt: altSentences([room, eyebrowText([padName, 'Chat'])]),
+    build: async () => {
+      const { title, under } = await fitMiddle(room, UNDER, true)
+      return cardFrame({
+        eyebrow: await eyebrowLine(padName, ' › Chat'),
+        title,
+        under,
+        footLeft: factChip(fact),
+        link: LINK
       })
+    }
   }
 }

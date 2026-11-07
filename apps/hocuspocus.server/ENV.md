@@ -188,15 +188,15 @@ Read by `src/lib/prisma.ts` from the validated config only. There are no runtime
 
 ## Social card
 
-| Variable            | Type       | Default | Notes                                                                                                                                         |
-| ------------------- | ---------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SOCIAL_CARD_KINDS` | comma list | empty   | Card kinds to switch on: `document`, `heading`, `chat`, `message`, `version`, `filter`. Empty keeps every pad link on the static share image. |
+| Variable            | Type       | Default | Notes                                                                                                                                    |
+| ------------------- | ---------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `SOCIAL_CARD_KINDS` | comma list | empty   | Card kinds to switch on: `document`, `heading`, `chat`, `message`, `version`, `filter`. Empty keeps every pad link on the Fallback card. |
 
 - **An unknown name stops the boot.** So a typo cannot quietly turn every card off.
 - **Give `rest-api` and the worker the same value.** The worker stores version change summaries only while `version` is on.
 - **Turn kinds on one at a time,** and only after every REST replica runs the code that knows them. Start with `document`.
 - **Run `scripts/backfill-card-data.ts` once before you turn `document` on.** Run a dry run first, then `--apply`. Without it, a pad that nobody saved since the upgrade shows only its title, with no outline or first lines.
-- **Some links keep the static image by design.** A pad with no owner gets no card. A crawler never reads the part of a link after `#`, so a History link needs `?version=` in the query to show its version.
+- **Some links keep the Fallback card by design.** A pad with no owner gets no card. A crawler never reads the part of a link after `#`, so a History link needs `?version=` in the query to show its version.
 - **Keep `PUBLIC_RESTAPI_URL` on the same origin as `NEXT_PUBLIC_RESTAPI_URL`.** The page head points `og:image` at the card on that origin. The hovercard relay reads the card in process only when the origins match. Otherwise it fetches the card over the network, and every reader's hover shares one rate bucket.
 
 ## Email

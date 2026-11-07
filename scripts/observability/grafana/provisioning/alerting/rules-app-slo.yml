@@ -168,8 +168,9 @@ groups:
                 - evaluator: { type: gt, params: [0.1] }
               refId: C
 
-      # A failed card answers a 302 to the static image, never a 5xx, so slo-http-5xx-ratio
-      # cannot see it. These two read the card's own counter instead.
+      # A failed card answers a 302 to the Fallback card, never a 5xx, so slo-http-5xx-ratio
+      # cannot see it. These two read the card's own counters instead. A failed member read
+      # still draws the card, with no count, so it also shows up only here.
       - uid: social-card-errors
         title: Social card failures (>3 in 15m)
         condition: C
@@ -179,14 +180,14 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: More than 3 social card requests failed in 15m and got the static image. error is a failed row read or render (search the rest-api logs for "social card failed"); chat-unavailable is a chat read that timed out or failed (check Supabase).
+          summary: More than 3 social card reads failed in 15m. A request error is a failed row read or render, and the crawler got the Fallback card (search the rest-api logs for "social card failed"). A chat read timeout or error sent a Chat or Message link to the Fallback card, or drew a Heading card without its chat chip. A member read timeout or error drew the card with no people row, because the member read gave no number. For both reads, check Supabase.
         data:
           - refId: A
             relativeTimeRange: { from: 900, to: 0 }
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
-              expr: 'sum(increase(social_card_requests_total{outcome=~"error|chat-unavailable"}[15m])) or vector(0)'
+              expr: '(sum(increase(social_card_requests_total{outcome="error"}[15m])) or vector(0)) + (sum(increase(social_card_chat_reads_total{outcome=~"timeout|error"}[15m])) or vector(0)) + (sum(increase(social_card_member_reads_total{outcome=~"timeout|error"}[15m])) or vector(0))'
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
@@ -218,7 +219,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'A social card request was shed to the static image ({{ $labels.outcome }}). slot-shed means the render queue (`createRenderSlot` in social-card/http/router.ts) was full. chat-shed means the chat read cap (`CHAT_READS_IN_FLIGHT`) was full. See the "Social preview card" row on App Performance.'
+          summary: 'A social card request was shed to the Fallback card ({{ $labels.outcome }}). slot-shed means the render queue (`createRenderSlot` in social-card/http/router.ts) was full. chat-shed means the chat read cap (`CHAT_READS_IN_FLIGHT`) was full. See the "Social preview card" row on App Performance.'
         data:
           - refId: A
             relativeTimeRange: { from: 3600, to: 0 }

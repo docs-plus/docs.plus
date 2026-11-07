@@ -1,42 +1,38 @@
-import { cutLine, fitHead, LADDER } from '../../render/fit'
-import {
-  BODY_H,
-  cardFrame,
-  CONTENT_W,
-  LINE_H,
-  muted,
-  READ_LH,
-  T,
-  titleNode
-} from '../../render/frame'
-import { altSentences, blockLines, firstLines, lineValue, namedSection } from '../../render/parts'
+import { cardFrame, factChip } from '../../render/frame'
+import { eyebrowLine, fitMiddle } from '../../render/parts'
+import { altSentences, eyebrowText, firstLines, messageCount, namedSection, sameText } from './text'
 import type { KindResolver } from './types'
 
-/** The Document card for one section: the pad name, the heading as the title, its first blocks. */
+const LINK = 'Open the section →'
+
+/** One section: the pad name above, the heading as the title, its first line, its chat count. */
 export const resolveHeading: KindResolver = async (source) => {
   const section = namedSection(source, source.query.id)
   if (!section) return null
   const { item, name: heading } = section
-  const { padName, padTitle, isDrawable } = source
+  const { padName, isDrawable } = source
 
-  const lines = firstLines(item.blocks, isDrawable)
+  const desc =
+    firstLines(item.blocks, isDrawable).find((line) => !sameText(line.text, heading))?.text ?? null
+  // The link read also matches a channel id, so the count is drawn only for this heading's room.
+  const chat = source.facts.chat
+  const count = chat && chat.headingId === item.id ? messageCount(chat) : null
+  const fact = count ? `💬 ${count}` : null
   return {
     kind: 'heading',
-    values: ['heading-section', padName, heading, ...lines.map(lineValue)],
-    ogTitle: `${heading} — ${padTitle}`,
-    alt: altSentences([`${heading} — ${padName}`, ...lines.slice(0, 2).map((l) => l.text)]),
+    values: [padName, heading, desc ?? '', fact ?? ''],
+    ogTitle: `${heading} — ${padName}`,
+    ogDescription: `A section of ${padName}, with its own chat.`,
+    alt: altSentences([heading, eyebrowText([padName])]),
     build: async () => {
-      const contextH = READ_LH + T.space[1]
-      const gap = lines.length ? T.space[3] : 0
-      const minBlocks = Math.min(2, lines.length) * LINE_H + gap
-      const head = await fitHead(heading, LADDER.object, CONTENT_W, BODY_H - contextH - minBlocks)
-      const context = await cutLine(padName, CONTENT_W)
-      const blocks = await blockLines(lines, BODY_H - contextH - head.height - gap)
-      return cardFrame('heading', [
-        muted(context.text, { marginBottom: T.space[1] }),
-        titleNode(head, { marginBottom: gap }),
-        ...blocks
-      ])
+      const { title, under } = await fitMiddle(heading, desc, true)
+      return cardFrame({
+        eyebrow: await eyebrowLine(padName, ' ›'),
+        title,
+        under,
+        footLeft: fact ? factChip(fact) : undefined,
+        link: LINK
+      })
     }
   }
 }

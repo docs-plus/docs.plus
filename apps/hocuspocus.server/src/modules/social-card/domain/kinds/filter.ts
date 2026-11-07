@@ -1,26 +1,17 @@
 import { padUrlCore } from '@docs.plus/pad-url'
-import { container } from '@takumi-rs/helpers'
 
 import { plural } from '../../../../lib/cardText'
-import { cutLine, fitHead, HEAD_LINE, LADDER, widthOf } from '../../render/fit'
-import {
-  BODY_H,
-  cardFrame,
-  CONTENT_W,
-  HEAD_EXTRA,
-  icon,
-  LINE_H,
-  mixOklab,
-  muted,
-  over,
-  read,
-  row,
-  T
-} from '../../render/frame'
-import { outlineRow, tocHeader } from '../../render/parts'
+import { cutLine } from '../../render/fit'
+import { cardFrame, factChip, filterChip, read, row, T } from '../../render/frame'
+import { chipWidth, eyebrowLine, fitChips } from '../../render/parts'
 import { type IsDrawable, usableLine } from '../eligibility'
 import type { StoredOutlineItem } from '../storedData'
+import { altSentences, eyebrowText } from './text'
 import type { KindResolver } from './types'
+
+const LINK = 'Open these sections →'
+/** At most 3 term chips, then a "+N" chip. */
+const SHOWN_CHIPS = 3
 
 interface FilterMatch {
   /** Per term with a match: the stored text it matched, folded as a URL term is. */
@@ -75,109 +66,63 @@ export const matchFilter = (
   return { chips, hits }
 }
 
-const CHIP = {
-  fill: over(T.info, 0.1, T.paper),
-  border: over(T.info, 0.3, T.paper),
-  ink: mixOklab(T.info, T.ink, 0.42)
+/**
+ * The chips the title row draws, then the count its "+N" chip shows. A chip that would pass the
+ * line's end is left out and counted in "+N"; one stored word wider than the line is cut.
+ */
+const drawnChips = async (chips: string[], more: number) => {
+  const plusW = async (n: number) => (n > 0 ? T.chip.gap + (await chipWidth(`+${n}`)) : 0)
+  const kept = await fitChips(chips, T.box.width, (left) => plusW(left + more))
+  if (!kept.length) {
+    const room =
+      T.box.width - (await plusW(chips.length - 1 + more)) - 2 * (T.chip.padX + T.chip.border)
+    kept.push((await cutLine(chips[0], room, T.chip.size, T.chip.weight)).text)
+  }
+  return { kept, plus: chips.length - kept.length + more }
 }
-const CHIP_H = 60
-const CHIP_ROW_H = 70
-const GAP = T.space[2]
 
-const chip = (text: string) =>
-  row([read(text, { color: CHIP.ink, weight: T.weight.semibold, lineHeight: 1 })], {
-    height: CHIP_H,
-    paddingLeft: T.space[3],
-    paddingRight: T.space[3],
-    backgroundColor: CHIP.fill,
-    border: `${T.hairline}px solid ${CHIP.border}`,
-    borderRadius: T.radiusField
-  })
-
-/** The FilterBar chips from stored matched text, the mode, the count, then the matching rows. */
-export const resolveFilter: KindResolver = async ({ padName, outline, query, isDrawable }) => {
+/** The filter chips from stored matched text, the matching section names, and how many match. */
+export const resolveFilter: KindResolver = async (source) => {
+  const { padName, outline, query, isDrawable } = source
   if (!outline || !query.t) return null
-  const mode = query.mode ?? 'or'
-  const { chips, hits } = matchFilter(outline.items, query.t, mode, isDrawable)
+  const { chips, hits } = matchFilter(outline.items, query.t, query.mode ?? 'or', isDrawable)
   if (!hits.length || !chips.length) return null
 
-  const countText = `${hits.length} ${plural(hits.length, 'section matches', 'sections match')}`
-  const modeText = chips.length > 1 ? (mode === 'and' ? 'Match all' : 'Match any') : null
-  const minLevel = Math.min(...hits.map((h) => h.level))
-  // The draw nests one step at most, so the version hashes that depth, not the raw level.
-  const rows = hits.map((h) => ({ text: h.text, depth: Math.min(1, h.level - minLevel) }))
+  const n = hits.length
+  const shown = chips.slice(0, SHOWN_CHIPS)
+  const { kept, plus } = await drawnChips(shown, chips.length - shown.length)
+  const drawn = [...kept, ...(plus > 0 ? [`+${plus}`] : [])]
+  const names = hits.map((h) => h.text).join(' · ')
+  const fact = `${n} ${plural(n, 'matching section', 'matching sections')}`
   return {
     kind: 'filter',
-    values: [
-      'filter-chips',
-      padName,
-      modeText ?? '',
-      ...chips,
-      countText,
-      ...rows.map((r) => `${r.depth}:${r.text}`)
-    ],
-    ogTitle: null,
-    alt: `${padName}. Filter: ${chips.join(', ')}. ${countText}`,
+    values: [padName, ...drawn, names, fact],
+    ogTitle: padName,
+    ogDescription: `${n} ${plural(n, 'section', 'sections')} of ${padName} ${plural(n, 'matches', 'match')} "${chips.join(', ')}".`,
+    alt: altSentences([kept.join(', '), eyebrowText([padName, 'Filtered'])]),
     build: async () => {
-      const title = await fitHead(padName, LADDER.object, CONTENT_W, HEAD_LINE)
-      const chipW = await Promise.all(
-        chips.map(
-          async (c) =>
-            (await widthOf(c, T.size.read, T.weight.semibold)) + 2 * T.space[3] + 2 * T.hairline
-        )
-      )
-      const modeRoom = modeText
-        ? (await widthOf(modeText)) + 2 * T.space[2] + 2 * T.hairline + GAP
-        : 0
-      // The filter glyph, then each chip that fits beside the mode label.
-      let used = T.size.read + GAP
-      const kept: string[] = []
-      for (const [i, text] of chips.entries()) {
-        if (used + chipW[i] + GAP > CONTENT_W - modeRoom) break
-        kept.push(text)
-        used += chipW[i] + GAP
-      }
-      if (!kept.length) {
-        // One stored match wider than the row: draw it cut, so the card still names the filter.
-        const room = CONTENT_W - used - modeRoom - 2 * T.space[3] - 3 * GAP
-        const cut = await cutLine(chips[0], room, T.size.read, T.weight.semibold)
-        kept.push(cut.text)
-        used += room + 2 * T.space[3] + GAP
-      }
-      used += modeRoom
-      const countInline = used + T.space[2] + (await widthOf(countText)) <= CONTENT_W
-      const count = muted(countText, {}, 1)
-      const modeLabel = modeText
-        ? row([read(modeText, { color: T.ink70, lineHeight: 1 })], {
-            height: CHIP_H,
-            paddingLeft: T.space[2],
-            paddingRight: T.space[2],
-            border: `${T.hairline}px solid ${T.border}`,
-            borderRadius: T.radiusField
+      const { size, weight, marginBottom } = T.filter
+      const line = await cutLine(names, T.box.width, size, weight)
+      return cardFrame({
+        eyebrow: await eyebrowLine(padName, ' › Filtered'),
+        title: row(
+          [
+            ...kept.map((chip) => filterChip(chip)),
+            ...(plus > 0 ? [filterChip(`+${plus}`, true)] : [])
+          ],
+          { gap: T.chip.gap, marginBottom }
+        ),
+        under: [
+          read(line.text, {
+            size,
+            weight,
+            lineHeight: T.desc.lineHeight,
+            style: { whiteSpace: 'nowrap' }
           })
-        : null
-      const chipRow = row(
-        [
-          icon('filter', T.size.read, 0.7),
-          ...kept.map(chip),
-          ...(modeLabel ? [modeLabel] : []),
-          ...(countInline
-            ? [container({ style: { width: T.space[2], flexShrink: 0 } }), count]
-            : [])
         ],
-        { gap: GAP, height: CHIP_ROW_H, width: CONTENT_W }
-      )
-      const rowsRoom =
-        BODY_H - title.height - HEAD_EXTRA - CHIP_ROW_H - T.space[1] - (countInline ? 0 : LINE_H)
-      const k = Math.max(0, Math.min(rows.length, Math.floor(rowsRoom / LINE_H)))
-      const rowNodes = await Promise.all(rows.slice(0, k).map((r) => outlineRow(r.text, r.depth)))
-      return cardFrame('filter', [
-        tocHeader(title),
-        chipRow,
-        container({ style: { height: T.space[1], flexShrink: 0 } }),
-        ...(countInline ? [] : [row([count], { height: LINE_H })]),
-        ...rowNodes
-      ])
+        footLeft: factChip(fact),
+        link: LINK
+      })
     }
   }
 }

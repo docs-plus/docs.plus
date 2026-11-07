@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import { COUNT_CAP } from '../../../lib/cardText'
 import {
   type ChatReadOutcome,
   socialCardChatReadSeconds,
@@ -10,14 +11,12 @@ import { MESSAGE_ID, SUB_ID } from '../domain/cardRequest'
 import type { ChatFacts } from '../domain/kinds/types'
 import type { CardReads, Indefinite } from '../domain/resolveCard'
 import { type ChatRoom, readChatRoom } from './chatRoom'
-import { createSingleFlight } from './renderGuards'
+import { createGuardedRead } from './renderGuards'
 
 const CHAT_READ_TIMEOUT_MS = 300
 const MEMO_MS = 60_000
 const MEMO_MAX = 1000
 export const CHAT_READS_IN_FLIGHT = 4
-// Matches the "10+" in `countBucket` (render/frame.ts): a card never shows a larger count.
-const COUNT_CAP = 10
 
 const toFacts = (documentId: string, room: ChatRoom): ChatFacts => ({
   // The pad's own room has its document id as its heading id.
@@ -41,53 +40,40 @@ export const createChatRead = (
   getClient: () => SupabaseClient | null = getAnonClient,
   timeoutMs = CHAT_READ_TIMEOUT_MS
 ): CardReads['chat'] => {
-  const memo = new Map<string, { at: number; facts: ChatFacts | null }>()
-  let inFlight = 0
-  const shared = createSingleFlight<ChatFacts | null | Indefinite>()
   const count = (outcome: ChatReadOutcome) => socialCardChatReadsTotal.inc({ outcome })
-
-  const remember = (key: string, facts: ChatFacts | null) => {
-    memo.delete(key)
-    memo.set(key, { at: Date.now(), facts })
-    // Insertion order makes the first key the oldest.
-    if (memo.size > MEMO_MAX) memo.delete(memo.keys().next().value as string)
-  }
+  const guarded = createGuardedRead<SupabaseClient, ChatFacts | null | Indefinite>({
+    getClient,
+    cap: CHAT_READS_IN_FLIGHT,
+    memoMs: MEMO_MS,
+    memoMax: MEMO_MAX,
+    keep: (facts) => typeof facts !== 'string',
+    shed: 'shed',
+    noClient: 'unavailable',
+    count,
+    startTimer: () => socialCardChatReadSeconds.startTimer()
+  })
 
   const readRoom = async (
     client: SupabaseClient,
-    key: string,
     documentId: string,
     linkId: string,
     messageId: string | undefined
   ): Promise<ChatFacts | null | Indefinite> => {
-    if (inFlight >= CHAT_READS_IN_FLIGHT) {
-      count('shed')
-      return 'shed'
+    const read = await readChatRoom(client, {
+      documentId,
+      linkId,
+      match: 'link',
+      messageId,
+      timeoutMs
+    })
+    // No `rejected` arm: the id check below runs before this read, so it never sees one.
+    if (read.status !== 'ok') {
+      count(read.status === 'timeout' ? 'timeout' : 'error')
+      return 'unavailable'
     }
-
-    inFlight++
-    const stop = socialCardChatReadSeconds.startTimer()
-    try {
-      const read = await readChatRoom(client, {
-        documentId,
-        linkId,
-        match: 'link',
-        messageId,
-        timeoutMs
-      })
-      // No `rejected` arm: the id check below runs before this read, so it never sees one.
-      if (read.status !== 'ok') {
-        count(read.status === 'timeout' ? 'timeout' : 'error')
-        return 'unavailable'
-      }
-      const facts = read.room ? toFacts(documentId, read.room) : null
-      count(facts ? 'ok' : 'missing')
-      remember(key, facts)
-      return facts
-    } finally {
-      stop()
-      inFlight--
-    }
+    const facts = read.room ? toFacts(documentId, read.room) : null
+    count(facts ? 'ok' : 'missing')
+    return facts
   }
 
   return async (documentId, linkId, messageId) => {
@@ -97,22 +83,6 @@ export const createChatRead = (
       return null
     }
     const key = `${documentId}\u0000${linkId}\u0000${messageId ?? ''}`
-    const hit = memo.get(key)
-    if (hit && Date.now() - hit.at < MEMO_MS) {
-      count('memo')
-      return hit.facts
-    }
-    const client = getClient()
-    if (!client) {
-      count('error')
-      return 'unavailable'
-    }
-    let joined = true
-    const result = await shared(key, () => {
-      joined = false
-      return readRoom(client, key, documentId, linkId, messageId)
-    })
-    if (joined) count('joined')
-    return result
+    return guarded(key, (client) => readRoom(client, documentId, linkId, messageId))
   }
 }

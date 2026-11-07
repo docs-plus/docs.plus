@@ -1,26 +1,12 @@
-import { plural } from '../../../../lib/cardText'
-import { fitHead, HEAD_LINE, LADDER } from '../../render/fit'
-import {
-  BODY_H,
-  cardFrame,
-  CONTENT_W,
-  HEAD_EXTRA,
-  LINE_H,
-  muted,
-  T,
-  titleNode
-} from '../../render/frame'
-import {
-  altSentences,
-  type BlockLine,
-  blockLines,
-  firstLines,
-  lineValue,
-  outlineRow,
-  tocHeader
-} from '../../render/parts'
+import type { Node } from '@takumi-rs/core'
+
+import { peopleCount, peopleLabel, plural } from '../../../../lib/cardText'
+import { cutLine, footLeftWidth } from '../../render/fit'
+import { cardFrame, peopleRow, read, T } from '../../render/frame'
+import { fitMiddle } from '../../render/parts'
 import { type IsDrawable, usableLine } from '../eligibility'
 import type { StoredOutlineItem } from '../storedData'
+import { altSentences, firstLines, sameText } from './text'
 import type { DrawnCard, KindResolver } from './types'
 
 interface OutlineRow {
@@ -28,11 +14,11 @@ interface OutlineRow {
   depth: number
 }
 
-/** The outline layout needs at least this many rows; with fewer, the first blocks say more. */
+/** With fewer top-level rows than this, their children count as sections too. */
 const MIN_ROWS = 3
 
 /**
- * The rows the Document card draws. It takes the top level when that has `MIN_ROWS` or more
+ * The pad's sections, in order. It takes the top level when that has `MIN_ROWS` or more
  * items. Else it takes the top level with its children nested under it.
  */
 export const pickRows = (items: StoredOutlineItem[], isDrawable: IsDrawable): OutlineRow[] => {
@@ -50,62 +36,80 @@ export const pickRows = (items: StoredOutlineItem[], isDrawable: IsDrawable): Ou
   })
 }
 
-const MORE_H = T.size.read + T.space[1]
+const LINK = 'Open the document →'
+const SHOWN_SECTIONS = 3
 
-const outlineCard = (padName: string, rows: OutlineRow[]): DrawnCard => ({
-  kind: 'document',
-  values: ['document-outline', padName, ...rows.map((r) => `${r.depth}:${r.text}`)],
-  ogTitle: null,
-  alt: [padName, ...rows.slice(0, 4).map((r) => r.text)].join(', '),
-  build: async () => {
-    const title = await fitHead(padName, LADDER.object, CONTENT_W, 2 * HEAD_LINE)
-    const budget = BODY_H - title.height - HEAD_EXTRA
-    let k = Math.min(rows.length, Math.floor(budget / LINE_H))
-    if (k < rows.length) k = Math.min(k, Math.floor((budget - MORE_H) / LINE_H))
-    const shown = await Promise.all(rows.slice(0, k).map((r) => outlineRow(r.text, r.depth)))
-    const more = rows.length - k
-    return cardFrame('document', [
-      tocHeader(title),
-      ...shown,
-      ...(more > 0
-        ? [
-            muted(
-              `+${more} more ${plural(more, 'section', 'sections')}`,
-              { marginTop: T.space[1] },
-              1
-            )
-          ]
-        : [])
-    ])
-  }
-})
+/**
+ * "Curry / daal · Pasta Bake · Soups · +5 more", or null with no section to name. A truncated
+ * outline hides how many sections remain, so its tail says "+ more" with no number.
+ */
+const sectionsLine = (rows: OutlineRow[], truncated: boolean): string | null => {
+  if (!rows.length) return null
+  const names = rows.slice(0, SHOWN_SECTIONS).map((r) => r.text)
+  const more = rows.length - names.length
+  const tail = truncated ? ['+ more'] : more > 0 ? [`+${more} more`] : []
+  return [...names, ...tail].join(' · ')
+}
 
-const titleCard = (padName: string): DrawnCard => ({
-  kind: 'document',
-  values: ['document-title', padName],
-  ogTitle: null,
-  alt: padName,
-  build: async () =>
-    cardFrame('document', [titleNode(await fitHead(padName, LADDER.padTitle, CONTENT_W, BODY_H))])
-})
+/**
+ * One sentence per fact a reader may see, or null with nothing to say. A hidden count leaves its
+ * part out, and a truncated outline gives a floor ("200+ sections"), never a false total.
+ */
+const describe = (members: number | null, sections: number, truncated: boolean): string | null => {
+  const counted =
+    sections > 0
+      ? `${sections}${truncated ? '+' : ''} ${plural(sections, 'section', 'sections')}`
+      : null
+  const people = peopleCount(members)
+  if (!people) return counted ? `A document on docs.plus with ${counted}.` : null
+  const working = `${people} people are working on this document.`
+  if (!counted) return working
+  return `${working} ${counted}, ${plural(sections, 'with its own chat', 'with chat on each one')}.`
+}
 
-const blocksCard = (padName: string, lines: BlockLine[]): DrawnCard => ({
-  kind: 'document',
-  values: ['document-blocks', padName, ...lines.map(lineValue)],
-  ogTitle: null,
-  alt: altSentences([padName, ...lines.slice(0, 2).map((l) => l.text)]),
-  build: async () => {
-    const minBlocks = Math.min(2, lines.length) * LINE_H + T.space[3]
-    const title = await fitHead(padName, LADDER.padTitle, CONTENT_W, BODY_H - minBlocks)
-    const blocks = await blockLines(lines, BODY_H - title.height - T.space[3])
-    return cardFrame('document', [titleNode(title, { marginBottom: T.space[3] }), ...blocks])
-  }
-})
+/** The foot clips with no "…", so the line is cut here, at a word when it can be. */
+const sectionsFoot = async (line: string): Promise<Node> => {
+  const fit = await cutLine(line, await footLeftWidth(LINK), T.sections.size, T.sections.weight)
+  return read(fit.text, {
+    ...T.sections,
+    color: T.inkSoft,
+    style: { whiteSpace: 'nowrap' }
+  })
+}
 
-/** The layout the Document card takes: outline rows, else first blocks, else one large title. */
-export const resolveDocument: KindResolver = async (source) => {
+/**
+ * The name, then the first paragraph, else the section names. The foot holds the people count
+ * from 3 people; else the section names when the paragraph took the middle.
+ */
+export const resolveDocument: KindResolver = async (source): Promise<DrawnCard> => {
+  const name = source.padName
+  const desc =
+    firstLines(source.blocks ?? [], source.isDrawable).find(
+      (line) => line.kind === 'p' && !sameText(line.text, name)
+    )?.text ?? null
+  const truncated = source.outline?.truncated === true
+  // A section named like the pad would print the name twice.
   const rows = source.outline ? pickRows(source.outline.items, source.isDrawable) : []
-  if (rows.length >= MIN_ROWS) return outlineCard(source.padName, rows)
-  const lines = firstLines(source.blocks ?? [], source.isDrawable)
-  return lines.length ? blocksCard(source.padName, lines) : titleCard(source.padName)
+  const sections = sectionsLine(
+    rows.filter((row) => !sameText(row.text, name)),
+    truncated
+  )
+  const people = peopleLabel(source.facts.members)
+  const middle = desc ?? sections
+  return {
+    kind: 'document',
+    values: [name, desc ?? '', sections ?? '', people ?? ''],
+    ogTitle: source.renamed ? name : null,
+    ogDescription: describe(source.facts.members, source.outline?.items.length ?? 0, truncated),
+    alt: altSentences(middle ? [name, middle] : [name]),
+    build: async () => {
+      const { title, under } = await fitMiddle(name, middle, false)
+      const footLeft = people
+        ? peopleRow(people)
+        : desc && sections
+          ? await sectionsFoot(sections)
+          : undefined
+      return cardFrame({ title, under, footLeft, link: LINK })
+    }
+  }
 }

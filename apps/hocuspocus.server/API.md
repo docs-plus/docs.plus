@@ -229,12 +229,12 @@ The pad card answers instead for an unknown heading, room, message or version, a
 
 The social preview card: a 1200 × 630 PNG drawn from stored values only, never from URL text. Each kind ships off; `SOCIAL_CARD_KINDS` turns kinds on. The kinds are `document`, `heading`, `chat`, `message`, `version` and `filter`. The full contract is in the OpenAPI spec (`getSocialCardImage`).
 
-| Status | `Cache-Control`        | When                                                                                                                            |
-| ------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `200`  | `public, max-age=3600` | The card. `ETag` is the server's own `cardVersion`. `X-Robots-Tag: noindex`.                                                    |
-| `304`  | `public, max-age=3600` | `If-None-Match` equals the current `ETag`.                                                                                      |
-| `302`  | `public, max-age=300`  | To the static image: the kind is off, the render queue is full, a chat read failed for now, or the render threw. Never a `5xx`. |
-| `404`  | `public, max-age=60`   | Private, deleted, ownerless, missing, or a bad id shape. One body and header set for all of them.                               |
+| Status | `Cache-Control`        | When                                                                                                                             |
+| ------ | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `200`  | `public, max-age=3600` | The card. `ETag` is the server's own `cardVersion`. `X-Robots-Tag: noindex`.                                                     |
+| `304`  | `public, max-age=3600` | `If-None-Match` equals the current `ETag`.                                                                                       |
+| `302`  | `public, max-age=300`  | To the Fallback card: the kind is off, the render queue is full, a chat read failed for now, or the render threw. Never a `5xx`. |
+| `404`  | `public, max-age=60`   | Private, deleted, ownerless, missing, or a bad id shape. One body and header set for all of them.                                |
 
 The `v` query parameter is a cache key for crawlers only. The server never reads it, so never cache this route as `immutable`. The route has its own rate limit; see [Rate limiting](#rate-limiting). `social_card_requests_total{outcome}` counts every answer, and the "Social preview card" row on the App Performance dashboard shows it.
 
@@ -1269,7 +1269,7 @@ The server runs the same pipeline as `GET /api/metadata`, usually a cache hit, a
 
 It shares the `/api/metadata` rate-limit bucket. See [Rate limiting](#rate-limiting).
 
-**A docs.plus pad link never leaves the process.** When the page image is this server's own `card.png` (same origin as `PUBLIC_RESTAPI_URL`), the route reads it in process. Over the network, every reader's hover would arrive from the server's one address and share one card bucket. A `302` from the card still goes over the network, to the static image on the web app host.
+**A docs.plus pad link never leaves the process.** When the page image is this server's own `card.png` (same origin as `PUBLIC_RESTAPI_URL`), the route reads it in process. Over the network, every reader's hover would arrive from the server's one address and share one card bucket. A `302` from the card still goes over the network, to the Fallback card on the web app host.
 
 **Accepted risk.** The same DNS rebinding risk as the icon route is accepted here, limited to sniffed image bytes up to 2 MiB within 5 s.
 

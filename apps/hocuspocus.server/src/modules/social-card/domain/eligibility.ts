@@ -5,6 +5,7 @@ export interface CardRow {
   isPrivate: boolean
   ownerId: string | null
   deletedAt: Date | null
+  slug: string
 }
 
 // A bare domain with no `/` stays text, so a title such as "docs.plus" survives.
@@ -24,24 +25,17 @@ const onlyLinks = (line: string): boolean =>
 /** Whether the card font and Twemoji can draw a line; `infra/assets.ts` holds the real one. */
 export type IsDrawable = (line: string) => boolean
 
+const drawableClean = (clean: string, isDrawable: IsDrawable): string | null =>
+  clean && !onlyLinks(clean) && isDrawable(clean) ? clean : null
+
 /** One drawn line after the cleaner, or null when nothing drawable is left. */
 export const usableLine = (
   line: string | null | undefined,
   isDrawable: IsDrawable
-): string | null => {
-  if (!line) return null
-  const clean = cleanLine(line)
-  return clean && !onlyLinks(clean) && isDrawable(clean) ? clean : null
-}
+): string | null => (line ? drawableClean(cleanLine(line), isDrawable) : null)
 
-/**
- * The one card eligibility rule: a live, public, owned row with a drawable Pad title.
- * Returns the title to draw, or null. Every null answers the same 404 on the route.
- */
-export const drawnTitle = (row: CardRow | null, isDrawable: IsDrawable): string | null => {
-  if (!row || row.deletedAt || row.isPrivate || !row.ownerId) return null
-  return usableLine(row.title, isDrawable)
-}
+// The letters of `[link]` must not count, or a Title made only of links would pass.
+const hasWord = (line: string): boolean => /[\p{L}\p{N}]/u.test(line.split(LINK_WORD).join(''))
 
 /** A Pad title still equal to the slug says nothing, so the Title replaces it when there is one. */
 export const padName = (
@@ -50,10 +44,24 @@ export const padName = (
   titleText: string | null | undefined
 ): string => (padTitle !== slug ? padTitle : titleText || padTitle)
 
-/** The name a card draws, with a Title it can draw. `og:title` keeps the Pad title. */
-export const drawnPadName = (
-  padTitle: string,
-  slug: string,
+/**
+ * The one card eligibility rule: a live, public, owned row with a drawable Pad title. The name
+ * rule then picks the drawn name: a Pad title that is only links, or equals the slug, gives way
+ * to the Title heading. `renamed` says it did. Every null answers the same 404 on the route.
+ */
+export const cardName = (
+  row: CardRow | null,
   titleText: string | null,
   isDrawable: IsDrawable
-): string => padName(padTitle, slug, usableLine(titleText, isDrawable))
+): { name: string; renamed: boolean } | null => {
+  if (!row || row.deletedAt || row.isPrivate || !row.ownerId) return null
+  const clean = cleanLine(row.title ?? '')
+  const own = drawableClean(clean, isDrawable)
+  const heading = usableLine(titleText, isDrawable)
+  if (own) {
+    const name = padName(own, row.slug, heading)
+    return { name, renamed: name !== own }
+  }
+  if (!clean.includes(LINK_WORD) || !onlyLinks(clean)) return null
+  return heading && hasWord(heading) ? { name: heading, renamed: true } : null
+}

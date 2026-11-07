@@ -36,6 +36,8 @@ export interface CardDescription {
   query: string
   /** `og:title`, or null to keep the Pad title. */
   title: string | null
+  /** `og:description`, or null to keep the page's own. */
+  description: string | null
   alt: string
   /** `og:url` path. */
   path: string
@@ -48,13 +50,14 @@ export const wantsCard = (req: QuerySource, kinds: ReadonlySet<CardKind>): boole
 const describe = (card: ResolvedCard): CardDescription => ({
   query: cardImageQuery(card.query, card.v),
   title: card.ogTitle,
+  description: card.ogDescription,
   alt: card.alt,
   path: card.path
 })
 
 /**
  * The slug reply, with `card` when the head asked for one (`withCard`, from `wantsCard`) and the
- * pad has one. The stored card data never leaves REST. A failed check keeps the static image.
+ * pad has one. The stored card data never leaves REST. A failed check keeps the Fallback card.
  */
 export const attachCard = async <T extends Omit<CardSourceRow, 'cardData'>>(args: {
   prisma: PrismaClient

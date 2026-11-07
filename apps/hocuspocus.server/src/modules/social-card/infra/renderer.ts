@@ -1,11 +1,11 @@
 import type { Node, Renderer } from '@takumi-rs/core'
 import { extractEmojis } from '@takumi-rs/helpers/emoji'
 
-import { collectImages, loadAssets } from './assets'
+import { CARD_FONTS, collectImages, loadAssets } from './assets'
 
 export const CARD_WIDTH = 1200
 export const CARD_HEIGHT = 630
-export const CARD_FONT = 'Arimo'
+export const CARD_FONT = CARD_FONTS.map((f) => f.name).join(', ')
 
 let renderer: Promise<Renderer> | null = null
 
@@ -13,9 +13,9 @@ let renderer: Promise<Renderer> | null = null
 const getRenderer = (): Promise<Renderer> => {
   renderer ??= (async () => {
     const { Renderer } = await import('@takumi-rs/core')
-    // 8 MiB covers the font, the logo and the emoji the cards draw.
+    // 8 MiB covers the logo and the emoji the cards draw. Registered fonts sit outside it.
     const r = new Renderer({ cacheMaxBytes: 8 * 1024 * 1024 })
-    await r.registerFont({ name: CARD_FONT, data: loadAssets().font })
+    for (const font of loadAssets().fonts) await r.registerFont(font)
     return r
   })().catch((err: unknown) => {
     renderer = null

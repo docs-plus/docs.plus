@@ -75,23 +75,47 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
     `filter`.
   - Each kind ships off. `SOCIAL_CARD_KINDS` turns kinds on; set the same value on both REST
     replicas and on the worker. An unknown name fails the boot.
-  - The slug read takes `card=1` and then returns `card: { query, title, alt, path }`. Next
-    sends it only on a full page load.
+  - The slug read takes `card=1` and then returns `card: { query, title, description, alt, path }`.
+    Next sends it only on a full page load. `description` is the card's `og:description`
+    sentence. It leaves out every number the card hides, and null keeps the page's own.
   - A Private, deleted, ownerless or missing pad gets one identical `404`. A kind that is off, a
-    full render queue, a failed chat read or a render error answers `302` to the static image.
+    full render queue, a failed chat read or a render error answers `302` to the Fallback card.
+    A Heading card reads its room's chat count through the same anon chat read. When that read
+    fails, the Heading card still draws, without its chat chip.
   - The route has its own rate-limit bucket, at four times `RATE_LIMIT_MAX` per 15 minutes.
     `GET /api/metadata/image` reads a docs.plus pad's card in process, so a hovercard never
     spends that bucket.
-  - The card draws no people: no message text, no author, no name and no face. Counts are
-    bucketed 1 to 9, then 10+.
+  - The card draws no people: no message text, no author, no name and no face. Message,
+    reaction and reply counts are bucketed 1 to 9, then 10+.
+  - The Document card draws the pad's first paragraph and its section names, as
+    "A · B · C · +N more". A truncated outline says "+ more", and "200+ sections" in
+    `og:description`.
+  - The Document card shows "N people joined" from 3 people. The count is exact to 999. Above
+    that it rounds down to one decimal ("1.9k", "12.4k"), so it never overstates.
+  - The member read is the card's one service-role read, through
+    `admin_get_document_member_counts`. It runs only after eligibility and only while the
+    `document` kind is on, and it returns a number only. It waits at most 300 ms, and four
+    run at a time. A failed read draws no people row, and that card is cached like any card.
+  - The drawn name is the pad name a card draws: the Pad title, with each link shown as
+    "[link]". When the Pad title is only links, such as `docs.plus/house-london`, or equals the
+    slug, the drawn name and `og:title` take the Title heading instead. The heading must be
+    drawable. For a link-only Pad title it must also hold a letter or digit. For a slug-equal
+    one it must not be only links or punctuation.
+  - The Document card's `og:title` keeps any other Pad title as written, links included, and
+    the card draws its cleaned form. Other kinds put the drawn name in their `og:title`, so a
+    link there reads "[link]".
   - A Chat card counts every live message, notices included. The count comes from the room's
     message counter, so it is the number the app shows.
-  - `assets/social-card/ATTRIBUTION.md` credits the Twemoji pictures (CC BY 4.0) and the Arimo
-    font (SIL OFL 1.1).
-  - A Pad title that needs two lines wraps on the Document outline card and the Filter card. A
-    longer title is cut at a word, with "…". Before this, the outline card drew the title on
-    one line and clipped it at the card edge. The template id is now `social-card-2`, so every
-    card URL changed and crawlers fetch the new image.
+  - Inter 4.1 draws the card. Arimo stays registered after it for the glyphs Inter lacks, so
+    no title that drew before is refused. `assets/social-card/ATTRIBUTION.md` credits the
+    Twemoji pictures (CC BY 4.0) and both fonts (SIL OFL 1.1).
+  - Every kind draws on one frame: a background with a soft glow and a faded logo, and no
+    text under 30 px. A text title steps from 104 to 88 to 72 px, then is cut at a word, with
+    "…". The Filter card's title is its chip row.
+  - The template id is now `social-card-3`, so every card URL changed and crawlers fetch the
+    new image.
+  - The Fallback card is now the homepage card, `og-card-1280x640.png?v=8164407d`, at
+    1280 × 640. `og-card-pad-1200x630.png` stays in place for crawler caches.
 - **The worker stores what the card draws.** Each save writes `DocumentMetadata.cardData`: the
   first blocks and the outline. While `SOCIAL_CARD_KINDS` holds `version`, each stored version
   enqueues a job on the new `version-change-summary` queue. That job writes
@@ -99,12 +123,17 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 - **Card numbers for later tuning.** The App Performance dashboard has a "Social preview card"
   row.
   - `social_card_requests_total{outcome}` splits served cards into `hit`, `render` and
-    `not-modified`, and sheds into `chat-shed` and `slot-shed`. `chat-unavailable` is a chat
-    read that timed out or failed.
+    `not-modified`, and sheds into `chat-shed` and `slot-shed`. `chat-unavailable` is a Chat
+    or Message card whose chat read timed out or failed.
   - `social_card_render_seconds{kind}` times each render.
   - `social_card_chat_read_seconds` times each chat round trip.
+  - `social_card_member_reads_total{outcome}` counts member reads as `ok`, `memo`, `joined`,
+    `timeout`, `error` or `shed`, and `social_card_member_read_seconds` times them. Both are
+    seeded at zero. `social-card-errors` also counts a member read `timeout` or `error`.
   - `social_card_chat_reads_total{outcome}`, `social_card_data_writes_total{outcome}` and
     `change_summary_writes_total{outcome}` count reads and writes.
+  - `social-card-errors` reads `social_card_chat_reads_total{outcome=~"timeout|error"}`, not
+    `chat-unavailable`, so every chat read failure (Chat, Message and Heading) counts once.
   - Three Grafana rules warn: `social-card-errors` (more than 3 failures in 15 minutes),
     `social-card-shed` (any shed in 1 hour) and `worker-summary-queue-backlog` (jobs waiting for
     15 minutes).

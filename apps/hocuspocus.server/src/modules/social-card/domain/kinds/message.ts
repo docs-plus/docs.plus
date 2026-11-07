@@ -1,19 +1,15 @@
-import { container, image, text } from '@takumi-rs/helpers'
+import { text } from '@takumi-rs/helpers'
 import { extractEmojis } from '@takumi-rs/helpers/emoji'
 
-import { cardDate, plural } from '../../../../lib/cardText'
-import { countBucket, over, read, row, stack, strokeSvg, T } from '../../render/frame'
-import { inBubble, outBubble } from '../../render/parts'
+import { countBucket, plural } from '../../../../lib/cardText'
+import { cardFrame } from '../../render/frame'
+import { eyebrowLine, factRow, fitMiddle } from '../../render/parts'
 import type { IsDrawable } from '../eligibility'
-import { chatFrame, innerWidth, roomName } from './chatPanel'
+import { altSentences, eyebrowText, roomName } from './text'
 import type { KindResolver } from './types'
 
-// Wider than the Chat panel: the lit message carries its reaction and its reply line.
-const PANEL_W = 480
-const FOOT_H = 54
-// The app's deep-link highlight (.msg_card--flash at rest) and its edge bar.
-const FLASH = over(T.primary, 0.16, T.paper)
-const FLASH_BAR = over(T.primary, 0.85, FLASH)
+const TITLE = 'A message was shared with you'
+const LINK = 'See the message →'
 
 /**
  * People stay off the card: skin tones, joiners, faces and figures. Hand gestures such as 👍
@@ -41,106 +37,34 @@ export const topReaction = (
   return ranked[0] ?? null
 }
 
-const REPLY_PATHS = '<polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>'
-
-/** The chat panel with the linked message lit, as the app lights a jumped-to message. */
+/** A shared message: never its text or author, only its top reaction and its reply count. */
 export const resolveMessage: KindResolver = async (source) => {
   const message = source.facts.chat?.message
   const room = roomName(source)
   if (!message || !room || message.type === 'notice' || message.type === 'notification') {
     return null
   }
+  const { padName } = source
 
-  const day = cardDate(message.createdAt)
   const reaction = topReaction(message.reactions, source.isDrawable)
   const reactionCount = reaction ? countBucket(reaction[1]) : null
+  const reactionFact = reaction && reactionCount ? `${reaction[0]} ${reactionCount}` : null
   const replies = countBucket(message.replies)
-  const repliesText = replies ? `${replies} ${plural(message.replies, 'reply', 'replies')}` : null
-  const inner = innerWidth(PANEL_W)
+  const repliesFact = replies ? `${replies} ${plural(message.replies, 'reply', 'replies')}` : null
+  const facts = [reactionFact, repliesFact].filter((f): f is string => f !== null)
 
   return {
     kind: 'message',
-    values: [
-      'message-panel',
-      source.padName,
-      room,
-      day,
-      reaction && reactionCount ? `${reaction[0]}${reactionCount}` : '',
-      repliesText ?? ''
-    ],
-    ogTitle: `Chat: ${room} — ${source.padTitle}`,
-    alt: `A message in ${room} — ${source.padName}, ${day}`,
-    build: () => {
-      const foot = [
-        ...(reaction && reactionCount
-          ? [
-              row(
-                [
-                  read(reaction[0], { lineHeight: 1 }),
-                  read(reactionCount, { weight: T.weight.semibold, lineHeight: 1 })
-                ],
-                {
-                  gap: T.space[1],
-                  height: FOOT_H,
-                  paddingLeft: T.space[2],
-                  paddingRight: T.space[2.5],
-                  backgroundColor: T.border,
-                  borderRadius: T.radiusField
-                }
-              )
-            ]
-          : []),
-        ...(repliesText
-          ? [
-              row(
-                [
-                  image({
-                    src: strokeSvg('card:reply', REPLY_PATHS, over(T.ink, 0.5, T.paper), 2),
-                    width: 36,
-                    height: 36,
-                    style: { flexShrink: 0 }
-                  }),
-                  read(repliesText, { color: T.ink70, lineHeight: 1 })
-                ],
-                { gap: T.space[1.5], height: FOOT_H }
-              )
-            ]
-          : [])
-      ]
-      const lit = row(
-        [
-          container({
-            style: { width: 8, alignSelf: 'stretch', backgroundColor: FLASH_BAR, flexShrink: 0 }
-          }),
-          stack(
-            [
-              inBubble(inner * 0.7, [100, 58], over(T.ink, 0.1, FLASH)),
-              ...(foot.length ? [row(foot, { gap: T.space[2], marginTop: T.space[1] })] : [])
-            ],
-            {
-              padding: T.space[1],
-              paddingLeft: T.space[1.5],
-              paddingRight: T.space[1.5],
-              flexGrow: 1
-            }
-          )
-        ],
-        {
-          alignItems: 'stretch',
-          width: '100%',
-          backgroundColor: FLASH,
-          borderRadius: T.radiusField,
-          overflow: 'hidden'
-        }
-      )
-      return chatFrame({
-        kind: 'message',
-        padName: source.padName,
-        room,
-        panelWidth: PANEL_W,
-        header: day,
-        bubbles: [inBubble(inner * 0.5, [100]), outBubble(inner * 0.42, [100]), lit]
+    values: [padName, room, reactionFact ?? '', repliesFact ?? ''],
+    ogTitle: `Chat: ${room} — ${padName}`,
+    ogDescription: `A message from the ${padName} chat.`,
+    alt: altSentences([TITLE, eyebrowText([padName, room])]),
+    build: async () =>
+      cardFrame({
+        eyebrow: await eyebrowLine(padName, ` › ${room}`),
+        title: (await fitMiddle(TITLE, null, true)).title,
+        footLeft: await factRow(facts, LINK),
+        link: LINK
       })
-    }
   }
 }
