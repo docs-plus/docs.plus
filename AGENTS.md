@@ -429,3 +429,5 @@ Inbox only. New workspace facts go into the topical section that owns the subjec
 - Cypress is `16.2.1` in that tree. `Cypress.env()` is gone. Use `Cypress.expose()` for a public value.
 - `pele` stays `1.8.0` in hocuspocus and `extension-mermaid`. Do not take `1.9.0` until diagram labels are handled.
 - Pull requests `#534`, `#535`, `#536`, and `#538` are merged. `#539`, `#540`, `#537`, and `#473` wait on this tree. `#364` is set aside.
+- The `supabase` CLI stays on 2.122.1. Version 3.0.0 makes `db push` target the local database unless the command passes `--remote`. Do not take 3.0.0 until the config and the production commands move with it.
+- A failed global sign-out in `@supabase/auth-js` 2.119 keeps the local session. `useSignOut` stays and shows a toast. Keep that path when the call fails and a session remains.
