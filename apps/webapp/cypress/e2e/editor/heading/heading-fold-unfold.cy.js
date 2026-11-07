@@ -22,20 +22,30 @@ describe('Heading Fold/Unfold (Flat Schema)', () => {
     cy.wait(500)
   })
 
+  // `contain` passes on hidden text, so these read the crinkle phase and visibility.
+  const foldSectionA = () => {
+    cy.getTocItem('Section A').find('button.toc__fold-btn').click({ force: true })
+    cy.get('.heading-fold-crinkle').should('have.attr', 'data-fold-phase', 'folded')
+    cy.contains('.docy_editor p', 'Content under section A').should('not.be.visible')
+  }
+  const expectSectionAOpen = () => {
+    cy.get('.heading-fold-crinkle').should('not.exist')
+    cy.get('.heading-fold-hidden').should('not.exist')
+    cy.contains('.docy_editor p', 'Content under section A').should('be.visible')
+  }
+
   it('folds and unfolds section content via TOC toggle', () => {
     cy.waitForToc()
-
-    cy.get('.docy_editor .tiptap.ProseMirror').should('contain', 'Content under section A')
-
+    foldSectionA()
     cy.getTocItem('Section A').find('button.toc__fold-btn').click({ force: true })
-    cy.wait(500)
+    expectSectionAOpen()
+  })
 
-    cy.get('.heading-fold-hidden').should('exist')
-
-    cy.getTocItem('Section A').find('button.toc__fold-btn').click({ force: true })
-    cy.wait(500)
-
-    cy.get('.docy_editor .tiptap.ProseMirror').should('contain', 'Content under section A')
+  it('unfolds a section from a click on its crinkle', () => {
+    cy.waitForToc()
+    foldSectionA()
+    cy.get('.heading-fold-crinkle').click()
+    expectSectionAOpen()
   })
 
   it('includes print media rules so folded content can print expanded (BC-7)', () => {
