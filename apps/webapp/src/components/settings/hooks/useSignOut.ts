@@ -22,7 +22,7 @@ export const useSignOut = () => {
     }
     const { error } = await signOut()
     if (error) {
-      // auth-js drops the local session even when the server call fails. Stay only if it did not,
+      // A failed global sign-out keeps the session (auth-js 2.119). Stay in that case,
       // or the reload below would hide the toast.
       const { data } = await supabaseClient.auth.getSession()
       if (data.session) {

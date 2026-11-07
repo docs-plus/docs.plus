@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev-local",
+      "runtimeExecutable": "make",
+      "runtimeArgs": ["dev-local"],
+      "port": 3000
+    },
+    {
+      "name": "dev-local-e2e",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["NEXT_PUBLIC_E2E=true", "make", "dev-local"],
+      "port": 3000
+    },
+    {
+      "name": "hypermultimedia-playground",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "--cwd", "extensions/extension-hypermultimedia", "playground"],
+      "port": 5174
+    },
+    {
+      "name": "webapp-only",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "--cwd", "apps/webapp", "dev"],
+      "port": 3000
+    }
+  ]
+}
