@@ -42,6 +42,12 @@ Pass the documentId exactly as stored. Do not pass `lower(documentId)` or the sl
 
 ### Changed
 
+- The three Auth mail templates moved here from `apps/hocuspocus.server/templates/`, because
+  the CLI refuses a template path outside `packages/`. `config.toml` now names the Magic Link
+  and Confirm signup templates, so local mail matches production. Both link to
+  `{{ .RedirectTo }}#token_hash={{ .TokenHash }}` instead of `{{ .ConfirmationURL }}`. Paste
+  both into the production dashboard after the webapp that reads `#token_hash` is deployed.
+
 - **A view keeps its duration when the visit closes before the view queue drains
   ([#603](https://github.com/docs-plus/docs.plus/issues/603)).** `20261025150000` replaces
   `update_view_duration` and `process_document_views_queue`. `update_view_duration` now also

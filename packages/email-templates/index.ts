@@ -1,6 +1,6 @@
 /**
  * eta templates in /templates/. Supabase auth templates use Go syntax and live
- * in apps/hocuspocus.server/templates/ — this engine does not manage them.
+ * in packages/supabase/templates/ — this engine does not manage them.
  */
 
 export { fitDigestDocuments } from './src/digestFit'

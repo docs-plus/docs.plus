@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>Confirm your email for docs.plus</title>
+    <title>Sign in to docs.plus</title>
     <!--[if mso]>
       <style type="text/css">
         table {
@@ -28,7 +28,7 @@
     ">
     <!-- Preheader (hidden preview text in email clients) -->
     <div style="display: none; max-height: 0; overflow: hidden; mso-hide: all">
-      Confirm your email to finish creating your docs.plus account.
+      Your magic link to sign in to docs.plus is ready.
     </div>
 
     <table
@@ -76,11 +76,11 @@
                 </p>
 
                 <p style="margin: 0 0 8px; color: #6b7280; font-size: 15px; line-height: 1.6">
-                  Thanks for signing up. Confirm your email address to finish creating your account.
-                  This link expires in 1 hour.
+                  You requested a magic link to sign in to your account. Click the button below to
+                  continue. This link expires in 1 hour.
                 </p>
 
-                <!-- CTA Button -->
+                <!-- CTA Button: the app reads #token_hash and calls verifyOtp. Never the ConfirmationURL variable: its PKCE code works only in the browser that asked. -->
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                   <tr>
                     <td align="center" style="padding: 24px 0 16px">
@@ -88,7 +88,7 @@
                         <v:roundrect
                           xmlns:v="urn:schemas-microsoft-com:vml"
                           xmlns:w="urn:schemas-microsoft-com:office:word"
-                          href="{{ .ConfirmationURL }}"
+                          href="{{ .RedirectTo }}#token_hash={{ .TokenHash }}"
                           style="height: 44px; v-text-anchor: middle; width: 200px"
                           arcsize="18%"
                           fillcolor="#1a73e8"
@@ -101,13 +101,13 @@
                               font-size: 14px;
                               font-weight: bold;
                             ">
-                            Confirm Email
+                            Sign In
                           </center>
                         </v:roundrect>
                       <![endif]-->
                       <!--[if !mso]><!-->
                       <a
-                        href="{{ .ConfirmationURL }}"
+                        href="{{ .RedirectTo }}#token_hash={{ .TokenHash }}"
                         style="
                           display: inline-block;
                           background: #1a73e8;
@@ -119,7 +119,7 @@
                           font-weight: 600;
                           line-height: 1.4;
                         ">
-                        Confirm Email
+                        Sign In
                       </a>
                       <!--<![endif]-->
                     </td>
@@ -142,8 +142,8 @@
                         padding: 16px;
                       ">
                       <p style="margin: 0; color: #6b7280; font-size: 13px; line-height: 1.5">
-                        🔒 If you didn't sign up for docs.plus, you can safely ignore this email.
-                        Nobody can sign in to the account until someone opens this link.
+                        🔒 If you didn't request this link, you can safely ignore this email. No
+                        action is needed — your account remains secure.
                       </p>
                     </td>
                   </tr>
@@ -167,8 +167,7 @@
                     text-align: center;
                     line-height: 1.5;
                   ">
-                  You're receiving this email because {{ .Email }} was used to sign up for
-                  docs.plus.
+                  You're receiving this email because a sign-in was requested for {{ .Email }}.
                 </p>
                 <p style="margin: 0; color: #9ca3af; font-size: 12px; text-align: center">
                   <a href="{{ .SiteURL }}" style="color: #1a73e8; text-decoration: none">

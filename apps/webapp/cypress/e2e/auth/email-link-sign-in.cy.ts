@@ -1,6 +1,7 @@
 /**
  * Needs the whole local stack up (`make dev-local`) and its Mailpit. Real Auth sends
- * the link. Local Auth allows two emails an hour (`email_sent = 2`), so space runs.
+ * the link, through the repo template that `packages/supabase/config.toml` names.
+ * Local Auth allows two emails an hour (`email_sent = 2`), so space runs.
  * Run: env -u ELECTRON_RUN_AS_NODE bunx cypress run --config
  * baseUrl=http://localhost:3000 --spec cypress/e2e/auth/email-link-sign-in.cy.ts
  */
@@ -9,9 +10,10 @@ const MAILPIT = Cypress.expose('MAILPIT_URL') ?? 'http://127.0.0.1:54324'
 const EMAIL = 'e2e-email-link@example.com'
 
 type MailpitList = { messages: { ID: string; To: { Address: string }[] }[] }
-type MailpitMessage = { HTML: string; Text: string }
+type MailpitMessage = { HTML: string }
 
-const VERIFY_LINK = /https?:\/\/[^\s"'<>]+\/auth\/v1\/verify\?[^\s"'<>]+/
+// The template links straight back to the app with `#token_hash=`, never to `/verify`.
+const SIGN_IN_LINK = /href="(https?:\/\/[^"]+#token_hash=[^"]+)"/
 
 /** Polls Mailpit until the sign-in mail for `email` lands, then returns its link. */
 const readSignInLink = (email: string, attempt = 0): Cypress.Chainable<string> =>
@@ -23,8 +25,8 @@ const readSignInLink = (email: string, attempt = 0): Cypress.Chainable<string> =
       return readSignInLink(email, attempt + 1)
     }
     return cy.request<MailpitMessage>(`${MAILPIT}/api/v1/message/${mail.ID}`).then(({ body }) => {
-      const link = `${body.Text}\n${body.HTML}`.match(VERIFY_LINK)?.[0]
-      if (!link) throw new Error('The sign-in mail holds no verify link')
+      const link = body.HTML.match(SIGN_IN_LINK)?.[1]
+      if (!link) throw new Error('The sign-in mail holds no #token_hash link')
       return link.replace(/&amp;/g, '&')
     })
   })
@@ -37,7 +39,7 @@ describe('email-link sign-in (full stack)', () => {
     cy.request('DELETE', `${MAILPIT}/api/v1/messages`)
   })
 
-  it('returns to the pad signed in and opens the chat its link names', () => {
+  it('signs in from another browser and opens the chat its link names', () => {
     // A live heading id, so the return link names a chat that can open.
     cy.visit(`/${slug}`)
     cy.get('.tiptap__editor [data-toc-id]', { timeout: 40000 })
@@ -51,20 +53,17 @@ describe('email-link sign-in (full stack)', () => {
         cy.contains('button', 'Send magic link').click()
         cy.contains('Check your email', { timeout: 20000 }).should('be.visible')
 
-        // Auth verifies the token and redirects to the return path. The browser then
-        // finishes the sign-in on the app origin, with the code verifier it stored.
-        readSignInLink(EMAIL).then((link) =>
-          cy.request({ url: link, followRedirect: false }).then(({ status, headers }) => {
-            expect(status, 'Auth answers the link with a redirect').to.be.within(300, 399)
-            const location = new URL(String(headers.location))
-            expect(location.pathname, 'Auth returns to the pad').to.equal(`/${slug}`)
-            expect(
-              location.searchParams.get('open_heading_chat'),
-              'Auth keeps the chat link'
-            ).to.equal(headingId)
-            cy.visit(location.href)
-          })
-        )
+        readSignInLink(EMAIL).then((link) => {
+          const sent = new URL(link)
+          expect(sent.pathname, 'The link returns to the pad').to.equal(`/${slug}`)
+          expect(sent.searchParams.get('open_heading_chat'), 'The link keeps the chat').to.equal(
+            headingId
+          )
+          // No cookies means no PKCE code verifier, as in a mail app's own browser.
+          // The draft stays in IndexedDB, so the pad can still show its heading.
+          cy.clearCookies()
+          cy.visit(link)
+        })
 
         cy.get('button[aria-label="Profile"]', { timeout: 40000 }).should('be.visible')
         cy.location('pathname').should('eq', `/${slug}`)

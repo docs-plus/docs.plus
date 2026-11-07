@@ -224,6 +224,17 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Sign-in mail uses the same templates as production: a #token_hash link, never a PKCE code link.
+# Paths are relative to `packages/`, the project root the CLI resolves for this file.
+# The CLI refuses a path outside it, which is why the templates live in this package.
+[auth.email.template.magic_link]
+subject = "Your docs.plus sign-in link"
+content_path = "./supabase/templates/magic-link.html"
+
+[auth.email.template.confirmation]
+subject = "Confirm your email for docs.plus"
+content_path = "./supabase/templates/confirm-signup.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"
