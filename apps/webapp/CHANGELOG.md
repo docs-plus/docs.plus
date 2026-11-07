@@ -27,7 +27,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - The pad page head names a share image
   ([#663](https://github.com/docs-plus/docs.plus/issues/663)). A full page load asks REST for
   the pad's card with `card=1`. `og:image`, `twitter:image` and their alt text then point at that
-  card. A pad with no card gets the static `icons/og-card-pad-1200x630.png`. A description that
+  card. A pad with no card gets the Fallback card, the homepage card
+  `icons/og-card-1280x640.png`. The head gives each image its own width and height: 1200 × 630
+  for the Social card and 1280 × 640 for the Fallback card. `og:description` takes the card's
+  sentence when REST sends one. Otherwise, a description that
   equals the Pad title or the slug is replaced by the product description. The card query
   carries only the keys of the place the link opens.
 - A History share link now also carries `?version=<n>` in the address, so a server can draw

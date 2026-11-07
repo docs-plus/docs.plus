@@ -21,6 +21,8 @@ export interface DocumentCard {
   query: string
   /** `og:title`, or null to keep the Pad title. */
   title: string | null
+  /** `og:description`, or null to keep the page's own. An older REST sends none. */
+  description?: string | null
   alt: string
   /** `og:url` path. */
   path: string

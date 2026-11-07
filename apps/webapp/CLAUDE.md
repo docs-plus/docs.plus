@@ -385,7 +385,9 @@ Follow industry overlay UX (Material, Apple HIG, Radix/shadcn) and dim-not-lift 
 ### Social Card Head
 
 - **`card=1` only on a full page load.** `documentServerSideProps.ts` sends it, never on an `x-nextjs-data` read, so a client-side jump never pays for a card. REST owns every card rule; see `apps/hocuspocus.server/CLAUDE.md` §Social Preview Card. The query carries only the keys of the one place the link opens: `?version=` first, else `padUrlCore.place` (filter, then chat, then heading).
-- **The Fallback card URL lives in two places.** `PAD_FALLBACK_IMAGE` in `src/pages/_app.tsx` and `fallbackImageUrl` in `apps/hocuspocus.server/src/config/env.ts`. Its `?v=` is the first 8 characters of the file's sha256. Change both when the PNG changes.
+- **The Fallback card URL lives in two places.** `PAD_FALLBACK_IMAGE` in `src/pages/_app.tsx` and `fallbackImageUrl` in `apps/hocuspocus.server/src/config/env.ts`. The file is `public/icons/og-card-1280x640.png`, the homepage card. Its `?v=` is the first 8 characters of the file's sha256. Change both when the PNG changes. `og-card-pad-1200x630.png` stays in place for crawler caches.
+- **Each image names its own size.** The Social card is 1200 × 630, and the Fallback card is 1280 × 640. A card route that answers 302 to the Fallback card still sits under a head that says 1200 × 630. This is accepted.
+- **`og:description` is `card.description` when REST sends one.** Otherwise the head keeps the pad's own description (`headDescription`). `DocumentCard.description` carries it.
 - **`?version=` is for servers only.** `historyShareUrl.ts` writes it beside the History hash, and `adoptVersionQuery` strips it on arrival, keyed on `asPath`. Do not read it anywhere else in the app.
 
 ### Document Filters

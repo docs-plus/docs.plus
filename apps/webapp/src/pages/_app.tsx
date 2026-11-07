@@ -5,7 +5,13 @@ import '@config'
 import { AppQueryClientRoot } from '@components/AppQueryClientRoot'
 import BottomSheet from '@components/BottomSheet'
 import GoogleAnalytics from '@components/GoogleAnalytics'
-import { HOME_SITE_URL } from '@components/pages/home/homeMetadata'
+import {
+  HOME_OG_IMAGE,
+  HOME_OG_IMAGE_ALT,
+  HOME_OG_IMAGE_HEIGHT,
+  HOME_OG_IMAGE_WIDTH,
+  HOME_SITE_URL
+} from '@components/pages/home/homeMetadata'
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
 import { trackEvent } from '@utils/analytics'
 import { installChunkLoadRecovery } from '@utils/chunkLoadRecovery'
@@ -72,14 +78,13 @@ const headDescription = ({ description, title, slug }: DocumentHeadMetadata) =>
     ? DOCUMENT_OG_DESCRIPTION
     : description
 
-const CARD_WIDTH = '1200'
-const CARD_HEIGHT = '630'
-
 // The Fallback card, for a pad with no card of its own. `v` is the start of the file's
 // sha256; REST names the same URL in `apps/hocuspocus.server/src/config/env.ts`.
 const PAD_FALLBACK_IMAGE = {
-  url: `${HOME_SITE_URL}/icons/og-card-pad-1200x630.png?v=3fff4849`,
-  alt: 'A document on docs.plus'
+  url: `${HOME_OG_IMAGE}?v=8164407d`,
+  alt: HOME_OG_IMAGE_ALT,
+  width: HOME_OG_IMAGE_WIDTH,
+  height: HOME_OG_IMAGE_HEIGHT
 }
 
 // The card is served by REST; its `v` changes whenever anything it draws changes.
@@ -87,7 +92,10 @@ const headImage = ({ documentId, card }: DocumentHeadMetadata) =>
   card && process.env.NEXT_PUBLIC_RESTAPI_URL
     ? {
         url: `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${encodeURIComponent(documentId)}/card.png?${card.query}`,
-        alt: card.alt
+        alt: card.alt,
+        // REST's `CARD_WIDTH` × `CARD_HEIGHT`, in the social-card module's `infra/renderer.ts`.
+        width: '1200',
+        height: '630'
       }
     : PAD_FALLBACK_IMAGE
 
@@ -98,7 +106,8 @@ const DocumentHead = ({ docMetadata }: { docMetadata: DocumentHeadMetadata }) =>
   const { card } = docMetadata
   // A Heading, Chat or Version card names what the link opens, so its URL and title do too.
   const title = card?.title || docMetadata.title || 'docs.plus'
-  const description = headDescription(docMetadata)
+  // `||`: an older REST sends no `description`, so the page's own stays.
+  const description = card?.description || headDescription(docMetadata)
   const url = card
     ? `${HOME_SITE_URL}${card.path}`
     : docMetadata.slug
@@ -116,8 +125,8 @@ const DocumentHead = ({ docMetadata }: { docMetadata: DocumentHeadMetadata }) =>
       <meta property="og:description" content={description} />
       <meta property="og:url" content={url} />
       <meta property="og:image" content={image.url} />
-      <meta property="og:image:width" content={CARD_WIDTH} />
-      <meta property="og:image:height" content={CARD_HEIGHT} />
+      <meta property="og:image:width" content={image.width} />
+      <meta property="og:image:height" content={image.height} />
       <meta property="og:image:alt" content={image.alt} />
 
       <meta name="twitter:title" content={title} />
