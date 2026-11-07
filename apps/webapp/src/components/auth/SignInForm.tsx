@@ -8,7 +8,7 @@ import { FieldHelp } from '@components/ui/FieldHelp'
 import TextInput from '@components/ui/TextInput'
 import { supabaseClient } from '@utils/supabase'
 import { twMerge } from '@utils/twMerge'
-import { type ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { FcGoogle } from 'react-icons/fc'
 
 import {
@@ -16,7 +16,7 @@ import {
   type LastSignedInAccount,
   readSignedInAccount
 } from './lastSignedInAccount'
-import { describeEmailLinkError } from './signInErrors'
+import { describeEmailLinkError, LINK_LIFETIME } from './signInErrors'
 
 /** Production Auth refuses a second link to one address inside this window. */
 const RESEND_COOLDOWN_S = 60
@@ -60,8 +60,9 @@ const SignInForm = ({ returnTo, touch = false, children }: SignInFormProps) => {
   const [focusEmail, setFocusEmail] = useState(false)
   // Set when Auth refused a send because a link to this address just left.
   const [sentNotice, setSentNotice] = useState('')
-  const [resendError, setResendError] = useState('')
   const [resendAt, setResendAt] = useState(0)
+  // A busy button drops focus, so a resend hands it here instead of to `body`.
+  const backRef = useRef<HTMLButtonElement>(null)
   const resendIn = useSecondsLeft(resendAt)
   // Read after mount, never during render: localStorage does not exist on the
   // server, and reading it inline would make the markup differ on hydration.
@@ -77,7 +78,7 @@ const SignInForm = ({ returnTo, touch = false, children }: SignInFormProps) => {
     setFocusEmail(true)
     setEmailSent(false)
     setSentNotice('')
-    setResendError('')
+    setEmailError('')
   }
 
   const isAnyLoading = googleBusy || emailBusy
@@ -109,40 +110,47 @@ const SignInForm = ({ returnTo, touch = false, children }: SignInFormProps) => {
     }
   }
 
-  /** One send for the first link and every resend. `error` is the inline line, or ''. */
-  const sendLink = async (email: string): Promise<{ sent: boolean; error: string }> => {
-    // The mail links back here with `#token_hash=`, so keep the full return context
-    // (deep-link / open_heading_chat params), like OAuth. The env is an optional base override.
+  /** One send for the first link and every resend; it owns the result state. True when a new link left. */
+  const sendLink = async (email: string): Promise<boolean> => {
+    // Keep the return context (deep-link / open_heading_chat params), like OAuth. The env
+    // is an optional base override. Drop any hash: the mail appends `#token_hash=`.
     const redirectBase =
       process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT || window.location.origin
-    const returnPath = returnTo ?? window.location.pathname + window.location.search
+    const target = new URL(
+      returnTo ?? window.location.pathname + window.location.search,
+      redirectBase
+    )
+    target.hash = ''
 
     let error: unknown
     try {
       ;({ error } = await supabaseClient.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: new URL(returnPath, redirectBase).href }
+        options: { emailRedirectTo: target.href }
       }))
     } catch (thrown) {
       error = thrown
     }
     if (!error) {
+      setEmailError('')
       setSentNotice('')
       setResendAt(Date.now() + RESEND_COOLDOWN_S * 1000)
       setEmailSent(true)
-      return { sent: true, error: '' }
+      return true
     }
 
     console.warn('Sign-in link send failed:', error)
     const problem = describeEmailLinkError(error)
     if (problem.retryInSeconds) {
       // A link to this address left moments ago: show it as sent and count down.
+      setEmailError('')
       setSentNotice(problem.message)
       setResendAt(Date.now() + problem.retryInSeconds * 1000)
       setEmailSent(true)
-      return { sent: false, error: '' }
+      return false
     }
-    return { sent: false, error: problem.message }
+    setEmailError(problem.message)
+    return false
   }
 
   /** The house regex and an MX check; a failed check never blocks sign-in. */
@@ -177,7 +185,7 @@ const SignInForm = ({ returnTo, touch = false, children }: SignInFormProps) => {
         setEmailError('Enter a valid email. Check the spelling after the @.')
         return
       }
-      setEmailError((await sendLink(email)).error)
+      await sendLink(email)
     } finally {
       setEmailBusy(false)
     }
@@ -186,11 +194,10 @@ const SignInForm = ({ returnTo, touch = false, children }: SignInFormProps) => {
   const handleResend = async () => {
     setEmailBusy(true)
     try {
-      const { sent, error } = await sendLink(magicLinkEmail.trim())
-      setResendError(error)
-      if (sent) toast.Success('New link sent. Check your inbox.')
+      if (await sendLink(magicLinkEmail.trim())) toast.Success('New link sent. Check your inbox.')
     } finally {
       setEmailBusy(false)
+      backRef.current?.focus()
     }
   }
 
@@ -213,11 +220,11 @@ const SignInForm = ({ returnTo, touch = false, children }: SignInFormProps) => {
         <>
           {sentNotice ? <Banner tone="info">{sentNotice}</Banner> : null}
           <ul className="text-base-content/70 flex list-disc flex-col gap-1 ps-5 text-sm">
-            <li>The link works once, for 1 hour.</li>
+            <li>The link works once, for {LINK_LIFETIME}.</li>
             <li>It signs you in wherever it opens, even inside your mail app.</li>
             <li>No email after a minute? Check your spam folder.</li>
           </ul>
-          {resendError ? <FieldHelp error>{resendError}</FieldHelp> : null}
+          {emailError ? <FieldHelp error>{emailError}</FieldHelp> : null}
           <Button
             shape="block"
             className={buttonHeight}
@@ -230,7 +237,7 @@ const SignInForm = ({ returnTo, touch = false, children }: SignInFormProps) => {
       ),
       // The pressed Send button unmounts here; without this, focus falls to `body`.
       back: (
-        <Button variant="quiet" onClick={returnToEmailStep} autoFocus>
+        <Button ref={backRef} variant="quiet" onClick={returnToEmailStep} autoFocus>
           Use a different email
         </Button>
       )
