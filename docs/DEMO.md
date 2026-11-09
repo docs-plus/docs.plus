@@ -752,7 +752,7 @@ Paste this page's address into a chat app or a social site — try it here. It s
 
 ![A docs.plus address in a chat opens into a card with the page name and a people count](/demo-assets/d23-share-card.png)
 
-Our server draws the card from the saved page. A card never shows a person's name, a face or a chat message, and a Private page never gets one. A link to a heading, a chat or a version shows the same card as the page. A page with no owner shows the docs.plus home card.
+Our server draws the card from the saved page. A card never shows a person's name, a face or a chat message, and a Private page never gets one. A link to a heading, a chat, a message, a version or a filter shows the same card as the page. A page with no owner shows the docs.plus home card.
 
 Filtered to this section? [Show the whole document](/demo).
 
