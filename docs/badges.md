@@ -36,3 +36,5 @@ Light and dark match the default.
 ```
 
 The HTML form shows the dark badge when the reader's system uses a dark theme. Set `height="28"` on `badge-docsplus-for-the-badge.svg`.
+
+For a README that npm shows, use the Markdown form. npm removes `<picture>`, and a click on the badge then opens the image instead of your link.
