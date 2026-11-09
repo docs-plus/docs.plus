@@ -10,6 +10,14 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ## [Unreleased]
 
+### Added
+
+- Two new MCP tools for AI apps. `move_block` moves one block inside a section, so a picture can
+  change places with its caption and settings intact ([#720](https://github.com/docs-plus/docs.plus/issues/720)). `rewrite_section` writes a whole
+  section body again from Markdown and keeps every picture, video and file in it. The Markdown
+  names each media block by its number, and the tool refuses a write that would lose one
+  ([#719](https://github.com/docs-plus/docs.plus/issues/719)).
+
 ### Changed
 
 - Bold, italic, strike, highlight and links can now sit on inline code, as in Notion. Before,

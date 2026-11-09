@@ -120,7 +120,7 @@ export const createVersionOps = (deps: Omit<InitWsOpsDeps, 'verifyServiceRole'>)
         backupVersion = backup.version
         return undefined
       },
-      mutate: (doc) => applyContentToDoc(doc, scratch, 'replace')
+      mutate: (doc) => applyContentToDoc(doc, scratch, { mode: 'replace' })
     })
 
     if (written.status !== 'done') return written

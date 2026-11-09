@@ -1,26 +1,18 @@
 import type * as Y from 'yjs'
 
 import { isRecord } from '../../../lib/isRecord'
-import type { ApplyMode } from '../types'
+import type { DocEdit } from '../types'
 import { CONTENT_APPLY_ORIGIN } from '../types'
 import { isMediaHref } from './media'
 import { liveDocJson } from './readContent'
 import { findSection, type Section } from './sections'
 import { findUniqueText, INLINE_NODE_CHAR } from './textRuns'
 
-/** A write inside one section. `blocks` needs `from` and `to`; `text` needs `oldText`. */
-export interface SectionTarget {
-  sectionId: string
-  rev: string
-  from?: number
-  to?: number
-  oldText?: string
-  newText?: string
-}
+type EditOf<Mode extends DocEdit['mode']> = Extract<DocEdit, { mode: Mode }>
 
 type DocApplyRefusal = { ok: false; status: 'conflict' | 'invalid-content'; detail: string }
 
-/** `rev` is the section's rev after a text edit; a block edit renumbers blocks, so it has none. */
+/** `rev` is the section's rev after a text edit; every other edit renumbers blocks, so it has none. */
 export type DocApplyResult = { ok: true; rev?: string } | DocApplyRefusal
 
 type BodyNode = Y.XmlElement | Y.XmlText
@@ -42,7 +34,10 @@ const deltaOf = (run: Y.XmlText): DeltaOp[] => run.toDelta() as DeltaOp[]
 const opLength = (op: DeltaOp): number => (typeof op.insert === 'string' ? op.insert.length : 1)
 
 /** Decided on the live fragment before anything mutates. */
-const locateSection = (doc: Y.Doc, target: SectionTarget): Section | DocApplyRefusal => {
+const locateSection = (
+  doc: Y.Doc,
+  target: { sectionId: string; rev: string }
+): Section | DocApplyRefusal => {
   const json = liveDocJson(doc)
   const section = findSection(json, target.sectionId)
   if (!section) return { ok: false, status: 'conflict', detail: 'section not found' }
@@ -57,28 +52,33 @@ const locateSection = (doc: Y.Doc, target: SectionTarget): Section | DocApplyRef
   return section
 }
 
+/**
+ * The flat schema: a heading owns every later block up to the next heading. One above the
+ * floor re-parents the subsections after it. Read the source nodes, not clones: a clone holds
+ * its attributes as pending values.
+ */
+const headingRefusal = (section: Section, source: BodyNode[]): DocApplyRefusal | null => {
+  const levels = source.map(sourceHeadingLevel).filter((level) => level !== null)
+  return levels.some((level) => level < section.minHeadingLevel)
+    ? invalid(`a new heading must be at level ${section.minHeadingLevel} or deeper`)
+    : null
+}
+
 /** Where `blocks` puts the new nodes, or why it cannot. */
 const blockSpan = (
   section: Section,
   source: BodyNode[],
-  target: SectionTarget
+  { from, to }: EditOf<'blocks'>
 ): { start: number; end: number } | DocApplyRefusal => {
-  const { from, to } = target
   const blocks = section.end - section.start
-  if (from === undefined || to === undefined || from < 0 || from > to || to > blocks) {
+  if (from > to || to > blocks) {
     return invalid(`the block range is outside this section, which has ${blocks} block(s)`)
   }
   if (from === to && source.length === 0) return invalid('nothing to insert or delete')
-
-  // Read the source nodes, not clones: a clone holds its attributes as pending values.
-  // The flat schema: a heading owns every later block up to the next heading.
-  // One above the floor re-parents the subsections after it; one before
-  // the end of the body silently moves the blocks behind it into a new subsection.
-  const levels = source.map(sourceHeadingLevel).filter((level) => level !== null)
-  if (levels.some((level) => level < section.minHeadingLevel)) {
-    return invalid(`a new heading must be at level ${section.minHeadingLevel} or deeper`)
-  }
-  if (levels.length > 0 && to !== blocks) {
+  const refusal = headingRefusal(section, source)
+  if (refusal) return refusal
+  // One before the end of the body would move the blocks behind it into a new subsection.
+  if (source.some((node) => sourceHeadingLevel(node) !== null) && to !== blocks) {
     return invalid('a new heading can only go at the end of the section')
   }
   return { start: section.start + from, end: section.start + to }
@@ -151,6 +151,65 @@ const removesMediaLink = (run: Y.XmlText, from: number, length: number): boolean
   return false
 }
 
+/**
+ * Moves one live block, never re-encoded, so it keeps every attribute and its caption.
+ * The body holds no heading, so a move never crosses one.
+ */
+const applyMove = (doc: Y.Doc, section: Section, { from, to }: EditOf<'move'>): DocApplyResult => {
+  const blocks = section.end - section.start
+  if (from >= blocks || to > blocks) {
+    return invalid(`the block or the caret is outside this section, which has ${blocks} block(s)`)
+  }
+  if (to === from || to === from + 1) return invalid('the block is already there')
+
+  const fragment = doc.getXmlFragment('default')
+  // Cloned before the delete: a deleted node clones empty, and nothing throws.
+  const moved = (fragment.get(section.start + from) as BodyNode).clone()
+  // The caret is counted before the delete, so a caret after the block shifts back by one.
+  const at = section.start + (to > from ? to - 1 : to)
+  doc.transact(() => {
+    fragment.delete(section.start + from, 1)
+    fragment.insert(at, [moved])
+    markApplied(doc)
+  }, CONTENT_APPLY_ORIGIN)
+  return { ok: true }
+}
+
+/**
+ * The new nodes with each kept live block cloned in at its place. A kept block may not
+ * follow a new heading: that would move it out of this section.
+ */
+const withKeptBlocks = (
+  body: BodyNode[],
+  source: BodyNode[],
+  nodes: BodyNode[],
+  keep: EditOf<'rewrite'>['keep']
+): BodyNode[] | DocApplyRefusal => {
+  const firstHeading = source.findIndex((node) => sourceHeadingLevel(node) !== null)
+  const lastAt = firstHeading === -1 ? nodes.length : firstHeading
+  const seen = new Set<number>()
+  let previous = 0
+  for (const { block, at } of keep) {
+    // The agent counts blocks from 1, so the refusal does too.
+    if (block >= body.length || seen.has(block)) {
+      return invalid(`kept block ${block + 1} is not a single block of this section`)
+    }
+    if (at < previous || at > lastAt) {
+      return invalid(`kept block ${block + 1} must stand in order, before any new heading`)
+    }
+    seen.add(block)
+    previous = at
+  }
+
+  const merged: BodyNode[] = []
+  let next = 0
+  for (const { block, at } of keep) {
+    merged.push(...nodes.slice(next, at), body[block].clone())
+    next = at
+  }
+  return [...merged, ...nodes.slice(next)]
+}
+
 const markApplied = (doc: Y.Doc): void => {
   const metadata = doc.getMap('metadata')
   metadata.set('isDraft', false)
@@ -161,8 +220,8 @@ const revAfter = (doc: Y.Doc, sectionId: string): string | undefined =>
   findSection(liveDocJson(doc), sectionId)?.rev
 
 /** Changes characters inside one text run, so it can never reach a block, a picture or a heading. */
-const applyText = (doc: Y.Doc, section: Section, target: SectionTarget): DocApplyResult => {
-  const { oldText = '', newText = '' } = target
+const applyText = (doc: Y.Doc, section: Section, edit: EditOf<'text'>): DocApplyResult => {
+  const { oldText, newText } = edit
   if (oldText === newText) return invalid('new_text is the same')
   const body = doc.getXmlFragment('default').slice(section.start, section.end) as BodyNode[]
   const runs = textRunsOf(body)
@@ -188,7 +247,49 @@ const applyText = (doc: Y.Doc, section: Section, target: SectionTarget): DocAppl
     if (inserted) run.insert(at, inserted, attributes)
     markApplied(doc)
   }, CONTENT_APPLY_ORIGIN)
-  return { ok: true, rev: revAfter(doc, target.sectionId) }
+  return { ok: true, rev: revAfter(doc, edit.sectionId) }
+}
+
+// The cast drops YXmlHook, which insert() rejects and the transformer never produces.
+const sourceNodes = (scratch: Y.Doc): BodyNode[] =>
+  scratch.getXmlFragment('default').toArray() as BodyNode[]
+
+// Clone before any mutation, not incidentally. `clone()` recurses, so a throw
+// on pathological input has to land while the live fragment is still whole.
+// Delete-first would broadcast a half-wipe to every collaborator.
+const cloneAll = (source: BodyNode[]): BodyNode[] => source.map((node) => node.clone())
+
+const spliceNodes = (
+  doc: Y.Doc,
+  span: { start: number; end: number },
+  nodes: BodyNode[]
+): DocApplyResult => {
+  const fragment = doc.getXmlFragment('default')
+  doc.transact(() => {
+    if (span.end > span.start) fragment.delete(span.start, span.end - span.start)
+    if (nodes.length > 0) fragment.insert(span.start, nodes)
+    markApplied(doc)
+  }, CONTENT_APPLY_ORIGIN)
+  return { ok: true }
+}
+
+/**
+ * Rebuilds the whole body from the new nodes, with each kept live block cloned in before
+ * the delete: a deleted Yjs node clones empty, and nothing throws.
+ */
+const applyRewrite = (
+  doc: Y.Doc,
+  section: Section,
+  scratch: Y.Doc,
+  { keep }: EditOf<'rewrite'>
+): DocApplyResult => {
+  const source = sourceNodes(scratch)
+  const refusal = headingRefusal(section, source)
+  if (refusal) return refusal
+  const body = doc.getXmlFragment('default').slice(section.start, section.end) as BodyNode[]
+  const nodes = withKeptBlocks(body, source, cloneAll(source), keep)
+  if ('ok' in nodes) return nodes
+  return spliceNodes(doc, { start: section.start, end: section.end }, nodes)
 }
 
 /**
@@ -196,42 +297,33 @@ const applyText = (doc: Y.Doc, section: Section, target: SectionTarget): DocAppl
  * persist a draft, and the empty-title-heading recipe would otherwise be
  * overwritten by the webapp's starter template on first open.
  */
-export const applyContentToDoc = (
-  doc: Y.Doc,
-  scratch: Y.Doc,
-  mode: ApplyMode,
-  target?: SectionTarget
-): DocApplyResult => {
-  const fragment = doc.getXmlFragment('default')
-
-  let section: Section | null = null
-  if (mode === 'blocks' || mode === 'text') {
-    if (!target) return invalid('section target missing')
-    const located = locateSection(doc, target)
-    if ('ok' in located) return located
-    section = located
-    if (mode === 'text') return applyText(doc, section, target)
+export const applyContentToDoc = (doc: Y.Doc, scratch: Y.Doc, edit: DocEdit): DocApplyResult => {
+  const length = doc.getXmlFragment('default').length
+  if (edit.mode === 'replace') {
+    return spliceNodes(doc, { start: 0, end: length }, cloneAll(sourceNodes(scratch)))
+  }
+  if (edit.mode === 'append') {
+    return spliceNodes(doc, { start: length, end: length }, cloneAll(sourceNodes(scratch)))
   }
 
-  // Clone before any mutation, not incidentally. `clone()` recurses, so a throw
-  // on pathological input has to land while the live fragment is still whole.
-  // Delete-first would broadcast a half-wipe to every collaborator. The cast
-  // drops YXmlHook, which insert() rejects and the transformer never produces.
-  const source = scratch.getXmlFragment('default').toArray() as BodyNode[]
-  const nodes = source.map((node) => node.clone())
-
-  let span = { start: fragment.length, end: fragment.length }
-  if (mode === 'replace') span = { start: 0, end: fragment.length }
-  if (section && target) {
-    const located = blockSpan(section, source, target)
-    if ('ok' in located) return located
-    span = located
+  const section = locateSection(doc, edit)
+  if ('ok' in section) return section
+  switch (edit.mode) {
+    case 'text':
+      return applyText(doc, section, edit)
+    case 'move':
+      return applyMove(doc, section, edit)
+    case 'rewrite':
+      return applyRewrite(doc, section, scratch, edit)
+    case 'blocks': {
+      const source = sourceNodes(scratch)
+      const span = blockSpan(section, source, edit)
+      if ('ok' in span) return span
+      return spliceNodes(doc, span, cloneAll(source))
+    }
+    default: {
+      const unhandled: never = edit
+      return unhandled
+    }
   }
-
-  doc.transact(() => {
-    if (span.end > span.start) fragment.delete(span.start, span.end - span.start)
-    if (nodes.length > 0) fragment.insert(span.start, nodes)
-    markApplied(doc)
-  }, CONTENT_APPLY_ORIGIN)
-  return { ok: true }
 }

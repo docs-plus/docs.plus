@@ -17,6 +17,7 @@ import { MAX_MARKDOWN_CHARS } from '../../document-conversion/types'
 import { checkDiagrams, checkReplacedDiagram, DIAGRAM_KEYWORDS } from '../domain/checkDiagrams'
 import { checkFragment } from '../domain/checkFragment'
 import { buildOutline } from '../domain/outline'
+import { planRewrite } from '../domain/planRewrite'
 import { hasMedia, redactMedia } from '../domain/redactMedia'
 import { replaceLineBreaks } from '../domain/replaceLineBreaks'
 import { createOwnedDocument, listDocuments } from '../infra/documentStore'
@@ -115,6 +116,12 @@ const parseFragment = async (markdown: string, intoEmpty = false): Promise<Tipta
 const REREAD_TEXT =
   ' Block numbers after the edit changed. Call read_document with section_id before the next edit.'
 
+const refuseShallowHeading = (nodes: readonly JSONContent[], section: Section): void => {
+  if (nodes.some((node) => (headingLevel(node) ?? Infinity) < section.minHeadingLevel)) {
+    refuse(refusedText(`a new heading must be at level ${section.minHeadingLevel} or deeper`))
+  }
+}
+
 const writeResult = (
   outcome: WsApplyOutcome,
   doc: DocumentRecord,
@@ -161,6 +168,19 @@ export const registerDocumentTools = (
   deps: ServerFactoryDeps,
   { caller, run, openDocument, loadContent }: ToolContext
 ): void => {
+  // Checked before the write too: a refusal inside the applier has already
+  // loaded a cold collab room, and its unload stores an unnamed version row.
+  const openOwnSection = async (slug: string, sectionId: string, rev: string) => {
+    const doc = await openDocument(slug, 'own')
+    const nodes = (await loadContent(doc)).content ?? []
+    const section = findSection({ type: 'doc', content: nodes }, sectionId)
+    if (!section) return refuse(noHeadingText(sectionId))
+    if (section.rev !== rev) return refuse(CONFLICT_TEXT)
+    return { doc, section, body: nodes.slice(section.start, section.end) }
+  }
+
+  const actor = { sub: caller.sub, email: caller.email }
+
   server.registerTool(
     'find_documents',
     {
@@ -235,7 +255,7 @@ export const registerDocumentTools = (
     {
       title: 'Get outline',
       description:
-        'The heading tree of a document. Each heading has a section_id and a rev for read_document, edit_blocks and replace_text.',
+        'The heading tree of a document. Each heading has a section_id and a rev for read_document and the edit tools.',
       inputSchema: z.object({ slug: slugField }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
     },
@@ -253,7 +273,7 @@ export const registerDocumentTools = (
     {
       title: 'Read document',
       description:
-        'A document as Markdown, or one section: its heading and the blocks up to the next heading, with its rev. In a section read, each block is numbered [1], [2] and so on, for edit_blocks. Media shows as a placeholder such as [image] or [youtube]; a file link keeps only its name.',
+        'A document as Markdown, or one section: its heading and the blocks up to the next heading, with its rev. In a section read, each block is numbered [1], [2] and so on, for edit_blocks, move_block and rewrite_section. Media shows as a placeholder such as [image] or [youtube]; a file link keeps only its name.',
       inputSchema: z.object({
         slug: slugField,
         section_id: sectionIdField.optional().describe('From get_outline'),
@@ -364,18 +384,12 @@ export const registerDocumentTools = (
         remove_blocks: count,
         markdown
       }) => {
-        const doc = await openDocument(slug, 'own')
+        const { doc, section, body } = await openOwnSection(slug, sectionId, rev)
         const fragment: TiptapDocJson = markdown.trim()
           ? await parseFragment(markdown)
           : { type: 'doc', content: [] }
-        // Checked before the write too: a refusal inside the applier has already
-        // loaded a cold collab room, and its unload stores an unnamed version row.
-        const nodes = (await loadContent(doc)).content ?? []
-        const section = findSection({ type: 'doc', content: nodes }, sectionId)
-        if (!section) return toolError(noHeadingText(sectionId))
-        if (section.rev !== rev) return toolError(CONFLICT_TEXT)
 
-        const blocks = section.end - section.start
+        const blocks = body.length
         const to = from + count
         if (to > blocks) {
           return toolError(
@@ -385,18 +399,14 @@ export const registerDocumentTools = (
         if (count === 0 && fragment.content.length === 0) {
           return toolError('markdown: give text to insert, or set remove_blocks to remove blocks.')
         }
-        const removed = nodes.slice(section.start + from, section.start + to)
+        const removed = body.slice(from, to)
         const media = removed.flatMap((node, index) => (hasMedia([node]) ? [from + index + 1] : []))
         if (media.length > 0) {
           return toolError(
             `remove_blocks: block(s) ${media.join(', ')} hold a picture, video or file, and docs.plus never deletes media for an AI app. Choose a range that skips them, or ask the person to change them in docs.plus.`
           )
         }
-        if (fragment.content.some((n) => (headingLevel(n) ?? Infinity) < section.minHeadingLevel)) {
-          return toolError(
-            refusedText(`a new heading must be at level ${section.minHeadingLevel} or deeper`)
-          )
-        }
+        refuseShallowHeading(fragment.content, section)
         if (to !== blocks && fragment.content.some((node) => node.type === 'heading')) {
           return toolError(
             refusedText(
@@ -413,7 +423,7 @@ export const registerDocumentTools = (
           from,
           to,
           content: fragment,
-          actor: { sub: caller.sub, email: caller.email }
+          actor
         })
         return writeResult(outcome, doc, 'Edited blocks in', { reread: true })
       }
@@ -454,13 +464,7 @@ export const registerDocumentTools = (
       async ({ slug, section_id: sectionId, rev, old_text: quotedOld, new_text: quotedNew }) => {
         let oldText = quotedOld
         let newText = quotedNew
-        const doc = await openDocument(slug, 'own')
-        const nodes = (await loadContent(doc)).content ?? []
-        const section = findSection({ type: 'doc', content: nodes }, sectionId)
-        if (!section) return toolError(noHeadingText(sectionId))
-        if (section.rev !== rev) return toolError(CONFLICT_TEXT)
-
-        const body = nodes.slice(section.start, section.end)
+        const { doc, body } = await openOwnSection(slug, sectionId, rev)
         const runs = jsonTextRuns(body)
         let match = findUniqueText(runs, oldText)
         // read_document is Markdown, so copied text can carry escapes such as \_ or \[.
@@ -489,11 +493,103 @@ export const registerDocumentTools = (
           rev,
           oldText,
           newText,
-          content: { type: 'doc', content: [] },
-          actor: { sub: caller.sub, email: caller.email }
+          actor
         })
         return writeResult(outcome, doc, 'Replaced text in', { field: 'old_text' })
       }
     )
+  )
+
+  server.registerTool(
+    'move_block',
+    {
+      title: 'Move block',
+      description:
+        'Move one whole block to another place in the same section of a document you own. The block moves whole, with its caption and settings, so this is how to move a picture, video or file. Call read_document with section_id first: it numbers the blocks. Take both numbers from that one read. The block never leaves its section. Block numbers change after a move, so read the section again before the next edit.',
+      inputSchema: z.object({
+        slug: slugField,
+        section_id: sectionIdField.describe('From get_outline'),
+        rev: revField,
+        from: z
+          .number()
+          .int()
+          .min(1)
+          .describe('The number of the block to move, from read_document'),
+        after_block: z
+          .number()
+          .int()
+          .min(0)
+          .describe(
+            'The block number to put it after, from the same read; 0 is right after the heading'
+          )
+      }),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: true
+      }
+    },
+    run('move_block', async ({ slug, section_id: sectionId, rev, from, after_block: after }) => {
+      const { doc, body } = await openOwnSection(slug, sectionId, rev)
+      if (from > body.length || after > body.length) {
+        return toolError(
+          `from: this section has ${body.length} block(s), so from and after_block must be at most ${body.length}.`
+        )
+      }
+      if (after === from || after === from - 1) {
+        return toolError('after_block: the block is already there, so nothing would change.')
+      }
+      const outcome = await deps.content.apply({
+        documentId: doc.documentId,
+        mode: 'move',
+        sectionId,
+        rev,
+        from: from - 1,
+        to: after,
+        actor
+      })
+      return writeResult(outcome, doc, 'Moved a block in', { field: 'from', reread: true })
+    })
+  )
+
+  server.registerTool(
+    'rewrite_section',
+    {
+      title: 'Rewrite section',
+      description:
+        'Replace the whole body of one section of a document you own with new Markdown, and keep every picture, video and file in it. Call read_document with section_id first: it numbers the blocks. In the Markdown, name each block that holds media by its number alone on a line, such as [3], at the place it should stand. That block stays exactly as it is, caption and all. docs.plus refuses the write if a media block is missing or named twice, or if a number names a block without media. The heading never changes. Every other block is written again from your Markdown, so formatting that Markdown cannot express is lost: for a small change, use replace_text or edit_blocks. Block numbers change after a rewrite, so read the section again before the next edit.',
+      inputSchema: z.object({
+        slug: slugField,
+        section_id: sectionIdField.describe('From get_outline'),
+        rev: revField,
+        markdown: markdownField.describe(
+          `The new section body. Name each media block by its number alone on a line, such as [3], with a blank line before and after. A heading in it must be deeper than the section heading, no shallower than the next heading, and come after every media block. ${DIAGRAM_HINT}`
+        )
+      }),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: true
+      }
+    },
+    run('rewrite_section', async ({ slug, section_id: sectionId, rev, markdown }) => {
+      const { doc, section, body } = await openOwnSection(slug, sectionId, rev)
+      const plan = planRewrite(body, (await parseFragment(markdown)).content)
+      if (!plan.ok) return toolError(plan.problem)
+      refuseShallowHeading(plan.content, section)
+
+      const outcome = await deps.content.apply({
+        documentId: doc.documentId,
+        mode: 'rewrite',
+        sectionId,
+        rev,
+        keep: plan.keep,
+        content: { type: 'doc', content: plan.content },
+        actor
+      })
+      return writeResult(outcome, doc, 'Rewrote a section in', { reread: true })
+    })
   )
 }

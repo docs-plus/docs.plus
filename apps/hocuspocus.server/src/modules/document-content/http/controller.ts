@@ -11,7 +11,6 @@ import type { ContentClient } from '../infra/contentClient'
 import { findDocumentMeta, findHeadRow } from '../infra/contentStore'
 import type { ApplyContent } from '../infra/hocuspocusApply'
 import type {
-  ApplyActor,
   ApplyMode,
   ContentApplyResponseData,
   ContentReadResponseData,
@@ -21,6 +20,7 @@ import type {
   WsApplyOutcome
 } from '../types'
 import { DOCUMENT_BUSY_CODE, MAX_CONTENT_BYTES, NOT_CONFIRMED_CODE } from '../types'
+import type { InternalApplyBody, PatchQuery } from './schema'
 
 // A repeat of this 500 for the same document means the per-doc debouncer is
 // poisoned, and every later store rejects instantly. Retrying keeps mutating
@@ -157,7 +157,7 @@ export const createPatchContentHandler =
   (deps: ApplyControllerDeps) =>
   async (c: Context): Promise<Response> => {
     const documentId = c.req.param('documentId') as string
-    const { mode } = c.req.valid('query' as never) as { mode: ApplyMode }
+    const { mode } = c.req.valid('query' as never) as PatchQuery
     const { content, commitMessage } = c.req.valid('json' as never) as {
       content: TiptapDocJson
       commitMessage?: string
@@ -181,19 +181,7 @@ export const createInternalApplyHandler =
   (applyContent: ApplyContent) =>
   async (c: Context): Promise<Response> => {
     const documentId = c.req.param('documentId') as string
-    const { mode, content, commitMessage, sectionId, rev, from, to, oldText, newText, actor } =
-      c.req.valid('json' as never) as {
-        mode: ApplyMode
-        content: TiptapDocJson
-        commitMessage?: string
-        sectionId?: string
-        rev?: string
-        from?: number
-        to?: number
-        oldText?: string
-        newText?: string
-        actor?: ApplyActor
-      }
+    const { commitMessage, ...edit } = c.req.valid('json' as never) as InternalApplyBody
     const requestId = c.get('requestId') as string | undefined
 
     // A REST write is nobody's edit, so its row names no one. An MCP write
@@ -201,26 +189,18 @@ export const createInternalApplyHandler =
     // request id is hono-sanitized to [\w\-=], safe to widen a store job id with.
     const version: VersionStamp = {
       ...(commitMessage ? { name: commitMessage, forceKey: requestId } : {}),
-      trigger: actor ? 'mcp' : 'api',
-      triggeredBy: actor ? actor.sub : null
+      trigger: edit.actor ? 'mcp' : 'api',
+      triggeredBy: edit.actor ? edit.actor.sub : null
     }
 
     const outcome = await applyContent({
+      ...edit,
       documentId,
-      mode,
-      content,
-      sectionId,
-      rev,
-      from,
-      to,
-      oldText,
-      newText,
-      actor,
       version,
       requestId,
       payloadBytes: Number(c.req.header('content-length') ?? 0) || undefined
     })
-    return applyOutcomeResponse(c, documentId, mode, outcome)
+    return applyOutcomeResponse(c, documentId, edit.mode, outcome)
   }
 
 export interface InternalReadDeps {

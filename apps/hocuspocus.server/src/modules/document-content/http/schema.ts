@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import { MAX_MARKDOWN_CHARS } from '../../document-conversion/types'
 import { REV_PATTERN } from '../domain/sections'
+import { APPLY_MODES } from '../types'
 
 /**
  * Shape-level only — encode checks content expressions. Import-light on
@@ -22,9 +23,14 @@ export const contentQuerySchema = z.object({
   format: z.enum(['json', 'text']).default('json')
 })
 
+/** The modes that write the whole document, the only ones REST offers. */
+const wholeDocMode = z.enum(APPLY_MODES).extract(['replace', 'append'])
+
 export const patchQuerySchema = z.object({
-  mode: z.enum(['replace', 'append']).default('replace')
+  mode: wholeDocMode.default('replace')
 })
+
+export type PatchQuery = z.infer<typeof patchQuerySchema>
 
 const commitMessageSchema = z.string().trim().min(1).max(200)
 
@@ -39,7 +45,7 @@ const actorSchema = z.object({
   email: z.string().max(254).optional()
 })
 
-/** A block delete and a text edit carry no nodes, so the hop allows an empty body. */
+/** A block delete and an all-media rewrite carry no new nodes, so these allow an empty body. */
 const hopContentSchema = z.object({
   type: z.literal('doc'),
   content: z.array(z.looseObject({ type: z.string() }))
@@ -47,29 +53,57 @@ const hopContentSchema = z.object({
 
 const MAX_BLOCK_POSITION = 50_000
 
-/** The internal hop carries the mode in the body; REST has already defaulted it. */
-export const internalApplyBodySchema = z
-  .object({
-    mode: z.enum(['replace', 'append', 'blocks', 'text']).default('replace'),
-    content: hopContentSchema.default({ type: 'doc', content: [] }),
-    commitMessage: commitMessageSchema.optional(),
-    sectionId: z.string().trim().min(1).max(64).optional(),
-    rev: z.string().regex(REV_PATTERN).optional(),
-    from: z.number().int().min(0).max(MAX_BLOCK_POSITION).optional(),
-    to: z.number().int().min(0).max(MAX_BLOCK_POSITION).optional(),
-    oldText: z.string().min(1).max(MAX_MARKDOWN_CHARS).optional(),
-    newText: z.string().max(MAX_MARKDOWN_CHARS).optional(),
-    actor: actorSchema.optional()
+const blockPosition = z.number().int().min(0).max(MAX_BLOCK_POSITION)
+
+const keptBlockSchema = z.object({ block: blockPosition, at: blockPosition })
+
+const sectionRef = {
+  sectionId: z.string().trim().min(1).max(64),
+  rev: z.string().regex(REV_PATTERN)
+}
+
+const shared = { commitMessage: commitMessageSchema.optional(), actor: actorSchema.optional() }
+
+/**
+ * Each mode carries exactly its own fields. Plain objects strip unknown keys, which is why a
+ * new edit is a new mode name: an old replica would strip a new field and widen the edit.
+ * `keep` is required, not defaulted: a dropped list would read as "keep nothing".
+ */
+export const internalApplyBodySchema = z.discriminatedUnion('mode', [
+  z.object({
+    mode: wholeDocMode,
+    content: tiptapDocSchema,
+    ...shared
+  }),
+  z.object({
+    mode: z.literal('blocks'),
+    content: hopContentSchema,
+    from: blockPosition,
+    to: blockPosition,
+    ...sectionRef,
+    ...shared
+  }),
+  z.object({
+    mode: z.literal('text'),
+    oldText: z.string().min(1).max(MAX_MARKDOWN_CHARS),
+    newText: z.string().max(MAX_MARKDOWN_CHARS),
+    ...sectionRef,
+    ...shared
+  }),
+  z.object({
+    mode: z.literal('move'),
+    from: blockPosition,
+    to: blockPosition,
+    ...sectionRef,
+    ...shared
+  }),
+  z.object({
+    mode: z.literal('rewrite'),
+    content: hopContentSchema,
+    keep: z.array(keptBlockSchema).max(MAX_BLOCK_POSITION),
+    ...sectionRef,
+    ...shared
   })
-  .refine((body) => !['replace', 'append'].includes(body.mode) || body.content.content.length > 0, {
-    message: 'replace and append need content'
-  })
-  .refine((body) => !['blocks', 'text'].includes(body.mode) || (body.sectionId && body.rev), {
-    message: 'blocks and text modes need sectionId and rev'
-  })
-  .refine((body) => body.mode !== 'blocks' || (body.from !== undefined && body.to !== undefined), {
-    message: 'blocks mode needs from and to'
-  })
-  .refine((body) => body.mode !== 'text' || body.oldText !== undefined, {
-    message: 'text mode needs oldText'
-  })
+])
+
+export type InternalApplyBody = z.infer<typeof internalApplyBodySchema>

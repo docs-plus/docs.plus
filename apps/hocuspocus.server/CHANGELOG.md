@@ -10,6 +10,12 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ## [Unreleased]
 
+### Added
+
+- MCP `move_block` and `rewrite_section`, with their own hop modes `move` and `rewrite`. Both check
+  ownership and the section `rev`. `rewrite_section` clones every kept media node into place and
+  never re-creates media from Markdown ([#719](https://github.com/docs-plus/docs.plus/issues/719)), ([#720](https://github.com/docs-plus/docs.plus/issues/720)).
+
 ### Changed
 
 - Markdown export keeps bold, italic, strike and highlight outside the backticks of inline code, so

@@ -69,6 +69,8 @@ A result carries text. `find_documents`, `get_outline`, `read_document`, `list_c
 | `append_to_document` | not destructive, open world | Adds Markdown at the end                                                        | `slug`, `markdown`                                                      |
 | `edit_blocks`        | destructive, open world     | Inserts, replaces or removes whole blocks at a numbered position in one section | `slug`, `section_id`, `rev`, `after_block`, `remove_blocks`, `markdown` |
 | `replace_text`       | destructive, open world     | Changes text inside one paragraph, list item or table cell                      | `slug`, `section_id`, `rev`, `old_text`, `new_text`                     |
+| `move_block`         | destructive, open world     | Moves one whole block to another place in the same section                      | `slug`, `section_id`, `rev`, `from`, `after_block`                      |
+| `rewrite_section`    | destructive, open world     | Replaces one section body from Markdown and keeps every media block             | `slug`, `section_id`, `rev`, `markdown`                                 |
 | `list_chat_rooms`    | read-only                   | The headings that have a chat room                                              | `slug`                                                                  |
 | `read_chat_thread`   | read-only                   | Messages in one heading's room, newest last                                     | `slug`, `section_id`, `before_seq`, `limit` (1 to 50)                   |
 | `post_chat_message`  | not destructive, open world | Posts plain text in one heading's room, as the person                           | `slug`, `section_id`, `text`                                            |
@@ -79,19 +81,21 @@ A `#` heading in written Markdown is refused, because it is the document title. 
 
 The `title` becomes the `#` heading, and `markdown`, if given, follows it. The Markdown is checked before anything is written, so refused text leaves no document. One transaction writes the document and version 1, so a failed write leaves none either. The slug comes from the title. A taken slug gets a suffix, and a slug that is a webapp page, such as `privacy`, gets `-document`. The new document is public, like any new docs.plus document. The `url` is the webapp address plus the slug.
 
-**Editing inside a section.** An AI app changes only the blocks or text it names. It never changes a heading, and it never removes media. It reads one section with `read_document` and `section_id`, then edits there.
+**Editing inside a section.** An AI app changes only the blocks or text it names, or one section body as a whole. It never changes a heading, and it never removes media. It reads one section with `read_document` and `section_id`, then edits there.
 
 - A section read numbers each block after the heading: `[1]`, `[2]` and so on. A block is a paragraph, a list, a table, a quote or an embed. A picture sits inside a paragraph.
 - `edit_blocks` puts a caret after block `after_block`, where `0` is right after the heading. It removes the next `remove_blocks` blocks, then inserts the Markdown there. `remove_blocks: 0` only inserts, and empty Markdown only removes.
 - `edit_blocks` refuses to remove a block that holds a picture, a video, an embed, an upload in progress or a file link. An AI app sees media only as a placeholder, so it could never put the media back.
-- A new heading must be deeper than the section heading, and it can go only at the end of the section. Anywhere else, it would move the blocks after it into a new subsection.
+- `move_block` moves block `from` to stand after block `after_block`, where `0` is right after the heading. Take both numbers from one read. The block moves whole, so a picture keeps its caption and every setting. A block never leaves its section, and a move to where the block already stands is refused.
+- `rewrite_section` replaces the whole section body with its Markdown. The Markdown names each block that holds media by its number alone on a line, such as `[3]`, with a blank line before and after, at the place it should stand. That block stays as it is. The tool refuses a media block that is missing or named twice, a number for a block without media, and a number outside the section. Every other block is written again from the Markdown, so formatting that Markdown cannot express is lost.
+- A new heading must be deeper than the section heading, and it can go only at the end of the section. Anywhere else, it would move the blocks after it into a new subsection. In `rewrite_section`, every media block must stand before the first new heading.
 - `replace_text` refuses to remove the name of a file attachment, because the name carries the file link. It may add text next to it.
 - `replace_text` finds `old_text` in the section body and puts `new_text` in its place. `old_text` must appear exactly once, inside one stretch of text. It cannot cross two blocks, a picture or a line break, and it never matches the heading. To insert, repeat the nearby words and add to them. To delete, leave `new_text` empty.
 - `new_text` is plain text. It takes the formatting of the first character it replaces, so bold or a link around it stays. For new paragraphs or new formatting, use `edit_blocks`.
-- Both tools check the section `rev`. `replace_text` returns the new `rev`, so a second text edit needs no new read. `edit_blocks` returns no `rev`: its edit renumbers the blocks after it, and an agent that reused its old numbers could remove the wrong block. So it must read the section again.
+- Every edit tool checks the section `rev`. `replace_text` returns the new `rev`, so a second text edit needs no new read. `edit_blocks`, `move_block` and `rewrite_section` return no `rev`: each renumbers blocks, and an agent that reused its old numbers could change the wrong block. So it must read the section again.
 - `read_document` escapes Markdown characters, such as `snake\_case`. `replace_text` first looks for `old_text` as given, and if that finds nothing, it tries again with those escapes removed.
 
-**Diagrams.** A fenced code block whose language is exactly `mermaid` becomes a [diagram](../diagrams.md) in the pad. `read_document` returns it as the same fence. Before a write, the server parses each diagram with [Pele](https://pele.run), the renderer the pad uses. It checks the Markdown of `create_document`, `append_to_document` and `edit_blocks`, at any depth. For `replace_text`, it checks the diagram source after the change. A diagram is refused, and nothing is written, when:
+**Diagrams.** A fenced code block whose language is exactly `mermaid` becomes a [diagram](../diagrams.md) in the pad. `read_document` returns it as the same fence. Before a write, the server parses each diagram with [Pele](https://pele.run), the renderer the pad uses. It checks the Markdown of `create_document`, `append_to_document`, `edit_blocks` and `rewrite_section`, at any depth. For `replace_text`, it checks the diagram source after the change. A diagram is refused, and nothing is written, when:
 
 - it is empty;
 - Pele does not draw its type;
@@ -102,7 +106,7 @@ The check parses only. It does not lay the diagram out. The `markdown` field des
 
 `post_chat_message` only adds a message, so it is not destructive. It reaches other people: room members who follow every message and are away get a notification. Every `@` is removed, so it never sends a mention or `@everyone` notification.
 
-**Server instructions.** The `initialize` result carries `instructions`. They say that these tools act as the signed-in person, and that a browser session is not signed in as them. To start a document, they name `create_document`. To change one, they name `replace_text` and `edit_blocks`. They suggest a `mermaid` diagram where a picture is clearer than text. A host may ignore them. The server info also carries `title`, `websiteUrl`, `description` and `icons`. The one icon is the 192 px docs.plus mark on the web app. Some hosts do not show it.
+**Server instructions.** The `initialize` result carries `instructions`. They say that these tools act as the signed-in person, and that a browser session is not signed in as them. To start a document, they name `create_document`. To change one, they name `replace_text`, `edit_blocks`, `move_block` and `rewrite_section`. They suggest a `mermaid` diagram where a picture is clearer than text. A host may ignore them. The server info also carries `title`, `websiteUrl`, `description` and `icons`. The one icon is the 192 px docs.plus mark on the web app. Some hosts do not show it.
 
 ## Limits
 
@@ -131,7 +135,7 @@ A post with many short lines can pass the text cap and fail the HTML cap.
 
 When one argument is at fault, the tool error text starts with that field, such as `slug:` or `section_id:`. An argument with the wrong shape never reaches the tool. The MCP SDK on the server refuses it and names the failing field.
 
-Plan retries with care. `create_document`, `append_to_document`, `edit_blocks`, `replace_text` and `post_chat_message` are not idempotent.
+Plan retries with care. `create_document`, `append_to_document`, `edit_blocks`, `replace_text`, `move_block`, `rewrite_section` and `post_chat_message` are not idempotent.
 
 - A stale `rev` is refused. Call `get_outline` or `read_document` again, then retry with the new `rev`.
 - After `docs.plus could not confirm the write`, wait about a minute, then call `read_document` before you retry. A read at once cannot see a write that is still saving.

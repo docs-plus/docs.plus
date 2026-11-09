@@ -288,9 +288,7 @@ describe('PATCH /api/documents/:documentId/content', () => {
     expect(response.status).toBe(200)
     expect(body.data).toEqual({ documentId: DOCUMENT_ID, mode: 'append' })
     expect(h.wsCalls).toHaveLength(1)
-    expect(h.wsCalls[0].documentId).toBe(DOCUMENT_ID)
-    expect(h.wsCalls[0].mode).toBe('append')
-    expect(h.wsCalls[0].content).toEqual(content)
+    expect(h.wsCalls[0]).toMatchObject({ documentId: DOCUMENT_ID, mode: 'append', content })
   })
 
   test('defaults the mode to replace', async () => {

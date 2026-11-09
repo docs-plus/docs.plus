@@ -346,6 +346,41 @@ describe('Internal content apply — edits inside one section', () => {
     expect(texts()).toEqual(['Title', 'Two', 'first line', 'middle', 'last line'])
   })
 
+  test('a rewrite keeps the blocks it names and a move crosses the hop; a rewrite without keep is a 400', async () => {
+    metaRows.set(SECTION_DOC, liveMeta(SECTION_DOC, 'section-doc'))
+    await server.post(applyPath(SECTION_DOC), { mode: 'replace', content: sectionDoc() }, AUTH)
+    const rev = () => findSection(persistedJson(), 'two')?.rev
+
+    const dropped = await server.post(
+      applyPath(SECTION_DOC),
+      { mode: 'rewrite', sectionId: 'two', rev: rev(), content: paragraphDoc('new') },
+      AUTH
+    )
+    expect(dropped.status).toBe(400)
+
+    const rewritten = await server.post(
+      applyPath(SECTION_DOC),
+      {
+        mode: 'rewrite',
+        sectionId: 'two',
+        rev: rev(),
+        keep: [{ block: 1, at: 1 }],
+        content: paragraphDoc('new')
+      },
+      AUTH
+    )
+    expect(rewritten.status).toBe(200)
+    expect(texts()).toEqual(['Title', 'Two', 'new', 'second line'])
+
+    const moved = await server.post(
+      applyPath(SECTION_DOC),
+      { mode: 'move', sectionId: 'two', rev: rev(), from: 1, to: 0 },
+      AUTH
+    )
+    expect(moved.status).toBe(200)
+    expect(texts()).toEqual(['Title', 'Two', 'second line', 'new'])
+  })
+
   test('a text mode without oldText is a 400, never a write', async () => {
     metaRows.set(SECTION_DOC, liveMeta(SECTION_DOC, 'section-doc'))
     const before = texts()

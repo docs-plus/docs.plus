@@ -30,6 +30,8 @@ const OWN_TOOLS: Record<string, Record<string, unknown>> = {
   append_to_document: { markdown: 'More text' },
   edit_blocks: { ...sectionArgs, after_block: 0, markdown: 'More text' },
   replace_text: { ...sectionArgs, old_text: 'old', new_text: 'new' },
+  move_block: { ...sectionArgs, from: 1, after_block: 2 },
+  rewrite_section: { ...sectionArgs, markdown: 'New text' },
   post_chat_message: { section_id: 'h1', text: 'Hello' }
 }
 

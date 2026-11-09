@@ -33,15 +33,17 @@ export const createApplyContent = (
   const liveWrite = createLiveWrite(deps)
 
   const apply = async (request: ApplyContentRequest): Promise<ApplyOutcome> => {
-    const { documentId, mode, content, sectionId, rev, from, to, oldText, newText } = request
+    const { documentId, mode } = request
+    // A text edit, a move and a block delete bring no nodes, so there is nothing to encode.
+    const content =
+      'content' in request && request.content.content.length > 0 ? request.content : null
     let scratch!: Y.Doc
 
     const written = await liveWrite.write(documentId, {
       stamp: request.version,
       actor: request.actor,
       prepare: (): InvalidContent | undefined => {
-        // A text edit and a block delete bring no nodes, so there is nothing to encode.
-        if (content.content.length === 0) {
+        if (!content) {
           scratch = new Y.Doc()
           return undefined
         }
@@ -58,16 +60,10 @@ export const createApplyContent = (
       check: (room): InvalidContent | undefined =>
         mode === 'append' &&
         room.getXmlFragment('default').length === 0 &&
-        !startsWithTitleHeading(content.content)
+        !startsWithTitleHeading(content?.content ?? [])
           ? { status: 'invalid-content', detail: TITLE_HEADING_DETAIL }
           : undefined,
-      mutate: (doc) =>
-        applyContentToDoc(
-          doc,
-          scratch,
-          mode,
-          sectionId && rev ? { sectionId, rev, from, to, oldText, newText } : undefined
-        )
+      mutate: (doc) => applyContentToDoc(doc, scratch, request)
     })
 
     if (written.status !== 'done') return written

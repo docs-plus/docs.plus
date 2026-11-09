@@ -39,7 +39,7 @@ describe('applyContentToDoc', () => {
     const live = liveDocWith(
       doc(heading('OLD'), { type: 'paragraph', content: [{ type: 'text', text: 'stale' }] })
     )
-    applyContentToDoc(live, scratchFrom(doc(heading('NEW'))), 'replace')
+    applyContentToDoc(live, scratchFrom(doc(heading('NEW'))), { mode: 'replace' })
 
     expect(textOf(live)).toEqual(['NEW'])
   })
@@ -49,7 +49,7 @@ describe('applyContentToDoc', () => {
     applyContentToDoc(
       live,
       scratchFrom(doc({ type: 'paragraph', content: [{ type: 'text', text: 'added' }] })),
-      'append'
+      { mode: 'append' }
     )
 
     expect(textOf(live)).toEqual(['Title', 'added'])
@@ -72,7 +72,7 @@ describe('applyContentToDoc', () => {
           ]
         })
       ),
-      'append'
+      { mode: 'append' }
     )
 
     const appended = decode(live).content[1]
@@ -88,7 +88,7 @@ describe('applyContentToDoc', () => {
     metadata.set('commitMessage', 'keep me')
     metadata.set('someOtherKey', 42)
 
-    applyContentToDoc(live, scratchFrom(doc(heading('New'))), 'replace')
+    applyContentToDoc(live, scratchFrom(doc(heading('New'))), { mode: 'replace' })
 
     expect(metadata.get('isDraft')).toBe(false)
     expect(metadata.get('needsInitialization')).toBe(false)
@@ -108,7 +108,7 @@ describe('applyContentToDoc', () => {
       scratchFrom(
         doc(heading('New'), { type: 'paragraph', content: [{ type: 'text', text: 'body' }] })
       ),
-      'replace'
+      { mode: 'replace' }
     )
 
     expect(updates).toBe(1)
@@ -131,7 +131,7 @@ describe('applyContentToDoc', () => {
       throw new Error('pathological node')
     }
 
-    expect(() => applyContentToDoc(live, scratch, 'replace')).toThrow('pathological node')
+    expect(() => applyContentToDoc(live, scratch, { mode: 'replace' })).toThrow('pathological node')
     expect(textOf(live)).toEqual(['OLD', 'keep'])
     expect(updates).toBe(0)
   })
@@ -214,8 +214,7 @@ describe('applyContentToDoc — blocks mode', () => {
     const result = applyContentToDoc(
       live,
       scratchFrom(doc(para('new two'), section('New three', 3, 'n3'))),
-      'blocks',
-      { sectionId: 'two', rev: before, from: 0, to: 1 }
+      { mode: 'blocks', sectionId: 'two', rev: before, from: 0, to: 1 }
     )
 
     // A block edit renumbers blocks, so it returns no rev and the agent must read again.
@@ -235,13 +234,13 @@ describe('applyContentToDoc — blocks mode', () => {
 
   test('inserts at a caret, replaces one block, and removes one, touching nothing else', () => {
     const live = liveDocWith(threeBlocks())
-    applyContentToDoc(live, scratchFrom(doc(para('X'))), 'blocks', at(live, 1, 1))
+    applyContentToDoc(live, scratchFrom(doc(para('X'))), { mode: 'blocks', ...at(live, 1, 1) })
     expect(textOf(live)).toEqual(['Title', 'Two', 'a', 'X', 'b', 'c', 'Next'])
 
-    applyContentToDoc(live, scratchFrom(doc(para('Y'))), 'blocks', at(live, 2, 3))
+    applyContentToDoc(live, scratchFrom(doc(para('Y'))), { mode: 'blocks', ...at(live, 2, 3) })
     expect(textOf(live)).toEqual(['Title', 'Two', 'a', 'X', 'Y', 'c', 'Next'])
 
-    applyContentToDoc(live, new Y.Doc(), 'blocks', at(live, 1, 2))
+    applyContentToDoc(live, new Y.Doc(), { mode: 'blocks', ...at(live, 1, 2) })
     expect(textOf(live)).toEqual(['Title', 'Two', 'a', 'Y', 'c', 'Next'])
   })
 
@@ -254,10 +253,15 @@ describe('applyContentToDoc — blocks mode', () => {
       [0, 4]
     ]) {
       expect(
-        applyContentToDoc(live, scratchFrom(doc(para('x'))), 'blocks', at(live, from, to))
+        applyContentToDoc(live, scratchFrom(doc(para('x'))), {
+          mode: 'blocks',
+          ...at(live, from, to)
+        })
       ).toMatchObject({ ok: false, status: 'invalid-content' })
     }
-    expect(applyContentToDoc(live, new Y.Doc(), 'blocks', at(live, 1, 1))).toMatchObject({
+    expect(
+      applyContentToDoc(live, new Y.Doc(), { mode: 'blocks', ...at(live, 1, 1) })
+    ).toMatchObject({
       ok: false,
       status: 'invalid-content'
     })
@@ -269,7 +273,8 @@ describe('applyContentToDoc — blocks mode', () => {
     const before = textOf(live)
 
     expect(
-      applyContentToDoc(live, scratchFrom(doc(para('x'))), 'blocks', {
+      applyContentToDoc(live, scratchFrom(doc(para('x'))), {
+        mode: 'blocks',
         sectionId: 'two',
         rev: '000000000000',
         from: 0,
@@ -277,7 +282,8 @@ describe('applyContentToDoc — blocks mode', () => {
       })
     ).toEqual({ ok: false, status: 'conflict', detail: 'section changed' })
     expect(
-      applyContentToDoc(live, scratchFrom(doc(para('x'))), 'blocks', {
+      applyContentToDoc(live, scratchFrom(doc(para('x'))), {
+        mode: 'blocks',
         sectionId: 'gone',
         rev: '000000000000',
         from: 0,
@@ -295,19 +301,24 @@ describe('applyContentToDoc — blocks mode', () => {
       const result = applyContentToDoc(
         live,
         scratchFrom(doc(section('Sibling', level, `s${level}`))),
-        'blocks',
-        at(live, 3, 3)
+        { mode: 'blocks', ...at(live, 3, 3) }
       )
       expect(result).toMatchObject({ ok: false, status: 'invalid-content' })
     }
     // A deeper heading mid-body would pull blocks b and c into a new subsection.
     expect(
-      applyContentToDoc(live, scratchFrom(doc(section('Sub', 3, 'sub'))), 'blocks', at(live, 1, 1))
+      applyContentToDoc(live, scratchFrom(doc(section('Sub', 3, 'sub'))), {
+        mode: 'blocks',
+        ...at(live, 1, 1)
+      })
     ).toMatchObject({ ok: false, status: 'invalid-content' })
     expect(textOf(live)).toEqual(before)
 
     expect(
-      applyContentToDoc(live, scratchFrom(doc(section('Sub', 3, 'sub'))), 'blocks', at(live, 3, 3))
+      applyContentToDoc(live, scratchFrom(doc(section('Sub', 3, 'sub'))), {
+        mode: 'blocks',
+        ...at(live, 3, 3)
+      })
     ).toMatchObject({ ok: true })
   })
 
@@ -321,7 +332,8 @@ describe('applyContentToDoc — blocks mode', () => {
       )
     )
     const insert = (level: number) =>
-      applyContentToDoc(live, scratchFrom(doc(section('New', level, 'new'))), 'blocks', {
+      applyContentToDoc(live, scratchFrom(doc(section('New', level, 'new'))), {
+        mode: 'blocks',
         sectionId: 'two',
         rev: revOf(live, 'two'),
         from: 1,
@@ -361,7 +373,8 @@ describe('applyContentToDoc — text mode', () => {
       }
     )
   const edit = (live: Y.Doc, oldText: string, newText: string) =>
-    applyContentToDoc(live, new Y.Doc(), 'text', {
+    applyContentToDoc(live, new Y.Doc(), {
+      mode: 'text',
       sectionId: 'budget',
       rev: revOf(live, 'budget'),
       oldText,
@@ -475,5 +488,104 @@ describe('applyContentToDoc — text mode', () => {
     expect(findUniqueText(runs, 'high')).toMatchObject({ ok: true })
     expect(findUniqueText(runs, 'e')).toMatchObject({ ok: false })
     expect(findUniqueText(runs, 'leftright')).toEqual({ ok: false, count: 0 })
+  })
+})
+
+// The media nodes are never re-encoded, so a lost attribute or an empty clone shows here.
+describe('applyContentToDoc — move and rewrite keep media nodes whole', () => {
+  const revOf = (live: Y.Doc, id: string) => findSection(liveDocJson(live), id)?.rev as string
+  const video = { type: 'youtube', attrs: { src: 'https://youtu.be/x', width: 400, height: 300 } }
+  const picture = {
+    type: 'paragraph',
+    content: [
+      { type: 'image', attrs: { src: 'https://cdn.test/p.png', alt: 'Caption', width: 120 } }
+    ]
+  }
+  const mediaSection = () =>
+    doc(
+      section('Title', 1, 'title'),
+      section('Two', 2, 'two'),
+      para('a'),
+      video,
+      picture,
+      section('Next', 2, 'next')
+    )
+  const target = <Fields extends object>(live: Y.Doc, fields: Fields) => ({
+    sectionId: 'two',
+    rev: revOf(live, 'two'),
+    ...fields
+  })
+
+  test('move puts one block after another, in both directions', () => {
+    const live = liveDocWith(mediaSection())
+    const [videoJson, pictureJson] = decode(live).content.slice(3, 5)
+
+    expect(
+      applyContentToDoc(live, new Y.Doc(), { mode: 'move', ...target(live, { from: 1, to: 3 }) })
+    ).toEqual({
+      ok: true
+    })
+    expect(decode(live).content.slice(2, 5)).toEqual([para('a'), pictureJson, videoJson])
+
+    applyContentToDoc(live, new Y.Doc(), { mode: 'move', ...target(live, { from: 2, to: 0 }) })
+    expect(decode(live).content.slice(2, 5)).toEqual([videoJson, para('a'), pictureJson])
+    expect(textOf(live).at(-1)).toBe('Next')
+  })
+
+  test('move refuses a block outside the body and a move that changes nothing', () => {
+    const live = liveDocWith(mediaSection())
+    const before = decode(live)
+    for (const [from, to] of [
+      [3, 0],
+      [0, 4],
+      [1, 1],
+      [1, 2]
+    ]) {
+      expect(
+        applyContentToDoc(live, new Y.Doc(), { mode: 'move', ...target(live, { from, to }) })
+      ).toMatchObject({ ok: false, status: 'invalid-content' })
+    }
+    expect(decode(live)).toEqual(before)
+  })
+
+  test('rewrite replaces the text and puts each kept block at its place', () => {
+    const live = liveDocWith(mediaSection())
+    const [videoJson, pictureJson] = decode(live).content.slice(3, 5)
+
+    const result = applyContentToDoc(live, scratchFrom(doc(para('first'), para('second'))), {
+      mode: 'rewrite',
+      ...target(live, {
+        keep: [
+          { block: 2, at: 0 },
+          { block: 1, at: 1 }
+        ]
+      })
+    })
+    expect(result).toEqual({ ok: true })
+    expect(decode(live).content.slice(2)).toEqual([
+      pictureJson,
+      para('first'),
+      videoJson,
+      para('second'),
+      section('Next', 2, 'next')
+    ])
+  })
+
+  test('rewrite refuses a repeated block and a kept block after a new heading', () => {
+    const live = liveDocWith(mediaSection())
+    const before = decode(live)
+    const rewrite = (scratch: Y.Doc, keep: { block: number; at: number }[]) =>
+      applyContentToDoc(live, scratch, { mode: 'rewrite', ...target(live, { keep }) })
+
+    expect(
+      rewrite(scratchFrom(doc(para('x'))), [
+        { block: 1, at: 0 },
+        { block: 1, at: 1 }
+      ])
+    ).toMatchObject({ ok: false, status: 'invalid-content' })
+    expect(
+      rewrite(scratchFrom(doc(para('x'), section('Sub', 3, 'sub'))), [{ block: 1, at: 2 }])
+    ).toMatchObject({ ok: false, status: 'invalid-content' })
+    expect(decode(live)).toEqual(before)
   })
 })

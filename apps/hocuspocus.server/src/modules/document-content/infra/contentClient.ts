@@ -32,35 +32,17 @@ const dataField = (body: unknown): Record<string, unknown> | undefined =>
 
 /** REST → WS hop. Transport and envelope failures both collapse to `unreachable` (503). */
 export const createContentClient = (deps: ContentClientDeps): ContentClient => {
+  // JSON drops the undefined fields, so the body carries only what the mode set.
   const apply: ContentClient['apply'] = async ({
     documentId,
-    mode,
-    content,
-    commitMessage,
-    sectionId,
-    rev,
-    from,
-    to,
-    oldText,
-    newText,
-    actor,
-    requestId
+    requestId,
+    payloadBytes,
+    ...body
   }) => {
     const hop = await internalHop({
       baseUrl: deps.baseUrl,
       path: ['internal', 'documents', documentId, 'content'],
-      body: {
-        mode,
-        content,
-        ...(commitMessage ? { commitMessage } : {}),
-        ...(sectionId ? { sectionId } : {}),
-        ...(rev ? { rev } : {}),
-        ...(from === undefined ? {} : { from }),
-        ...(to === undefined ? {} : { to }),
-        ...(oldText === undefined ? {} : { oldText }),
-        ...(newText === undefined ? {} : { newText }),
-        ...(actor ? { actor } : {})
-      },
+      body,
       serviceRoleKey: deps.serviceRoleKey,
       requestId,
       timeoutMs: WS_APPLY_TIMEOUT_MS

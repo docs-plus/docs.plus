@@ -2,6 +2,7 @@ import type { MiddlewareHandler } from 'hono'
 import { collectDefaultMetrics, Counter, Gauge, Histogram, Registry } from 'prom-client'
 
 import pkg from '../../package.json'
+import { APPLY_MODES } from '../modules/document-content/types'
 import { CHANGE_SUMMARY_QUEUE_NAME } from './changeSummaryQueueName'
 import { EMAIL_QUEUE_NAME } from './email/jobIdentity'
 
@@ -433,7 +434,7 @@ export const seedWsAlertSeries = (): void => {
   for (const reason of ['type-not-allowed', 'broadcast-frame']) {
     statelessRelayDroppedTotal.inc({ reason }, 0)
   }
-  for (const mode of ['replace', 'append', 'blocks', 'text']) {
+  for (const mode of APPLY_MODES) {
     documentContentApplyTotal.inc({ mode, outcome: 'error' }, 0)
   }
 }

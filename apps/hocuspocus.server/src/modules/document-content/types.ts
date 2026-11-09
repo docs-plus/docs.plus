@@ -16,10 +16,46 @@ export interface TiptapDocJson {
 }
 
 /**
- * `blocks` and `text` are MCP-only edits inside one section; REST offers `replace` and `append`.
- * Each is a new mode name, so an older replica mid-deploy refuses it instead of widening it.
+ * `blocks`, `text`, `move` and `rewrite` are MCP-only edits inside one section; REST offers
+ * `replace` and `append`. Each is a new mode name, so an older replica mid-deploy refuses it
+ * instead of widening it.
  */
-export type ApplyMode = 'replace' | 'append' | 'blocks' | 'text'
+export const APPLY_MODES = ['replace', 'append', 'blocks', 'text', 'move', 'rewrite'] as const
+export type ApplyMode = (typeof APPLY_MODES)[number]
+
+/** `rewrite` keeps body block `block` (0-based) as it is, after the first `at` new nodes. */
+export interface KeptBlock {
+  block: number
+  at: number
+}
+
+interface SectionRef {
+  sectionId: string
+  rev: string
+}
+
+/**
+ * Each mode with exactly its own fields. Body positions are 0-based carets: `blocks` puts
+ * the content over blocks `from` up to `to`, and `move` puts block `from` at caret `to`.
+ * Keyed by `ApplyMode`, so a mode added to `APPLY_MODES` fails to compile until it has one.
+ */
+interface ModeFields {
+  replace: { content: TiptapDocJson }
+  append: { content: TiptapDocJson }
+  blocks: SectionRef & { content: TiptapDocJson; from: number; to: number }
+  /** `oldText` is found once in the body. */
+  text: SectionRef & { oldText: string; newText: string }
+  move: SectionRef & { from: number; to: number }
+  /** The content replaces the whole body, with the `keep` blocks put back in place. */
+  rewrite: SectionRef & { content: TiptapDocJson; keep: KeptBlock[] }
+}
+
+export type ContentEdit = { [Mode in ApplyMode]: { mode: Mode } & ModeFields[Mode] }[ApplyMode]
+
+type WithoutContent<Edit> = Edit extends unknown ? Omit<Edit, 'content'> : never
+
+/** The applier's edit. It never reads `content`: the caller encoded it into a scratch doc. */
+export type DocEdit = WithoutContent<ContentEdit>
 export type ReadFormat = 'json' | 'text'
 
 /** The attr that keys a heading's section, chat room and digest links. */
@@ -105,25 +141,14 @@ export interface ApplyActor {
   email?: string
 }
 
-export interface ApplyRequest {
+interface ApplyRequestBase {
   documentId: string
-  mode: ApplyMode
-  content: TiptapDocJson
-  /** `toc-id` of the target heading; required for `blocks` and `text`. */
-  sectionId?: string
-  /** The section `rev` the caller read; required for `blocks` and `text`. */
-  rev?: string
-  /** `blocks`: body positions; the content replaces blocks `from` up to `to`, so equal values insert. */
-  from?: number
-  to?: number
-  /** `text`: the exact text found once in the section body, and what replaces it. */
-  oldText?: string
-  newText?: string
   actor?: ApplyActor
-  commitMessage?: string
   requestId?: string
   payloadBytes?: number
 }
+
+export type ApplyRequest = ContentEdit & ApplyRequestBase & { commitMessage?: string }
 
 /**
  * Attribution for the version row a live write mints. `forceKey` only widens the
@@ -141,9 +166,7 @@ export interface VersionStamp {
 export type NamedVersionStamp = VersionStamp & Required<Pick<VersionStamp, 'name' | 'forceKey'>>
 
 /** The applier's view: the wire name has already been resolved into a stamp. */
-export interface ApplyContentRequest extends Omit<ApplyRequest, 'commitMessage'> {
-  version?: VersionStamp
-}
+export type ApplyContentRequest = ContentEdit & ApplyRequestBase & { version?: VersionStamp }
 
 export interface ContentApplyResponseData {
   documentId: string

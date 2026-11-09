@@ -211,6 +211,8 @@ You ask in your own words. To point at one document, paste its link or give its 
 | `append_to_document` | Adds text at the end of a document you own                                  | "Add a Next steps section at the end."                                 |
 | `replace_text`       | Changes words inside one paragraph, in a document you own                   | "In the Budget section, change 'high' to 'low'."                       |
 | `edit_blocks`        | Adds, replaces or removes paragraphs at one spot in a section you own       | "Add a paragraph about catering after the second paragraph of Budget." |
+| `move_block`         | Moves one paragraph, picture or video to another spot in the same section   | "In Budget, move the chart picture below the cost table."              |
+| `rewrite_section`    | Writes one section's text again and keeps its pictures, videos and files    | "Rewrite the Budget section in plain words. Keep its pictures."        |
 | `list_chat_rooms`    | Lists the headings that have a chat                                         | "Which sections have a discussion?"                                    |
 | `read_chat_thread`   | Reads the chat under one heading                                            | "What did people say about the Timeline?"                              |
 | `post_chat_message`  | Posts a message in the chat under one heading, as you, in your own document | "Post a short summary of this thread in its chat."                     |
@@ -222,7 +224,8 @@ You ask in your own words. To point at one document, paste its link or give its 
 - It reads only documents you can open in docs.plus yourself. A private document opens for its owner only.
 - It writes and posts in chat only in documents you own. It refuses any other document, even a public one you can edit.
 - It can create a new document. You own it. Like any new docs.plus document, it is public: other people can find it by title, open it and edit it. Make it private in docs.plus if you need to.
-- It edits only the spot it names. It reads the section first, then changes words inside one paragraph, or adds, replaces or removes whole paragraphs at one numbered position.
+- It edits only the spot it names. It reads the section first, then changes words inside one paragraph, adds, replaces or removes whole paragraphs at one numbered position, or moves one block inside the section.
+- It can write the text of a whole section again. Every picture, video and file in that section stays as it is; the AI app only chooses where each one stands.
 - It never changes a heading. So the chat and the links on that heading stay in place.
 - It can add a [diagram](../diagrams.md), such as a flowchart or a timeline. It writes the Mermaid text, and the pad draws it. docs.plus checks each diagram first and refuses one that does not parse or is too large.
 - It never deletes a picture, video or file, including the name of an attached file. An edit that would remove one is refused.
