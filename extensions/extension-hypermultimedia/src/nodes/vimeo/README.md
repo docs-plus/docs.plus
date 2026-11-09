@@ -103,9 +103,12 @@ Layout options: `width`, `height`, `margin`, `float`, `clear`, `display`, `justi
 
 With `@tiptap/markdown` loaded:
 
-```md
+```text
 ![vimeo](https://vimeo.com/123456789)
+![vimeo](https://vimeo.com/123456789 "Demo"){width=800 float=right}
 ```
+
+The title slot holds the caption, and the block holds the options. Markdown drops the player options in the table above. Keys, values and defaults: [Caption and options](../../../docs/paste-and-import.md#caption-and-options).
 
 ## Source code
 

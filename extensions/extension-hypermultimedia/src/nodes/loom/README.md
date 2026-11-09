@@ -85,9 +85,12 @@ Only valid Loom URLs enter the document. Non-Loom `src` values render an empty i
 
 With `@tiptap/markdown` loaded:
 
-```md
+```text
 ![loom](https://www.loom.com/share/abcdef1234567890)
+![loom](https://www.loom.com/share/abcdef1234567890 "Walkthrough"){width=800 float=right}
 ```
+
+The title slot holds the caption, and the block holds the options. Markdown drops the player options in the table above. Keys, values and defaults: [Caption and options](../../../docs/paste-and-import.md#caption-and-options).
 
 ## Source code
 

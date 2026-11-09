@@ -10,16 +10,25 @@ historical Conventional Commits format. The project adheres to
 
 ### Added
 
+- Markdown carries the media caption in the CommonMark title slot, on all nine nodes, both ways: `![youtube](src "My caption")` ([#244](https://github.com/docs-plus/docs.plus/issues/244)). Before, Markdown dropped every caption. An image title now reads into the caption.
+- Markdown carries layout in an option block after the closing parenthesis: `![youtube](src){width=800 float=right}`. The keys are `width`, `height`, `display`, `float`, `clear`, `margin` and `justify-content`. `image` takes the same block, without `justify-content`. Import reads `justifyContent` too ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
+- The option block carries player options. `video` takes `controls`, `autoplay`, `loop`, `muted`, `preload` and `poster`. `audio` takes the same keys except `poster`. `x` takes `maxwidth`, `theme`, `lang`, `hide_media` and `hide_thread` ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
+- Import drops an unknown key, and a value that fails its check. `poster` passes the same scheme gate as `src`. Export runs every value through the same checks.
 - `MediaLoadingShellContext` gains an optional `sourceHost` field. The built-in shell names that site under the error message ([#637](https://github.com/docs-plus/docs.plus/issues/637)).
 
 ### Changed
 
+- **Markdown export writes the option block, and only for a value that differs from the node default** ([#244](https://github.com/docs-plus/docs.plus/issues/244)). A `video` at 640 × 480 now exports as `![video](src)`. A resized one exports as `![video](src){width=400 height=300}`, where it wrote `![video](src width=400 height=300)` before. Import still reads the old in-parenthesis form. A parser of your own that reads our old export needs the new form. See [Migrating to the option block](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/migration.md#migrating-to-the-markdown-option-block).
+- Markdown export writes both `(` and `)` in a `src` as `%28` and `%29`. Before, only `)` was encoded, so an unbalanced `(` broke the image on import.
 - The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.0`. It was `^3.31.3`.
 - A popover reads its Tab cycle on each Tab, so a control that renders after it opens joins the cycle.
 - A failed image shows "Couldn’t load this image" and a second line that names the site, for example "From picsum.photos. The link may be broken." The broken-image glyph is hidden. Other media show "Couldn’t load this video", "…audio" or "…embed". Before, every kind showed "Could not load media" ([#637](https://github.com/docs-plus/docs.plus/issues/637)).
 
 ### Fixed
 
+- A Spotify track imported from Markdown now gets the 152 px track height, as a pasted track does. Before, it rendered 352 px tall. Import also stores the canonical share URL ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
+- An X post imported from Markdown now stores the normalized `https://x.com/<user>/status/<id>` URL, as paste and `setX` do ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
+- An image alt that holds `[` survives Markdown export. Export now escapes `[` as well as `]`.
 - An `<img>` whose `src` has no image file extension, such as `https://picsum.photos/id/1/200/100`, now survives paste and HTML import ([#637](https://github.com/docs-plus/docs.plus/issues/637)). Before, the image vanished with no warning. A bare URL pasted as text still needs an extension to become an image. Pasted web or email HTML can also carry tracking pixels with no extension; those now become image nodes too.
 - Tab and Shift-Tab in a popover skip a control that cannot take focus: one that is disabled, inside `[inert]`, not rendered, or at `tabindex="-1"`. Before, Tab onto a disabled control left focus where it was. The popover engine is bundled, so this package gets the fix too.
 - A caption on `video`, `audio`, `youtube`, `vimeo`, `soundcloud`, `spotify`, `loom` or `x` now survives HTML ([#244](https://github.com/docs-plus/docs.plus/issues/244)). Before, only `image` kept it, so clipboard copy and the toolbar Copy action dropped the text. A captioned node now renders as a `<figure data-hm-figure>` with a `<figcaption>`, and parses it back. For a floated media node, the `<figure>` takes the float, clear and margin, and the media element inside keeps its size. For a media node that is not floated, the `<figure>` takes the clear and margin, so a `margin: auto` media node stays centered. X writes no layout to HTML, so its `<figure>` has no placement. A node without a caption renders the same HTML as before.

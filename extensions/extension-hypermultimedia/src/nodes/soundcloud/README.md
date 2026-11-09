@@ -93,9 +93,12 @@ Layout options plus any widget row above can be passed on the command.
 
 With `@tiptap/markdown` loaded:
 
-```md
+```text
 ![soundcloud](https://soundcloud.com/artist/track)
+![soundcloud](https://soundcloud.com/artist/track "Live set"){width=800 float=right}
 ```
+
+The title slot holds the caption, and the block holds the options. Markdown drops the player options in the table above. Keys, values and defaults: [Caption and options](../../../docs/paste-and-import.md#caption-and-options).
 
 ## Source code
 

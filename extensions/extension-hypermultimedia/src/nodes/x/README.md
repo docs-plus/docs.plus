@@ -187,9 +187,12 @@ editor.commands.setX({
 
 With `@tiptap/markdown` loaded:
 
-```md
+```text
 ![x](https://x.com/user/status/123)
+![x](https://x.com/user/status/123 "Launch thread"){maxwidth=550 theme=dark}
 ```
+
+The title slot holds the caption, and the block holds the options. Import stores the normalized `https://x.com/<user>/status/<id>` URL. Keys, values and defaults: [Caption and options](../../../docs/paste-and-import.md#caption-and-options).
 
 ## Source code
 

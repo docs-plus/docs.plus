@@ -205,10 +205,12 @@ editor.commands.setVideo({
 
 With `@tiptap/markdown` loaded:
 
-```md
+```text
 ![video](https://example.com/foobar.mp4)
-![video](https://example.com/foobar.mp4 width=640 height=480)
+![video](https://example.com/foobar.mp4 "Launch demo"){width=400 height=300 muted=true poster=https://example.com/poster.png}
 ```
+
+The title slot holds the caption, and the block holds the options. Keys, values and defaults: [Caption and options](../../../docs/paste-and-import.md#caption-and-options).
 
 ## Source code
 

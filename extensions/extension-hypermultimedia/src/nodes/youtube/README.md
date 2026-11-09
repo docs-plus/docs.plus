@@ -163,9 +163,12 @@ Any player row from the table above can be passed on the command to override kit
 
 With `@tiptap/markdown` loaded:
 
-```md
+```text
 ![youtube](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+![youtube](https://www.youtube.com/watch?v=dQw4w9WgXcQ "How docs.plus works"){width=800 float=right}
 ```
+
+The title slot holds the caption, and the block holds the options. Markdown drops the player options in the table above. Keys, values and defaults: [Caption and options](../../../docs/paste-and-import.md#caption-and-options).
 
 Use the literal alt `youtube` so the token routes to this node instead of a plain image or hyperlink.
 

@@ -46,3 +46,23 @@ docs.plus and Hocuspocus hosts: run `bun run --filter @docs.plus/hocuspocus migr
 External adopters: rewrite the stored JSON and Yjs node `type` strings yourself. The [media-node-rename runbook](https://github.com/docs-plus/docs.plus/blob/main/apps/hocuspocus.server/docs/migrate-media-node-names.md) lists every mapping, even if you never run the CLI.
 
 The [CHANGELOG](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/CHANGELOG.md) holds the full breaking-change list.
+
+## Migrating to the Markdown option block
+
+This section covers the next minor release after 2.2.0, not the 1.x move. It is a minor release, because the old input still parses ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
+
+Markdown export now writes size after the closing parenthesis, in an option block:
+
+| Before                               | Now                                        |
+| ------------------------------------ | ------------------------------------------ |
+| `![video](src width=400 height=300)` | `![video](src){width=400 height=300}`      |
+| `![audio](src width=400 height=80)`  | `![audio](src){width=400 height=80}`       |
+| `![video](src width=640 height=480)` | `![video](src)` — 640 × 480 is the default |
+| `![Alt](src)`, caption dropped       | `![Alt](src "My caption")`                 |
+
+Import still reads the old in-parenthesis form, so documents you already exported import as before.
+
+Two cases need a change:
+
+- **Your own parser reads our Markdown.** Read the `{…}` block after `)`, and read the title slot as the caption. The full syntax is in [Markdown import/export](./paste-and-import.md#markdown-importexport).
+- **Your code expects a size on every node.** Export now leaves out a value equal to the node default. Read a missing key as that default.

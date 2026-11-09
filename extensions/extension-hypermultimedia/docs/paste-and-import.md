@@ -10,17 +10,60 @@ Markdown round-trip is optional and needs `npm install @tiptap/markdown`.
 
 With `@tiptap/markdown` loaded, every media node round-trips through typed `![alt](src)` syntax. Use the node name as the alt literal for non-image media:
 
-| Node         | Import / export syntax                                      |
-| ------------ | ----------------------------------------------------------- |
-| `image`      | `![alt text](src)` — caption is not exported                |
-| `audio`      | `![audio](src)` — optional `width=N height=N` after the URL |
-| `video`      | `![video](src)` — optional `width=N height=N`               |
-| `youtube`    | `![youtube](src)`                                           |
-| `vimeo`      | `![vimeo](src)`                                             |
-| `soundcloud` | `![soundcloud](src)`                                        |
-| `spotify`    | `![spotify](src)`                                           |
-| `loom`       | `![loom](src)`                                              |
-| `x`          | `![x](src)`                                                 |
+| Node         | Import / export syntax |
+| ------------ | ---------------------- |
+| `image`      | `![alt text](src)`     |
+| `audio`      | `![audio](src)`        |
+| `video`      | `![video](src)`        |
+| `youtube`    | `![youtube](src)`      |
+| `vimeo`      | `![vimeo](src)`        |
+| `soundcloud` | `![soundcloud](src)`   |
+| `spotify`    | `![spotify](src)`      |
+| `loom`       | `![loom](src)`         |
+| `x`          | `![x](src)`            |
+
+### Caption and options
+
+Two optional parts follow the URL. Write them in this order:
+
+```text
+![youtube](https://www.youtube.com/watch?v=dQw4w9WgXcQ "How docs.plus works"){width=800 float=right}
+```
+
+- **The caption** rides the CommonMark title slot, in quotes after the URL. It maps to the `caption` attribute, on every node. Escape a `"` or a `\` inside it with a backslash.
+- **The option block** is `{key=value key=value}`, right after the closing parenthesis. Separate keys with spaces. Quote a value that holds a space: `margin="0 0 0 auto"`.
+
+| Keys                                    | Nodes                     | Values                                                              |
+| --------------------------------------- | ------------------------- | ------------------------------------------------------------------- |
+| `width`, `height`                       | every node except `x`     | a positive number, with an optional `px`                            |
+| `display`                               | every node                | `block`, `inline`, `inline-block`, `flex`, `inline-flex`            |
+| `float`                                 | every node                | `left`, `right`, `none`                                             |
+| `clear`                                 | every node                | `none`, `left`, `right`, `both`                                     |
+| `margin`                                | every node                | one to four of `auto`, `0`, or a length such as `0.5in`             |
+| `justify-content`                       | every node except `image` | `start`, `center`, `end`, `flex-start`, `flex-end`, `left`, `right` |
+| `controls`, `autoplay`, `loop`, `muted` | `video`, `audio`          | `true`, `false`                                                     |
+| `preload`                               | `video`, `audio`          | `none`, `metadata`, `auto`                                          |
+| `poster`                                | `video`                   | a URL that passes the scheme gate                                   |
+| `maxwidth`                              | `x`                       | a positive number                                                   |
+| `theme`                                 | `x`                       | `light`, `dark`                                                     |
+| `lang`                                  | `x`                       | a language tag, such as `fr` or `zh-cn`                             |
+| `hide_media`, `hide_thread`             | `x`                       | `true`, `false`                                                     |
+
+Import reads `justifyContent` as well as `justify-content`. Export writes `justify-content`.
+
+Import drops a key the node does not take, and a value that fails its check. The node then keeps its default. Export runs every value through the same checks.
+
+**Export writes only what differs from the default.** A node nobody styled exports as `![youtube](src)`. A `video` at 640 × 480 writes no block. A Spotify track compares against its 152 px track height, and a playlist against 352 px. `float=none` counts as the default, because the toolbar writes it for Left, Center and Right.
+
+Import still reads the old in-parenthesis size, `![video](src width=640 height=360)`. Export writes the block. See [Migrating to the Markdown option block](./migration.md#migrating-to-the-markdown-option-block).
+
+Markdown still drops these attributes:
+
+- the image `title` attribute, because the title slot holds the caption;
+- the `youtube`, `vimeo`, `soundcloud`, `spotify` and `loom` player options, such as YouTube `start` and SoundCloud `visual`;
+- the X `dnt` and `align` attributes.
+
+Outside docs.plus, a renderer shows the media and prints the block as plain text. GitHub does this.
 
 Reserved alts — `audio`, `video`, `youtube`, `vimeo`, `soundcloud`, `spotify`, `loom`, `x` — route to the matching node. A GFM image token would otherwise create an `image` node.
 

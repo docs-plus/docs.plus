@@ -175,10 +175,12 @@ editor.commands.setAudio({
 
 With `@tiptap/markdown` loaded:
 
-```md
+```text
 ![audio](https://example.com/foobar.mp3)
-![audio](https://example.com/foobar.mp3 width=640 height=80)
+![audio](https://example.com/foobar.mp3 "Episode 12"){width=640 height=80 loop=true}
 ```
+
+The title slot holds the caption, and the block holds the options. Keys, values and defaults: [Caption and options](../../../docs/paste-and-import.md#caption-and-options).
 
 ## Source code
 

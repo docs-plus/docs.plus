@@ -181,11 +181,14 @@ editor.commands.updateImageDimensions({
 
 ## Markdown syntax
 
-Markdown export keeps `![alt](src)` only — the caption is not represented.
+With `@tiptap/markdown` loaded:
 
-```md
+```text
 ![alt text](https://example.com/foobar.png)
+![alt text](https://example.com/foobar.png "Figure 1"){width=300 float=left margin=0.5in}
 ```
+
+The title slot holds the caption, not the `title` attribute, which Markdown drops. Keys, values and defaults: [Caption and options](../../../docs/paste-and-import.md#caption-and-options).
 
 ## Source code
 

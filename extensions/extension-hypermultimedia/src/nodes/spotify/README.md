@@ -83,9 +83,12 @@ Layout options plus `theme` can be passed on the command.
 
 With `@tiptap/markdown` loaded:
 
-```md
+```text
 ![spotify](https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl)
+![spotify](https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M "Focus"){width=480}
 ```
+
+The title slot holds the caption, and the block holds the options. Import gives a track the 152 px track height and anything else 352 px, as paste does. Export compares against that height. Keys, values and defaults: [Caption and options](../../../docs/paste-and-import.md#caption-and-options).
 
 ## Source code
 
