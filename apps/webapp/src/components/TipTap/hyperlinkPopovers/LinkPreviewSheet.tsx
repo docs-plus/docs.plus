@@ -12,6 +12,7 @@ import { Fragment, useMemo, useState } from 'react'
 import { InternalLinkChip } from './components/InternalLinkChip'
 import { describeDestination, linkDestination } from './internalDocumentLink'
 import { buildLinkPreviewActions } from './linkPreviewActions'
+import { specialUrlIcon } from './previewShared'
 import { useLinkMetadata } from './useLinkMetadata'
 
 interface LinkPreviewSheetProps {
@@ -25,9 +26,12 @@ interface LinkPreviewSheetProps {
 const ExternalLinkHeader = ({ data: { href } }: LinkPreviewSheetProps) => {
   const { status, data } = useLinkMetadata(href)
 
-  // Our icon route only. A miss, or no http(s) origin, keeps the grey box.
+  // Our icon route only, and a route miss keeps the grey box. With no http(s) origin
+  // (mailto:, tel:, app schemes), the desktop preview's glyph.
   const [iconFailed, setIconFailed] = useState(false)
-  const imageUrl = iconFailed ? undefined : getSiteIconUrl(href)
+  const siteIconUrl = getSiteIconUrl(href)
+  const imageUrl = iconFailed ? undefined : siteIconUrl
+  const SpecialIcon = siteIconUrl ? undefined : specialUrlIcon(href)
   const title = data?.title || href
   const description = data?.description
   const showHrefLine = Boolean(data?.title && data.title !== href)
@@ -57,6 +61,8 @@ const ExternalLinkHeader = ({ data: { href } }: LinkPreviewSheetProps) => {
             className="size-5 rounded"
             onError={() => setIconFailed(true)}
           />
+        ) : SpecialIcon ? (
+          <SpecialIcon size={20} aria-hidden />
         ) : (
           <span className="bg-base-300 size-5 rounded" aria-hidden />
         )}

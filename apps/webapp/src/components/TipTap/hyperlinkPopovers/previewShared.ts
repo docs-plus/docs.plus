@@ -17,9 +17,9 @@ import { runInternalDocumentLink } from './internalDocumentLinkActions'
 import type { InternalDocumentLink, InternalLinkDescriptor } from './types'
 
 /**
- * Preview popover only; pad link icons come from `padLinkIcon`. `Partial` is deliberate. For
- * https URLs the route icon wins, so a web entry such as `github` shows its glyph only for app
- * schemes or when no route icon builds.
+ * Preview popover and phone sheet; pad link icons come from `padLinkIcon`. `Partial` is
+ * deliberate. For https URLs the route icon wins, so a web entry such as `github` shows its
+ * glyph only for app schemes or when no route icon builds.
  */
 const TYPE_TO_ICON: Partial<Record<SpecialUrlType, IconType>> = {
   email: Icons.mail,
@@ -67,6 +67,12 @@ const TYPE_TO_ICON: Partial<Record<SpecialUrlType, IconType>> = {
   amazon: Icons.externalLink
 }
 
+/** The glyph for a link with no http(s) origin (mailto:, tel:, app schemes), if it has one. */
+export const specialUrlIcon = (href: string): IconType | undefined => {
+  const specialInfo = getSpecialUrlInfo(href)
+  return specialInfo ? TYPE_TO_ICON[specialInfo.type] : undefined
+}
+
 export interface PreviewContext {
   href: string
   signal: AbortSignal
@@ -104,7 +110,6 @@ const newTabHint = (): string =>
 const createMetadataContent = (
   href: string
 ): { container: HTMLElement; titleLink: HTMLElement } => {
-  const specialInfo = getSpecialUrlInfo(href)
   const container = createHTMLElement('div', { className: 'metadata-content' })
 
   const titleLink = createHTMLElement('a', {
@@ -120,14 +125,11 @@ const createMetadataContent = (
 
   // A site icon when one loads; with no http(s) origin, the special-icon SVG below.
   const icon = createSiteIcon(href, 'metadata-image')
+  const SpecialIcon = icon ? undefined : specialUrlIcon(href)
   if (icon) {
     container.prepend(icon)
-  } else if (specialInfo) {
-    // Nothing to fetch a favicon from (mailto:, tel:, custom-scheme apps).
-    const Icon = TYPE_TO_ICON[specialInfo.type]
-    if (Icon) {
-      container.prepend(createSvgIcon(Icon))
-    }
+  } else if (SpecialIcon) {
+    container.prepend(createSvgIcon(SpecialIcon))
   }
 
   return { container, titleLink }
