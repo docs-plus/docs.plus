@@ -850,13 +850,24 @@ A crafted web page can no longer stall our server while the server builds its li
 
 An erased account can no longer write back its profile, its preferences or its devices for push alerts.
 
-### Faster and lighter
+### Faster and steadier
 
-A large document now opens faster, and its offline copy no longer grows on every load.
+The frame that first draws a large document is now shorter, and its offline copy in your browser no longer grows on every reload. The server reads a large document much faster. One crafted web page can no longer stall link previews.
 
-We measured the link icons on a 2,000-link test page against the same page with no icons. In a local dev build, the icons added about 26 ms to the frame that fills the page. The frame took 134.3 ms with the icons and 108.5 ms without, each the median of 5 runs. We ran it in Chromium 156 on an Apple M5 Max laptop ([#516](https://github.com/docs-plus/docs.plus/issues/516)).
+We timed the old code and the new code on the same work. Each row says where we measured it.
 
-The server now reads a large document's last saved version much faster. On a 5.36 MB document, the read fell from 165.13 ms to 2.87 ms on an Apple M5 Max laptop. We did not time production ([#198](https://github.com/docs-plus/docs.plus/issues/198)).
+|                                              | Before                | Now                         | Measured on                |
+| -------------------------------------------- | --------------------- | --------------------------- | -------------------------- |
+| Frame that first draws a 2,000-link document | 213 ms, no link icons | **129 ms**, with link icons | dev build, median of 5     |
+| Offline copy after 20 reloads                | 42 rows, 22.6 MB      | **1 row, 0.55 MB**          | headless Chrome, dev build |
+| Server read of a 5.36 MB document            | 165 ms                | **2.9 ms**                  | laptop, median of 7        |
+| One crafted web page against link previews   | 28 s                  | **about 30 ms**             | laptop, 5 runs             |
+
+All 3,101 tests pass on commit `aab825125`, run on the same laptop.
+
+"Laptop" means one Apple M5 Max with Bun 1.4.4. Every timing traces to a commit or an issue.
+
+On this page: [/demo/steadier](/demo/steadier).
 
 Read every change in the [GitHub Release](https://github.com/docs-plus/docs.plus/releases/tag/v2.3.0) and the [CHANGELOG](https://github.com/docs-plus/docs.plus/blob/main/CHANGELOG.md).
 
