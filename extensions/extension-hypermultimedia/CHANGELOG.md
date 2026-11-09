@@ -8,6 +8,14 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
+### Highlights
+
+- **Media through Markdown.** Every media node keeps its caption in the title slot, and its size, placement and player options in an option block: `![video](src "Caption"){width=800}`.
+- **Captions through HTML.** All nine nodes render a `<figure data-hm-figure>` with a `<figcaption>`, so a copied caption survives.
+- **Clear load errors.** A failed image names its site, and every failed media says what failed, in place of "Could not load media".
+- **Pasted images stay.** An `<img>` whose `src` has no file extension now survives paste and HTML import.
+- **Upgrading from 2.2.0.** Markdown export of a resized `audio` or `video` now writes the option block. Import still reads the old form. See [Migrating to the option block](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/migration.md#migrating-to-the-markdown-option-block).
+
 ### Added
 
 - Markdown carries the media caption in the CommonMark title slot, on all nine nodes, both ways: `![youtube](src "My caption")` ([#244](https://github.com/docs-plus/docs.plus/issues/244)). Before, Markdown dropped every caption. An image title now reads into the caption.
@@ -20,7 +28,7 @@ historical Conventional Commits format. The project adheres to
 
 - **Markdown export writes the option block, and only for a value that differs from the node default** ([#244](https://github.com/docs-plus/docs.plus/issues/244)). A `video` at 640 × 480 now exports as `![video](src)`. A resized one exports as `![video](src){width=400 height=300}`, where it wrote `![video](src width=400 height=300)` before. Import still reads the old in-parenthesis form. A parser of your own that reads our old export needs the new form. See [Migrating to the option block](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/migration.md#migrating-to-the-markdown-option-block).
 - Markdown export writes both `(` and `)` in a `src` as `%28` and `%29`. Before, only `)` was encoded, so an unbalanced `(` broke the image on import.
-- The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.0`. It was `^3.31.3`.
+- The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.2`. It was `^3.31.3`.
 - A popover reads its Tab cycle on each Tab, so a control that renders after it opens joins the cycle.
 - A failed image shows "Couldn’t load this image" and a second line that names the site, for example "From picsum.photos. The link may be broken." The broken-image glyph is hidden. Other media show "Couldn’t load this video", "…audio" or "…embed". Before, every kind showed "Could not load media" ([#637](https://github.com/docs-plus/docs.plus/issues/637)).
 

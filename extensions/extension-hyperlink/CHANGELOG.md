@@ -10,6 +10,15 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ## [Unreleased]
 
+### Highlights
+
+- **Link icons.** The `linkIcon` option draws an icon before every link. `linkIconMap` builds it from an offline domain table, and `linkIconFetcher` from your own favicon route.
+- **Hovercard.** The `hovercard` option shows a card when a mouse pointer rests on a link. Your `fetchMetadata` supplies the data, and `render` can draw your own card.
+- **Paste title.** The `pasteTitle` option names a pasted bare URL after its page, in one undo step. It keeps a look-alike address out of the title.
+- **One open hook.** The `navigate` option opens every link the package opens: Mod-click, a middle click, `Alt-Enter` and the preview's Open.
+- **Keyboard.** `Mod-k` inside a link opens its preview with focus inside, and Escape returns to the same caret.
+- **Upgrading from 2.2.0.** No export or option was removed, but 13 default behaviours changed. The first entry under Changed lists them.
+
 ### Added
 
 - `toStoredLink(value, { customValidator })` returns the link a form should store: the value when it is one whole link, without the trailing punctuation linkify leaves out, or `null`. `validateURL` is now `toStoredLink(…) !== null`, so the check and the stored value always agree ([#678](https://github.com/docs-plus/docs.plus/issues/678)).
@@ -59,7 +68,21 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ### Changed
 
-- The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.0`. It was `^3.31.3`.
+- **Upgrading from 2.2.0.** No export or option was removed. Check these if your app depends on the old behaviour. Each one has its own entry in this release:
+  - The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.2`.
+  - `customValidator` and `validate` get the value the form stores, and one submit can call `validate` twice.
+  - The preview popover is `role="dialog"`, named "Link preview". It was `role="toolbar"`.
+  - A pasted `<a href>` becomes `hyperlink` even when StarterKit's `Link` is registered.
+  - `validateURL` accepts only one whole link, with no raw space.
+  - Mod-click opens a new tab, not the preview.
+  - `Mod-k` inside a link opens the preview. Without `popovers.previewHyperlink`, it does nothing there.
+  - A read-only click with no preview slot ignores the link's `target`.
+  - The prebuilt preview's Open also applies the editor's `isAllowedUri`.
+  - Links show the text cursor at rest, and the hand only while Mod is held.
+  - `Alt-Enter` inside a link opens the link, so a host keymap no longer gets that key there.
+  - In a read-only editor, Enter on a focused link opens its preview.
+  - The `hyperlink` mark renders through a mark view. With `linkIcon` set, the link text sits in a `<span>` after the icon.
+- The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.2`. It was `^3.31.3`.
 - The `hyperlink` mark now renders through a mark view. With `linkIcon` unset, the `<a>` is the same as before.
 - With `linkIcon` set, an iconed `<a>` holds the icon first, then the link text in a `<span>`. No icon reaches `getHTML()`, Markdown, or the clipboard.
 - A click on a link icon puts the caret at the link start.

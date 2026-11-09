@@ -4,6 +4,12 @@ All notable changes to `@docs.plus/extension-mermaid` are documented here. The f
 
 ## [Unreleased]
 
+### Highlights
+
+- **Your own code block.** `mermaidNodeView(editor)` draws diagrams inside your own `codeBlock` node view, such as `CodeBlockLowlight`.
+- **Other code blocks pass through.** A code block that is not `mermaid` now goes to the next plugin's node view.
+- **A clear warning.** In development, a warning appears when another node view owns `codeBlock` and no diagram can draw.
+
 ### Added
 
 - `mermaidNodeView(editor)` draws diagrams inside your own `codeBlock` node view. The guide has a recipe for `CodeBlockLowlight.extend({ addNodeView })` ([#628](https://github.com/docs-plus/docs.plus/issues/628)).
@@ -11,7 +17,7 @@ All notable changes to `@docs.plus/extension-mermaid` are documented here. The f
 
 ### Changed
 
-- The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.0`. It was `^3.31.3`.
+- The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.2`. It was `^3.31.3`.
 - `pele` stays at `1.8.0`. Version `1.9.0` changes diagram labels. This package does not take that yet.
 
 ### Fixed
