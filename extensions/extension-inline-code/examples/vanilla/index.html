@@ -29,12 +29,13 @@
       You should see one paragraph, with
       <code>render()</code>
       on a grey background. Type text between single backticks. When you type the closing backtick,
-      both backticks go away, the text becomes code, and the next character you type is plain.
-      Select a word and press
+      both backticks go away and the text becomes code. In any paragraph, the next character you
+      type is plain. Select a word and press
       <code>Mod-e</code>
       (Cmd on macOS, Ctrl elsewhere) to toggle the mark. Text with backtick pairs that you paste
       from a plain-text source or a web page converts too. A paste copied from a Tiptap or
-      ProseMirror editor keeps its backticks. An empty pair or a double-backtick span stays literal.
+      ProseMirror editor keeps its backticks. When you type or paste, an empty pair, a
+      double-backtick span, and any pair inside a code block stay literal.
     </p>
     <div id="editor"></div>
     <script type="module" src="/main.ts"></script>
