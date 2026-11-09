@@ -2,8 +2,10 @@ import {
   type ConversionWarning,
   exportDocument,
   type ExportFormat,
+  importCapsHint,
   importDocument,
   type ImportedDocument,
+  importTooBigMessage,
   pickExportTarget
 } from '@api'
 import { isVisitor } from '@components/auth/isVisitor'
@@ -26,6 +28,8 @@ interface ImportExportSectionProps {
   documentTitle: string
   /** The read-only lock and the owner gate, already resolved by the panel. */
   editingLocked: boolean
+  /** Picks the cap copy only. The server decides who owns the document. */
+  isOwner: boolean
   isSheet: boolean
   onPrint: () => void
 }
@@ -130,6 +134,7 @@ const ImportExportSection = ({
   documentId,
   documentTitle,
   editingLocked,
+  isOwner,
   isSheet,
   onPrint
 }: ImportExportSectionProps) => {
@@ -167,6 +172,12 @@ const ImportExportSection = ({
   const convert = async (file: File) => {
     setStage({ step: 'converting', filename: file.name })
     try {
+      // Refused before the upload, so a person never waits on a file the server will reject.
+      const tooBig = await importTooBigMessage(file, isOwner)
+      if (tooBig) {
+        setStage({ step: 'failed', message: tooBig })
+        return
+      }
       const result = await importDocument(documentId, file)
       // Read once at staging. The replace picks again on the pad as it is then.
       const chatLine = editor
@@ -281,6 +292,7 @@ const ImportExportSection = ({
             <p className="text-base-content/60 text-meta mt-2">
               Word (.docx) or Markdown (.md). You’ll see what changes before anything is replaced.
             </p>
+            <p className="text-base-content/60 text-meta mt-1">{importCapsHint(isOwner)}</p>
             <Button
               variant="cancel"
               size="sm"

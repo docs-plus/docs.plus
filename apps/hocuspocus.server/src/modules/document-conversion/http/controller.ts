@@ -1,4 +1,5 @@
 import type { Context } from 'hono'
+import { bodyLimit } from 'hono/body-limit'
 import type { Logger } from 'pino'
 import slugify from 'slugify'
 
@@ -6,10 +7,13 @@ import type { PrismaClient } from '../../../generated/prisma/client'
 import { fail, ok } from '../../../http/envelope'
 import { decideDocumentAccess } from '../../../lib/documentAccess'
 import { ydocToPmJson } from '../../../lib/nested-flat-migration'
+import { isDocumentOwner } from '../../../lib/ownerAccess'
 import { findHeadRow } from '../../document-content/infra/contentStore'
+import { MAX_CONTENT_DEPTH, MAX_CONTENT_NODES } from '../../document-content/types'
 import { exportDocx } from '../domain/docxExport'
 import { importDocx } from '../domain/docxImport'
 import { titleHeadingText } from '../domain/ensureTitleHeading'
+import { checkImportSize, type ImportSizeRefusal } from '../domain/importGuards'
 import { exportMarkdown } from '../domain/markdownExport'
 import { importMarkdown } from '../domain/markdownImport'
 import { exportOdt } from '../domain/odtExport'
@@ -17,9 +21,12 @@ import { zipInflateSize } from '../domain/zipInflateSize'
 import { createImageUpload } from '../infra/imageUpload'
 import type { ExportFormat, ImportFormat, TiptapDocJson } from '../types'
 import {
+  IMPORT_MULTIPART_SLACK_BYTES,
   MAX_IMPORT_BYTES,
+  MAX_IMPORT_YJS_BYTES,
   MAX_INFLATED_IMPORT_BYTES,
   MAX_MARKDOWN_CHARS,
+  MAX_OWNER_IMPORT_BYTES,
   startsWith
 } from '../types'
 
@@ -195,6 +202,33 @@ const IMPORT_FAILED: Record<ImportFormat, string> = {
   md: 'The upload could not be read as Markdown'
 }
 
+const uploadCap = (isOwner: boolean): number =>
+  isOwner ? MAX_OWNER_IMPORT_BYTES : MAX_IMPORT_BYTES
+
+const uploadTooLarge = (c: Context, isOwner: boolean): Response =>
+  fail(
+    c,
+    413,
+    'PAYLOAD_TOO_LARGE',
+    isOwner
+      ? `The upload exceeds the owner's ${MAX_OWNER_IMPORT_BYTES}-byte limit`
+      : `The upload exceeds the ${MAX_IMPORT_BYTES}-byte limit; only the document owner may import up to ${MAX_OWNER_IMPORT_BYTES} bytes`
+  )
+
+// Built per request, after the owner is known, so nobody buffers past their own cap.
+// It reads Content-Length when there is one, and counts a chunked body as it arrives.
+const refuseOverCap = async (c: Context, isOwner: boolean): Promise<Response | null> =>
+  (await bodyLimit({
+    maxSize: uploadCap(isOwner) + IMPORT_MULTIPART_SLACK_BYTES,
+    onError: (limited) => uploadTooLarge(limited, isOwner)
+  })(c, async () => {})) || null
+
+const SIZE_REFUSALS: Record<ImportSizeRefusal, string> = {
+  TOO_MANY_NODES: `The import holds more than ${MAX_CONTENT_NODES} nodes, the most one document may hold`,
+  TOO_DEEP: `The import nests deeper than ${MAX_CONTENT_DEPTH} levels, the most one document may hold`,
+  TOO_LARGE_TO_OPEN: `The import encodes past ${MAX_IMPORT_YJS_BYTES} bytes, so a browser could not load the document`
+}
+
 export interface ImportControllerDeps {
   prisma: PrismaClient
   logger: Logger
@@ -216,6 +250,11 @@ export const createPostImportHandler =
     const denied = deny(c, meta, 'write')
     if (denied) return denied
 
+    // The owner flag comes from the stored `ownerId`, never from the client.
+    const isOwner = isDocumentOwner(meta, c.get('userId'))
+    const overCap = await refuseOverCap(c, isOwner)
+    if (overCap) return overCap
+
     let form: FormData
     try {
       form = await c.req.formData()
@@ -227,14 +266,7 @@ export const createPostImportHandler =
     if (!(upload instanceof File)) {
       return fail(c, 400, 'VALIDATION_ERROR', `Expected a file in the \`${UPLOAD_FIELD}\` field`)
     }
-    if (upload.size > MAX_IMPORT_BYTES) {
-      return fail(
-        c,
-        413,
-        'PAYLOAD_TOO_LARGE',
-        `The upload exceeds the ${MAX_IMPORT_BYTES}-byte limit`
-      )
-    }
+    if (upload.size > uploadCap(isOwner)) return uploadTooLarge(c, isOwner)
 
     const buffer = Buffer.from(await upload.arrayBuffer())
     const kind = sniffUpload(buffer)
@@ -266,8 +298,8 @@ export const createPostImportHandler =
       if (markdown === null) {
         return fail(c, 422, 'UNPROCESSABLE_ENTITY', 'The upload is neither a .docx file nor text')
       }
-      // A reject, never a truncate: `marked` is quadratic (954 KiB blocks the
-      // event loop for ~144s), and half a document is worse than a refused one.
+      // A reject, never a truncate, for owner and non-owner alike. Hostile Markdown
+      // past this blocks the event loop for minutes (bench-import.ts).
       if (markdown.length > MAX_MARKDOWN_CHARS) {
         return fail(
           c,
@@ -286,6 +318,9 @@ export const createPostImportHandler =
               uploadImage: createImageUpload({ documentId, publicBaseUrl: deps.mediaPublicBaseUrl })
             })
           : importMarkdown(markdown, meta.slug)
+      // Refused here, the replace never reaches the room, so nothing is saved.
+      const refusal = checkImportSize(result.content)
+      if (refusal) return fail(c, 413, refusal, SIZE_REFUSALS[refusal])
       return ok(c, result)
     } catch (error) {
       // A truncated or re-zipped file passes the magic-byte sniff and only fails

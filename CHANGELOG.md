@@ -22,6 +22,15 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 - Bold, italic, strike, highlight and links can now sit on inline code, as in Notion. Before,
   Markdown import dropped the bold from ``**`x`**`` and the MCP refused the write ([#721](https://github.com/docs-plus/docs.plus/issues/721)).
+- Replace with a file now has a cap per person. The document owner may upload a Word file of up to
+  40 MB; everyone else keeps 10 MB. Markdown stays at 65,536 characters for everyone, because a
+  bench showed larger Markdown blocks the server ([#722](https://github.com/docs-plus/docs.plus/issues/722)).
+
+### Security
+
+- Every import is now refused when it holds more than 50,000 nodes, nests deeper than 100
+  levels, or when its saved state would pass 12 MiB. A larger document could not open in a browser
+  ([#722](https://github.com/docs-plus/docs.plus/issues/722)).
 
 ### Documentation
 

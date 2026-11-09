@@ -1,4 +1,4 @@
-import type { TiptapDocJson } from '../document-content/types'
+import { MAX_WS_MESSAGE_BYTES, type TiptapDocJson } from '../document-content/types'
 
 export type { TiptapDocJson }
 
@@ -36,18 +36,31 @@ export interface TitleHeadingResult {
   branch: TitleHeadingBranch
 }
 
-/** Matches the pad's media upload cap (`DO_STORAGE_MAX_FILE_SIZE`, 10 MB). */
+/** Upload cap for a caller who may replace the document but does not own it.
+ *  Matches the pad's media upload cap (`DO_STORAGE_MAX_FILE_SIZE`, 10 MB). */
 export const MAX_IMPORT_BYTES = 10 * 1024 * 1024
 
+/** Upload cap for the document owner (maintainer ruling on #722, 2026-11-09). */
+export const MAX_OWNER_IMPORT_BYTES = 40 * 1024 * 1024
+
+/** Multipart boundary and header overhead, so an upload exactly at a cap is not refused. */
+export const IMPORT_MULTIPART_SLACK_BYTES = 1024 * 1024
+
 // A zip bounds its compressed size, never its inflated one: 200 KiB of deflated
-// zeroes reach 200 MiB, and mammoth's unzip has no cap of its own. Word files
-// hold images, so the ratio has to be generous — it only has to refuse a bomb.
+// zeroes reach 200 MiB, and mammoth's unzip has no cap of its own. The owner gets
+// no more until #724: 40 MiB of unpacked Word text already peaks near 820 MiB of
+// RSS against a 512M container (bench-import.ts docx).
 export const MAX_INFLATED_IMPORT_BYTES = 4 * MAX_IMPORT_BYTES
 
-// `marked` parses in quadratic time (64 KiB ≈ 0.6s, 954 KiB ≈ 144s), so an
-// oversized body is rejected as `too-large`. Never truncate to fit: a silently
-// halved document is worse than a refused one.
+// A reject, never a truncate: a silently halved document is worse than a refused
+// one. Applies to every caller. Bigger hostile Markdown blocks REST for minutes
+// or passes 1 GiB of memory (scripts/bench-import.ts, #722).
 export const MAX_MARKDOWN_CHARS = 64 * 1024
+
+// A browser applies a replace as one Yjs update, and a larger saved state cannot
+// load. The 4 MiB left under the socket cap covers the replaced document's delete
+// set and the browser's own encoding.
+export const MAX_IMPORT_YJS_BYTES = MAX_WS_MESSAGE_BYTES - 4 * 1024 * 1024
 
 // `encodeContent` validates content expressions, not attribute values, so a stored
 // `colspan` is unbounded. Writer tops out at 64 columns and Word at 63, so no span

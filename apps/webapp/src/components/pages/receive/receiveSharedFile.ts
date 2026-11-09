@@ -1,4 +1,10 @@
-import { ConversionError, importDocument, type ImportedDocument } from '@api'
+import {
+  ConversionError,
+  importDocument,
+  type ImportedDocument,
+  importTooBigMessage,
+  WORD_DOCUMENT_TYPE
+} from '@api'
 import { applyImportedContent } from '@components/TipTap/toolbar/desktop/applyImportedContent'
 import * as toast from '@components/toast'
 import { isDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
@@ -17,12 +23,12 @@ const SHARE_KEY = '/__docsplus/shared-file'
 // Holds the stash this tab already started, so a reload cannot import twice.
 // It also keeps the created pad, so a retry reuses it instead of making another.
 const CLAIM_KEY = 'docsplus:receive-claim'
-// Copies MAX_IMPORT_BYTES in the backend document-conversion module.
-const MAX_SHARED_BYTES = 10 * 1024 * 1024
 const APPLY_TIMEOUT_MS = 60_000
+// The sharer owns the pad this creates, so the owner's caps apply.
+const SHARER_OWNS_NEW_PAD = true
 const IMPORTABLE_NAME = /\.(docx|md|markdown|txt)$/i
 const IMPORTABLE_TYPES = new Set([
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  WORD_DOCUMENT_TYPE,
   'text/markdown',
   'text/x-markdown',
   'text/plain'
@@ -206,16 +212,12 @@ export const runSharedImport = async (
   if (!shared) return { kind: 'empty' }
   const { file } = shared
   if (!authStore.getState().session) return { kind: 'signed-out', filename: file.name }
-  if (file.size > MAX_SHARED_BYTES || !isImportableFile(file)) {
+  const refusal = isImportableFile(file)
+    ? await importTooBigMessage(file, SHARER_OWNS_NEW_PAD)
+    : `docs.plus can import ${IMPORTABLE_KINDS} files only.`
+  if (refusal) {
     await clearSharedFile()
-    return {
-      kind: 'failed',
-      message:
-        file.size > MAX_SHARED_BYTES
-          ? `This file is larger than ${MAX_SHARED_BYTES / 1024 / 1024} MB, so it can’t be imported.`
-          : `docs.plus can import ${IMPORTABLE_KINDS} files only.`,
-      canRetry: false
-    }
+    return { kind: 'failed', message: refusal, canRetry: false }
   }
   const claim = readClaim()
   // A claim without a pad means a run stopped mid-create; its pad may exist.

@@ -11,7 +11,7 @@ import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import { Icons } from '@icons'
 import { useAuthStore, useStore } from '@stores'
 import { type PanelSurfaceVariant } from '@types'
-import { canEditDocumentMetadata } from '@utils/isDocumentOwner'
+import { canEditDocumentMetadata, isDocumentOwner } from '@utils/isDocumentOwner'
 import React, { useState } from 'react'
 
 import { useDocumentFollow } from '../useDocumentFollow'
@@ -37,6 +37,7 @@ const DocumentSettingsPanel = ({ variant = 'popover' }: DocumentSettingsPanelPro
   const canEditMetadata = useStore((state) =>
     canEditDocumentMetadata(state.settings.metadata, profileId)
   )
+  const isOwner = useStore((state) => isDocumentOwner(state.settings.metadata, profileId))
 
   const [docDescription, setDocDescription] = useState(docMetadata.description || '')
   const { isPending, mutate } = useUpdateDocMetadata()
@@ -171,6 +172,7 @@ const DocumentSettingsPanel = ({ variant = 'popover' }: DocumentSettingsPanelPro
               documentId={docMetadata.documentId}
               documentTitle={docMetadata.title || ''}
               editingLocked={editingLocked}
+              isOwner={isOwner}
               isSheet={isSheet}
               onPrint={handlePrint}
             />

@@ -71,6 +71,11 @@ export const MAX_CONTENT_BYTES = 5 * 1024 * 1024
 export const MAX_CONTENT_NODES = 50_000
 export const MAX_CONTENT_DEPTH = 100
 
+// Bun 1.4.4 enforces `ws` maxPayload (100 MiB by default); up to 1.4.3 Bun itself
+// refused anything over 16 MiB. Keep the old bound, which still sits above the
+// largest client sync message (about one document's size).
+export const MAX_WS_MESSAGE_BYTES = 16 * 1024 * 1024
+
 /** REST→WS hop budget. `replace` is idempotent on retry; `append` is at-least-once. */
 export const WS_APPLY_TIMEOUT_MS = 30_000
 

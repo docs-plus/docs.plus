@@ -1,4 +1,5 @@
 export { ConversionError } from './conversionErrors'
 export * from './exportDocument'
+export * from './importCaps'
 export * from './importDocument'
 export * from './types'

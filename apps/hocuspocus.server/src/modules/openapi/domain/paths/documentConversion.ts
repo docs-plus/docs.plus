@@ -1,9 +1,12 @@
 import { documentIdParamSchema } from '../../../document-content/http/schema'
+import { MAX_CONTENT_DEPTH, MAX_CONTENT_NODES } from '../../../document-content/types'
 import { exportQuerySchema } from '../../../document-conversion/http/schema'
 import {
   MAX_IMPORT_BYTES,
+  MAX_IMPORT_YJS_BYTES,
   MAX_INFLATED_IMPORT_BYTES,
-  MAX_MARKDOWN_CHARS
+  MAX_MARKDOWN_CHARS,
+  MAX_OWNER_IMPORT_BYTES
 } from '../../../document-conversion/types'
 import type { JsonSchema, OpenApiPaths, SecurityRequirement } from '../../types'
 import { envelopeResponse, rateLimitedRef } from '../components'
@@ -97,7 +100,7 @@ export const documentConversionPaths: OpenApiPaths = {
     post: {
       operationId: 'importDocument',
       summary: 'Convert an uploaded Word or Markdown file to document content',
-      description: `Reads a \`.docx\` or a Markdown file and returns Tiptap JSON. Takes the same credentials as export and gates on write access on top of them: a read-only document refuses everyone but its owner with a 403, since nobody else can apply the result and the conversion costs real CPU. **No database write and no content mutation** — apply the result with \`PATCH /api/documents/{documentId}/content\`, which enforces the read-only lock on the write itself. A Markdown paragraph that is only a media URL, or a provider address written as an image, becomes the matching player node so the JSON composes with that PATCH. Picture width and height stay empty on this JSON; Settings replace writes natural size in the browser. Markdown carries no \`toc-id\`, so applying it with \`mode=replace\` re-keys every heading and orphans that heading's chat channel, fold state and \`?id=\` links; prefer \`mode=append\`. Both formats arrive as \`multipart/form-data\` — there is no raw-body variant, so one field, one size limit and one sniff cover every upload. The bytes are identified by their container, not their extension or declared MIME type: a zip is \`.docx\`, and anything else must decode as UTF-8 text. Embedded Word images are rehosted through the media route, which is the one side effect: those objects are written to storage even though the document is not. When the server has no public media URL configured each image is reported as a \`media-placeholder-dropped\` warning and the text still imports. Capped at ${MAX_IMPORT_BYTES} bytes uploaded and ${MAX_INFLATED_IMPORT_BYTES} bytes unpacked, and Markdown additionally at ${MAX_MARKDOWN_CHARS} characters.`,
+      description: `Reads a \`.docx\` or a Markdown file and returns Tiptap JSON. Takes the same credentials as export and gates on write access on top of them: a read-only document refuses everyone but its owner with a 403, since nobody else can apply the result and the conversion costs real CPU. **No database write and no content mutation** — apply the result with \`PATCH /api/documents/{documentId}/content\`, which enforces the read-only lock on the write itself. A Markdown paragraph that is only a media URL, or a provider address written as an image, becomes the matching player node so the JSON composes with that PATCH. Picture width and height stay empty on this JSON; Settings replace writes natural size in the browser. Markdown carries no \`toc-id\`, so applying it with \`mode=replace\` re-keys every heading and orphans that heading's chat channel, fold state and \`?id=\` links; prefer \`mode=append\`. Both formats arrive as \`multipart/form-data\` — there is no raw-body variant, so one field, one size limit and one sniff cover every upload. The bytes are identified by their container, not their extension or declared MIME type: a zip is \`.docx\`, and anything else must decode as UTF-8 text. Embedded Word images are rehosted through the media route, which is the one side effect: those objects are written to storage even though the document is not. When the server has no public media URL configured each image is reported as a \`media-placeholder-dropped\` warning and the text still imports. The document owner may upload ${MAX_OWNER_IMPORT_BYTES} bytes and everyone else ${MAX_IMPORT_BYTES}. A \`.docx\` may unpack to ${MAX_INFLATED_IMPORT_BYTES} bytes for every caller. Markdown is capped at ${MAX_MARKDOWN_CHARS} characters for every caller. A result over ${MAX_CONTENT_NODES} nodes, nested deeper than ${MAX_CONTENT_DEPTH} levels, or one that encodes past ${MAX_IMPORT_YJS_BYTES} bytes of Yjs state, is refused, because a browser could not apply or load it.`,
       tags,
       security,
       parameters: documentIdParam,
@@ -127,7 +130,7 @@ export const documentConversionPaths: OpenApiPaths = {
           content: { 'application/json': { schema: dataEnvelope(importResult) } }
         },
         '413': envelopeResponse(
-          `The upload exceeds the ${MAX_IMPORT_BYTES}-byte cap, unpacks past ${MAX_INFLATED_IMPORT_BYTES} bytes, or is Markdown longer than ${MAX_MARKDOWN_CHARS} characters — the parser is quadratic, so an oversized body is refused rather than truncated.`
+          `\`PAYLOAD_TOO_LARGE\`: the upload exceeds the caller's cap (${MAX_OWNER_IMPORT_BYTES} bytes for the owner, ${MAX_IMPORT_BYTES} for everyone else), unpacks past ${MAX_INFLATED_IMPORT_BYTES} bytes, or is Markdown longer than ${MAX_MARKDOWN_CHARS} characters. Markdown is refused, never truncated. \`TOO_MANY_NODES\`: the result holds more than ${MAX_CONTENT_NODES} nodes. \`TOO_DEEP\`: the result nests deeper than ${MAX_CONTENT_DEPTH} levels. \`TOO_LARGE_TO_OPEN\`: the result encodes past ${MAX_IMPORT_YJS_BYTES} bytes, so a browser could not load it.`
         ),
         '415': envelopeResponse('A legacy OLE2 `.doc`. Re-save it as `.docx`.'),
         '422': envelopeResponse(

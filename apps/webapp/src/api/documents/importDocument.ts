@@ -30,7 +30,11 @@ export const importDocument = async (documentId: string, file: File): Promise<Im
     throw new Error(NETWORK_ERROR_MESSAGE)
   }
 
-  if (!response.ok) throw new ConversionError(response.status)
+  if (!response.ok) {
+    // A proxy 413 has no JSON body, so the status alone still picks a message.
+    const failed = await response.json().catch(() => null)
+    throw new ConversionError(response.status, failed?.error?.code)
+  }
 
   const payload = await response.json()
   if (!payload?.success) throw new ConversionError(response.status)

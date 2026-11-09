@@ -47,6 +47,7 @@ import { createRevertCooldown } from './lib/revertCooldown'
 import { admitWatchBytes, watchOverBudget } from './lib/watchBudget'
 import { resolveWsAccess } from './lib/wsAccess'
 import * as documentContent from './modules/document-content'
+import { MAX_WS_MESSAGE_BYTES } from './modules/document-content/types'
 import type { RevertOutcome, VersionFailureReason, VersionOps } from './modules/document-versions'
 import * as documentVersions from './modules/document-versions'
 import { MAX_VERSION_NUMBER } from './modules/document-versions/types'
@@ -60,11 +61,6 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 // about 500 B per person, so a big room must fit. A throw here closes the
 // document connection, so the budget sits well above any real frame.
 const MAX_AWARENESS_FRAME_BYTES = 64 * 1024
-
-// Bun 1.4.4 enforces `ws` maxPayload (100 MiB by default); up to 1.4.3 Bun itself
-// refused anything over 16 MiB. Keep the old bound, which still sits above the
-// largest client sync message (about one document's size).
-const MAX_WS_MESSAGE_BYTES = 16 * 1024 * 1024
 
 // Bracket load/store hooks keyed by the Document object. WeakMap means an aborted
 // load that never reaches the `after` hook is GC'd instead of leaking a timer.

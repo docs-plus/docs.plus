@@ -18,6 +18,9 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- The Replace with a file card shows the caps that apply to you, and checks the file before upload.
+  The owner may send a Word file of up to 40 MB; everyone else 10 MB. Sharing a file into the
+  installed app uses the owner caps ([#722](https://github.com/docs-plus/docs.plus/issues/722)).
 - In the pad, bold, italic, strike, highlight and links can sit on inline code. Inline code still
   turns an old `code` span into inline code ([#721](https://github.com/docs-plus/docs.plus/issues/721)).
 

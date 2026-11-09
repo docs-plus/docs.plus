@@ -18,8 +18,20 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Changed
 
+- `POST /api/documents/:docId/import` caps a Word upload by caller: 40 MiB for the owner and
+  10 MiB for everyone else. The unpacked text stays capped at 40 MiB for both. The route's body
+  limit follows the owner cap. `MAX_MARKDOWN_CHARS` stays 64 KiB
+  ([#722](https://github.com/docs-plus/docs.plus/issues/722)).
 - Markdown export keeps bold, italic, strike and highlight outside the backticks of inline code, so
   a round trip keeps them ([#721](https://github.com/docs-plus/docs.plus/issues/721)).
+
+### Security
+
+- The import route refuses a result over `MAX_CONTENT_NODES` (`TOO_MANY_NODES`), deeper than
+  `MAX_CONTENT_DEPTH` (`TOO_DEEP`), or whose Yjs state would pass `MAX_WS_MESSAGE_BYTES` less 4 MiB
+  (`TOO_LARGE_TO_OPEN`). A larger document could not open in a browser.
+  `scripts/bench-import.ts` holds the adversarial bench
+  ([#722](https://github.com/docs-plus/docs.plus/issues/722)).
 
 ## [2.3.0] — 2026-11-09
 

@@ -1,6 +1,6 @@
 import { crc32, deflateRawSync } from 'node:zlib'
 
-interface ZipEntry {
+export interface ZipEntry {
   name: string
   data: Uint8Array | string
   /** ODF requires the `mimetype` part uncompressed so readers can sniff it from the raw bytes. */

@@ -993,7 +993,27 @@ The strict decode is Markdown's real gate. A BOM is stripped, so a Windows-writt
 
 > **Any non-`.docx` zip lands on the Word error.** ODT is a zip, so re-importing your own ODT export returns `422 The upload could not be read as a Word document`. That is the sniff working, not a mis-detected file — ODT import does not exist.
 
-**Three different `413`s.** Any upload over 10 MiB (`MAX_IMPORT_BYTES`, matching the pad's media cap) is refused on size. A `.docx` whose ZIP directory declares more than 40 MiB unpacked is refused before the converter opens it. A zip bounds its compressed size, never its inflated one, and 200 KiB of deflated padding reaches 200 MiB. Markdown is additionally capped at 65 536 characters, because `marked` parses in quadratic time — 64 KiB takes ~0.6 s, 954 KiB blocks the event loop for ~144 s. That cap rejects; it never truncates, since half a document is worse than a refused one. Convert the file to `.docx` to get past it.
+**The size caps depend on who imports** (maintainer ruling on #722, 2026-11-09). The server reads the document's stored owner; a client flag never counts.
+
+| Caller             | Upload                                           | Unpacked `.docx` | Markdown          |
+| ------------------ | ------------------------------------------------ | ---------------- | ----------------- |
+| The document owner | 40 MiB (`MAX_OWNER_IMPORT_BYTES`)                | 40 MiB           | 65 536 characters |
+| Anyone else        | 10 MiB (`MAX_IMPORT_BYTES`, the pad's media cap) | 40 MiB           | 65 536 characters |
+
+The unpacked cap is the same for the owner until [#724](https://github.com/docs-plus/docs.plus/issues/724). 40 MiB of unpacked Word text already costs about 820 MiB of memory, and the converter runs before the result guards below.
+
+**The body limit follows the caller.** The server reads the document's owner before it reads the body, then limits the body to that caller's cap. It reads `Content-Length` when the request has one. A chunked body is counted as it arrives and refused at the cap.
+
+**Six different `413`s.**
+
+- `PAYLOAD_TOO_LARGE`: the upload is over the caller's cap. Nobody's body is read past their own cap.
+- `PAYLOAD_TOO_LARGE`: a `.docx` that really unpacks past 40 MiB is refused before the converter opens it. A zip bounds its compressed size, never its inflated one, and 200 KiB of deflated padding reaches 200 MiB.
+- `PAYLOAD_TOO_LARGE`: Markdown over 65 536 characters, for every caller. That cap rejects; it never truncates, since half a document is worse than a refused one. Larger hostile Markdown blocks the server for minutes or passes 1 GiB of memory (`scripts/bench-import.ts`). Convert the file to `.docx` to get past it.
+- `TOO_MANY_NODES`: the converted result holds more than 50 000 nodes (`MAX_CONTENT_NODES`), the cap on every content write.
+- `TOO_DEEP`: the converted result nests deeper than 100 levels (`MAX_CONTENT_DEPTH`), the same cap as every content write.
+- `TOO_LARGE_TO_OPEN`: the result encodes to more than 12 MiB of Yjs state. A browser applies the replace as one update, and a socket message over 16 MiB (`MAX_WS_MESSAGE_BYTES`) is refused, so the document could not load. The 4 MiB margin covers the replaced document's delete set.
+
+The last three run on the result of both formats, before the server answers, so a refused import is never applied and never saved. Pictures a refused Word file held are already rehosted, as with any discarded import.
 
 Images embedded in a Word file are re-hosted through [the media route](#post-apipluginshypermultimediadocumentid) so the result carries URLs the editor can parse instead of `data:` payloads. This needs `PUBLIC_RESTAPI_URL` — see [ENV.md](./ENV.md#public-origin). Without it, every image becomes a warning and the text still imports.
 
@@ -1049,17 +1069,20 @@ An empty `warnings` array does not prove that nothing was lost. The converter dr
 
 ### Status codes
 
-| Status | Code                     | When                                                                                                                           |
-| ------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `400`  | `VALIDATION_ERROR`       | Malformed `documentId`, unknown `format`, a body that is not `multipart/form-data`, or no `documentFile` field                 |
-| `401`  | `UNAUTHORIZED`           | Missing, wrong, or user-JWT bearer; also when `SUPABASE_SERVICE_ROLE_KEY` is unset (fails closed)                              |
-| `404`  | `NOT_FOUND`              | No metadata row, or the document is soft-deleted                                                                               |
-| `413`  | `PAYLOAD_TOO_LARGE`      | Upload over 10 MiB, a `.docx` declaring over 40 MiB unpacked, or Markdown over 65 536 characters                               |
-| `415`  | `UNSUPPORTED_MEDIA_TYPE` | Import of a legacy OLE2 `.doc`                                                                                                 |
-| `422`  | `UNPROCESSABLE_ENTITY`   | Import of a file that is neither a zip nor UTF-8 text, or one too damaged for its converter to open. Retrying will not fix it  |
-| `429`  | `RATE_LIMIT_EXCEEDED`    | Global rate limiter. The house envelope; the retry seconds ride the `Retry-After` header — see [Rate limiting](#rate-limiting) |
-| `500`  | `INTERNAL_SERVER_ERROR`  | Export only: the stored snapshot could not be decoded, or the converter threw                                                  |
-| `503`  | `AUTH_UNAVAILABLE`       | Supabase token verification was unreachable                                                                                    |
+| Status | Code                     | When                                                                                                                                    |
+| ------ | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  | `VALIDATION_ERROR`       | Malformed `documentId`, unknown `format`, a body that is not `multipart/form-data`, or no `documentFile` field                          |
+| `401`  | `UNAUTHORIZED`           | Missing, wrong, or user-JWT bearer; also when `SUPABASE_SERVICE_ROLE_KEY` is unset (fails closed)                                       |
+| `404`  | `NOT_FOUND`              | No metadata row, or the document is soft-deleted                                                                                        |
+| `413`  | `PAYLOAD_TOO_LARGE`      | Upload over the caller's cap (40 MiB owner, 10 MiB anyone else), a `.docx` that unpacks past 40 MiB, or Markdown over 65 536 characters |
+| `413`  | `TOO_MANY_NODES`         | Import result over 50 000 nodes                                                                                                         |
+| `413`  | `TOO_DEEP`               | Import result nested deeper than 100 levels                                                                                             |
+| `413`  | `TOO_LARGE_TO_OPEN`      | Import result over 12 MiB of encoded Yjs state                                                                                          |
+| `415`  | `UNSUPPORTED_MEDIA_TYPE` | Import of a legacy OLE2 `.doc`                                                                                                          |
+| `422`  | `UNPROCESSABLE_ENTITY`   | Import of a file that is neither a zip nor UTF-8 text, or one too damaged for its converter to open. Retrying will not fix it           |
+| `429`  | `RATE_LIMIT_EXCEEDED`    | Global rate limiter. The house envelope; the retry seconds ride the `Retry-After` header — see [Rate limiting](#rate-limiting)          |
+| `500`  | `INTERNAL_SERVER_ERROR`  | Export only: the stored snapshot could not be decoded, or the converter threw                                                           |
+| `503`  | `AUTH_UNAVAILABLE`       | Supabase token verification was unreachable                                                                                             |
 
 ## MCP connector
 

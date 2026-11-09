@@ -1,13 +1,11 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
-import { bodyLimit } from 'hono/body-limit'
 import type { Logger } from 'pino'
 
 import { requireServiceRoleOrUser } from '../../../api/middleware/auth'
 import type { PrismaClient } from '../../../generated/prisma/client'
-import { fail, houseEnvelopeHook } from '../../../http/envelope'
+import { houseEnvelopeHook } from '../../../http/envelope'
 import { documentIdParamSchema } from '../../document-content/http/schema'
-import { MAX_IMPORT_BYTES } from '../types'
 import { createGetExportHandler, createPostImportHandler } from './controller'
 import { exportQuerySchema } from './schema'
 
@@ -17,14 +15,6 @@ export interface RouterDeps {
   mediaPublicBaseUrl: string | null
   mediaCookieFor: (uid: string) => string | null
 }
-
-// Sized above the file cap so multipart boundary and header overhead cannot turn
-// an upload exactly at the limit into the blunt streaming 413.
-const uploadBodyLimit = bodyLimit({
-  maxSize: MAX_IMPORT_BYTES + 1_048_576,
-  onError: (c) =>
-    fail(c, 413, 'PAYLOAD_TOO_LARGE', `The upload exceeds the ${MAX_IMPORT_BYTES}-byte limit`)
-})
 
 /**
  * Both paths are two-segment, so neither can shadow the legacy `/:docName` read.
@@ -51,7 +41,6 @@ export const createRouter = (deps: RouterDeps): Hono => {
   router.post(
     '/:documentId/import',
     requireServiceRoleOrUser,
-    uploadBodyLimit,
     zValidator('param', documentIdParamSchema, houseEnvelopeHook),
     createPostImportHandler({
       prisma: deps.prisma,
