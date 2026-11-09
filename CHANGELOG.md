@@ -10,6 +10,21 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ## [Unreleased]
 
+### Documentation
+
+- The demo's 2.3.0 section names more fixes: the link rename, the empty title heading, imported
+  links, phone link sheets, the iPhone chat icon, Google sign-in branding, the title-row Delete,
+  Documents list rows that open in a new tab, and a link preview that no longer changes the
+  document.
+
+### Internal
+
+- The `release-product` skill now requires a release note to cover every user-facing changelog
+  entry. `.agents/skills/release-product/scripts/note-coverage.ts` lists each entry the note does
+  not mention, as whole issue and commit tokens, and checks each sub-bullet. The 2.3.0 note had
+  missed nineteen user-facing changes before this check. The `release-extensions` skill now says to
+  re-record a package's demo GIF before a publish, because npm freezes the README.
+
 ## [2.3.0] — 2026-11-09
 
 ### Highlights
