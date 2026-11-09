@@ -51,7 +51,10 @@ Next step: run that after any runtime change, then run the checks in [Install st
 | Push notifications       | VAPID key pair                                                                                     | Required in production. See [Turn on push notifications](#turn-on-push-notifications)                                                                                                                                   |
 | CORS                     | Allowed origins                                                                                    |                                                                                                                                                                                                                         |
 | Rate limiting            | `RATE_LIMIT_MAX`                                                                                   | `.env.example` sets 1000. Media reads, favicons and link previews each get ten times this value. The social card gets four times. [Rate limiting](../api/README.md#rate-limiting) gives the window and the code default |
+| Pad hosts                | [`APP_HOSTS`](../../apps/hocuspocus.server/ENV.md#core-application)                                | The hosts that serve pads. Empty by default, which means the `APP_URL` host and its `www.` form. Each entry must be a bare host name; a scheme, a port or a path stops the server at boot                               |
 | Favicons                 | [`LINK_ICON_MAX_BYTES`](../../apps/hocuspocus.server/ENV.md#link-metadata)                         | Byte cap for one favicon. The default is `32768`. Write a plain byte count                                                                                                                                              |
+| GitHub facts             | [`GITHUB_TOKEN`](../../apps/hocuspocus.server/ENV.md#link-metadata)                                | Optional, unset by default. Unset allows 60 GitHub calls an hour per server address. Give the token public-repository read access only                                                                                  |
+| Stack Overflow facts     | [`STACKEXCHANGE_KEY`](../../apps/hocuspocus.server/ENV.md#link-metadata)                           | Optional, unset by default. Unset allows 300 Stack Exchange calls a day per server address                                                                                                                              |
 | Social card              | [`SOCIAL_CARD_KINDS`](../../apps/hocuspocus.server/ENV.md#social-card)                             | Empty by default, so every pad link shows the Fallback card. Set the same value for REST and the worker. Turn kinds on one at a time, starting with `document`                                                          |
 | Logging                  | Level and format                                                                                   |                                                                                                                                                                                                                         |
 | Observability            | Metrics and error reporting                                                                        | Optional. See [Observability (optional)](#observability-optional)                                                                                                                                                       |
@@ -98,7 +101,7 @@ A CDN in front of the bucket keeps its cached copies until they expire, so set a
 
 **`REDIS_PASSWORD`** must be 32 characters or more, for example `openssl rand -hex 32`. Redis runs with `--requirepass`, so other containers on the Docker network cannot read or write the queues without it. Empty stops `docker compose up`. `redis-exporter` reads its copy from `.env.observability`.
 
-**`NEW_DOCUMENT_NOTIFICATION_EMAILS`** holds two sample addresses at a real domain. Set your own addresses, or leave it empty. Empty sends no new-document mail. See [ENV.md](../../apps/hocuspocus.server/ENV.md#email).
+**`NEW_DOCUMENT_NOTIFICATION_EMAILS`** holds two sample addresses at a real domain. With app email on, the production server mails those addresses for each new document. Set your own addresses, or leave it empty. Empty sends no new-document mail. See [ENV.md](../../apps/hocuspocus.server/ENV.md#email).
 
 ## Choose where Traefik reads its config
 
@@ -301,7 +304,7 @@ The answer is `401`, with a `WWW-Authenticate` header that names a `resource_met
 
 **Refuse connected-app tokens in Supabase.** Supabase applies the same RLS to an OAuth token as to a session token. Its [Token Security and RLS](https://supabase.com/docs/guides/auth/oauth-server/token-security) guide says so. `packages/supabase/scripts/31-connected-app-token-gate.sql` makes Supabase refuse a token that carries `client_id`. It covers the Data API, Storage and Realtime. The MCP tools use the service-role key, so the script does not change them.
 
-A new install runs this script with the other numbered files, as [Install](install.md#2-prepare-supabase) says. An existing install runs it once in the SQL editor. The paired migration `20260928120000_refuse_connected_app_tokens` has the same body, for a `supabase db push`. Both are safe to run again.
+A new install runs this script with the other numbered files, as [Install](install.md#2-prepare-supabase) says. An install made from a tag older than `v2.1.0` runs it once in the SQL editor. The paired migration `20260928120000_refuse_connected_app_tokens` has the same body, for a `supabase db push`. Both are safe to run again.
 
 Before you run it, check two things.
 
@@ -397,7 +400,7 @@ In production, the worker `/health` reports `unhealthy` until `VAPID_PUBLIC_KEY`
 
 docs.plus does not use passwords. People sign in with Google or an email link. Turn on this hook, so that no account can sign in with a password.
 
-`packages/supabase/scripts/32-password-sign-in-hook.sql` creates the function `public.hook_block_password_tokens`. A new install runs it with the other numbered files. An existing install runs it once in the SQL editor, or pushes the paired migration `20260928130000_reject_password_sign_in_hook`. Both are safe to run again.
+`packages/supabase/scripts/32-password-sign-in-hook.sql` creates the function `public.hook_block_password_tokens`. A new install runs it with the other numbered files. An install made from a tag older than `v2.1.0` runs it once in the SQL editor, or pushes the paired migration `20260928130000_reject_password_sign_in_hook`. Both are safe to run again.
 
 The function is a Custom Access Token hook, which every Supabase plan has. It refuses a token for a password sign-in and passes every other sign-in through unchanged. Keep **Confirm email** on. With it off, a first sign-in by email link also fails.
 

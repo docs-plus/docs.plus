@@ -69,9 +69,9 @@ Then edit it. [Configuration](configuration.md) explains the groups. The values 
 - The Supabase URL and keys, both the server-side and the `NEXT_PUBLIC_` ones.
 - The object-storage endpoint, region, bucket, and key pair.
 - `PERSIST_TO_LOCAL_STORAGE=false`. See [Template values to fix before you deploy](configuration.md#template-values-to-fix-before-you-deploy).
-- `MEDIA_COOKIE_SECRET`, 32 characters or more, so Private documents can show their media. The repository deploy workflows refuse to deploy without it.
+- [`MEDIA_COOKIE_SECRET`](../../apps/hocuspocus.server/ENV.md#private-media), 32 characters or more, so Private documents can show their media. The repository deploy workflows refuse to deploy without it.
 - `REDIS_PASSWORD`, 32 characters or more. Redis in `docker-compose.prod.yml` requires it, so the stack does not start without it. If you run the observability stack, put the same value in `.env.observability`.
-- `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`, plus the same public key in `NEXT_PUBLIC_VAPID_PUBLIC_KEY`. Without the two server keys, the worker `/health` reports `unhealthy`. [Turn on push notifications](configuration.md#turn-on-push-notifications) has the steps.
+- `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`, plus the same public key in `NEXT_PUBLIC_VAPID_PUBLIC_KEY`. Set `VAPID_SUBJECT` to a `mailto:` address that you read. Without the two server keys, the worker `/health` reports `unhealthy`. [Turn on push notifications](configuration.md#turn-on-push-notifications) has the steps.
 
 A Let's Encrypt email is optional. Traefik reads it from `traefik.yml`, not from `.env.production`. See [Choose where Traefik reads its config](configuration.md#choose-where-traefik-reads-its-config).
 
@@ -90,8 +90,6 @@ The template points every URL at `localhost`. Replace each of these with your ow
 | `PUBLIC_RESTAPI_URL`       | Runtime | [ENV.md, Public origin](../../apps/hocuspocus.server/ENV.md#public-origin) |
 | `ALLOWED_ORIGINS`          | Runtime | [ENV.md, Security](../../apps/hocuspocus.server/ENV.md#security)           |
 | `APP_URL`                  | Runtime | [ENV.md, Email](../../apps/hocuspocus.server/ENV.md#email)                 |
-| `EMAIL_UNSUBSCRIBE_SECRET` | Runtime | [ENV.md, Email](../../apps/hocuspocus.server/ENV.md#email)                 |
-| `MEDIA_COOKIE_SECRET`      | Runtime | [ENV.md, Private media](../../apps/hocuspocus.server/ENV.md#private-media) |
 
 `ALLOWED_ORIGINS` must list two origins, `https://<APP_HOST>` and `https://<ADMIN_HOST>`. The editor and the admin dashboard both call `<API_HOST>` from the browser. [ENV.md, Security](../../apps/hocuspocus.server/ENV.md#security) gives the format.
 
@@ -187,6 +185,8 @@ At the repository root, list the containers:
 docker compose -f docker-compose.prod.yml --env-file .env.production ps
 ```
 
+After its start period, each service shows `(healthy)`. Docker only marks an `(unhealthy)` service. It does not restart it.
+
 From any directory, check the three public hosts:
 
 ```bash
@@ -195,7 +195,7 @@ curl -sf https://<API_HOST>/health
 curl -sf https://<ADMIN_HOST>/api/health
 ```
 
-Each command prints a JSON body. A failure prints nothing and exits non-zero.
+Each command prints a JSON body. The editor and admin bodies hold `"status":"healthy"`. The API body holds `"status":"ok"` and one entry for each dependency. A failure prints nothing and exits non-zero.
 
 Do not use `make status-prod` here. It probes docs.plus itself, so it proves nothing about your server.
 
@@ -333,7 +333,18 @@ Release tags look like `v2.1.0`. `<OLD_TAG>` is the tag you run now, from step 1
 
    `git reset` clears the unmerged mark and keeps your edits. `git stash drop` deletes the stash that Git kept. Skip this, and the next upgrade's `git stash` fails.
 
-5. Refresh your Traefik copy. The new tag can change `scripts/traefik/`, and your copy in `<TRAEFIK_DIR>` does not follow it. At the repository root, run the step 4 commands again:
+5. Refresh your Traefik copy. The new tag can change `scripts/traefik/`, and your copy in `<TRAEFIK_DIR>` does not follow it.
+
+   First pull the Traefik image. The compose file names the moving tag `traefik:v3.6`, and a recreate reuses the image you already have. At the repository root:
+
+   ```bash
+   docker compose -f docker-compose.prod.yml --env-file .env.production pull traefik
+   docker run --rm traefik:v3.6 version
+   ```
+
+   The bundled `traefik.yml` needs 3.6.18 or later. An older Traefik refuses it and does not start. Pull before the copy, so a restart never meets the new file on an old image.
+
+   Then, at the repository root, run the step 4 commands again:
 
    ```bash
    mkdir -p <TRAEFIK_DIR>
@@ -343,7 +354,7 @@ Release tags look like `v2.1.0`. `<OLD_TAG>` is the tag you run now, from step 1
 
    The copy overwrites each file in `<TRAEFIK_DIR>` that has the same name, `traefik.yml` too. Add your own edits back, such as the Let's Encrypt email in [Choose where Traefik reads its config](configuration.md#choose-where-traefik-reads-its-config). If `.env.production` does not set `TRAEFIK_CONFIG_DIR` yet, set it now, as in step 4.
 
-6. Apply each new migration by hand in the Supabase SQL editor, in timestamp order. Skip the ones that item 7 holds. An install made from `scripts/` has no migration history, so do not run `supabase db push`. Do not run changed `scripts/*.sql` files again. Those are for a new install.
+6. Apply each new migration by hand in the Supabase SQL editor, in timestamp order. Skip the ones that item 2 or item 7 holds. An install made from `scripts/` has no migration history, so do not run `supabase db push`. Do not run changed `scripts/*.sql` files again. Those are for a new install.
 7. Some migrations must wait. A migration says so in its first comment lines, for example "after the new webapp is live". Hold such a migration until the apps run, and follow the timing it gives. Those comments say "push". For this install, push means apply by hand.
 8. At the repository root, build the images:
 
