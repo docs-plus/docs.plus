@@ -338,6 +338,8 @@ Click a link on this page and a card opens under it, naming what sits on the oth
 
 Most links on this page start with a small icon that shows where they go — try it here.
 
+![Links led by small icons: a site, a docs.plus page, mail, phone, and links into this page](/demo-assets/d18-link-icons.png)
+
 A web link shows its site's favicon. A link to another docs.plus page shows the docs.plus logo. A mail or phone link shows a mail or phone icon. This page holds none.
 
 A link into this page shows what it opens: a heading, a chat, a filter, a version or the top. So every line of the contents list at the top carries the filter icon.
@@ -347,6 +349,8 @@ The icons come through our own server, never straight from the linked site. A si
 ## Rest on a link
 
 On desktop, rest the mouse on a link and a card opens after half a second, with no click — try it here. The card asks for its content only after 150 ms, so a pointer that passes over a link costs nothing. Our server fetches the card, so your browser sends nothing to the linked site.
+
+![A pointer rests on a link, and a card opens after half a second with no click](/demo-assets/d19-hovercard.png)
 
 A slow page opens the card with grey bars, and the content then replaces them in the same card. After 4 seconds with no answer, the card shows the address and says the site shares no preview.
 
@@ -370,6 +374,8 @@ A Stack Overflow question shows its answer count. It adds **Accepted answer** wh
 
 Some sites refuse to share a preview. Then the card puts the address first: the site name is the title, and the full path wraps under it. The last line says why there is no preview. [The New York Times](https://www.nytimes.com/) does not share previews — try it here. When the site blocked us or did not answer, the card also offers **View archived copy**. One click asks the Internet Archive for a saved copy, then shows a link that opens it.
 
+![A card with no preview shows the site name, the full path and View archived copy](/demo-assets/d21-no-preview.png)
+
 A link to a file gets its own card, with the file name as the title: [a sample PDF](https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf) says it is a PDF file — try it here. The card knows PDFs, documents, spreadsheets, slides, archives, pictures, audio and video.
 
 When a link's text names one site but the link opens another, the card warns you. This link reads [github.com](https://github-login.example.net/session) but opens another site — try it here.
@@ -379,6 +385,8 @@ On mobile the card is a bottom sheet instead. Its four rows are Open link, Copy 
 ## Paste a link, get its name
 
 Copy a web address, paste it into a document, and the link takes **the page's title** in place of the long address — needs a document you can edit. The address shows at once, and the title replaces it when our server answers, usually within a second. Paste [https://github.com/docs-plus/docs.plus](https://github.com/docs-plus/docs.plus) into a page from [/new](/new) to see it.
+
+![A pasted address turns into the page title, and one undo brings it back](/demo-assets/d20-paste-title.png)
 
 One undo brings the address back, and a second removes the paste. ⌘+⇧+V (Ctrl+Shift+V) pastes the address as it is. A file link takes its file name and format, so the sample PDF above reads `dummy.pdf`. A link to another docs.plus page takes that page's title, and a heading link reads like `Budget · Q3 launch plan`. A link to a Private page keeps its address, and so does a link pasted in a chatroom.
 
@@ -402,6 +410,8 @@ A `mailto:` or `tel:` link has no page to fetch. The address becomes the title, 
 ## Back into the document
 
 A link into this document never touches the network. It resolves on the spot, and its click card shows a destination chip. The chip names the place: **This document**, a quoted heading, a chat or a message, **Filtered view**, or **Version N**.
+
+![A link into this page opens a Filtered view card, and the page folds in place](/demo-assets/d22-pad-links.png)
 
 [/demo/crease](/demo/crease) is such a link. Its card carries a **Filtered view** chip, with **Match any** and one pill for each term. Click the chip and the page folds in place — try it here. No reload, and no new tab.
 
@@ -710,6 +720,8 @@ Import takes `.docx` and `.md` only, up to 10,485,760 bytes, and Markdown stops 
 
 A Markdown export keeps the caption, size and placement of every picture, video, audio and embed. A Markdown import reads them back, and so does an AI app that writes Markdown — needs an account. The guide is [Media in Markdown](https://github.com/docs-plus/docs.plus/blob/main/docs/media-in-markdown.md).
 
+![A floated picture with a caption, and the one Markdown line that keeps them](/demo-assets/d24-media-markdown.png)
+
 A Word import accepts every tracked change, and says so — needs an account and a document you can edit.
 
 Filtered to this section? [Show the whole document](/demo).
@@ -737,6 +749,8 @@ A share link **carries no permission**. There is no token, no expiry, and no gra
 ## A card when you share this page
 
 Paste this page's address into a chat app or a social site — try it here. It shows a docs.plus card with the page's name and its first paragraph.
+
+![A docs.plus address in a chat opens into a card with the page name and a people count](/demo-assets/d23-share-card.png)
 
 Our server draws the card from the saved page. A card never shows a person's name, a face or a chat message, and a Private page never gets one. A link to a heading, a chat or a version shows the same card as the page. A page with no owner shows the docs.plus home card.
 
