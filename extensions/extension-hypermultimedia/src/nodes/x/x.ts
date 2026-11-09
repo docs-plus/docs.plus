@@ -53,7 +53,15 @@ export const X = Node.create<XOptions>({
   // embed before the generic blockquote rule claims it.
   priority: 101,
 
-  ...createTypedMediaMarkdownHooks('x'),
+  ...createTypedMediaMarkdownHooks('x', {
+    keys: [...X_LAYOUT_ATTR_KEYS, ...EMBED_ATTR_KEYS.filter((key) => key !== 'src')],
+    // The `maxwidth` default lives on the schema, not on the options.
+    defaults: { maxwidth: X_EMBED_DEFAULT_MAXWIDTH },
+    resolveSrc: (src) => {
+      const url = normalizeXUrl(src)
+      return url ? { src: url } : null
+    }
+  }),
 
   addOptions() {
     return {

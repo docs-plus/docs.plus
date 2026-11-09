@@ -62,7 +62,17 @@ export const Spotify = Node.create<SpotifyOptions>({
   name: 'spotify',
   draggable: true,
 
-  ...createTypedMediaMarkdownHooks('spotify'),
+  // A track and a playlist differ in height, so both import and export read the type default.
+  ...createTypedMediaMarkdownHooks('spotify', {
+    resolveSrc: (src) => {
+      const entity = parseSpotifyEntity(src)
+      if (!entity) return null
+      return {
+        src: canonicalSpotifyUrl(entity),
+        defaults: { height: defaultSpotifyHeight(entity.type) }
+      }
+    }
+  }),
 
   addOptions() {
     return {

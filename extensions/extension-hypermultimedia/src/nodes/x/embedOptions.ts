@@ -1,5 +1,6 @@
 export type XEmbedSizeId = 'compact' | 'standard' | 'wide'
-export type XEmbedTheme = 'light' | 'dark'
+export const X_EMBED_THEMES = ['light', 'dark'] as const
+export type XEmbedTheme = (typeof X_EMBED_THEMES)[number]
 
 export const X_EMBED_DEFAULT_MAXWIDTH = 400
 

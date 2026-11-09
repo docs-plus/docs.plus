@@ -2,10 +2,15 @@ import { Node, nodeInputRule } from '@tiptap/core'
 
 import { captionAttribute, ignoreFigcaptionParseRule } from '../../caption'
 import { createTypedMediaMarkdownHooks } from '../../markdown/typedMediaMarkdown'
-import { layoutAttrDefaults, resolveEmbedLayoutDimensions } from '../../utils/embedKit'
+import {
+  EMBED_LAYOUT_ATTR_KEYS,
+  layoutAttrDefaults,
+  resolveEmbedLayoutDimensions
+} from '../../utils/embedKit'
 import {
   createHtmlMediaNodeView,
   type HtmlMediaNodeConfig,
+  type MediaPreload,
   renderHtmlMediaHTML
 } from '../../utils/htmlMediaNode'
 import { keyIdAttribute } from '../../utils/media-node-attrs'
@@ -25,7 +30,7 @@ export interface VideoOptions extends StyleLayoutOptions, NodeOptions {
   loop?: boolean
   muted?: boolean
   poster?: string | null
-  preload?: 'none' | 'metadata' | 'auto'
+  preload?: MediaPreload
   src: string | null
 }
 
@@ -36,7 +41,7 @@ export type SetVideoOptions = {
   loop?: boolean
   muted?: boolean
   poster?: string | null
-  preload?: 'none' | 'metadata' | 'auto'
+  preload?: MediaPreload
 } & StyleLayoutOptions
 
 /** `<video>` element attrs; remount the node view when any change. */
@@ -59,7 +64,9 @@ export const Video = Node.create<VideoOptions>({
   name: 'video',
   draggable: true,
 
-  ...createTypedMediaMarkdownHooks('video', { withDimensions: true }),
+  ...createTypedMediaMarkdownHooks('video', {
+    keys: [...EMBED_LAYOUT_ATTR_KEYS, ...VIDEO_REMOUNT_ATTR_KEYS.filter((key) => key !== 'src')]
+  }),
 
   addOptions() {
     return {

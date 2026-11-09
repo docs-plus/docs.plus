@@ -1,19 +1,6 @@
 /// <reference types="cypress" />
 
-/** Shared fixture URLs (paste-matrix parity). */
-const FIXTURES = {
-  image: 'https://example.com/photo.png',
-  audio: 'https://example.com/track.mp3',
-  video: 'https://example.com/clip.mp4',
-  youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-  vimeo: 'https://vimeo.com/123456789',
-  soundcloud: 'https://soundcloud.com/forss/flickermood',
-  spotify: 'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl',
-  loom: 'https://www.loom.com/share/abcdef1234567890',
-  x: 'https://x.com/jack/status/20'
-} as const
-
-type MediaNode = keyof typeof FIXTURES
+import { FIXTURES, type MediaNode } from './fixtures'
 
 const MARKDOWN_SYNTAX: Record<MediaNode, (url: string) => string> = {
   image: (url) => `![Alt text](${url})`,
@@ -67,7 +54,7 @@ describe('Markdown import/export — all media nodes', () => {
       })
     })
 
-    it('round-trips audio width/height attrs', () => {
+    it('round-trips audio width/height attrs from the old in-parenthesis form', () => {
       const md = `![audio](${FIXTURES.audio} width=400 height=80)`
       cy.setMarkdown(md)
       cy.nodeCount('audio').should('eq', 1)
@@ -84,7 +71,7 @@ describe('Markdown import/export — all media nodes', () => {
       cy.expectRenderedMediaSize('#editor .hypermultimedia--video__content video', 'width', 400)
       cy.expectRenderedMediaSize('#editor .hypermultimedia--video__content video', 'height', 300)
       cy.getMarkdown().then((exported) => {
-        expect(exported).to.include(`![video](${FIXTURES.video} width=400 height=300)`)
+        expect(exported).to.include(`![video](${FIXTURES.video}){width=400 height=300}`)
       })
     })
   })
@@ -149,12 +136,11 @@ describe('Markdown import/export — all media nodes', () => {
       cy.nodeCount('image').should('eq', 0)
     })
 
-    it('drops caption on markdown export (documented lossy contract)', () => {
+    it('writes the caption into the title slot on export', () => {
       cy.getEditor().then((editor) => {
         editor.commands.setImage({ src: FIXTURES.image, alt: 'Alt', caption: 'Fig 1' })
       })
-      cy.getMarkdown().should('include', `![Alt](${FIXTURES.image})`)
-      cy.getMarkdown().should('not.include', 'Fig 1')
+      cy.getMarkdown().should('include', `![Alt](${FIXTURES.image} "Fig 1")`)
     })
   })
 

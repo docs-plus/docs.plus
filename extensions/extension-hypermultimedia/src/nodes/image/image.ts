@@ -1,10 +1,3 @@
-import type {
-  JSONContent,
-  MarkdownParseHelpers,
-  MarkdownRendererHelpers,
-  MarkdownToken,
-  RenderContext
-} from '@tiptap/core'
 import { Editor, mergeAttributes, Node, nodeInputRule } from '@tiptap/core'
 import type { DOMOutputSpec } from '@tiptap/pm/model'
 import { Transaction } from '@tiptap/pm/state'
@@ -15,10 +8,11 @@ import {
   readCaption,
   wrapRenderWithCaption
 } from '../../caption'
+import { createImageMarkdownHooks } from '../../markdown/typedMediaMarkdown'
+import { EMBED_LAYOUT_ATTR_KEYS } from '../../utils/embedKit'
 import { fitLayoutToEditorColumn } from '../../utils/fitImageDimensions'
 import { mediaLayoutCss } from '../../utils/layoutStyle'
 import { keyIdAttribute } from '../../utils/media-node-attrs'
-import { isSafeMediaSrc } from '../../utils/mediaUrl'
 import { generateShortId } from '../../utils/utils'
 import { inputRegex, isImageElementSrc } from './helper'
 import { createImageNodeView } from './nodeView'
@@ -32,28 +26,7 @@ export const Image = Node.create<ImageOptions>({
   // Markdown round-trip lives on the node so a single
   // `HyperMultimediaKit.configure({ Image })` is the only entry a host needs.
   // Hooks are inert unless the host also loads @tiptap/markdown.
-  markdownTokenName: 'image',
-
-  parseMarkdown: (token: MarkdownToken, _helpers: MarkdownParseHelpers) => {
-    const alt = token.text || ''
-    // Markdown import is a write boundary like paste and parseHTML: an
-    // imported `![alt](javascript:…)` must not reach a stored node attribute.
-    // Inline images pass — a `.md` that embeds base64 is the case `allowBase64`
-    // exists for, and the HTML parse rule stays the authority on that policy.
-    const href = isSafeMediaSrc(token.href, { allowInlineImage: true }) ? token.href : ''
-    // Reserved alts belong to each node's own `hm_*` tokenizer, which is registered
-    // only when that node is enabled. Naming a disabled type here blanks the document.
-    return {
-      type: 'image',
-      attrs: { src: href, alt }
-    }
-  },
-
-  renderMarkdown: (node: JSONContent, _helpers: MarkdownRendererHelpers, _ctx: RenderContext) => {
-    const alt = (node.attrs?.alt || '').replace(/\]/g, '\\]')
-    const src = (node.attrs?.src || '').replace(/\)/g, '%29')
-    return `![${alt}](${src})`
-  },
+  ...createImageMarkdownHooks(EMBED_LAYOUT_ATTR_KEYS.filter((key) => key !== 'justifyContent')),
 
   addOptions() {
     return {

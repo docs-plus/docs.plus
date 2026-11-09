@@ -3,10 +3,11 @@ import { Node, nodeInputRule } from '@tiptap/core'
 import { captionAttribute, ignoreFigcaptionParseRule } from '../../caption'
 import { AUDIO_LAYOUT_FALLBACK } from '../../loading'
 import { createTypedMediaMarkdownHooks } from '../../markdown/typedMediaMarkdown'
-import { layoutAttrDefaults } from '../../utils/embedKit'
+import { EMBED_LAYOUT_ATTR_KEYS, layoutAttrDefaults } from '../../utils/embedKit'
 import {
   createHtmlMediaNodeView,
   type HtmlMediaNodeConfig,
+  type MediaPreload,
   renderHtmlMediaHTML
 } from '../../utils/htmlMediaNode'
 import { keyIdAttribute } from '../../utils/media-node-attrs'
@@ -25,7 +26,7 @@ export interface AudioOptions extends StyleLayoutOptions, NodeOptions {
   autoplay?: boolean
   loop?: boolean
   muted?: boolean
-  preload?: 'none' | 'metadata' | 'auto'
+  preload?: MediaPreload
   src: string | null
 }
 
@@ -35,7 +36,7 @@ export type SetAudioOptions = {
   autoplay?: boolean
   loop?: boolean
   muted?: boolean
-  preload?: 'none' | 'metadata' | 'auto'
+  preload?: MediaPreload
 } & StyleLayoutOptions
 
 /** `<audio>` element attrs; remount the node view when any change. */
@@ -51,7 +52,9 @@ export const Audio = Node.create<AudioOptions>({
   name: 'audio',
   draggable: true,
 
-  ...createTypedMediaMarkdownHooks('audio', { withDimensions: true }),
+  ...createTypedMediaMarkdownHooks('audio', {
+    keys: [...EMBED_LAYOUT_ATTR_KEYS, ...AUDIO_REMOUNT_ATTR_KEYS.filter((key) => key !== 'src')]
+  }),
 
   addOptions() {
     return {

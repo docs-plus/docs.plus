@@ -19,6 +19,9 @@ import { ignoreNodeViewSubtreeMutation } from './ignoreNodeViewMutation'
 import { captionLayoutCss, mediaLayoutStyleProps } from './layoutStyle'
 import { omitNullishAndFalse, type StyleLayoutOptions } from './utils'
 
+export const MEDIA_PRELOAD_VALUES = ['none', 'metadata', 'auto'] as const
+export type MediaPreload = (typeof MEDIA_PRELOAD_VALUES)[number]
+
 export interface HtmlMediaNodeConfig {
   tag: 'video' | 'audio'
   /** Written onto the media element; doubles as the update() remount-key list. */
