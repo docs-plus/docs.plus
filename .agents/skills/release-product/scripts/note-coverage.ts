@@ -1,7 +1,8 @@
 // Lists every user-facing changelog entry of a release that the release note does not mention.
-// An entry counts as covered when one of its issue numbers or commit hashes is in the note, or
-// when its bold lead phrase is.
-// Entries with no reference print under "check by hand". Usage:
+// An entry counts as covered when one of its docs.plus issue numbers or commit hashes is in the
+// note, compared as whole tokens. An entry with no reference counts as covered when its bold lead
+// phrase is in the note, and otherwise prints under "check by hand". Sub-bullets are entries too,
+// so one covered child never hides its siblings. Usage:
 //   bun note-coverage.ts <X.Y.Z> [note] [changelog]
 // Defaults: Notes/release-X.Y.Z/RELEASE-NOTES.md and CHANGELOG.md, from the repo root.
 import { readFileSync } from 'node:fs'
@@ -32,10 +33,26 @@ const leadIn = (block: string): string | null => {
     : null
 }
 
+// Whole-token references only: `#64` must never match `#646`, and `tiptap#8584` is another repo.
+const issueRefs = (text: string): Set<string> =>
+  new Set(
+    [...text.matchAll(/(?<![\w/])#(\d{1,6})\b|docs-plus\/docs\.plus\/issues\/(\d{1,6})\b/g)].map(
+      (m) => m[1] ?? m[2]
+    )
+  )
+const commitRefs = (text: string): string[] => [
+  ...new Set([...text.matchAll(/\/commit\/([0-9a-f]{7,40})\b/g)].map((m) => m[1]))
+]
+const noteIssues = issueRefs(note)
+const noteCommits = commitRefs(note)
+// Short and full hashes name one commit, so compare by prefix in both directions.
+const sameCommit = (a: string, b: string): boolean => a.startsWith(b) || b.startsWith(a)
+
 const missing: string[] = []
 const manual: string[] = []
 let section = ''
-for (const block of entry.split(/\n(?=### |- )/)) {
+for (const raw of entry.split(/\n(?=\s*(?:### |- ))/)) {
+  const block = raw.trimStart()
   const heading = block.match(/^### (\w+)/)
   if (heading) {
     section = heading[1]
@@ -43,19 +60,17 @@ for (const block of entry.split(/\n(?=### |- )/)) {
   }
   if (!block.startsWith('- ') || !USER_FACING.has(section)) continue
   const summary = block.slice(2).replace(/\s+/g, ' ').slice(0, 110)
-  const lead = leadIn(block)
-  if (lead && noteFlat.includes(lead)) continue
-  const issues = [...block.matchAll(/(?:#|\/issues\/)(\d{2,5})\b/g)].map((m) => m[1])
-  const commits = [...block.matchAll(/\/commit\/([0-9a-f]{7,40})/g)].map((m) => m[1])
+  const issues = [...issueRefs(block)]
+  const commits = commitRefs(block)
   if (!issues.length && !commits.length) {
-    manual.push(`${section}: ${summary}`)
+    const lead = leadIn(block)
+    if (!(lead && noteFlat.includes(lead))) manual.push(`${section}: ${summary}`)
     continue
   }
   const covered =
-    issues.some((n) => note.includes(`#${n}`) || note.includes(`/issues/${n})`)) ||
-    commits.some((h) => note.includes(h))
-  if (!covered)
-    missing.push(`${section} [${[...new Set(issues)].map((n) => `#${n}`).join(' ')}]: ${summary}`)
+    issues.some((n) => noteIssues.has(n)) ||
+    commits.some((h) => noteCommits.some((c) => sameCommit(h, c)))
+  if (!covered) missing.push(`${section} [${issues.map((n) => `#${n}`).join(' ')}]: ${summary}`)
 }
 
 console.log(`Not in the note (${missing.length}):`)
