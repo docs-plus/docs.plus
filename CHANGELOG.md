@@ -44,6 +44,13 @@ path stops the server at boot. See [hocuspocus Changed](apps/hocuspocus.server/C
 
 ### Added
 
+- A media node keeps its caption and its options through Markdown, on all nine media kinds
+  ([#244](https://github.com/docs-plus/docs.plus/issues/244)). The caption rides in the
+  Markdown title slot, `![video](url "My caption")`. Size, placement and player options ride
+  in an option block after the link, `![video](url){width=800 controls=false}`. So an AI app
+  that writes Markdown, a Markdown import and a Markdown export keep them. The guide is
+  [Media in Markdown](docs/media-in-markdown.md).
+
 - A shared pad link now shows a docs.plus card in chat apps and on social sites
   ([#663](https://github.com/docs-plus/docs.plus/issues/663)). A public pad with an owner shows
   its real content: its name, its first paragraph or its section names, and an "Open the
@@ -100,6 +107,13 @@ path stops the server at boot. See [hocuspocus Changed](apps/hocuspocus.server/C
 
 ### Changed
 
+- Markdown export writes a resized audio or video as `![video](url){width=400 height=300}`. It
+  wrote `![video](url width=400 height=300)` before. Import still reads the old form
+  ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
+- A pad link to the docs.plus home page or to `new.docs.plus` now shows the docs.plus logo, as
+  a link to another pad does. It showed the site icon before
+  ([#516](https://github.com/docs-plus/docs.plus/issues/516), maintainer ruling 2026-11-09).
+
 - Markdown export, and what an AI app reads, now writes underlined text as `<u>text</u>`. Before,
   it wrote `++text++`. Markdown import reads only `<u>` now, so older `++text++` comes in as
   plain text. The change comes from TipTap 3.32.2.
@@ -150,6 +164,10 @@ path stops the server at boot. See [hocuspocus Changed](apps/hocuspocus.server/C
 - A plain click on a link to another pad opens that pad in the same window.
 
 ### Fixed
+
+- On a phone, the link sheet for a `mailto:`, `tel:` or `slack://` link shows a mail, phone or
+  Slack icon, as the desktop preview does. It showed an empty grey box before
+  ([#517](https://github.com/docs-plus/docs.plus/issues/517)).
 
 - **Folded sections open again.** A folded section stayed shut. A click on its fold in the pad
   or on its arrow in the table of contents did nothing.

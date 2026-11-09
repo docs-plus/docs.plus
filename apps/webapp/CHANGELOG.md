@@ -137,6 +137,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- `padLinkIcon` gives the docs.plus logo to a link to the `https://docs.plus` root and to any
+  `new.docs.plus` link, from any origin. Other cross-origin docs.plus paths keep the route
+  favicon. The design-system K2 row records the maintainer ruling of 2026-11-09
+  ([#516](https://github.com/docs-plus/docs.plus/issues/516)).
+
 - A paste from the same pad keeps each heading's `toc-id`
   ([#700](https://github.com/docs-plus/docs.plus/issues/700)). So a full cut and paste, or a
   select-all paste, keeps heading chats and `?id=` links. Copied HTML now names its pad. When an
@@ -208,6 +213,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   its message. Before, under a filter, it stored the filter term as the pad name.
 
 ### Fixed
+
+- The phone link sheet shows the `TYPE_TO_ICON` glyph for a link with no http(s) origin, such as
+  `mailto:`, `tel:` or `slack://`. The sheet and the desktop preview share `specialUrlIcon`. A
+  route miss still keeps the grey box ([#517](https://github.com/docs-plus/docs.plus/issues/517)).
 
 - A fold opens again from its crinkle and from its TOC arrow. Tiptap's unmount and mount
   rebuild the editor view but keep the fold plugin, and the pad rebuilds it on load. The plugin
