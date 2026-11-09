@@ -19,6 +19,10 @@ This file is the product changelog. Every app, package and extension keeps its o
 - The demo now names the Escape key, the three Link previews switches, the link form cleanup,
   underline in Markdown, five more fixes and four more safety changes. Its keys use ⌘ notation
   throughout.
+- The whole demo now uses the editor's own formats: ordered and task lists, tables for keys and
+  limits, quotes, highlights and a new Mermaid diagram. Every heading and every `/demo/<word>`
+  filter link is unchanged. The Writing chapter now says that a highlight marks the one line a
+  reader must see first.
 
 ### Internal
 
