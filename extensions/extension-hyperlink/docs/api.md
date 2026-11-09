@@ -48,7 +48,7 @@ Pick one. Setting both works, because they compose and a URL must pass both, but
 
 `isSafeHref` plus your `validate` and `isAllowedUri` hooks form the composed gate. The package docs use that name.
 
-`validateURL(url, { customValidator })` is a different tool. It is the form-level shape check the prebuilt popovers run before they call a command. It runs `isSafeHref` first, then the shape check, then your `customValidator`. The value must be one whole link: a sentence or a raw space is refused, and trailing punctuation such as `google.com.` still passes the check. `toStoredLink(url, { customValidator })` runs the same check and returns the link to store, without that punctuation, or `null`. `customValidator` gets the value `toStoredLink` would return: trimmed, without trailing punctuation, with a leading `//` kept. A custom popover stores `normalizeHref(toStoredLink(value))`, as the prebuilt ones do.
+`validateURL(url, { customValidator })` is a different tool. It is the form-level shape check the prebuilt popovers run before they call a command. It runs `isSafeHref` first, then the shape check, then your `customValidator`. The value must be one whole link: a sentence or a raw space is refused, and trailing punctuation such as `google.com.` still passes the check. `toStoredLink(url, { customValidator })` runs the same check and returns the link to store, without that punctuation, or `null`. `customValidator` gets the value `toStoredLink` would return: trimmed, without trailing punctuation, with a leading `//` kept. A custom popover passes `toStoredLink(value)` to `setHyperlink` or `editHyperlink`, as the prebuilt ones do. The command normalizes it, so `google.com` is stored as `https://google.com`.
 
 ### Link icons
 
@@ -67,7 +67,7 @@ An iconed link has this DOM:
 - The function runs once per rendered `<a>`. A `title` or `image` write keeps the same `<a>` and icon, and a new href draws a new one.
 - The icon starts every iconed `<a>`, image-led and image-only links included. A mark view gets no content, so it cannot place the icon after an image.
 - Serializers use the mark's `toDOM`, so no icon reaches `getHTML()`, Markdown, copy or drag.
-- A parse rule ignores `.hyperlink-icon`, so a paste or a native split never turns an icon into an Image node.
+- A parse rule ignores `.hyperlink-icon`, so a paste or a native split never turns an icon into an Image node. The rule runs even with `linkIcon` unset, and it drops any content inside such an element.
 - The package sets `aria-hidden="true"` on the icon, so screen readers read only the link text. An icon with its own non-empty `aria-label` is the exception. It gets `role="img"` and stays exposed, so a host can speak a link's kind.
 - An icon click puts the caret at the link start.
 - At a link that starts its block, the caret shows after the icon, but typed text lands before the link. This is a deliberate exception to Google Docs, Word and Notion, whose links carry no icon.
@@ -200,11 +200,12 @@ The mark runs at `priority: 1000`, above the Tiptap default `100`. `@tiptap/exte
 - **Markdown keeps only the link `href`.** Export writes `[text](href)`, and import reads the href alone, so a link `title` is lost both ways. A custom `rel` is lost too, and import sets the default `rel`. `target`, `class` and `image` never reach Markdown, by design. See [Markdown](./url-handling.md#markdown).
 - **The mark name is fixed at `hyperlink`.** Stored documents and the markdown wiring both key on it. `openPreviewHyperlink`, `openEditHyperlink`, and `openCreateHyperlink` throw when no extension answers to that name. Do not rename the mark.
 - **[`getDefaultController()`](./advanced.md#ui-controller) owns one controller per bundle, not one per page.** A host that also loads `@docs.plus/extension-hypermultimedia` gets two controllers. Opening a popover in one package does not dismiss the popover of the other. Close the other popover yourself when you open one.
-- **A link icon needs CSS for `.hyperlink-icon`.** Without `styles.css` or your own rule, the icon shows at its natural size. A Tailwind host also breaks the line, because preflight sets `img` and `svg` to `display: block`. See [Styling](./styling.md).
+- **A link icon needs CSS for `.hyperlink-icon`.** Without `styles.css` or your own rule, the icon shows at its natural size. `styles.css` sizes it only inside `.ProseMirror`, so an icon from `linkIconFor` outside an editor needs your own rule. A Tailwind host also breaks the line, because preflight sets `img` and `svg` to `display: block`. See [Styling](./styling.md).
 - **`linkIcon` must return a fresh element with no text.** An element that already has a parent, an element with text, any other non-null value, or a throw gives a plain link. The package logs one console error per `linkIcon` function, not one per link.
 - **A host mark above `priority: 1000` splits one link into two icons.** That mark renders outside the link. When it covers part of a link, the `<a>` splits in two, and each part gets an icon.
 - **`Hyperlink.extend({ addMarkView })` replaces the icon mark view.** Tiptap gives no warning. To keep the icon, call `this.parent?.()` and wrap its result.
 - **Legacy `link` marks get no icon.** Only the `hyperlink` mark renders through the icon mark view.
+- **Parsed HTML drops every `.hyperlink-icon` element.** The mark registers a parse rule that ignores that class at priority 1000, even with `linkIcon` unset. So content inside an element with that class is lost on `setContent`, HTML paste and HTML import. Rename the class in your own HTML before you load it.
 - **A `{ light, dark }` pair has limits.** It needs `styles.css` or your own `.hyperlink-icon` size, or the span has zero width. A bad URL shows a blank 1em box. Browsers before Chrome 150, Firefox 150 and Safari 27 show the light image.
 - **A transient image failure hides that icon until reload.** The helper does not request a failed URL again.
 - **A pointer already resting on a link gets no hovercard.** The card starts only on `pointerover`. When a link renders under a still pointer, no card shows until the pointer leaves the link and comes back.

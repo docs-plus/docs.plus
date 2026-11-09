@@ -87,31 +87,31 @@ html[data-theme='dark'] {
 
 Stable class names you can target:
 
-| Class                        | Element                                                                                                              |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `.floating-popover`          | Popover container (adds `.visible` after mount).                                                                     |
-| `.floating-popover-arrow`    | Arrow pointing at the anchor (adds `-top` / `-bottom` / `-left` / `-right`).                                         |
-| `.floating-popover-content`  | Content wrapper inside the popover.                                                                                  |
-| `.floating-tooltip`          | Tooltip on popover icon buttons (adds `.visible`).                                                                   |
-| `.hyperlink-create-popover`  | Create-link form root.                                                                                               |
-| `.hyperlink-preview-popover` | Preview popover root.                                                                                                |
-| `.hyperlink-edit-popover`    | Edit-link form root.                                                                                                 |
-| `.hyperlink-icon`            | Icon from the `linkIcon` option, first inside the `<a>`. `styles.css` gives it a `1em` box and a `0.25em` gap.       |
-| `.hyperlink-icon-tile`       | From `linkIconFetcher({ tile: true })`. `styles.css` paints `--hl-icon-tile` behind the icon.                        |
-| `.hyperlink-click-scope`     | On the editor root while `openOnClick` is on. It scopes the Mod-held hand cursor to editors that handle link clicks. |
-| `.inputs-wrapper`            | Input group container (adds `.error` on validation).                                                                 |
-| `.text-wrapper`              | Edit-form text input row (adds `.error`).                                                                            |
-| `.href-wrapper`              | Edit-form URL input row (adds `.error`).                                                                             |
-| `.buttons-wrapper`           | Button group container.                                                                                              |
-| `.back-button`               | Edit-form back action.                                                                                               |
-| `.apply-button`              | Edit-form apply action.                                                                                              |
-| `.copy`                      | Preview-popover copy icon button.                                                                                    |
-| `.edit`                      | Preview-popover edit icon button.                                                                                    |
-| `.remove`                    | Preview-popover remove icon button.                                                                                  |
-| `.search-icon`               | Leading icon inside an input group.                                                                                  |
-| `.error-message`             | Validation error text (shown with `.show`).                                                                          |
+| Class                        | Element                                                                                                                               |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `.floating-popover`          | Popover container (adds `.visible` after mount).                                                                                      |
+| `.floating-popover-arrow`    | Arrow pointing at the anchor (adds `-top` / `-bottom` / `-left` / `-right`).                                                          |
+| `.floating-popover-content`  | Content wrapper inside the popover.                                                                                                   |
+| `.floating-tooltip`          | Tooltip on popover icon buttons (adds `.visible`).                                                                                    |
+| `.hyperlink-create-popover`  | Create-link form root.                                                                                                                |
+| `.hyperlink-preview-popover` | Preview popover root.                                                                                                                 |
+| `.hyperlink-edit-popover`    | Edit-link form root.                                                                                                                  |
+| `.hyperlink-icon`            | Icon from the `linkIcon` option, first inside the `<a>`. Inside `.ProseMirror`, `styles.css` gives it a `1em` box and a `0.25em` gap. |
+| `.hyperlink-icon-tile`       | From `linkIconFetcher({ tile: true })`. `styles.css` paints `--hl-icon-tile` behind the icon.                                         |
+| `.hyperlink-click-scope`     | On the editor root while `openOnClick` is on. It scopes the Mod-held hand cursor to editors that handle link clicks.                  |
+| `.inputs-wrapper`            | Input group container (adds `.error` on validation).                                                                                  |
+| `.text-wrapper`              | Edit-form text input row (adds `.error`).                                                                                             |
+| `.href-wrapper`              | Edit-form URL input row (adds `.error`).                                                                                              |
+| `.buttons-wrapper`           | Button group container.                                                                                                               |
+| `.back-button`               | Edit-form back action.                                                                                                                |
+| `.apply-button`              | Edit-form apply action.                                                                                                               |
+| `.copy`                      | Preview-popover copy icon button.                                                                                                     |
+| `.edit`                      | Preview-popover edit icon button.                                                                                                     |
+| `.remove`                    | Preview-popover remove icon button.                                                                                                   |
+| `.search-icon`               | Leading icon inside an input group.                                                                                                   |
+| `.error-message`             | Validation error text (shown with `.show`).                                                                                           |
 
-Links keep the browser text cursor at rest. While Cmd (macOS) or Ctrl (elsewhere) is held, the package sets `data-hyperlink-mod` on `<html>`. `styles.css` then shows the hand over links:
+`styles.css` sets no link cursor at rest, so links keep the browser default. While Cmd (macOS) or Ctrl (elsewhere) is held, the package sets `data-hyperlink-mod` on `<html>`. `styles.css` then shows the hand over links:
 
 ```css
 :root[data-hyperlink-mod] .hyperlink-click-scope a[href] {

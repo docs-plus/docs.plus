@@ -34,13 +34,15 @@ npm install @docs.plus/extension-hyperlink
 
 Or use `pnpm add @docs.plus/extension-hyperlink`, `yarn add @docs.plus/extension-hyperlink`, or `bun add @docs.plus/extension-hyperlink`.
 
-Requires **`@tiptap/core` ^3.32.0** and **`@tiptap/pm` ^3.32.0** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.32.2** and **`@tiptap/pm` ^3.32.2** (Tiptap 3.x).
 
 This package imports no React, Vue, or Next.js code. Use it from a plain page, Vite, React, Vue, Svelte, Next.js, Nuxt, or SvelteKit. Create the editor in the browser.
 
 React Native has no DOM. Load the editor in a web view.
 
 Installs two runtime dependencies, `@floating-ui/dom` and `linkifyjs`. The popover engine and the tooltip ship inside `dist`, so they add no third package.
+
+Upgrading from `2.2`? No export or option was removed, but some defaults changed, such as Mod-click and `Mod-k` inside a link. See [Migrating from 2.2 to 2.3](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/migration.md#migrating-from-22-to-23).
 
 Upgrading from `1.x`? Option names, command names, and CSS class names all changed — see [Migrating from 1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/migration.md#migrating-from-1x).
 
@@ -93,11 +95,12 @@ To show a card when the pointer rests on a link, add the `hovercard` option. See
 - **`linkOnPaste: false` does not stop every paste from linking.** The linkify paste rule stays registered, so a pasted bare URL still becomes a link. To stop that path too, set `shouldAutoLink: () => false`, which every autolink path consults.
 - **`HTMLAttributes.target` reaches the DOM.** `HTMLAttributes: { target: '_blank' }` does emit `<a target="_blank">`. A browser-driven `target="_blank"` navigation skips the click gate. Leave `target` at `null` and let the click handler open the link.
 - **Markdown keeps only the link `href`.** Export writes `[text](href)`, and import reads the href alone, so a link `title` is lost both ways. A custom `rel` is lost too, and import sets the default `rel`. `target`, `class` and `image` never reach Markdown, by design.
-- **A link icon needs CSS for `.hyperlink-icon`.** Without `styles.css` or your own rule, the icon shows at its natural size. A Tailwind host also breaks the line, because preflight sets `img` and `svg` to `display: block`.
+- **A link icon needs CSS for `.hyperlink-icon`.** Without `styles.css` or your own rule, the icon shows at its natural size. `styles.css` sizes it only inside `.ProseMirror`, so an icon from `linkIconFor` outside an editor needs your own rule. A Tailwind host also breaks the line, because preflight sets `img` and `svg` to `display: block`.
 - **`linkIcon` must return a fresh element with no text.** `null` gives a plain link with no error. Any other result, or a throw, gives a plain link and one console error for that `linkIcon` function.
 - **A host mark above `priority: 1000` splits one link into two icons.** That mark renders outside the link. When it covers part of a link, the `<a>` splits in two, and each part gets an icon.
 - **`Hyperlink.extend({ addMarkView })` replaces the icon mark view.** To keep the icon, call `this.parent?.()` and wrap its result.
 - **Legacy `link` marks get no icon.** Only the `hyperlink` mark renders through the icon mark view.
+- **Parsed HTML drops every `.hyperlink-icon` element.** The rule runs even with `linkIcon` unset, so content inside an element with that class is lost on load and paste.
 - **A `{ light, dark }` pair has limits.** It needs `styles.css` or your own `.hyperlink-icon` size, or the span has zero width. A bad URL shows a blank 1em box. Browsers before Chrome 150, Firefox 150 and Safari 27 show the light image.
 - **A transient image failure hides that icon until reload.** The helper does not request a failed URL again.
 - **A pointer already resting on a link gets no hovercard.** The card starts only on `pointerover`. When a link renders under a still pointer, no card shows until the pointer leaves the link and comes back.
@@ -271,19 +274,19 @@ Prebuilt create, preview, and edit popovers (`styles.css` + `popovers` config), 
 
 ## Documentation
 
-| Guide                                                                                                                   | What it covers                                                                                                          |
-| ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| [API reference](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md)            | Options, commands, keyboard shortcuts, the full caveats list, server bundles, and TypeScript exports                    |
-| [Popovers](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/popovers.md)            | The three popover slots, factory option shapes, openers, and custom popovers                                            |
-| [Hovercard](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/hovercard.md)          | The link card on hover: the built-in card, the data contract, custom `render`, timing, and keys                         |
-| [Paste title](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/paste-title.md)      | A pasted URL named after its page: when it runs, the resolver contract, undo and a safe backend                         |
-| [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/styling.md)              | The stylesheet, `--hl-*` theme tokens, dark mode, and class names                                                       |
-| [URL handling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/url-handling.md)    | Href normalization, scheme classification, and Markdown round-trip                                                      |
-| [Security](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/security.md)            | The dangerous-scheme gate at each boundary, and the exported safety helpers                                             |
-| [Advanced](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/advanced.md)            | The floating-popover primitive, the UI controller, and the tooltip primitive                                            |
-| [Migrating from 1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/migration.md) | Renamed options, commands, CSS classes, and popover APIs                                                                |
-| [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/CHANGELOG.md)               | Every release and its breaking changes                                                                                  |
-| [For AI coding agents](https://cdn.jsdelivr.net/npm/@docs.plus/extension-hyperlink/README.md)                           | This README as plain Markdown for your agent. The docs are also on [Context7](https://context7.com/docs-plus/docs.plus) |
+| Guide                                                                                                                | What it covers                                                                                                          |
+| -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| [API reference](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md)         | Options, commands, keyboard shortcuts, the full caveats list, server bundles, and TypeScript exports                    |
+| [Popovers](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/popovers.md)         | The three popover slots, factory option shapes, openers, and custom popovers                                            |
+| [Hovercard](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/hovercard.md)       | The link card on hover: the built-in card, the data contract, custom `render`, timing, and keys                         |
+| [Paste title](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/paste-title.md)   | A pasted URL named after its page: when it runs, the resolver contract, undo and a safe backend                         |
+| [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/styling.md)           | The stylesheet, `--hl-*` theme tokens, dark mode, and class names                                                       |
+| [URL handling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/url-handling.md) | Href normalization, scheme classification, and Markdown round-trip                                                      |
+| [Security](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/security.md)         | The dangerous-scheme gate at each boundary, and the exported safety helpers                                             |
+| [Advanced](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/advanced.md)         | The floating-popover primitive, the UI controller, and the tooltip primitive                                            |
+| [Migration](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/migration.md)       | What to check from 2.2 to 2.3, and the renamed options, commands, CSS classes, and popover APIs from 1.x                |
+| [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/CHANGELOG.md)            | Every release and its breaking changes                                                                                  |
+| [For AI coding agents](https://cdn.jsdelivr.net/npm/@docs.plus/extension-hyperlink/README.md)                        | This README as plain Markdown for your agent. The docs are also on [Context7](https://context7.com/docs-plus/docs.plus) |
 
 ## Part of docs.plus
 

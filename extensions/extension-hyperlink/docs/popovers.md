@@ -97,7 +97,7 @@ Each opener reads its slot from `Hyperlink.configure({ popovers })`. Each opener
 
 ## Bring your own popover
 
-Three minimal factories that match the option shapes above. A factory supplies content only. The shell keeps its per-popover ARIA semantics: `role="dialog"` named "Link preview" for preview, and `role="dialog"` named "Add link" or "Edit link" for create and edit. Your popovers therefore stay accessible with no extra wiring. If you select the prebuilt preview by role, use `[role="dialog"][aria-label="Link preview"]`. The shell also owns dismissal and focus — see [Floating-popover primitive](./advanced.md#floating-popover-primitive). The create and edit examples call `validateURL(url, { customValidator: validate })` for the form-level shape check — see [`validate` vs `isAllowedUri`](./api.md#validate-vs-isalloweduri).
+Three minimal factories that match the option shapes above. A factory supplies content only. The shell keeps its per-popover ARIA semantics: `role="dialog"` named "Link preview" for preview, and `role="dialog"` named "Add link" or "Edit link" for create and edit. Your popovers therefore stay accessible with no extra wiring. If you select the prebuilt preview by role, use `[role="dialog"][aria-label="Link preview"]`. The shell also owns dismissal and focus — see [Floating-popover primitive](./advanced.md#floating-popover-primitive). The create and edit examples call `toStoredLink(value, { customValidator: validate })` for the form-level shape check. It returns the link to store, without trailing punctuation, or `null`. See [`validate` vs `isAllowedUri`](./api.md#validate-vs-isalloweduri).
 
 <details>
 <summary><b>Custom <code>previewHyperlink</code></b></summary>
@@ -165,7 +165,7 @@ const HyperlinkWithPreview = Hyperlink.configure({ popovers: { previewHyperlink 
 import {
   getDefaultController,
   Hyperlink,
-  validateURL,
+  toStoredLink,
   type CreateHyperlinkOptions
 } from '@docs.plus/extension-hyperlink'
 
@@ -184,8 +184,9 @@ function createHyperlink(options: CreateHyperlinkOptions): HTMLElement {
   form.append(input, submit)
   form.addEventListener('submit', (event) => {
     event.preventDefault()
-    const url = input.value.trim()
-    if (!validateURL(url, { customValidator: validate })) return
+    // The link to store, without trailing punctuation, or null.
+    const url = toStoredLink(input.value, { customValidator: validate })
+    if (!url) return
 
     // Delegate to the canonical command — it normalizes the protocol
     // and runs the composed gate. Returns `false` when the gate rejects,
@@ -217,7 +218,7 @@ import {
   getDefaultController,
   Hyperlink,
   openPreviewHyperlink,
-  validateURL,
+  toStoredLink,
   type EditHyperlinkOptions
 } from '@docs.plus/extension-hyperlink'
 import { getMarkRange } from '@tiptap/core'
@@ -277,8 +278,8 @@ function editHyperlink(options: EditHyperlinkOptions): HTMLElement {
   form.addEventListener('submit', (event) => {
     event.preventDefault()
     const newText = textInput.value.trim()
-    const newURL = hrefInput.value.trim()
-    if (!newText || !validateURL(newURL, { customValidator: validate })) return
+    const newURL = toStoredLink(hrefInput.value, { customValidator: validate })
+    if (!newText || !newURL) return
 
     // Extend across the full mark range so the edit applies to every
     // position the link covers, then delegate to the canonical command.
