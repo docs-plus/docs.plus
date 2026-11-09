@@ -431,6 +431,10 @@ blocks to the next node view ([#627](https://github.com/docs-plus/docs.plus/issu
 
 - `README.md` is now two screens long. Its detail moved to `CONTRIBUTING.md` and `docs/`
   ([#541](https://github.com/docs-plus/docs.plus/issues/541)).
+- The demo page at [docs.plus/demo](https://docs.plus/demo) has seven new pictures. They show the
+  link icons, the hovercard, a pasted link taking its title, a card for a page that shares no
+  preview, links into the same page, the share card, and media captions in Markdown. The page also
+  says that a filter or a message link shows the page card.
 
 ### Internal
 
