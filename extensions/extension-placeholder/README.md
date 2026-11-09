@@ -21,10 +21,10 @@ A textblock is a node that holds inline text, such as a paragraph or a heading.
 
 ## Why use it
 
-- **Cost tracks cursor depth, not document length.** Tiptap's built-in Placeholder scans every top-level block with `doc.descendants` on every editor update. This package walks up from the cursor instead.
+- **Nested hints need no full-document scan.** This package walks up from the cursor. Tiptap's built-in reaches a nested paragraph only with `includeChildren`. That mode scans the whole document at start, then each top-level block a change touches.
 - **Migration starts with one import swap.** Four of the built-in's seven options keep their names and defaults. The callback form also receives `parentName` and `doc`.
 - **Nested blocks work with no extra option.** An empty paragraph inside a list item or blockquote gets the hint. The built-in needs `includeChildren` for that.
-- **Metadata-only transactions skip the rebuild.** An awareness ping in a collaborative editor keeps the previous decoration set. The built-in re-evaluates the `placeholder` callback on every editor update.
+- **Metadata-only transactions skip the rebuild.** An awareness ping in a collaborative editor keeps the previous decoration set. With default options, the built-in re-evaluates the `placeholder` callback on every editor update.
 
 ## Install
 
@@ -34,7 +34,7 @@ npm install @docs.plus/extension-placeholder
 
 Or use `pnpm add @docs.plus/extension-placeholder`, `yarn add @docs.plus/extension-placeholder`, or `bun add @docs.plus/extension-placeholder`.
 
-Requires **`@tiptap/core` ^3.32.0** and **`@tiptap/pm` ^3.32.0** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.32.2** and **`@tiptap/pm` ^3.32.2** (Tiptap 3.x).
 
 This package imports no React, Vue, or Next.js code. Use it from a plain page, Vite, React, Vue, Svelte, Next.js, Nuxt, or SvelteKit. Create the editor in the browser.
 

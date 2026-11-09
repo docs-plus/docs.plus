@@ -4,7 +4,7 @@ Part of the [`@docs.plus/extension-placeholder` README](../README.md).
 
 ## How it works
 
-A textblock is a node that holds inline text, such as a paragraph or a heading. Tiptap's built-in Placeholder scans every top-level block with `doc.descendants` on every editor update, and the whole tree when `includeChildren` is on. This package starts at the cursor and walks up, so the cost tracks the cursor depth, not the document length. It writes the hint text into a `data-placeholder` attribute on the empty textblock at the cursor. It also adds `emptyNodeClass` to every empty ancestor wrapper above that textblock. It accepts four of the built-in's seven options, and its callback form gains `parentName` and `doc`.
+A textblock is a node that holds inline text, such as a paragraph or a heading. With default options, Tiptap's built-in Placeholder checks only the top-level block at the cursor, so it misses a nested paragraph. With `includeChildren` on, it scans the whole document at start, then each top-level block a change touches. This package starts at the cursor and walks up, so the cost tracks the cursor depth, not the document length. It writes the hint text into a `data-placeholder` attribute on the empty textblock at the cursor. It also adds `emptyNodeClass` to every empty ancestor wrapper above that textblock. It accepts four of the built-in's seven options, and its callback form gains `parentName` and `doc`.
 
 ## Styling
 

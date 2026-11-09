@@ -4,11 +4,21 @@ All notable changes to `@docs.plus/extension-placeholder` are documented here. T
 
 ## [Unreleased]
 
-No behaviour change. The Tiptap peer floor rises to `^3.32.2`, aligned to the family.
+No behaviour change. The Tiptap peer floor rises to `^3.32.2`, aligned to the family. To upgrade, move `@tiptap/core` and `@tiptap/pm` to 3.32.2 or later. Nothing else changes for a host.
 
 ### Changed
 
 - The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.2`. It was `^3.31.3`.
+
+### Documentation
+
+- The README and docs comparisons with Tiptap's built-in Placeholder now match Tiptap 3.32.2. The built-in no longer scans with `doc.descendants`. With default options, it checks only the top-level block at the cursor. With `includeChildren`, it scans the whole document at start, then each top-level block a change touches.
+- The migration guide and the API caveats say that `emptyNodeClass` takes a string only. Tiptap's built-in also takes a callback.
+- On npm, the docs.plus badge now opens the docs.plus repository. Before, a click opened the badge image.
+
+### Internal
+
+- The package `author` field and the `LICENSE` copyright line now name Harvey Marzban.
 
 ## [2.2.0] — 2026-10-22
 

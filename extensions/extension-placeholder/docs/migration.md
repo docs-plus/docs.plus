@@ -4,7 +4,7 @@ Part of the [`@docs.plus/extension-placeholder` README](../README.md).
 
 Tiptap 3.x ships the built-in Placeholder from `@tiptap/extensions`, subpath `./placeholder`. `@tiptap/extension-placeholder` is the older name for the same extension.
 
-Swap the import and keep the same configuration. The options this package accepts carry the built-in's names and defaults.
+Swap the import and keep the same configuration. The options this package accepts carry the built-in's names and defaults. One type is narrower: `emptyNodeClass` takes a string only.
 
 ```diff
 - import { Placeholder } from '@tiptap/extensions'
@@ -16,7 +16,7 @@ Remove the built-in from the extensions array in the same change. Both register 
 | Built-in option        | This package                                                                                                                                                                       |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `placeholder`          | Same name, same default `'Write something …'`. The callback also receives `parentName` and `doc`.                                                                                  |
-| `emptyNodeClass`       | Same name, same default `'is-empty'`. The extension also adds it to every empty ancestor wrapper.                                                                                  |
+| `emptyNodeClass`       | Same name, same default `'is-empty'`. A string only: the built-in also takes a callback. The extension adds the class to every empty ancestor wrapper as well.                     |
 | `emptyEditorClass`     | Same name, same default `'is-editor-empty'`. Unchanged: the built-in also adds it to the decorated nodes.                                                                          |
 | `showOnlyWhenEditable` | Same name, same default `true`. Read at render time, so `editor.setEditable()` updates the hint and both classes at once.                                                          |
 | `showOnlyCurrent`      | No option. The extension decorates only the empty textblock at the cursor.                                                                                                         |
@@ -25,12 +25,12 @@ Remove the built-in from the extensions array in the same change. Both register 
 
 Five behavior differences remain after the swap:
 
-- **Cost.** The built-in scans every top-level block with `doc.descendants` on every editor update, and the whole tree when `includeChildren` is on. This package walks from the cursor up to the first non-empty ancestor.
-- **Rebuild timing.** The built-in re-evaluates the `placeholder` callback on every editor update. This package rebuilds only when a transaction changes the document or sets the selection.
+- **Cost.** With default options, the built-in checks only the top-level block at the cursor. With `includeChildren` on, it scans the whole document at start, then each top-level block a change touches. This package walks from the cursor up to the first non-empty ancestor.
+- **Rebuild timing.** With default options, the built-in re-evaluates the `placeholder` callback on every editor update. This package rebuilds only when a transaction changes the document or sets the selection.
 - **Empty hint.** A resolved hint of `''` removes the decoration and both classes here. The built-in still emits the classes.
-- **Document-depth selection.** ⌘A or Ctrl+A hides the hint here. The built-in keeps it.
+- **Document-depth selection.** ⌘A or Ctrl+A hides the hint here. The built-in keeps the hint on an empty first block.
 - **`hasAnchor`.** Always `true` here, because the extension decorates only the empty textblock at the cursor. The built-in passes `false` when `showOnlyCurrent: false` decorates a node away from the cursor.
 
 Class-based CSS keeps working, with one change: the extension now adds the empty class to an empty list item or blockquote as well. Add `[data-placeholder]` to the selector to reach only the textblock that holds the hint. See [Styling](./guide.md#styling).
 
-Full breaking-change list: [CHANGELOG.md](../CHANGELOG.md).
+Release history: [CHANGELOG.md](../CHANGELOG.md).
