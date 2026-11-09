@@ -17,6 +17,9 @@ No behaviour change. The Tiptap peer floor rises to `^3.32.2`, aligned to the fa
 - The README now says that one hint shows at a time, at the cursor. It names the four options that keep the built-in's names, and lists every callback field.
 - The README says what changed since 2.2.0, and why the hint shows before the first click. It names the peer floor and says to keep every `@tiptap/*` package on one version.
 - The README and API caveats say that removed options log no warning. They also say that the i18n rebuild dispatch adds no undo step.
+- The README says that Tiptap 3.31.x gets a peer conflict at install, and why 2.3.0 is a minor. It asks for the exact `@tiptap/core` version on every other `@tiptap/*` package, the Quickstart `@tiptap/starter-kit` install included.
+- The README and the Styling guide say why the hint rule needs `float: left`, `height: 0` and `pointer-events: none`. The README links Tiptap's built-in Placeholder, and explains `pos`, `doc` and `hasAnchor`.
+- The README and API caveats say when to run the rebuild dispatch, and why the three removed options need no replacement.
 - On npm, the docs.plus badge now opens the docs.plus repository. Before, a click opened the badge image.
 
 ### Internal

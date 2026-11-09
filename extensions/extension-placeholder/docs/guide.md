@@ -22,6 +22,8 @@ The extension writes the resolved hint text into the `data-placeholder` attribut
 }
 ```
 
+`float: left` and `height: 0` take the hint out of the line, so the caret stays at the start of the empty line. `pointer-events: none` lets a click on the hint reach the editor. Only `color` is a style choice.
+
 ### Class names
 
 | Name                                   | Where the extension adds it                                    | When                                                                                                                                        |
