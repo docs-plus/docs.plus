@@ -258,7 +258,7 @@ const WORKSTREAMS = [
   {
     key: 'demo-page',
     section: '5. Demo page',
-    task: `Audit every claim in docs/DEMO.md against the code and fix the wrong lines. Then append the final H1 for ${version} with the banner image /demo-assets/release-${version}-banner.png.`
+    task: `Audit every claim in docs/DEMO.md against the code and fix the wrong lines. Then append the final H1 for ${version} with the banner image /demo-assets/release-${version}-banner.png. Then write ${notesDir}/DEMO-PICTURES.md: every section this release adds or visibly changes that has no picture, with its facts and source files, for the main loop (skill §5).`
   },
   {
     key: 'banner-brief',
@@ -356,6 +356,7 @@ return {
   gates,
   mainLoopNext: [
     `Build the banner from ${notesDir}/BANNER-BRIEF.md on the Design canvas (skill §6), render light and dark at 2x into apps/webapp/public/demo-assets/.`,
+    `Draw a picture for every section in ${notesDir}/DEMO-PICTURES.md from the house kit (skill §5), and place each one in docs/DEMO.md.`,
     'Browser-check every UI fix in this release at phone width and on desktop.',
     'Hand the maintainer the diff for review, then the skill §Ship steps. Commit nothing.'
   ]

@@ -115,6 +115,13 @@ Check every page the release makes wrong: `README.md` (extension status), `exten
 - First run a feature-truth audit: check every claim on the page against the code, and fix the lines that are now wrong.
 - The page ends with one H1, `# 🆕 What's new`, newest release first. Add the release as `## docs.plus X.Y.Z` right under that H1, with the banner image, the date, and one H3 per headline. End each H3 with a filter link such as `/demo/connected%20app`. Never add a second What's new H1 (maintainer ruling, 2026-10-22).
 - When the release has benchmarks, add a `### Faster and steadier` H3 with the Promote rows, each with its condition (§Benchmarks). Its filter term must appear only in that H3.
+- **Every new section gets a picture before the release** (maintainer ruling, 2026-11-09). That covers each section the release adds, and each section whose feature changes what a reader sees. 2.3.0 needed seven (`d18` to `d24`), because its link sections were written with none.
+  - Build each picture from the house kit `kit.css`, in the untracked folder `Notes/PROPOSAL-demo/`, at 1280×720, as one HTML file beside it, such as `d18-link-icons.html`. The folder's README holds the rules. Never draw a second visual language.
+  - A team works best: designers propose concepts through different lenses, an art director merges them into one brief per picture, one illustrator builds each picture, and a fresh reviewer checks it against the code. A drawn UI part that does not match the code is a blocker.
+  - Render with headless Chrome at 1x: `--headless=new --hide-scrollbars --window-size=1280,720 --screenshot=<png> file://<html>`. Look at every PNG yourself before it ships.
+  - When the server draws the real thing (a social card, say), render the real output, as the kit folder's `render-kinds.ts` script does in its `cards` folder.
+  - Copy each PNG to `apps/webapp/public/demo-assets/`, and put it after the section's first paragraph with alt text that says what it shows.
+  - Never picture a feature that production has off. Hold that picture and its text until the switch-on.
 
 ### 6. Banner
 
@@ -142,7 +149,7 @@ The maintainer runs these steps, in this order.
 4. **Extensions**, if they publish. The npm account uses a Chrome passkey, so no 6-digit code exists. Publish each package with `(cd extensions/<pkg> && bun publish)` and approve in the browser. Tick "skip two-factor for 5 minutes" so the rest go through. Wait until `npm view <pkg> dist-tags.latest --prefer-online` shows the new version for every package. Then run `bun run release:family`: it skips the publishes, then creates and pushes one tag per package.
 5. `git tag vX.Y.Z && git push origin vX.Y.Z`, after the deploy commit.
 6. `gh release create vX.Y.Z --title "docs.plus X.Y.Z" --latest --notes-file Notes/release-X.Y.Z/RELEASE-NOTES.md`, after the banner is live.
-7. Paste `docs/DEMO.md` on /demo, then check the banner in light and dark.
+7. Paste `docs/DEMO.md` on /demo, then check the banner in light and dark, and that every new picture loads.
 8. Refresh the Context7 library.
 
 ## Traps that bit on 2.1.0
