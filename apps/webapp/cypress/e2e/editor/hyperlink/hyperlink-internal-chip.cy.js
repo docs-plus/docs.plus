@@ -6,6 +6,9 @@ import { TEST_TITLE } from '../../../support/commands'
 const HEADING_TEXT = 'heading chip'
 const EXTERNAL_TEXT = 'external link'
 const PAD_TEXT = 'other pad link'
+const HOME_TEXT = 'docs home link'
+const NEW_HOST_TEXT = 'new host link'
+const CROSS_PAD_TEXT = 'cross pad link'
 // The same words in both paragraphs, so the chip and the plain line wrap alike.
 const LONG_TEXT =
   'This long chip runs past the end of the first line so it has to wrap onto a second line and keep the same height as a plain paragraph does'
@@ -20,6 +23,9 @@ const DocumentStructure = {
       paragraph(`A ${HEADING_TEXT} here.`),
       paragraph(`An ${EXTERNAL_TEXT} here.`),
       paragraph(`An ${PAD_TEXT} here.`),
+      paragraph(`A ${HOME_TEXT} here.`),
+      paragraph(`A ${NEW_HOST_TEXT} here.`),
+      paragraph(`A ${CROSS_PAD_TEXT} here.`),
       paragraph(LONG_TEXT),
       paragraph(LONG_TEXT)
     ])
@@ -84,6 +90,23 @@ describe('Internal link chips', () => {
       .should('have.attr', 'src')
       .and('match', /\/icons\/logo\.svg$/)
     linkFor(PAD_TEXT).find('[data-link-kind]').should('not.exist')
+  })
+
+  // Maintainer ruling, 2026-11-09 (#516). Other cross-origin docs.plus paths keep the favicon.
+  it('the docs.plus root and a new.docs.plus link show the docs.plus logo', () => {
+    linkText(HOME_TEXT, 'https://docs.plus/')
+    linkText(NEW_HOST_TEXT, 'https://new.docs.plus/x')
+    linkText(CROSS_PAD_TEXT, 'https://docs.plus/some-pad')
+    for (const text of [HOME_TEXT, NEW_HOST_TEXT]) {
+      linkFor(text)
+        .find('> img.hyperlink-icon')
+        .should('have.attr', 'src')
+        .and('match', /\/icons\/logo\.svg$/)
+    }
+    linkFor(CROSS_PAD_TEXT)
+      .find('> img.hyperlink-icon')
+      .should('have.attr', 'src')
+      .and('not.match', /\/icons\/logo\.svg$/)
   })
 
   it('a chip that wraps keeps the height of a plain two-line paragraph', () => {

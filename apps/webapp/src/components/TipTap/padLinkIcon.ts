@@ -49,11 +49,27 @@ const kindIcon = (kind: InternalDocumentLink['kind']): HTMLElement => {
   return el
 }
 
+// Maintainer ruling, 2026-11-09 (#516): from any origin, the docs.plus root and the
+// new.docs.plus host are docs.plus too. Literal hosts, so other docs.plus paths keep spec B2.
+const isDocsPlusHome = (href: string): boolean => {
+  try {
+    const { protocol, hostname, pathname } = new URL(href)
+    if (protocol !== 'https:' && protocol !== 'http:') return false
+    return hostname === 'new.docs.plus' || (hostname === 'docs.plus' && pathname === '/')
+  } catch {
+    return false
+  }
+}
+
 /** Pad resolver: same-pad kind glyph, the logo for another or a new pad, mail and phone, then the favicon. */
 export const padLinkIcon = (ctx: LinkIconContext): HTMLElement | null => {
   const destination = destinationOf(ctx.href)
   if (destination.kind === 'here') return kindIcon(destination.link.kind)
-  if (destination.kind === 'pad' || destination.kind === 'newPad') {
+  if (
+    destination.kind === 'pad' ||
+    destination.kind === 'newPad' ||
+    (destination.kind === 'web' && isDocsPlusHome(ctx.href))
+  ) {
     return logoMap({ href: LOGO_HREF })
   }
   return appScheme(ctx) ?? fetchIcon(ctx)
