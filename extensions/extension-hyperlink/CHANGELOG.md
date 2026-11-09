@@ -102,6 +102,7 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ### Fixed
 
+- Renaming a link no longer removes it when its old text was a web address. Before, `editHyperlink` changed `example.com` to `our site`, and autolink then dropped the mark, because the new text no longer looked like a URL. This also hit pasted links whose title holds a domain. The command now carries `preventAutolink`, as `setHyperlink` and `unsetHyperlink` do.
 - The prebuilt edit popover sends the link text only when you change the Text field. A co-editor's new link text and its inner marks, such as bold, now survive a URL-only edit ([#643](https://github.com/docs-plus/docs.plus/issues/643)).
 - Tab and Shift-Tab in a popover skip a control that cannot take focus: one that is disabled, inside `[inert]`, not rendered, or at `tabindex="-1"`. Before, Tab onto a disabled Apply button left focus where it was ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - Parsed and pasted `<a href>` now becomes `hyperlink` even when StarterKit's Link stays registered. The `a[href]` parse rule runs at priority 51, above the ProseMirror default of 50. Before, the mark registered first won, which was usually Link. A host that keeps Link to load stored `link` marks now gets a `hyperlink` mark, its icon and its popovers on paste ([#636](https://github.com/docs-plus/docs.plus/issues/636)).
@@ -116,10 +117,12 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 - [Migrating from 2.2 to 2.3](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/migration.md#migrating-from-22-to-23) gives a code change or a check for each item in the upgrade list, and says what 2.2 did.
 - The custom create and edit popovers in [Popovers](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/popovers.md#bring-your-own-popover) store `toStoredLink(value)`, as the prebuilt forms do.
 - On npm, the docs.plus badge now opens the docs.plus repository. Before, a click opened the badge image.
+- The README demo GIF now shows this release, with each shortcut drawn on screen. A typed address gets its site icon, and resting on a link opens the hovercard. `Mod-k` on a selected word creates a link, and a pasted address takes its page title. `Mod-k` inside a link opens its preview, and Edit renames the link.
 
 ### Internal
 
 - The clean-room tests run on `prosemirror-view` 1.42.6. They ran on 1.42.3.
+- The playground has a `demo=on` mode for `bun run docs:gif`. It serves real site icons, a real card picture and a real page title from `test/playground/icons/demo`, so the recording needs no network.
 - The package `author` field and the `LICENSE` copyright line now name Harvey Marzban.
 
 ## [2.2.0] — 2026-10-22

@@ -222,6 +222,42 @@ const pasteTitle: HyperlinkModule.PasteTitleOptions | undefined = pasteTitleMode
   : undefined
 if (pasteTitle) window._pasteTitle = pasteTitleState
 
+// `demo=on` drives the README hero GIF (`bun run docs:gif`): real site icons, the real docs.plus
+// demo card and a real page title, all served from ./icons/demo, so the recording needs no network.
+const demoMode = params.get('demo') === 'on'
+const demoIcon = HyperlinkModule.linkIconMap({
+  'docs.plus': media('demo/docsplus.svg'),
+  'github.com': { light: media('demo/github.svg'), dark: media('demo/github-dark.svg') }
+})
+const DEMO_PAGES: Record<string, HyperlinkModule.HovercardData> = {
+  'https://docs.plus/demo': {
+    title: 'Demo Handbook of docs.plus',
+    description: 'docs.plus is a free, open-source shared document with a chatroom per heading.',
+    image: { url: media('demo/docsplus-demo-card.png') }
+  }
+}
+const DEMO_TITLES: Record<string, string> = {
+  'https://github.com/docs-plus/docs.plus/issues/242':
+    'RFC: Desktop hyperlink hovercard · Issue #242 · docs-plus/docs.plus'
+}
+const demoKey = (href: string): string => href.replace(/^http:/, 'https:').replace(/\/$/, '')
+const demoHovercard: HyperlinkModule.HovercardOptions = {
+  fetchMetadata: ({ href }) =>
+    new Promise((resolve) =>
+      window.setTimeout(() => resolve(DEMO_PAGES[demoKey(href)] ?? null), 150)
+    ),
+  siteIcon: demoIcon
+}
+const demoPasteTitle: HyperlinkModule.PasteTitleOptions = {
+  fetchTitle: ({ href }) =>
+    new Promise((resolve) =>
+      window.setTimeout(() => resolve(DEMO_TITLES[demoKey(href)] ?? null), 700)
+    )
+}
+const linkIconOption = demoMode ? demoIcon : linkIcon
+const hovercardOption = demoMode ? demoHovercard : hovercard
+const pasteTitleOption = demoMode ? demoPasteTitle : pasteTitle
+
 // Stable reference for custom-popover.cy.ts; permissive so preview fixture hrefs pass.
 const configuredValidate = (url: string): boolean => /^https?:/i.test(url)
 
@@ -320,9 +356,9 @@ const editor = new Editor({
       ...(blockAutoLink && { shouldAutoLink: () => false }),
       ...(enableClickSelection && { enableClickSelection: true }),
       ...(exitable && { exitable: true }),
-      ...(linkIcon && { linkIcon }),
-      ...(hovercard && { hovercard }),
-      ...(pasteTitle && { pasteTitle }),
+      ...(linkIconOption && { linkIcon: linkIconOption }),
+      ...(hovercardOption && { hovercard: hovercardOption }),
+      ...(pasteTitleOption && { pasteTitle: pasteTitleOption }),
       ...(strictGate && {
         isAllowedUri: (uri: string, { defaultValidate }: HyperlinkModule.IsAllowedUriContext) =>
           defaultValidate(uri) && !uri.includes('blocked.example')
@@ -335,7 +371,9 @@ const editor = new Editor({
       popovers
     })
   ],
-  content: '<p>Select text and press <strong>Mod+K</strong> to create a link.</p>'
+  content: demoMode
+    ? '<p></p>'
+    : '<p>Select text and press <strong>Mod+K</strong> to create a link.</p>'
 })
 
 // `readonly=on` mimics a published read-only doc (nav-guards.cy.ts fallback spec).

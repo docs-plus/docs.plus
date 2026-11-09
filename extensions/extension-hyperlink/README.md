@@ -9,7 +9,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/demo-dark.gif">
-    <img alt="Typing "docs.plus" autolinks it, clicking the link opens a preview with copy, edit and remove, and Mod-K on a selected word opens the create-link form" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/demo-light.gif">
+    <img alt="Typing docs.plus/demo makes a link with the site icon, and resting on it opens a hovercard. Mod-K on a selected word creates a link, and a pasted address takes its page title. Mod-K inside a link opens its preview, and Edit renames the link" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/demo-light.gif">
   </picture>
 </p>
 
