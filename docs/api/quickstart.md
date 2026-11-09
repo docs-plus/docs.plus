@@ -69,6 +69,19 @@ Two modes exist. `replace` swaps the whole body, and it is the default. `append`
 
 A `200` means the content reached the live document, and its save was handed off. People with the document open see the change at once, without reconnecting.
 
+```json
+{
+  "success": true,
+  "data": {
+    "documentId": "kR4pZ2mQ7tY1nB8xW3v",
+    "mode": "replace",
+    "version": 1
+  }
+}
+```
+
+`version` is the saved version that holds your write. It is missing when the `200` came before the save, as [step 3](#3-read-it-back) explains.
+
 ## 3. Read it back
 
 ```bash
@@ -81,7 +94,7 @@ curl '<BASE_URL>/api/documents/<DOCUMENT_ID>/content?format=json' \
   "success": true,
   "data": {
     "documentId": "kR4pZ2mQ7tY1nB8xW3v",
-    "version": 12,
+    "version": 1,
     "format": "json",
     "content": {
       "type": "doc",
@@ -90,6 +103,10 @@ curl '<BASE_URL>/api/documents/<DOCUMENT_ID>/content?format=json' \
           "type": "heading",
           "attrs": { "level": 1, "toc-id": "a1B2c3D4e5F6g7H8" },
           "content": [{ "type": "text", "text": "Quarterly report" }]
+        },
+        {
+          "type": "paragraph",
+          "content": [{ "type": "text", "text": "Revenue grew 12%." }]
         }
       ]
     }
@@ -97,11 +114,20 @@ curl '<BASE_URL>/api/documents/<DOCUMENT_ID>/content?format=json' \
 }
 ```
 
-Pass `format=text` instead to get plain text, one line per block.
+A document created without `content` has no saved version, so your first write is version `1`. Each later saved version adds one.
 
 Notice the `toc-id` the server added. That is covered below.
 
-**This read returns the stored copy, not the live one.** It can trail an actively edited document by up to 60 seconds. Your own write can trail too. On a document nobody has open, a `200` carries `version` once the write is saved. On an open document the `200` has no `version`.
+Pass `format=text` instead to get plain text, one line per block.
+
+To read the document as Markdown, call the export route with `format=md`. It returns the raw `.md` file, not the JSON envelope. It takes the service-role key or a user token, and it always needs one, even on a public document.
+
+```bash
+curl '<BASE_URL>/api/documents/<DOCUMENT_ID>/export?format=md' \
+  -H 'Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>'
+```
+
+**This read returns the stored copy, not the live one.** It can trail an actively edited document by up to 60 seconds. Your own write can trail too. On a document nobody has open, the `PATCH` `200` carries `version` once the write is saved. On an open document that `200` has no `version`.
 
 A document that exists with no content yet returns `version: 0` and an empty document. That is not an error.
 
@@ -135,7 +161,7 @@ Next step: prefer one `replace`, or a few large `append` calls, over many small 
 
 ## Retrying safely
 
-`replace` is safe to retry. Sending it twice leaves the same document.
+`replace` is safe to retry when every heading in it carries its `toc-id`. Sending it twice then leaves the same document. Without the ids, each retry mints new ones, so a heading's chat thread detaches again. Each retry also stores one more version.
 
 `append` is not. A timeout may mean the write landed anyway, so a blind retry can append twice. Next step: wait about a minute, then `GET` the document and check before retrying an `append`. `503 SAVE_NOT_CONFIRMED` means the write was applied. `503 DOCUMENT_BUSY` applied nothing; retry after a few seconds. Send writes to one document in sequence.
 

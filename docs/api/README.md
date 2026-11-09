@@ -14,7 +14,7 @@ http://localhost:4000
 
 On a self-hosted deployment it sits behind your reverse proxy. Only two path prefixes are routed to the public edge, `/api` and `/health`. Everything else answers inside your network only.
 
-On a deployed server, the base URL is your [`PUBLIC_RESTAPI_URL`](../../apps/hocuspocus.server/ENV.md#public-origin), the origin with no `/api`. Every path on these pages already starts with `/api` or `/health`.
+On a deployed server, the base URL is your [`PUBLIC_RESTAPI_URL`](../../apps/hocuspocus.server/ENV.md#public-origin), the origin with no `/api`. Every public path on these pages already starts with `/api` or `/health`.
 
 ## Machine-readable spec
 
@@ -69,7 +69,13 @@ When a request fails schema validation, the `400` (`VALIDATION_ERROR`) also carr
 
 `error.details` appears only when the server runs with `NODE_ENV=development`. Do not depend on it.
 
-Three route groups still answer with older shapes, and the contract document lists each one. Notably `/api/metadata` puts `code` and `message` at the top level rather than nested. Next step: read the response-envelope section of the contract document before you write a client that parses errors.
+Three route groups still answer with older shapes:
+
+- `{ "error": "..." }` from the email handlers, the admin routes' auth check, an upload with no file, and a media file read.
+- `{ "success": false, "code": "...", "message": "..." }` from `/api/metadata`, with `code` and `message` at the top level.
+- The email `send-*` and `bounce` successes, which carry their own fields with no `data` wrapper.
+
+Next step: read the [response envelope](../../apps/hocuspocus.server/API.md#response-envelope) section of `apps/hocuspocus.server/API.md` before you write a client that parses errors.
 
 ## Error codes
 
@@ -101,7 +107,7 @@ Five limiters cover every request except `/health`, `/health/*` and a verified `
 - The global limit is [`RATE_LIMIT_MAX`](../../apps/hocuspocus.server/ENV.md#security) requests per 15 minutes, and the code default is `100`. Your server may set another value, so read `X-RateLimit-Limit` rather than assume 100.
 - Public media reads have their own budget, ten times the global one. It covers every `GET` under `/api/plugins/hypermultimedia/`.
 - Favicons have their own budget, ten times the global one. It covers every request to `/api/metadata/icon`.
-- Link previews have their own budget, ten times the global one. It covers every request to `/api/metadata` and `/api/metadata/image`.
+- Link previews have their own budget, ten times the global one. It covers every request to `/api/metadata`, `/api/metadata/image` and `/api/metadata/archive`.
 - The social card has its own budget, four times the global one. It covers every request to `/api/documents/:documentId/card.png`, so crawlers never spend a reader's budget.
 - Every other route spends from the global budget, and that includes the upload `POST` on the same media path.
 - An `/api/mcp` call with an accepted OAuth token spends no global budget. Its tool calls spend a per-person budget instead (see the [MCP reference](../mcp/reference.md)). A request without an accepted token still spends it. When an address has no budget left, every `/api/mcp` call from it gets a `429`, an accepted one too.

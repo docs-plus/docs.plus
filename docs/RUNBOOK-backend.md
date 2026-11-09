@@ -124,7 +124,7 @@ For `push-notifications-dlq`, inspect `GET /api/admin/audit/notifications/dlq` a
    dc exec redis redis-cli CLIENT LIST | grep -c bzpopmin
    ```
 
-   Expect three blocking clients per worker replica — document, email and push. A count below that means a parked fetch loop. Restart `hocuspocus-worker` and re-check before you go on.
+   Expect four blocking clients per worker replica: document, `version-change-summary`, email and push. With an `invalid` email config, expect three. A lower count means a parked fetch loop. Restart `hocuspocus-worker` and re-check before you go on.
 
 2. Run the drain as a dry run. It is dry by default.
 

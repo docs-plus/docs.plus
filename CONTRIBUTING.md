@@ -213,6 +213,7 @@ docs.plus/
 │   ├── eslint-config/           # 🧹 Shared ESLint configuration
 │   ├── floating-popover/        # 🎈 Popover lifecycle engine
 │   ├── floating-tooltip/        # 💬 Hover/focus tooltip primitive
+│   ├── pad-url/                 # 🔗 Pad link format, shared by webapp and server
 │   ├── playground/              # 🧪 Clean-room Cypress harness
 │   ├── release-tooling/         # 📦 Shared prepack and publish guards
 │   └── supabase/                # 🗄️ Database schema, seed, migrations
@@ -434,7 +435,7 @@ That skips the extension gates.
 
 ### E2E Tests
 
-`bun run test:e2e` runs every Cypress spec under `apps/webapp/cypress/e2e/`, which today means `editor/`, `chatroom/` and `document/`. The run fails when the number of specs the workers ran does not match the number of spec files on disk. Those specs run in **parallel** across multiple workers using [cypress-split](https://github.com/bahmutov/cypress-split). cypress-split splits spec files across N Cypress instances for faster feedback.
+`bun run test:e2e` runs every Cypress spec under `apps/webapp/cypress/e2e/`, which today means `auth/`, `chatroom/`, `document/` and `editor/`. The run fails when the number of specs the workers ran does not match the number of spec files on disk. Those specs run in **parallel** across multiple workers using [cypress-split](https://github.com/bahmutov/cypress-split). cypress-split splits spec files across N Cypress instances for faster feedback.
 
 ```bash
 # Interactive mode (single instance)
