@@ -1,23 +1,25 @@
 # ✨ docs.plus demo
 
+docs.plus is a free, open-source shared document with a chatroom per heading.
+
 ![docs.plus: a shared page with people writing and talking all over it](/demo-assets/d0-intro.png)
 
 Every line below is a filter, not an anchor. Click one and the page folds to that section alone.
 
-- [👋 Start here](/demo/start%20here)
+- [👋 Start here](/demo/running)
 - [💬 A chatroom on every heading](/demo/notifications)
-- [🗂️ The table of contents](/demo/invisible)
+- [🗂️ The table of contents](/demo/lights)
 - [🔍 Filter by word](/demo/filter%20by%20word)
 - [🧱 Why a section behaves this way](/demo/behaves)
 - [🔗 Links](/demo/mailto)
 - [🎬 Media](/demo/soundcloud)
 - [✍️ Writing](/demo/writing)
 - [📊 Diagrams](/demo/pele)
-- [📜 What the history holds](/demo/versions)
+- [📜 What the history holds](/demo/snapshot)
 - [📤 Import and export](/demo/import%20and%20export)
 - [🔐 Who can open this document](/demo/owner-only)
 - [🚀 Make your own](/demo/make%20your%20own)
-- [🆕 What's new](/demo/release)
+- [🆕 What's new](/demo/released)
 
 # 👋 Start here
 
@@ -98,7 +100,7 @@ The lock **stops at the document body**. Every chat control on this page still w
 
 The text is fixed. The talk is not.
 
-The table of contents has no drag grip here, because a locked page refuses every move. Its Delete section entry is the exception. It still responds on this page and writes into the document — needs a document you can edit. The server refuses what it sends, so **do not press it here**. Delete section asks you to confirm first, so press Cancel if you open it.
+The table of contents has no drag grip and no Delete section here, because a locked page refuses both. Both need a document you can edit.
 
 Open the chatroom on this heading and say what you would use a per-heading chatroom for — needs an account.
 
@@ -194,19 +196,23 @@ _One row per heading. Fold from a row, and the page creases where the text went.
 
 ## What lands in a row
 
-A row carries the level of the heading and the text you typed. A heading with no text still **gets a row**, with a grey label such as "Heading 2", the same hint the page shows. So the table of contents always matches the page.
+A row carries the level of the heading and the text you typed. A heading with no text still **gets a row**. The row shows the page's grey hint, such as "Heading 2" — needs a document you can edit. So the table of contents always matches the page.
 
 The table of contents has its own column. Drag the divider between that column and the page to resize it — try it here. The width runs from 240px to 46% of the column and page together. Your browser remembers a width above 240px. That gesture needs a mouse.
 
-Drag the divider below 120px, and the column turns into the **tick rail**: a 32px strip with one tick per heading. The docked chatroom then spans the full width — try it here. Hover or focus a tick to preview its section, and click it to jump there. The button at the top of the rail, or a reload, brings the full table back.
+Drag the divider below 120px, and the column turns into the **tick rail**: a 32px strip with one tick per heading. The docked chatroom then spans the full width — try it here. Hover or focus a tick to open its section card, and click the tick to jump there. The button at the top of the rail, or a reload, brings the full table back.
+
+The section card has a chat button that opens that heading's chatroom. Tab moves into the card, and Escape leaves it — try it here. A video or an embed never plays in the card.
 
 ## The row's menu
 
-**Right-click a row for five entries** — try it here. Chat room opens the chatroom on that heading. Fold section folds it, and on a folded row it reads Unfold section. Focus section writes the heading text into the address as the only filter term. Copy link puts a link to that heading on your clipboard, and the copied link scrolls there on a cold page load.
+**Right-click a row for its menu** — try it here. This page shows four entries. Chat room opens the chatroom on that heading. Fold section folds it, and on a folded row it reads Unfold section. Focus section writes the heading text into the address as the only filter term. Copy link puts a link to that heading on your clipboard, and the copied link scrolls there on a cold page load.
+
+Paste the copied link into a rich text editor, and its text names the heading and the headings above it, like a breadcrumb. It never carries the filter or the chatroom you have open — try it here.
 
 On a focused row, `Shift+F10` or the Menu key opens the same menu — try it here.
 
-Delete section removes the whole section, body text and media with it. It asks you to confirm first — needs a document you can edit.
+A document you can edit adds a fifth entry, Delete section. It removes the whole section, body text and media with it. It asks you to confirm first.
 
 The menu is desktop only. The document title row at the top has none.
 
@@ -220,6 +226,8 @@ A fold changes no text. It is **drawing, not editing**, which is why it works on
 
 A filter folds sections for you. It saves your own folds first, and puts them back when you clear the filter.
 
+A link to a heading lands on it, even when a fold or a filter hides it. It opens only the sections that hide the heading, then scrolls the heading to the top. Those sections stay open for this visit only. Your saved folds do not change, so a reload folds them again.
+
 ## Moving a section
 
 Drag the grip on a row up or down, and let go between two rows — needs a document you can edit. The slot sets the level: the section joins the list where the line sits, and the rail of the list it joins turns blue. Let go on the middle of a row instead, and the section goes inside that row, as its last sub-section. Let go where it started, and nothing changes. The first line, the title, has no grip, and nothing can land above it.
@@ -228,6 +236,8 @@ Drag the grip on a row up or down, and let go between two rows — needs a docum
 _The slot sets the order and the level. The whole section travels._
 
 **The whole section travels**: the heading, its body text, its media, and every sub-heading under it. One undo step puts it back. Every sub-heading shifts by the same number of levels as the dragged heading, and stops at H6. A move never pulls the headings that follow into the section.
+
+A cut and paste inside the same page keeps each heading's chatroom and every link to it — needs a document you can edit. A paste from another page or another site gives the headings new ids, so they start new chatrooms.
 
 The grip is desktop only.
 
@@ -244,7 +254,7 @@ _The path after the document name is the filter. Every hit is marked where it si
 
 A section stays open when the word appears in its own text: the heading, plus the body under it, down to the next heading. Its parents stay open with it, and so does everything nested beneath it.
 
-The match is a plain run of letters, and it ignores case. So `fold` also finds `folding` and `unfold`.
+The match is a plain run of letters, and it ignores case. So `fold` also finds `folding` and `unfold`. A run of spaces, tabs or hyphens counts as one gap, so `customer-research` finds `customer research`.
 
 Two things follow. A term that matches a heading always keeps that section, so every section name on this page works as a filter. And **the filter reads text, not subject matter**.
 
@@ -324,9 +334,19 @@ Filtered to this section? [Show the whole document](/demo).
 
 Click a link on this page and a card opens under it, naming what sits on the other end — try it here. Going there takes a second click, on the card. You see where a link leads **before you commit to leaving**.
 
+## An icon on every link
+
+Most links on this page start with a small icon that shows where they go — try it here.
+
+A web link shows its site's favicon. A link to another docs.plus page shows the docs.plus logo. A mail or phone link shows a mail or phone icon. This page holds none.
+
+A link into this page shows what it opens: a heading, a chat, a filter, a version or the top. So every line of the contents list at the top carries the filter icon.
+
+The icons come through our own server, never straight from the linked site. A site with no icon keeps a plain link. In print, a link shows no icon.
+
 ## Rest on a link
 
-On desktop, rest the mouse on a link and a card opens after half a second, with no click — try it here. The card asks for its content only after 150 ms, so a pointer that passes over a link costs nothing.
+On desktop, rest the mouse on a link and a card opens after half a second, with no click — try it here. The card asks for its content only after 150 ms, so a pointer that passes over a link costs nothing. Our server fetches the card, so your browser sends nothing to the linked site.
 
 A slow page opens the card with grey bars, and the content then replaces them in the same card. After 4 seconds with no answer, the card shows the address and says the site shares no preview.
 
@@ -336,11 +356,13 @@ Settings › Appearance › **Show link previews on hover** turns the cards off 
 
 ## Out to the web
 
-[https://github.com/docs-plus/docs.plus](https://github.com/docs-plus/docs.plus) is an ordinary external link. Rest on it, and its card shows **the stars, the main language and the last update** — try it here. The owner's picture sits beside them as a small tile. Click it, and its card fills with **the page title and picture, held for 5 minutes**. Copy link sits on the card, and its icon turns into a check when the copy works — try it here. On desktop, Edit and Remove sit there too, but only on a document you can edit.
+[https://github.com/docs-plus/docs.plus](https://github.com/docs-plus/docs.plus) is an ordinary external link. Rest on it, and its card shows the page's picture, title and description — try it here. Some public GitHub projects add **the stars, the main language and the last update**, as [ueberdosis/tiptap](https://github.com/ueberdosis/tiptap) shows — try it here. Click a link, and its card fills with **the page title and the site icon, held for 5 minutes**. Copy link sits on the card, and its icon turns into a check when the copy works — try it here. On desktop, Edit and Remove sit there too, but only on a document you can edit.
 
 The card's title is itself a link, so one click on the title goes there — try it here. When the fetch fails, that title falls back to the raw address, and the link still works.
 
-Middle-click a link to skip the card and open it in a new tab — try it here.
+Middle-click a link, or hold ⌘ (Ctrl) and click it, to skip the card and open it in a new tab — try it here. On a document you can edit, a link shows the hand cursor only while you hold ⌘ or Ctrl. On this page, links always show it. Press Enter on a focused link to open its card, even on this page.
+
+With the caret inside a link, ⌘+K (Ctrl+K) opens its card, and Alt+Enter opens the link — needs a document you can edit.
 
 A Stack Overflow question shows its answer count. It adds **Accepted answer** when one is accepted: [Why is conditional processing of a sorted array faster than of an unsorted array?](https://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-processing-an-unsorted-array) — try it here. A Wikipedia article shows its opening lines, and its lead picture when it has one: [Collaborative real-time editor](https://en.wikipedia.org/wiki/Collaborative_real-time_editor) — try it here. A job post shows where the job is, how it is worked, and when it was posted.
 
@@ -375,13 +397,15 @@ Both ship in the next npm release of the extension.
 
 ## Addresses that are not web pages
 
-A `mailto:` or `tel:` link has no page to fetch. The address becomes the title, and the icon names the kind. The pad maps **40 schemes** this way: mail, phone, maps, video calls, and app links.
+A `mailto:` or `tel:` link has no page to fetch. The address becomes the title, and the icon names the kind. The pad maps **47 schemes** this way: mail, phone, maps, video calls, and app links.
 
 ## Back into the document
 
-A link into this document never touches the network. It resolves on the spot, and the card shows a destination chip. Five kinds exist: **This document**, a quoted heading, **Chat**, **Filtered view · N terms**, and **Version N**.
+A link into this document never touches the network. It resolves on the spot, and its click card shows a destination chip. The chip names the place: **This document**, a quoted heading, a chat or a message, **Filtered view**, or **Version N**.
 
-[/demo/crease](/demo/crease) is such a link. Its card carries a **Filtered view · 1 term** chip. Click the chip and the page folds in place — try it here. No reload, and no new tab.
+[/demo/crease](/demo/crease) is such a link. Its card carries a **Filtered view** chip, with **Match any** and one pill for each term. Click the chip and the page folds in place — try it here. No reload, and no new tab.
+
+A [/new](/new) link gets a chip of its own, **New document**. Click the chip, and a blank document opens in a new tab.
 
 ## Cards for docs.plus pages
 
@@ -389,15 +413,13 @@ Rest on a link to a docs.plus page, and its card comes from the page itself, not
 
 [/demo/crease](/demo/crease) shows **Filter for “crease”**, how many sections the filter shows, and the first two. Every filter link on this page has a card like it — try it here.
 
-[Folding](/demo?id=HoKBe56adb5466L6) shows the heading, the headings above it, its subsections and its first lines — try it here.
+[Folding](/demo?id=HoKBe56adb5466L6) shows the heading, the headings above it, its subsections and its first lines — try it here. Fold `🗂️ The table of contents` first, then click the Folding link and its chip. The page opens that fold and lands on the heading — try it here.
 
-[The chatroom on Start here](/demo?chatroom=6adb5466z7HG78l0) shows how many messages it holds, and when the last one came — try it here. A card shows counts and dates only, never a message or a name.
+[The chatroom on Start here](/demo?chatroom=6adb5466z7HG78l0) shows how many messages it holds — try it here. A card shows counts and dates only, never a message or a name.
 
 [This page's history](/demo#history) shows how many versions the page keeps, and the last save. [Version 1](/demo#history?version=1) shows when that version was saved — try it here.
 
-[The companion page](/demo-companion) is another docs.plus page. Its card shows the page title, its number of sections and the first two — try it here. Click it instead, and the card shows its address.
-
-[A Private page](/demo-private) shows only **This document is private**. Its title and text stay hidden from everyone but its owner — try it here.
+A link to a Private page shows only **This document is private**. Its title and text stay hidden from everyone but its owner.
 
 Filtered to this section? [Show the whole document](/demo).
 
@@ -407,7 +429,7 @@ Filtered to this section? [Show the whole document](/demo).
 
 ## Images
 
-A picture sits **in the run of the text**, not in a gallery beside it. While a remote picture loads, a grey shell holds its place.
+A picture sits **in the run of the text**, not in a gallery beside it. While a remote picture loads, a grey shell holds its place. A picture that fails to load says so, and names the site it comes from.
 
 Hover a picture and its toolbar appears — needs a document you can edit. The toolbar checks edit rights first, so this page shows the pictures and no toolbar.
 
@@ -684,7 +706,11 @@ The gear button opens Document settings. Its Import & export section holds four 
 
 An export is built from the last saved version, so a very recent edit may be missing from it.
 
-Import takes `.docx` and `.md` only, up to 10,485,760 bytes, and Markdown stops at 65,536 characters. It replaces the whole document — needs an account and a document you can edit. A heading keeps its chatroom only when its level and text stay the same. History keeps the earlier version, so a restore can bring it back. On this read-only page, Replace with a file says the document cannot be replaced — try it here. A Markdown replace keeps pictures at their natural size, and a lone video, audio, or embed URL becomes a player.
+Import takes `.docx` and `.md` only, up to 10,485,760 bytes, and Markdown stops at 65,536 characters. It replaces the whole document — needs an account and a document you can edit. A heading keeps its chatroom when its text stays the same, even at a new level. A renamed heading keeps it too, when its section text is unique and unchanged. Before the replace, the confirm card names each heading whose chatroom holds messages and would lose them. History keeps the earlier version, so a restore can bring it back. On this read-only page, Replace with a file says the document cannot be replaced — try it here. A Markdown replace keeps pictures at their natural size, and a lone video, audio, or embed URL becomes a player.
+
+A Markdown export keeps the caption, size and placement of every picture, video, audio and embed. A Markdown import reads them back, and so does an AI app that writes Markdown — needs an account. The guide is [Media in Markdown](https://github.com/docs-plus/docs.plus/blob/main/docs/media-in-markdown.md).
+
+A Word import accepts every tracked change, and says so — needs an account and a document you can edit.
 
 Filtered to this section? [Show the whole document](/demo).
 
@@ -708,11 +734,17 @@ On desktop, the Document QR code button after Filter shows the code in a QR card
 
 A share link **carries no permission**. There is no token, no expiry, and no grant to one person. Who can open a document is decided by the two flags, and by who you are signed in as. On a private document the Share card hides the link and the QR code, and says to turn Private off in Settings.
 
+## A card when you share this page
+
+Paste this page's address into a chat app or a social site — try it here. It shows a docs.plus card with the page's name and its first paragraph.
+
+Our server draws the card from the saved page. A card never shows a person's name, a face or a chat message, and a Private page never gets one. A link to a heading, a chat or a version shows the same card as the page. A page with no owner shows the docs.plus home card.
+
 Filtered to this section? [Show the whole document](/demo).
 
 # 🚀 Make your own
 
-[/new](/new) gives you a blank document with a random name, and you can write in it — try it here. **Nothing to install**, and no sign-up to start.
+[/new](/new) gives you a blank document with a random name, and you can write in it — try it here. Click the link, then the **New document** chip on its card. **Nothing to install**, and no sign-up to start.
 
 Everything above then runs the other way round. You can type, move a section, and insert media from its address. Uploading a file, replacing the whole document with a file, and posting in a chatroom ask you to sign in first — needs an account.
 
@@ -727,6 +759,92 @@ Filtered to this section? [Show the whole document](/demo).
 # 🆕 What's new
 
 The newest release comes first. Most parts end with a filter link to the place on this page that shows it.
+
+## docs.plus 2.3.0
+
+Released on OWED-RELEASE-DATE.
+
+This release is about links. You see where a link goes before you click it, and a link you share shows what it holds.
+
+### See where a link goes before you click
+
+On desktop, you can now rest the mouse on a web link. A card opens with the page's picture, site, title and description — try it here. Our server fetches it, so your browser sends nothing to the linked site.
+
+When a site shares no preview, the card says why. It warns you when a link's text names one site but opens another. A link to a docs.plus page gets a card made from the page itself — try it here.
+
+On this page: [/demo/rest-on-a-link](/demo/rest-on-a-link).
+
+### Every link shows its site
+
+A small icon now sits before a link: the site's favicon, the docs.plus logo, or a mail or phone icon — try it here. A site with no icon keeps a plain link.
+
+A link into this page shows what it opens: a heading, a chat, a filter, a version or the top. Its card names the place, such as **Filtered view** with one pill for each term.
+
+On this page: [/demo/favicon](/demo/favicon).
+
+### Pasted links take the page title
+
+Paste a web address on its own, and the link now shows the page's title. A link to another docs.plus page takes that page's title. One undo brings the address back — needs a document you can edit. Try it in [/new](/new).
+
+On this page: [/demo/paste-a-link](/demo/paste-a-link).
+
+### A shared link shows what it holds
+
+Paste this page's address into a chat app or a social site — try it here. It now shows a docs.plus card with the page's name and its first paragraph. A card never shows a person's name, a face or a chat message.
+
+On this page: [/demo/social](/demo/social).
+
+### Copied links read like a breadcrumb
+
+Copy link on a table of contents row now gives a link that names the heading and the headings above it — try it here. It never carries the filter or the chatroom you have open.
+
+A link to a heading now opens the fold that hides it. A link copied from History opens History at that version — try it here.
+
+On this page: [/demo/breadcrumb](/demo/breadcrumb).
+
+### Captions that survive Markdown
+
+A picture, video, audio or embed now keeps its caption, size and placement through Markdown. A Markdown export, a Markdown import and an AI app that writes Markdown all keep them — needs an account.
+
+On this page: [/demo/caption](/demo/caption).
+
+### Move a section with its chatroom
+
+On desktop, the slot where you let go of a table of contents row sets the section's level. A drop on the middle of a row puts the section inside it. A cut and paste inside one page now keeps each heading's chatroom and every link to it. All three need a document you can edit.
+
+On this page: [/demo/cut-and-paste](/demo/cut-and-paste).
+
+### The tick rail's section card
+
+On desktop, the tick rail's section card now has a chat button for that heading. Tab moves into the card, and Escape leaves it — try it here.
+
+On this page: [/demo/tick-rail](/demo/tick-rail).
+
+### Things that work again
+
+Folded sections open again. Before, a click on a folded section or on its arrow in the table of contents did nothing — try it here.
+
+The email for a chat message now opens the document at that message. On Android, the slash menu and the link editor now keep the on-screen keyboard open — needs a document you can edit.
+
+A pasted picture no longer vanishes when its address has no file extension. A picture that fails to load now names the site it comes from.
+
+Sign-in no longer stops when Chrome wrongly says you are offline — needs an account.
+
+### Safer links, safer server
+
+A crafted web page can no longer stall our server while the server builds its link preview. Error reports no longer carry the address of a link you preview.
+
+An erased account can no longer write back its profile, its preferences or its devices for push alerts.
+
+### Faster and lighter
+
+A large document now opens faster, and its offline copy no longer grows on every load.
+
+We measured the link icons on a 2,000-link test page against the same page with no icons. In a local dev build, the icons added about 26 ms to the frame that fills the page. The frame took 134.3 ms with the icons and 108.5 ms without, each the median of 5 runs. We ran it in Chromium 156 on an Apple M5 Max laptop ([#516](https://github.com/docs-plus/docs.plus/issues/516)).
+
+The server now reads a large document's last saved version much faster. On a 5.36 MB document, the read fell from 165.13 ms to 2.87 ms on an Apple M5 Max laptop. We did not time production ([#198](https://github.com/docs-plus/docs.plus/issues/198)).
+
+Read every change in the [GitHub Release](https://github.com/docs-plus/docs.plus/releases/tag/v2.3.0) and the [CHANGELOG](https://github.com/docs-plus/docs.plus/blob/main/CHANGELOG.md).
 
 ## docs.plus 2.2.0
 
