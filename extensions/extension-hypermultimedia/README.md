@@ -21,7 +21,7 @@ Tiptap extension for embedding media in the editor: images, audio, video, and pr
 
 - **One kit adds nine media nodes.** One `HyperMultimediaKit.configure` call adds image, audio, video, YouTube, Vimeo, SoundCloud, Spotify, X and Loom. Set a node to `false` to leave it out.
 - **Editing controls on every node.** Each node gets a media toolbar in its top-right corner, an editable caption, and a loading shell. Eight of the nine also get drag-to-resize.
-- **A pasted provider URL becomes a player.** Paste a YouTube, SoundCloud or Spotify URL on its own, or a Loom, Vimeo or X URL anywhere, and it becomes an embed node. With `@tiptap/markdown`, every node imports and exports through typed `![alt](src "caption"){width=800}` syntax. See [Caveats](#caveats) for what Markdown drops.
+- **A pasted provider URL becomes a player.** Paste a YouTube, SoundCloud or Spotify URL alone on its line, or a Loom, Vimeo or X URL anywhere, and it becomes an embed node. With `@tiptap/markdown`, every node imports and exports through typed syntax, such as `![youtube](src "caption"){width=800}`. See [Caveats](#caveats) for what Markdown drops.
 - **The UI follows `color-scheme`.** Every visual token is a `--hm-*` CSS custom property, declared with `light-dark()`. The toolbar, loading shell, gripper and caption follow the nearest ancestor's `color-scheme`.
 
 ## Install
@@ -42,7 +42,7 @@ Installs one runtime dependency, `@floating-ui/dom`. The popover engine and the 
 
 Upgrading from `1.x`? Version 2.0.0 renames the stored node types to camelCase and renames `Twitter` to `x` — see [Migrating from 1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/migration.md#migrating-from-1x).
 
-Upgrading from `2.2.0`? Nothing was removed, but the Markdown and HTML output changed — see [Upgrading from 2.2.0](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/migration.md#upgrading-from-220).
+Upgrading from `2.2.0`? No export or option was removed, but the Markdown and HTML output changed. A per-node `allowfullscreen: false` no longer survives HTML. See [Upgrading from 2.2.0](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/migration.md#upgrading-from-220).
 
 ## Quickstart
 
@@ -76,7 +76,8 @@ You should see the image in the editor. Hover it with a mouse: the media toolbar
 - **`resizeGripper: false` removes the whole media toolbar for that node.** To remove the drag handles alone, replace the media toolbar with [`mediaToolbar`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/media-toolbar.md#bring-your-own-toolbar).
 - **A link extension can claim a media URL before the kit sees it.** See [Keep media URLs out of a link extension](#keep-media-urls-out-of-a-link-extension).
 - **The paste handler drops pasted image files silently without a listener.** Add an `editorFileUpload` listener, as [Image file paste](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/paste-and-import.md#image-file-paste-editorfileupload) shows.
-- **Markdown drops the provider player options.** The caption, the layout and the `video`, `audio` and `x` player options survive. See [Caption and options](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/paste-and-import.md#caption-and-options).
+- **The kit has no translation option.** Its loading and error text are English. A custom shell can show other words, but screen readers still hear the English error. See [Loading shell](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/resize-and-loading.md#loading-shell).
+- **Markdown drops the `youtube`, `vimeo`, `soundcloud`, `spotify` and `loom` player options.** The caption, the layout keys and the `video` and `audio` player options survive. The `x` options survive too, except `dnt` and `align`. See [Caption and options](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/paste-and-import.md#caption-and-options).
 
 The full list, with the reason for each, is in [Caveats](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/api.md#caveats).
 
@@ -84,13 +85,15 @@ The full list, with the reason for each, is in [Caveats](https://github.com/docs
 
 ### Insert media by command
 
-Each provider insert command returns `false` for a `src` that fails its provider check. Chain any of them like a normal Tiptap command:
+Each provider insert command returns `false` for a `src` that fails its provider check. Chain any of them like a normal Tiptap command. The command inserts the node at the selection and replaces any selected content:
 
 ```ts
 editor.chain().focus().setYoutubeVideo({ src: 'https://youtu.be/dQw4w9WgXcQ', start: 42 }).run()
 ```
 
-No insert command runs the scheme gate, so validate host-supplied URLs before you insert them. [Commands](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/api.md#commands) lists all ten.
+To start with a video in `content`, pass JSON: `{ type: 'doc', content: [{ type: 'youtube', attrs: { src } }] }`.
+
+No insert command runs the [scheme gate](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/security.md#write-side-the-scheme-gate), the check that rejects `javascript:`, `data:` and other unsafe URL schemes. Validate host-supplied URLs before you insert them. [Commands](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/api.md#commands) lists all ten.
 
 ### Keep media URLs out of a link extension
 
@@ -105,7 +108,7 @@ Hyperlink.configure({ shouldAutoLink: (url) => !isMediaUrl(url) })
 
 Hyperlink also needs `StarterKit.configure({ link: false })`, as its [Quickstart](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/README.md#quickstart) shows.
 
-YouTube, SoundCloud and Spotify only claim a URL that is the whole pasted block. Loom, Vimeo and X claim their URL anywhere in the pasted text. [Paste precedence](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/paste-and-import.md#paste-precedence) covers the tradeoffs.
+YouTube, SoundCloud and Spotify only claim a URL pasted alone on its line, with no other text. Loom, Vimeo and X claim their URL anywhere in the pasted text. [Paste precedence](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/paste-and-import.md#paste-precedence) covers the tradeoffs.
 
 ### Leave out or tune a node
 
@@ -257,7 +260,7 @@ The shots below show every node the kit ships: the local asset files `image`, `v
 | [Media toolbar](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/media-toolbar.md)                 | Toolbar actions, custom actions and icons, captions, a host-built toolbar                                               |
 | [Embeds](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/embeds.md)                               | Player options for YouTube, Vimeo, Loom, SoundCloud, Spotify and X                                                      |
 | [Paste and import](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/paste-and-import.md)           | Markdown import and export, paste precedence with a link extension, image file paste                                    |
-| [Resize and loading shell](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/resize-and-loading.md) | Drag-resize limits, the loading shell and a custom overlay                                                              |
+| [Resize and loading shell](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/resize-and-loading.md) | Drag-resize limits, the loading shell and a custom shell                                                                |
 | [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/styling.md)                             | The stylesheet, the `--hm-*` theme tokens, class names                                                                  |
 | [Security](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/security.md)                           | The scheme gate on stored `src` values, the View original allowlist                                                     |
 | [Migration guide](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/migration.md)                   | Upgrading from 2.2.0: Markdown and HTML output. Migrating from 1.x: renamed node types and exports, removed API         |

@@ -58,8 +58,10 @@ historical Conventional Commits format. The project adheres to
 - The README Caveats list what Markdown drops, and `docs/api.md` Caveats name each dropped attribute.
 - `docs/paste-and-import.md` documents the caption title slot and the option block, with every key and its values ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
 - `docs/migration.md` gains Upgrading from 2.2.0. It covers the Markdown option block and the other changes a host should check.
+- `docs/paste-and-import.md` shows how to load `@tiptap/markdown`, and lists the defaults that export leaves out. It gives the old size form and the audio and video file extensions. The loading shell docs say that no option changes the error text.
 - `docs/embeds.md` and the `youtube`, `vimeo`, `spotify` and `loom` READMEs say that fullscreen lives only in `allow`.
 - `docs/resize-and-loading.md` and `docs/styling.md` document `sourceHost` and `.hm-loading-shell__detail` ([#637](https://github.com/docs-plus/docs.plus/issues/637)).
+- The README and `docs/api.md` Caveats say the kit has no translation option. `docs/migration.md` shows how a custom shell shows its own error words, and why screen readers still hear English.
 - The README peer line now names `^3.32.2`, the range the package publishes.
 - On npm, the docs.plus badge now opens the docs.plus repository. Before, a click opened the badge image.
 
