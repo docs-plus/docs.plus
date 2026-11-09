@@ -12,7 +12,11 @@ No behaviour change. The Tiptap peer floor rises to `^3.32.2`, aligned to the fa
 
 ### Documentation
 
-- The README and `docs/api.md` Caveats now say what Markdown does to an indent ([#606](https://github.com/docs-plus/docs.plus/issues/606)). Export writes the literal leading characters. On import, four or more spaces, or one tab, start a code block. Right after a list, a line indented two or more spaces, or one tab, joins the last list item. It loses some or all of its indent.
+- The README and `docs/api.md` Caveats now say what Markdown does to an indent ([#606](https://github.com/docs-plus/docs.plus/issues/606)). Export writes the literal leading characters. On import, four or more spaces, or one tab, start a code block. Right after a list, a line indented two or more spaces, or one tab, joins the last list item. The line loses some or all of its indent.
+- `docs/migration.md` is now one Migration page with two sections. The new [Upgrading within 2.x](docs/migration.md#upgrading-within-2x) section lists the Tiptap range each `2.x` release needs. It also says to keep every `@tiptap/*` package on one version.
+- The table-cell caveat now names the `tableCell` and `tableHeader` rules that `indent()` needs. The table caveat also says Tab adds a row in the last cell. A new list caveat says Tab sinks and Shift-Tab lifts a list item. The first item at any level cannot sink. Shift-Tab lifts even an item with a literal indent, so call `outdent()` to remove that indent.
+- The README defines a line: one non-empty textblock. A hard break does not start a new line.
+- The Markdown caveat now names `@tiptap/markdown`, and the README says a two-space paragraph indent survives import. The `preserveWhitespace` note says the option keeps every whitespace run, not only the indent.
 - On npm, the docs.plus badge now opens the docs.plus repository. Before, a click opened the badge image.
 
 ### Internal

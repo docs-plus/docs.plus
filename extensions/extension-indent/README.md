@@ -13,16 +13,16 @@
   </picture>
 </p>
 
-Tiptap extension for literal indent: Tab inserts an indent string at the caret or at each selected line start, and Shift-Tab removes it.
+Tiptap extension for literal indent: Tab inserts an indent string at the caret or at each selected line start, and Shift-Tab removes it. The indent is plain text in the document, not a node attribute or CSS.
 
 [![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/docs-plus/docs.plus/tree/main/extensions/extension-indent/examples/vanilla?file=main.ts)
 
 ## Why use it
 
-- **Lists and tables keep Tab.** The extension registers at priority `25`, below the Tiptap default `100`. So `@tiptap/extension-list` sinks list items and `@tiptap/extension-table` moves between cells first.
-- **Keyboard users can still leave the editor.** When nothing claims Tab, the key falls through to the browser default. Tab focus navigation keeps working.
-- **You choose where indent applies.** The default allowlist holds two rules: paragraphs under `doc`, and paragraphs under `blockquote`. Headings, code blocks and every other textblock stay excluded until you add a rule.
-- **Selections indent line by line.** Any non-empty selection indents at each line start, and it never replaces the selected text.
+- **Lists and tables keep Tab.** The extension registers at priority `25`, below the Tiptap default `100`. Tiptap runs the higher priority first. So `@tiptap/extension-list` sinks list items and `@tiptap/extension-table` moves between cells first. `@tiptap/starter-kit` includes the list extension, but not the table extension.
+- **Keyboard users can still leave the editor.** When nothing claims Tab, the key falls through to the browser default. Tab focus navigation keeps working. This is by design, not a bug.
+- **You choose where indent applies.** Each rule names a textblock type and its direct parent type, never a further ancestor. The default allowlist holds two rules: paragraphs under `doc`, and paragraphs under `blockquote`. Headings, code blocks and every other textblock stay excluded until you add a rule.
+- **Selections indent line by line.** Any non-empty selection indents at each line start, and it never replaces the selected text. A line is one non-empty textblock, such as a paragraph. A hard break does not start a new line.
 
 ## Install
 
@@ -32,7 +32,7 @@ npm install @docs.plus/extension-indent
 
 Or use `pnpm add @docs.plus/extension-indent`, `yarn add @docs.plus/extension-indent`, or `bun add @docs.plus/extension-indent`.
 
-Requires **`@tiptap/core` ^3.32.2** and **`@tiptap/pm` ^3.32.2** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.32.2** and **`@tiptap/pm` ^3.32.2** (Tiptap 3.x). Keep every other `@tiptap/*` package, `@tiptap/starter-kit` included, on the same version as `@tiptap/core`.
 
 This package imports no React, Vue, or Next.js code. Use it from a plain page, Vite, React, Vue, Svelte, Next.js, Nuxt, or SvelteKit. Create the editor in the browser.
 
@@ -40,7 +40,9 @@ React Native has no DOM. Load the editor in a web view.
 
 Installs with no runtime dependencies.
 
-Coming from `0.1.x`? Read [Migrating from 0.1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/migration.md#migrating-from-01x) first — `2.0.0` renames one option.
+Coming from `0.1.x`? Read [Migrating from 0.1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/migration.md#migrating-from-01x) first. `2.0.0` needs Tiptap 3, renames one option, and drops `indentCSS`, the UMD file and deep imports.
+
+On `2.x` already? [Upgrading within 2.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/migration.md#upgrading-within-2x) lists the Tiptap range each release needs. No `2.x` release after `2.0.0` changes behaviour, options, commands or exports.
 
 ## Quickstart
 
@@ -75,17 +77,18 @@ const editor = new Editor({
 })
 ```
 
-The snippet keeps `indentChars` at the two-space default, and it needs no CSS. See [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/guide.md#styling) for the two cases that do. In React, pass the same `extensions` array to `useEditor` from `@tiptap/react`.
+The snippet keeps `indentChars` at the two-space default, and it needs no CSS. You need one CSS rule only when you pass `injectCSS: false`, or when your stylesheet overrides `white-space` on `.ProseMirror`. See [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/guide.md#styling). In React, pass the same `extensions` array to `useEditor` from `@tiptap/react`.
 
 You should see one paragraph that asks you to press Tab. Click before its first word and press Tab: the text moves two spaces to the right. Press Shift-Tab to move it back.
 
 ## Caveats
 
-- **Tab in a table cell never inserts an indent, whatever your allowlist holds.** Call `editor.commands.indent()` from a toolbar button instead.
+- **Tab in a table cell never inserts an indent, whatever your allowlist holds.** `@tiptap/extension-table` moves to the next cell, and in the last cell it adds a row. Call `editor.commands.indent()` from a toolbar button instead. The command needs a `{ textblock: 'paragraph', parent: 'tableCell' }` rule, and a `tableHeader` rule for header cells. Without them it returns `false`.
 - **`configure({ allowedIndentContexts })` replaces the default allowlist instead of merging into it.** Passing one rule drops both defaults, so list every rule you keep.
-- **Headings, code blocks and every textblock outside the default allowlist ignore Tab.** In those textblocks Tab moves focus out of the editor, because the handler returns `false`. Add one rule for each textblock and parent you need.
+- **Headings, code blocks, list items that cannot sink, and every textblock outside the allowlist ignore Tab.** The extension leaves the key alone there, so the browser moves focus out of the editor. Shift-Tab with no indent to remove does the same. Add one rule for each textblock and parent you need.
+- **In a list item, Tab sinks the item and Shift-Tab lifts it.** The first item of any list, nested or not, cannot sink. A `{ textblock: 'paragraph', parent: 'listItem' }` rule makes Tab insert a literal indent there. Shift-Tab still lifts the item and keeps the indent, so call `editor.commands.outdent()` from a toolbar button instead. Task items need their own rule. See [List item paragraphs](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/api.md#allowedindentcontexts).
 - **`editor.getHTML()` writes the indent out, and `setContent(savedHtml)` drops it on load.** See [Keep the indent in saved HTML](#keep-the-indent-in-saved-html).
-- **In Markdown, an indent does not survive reliably.** On import, four or more spaces, or one tab, start a code block. Right after a list, a line indented two or more spaces, or one tab, joins the last list item. It loses some or all of its indent.
+- **In Markdown, an indent does not survive reliably.** This covers `@tiptap/markdown`. Export writes the literal leading characters. On import, a two-space indent on a paragraph survives. Four or more spaces, or one tab, start a code block. Right after a list, a line indented two or more spaces, or one tab, joins the last list item. The line loses some or all of its indent. To keep it, store `getJSON()` instead.
 
 The full list, with the reason for each, is in [Caveats](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/api.md#caveats).
 
@@ -93,7 +96,7 @@ The full list, with the reason for each, is in [Caveats](https://github.com/docs
 
 ### Add toolbar buttons
 
-Both commands run the same `enabled`, `indentChars` and context gate as the Tab key.
+Both commands run the same `enabled`, `indentChars` and context gate as the Tab key. The context gate is the `allowedIndentContexts` check at the caret, or at each selected line.
 
 ```ts
 editor.chain().focus().indent().run()
@@ -117,7 +120,7 @@ HTML parsing collapses a whitespace run and strips the leading one. Pass `parseO
 editor.commands.setContent(savedHtml, { parseOptions: { preserveWhitespace: true } })
 ```
 
-`editor.getJSON()` round-trips the indent with no extra option. See [Persistence](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/guide.md#persistence).
+This keeps every whitespace run in that HTML, not only the indent. Whitespace between block tags is still dropped. `editor.getJSON()` round-trips the indent with no extra option. See [Persistence](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/guide.md#persistence).
 
 ### Indent with a tab character
 
@@ -127,15 +130,17 @@ editor.commands.setContent(savedHtml, { parseOptions: { preserveWhitespace: true
 Indent.configure({ indentChars: '\t' })
 ```
 
+A tab indent becomes a code block on Markdown import. See [Caveats](#caveats).
+
 ## Documentation
 
-| Guide                                                                                                                  | What it covers                                                                                                          |
-| ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| [API reference](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/api.md)              | Options, `allowedIndentContexts` recipes, commands, keyboard shortcuts and Tab order, the full caveats list, TypeScript |
-| [Guide](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/guide.md)                    | Styling, multiline selections, outdent at the caret, persistence                                                        |
-| [Migrating from 0.1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/migration.md) | `allowedNodeTypes` to `allowedIndentContexts`, the changed defaults                                                     |
-| [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/CHANGELOG.md)                 | Every release and its breaking changes                                                                                  |
-| [For AI coding agents](https://cdn.jsdelivr.net/npm/@docs.plus/extension-indent/README.md)                             | This README as plain Markdown for your agent. The docs are also on [Context7](https://context7.com/docs-plus/docs.plus) |
+| Guide                                                                                                       | What it covers                                                                                                          |
+| ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| [API reference](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/api.md)   | Options, `allowedIndentContexts` recipes, commands, keyboard shortcuts and Tab order, the full caveats list, TypeScript |
+| [Guide](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/guide.md)         | Styling, multiline selections, outdent at the caret, persistence                                                        |
+| [Migration](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/migration.md) | `0.1.x` to `2.x` breaking changes, and the Tiptap range for each `2.x` release                                          |
+| [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/CHANGELOG.md)      | Every release and its breaking changes                                                                                  |
+| [For AI coding agents](https://cdn.jsdelivr.net/npm/@docs.plus/extension-indent/README.md)                  | This README as plain Markdown for your agent. The docs are also on [Context7](https://context7.com/docs-plus/docs.plus) |
 
 ## Part of docs.plus
 

@@ -66,6 +66,8 @@ Literal indent is characters in the text, not a node attribute, so it survives w
 editor.commands.setContent(savedHtml, { parseOptions: { preserveWhitespace: true } })
 ```
 
+This keeps every whitespace run in that HTML, not only the indent. Whitespace between block tags is still dropped.
+
 The constructor loads content the same way, and `parseOptions` is a top-level field there:
 
 ```ts
