@@ -13,9 +13,10 @@ docs.plus is a real-time collaborative editor. A document is a tree of headings,
 
 ## Write in a document
 
-| Page                    | What it covers                                          |
-| ----------------------- | ------------------------------------------------------- |
-| [Diagrams](diagrams.md) | How to insert, edit and read a Mermaid diagram in a pad |
+| Page                                      | What it covers                                                     |
+| ----------------------------------------- | ------------------------------------------------------------------ |
+| [Diagrams](diagrams.md)                   | How to insert, edit and read a Mermaid diagram in a pad            |
+| [Media in Markdown](media-in-markdown.md) | How to write a picture, a player, a caption and a size in Markdown |
 
 ## Run it on your own server
 
