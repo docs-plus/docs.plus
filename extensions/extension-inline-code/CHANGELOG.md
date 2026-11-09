@@ -8,7 +8,15 @@ No behaviour change. The Tiptap peer floor rises to `^3.32.2`, aligned to the fa
 
 ### Changed
 
-- The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.2`. It was `^3.31.3`.
+- The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.2`. It was `^3.31.3`. If your app runs an older Tiptap 3, upgrade both packages first.
+
+### Documentation
+
+- On npm, the docs.plus badge now opens the docs.plus repository. Before, a click opened the badge image.
+
+### Internal
+
+- The package `author` field and the `LICENSE` copyright line now name Harvey Marzban.
 
 ## [2.2.0] — 2026-10-22
 
