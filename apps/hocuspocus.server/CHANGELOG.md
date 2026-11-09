@@ -10,6 +10,25 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ## [Unreleased]
 
+### Highlights
+
+- **Prisma 7 reads big documents faster and with less memory ([#198](https://github.com/docs-plus/docs.plus/issues/198)).**
+  On one Apple M5 Max laptop with Bun 1.4.4, a read of a 5.36 MB document fell from 165 ms to
+  2.9 ms. A `history.watch` read of it fell from 163 ms to 2.5 ms. Under a 1 GiB limit,
+  reading two 5 MB versions peaked at 206 MiB, down from 994 MiB. Each is the median of 7 runs.
+  We also ran three or ten digests of a 5 MB document at once, in a 1 GiB container. Before,
+  all 5 runs ran out of memory, and now none do
+  ([#597](https://github.com/docs-plus/docs.plus/issues/597)).
+- **One crafted web page can no longer stall link previews ([#242](https://github.com/docs-plus/docs.plus/issues/242)).**
+  The old parser took 28 s on one crafted page. On the same laptop, the shipped parser takes
+  about 30 ms on the worst crafted input we tried, up to 1 MiB.
+- **Fast typing costs less Redis traffic ([#595](https://github.com/docs-plus/docs.plus/issues/595)).**
+  With two collaboration replicas, one keystroke in a heavily edited 5.36 MB document cost
+  281 KB. On the same laptop, at one key per 50 ms, it now costs about 70 KB.
+- **A slow Supabase read no longer sends a pad render to `/500` ([#596](https://github.com/docs-plus/docs.plus/issues/596)).**
+  The owner-profile read and the Auth read each get a 2 s deadline, not the shared 10 s
+  Supabase bound. A late profile read renders the pad without the owner's profile.
+
 ### Breaking
 
 - Pull `traefik:v3.6` at 3.6.18 or later before the deploy, or Traefik does not start. See
@@ -229,7 +248,7 @@ upgrade shows only its title on its card.
 
 - When several people edit one document on two collaboration replicas, fast typing costs less
   Redis traffic. On a 5.36 MB edited document, one keystroke cost 281 KB. Now it costs about 70
-  KB at one key per 50 ms, and about 120 KB at one key per 100 ms. A bun patch on
+  KB at one key per 50 ms, and 120 to 127 KB at one key per 100 ms (two sessions). A bun patch on
   `@hocuspocus/extension-redis` 3.4.4 sends the sync request at once, then at most once per
   250 ms, and once more after the last change. Re-apply or drop the patch on any bump of that
   package ([#595](https://github.com/docs-plus/docs.plus/issues/595)).

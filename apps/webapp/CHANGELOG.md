@@ -16,6 +16,23 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ## [Unreleased]
 
+### Highlights
+
+- **Pad links now show a link icon.** A link with no icon stays a plain link. The icon is the site's favicon, the docs.plus logo, or
+  a mail or phone glyph, in the pad, history and `/editor`
+  ([#516](https://github.com/docs-plus/docs.plus/issues/516)).
+- **A link in a desktop pad opens a hovercard.** Rest the pointer on a link to see the page's picture,
+  title, facts and description. A link to another pad or to a part of this pad gets its own
+  card ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- **The frame that first draws a big pad is shorter.** The editor now mounts before the first
+  sync. In a dev build, that frame on a 2000-link pad took 213 ms before this release, with no
+  link icons. Now it takes 129 ms with the new icons, or 103 ms without them. On docs.plus, in Chrome on one laptop, that pad's
+  longest frame is 106 ms from the network and 75 ms from the offline mirror. Each number is
+  the median of 5 runs ([#516](https://github.com/docs-plus/docs.plus/issues/516)).
+- **The offline mirror stays small.** In headless Chrome on a dev build, 20 reloads of a
+  2000-link pad used to leave 42 rows (22.6 MB). Now the mirror stays at 1 row (0.55 MB)
+  ([#638](https://github.com/docs-plus/docs.plus/issues/638)).
+
 ### Added
 
 - The tick rail section preview is now a card you can use
@@ -193,9 +210,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   ([#359](https://github.com/docs-plus/docs.plus/issues/359)).
 - `EditorContent` mounts the Tiptap editor hidden while `providerSyncing` is true, under the
   skeleton or `SyncErrorCard`. Mounted after the fill, its `createNodeViews()` rebuilt every
-  block: 4 builds per cold load in dev and 2 in production. Now the fill builds once, and a
+  block: 4 builds per cold load in dev, and 2 in production by our code trace. Now the fill builds once, and a
   sync error flip keeps the editor mounted. On a 2000-link pad, anchors created per load fell
-  from 8004 to 2004, and the link-icon cost in the fill frame from +117 ms to +26 ms
+  from 8004 to 2004. In a dev build, the link-icon cost in the fill frame fell from +117 ms
+  to +26 ms
   ([#516](https://github.com/docs-plus/docs.plus/issues/516)).
 - A plain link in the pad and the chat composer underlines on hover, 1px thick with a 2px
   offset. Before, it faded to 85% opacity. A link chip never underlines.
@@ -309,8 +327,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - A multi-step change that deletes a heading now always rebuilds folds and filter highlights.
 - A co-editor's edit inside a folded section no longer shows that block under the fold, and
   no longer drops filter highlights.
-- The TOC is faster on long documents. Typing in a heading re-renders only its own row, a
-  drag measures the rows once, and the unread count no longer scans every chat per row.
+- The TOC does less work on long documents. Typing in a heading re-renders only its own row,
+  a drag measures the rows once, and the unread count no longer scans every chat per row.
 - A pointer far above or below a short tick rail stack no longer opens the first or last
   tick's preview. Only the ticks and a small margin around them count as hover.
 - A `/new` link in a pad now says what it does. Its click preview shows a "New document"
@@ -358,8 +376,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - **The offline mirror stays at one row
   ([#638](https://github.com/docs-plus/docs.plus/issues/638)).** y-indexeddb stores a full doc
   copy on each load and trims only past 500 rows. `useYdocAndProvider` now merges the store to
-  one row with `storeState`, 2 s after the first sync. On a 2000-link pad, 20 reloads used to
-  leave 42 rows (22.6 MB) and a 202 ms replay frame. Now the store stays at 1 row (0.55 MB),
+  one row with `storeState`, 2 s after the first sync. In headless Chrome on a dev build, 20 reloads of a 2000-link pad used to
+  leave 42 rows (22.6 MB). Its replay frame took 202 ms. Now the store stays at 1 row (0.55 MB),
   and a replay after the fill costs about 8 ms of script.
 - **The Documents list shows member faces and the roster on older documents
   ([#574](https://github.com/docs-plus/docs.plus/issues/574)).** The faces and the roster

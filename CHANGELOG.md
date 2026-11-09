@@ -10,6 +10,28 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ## [Unreleased]
 
+### Highlights
+
+- **Links now show where they go.** A link icon before each pad link shows the site's
+  favicon, the docs.plus logo, or a mail or phone glyph. A link with no icon stays a plain
+  link. Links in posted chat messages show the same icons ([#516](https://github.com/docs-plus/docs.plus/issues/516),
+  [#678](https://github.com/docs-plus/docs.plus/issues/678)).
+- **A hovercard previews a link before you open it.** On a desktop pad, rest the pointer on
+  a link. A web link shows the page's picture, title and description, and our server fetches
+  all of it. A link to another pad, a heading, a chat or a version gets its own card
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- **A shared pad link shows what is inside.** In a chat app or on a social site, the link to a
+  public pad with an owner shows a social card. The card has the pad's name and its first
+  paragraph or section names. It never shows a person's name, a face or message text, and a Private pad never gets
+  one. Self-hosters turn each kind on with `SOCIAL_CARD_KINDS`
+  ([#663](https://github.com/docs-plus/docs.plus/issues/663)).
+- **Faster and steadier.** In a dev build, the frame that first draws a 2000-link pad took
+  213 ms before this release, with no link icons. Now it takes 129 ms with the new icons ([#516](https://github.com/docs-plus/docs.plus/issues/516)). In
+  headless Chrome on a dev build, 20 reloads used to leave 42 offline copies (22.6 MB). Now
+  one copy stays (0.55 MB) ([#638](https://github.com/docs-plus/docs.plus/issues/638)). A
+  slow Supabase read no longer sends a pad to the error page. The pad renders in about 2 s
+  when one read stalls, or about 4 s when both do ([#596](https://github.com/docs-plus/docs.plus/issues/596)).
+
 ### Breaking
 
 - Pull `traefik:v3.6` at 3.6.18 or later, or Traefik does not start. The bundled
@@ -172,23 +194,22 @@ blocks to the next node view ([#627](https://github.com/docs-plus/docs.plus/issu
   differ ([#609](https://github.com/docs-plus/docs.plus/issues/609)).
 - When several people edit one document on two collaboration replicas, fast typing costs less
   Redis traffic. On a 5.36 MB edited document, one keystroke cost 281 KB. Now it costs about 70
-  KB at one key per 50 ms, and about 120 KB at one key per 100 ms. A patch on
+  KB at one key per 50 ms, and 120 to 127 KB at one key per 100 ms (two sessions). A patch on
   `@hocuspocus/extension-redis` 3.4.4 sends the sync request at most once per 250 ms
   ([#595](https://github.com/docs-plus/docs.plus/issues/595)).
-- A large pad opens faster. The editor now mounts before the first sync, so a cold load
-  builds each block once, not twice in production. On a 2000-link pad, the link icons add
-  26 ms to the first fill frame instead of 117 ms
+- The frame that first draws a large pad is shorter. The editor now mounts before the first sync, so a
+  cold load builds each block once. Before, it built each block four times in dev, and twice in
+  production by our code trace. In a dev build, on a 2000-link pad, the link icons add 26 ms to
+  the first fill frame instead of 117 ms
   ([#516](https://github.com/docs-plus/docs.plus/issues/516)).
 - The production deploy builds the images in their own `images` job first. The deploy stops
   before it changes production when an image is missing, or when the host env file changed
   between the two jobs ([#565](https://github.com/docs-plus/docs.plus/issues/565)).
 - Link previews are read by our own page parser, not metascraper. On a snapshot of 95 page
-  heads, it parsed the median page in about one seventh of the time. It also finds pictures and
+  heads, on one laptop, it parsed the median page in about one seventh of the time. It also finds pictures and
   descriptions that some sites tag in a non-standard way ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
-- Link previews work on more sites and arrive sooner. The server reads only the page head, up
-  to 1 MiB, and names itself as `DocsplusBot`, never as another crawler. We fetched the same 30
-  links once before this change and once after. Cards with a title, a description and a real
-  picture rose from 16 to 19. The p50 fetch fell from 669 ms to 532 ms
+- The link preview server reads only the page head, up to 1 MiB, and
+  names itself as `DocsplusBot`, never as another crawler
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - The page's picture in the hovercard, and the Vimeo, SoundCloud, Spotify and Loom thumbnails
   in chat and Insert media, now load through our server (`GET /api/metadata/image`). Link icons
@@ -291,8 +312,8 @@ blocks to the next node view ([#627](https://github.com/docs-plus/docs.plus/issu
     `?msg_id=` no longer opens another room. A tap on a heading in the phone TOC drawer keeps
     the heading in the address. A filter link with `%25` no longer throws
     ([#646](https://github.com/docs-plus/docs.plus/issues/646)).
-  - The TOC is faster on long documents. The unread count no longer scans every chat for each
-    row, and a sash drag resizes the TOC once per frame
+  - The TOC does less work on long documents. The unread count no longer scans every chat for
+    each row, and a sash drag resizes the TOC once per frame
     ([ea14e4ad4](https://github.com/docs-plus/docs.plus/commit/ea14e4ad4),
     [24b788e86](https://github.com/docs-plus/docs.plus/commit/24b788e86)).
 - **Chat emails open the right pad.** An immediate chat email opened the home page, and a digest
@@ -334,9 +355,9 @@ blocks to the next node view ([#627](https://github.com/docs-plus/docs.plus/issu
   The Docker images copy `patches/` before each install.
 - On iPhone Safari, the chat icon in the phone TOC drawer opens the chat again. The chat used to
   close as soon as it opened ([#639](https://github.com/docs-plus/docs.plus/issues/639)).
-- The offline copy of a pad no longer grows on every load. It used to keep one more full copy
-  of the document per reload, and every load decoded all of them. On a 2000-link pad, 20
-  reloads left 42 copies (22.6 MB) and a 202 ms frame. It now stays at one copy (0.55 MB)
+- The offline copy of a pad no longer grows on every load. It used to keep two more full copies
+  of the document per reload, and every load decoded all of them. In headless Chrome on a dev
+  build, 20 reloads of a 2000-link pad left 42 copies (22.6 MB) and a 202 ms frame. It now stays at one copy (0.55 MB)
   ([#638](https://github.com/docs-plus/docs.plus/issues/638)).
 - **Phone editing on Android works with the keyboard up.** The slash menu and the link editor no
   longer drop the keyboard or leave edit mode
@@ -391,7 +412,7 @@ blocks to the next node view ([#627](https://github.com/docs-plus/docs.plus/issu
   Needs Supabase migration `20261026120000`
   ([#570](https://github.com/docs-plus/docs.plus/issues/570)).
 - **A crafted page can no longer block the server.** Our old page parser took 28 s on one
-  crafted page. The new one took about 50 ms at worst on every crafted input we tried, up to 1 MiB ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+  crafted page. On one laptop, the new one took about 30 ms at worst on every crafted input we tried, up to 1 MiB ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - **One collaboration WebSocket message is capped at 16 MiB again.** Bun 1.4.4 raised the
   limit to 100 MiB, and a larger message now closes the socket with `1009`. Redeploy the backend
   ([#651](https://github.com/docs-plus/docs.plus/issues/651)).
