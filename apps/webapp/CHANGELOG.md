@@ -21,9 +21,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - The tick rail section preview is now a card you can use
   ([#645](https://github.com/docs-plus/docs.plus/issues/645)). Move from a tick into its card,
   and the card stays open along the way. A chat button at the top right opens that heading's
-  chat, or closes it when it is already open. The keyboard can focus the tick, Tab into the card
-  and leave it with Escape. Embeds in the card never play. A video shows its own poster, and
-  other embeds show a still tile with their icon. So a preview sends nothing to the embed host.
+  chat, or closes it when it is already open. A screen reader hears how many of its messages are
+  unread. The keyboard can focus the tick, Tab into the card and leave it with Escape. Tab never
+  lands on content hidden from screen readers. Embeds in the card never play. A video shows its
+  own poster, and other embeds show a still tile with their icon. So a preview sends nothing to
+  the embed host.
 - The pad page head names a share image
   ([#663](https://github.com/docs-plus/docs.plus/issues/663)). A full page load asks REST for
   the pad's card with `card=1`. `og:image`, `twitter:image` and their alt text then point at that
@@ -39,10 +41,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   in-app jump.
 - Every pad link now shows a link icon before its text, in the pad, history and `/editor`
   ([#516](https://github.com/docs-plus/docs.plus/issues/516)). A link to another pad shows the
-  docs.plus logo, and `mailto:` and `tel:` links show a mail or phone glyph. Other web links show the site's
-  favicon from our own icon route. A link with no icon stays a plain link. Print and the chat
-  composer show no link icons. This goes against Google Docs, Word and Notion on purpose
-  (maintainer ruling, 2026-10-17).
+  docs.plus logo, and `mailto:` and `tel:` links show a mail or phone glyph. A link to the
+  docs.plus home page (`https://docs.plus/`) or to any `new.docs.plus` address shows the logo
+  too, from any origin (maintainer ruling, 2026-11-09). Other web links show the site's favicon
+  from our own icon route. A link with no icon stays a plain link. Print and the chat composer
+  show no link icons. This goes against Google Docs, Word and Notion on purpose (maintainer
+  ruling, 2026-10-17).
 - The Home Screen app links launch images for 440x956, 402x874, 420x912, 428x926 and 375x812
   at 3x, next to the three sizes it had. Every other iPhone, the iPhone 17 line among them,
   used to open on a black screen ([#255](https://github.com/docs-plus/docs.plus/issues/255)).
@@ -56,15 +60,17 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   open a new tab. The phone, chat, history and `/editor` do not get it.
 - The card ends in a link line: the site icon, the host and the full path, then Copy link and
   Open in new tab. The site icon and the link line come from the link itself. Only the title,
-  facts, description and picture come from the page.
+  facts, description and picture come from the page
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - A slow page opens the card with loading bars and the link line, then fills it in place. With
   no data after 4 s, a web link shows the no-preview card below, and a docs.plus link says "No
-  preview for this page."
+  preview for this page." ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - A docs.plus link has its own hovercard on the desktop pad. It covers a link to another pad, and
   a link to a heading, heading chat, chat message, filter, version or version history, in this pad
   or another one. The title says what the link opens, a quiet breadcrumb says where it lives, and
   a few counts follow, such as sections, messages or versions. A filter card names its terms in
-  the title. A private pad you cannot open shows only "This document is private".
+  the title. A private pad you cannot open shows only "This document is private"
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - Both cards run on the hyperlink extension's `hovercard` engine, which owns the timing, keys and
   frame. The pad draws its own content through the `render` option, so docs.plus never shows the
   extension's built-in card. It maps the frame's `--hl-*` tokens to the house tokens
@@ -83,17 +89,19 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   "Open archived copy" link that opens it in a new tab. The link goes to archive.org only on
   that click.
 - A link whose text is its own web address shows a **Use page title** button on its hover card.
-  One click puts the page title in place of the address and leaves the caret after it, so one
-  undo brings the address back. The hover card's icon buttons, Use page title, Copy link and Open in new tab, now show a
-  tooltip on hover.
-  It shows only on a pad you can edit, for example on a link typed or pasted as a plain address
-  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+  The button shows only on a pad you can edit, for example on a link typed or pasted as a plain
+  address. One click puts the page title in place of the address and leaves the caret after it,
+  so one undo brings the address back. The hover card's icon buttons, Use page title, Copy link
+  and Open in new tab, show a tooltip on hover
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242),
+  [#692](https://github.com/docs-plus/docs.plus/issues/692)).
 - A web link pasted on its own into a pad shows the page title in place of its address
   ([#681](https://github.com/docs-plus/docs.plus/issues/681)). The link appears at once with the
   address, and the title replaces it when our server answers. One undo brings the address back.
   ⌘+⇧+V (Ctrl+Shift+V) pastes the address as is. A file link shows its file name, such as
   "Q3 Report.pdf" or "archive.zip". A title that reads as another site's address keeps the
-  address ([#682](https://github.com/docs-plus/docs.plus/issues/682)). The chat composer, history and `/editor` keep the address.
+  address ([#682](https://github.com/docs-plus/docs.plus/issues/682)). The chat composer,
+  history and `/editor` keep the address.
   The second "Link previews" switch, "Use page titles for pasted links", turns it off. Like the
   first, it is per browser, on by default, and applies only while you are signed in. The pasted
   link goes to our server, as for a link preview.
@@ -137,11 +145,6 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
-- `padLinkIcon` gives the docs.plus logo to a link to the `https://docs.plus` root and to any
-  `new.docs.plus` link, from any origin. Other cross-origin docs.plus paths keep the route
-  favicon. The design-system K2 row records the maintainer ruling of 2026-11-09
-  ([#516](https://github.com/docs-plus/docs.plus/issues/516)).
-
 - A paste from the same pad keeps each heading's `toc-id`
   ([#700](https://github.com/docs-plus/docs.plus/issues/700)). So a full cut and paste, or a
   select-all paste, keeps heading chats and `?id=` links. Copied HTML now names its pad. When an
@@ -160,7 +163,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   go where the section started, and nothing changes.
 - A heading with no text now has a TOC row, with a grey "Heading 2" style label. Before, it
   had no row, so the TOC showed its sub-headings under the heading above it, and a drag
-  moved different headings from the ones it greyed out.
+  moved different headings from the ones it greyed out
+  ([#499](https://github.com/docs-plus/docs.plus/issues/499)). Its drag card shows the same
+  label.
+- On desktop, a TOC title that wraps keeps its fold, grip and chat button on its first line, as
+  in a file tree. Phone rows stay centered (maintainer ruling, 2026-11-06).
 - Links in posted chat messages show the same icons as links in the document
   ([#516](https://github.com/docs-plus/docs.plus/issues/516)). A click on a
   message link opens the link preview: a popover on a computer, the Link sheet on a phone.
@@ -198,26 +205,46 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - Mod-click on a link in the text of the pad or the chat composer opens it in a new tab, with no
   preview.
   Before, it opened the preview, like a plain click.
-
 - Heading slugs in a `?h=` trail use only `a-z`, `0-9`, `.` and `-`, and drop apostrophes, so
   "What's new" reads `whats-new`. The trail still joins slugs with `>`. A pad with no title, or a
-  heading the pad no longer holds, gives a link with `id=` only and no empty `h=`.
+  heading the pad no longer holds, gives a link with `id=` only and no empty `h=`
+  ([#646](https://github.com/docs-plus/docs.plus/issues/646)).
 - Filter and Focus section terms in the path are lowercase, and any run of spaces and hyphens is
-  one `-`: `/demo/draw-a-diagram-with-text`, and "pre - war" is `/demo/pre-war`. The filter treats any run of spaces, tabs or hyphens as one
-  gap, so an old `%20` link still filters, and `customer-research` also matches "customer
-  research". A new link's chips show the path form; an old `%20` link shows the decoded words until the next filter change rewrites it.
+  one `-`: `/demo/draw-a-diagram-with-text`, and "pre - war" is `/demo/pre-war`. The filter
+  treats any run of spaces, tabs or hyphens as one gap, so an old `%20` link still filters.
+  `customer-research` also matches "customer research". A new link's chips show the path form.
+  An old `%20` link shows the decoded words until the next filter change rewrites it
+  ([#646](https://github.com/docs-plus/docs.plus/issues/646)).
 - TOC Copy link writes two clipboard formats. Plain text keeps the encoded link with `%3E`, because
   some apps end a link at a raw `>`. A rich paste, as in Gmail or Google Docs, shows the trail with
-  `>` and links to the full address.
+  `>` and links to the full address ([#646](https://github.com/docs-plus/docs.plus/issues/646)).
 - Copy to doc stores a message link as `?chatroom=&msg_id=`. A stored `?act=ch` link still opens
-  its message. Before, under a filter, it stored the filter term as the pad name.
+  its message. Before, under a filter, it stored the filter term as the pad name
+  ([#646](https://github.com/docs-plus/docs.plus/issues/646)).
 
 ### Fixed
 
-- The phone link sheet shows the `TYPE_TO_ICON` glyph for a link with no http(s) origin, such as
-  `mailto:`, `tel:` or `slack://`. The sheet and the desktop preview share `specialUrlIcon`. A
-  route miss still keeps the grey box ([#517](https://github.com/docs-plus/docs.plus/issues/517)).
-
+- The phone link sheet shows a glyph for a link with no web address: mail for `mailto:`, phone
+  for `tel:`, chat for `slack://`, and so on. The desktop preview does the same. Before, the sheet
+  showed a grey box. A web link whose site icon fails to load still shows the grey box
+  ([#517](https://github.com/docs-plus/docs.plus/issues/517)).
+- A pad no longer saves an empty H1 at its end
+  ([#572](https://github.com/docs-plus/docs.plus/issues/572)). Tiptap's trailing node added one
+  after every Markdown replace, and after any edit that left a non-heading block last. Connected
+  apps listed it as an "(untitled)" section. The pad turns `trailingNode` off. Gapcursor still
+  lets you type below a final table.
+- Typing in a Mermaid diagram no longer highlights every code block in the pad again
+  ([#631](https://github.com/docs-plus/docs.plus/issues/631)). The pad loads its own copy of the
+  lowlight plugin, `code-block-lowlight.ts`, which skips blocks whose language is `mermaid`.
+- The click preview and the phone sheet show the site's icon again, not a small copy of the
+  page's share picture ([#633](https://github.com/docs-plus/docs.plus/issues/633)). They ask only
+  our icon route. A page picture or a video thumbnail never fills the icon slot.
+- Rows and grid tiles on Home and in Settings → Documents are now real links. Middle-click,
+  Cmd-click and Ctrl-click open the pad in a new tab. A plain click still opens it in the same
+  tab ([#699](https://github.com/docs-plus/docs.plus/issues/699)).
+- The sign-out dialog no longer says that editing needs sign-in, because anyone with the link
+  can edit an open document. It now names joining the conversation and managing your documents.
+- The Home page names the funder correctly: Grant for the Web.
 - A fold opens again from its crinkle and from its TOC arrow. Tiptap's unmount and mount
   rebuild the editor view but keep the fold plugin, and the pad rebuilds it on load. The plugin
   held one `destroyed` flag for every view, so after the first rebuild no end-of-animation timer
@@ -228,31 +255,29 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   own browser. Before, the link signed in nowhere and showed only a vague error, so people
   asked again and hit the send limit. The link now carries `#token_hash=`, and
   `components/auth/authLanding.ts` signs in with `verifyOtp`, which needs no code verifier.
-  Sign-in errors are now plain words under the field. The send limit shows a countdown on
-  "Send a new link", and a spent link explains itself with a Sign in action. A failed Google
-  sign-in no longer reads as an email problem. A sign-in started on a page with a hash, such as
-  `#history?version=3`, now gets a working link. `/auth/error` shows the sign-in form instead of
-  a Back button that did nothing in a new tab.
+  Sign-in errors are now plain words under the field. When sign-ups are closed, the error does
+  not point to Google, which is closed to new accounts too. The send limit shows a countdown on
+  "Send a new link", and a spent link explains itself with a Sign in action. "Use a different
+  email" does nothing while a new link is sending, and a screen reader reads a resend error. A
+  failed Google sign-in no longer reads as an email problem. A sign-in started on a page with a
+  hash, such as `#history?version=3`, now gets a working link. `/auth/error` shows the sign-in
+  form instead of a Back button that did nothing in a new tab.
 - Sign-in, presence and the notification bell no longer stop when the browser wrongly reports
   offline. Chrome can hold `navigator.onLine` at false after a Mac sleeps, while requests still
   work. The Supabase client refused every request while the flag was false, so email and Google
   sign-in failed with nothing in any log, and people showed as offline. No network work waits on
   the flag now; a request made while really offline fails on its own.
-
-- Dragging an empty heading in the outline now shows "Heading N" on the drag card, as its row
-  does. Before, the card was blank.
-- Tab from the outline's section preview no longer lands on content hidden from screen readers.
-  The preview and the bottom sheets now share one tab-order rule.
 - After a failed first sync, the heading-id repair waits for sync to finish instead of retrying
   every second until the pad closes.
 - Dragging text that holds a heading to another place in the same pad now keeps the heading's
-  chat and links. A drag-copy gives only the copy a new id.
+  chat and links. A drag-copy gives only the copy a new id
+  ([#700](https://github.com/docs-plus/docs.plus/issues/700)).
 - A paste or a file replace never lets a heading take the pad's own id, which belongs to the
-  pad-wide chat. The server refuses it on content writes too.
+  pad-wide chat. The server refuses it on content writes too
+  ([#474](https://github.com/docs-plus/docs.plus/issues/474)).
 - Before a file replace, the confirm card names only headings whose chat holds messages. An
-  opened but empty chat has nothing to lose.
-- The tick-rail preview's chat button now says how many messages are unread, for screen
-  readers.
+  opened but empty chat has nothing to lose
+  ([#474](https://github.com/docs-plus/docs.plus/issues/474)).
 - A heading link now lands on its heading, even when a fold or a Filter hides it
   ([#338](https://github.com/docs-plus/docs.plus/issues/338)). A click opens only the sections
   that hide the heading, for this session, and scrolls it to the top of the pad. Folds saved on
@@ -267,11 +292,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - Two people who move one TOC section at the same time no longer leave two copies of it
   ([#510](https://github.com/docs-plus/docs.plus/issues/510)). After a merge, an editable
   client deletes a copy that equals the first, and gives a different copy a new heading id. So
-  two sections no longer keep sharing a chat room, a fold or a digest pairing. A co-editor's caret in a
-  sub-heading now stays put when a move changes its level.
+  two sections no longer keep sharing a chat room, a fold or a digest pairing. A co-editor's
+  caret in a sub-heading now stays put when a move changes its level.
 - A caret inside a section you drag in the TOC now moves with the section. Before, it stayed
   at the old place, and the next key typed into the following heading
-  ([#520](https://github.com/docs-plus/docs.plus/issues/520)).
+  ([#499](https://github.com/docs-plus/docs.plus/issues/499)).
 - A TOC drop below a folded row now lands after that row's whole section, not inside it.
 - "Delete section" no longer shows on the title row or on a read-only pad. On the title row it
   could delete the whole document.
@@ -286,11 +311,14 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   no longer drops filter highlights.
 - The TOC is faster on long documents. Typing in a heading re-renders only its own row, a
   drag measures the rows once, and the unread count no longer scans every chat per row.
+- A pointer far above or below a short tick rail stack no longer opens the first or last
+  tick's preview. Only the ticks and a small margin around them count as hover.
 - A `/new` link in a pad now says what it does. Its click preview shows a "New document"
   chip that reads "Opens a blank document in a new tab", on desktop, in the phone sheet and in
   the chat composer dialog. The chip opens `/new` in a new tab, so the reader keeps their
   place, and the link shows the docs.plus logo. Before, the preview showed a bare "/new" with a
-  broken site icon. `https://<app host>/new` works the same way.
+  broken site icon. `https://<app host>/new` works the same way
+  ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - Desktop link Edit now finds the link after a co-editor types above it. Before, Apply did
   nothing in that case ([#678](https://github.com/docs-plus/docs.plus/issues/678)).
 - **The Replace with a file warning names History.** It said there was no undo. History keeps
@@ -308,6 +336,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - **Editing a link's URL no longer reverts a co-editor's link text.** When you leave the Text
   field untouched, Apply sends only the new `href`. Before, it sent the text from when the form
   opened.
+- **A link Edit form takes its Text from the document
+  ([#518](https://github.com/docs-plus/docs.plus/issues/518)).** Before, some forms read the
+  screen text, so CSS such as `text-transform` changed what Apply wrote back. A form also no
+  longer shows a neighbour link's text. This holds in the pad, the chat composer and the phone
+  sheets.
 - **Edit then Back no longer leaves a stale edit form.** The popover store now also clears the
   form when the open popover does not hold its host. Two examples are the preview after Back and
   a click on another link.
@@ -347,20 +380,22 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - **A push notification click marks the notification read when it opens a new window
   ([#312](https://github.com/docs-plus/docs.plus/issues/312)).** The bell and the app icon
   badge used to keep the old count.
-
-- **Copied links no longer carry your open filter, chat or heading.** TOC Copy link, the chat
+- **Copied links no longer carry your open filter, chat or heading
+  ([#646](https://github.com/docs-plus/docs.plus/issues/646)).** TOC Copy link, the chat
   breadcrumb's link, chat Share, Copy link in Bookmarks and Notifications, and the link picker now
   build from the pad's own address. Before, a heading link copied under a filter kept the filter
   path. Report no longer mails the filter terms either.
 - **A notification row names the document, not a filter term.** It read the last part of the
-  link's path, which can be a filter term.
+  link's path, which can be a filter term
+  ([#646](https://github.com/docs-plus/docs.plus/issues/646)).
 - **A stale `?msg_id=` no longer opens another room at that message.** The address's message id
-  anchors a chat only when the address names that room.
+  anchors a chat only when the address names that room
+  ([#646](https://github.com/docs-plus/docs.plus/issues/646)).
 - **A tap on a heading in the phone TOC drawer keeps the heading in the address.** The drawer
   closes by going back one history entry, and that step undid the heading write. Pad URL now waits
-  for the step to land, then writes.
+  for the step to land, then writes ([#646](https://github.com/docs-plus/docs.plus/issues/646)).
 - **A filter link with `%25` in a term no longer throws.** The filter decoded each term twice, so
-  `/demo/100%25` failed.
+  `/demo/100%25` failed ([#646](https://github.com/docs-plus/docs.plus/issues/646)).
 - **The slash menu keeps the keyboard up on Android.** The menu closed about 600 ms after `/`,
   the keyboard dropped, and the pad left edit mode. The slash sheet turned on Chrome's keyboard
   overlay mode, so the pad read the keyboard as closed
