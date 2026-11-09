@@ -41,7 +41,7 @@ Top to bottom, the built-in card shows:
 
 Data with no `title` shows one line, "No preview for this page.", above the link line. Copy link writes the href to the clipboard and shows a check for 1500 ms. A refused write keeps the copy icon.
 
-A click on the title opens the link through the [`navigate`](./api.md#options) option. A Mod-click or a middle click passes `newTab: true`.
+A click on the title opens the link through the [`navigate`](./api.md#options) option. A Mod-click or a middle click passes `newTab: true`. With `navigate` unset, every open uses a new tab, so `newTab` matters only when you set `navigate`.
 
 ## Options
 
@@ -52,7 +52,9 @@ A click on the title opens the link through the [`navigate`](./api.md#options) o
 | `shouldShow?`   | `(ctx: HovercardShowContext) => boolean`                                   | Return `false` to show no card for this link. It runs before any request. A throw shows no card and logs once per editor.                                                |
 | `render?`       | `(ctx: HovercardRenderContext<D>) => HTMLElement \| HovercardView \| null` | Draws the card content. `null` keeps the built-in card for this state. See [Draw your own card](#draw-your-own-card).                                                    |
 
-`editor` is the editor that holds the link. It helps when one page has two editors.
+`HovercardContext` is `{ href, editor }`. `href` is the link's stored href. `editor` is the editor that holds the link. It helps when one page has two editors. `HovercardShowContext` is `{ href, link }`, where `link` is the `<a>` element.
+
+`fetchMetadata` gets no `AbortSignal`, unlike `fetchTitle` in [Paste title](./paste-title.md). Leaving the link never cancels the request, so its answer can fill your cache for the next hover or click.
 
 ## The data contract
 
@@ -193,7 +195,7 @@ Hyperlink.configure({
 })
 ```
 
-`loadPage` stands for your own `fetchMetadata`. The clean-room playground draws every state this way: see `renderCard` in [`test/playground/main.ts`](../test/playground/main.ts).
+`loadPage` stands for your own `fetchMetadata`. The clean-room playground draws every state this way: see `renderCard` in [`test/playground/main.ts`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/test/playground/main.ts). That file lives in the repository, not in the npm package.
 
 ### Example: a React portal
 
@@ -267,6 +269,8 @@ function MyCard({ ctx }: { ctx: HovercardRenderContext<HovercardData> }) {
 
 Pass `render: renderCard` in the `hovercard` option. `MyCard` is a short sample; replace it with your own component.
 
+Mount `HovercardPortals` once per page, even with two editors or two React roots. One store serves every editor. Render it inside your providers. A portal keeps the React context of the place it renders, so a theme provider above it reaches the card.
+
 The third argument of `useSyncExternalStore` is the server snapshot. A stable empty list keeps server rendering safe. The engine places the card again when its size changes.
 
 ## Timing
@@ -293,7 +297,7 @@ The engine calls `fetchMetadata` once per hover, and it keeps no cache. Dedupe r
 
 - Only for a mouse on a `(hover: hover) and (pointer: fine)` device, and never while a mouse button is down.
 - Only for a link with a stored `hyperlink` mark. An embed's own anchor gets no card.
-- Only for an href the composed gate allows. Then `shouldShow` runs.
+- Only for an href the [read gate](./api.md#validate-vs-isalloweduri) allows: `isSafeHref` plus your `isAllowedUri`. `validate` does not run here. Then `shouldShow` runs.
 - Never while another popover of this bundle is mounted, such as the preview, create or edit popover. The card closes only its own popover.
 
 A pointer that already rests on a link when it renders gets no card until it leaves and comes back. See [Caveats](./api.md#caveats).
@@ -315,7 +319,7 @@ A custom card can use the same tokens, so it follows the theme and dark mode.
 
 ## Accessibility
 
-- The card is a pointer preview. The keyboard path is `Mod-k` with the caret in a link, which opens the click preview with the same actions.
+- The card is a pointer preview. The keyboard path is `Mod-k` with a collapsed caret strictly inside a link. It opens the same preview a click opens, when `popovers.previewHyperlink` is set.
 - No card control joins the Tab order, and Tab closes the card.
 - The popover has no role. The loading body carries `aria-busy="true"`, and Copy link changes its name to "Link copied" for 1500 ms.
 - Loading-to-data fades and picture motion turn off under `prefers-reduced-motion: reduce`.

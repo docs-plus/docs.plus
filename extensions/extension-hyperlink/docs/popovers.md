@@ -47,14 +47,14 @@ Every factory takes one `options` argument. The shape depends on the slot.
 
 **`PreviewHyperlinkOptions`** — passed to `popovers.previewHyperlink` on a plain click or tap on a link. `Mod-k` with the caret inside a link passes it too, and so does read-only `Enter` on a focused link. A Mod-click opens the link in a new tab and builds no preview.
 
-| Field           | Type                       | Description                                                                                                                                                             |
-| --------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `editor`        | `Editor`                   | The Tiptap editor instance. Reach the `EditorView` through `editor.view` when you need it.                                                                              |
-| `link`          | `HTMLAnchorElement`        | The link's `<a>` node: the clicked one, or the one around the caret for `Mod-k`. It anchors the popover, so the popover follows the link on scroll.                     |
-| `nodePos`       | `number`                   | Document position of the link mark. Pair it with `editor.state.doc.nodeAt(nodePos)` to read the mark.                                                                   |
-| `attrs`         | `HyperlinkAttributes`      | **Required.** The mark's stored attributes. Prefer `attrs.href` over `link.href` (the DOM property resolves against `document.baseURI` and would leak the host origin). |
-| `validate?`     | `(url: string) => boolean` | The configured `validate` option, forwarded.                                                                                                                            |
-| `isAllowedUri?` | `(uri: string) => boolean` | The composed gate. **Your popover must call this before any navigation, including a rendered `<a href>` and any `window.open`.**                                        |
+| Field           | Type                       | Description                                                                                                                                                                 |
+| --------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `editor`        | `Editor`                   | The Tiptap editor instance. Reach the `EditorView` through `editor.view` when you need it.                                                                                  |
+| `link`          | `HTMLAnchorElement`        | The link's `<a>` node: the clicked one, or the one around the caret for `Mod-k`. It anchors the popover, so the popover follows the link on scroll.                         |
+| `nodePos`       | `number`                   | Document position of the link mark. Pair it with `editor.state.doc.nodeAt(nodePos)` to read the mark.                                                                       |
+| `attrs`         | `HyperlinkAttributes`      | **Required.** The mark's stored attributes. Prefer `attrs.href` over `link.href` (the DOM property resolves against `document.baseURI` and would leak the host origin).     |
+| `validate?`     | `(url: string) => boolean` | The configured `validate` option, forwarded.                                                                                                                                |
+| `isAllowedUri?` | `(uri: string) => boolean` | The read gate: `isSafeHref` plus the editor's `isAllowedUri`. **Your popover must call this before any navigation, including a rendered `<a href>` and any `window.open`.** |
 
 Return `null` to opt out for this click, for example to open a mobile bottom sheet. The package then mounts no popover.
 
@@ -77,7 +77,7 @@ Return `null` when the popover cannot open, for example when DOM construction fa
 | `link`          | `HTMLAnchorElement`        | The link being edited. It anchors the popover.                                                                                                |
 | `nodePos?`      | `number`                   | Document position of the link mark. It lets edit and Back recover the anchor when ProseMirror replaces duplicate link DOM nodes.              |
 | `validate?`     | `(url: string) => boolean` | The configured `validate` option, forwarded — the edit form rejects the same URLs as `Mod-k`.                                                 |
-| `isAllowedUri?` | `(uri: string) => boolean` | The composed gate, forwarded so Back re-opens the preview under the same navigation policy.                                                   |
+| `isAllowedUri?` | `(uri: string) => boolean` | The read gate, forwarded so Back re-opens the preview under the same navigation policy.                                                       |
 | `onBack?`       | `() => void`               | Overrides the default Back behavior. By default, Back re-opens the preview popover through `openPreviewHyperlink`. Use it as an escape hatch. |
 | `markName?`     | `string`                   | Mark name to extend the range over, always `'hyperlink'`. It exists so your factory passes one name through to `extendMarkRange`.             |
 
@@ -115,7 +115,7 @@ function previewHyperlink(options: PreviewHyperlinkOptions): HTMLElement {
   const root = document.createElement('div')
 
   // A rendered `<a target="_blank">` navigates on click, so it is a navigation
-  // sink like `window.open`. Gate it on the composed gate, and fall back to
+  // sink like `window.open`. Gate it on the read gate, and fall back to
   // `isSafeHref` when the factory runs outside the click handler.
   const isOpenable = isAllowedUri ?? isSafeHref
   // `attrs.href` is `string | null` and can predate the current policy.

@@ -8,7 +8,7 @@ Part of the [`@docs.plus/extension-hyperlink` README](../README.md).
 - **Import** — `parseMarkdown` normalizes the href and stores an empty string when the scheme is blocked. Both import paths apply the `isSafeHref` floor alone, so a tightened `isAllowedUri` never strips marks from existing documents.
 - **Write** — the input rule, paste rule, paste handler, autolink, `setHyperlink`, `toggleHyperlink`, and `editHyperlink` all route through the [composed gate](./api.md#validate-vs-isalloweduri).
 - **Serialize** — `renderHTML` re-checks `isSafeHref` and emits an empty `href` when a hostile mark reaches it. A hostile mark can arrive through a legacy migration, a raw `addMark`, or Yjs replay. `renderMarkdown` blanks the same way.
-- **Navigate** — primary click, middle-click (`auxclick`), touch, and the preview popover's href link all gate `window.open(…)` on the composed gate. They also pass `'noopener,noreferrer'`, so an opened tab cannot read `window.opener` or leak the Referer.
+- **Navigate** — primary click, middle-click (`auxclick`), touch, and the preview popover's href link all gate `window.open(…)` on the [read gate](./api.md#validate-vs-isalloweduri): `isSafeHref` plus `isAllowedUri`. They also pass `'noopener,noreferrer'`, so an opened tab cannot read `window.opener` or leak the Referer.
 
 On the read side, the click handlers prefer the stored mark attribute over the DOM `link.href` property. A relative href injected through `setContent` therefore does not resolve against the host page's origin.
 

@@ -22,7 +22,7 @@ It replaces the `@tiptap/extension-link` mark that StarterKit v3 bundles.
 ## Why use it
 
 - **Autolink covers more than web URLs.** As you type, bare domains get `https://`, emails become `mailto:`, and E.164 phones become `tel:`. App schemes from a catalog of 47, such as `whatsapp://`, autolink too.
-- **The link UI is included.** Prebuilt create, preview, and edit popovers ship with the package. `Mod-k` opens the create-link form with no configuration. Inside a link, `Mod-k` opens that link's preview and `Alt-Enter` opens the link. Mod-click opens a link in a new tab. `@tiptap/extension-link` binds no keyboard shortcut.
+- **The link UI is included.** Prebuilt create, preview, and edit popovers ship with the package. `Mod-k` opens the create-link form with no configuration. Inside a link, `Mod-k` opens that link's preview when `popovers.previewHyperlink` is set, and `Alt-Enter` opens the link. Mod-click opens a link in a new tab. `@tiptap/extension-link` binds no keyboard shortcut.
 - **Every boundary checks the scheme.** `isSafeHref` blocks `javascript:`, `data:`, `vbscript:`, `file:`, and `blob:` on parse, import, write, serialize, and navigation. An embedded tab or newline cannot hide a scheme from the gate.
 - **Your `@tiptap/extension-link` configuration ports over.** `isAllowedUri` takes the same `(uri, ctx)` shape as `@tiptap/extension-link`, so an existing policy works unchanged. `setLink`, `unsetLink`, and `toggleLink` stay as aliases. `[label](url)` round-trips with `@tiptap/markdown`.
 
@@ -34,7 +34,7 @@ npm install @docs.plus/extension-hyperlink
 
 Or use `pnpm add @docs.plus/extension-hyperlink`, `yarn add @docs.plus/extension-hyperlink`, or `bun add @docs.plus/extension-hyperlink`.
 
-Requires **`@tiptap/core` ^3.32.2** and **`@tiptap/pm` ^3.32.2** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.32.2** and **`@tiptap/pm` ^3.32.2**. A Tiptap 3 release before 3.32.2 is not supported.
 
 This package imports no React, Vue, or Next.js code. Use it from a plain page, Vite, React, Vue, Svelte, Next.js, Nuxt, or SvelteKit. Create the editor in the browser.
 
@@ -91,18 +91,18 @@ To show a card when the pointer rests on a link, add the `hovercard` option. See
 ## Caveats
 
 - **`StarterKit.configure({ link: false })` is required, not stylistic.** StarterKit v3 bundles `@tiptap/extension-link` by default. The two marks collide on the `setLink` / `unsetLink` / `toggleLink` command names. Your `extensions` array order then decides which mark each command writes, with no warning. If you keep Link only to load stored `link` marks, parsed and pasted HTML still gives `hyperlink`. This package's `a[href]` rule runs at priority 51, above Link's default 50.
-- **A click on a link, and `Mod-k` inside a link, need `popovers.previewHyperlink`.** The three openers fall back to the prebuilt factory when a slot is `null`. The click handler and `Mod-k` do not. Leave `previewHyperlink` at `null`, and a click on a link opens no popover. `Mod-k` inside a link then does nothing, and it never opens the create form there.
+- **A click on a link, and `Mod-k` inside a link, need `popovers.previewHyperlink`.** The three openers, `openPreviewHyperlink`, `openEditHyperlink` and `openCreateHyperlink`, fall back to the prebuilt factory when a slot is `null`. The click handler and `Mod-k` do not. Leave `previewHyperlink` at `null`, and a click on a link opens no popover. `Mod-k` inside a link then does nothing, and it never opens the create form there.
 - **`linkOnPaste: false` does not stop every paste from linking.** The linkify paste rule stays registered, so a pasted bare URL still becomes a link. To stop that path too, set `shouldAutoLink: () => false`, which every autolink path consults.
 - **`HTMLAttributes.target` reaches the DOM.** `HTMLAttributes: { target: '_blank' }` does emit `<a target="_blank">`. A browser-driven `target="_blank"` navigation skips the click gate. Leave `target` at `null` and let the click handler open the link.
 - **Markdown keeps only the link `href`.** Export writes `[text](href)`, and import reads the href alone, so a link `title` is lost both ways. A custom `rel` is lost too, and import sets the default `rel`. `target`, `class` and `image` never reach Markdown, by design.
-- **A link icon needs CSS for `.hyperlink-icon`.** Without `styles.css` or your own rule, the icon shows at its natural size. `styles.css` sizes it only inside `.ProseMirror`, so an icon from `linkIconFor` outside an editor needs your own rule. A Tailwind host also breaks the line, because preflight sets `img` and `svg` to `display: block`.
+- **A link icon needs CSS for `.hyperlink-icon`.** Without `styles.css` or your own rule, the icon shows at its natural size. `styles.css` sizes it only inside `.ProseMirror`, so an icon from `linkIconFor` outside an editor needs your own rule. Without such a rule, a Tailwind host also breaks the line, because preflight sets `img` and `svg` to `display: block`. The `styles.css` rule wins over preflight inside `.ProseMirror`.
 - **`linkIcon` must return a fresh element with no text.** `null` gives a plain link with no error. Any other result, or a throw, gives a plain link and one console error for that `linkIcon` function.
 - **A host mark above `priority: 1000` splits one link into two icons.** That mark renders outside the link. When it covers part of a link, the `<a>` splits in two, and each part gets an icon.
 - **`Hyperlink.extend({ addMarkView })` replaces the icon mark view.** To keep the icon, call `this.parent?.()` and wrap its result.
 - **Legacy `link` marks get no icon.** Only the `hyperlink` mark renders through the icon mark view.
 - **Parsed HTML drops every `.hyperlink-icon` element.** The rule runs even with `linkIcon` unset, so content inside an element with that class is lost on load and paste.
 - **A `{ light, dark }` pair has limits.** It needs `styles.css` or your own `.hyperlink-icon` size, or the span has zero width. A bad URL shows a blank 1em box. Browsers before Chrome 150, Firefox 150 and Safari 27 show the light image.
-- **A transient image failure hides that icon until reload.** The helper does not request a failed URL again.
+- **A transient image failure hides that icon until reload.** This holds for an `<img>` icon from `linkIconFetcher` or from an image URL entry in `linkIconMap`. Each helper never requests a failed URL again, until the page reloads or you build a new helper. A `{ light, dark }` pair keeps no such list.
 - **A pointer already resting on a link gets no hovercard.** The card starts only on `pointerover`. When a link renders under a still pointer, no card shows until the pointer leaves the link and comes back.
 - **The hovercard sees only this bundle's popovers.** It opens no card while a preview, create or edit popover of this package is mounted. A popover from another bundle, such as `@docs.plus/extension-hypermultimedia`, does not stop it.
 
@@ -162,7 +162,7 @@ Hyperlink.configure({
 })
 ```
 
-The icon goes first inside each `<a>`, and the link text sits in a `<span>` after it. Only safe hrefs reach the function. `styles.css` sizes the icon to `1em`. See [Options](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md#options).
+The icon goes first inside each `<a>`, and the link text sits in a `<span>` after it. Only an href that passes `isSafeHref` reaches the function. `validate` and `isAllowedUri` do not run for icons. `styles.css` sizes the icon to `1em`. See [Options](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md#options).
 
 Two helpers build that function for you. `linkIconMap` is an offline table from domain to icon. `linkIconFetcher` builds one `<img>` per link from the link's origin, for example through your own favicon route. Chain them with `??`, so a map hit wins and the fetcher helper never runs for it:
 
@@ -175,6 +175,8 @@ const favicons = linkIconFetcher({
 })
 Hyperlink.configure({ linkIcon: (ctx) => icons(ctx) ?? favicons(ctx) })
 ```
+
+`linkIconFetcher` takes two options: `src` and `tile`. `src` gets the link's origin, such as `https://example.com` or `https://example.com:8080`, with no path and no trailing slash. `tile: true` paints a light square behind each icon on a dark `color-scheme`. On a light scheme the tile is clear. `linkIconMap` keys are bare hostnames: `www.` is ignored, a subdomain matches its parent key, and the href port does not count. Both helpers cover `http:` and `https:` links only. A `mailto:`, `tel:` or app link has no web origin, so it stays a plain link. To give those links an icon, chain your own function that reads `href`.
 
 A map entry may also be a `{ light, dark }` pair of image URLs, or a function that returns an element. See [Link icons](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md#link-icons).
 
