@@ -21,8 +21,7 @@ This package is private and ships inside docs.plus, so each heading names the do
 
 ### Migration
 
-Push six of this release's eight migrations with the backend and webapp deploy. Hold
-`20261026120000`. Push `20261103120000` only after the backend is live
+Push seven of this release's eight migrations with the backend and webapp deploy. Push `20261103120000` only after the backend is live
 ([#661](https://github.com/docs-plus/docs.plus/issues/661)). The deploy order and the
 `check-grants.sql` runs are in the Migration section of this
 release in [`apps/hocuspocus.server/CHANGELOG.md`](../../apps/hocuspocus.server/CHANGELOG.md#migration).
@@ -40,19 +39,17 @@ Rename the parameters and the result column in every caller of the three functio
 
 Pass the documentId exactly as stored. Do not pass `lower(documentId)` or the slug.
 
+After the webapp deploy, paste `templates/magic-link.html` into **Magic Link** and
+`templates/confirm-signup.html` into **Confirm signup** in the Supabase dashboard. Do not paste
+them before: the new links need the webapp that reads `#token_hash`.
+
 ### Changed
 
 - The three Auth mail templates moved here from `apps/hocuspocus.server/templates/`, because
   the CLI refuses a template path outside `packages/`. `config.toml` now names the Magic Link
   and Confirm signup templates, so local mail matches production. Both link to
-  `{{ .RedirectTo }}#token_hash={{ .TokenHash }}` instead of `{{ .ConfirmationURL }}`. Paste
-  both into the production dashboard after the webapp that reads `#token_hash` is deployed.
-
-- **A view keeps its duration when the visit closes before the view queue drains
-  ([#603](https://github.com/docs-plus/docs.plus/issues/603)).** `20261025150000` replaces
-  `update_view_duration` and `process_document_views_queue`. `update_view_duration` now also
-  patches the queued message, and the drain copies that duration into the new row. Both stay
-  service-role and pg_cron only.
+  `{{ .RedirectTo }}#token_hash={{ .TokenHash }}` instead of `{{ .ConfirmationURL }}`. See
+  Migration for the dashboard step.
 - **The immediate email payload carries the document and the message
   ([#647](https://github.com/docs-plus/docs.plus/issues/647)).** `20261031120000` replaces
   `process_email_queue`. The payload gains `workspace_id` and `message_id`. `workspace_id` is the
@@ -67,6 +64,14 @@ Pass the documentId exactly as stored. Do not pass `lower(documentId)` or the sl
   `process_email_queue` again. It no longer reads `channels.slug` or sends `document_slug`. The
   server builds the pad link from `workspace_id` since #648.
 
+### Fixed
+
+- **A view keeps its duration when the visit closes before the view queue drains
+  ([#603](https://github.com/docs-plus/docs.plus/issues/603)).** `20261025150000` replaces
+  `update_view_duration` and `process_document_views_queue`. `update_view_duration` now also
+  patches the queued message, and the drain copies that duration into the new row. Both stay
+  service-role and pg_cron only.
+
 ### Security
 
 - **An erased account can no longer write back its profile, preferences or push devices
@@ -75,8 +80,7 @@ Pass the documentId exactly as stored. Do not pass `lower(documentId)` or the sl
   and security modes stay the same.
 - **New pgmq and storage objects start closed to anon and authenticated
   ([#570](https://github.com/docs-plus/docs.plus/issues/570)).** `20261026120000` changes the
-  default privileges in `pgmq` and `storage`. Existing grants do not change. This migration is
-  held; see Migration.
+  default privileges in `pgmq` and `storage`. Existing grants do not change.
 
 ### Removed
 
@@ -90,11 +94,13 @@ Pass the documentId exactly as stored. Do not pass `lower(documentId)` or the sl
   `packages/supabase/tests/` covers chat messages, chat media storage, the document views queue
   and writes after an erase. Run them with `bun run --filter @docs.plus/supabase_back test`.
   CI runs them in `.github/workflows/supabase-policies.yml`.
-- **The checks cover two more rules.** `check-functions-parity.ts` fails when the four Private
+- **The checks cover two more rules
+  ([#582](https://github.com/docs-plus/docs.plus/issues/582)).** `check-functions-parity.ts` fails when the four Private
   `document_access` clauses in `10-0-func-helpers.sql` differ. `check-grants.sql` and
   `check-grant-allowlists.ts` flag a SELECT grant to `authenticated` on `users.email` or
   `users.notification_preferences`.
-- **`seed.sql` matches the scripts again.** The email payload scripts changed on 2026-10-31 and
+- **`seed.sql` matches the scripts again
+  ([#583](https://github.com/docs-plus/docs.plus/issues/583)).** The email payload scripts changed on 2026-10-31 and
   2026-11-03, but `seed.sql` was not rebuilt. The policy test job checks the match before it
   starts, so its first run failed before any test ran. A local reset also seeded the old
   functions. It was rebuilt with `generate-seed.ts`.

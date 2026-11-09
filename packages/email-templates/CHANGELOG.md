@@ -15,6 +15,11 @@ This package is private and ships inside docs.plus, so each heading names the do
 - `DigestDocument.workspace_id` is now required. It holds the exact-case documentId
   ([#661](https://github.com/docs-plus/docs.plus/issues/661)).
 
+### Internal
+
+- The package has a `typecheck` script, so the root `bun run typecheck` gate now checks it
+  ([#658](https://github.com/docs-plus/docs.plus/issues/658)).
+
 ## [2.1.0] — 2026-10-13
 
 ### Added

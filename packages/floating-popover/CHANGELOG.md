@@ -12,17 +12,17 @@ Versioning follows [Semantic Versioning](https://semver.org/) and commits follow
 
 ### Added
 
-- `PopoverKind` gains the `'hovercard'` literal, for the extension-hyperlink link hovercard.
-- `createPopover` takes an optional `onRemove` callback. It runs once, after the popover root has left the DOM: at the end of the exit fade, or at once on `destroy()`. `onHide` still runs as the hide starts.
-- `focusables(root)` returns the controls that Tab visits in a popover, in DOM order. An opener can use it to choose the first focus.
+- `PopoverKind` gains the `'hovercard'` literal, for the extension-hyperlink link hovercard ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- `createPopover` takes an optional `onRemove` callback. It runs once, after the popover root has left the DOM: at the end of the exit fade, or at once on `destroy()`. `onHide` still runs as the hide starts ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+- `focusables(root)` returns the controls that Tab visits in a popover, in DOM order. An opener can use it to choose the first focus ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 
 ### Changed
 
-- `createPopover` reads its Tab cycle on each Tab, so a control that renders after `show()` joins the cycle. One `keydown` listener on the root, bound in `show()`, replaces one listener per control.
+- `createPopover` reads its Tab cycle on each Tab, so a control that renders after `show()` joins the cycle. One `keydown` listener on the root, bound in `show()`, replaces one listener per control ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 
 ### Fixed
 
-- The Tab cycle skips a control that cannot take focus: one that is disabled, inside `[inert]`, not rendered, or at `tabindex="-1"`. Before, Tab onto a disabled Apply button left focus where it was.
+- The Tab cycle skips a control that cannot take focus: one that is disabled, inside `[inert]`, not rendered, or at `tabindex="-1"`. Before, Tab onto a disabled Apply button left focus where it was ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - `createPopover` no longer light-dismisses when the pointer is on the toggle
   trigger (`referenceElement`, or `ignoreOutsideClickOn` when the position
   reference is a larger surface). Re-clicking the trigger can toggle closed.

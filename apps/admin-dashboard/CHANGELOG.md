@@ -21,7 +21,9 @@ This app is private and ships inside docs.plus, so each heading names the docs.p
 ### Internal
 
 - The Docker image copies `patches/` and the `packages/pad-url` manifest before the install, so
-  `bun install --frozen-lockfile` resolves.
+  `bun install --frozen-lockfile` resolves. `patches/` holds the `@tiptap/y-tiptap` fix for
+  [ueberdosis/tiptap#8584](https://github.com/ueberdosis/tiptap/issues/8584). The `pad-url`
+  package comes from [#648](https://github.com/docs-plus/docs.plus/issues/648).
 
 ## [2.2.0] — 2026-10-22
 
