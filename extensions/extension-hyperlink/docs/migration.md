@@ -7,15 +7,27 @@ Part of the [`@docs.plus/extension-hyperlink` README](../README.md).
 
 ## Migrating from 2.2 to 2.3
 
-`2.3` is a minor release. No export or option was removed, and stored JSON and Yjs documents load as before. HTML loads with two differences: the `<a href>` parse rule and the `.hyperlink-icon` parse rule below. Some defaults changed, so check each item below that your app depends on. The [CHANGELOG](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/CHANGELOG.md) has one entry for each item.
+`2.3` is a minor release. No export or option was removed, and stored JSON and Yjs documents load as before. HTML loads with two differences: the `<a href>` parse rule and the `.hyperlink-icon` parse rule below. Some behaviour changed with no option to restore it, so check each item below that your app depends on. The [CHANGELOG](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/CHANGELOG.md) has one entry for each item.
+
+Four changes are the most likely to break an existing test: Mod-click, `Mod-k` inside a link, the preview's role, and the `<a href>` parse rule.
 
 This guide lists only what can break. New in 2.3, and opt-in: the `linkIcon`, `hovercard`, `pasteTitle` and `navigate` options, and the `toStoredLink`, `linkAtSelection`, `linkIconMap`, `linkIconFetcher` and `hasMod` exports. Each is a root export of `@docs.plus/extension-hyperlink`. The CHANGELOG `Added` list has the rest.
 
 Two gates appear below. A write passes the composed gate: `isSafeHref`, your `validate` and your `isAllowedUri`. An open passes the read gate: `isSafeHref` and your `isAllowedUri`. `validate` never runs on an open. See [`validate` vs `isAllowedUri`](./api.md#validate-vs-isalloweduri).
 
+Mod is Cmd on macOS and Ctrl elsewhere. On macOS, Ctrl does not count as Mod.
+
 No new stylesheet import is needed to keep 2.2 behaviour. Import `hovercard.css` only when you add the `hovercard` option. The link icon rules ship in `styles.css`.
 
 ### Dependencies
+
+**The package.** Install the new version:
+
+```sh
+npm install @docs.plus/extension-hyperlink@^2.3.0
+```
+
+Or use `pnpm add`, `yarn add` or `bun add` with the same package and range.
 
 **Tiptap peer floor.** `@tiptap/core` and `@tiptap/pm` must be `^3.32.2`. They were `^3.31.3`.
 
@@ -48,25 +60,39 @@ if (!url) return
 editor.chain().setHyperlink({ href: url }).run() // `google.com,` stores https://google.com
 ```
 
-`setHyperlink` normalizes the value, so `google.com` is stored as `https://google.com`.
+`setHyperlink` normalizes the value, so `google.com` is stored as `https://google.com`. A value with a leading `//`, such as `//example.com`, is stored as it is.
 
-**`customValidator` gets the value the form stores.** That value is trimmed, without trailing punctuation, and keeps a leading `//`. In 2.2, an app link or a phone reached it as raw input, and a web link as linkify's match. The prebuilt forms pass your `validate` option as `customValidator`, so this applies to `validate` too:
+**`customValidator` gets the value `toStoredLink` returns, before the command normalizes it.** That value is trimmed, without trailing punctuation, and keeps a leading `//`. A direct `validateURL(url, { customValidator })` call passes the same value. The prebuilt forms pass your `validate` option as `customValidator`, so this applies to `validate` too. Both take one argument: `(url: string) => boolean`.
+
+What reaches it, per kind of input. In the table, linkify's match is the part of the input that `linkifyjs` found as a link:
+
+| Typed value                              | 2.2                                           | 2.3                       |
+| ---------------------------------------- | --------------------------------------------- | ------------------------- |
+| `google.com` or `google.com.`            | `google.com` (linkify's match)                | `google.com`              |
+| `//example.com`                          | `example.com` (linkify's match)               | `//example.com`           |
+| `hello google.com`                       | `google.com` (linkify's match)                | Not called. Refused.      |
+| `whatsapp://send?text=hi.`               | `whatsapp://send?text=hi.`, raw, with its dot | `whatsapp://send?text=hi` |
+| `+14155550123` with a space on each side | The raw value, spaces included                | `+14155550123`            |
 
 ```ts
-// 2.2: `whatsapp://send?text=hi.` reached `validate` with its dot.
-// 2.3: the same input reaches it as `whatsapp://send?text=hi`.
 Hyperlink.configure({ validate: (url) => !url.includes('blocked.example') })
 ```
 
-A rule that reads the value as the user typed it, such as one that refuses a trailing dot, no longer sees that dot. The write gate is unchanged. It still calls `validate` with the normalized href. So one submit of `google.com` calls `validate` with `google.com`, and again with `https://google.com`. One submit calls `validate` more than once, as in 2.2. Only the typed value is new. So a rule must pass both the typed value and the normalized href, and give the same answer each time. Autolink and paste call it with the normalized href only.
+So a web link reaches it as in 2.2, except for a leading `//`. An app link or a phone changes. A rule that refuses a trailing dot no longer sees that dot.
+
+The write gate is unchanged. It still calls `validate` with the normalized href. So one submit of `google.com` calls `validate` with `google.com`, then one or more times with `https://google.com`. 2.2 called it the same way. For example, the create form checks first with `editor.can()`, a dry run that changes nothing, then writes. The edit command checks the typed value once more before the write. The number of calls is not part of the contract. Write a rule with no side effects that accepts both the typed value and the normalized href, and gives the same answer each time. Autolink and paste call it with the normalized href only.
 
 ### Clicks and keys
 
 **Mod-click opens a new tab.** Cmd-click on macOS, or Ctrl-click elsewhere, opens the link through `navigate` with `newTab: true`, and opens no preview. In 2.2 it opened the preview, like a plain click. No option restores the old behaviour. Mod-click works the same in a read-only editor. With `openOnClick: false`, the package handles no click on a link, Mod-click included. Check any test or tour that Mod-clicks a link to open the preview.
 
-With `navigate` unset, every open of the package calls `window.open(href, '_blank', 'noopener,noreferrer')`, whatever `newTab` says. That covers Mod-click, `Alt-Enter`, read-only Enter and click, the preview's Open and the hovercard title. Set `navigate` to route an open in your app. It gets only `href` and `{ newTab }`. See the example under the read-only click below.
+Mod-click and a middle click on a link in the editor pass the read gate first. When the gate refuses the link, the click opens nothing. The package still stops the browser from following the link.
 
-**`Mod-k` inside a link opens the preview.** With a collapsed caret strictly inside a link, `Mod-k` opens that link's preview, with focus inside it. Strictly inside means link text sits on both sides of the caret. In `docs|.plus` the caret is inside. In `|docs.plus` or `docs.plus|` it sits at an edge. Two touching links count as an edge. At an edge, outside a link, or with a non-empty selection, it still opens the create form. Any factory in the slot works, not only the prebuilt one. With `popovers.previewHyperlink` unset, `Mod-k` inside a link does nothing. Set the slot so the key has a result:
+With `navigate` unset, every open of the package calls `window.open(href, '_blank', 'noopener,noreferrer')`, whatever `newTab` says. That covers Mod-click, a middle click in the editor, `Alt-Enter`, read-only Enter and click, the preview's Open and the hovercard title. 2.2 had no `navigate` option, and it also opened every link in a new tab. The one exception was a read-only click, described below.
+
+Set `navigate` to route an open in your app. It gets only `href` and `{ newTab }`, with no event and no editor. So it cannot tell which control asked for the open, and it cannot open a preview. See the example under the read-only click below.
+
+**`Mod-k` inside a link opens the preview.** With a collapsed caret strictly inside a link, `Mod-k` opens that link's preview, with focus inside it. Escape closes the preview and puts focus back in the editor, at the same caret. Strictly inside means link text sits on both sides of the caret. In `docs|.plus` the caret is inside. In `|docs.plus` or `docs.plus|` it sits at an edge. Two touching links count as an edge. At an edge, outside a link, or with a non-empty selection, it still opens the create form. In 2.2, `Mod-k` always opened the create form. Any factory in the slot works, not only the prebuilt one. With `popovers.previewHyperlink` unset, `Mod-k` inside a link does nothing and logs no warning. No option restores the create form there. Set the slot so the key has a result:
 
 ```ts
 import { Hyperlink, previewHyperlinkPopover } from '@docs.plus/extension-hyperlink'
@@ -74,7 +100,7 @@ import { Hyperlink, previewHyperlinkPopover } from '@docs.plus/extension-hyperli
 Hyperlink.configure({ popovers: { previewHyperlink: previewHyperlinkPopover } })
 ```
 
-**`Alt-Enter` inside a link opens the link.** As with `Mod-k`, the caret must sit strictly inside the link. The package opens it through `navigate`, with `newTab: false`. It uses up the key even when the gate refuses the link. So a keymap below the mark's priority of `1000` no longer gets `Alt-Enter` with the caret inside a link. To act first, give your extension a priority above `1000`. Then test the caret with `linkAtSelection`, and return `false` inside a link so the link still opens. For example, a chat composer that sends on `Alt-Enter`:
+**`Alt-Enter` inside a link opens the link.** 2.2 bound no `Alt-Enter`. As with `Mod-k`, the caret must sit strictly inside the link. The package opens it through `navigate`, with `newTab: false`. It uses up the key even when the gate refuses the link. So a keymap below the mark's priority of `1000` no longer gets `Alt-Enter` with the caret inside a link. To act first, give your extension a priority above `1000`. Then test the caret with `linkAtSelection`, and return `false` inside a link so the link still opens. For example, a chat composer that sends on `Alt-Enter`:
 
 ```ts
 import { Extension } from '@tiptap/core'
@@ -101,7 +127,7 @@ const SendOnAltEnter = Extension.create({
 
 **In a read-only editor, Enter on a focused link moves focus into its preview.** In 2.2, Enter opened the preview as a click does, but focus stayed on the link. Now focus moves into the preview, and Escape returns it to the link. With no preview slot, Enter opens the link through `navigate` with `newTab: false`, as a click does. With `navigate` unset, both open a new tab. Check any read-only keyboard handling of your own on links.
 
-**A read-only click with no preview slot ignores the link's `target`.** It goes through `navigate` with `newTab: false`. With `navigate` unset, it always opens a new tab. In 2.2 the link's `target` decided, with `_blank` as the fallback. To open a plain click in the same tab, set `navigate`. It handles every open of the package. So `Alt-Enter`, a plain click on the preview's Open and the hovercard title then open in the same tab too. In an editable editor, a same-tab open leaves the page.
+**A read-only click with no preview slot ignores the link's `target`.** It goes through `navigate` with `newTab: false`. With `navigate` unset, it always opens a new tab. In 2.2 the link's `target` decided. That was the `target` on the rendered `<a>`, such as one from `HTMLAttributes`, then the stored `target` attribute, then `_blank`. To open a plain click in the same tab, set `navigate`. It handles every open of the package. So `Alt-Enter`, a plain click on the preview's Open and the hovercard title then open in the same tab too. In an editable editor, a same-tab open leaves the page.
 
 ```ts
 import { Hyperlink, SAFE_WINDOW_FEATURES } from '@docs.plus/extension-hyperlink'
@@ -134,9 +160,11 @@ Hyperlink.configure({
 document.querySelector('[role="toolbar"]')
 // 2.3
 document.querySelector('[role="dialog"][aria-label="Link preview"]')
+// Testing Library
+screen.getByRole('dialog', { name: 'Link preview' })
 ```
 
-The role and the name sit on the popover frame, for any preview factory. The prebuilt preview content inside it keeps the `.hyperlink-preview-popover` class, as in 2.2. A custom factory's content has only your own classes. The hovercard is a separate popover, `.hyperlink-hovercard`, with no role, so this selector never matches it. The preview sets no `aria-modal`. The name "Link preview" is fixed English text, and no option changes it.
+The role and the `aria-label` sit on the `.floating-popover` root, for any preview factory. Query the preview's buttons inside that root. The create and edit popovers were already dialogs in 2.2, named "Add link" and "Edit link". So `[role="dialog"]` alone matches all three, and the name picks the preview. The prebuilt preview content inside it keeps the `.hyperlink-preview-popover` class, as in 2.2. A custom factory's content has only your own classes. The hovercard is a separate popover with no role, so this selector never matches it. Its root is also `.floating-popover`, with `.hyperlink-hovercard` inside. So a selector on the `.floating-popover` class alone matches the hovercard too. No popover of this package sets `aria-modal`. All three names are fixed English text, and no option changes them.
 
 **A pasted `<a href>` becomes `hyperlink` even when StarterKit's Link is registered.** The `a[href]` parse rule now runs at priority 51, above Link's 50. A host that keeps Link to load stored `link` marks gets `hyperlink` from every new paste and HTML import. Code that reads new links as `link` must read `hyperlink`:
 

@@ -22,7 +22,7 @@ It replaces the `@tiptap/extension-link` mark that StarterKit v3 bundles.
 ## Why use it
 
 - **Autolink covers more than web URLs.** As you type, bare domains get `https://`, emails become `mailto:`, and E.164 phones become `tel:`. App schemes from a catalog of 47, such as `whatsapp://`, autolink too.
-- **The link UI is included.** Prebuilt create, preview, and edit popovers ship with the package. `Mod-k` opens the create-link form with no configuration. Inside a link, `Mod-k` opens that link's preview when `popovers.previewHyperlink` is set, and `Alt-Enter` opens the link. Mod-click opens a link in a new tab. `@tiptap/extension-link` binds no keyboard shortcut.
+- **The link UI is included.** Prebuilt create, preview, and edit popovers ship with the package. `Mod-k` opens the create-link form with no configuration. Inside a link, `Mod-k` opens that link's preview when `popovers.previewHyperlink` is set, and `Alt-Enter` opens the link. Mod-click opens a link in a new tab. Every open uses a new tab until you set the `navigate` option. `@tiptap/extension-link` binds no keyboard shortcut.
 - **Every boundary checks the scheme.** `isSafeHref` blocks `javascript:`, `data:`, `vbscript:`, `file:`, and `blob:` on parse, import, write, serialize, and navigation. An embedded tab or newline cannot hide a scheme from the gate.
 - **Your `@tiptap/extension-link` configuration ports over.** `isAllowedUri` takes the same `(uri, ctx)` shape as `@tiptap/extension-link`, so an existing policy works unchanged. `setLink`, `unsetLink`, and `toggleLink` stay as aliases. `[label](url)` round-trips with `@tiptap/markdown`.
 
@@ -42,7 +42,7 @@ React Native has no DOM. Load the editor in a web view.
 
 Installs two runtime dependencies, `@floating-ui/dom` and `linkifyjs`. The popover engine and the tooltip ship inside `dist`, so they add no third package.
 
-Upgrading from `2.2`? No export or option was removed, but some defaults changed, such as Mod-click and `Mod-k` inside a link. See [Migrating from 2.2 to 2.3](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/migration.md#migrating-from-22-to-23).
+Upgrading from `2.2`? No export or option was removed, and stored JSON and Yjs documents load as before. Some behaviour changed, such as Mod-click, `Mod-k` inside a link and two HTML parse rules. See [Migrating from 2.2 to 2.3](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/migration.md#migrating-from-22-to-23).
 
 Upgrading from `1.x`? Option names, command names, and CSS class names all changed — see [Migrating from 1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/migration.md#migrating-from-1x).
 
@@ -82,7 +82,7 @@ const editor = new Editor({
 })
 ```
 
-The `styles.css` import is optional. The snippet also styles no document link — see [Popovers](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/popovers.md) and [Style document links](#style-document-links).
+The `styles.css` import is optional. Without it, the prebuilt popovers render unstyled, and every popover shows with no fade, the hovercard included. The snippet also styles no document link — see [Popovers](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/popovers.md) and [Style document links](#style-document-links).
 
 You should see a paragraph with one link. Click the link to open the preview popover, with copy, edit, and remove actions. Type `example.org` and a space, and the text becomes a link. Select a word and press `Mod-k` (Cmd on macOS, Ctrl elsewhere) to open the create-link form.
 
@@ -176,9 +176,9 @@ const favicons = linkIconFetcher({
 Hyperlink.configure({ linkIcon: (ctx) => icons(ctx) ?? favicons(ctx) })
 ```
 
-`linkIconFetcher` takes two options: `src` and `tile`. `src` gets the link's origin, such as `https://example.com` or `https://example.com:8080`, with no path and no trailing slash. `tile: true` paints a light square behind each icon on a dark `color-scheme`. On a light scheme the tile is clear. `linkIconMap` keys are bare hostnames: `www.` is ignored, a subdomain matches its parent key, and the href port does not count. Both helpers cover `http:` and `https:` links only. A `mailto:`, `tel:` or app link has no web origin, so it stays a plain link. To give those links an icon, chain your own function that reads `href`.
+`linkIconFetcher` takes two options: `src` and `tile`. `src` gets the link's origin, such as `https://example.com` or `https://example.com:8080`, with no path and no trailing slash. It must return an image URL string. Your route may answer with any image the browser can draw. If `src` throws, the link stays plain, and the package logs one console error. Links that share an icon URL share one request. Each `<img>` has `alt=""`, a 16 × 16 fallback size and `referrerPolicy="no-referrer"`. It stays hidden until it loads, so a failed load shows no icon. To skip a link, wrap the fetcher in your own function that returns `null`. `tile: true` paints a light square behind each icon on a dark `color-scheme`. On a light scheme the tile is clear. `linkIconMap` keys are bare hostnames: `www.` is ignored, a subdomain matches its parent key, and the href port does not count. Both helpers cover `http:` and `https:` links only. A `mailto:`, `tel:` or app link has no web origin, so each helper returns `null` for it. When every function in the `??` chain returns `null`, the link stays plain. To give those links an icon, chain your own function that reads `href`.
 
-A map entry may also be a `{ light, dark }` pair of image URLs, or a function that returns an element. See [Link icons](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md#link-icons).
+The `favicons` function above also works as the hovercard's `siteIcon`. A map entry may also be a `{ light, dark }` pair of image URLs, or a function that returns an element. See [Link icons](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md#link-icons).
 
 ### Show a card on hover
 
@@ -193,7 +193,14 @@ Hyperlink.configure({
   hovercard: {
     fetchMetadata: async ({ href }) => {
       const res = await fetch(`/metadata?url=${encodeURIComponent(href)}`)
-      return res.ok ? res.json() : null
+      if (!res.ok) return null
+      const page = await res.json()
+      // Map your server's fields to HovercardData. `image` is `{ url }`, not a string.
+      return {
+        title: page.title,
+        description: page.description,
+        image: page.image ? { url: page.image } : undefined
+      }
     }
   }
 })

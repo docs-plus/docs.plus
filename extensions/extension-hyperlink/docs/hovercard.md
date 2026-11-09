@@ -22,13 +22,22 @@ Hyperlink.configure({
   hovercard: {
     fetchMetadata: async ({ href }) => {
       const res = await fetch(`/metadata?url=${encodeURIComponent(href)}`)
-      return res.ok ? res.json() : null
+      if (!res.ok) return null
+      const page = await res.json()
+      // Map your server's fields to HovercardData. `image` is `{ url }`, not a string.
+      return {
+        title: page.title,
+        description: page.description,
+        image: page.image ? { url: page.image } : undefined
+      }
     }
   }
 })
 ```
 
-`hovercard.css` styles the frame and the built-in card. Without it, the card renders unstyled. `styles.css` styles the tooltips on the built-in card's buttons, the same `.floating-tooltip` bubble the click preview uses. Without it, a tooltip shows as plain text and never hides. See [Theming](#theming).
+`/metadata` stands for your own server route. Its answer must reach the card as [`HovercardData`](#the-data-contract), so map its fields as above.
+
+`hovercard.css` styles the frame and the built-in card. Without it, the card renders unstyled. Keep it with a custom `render` too, because the frame still needs it. `styles.css` styles the tooltips on the built-in card's buttons, the same `.floating-tooltip` bubble the click preview uses. Without it, a tooltip shows as plain text and never hides. `styles.css` also gives the popover shell, `.floating-popover`, its fade. So keep it for a fully custom card too, or the card shows and hides with no fade. See [Theming](#theming).
 
 ## The built-in card
 
@@ -65,6 +74,8 @@ A click on the title opens the link through the [`navigate`](./api.md#options) o
 | `title`       | `string`          | The title. Without it, the built-in card shows "No preview for this page."                                  |
 | `description` | `string`          | Two lines at most.                                                                                          |
 | `image`       | `{ url: string }` | The picture. The card loads exactly `url`. Route pictures through your own server, so readers stay private. |
+
+A plain string in `image` is not a picture URL. The built-in card then shows no picture. Wrap the string as `{ url }`.
 
 A custom card can need more fields. `HovercardOptions<D>` takes your own data type, and `render` then gets `ctx.data` as `D`:
 
@@ -199,7 +210,7 @@ Hyperlink.configure({
 
 ### Example: a React portal
 
-`render` must return an element at once, so a React card goes through a portal. `render` registers an empty host element, and one React component draws a portal into each host. `flushSync` makes React paint the card before `render` returns. `destroy` removes the entry, and React unmounts the card.
+`render` must return an element at once, so a React card goes through a portal. `render` registers an empty host element, and one React component draws a portal into each host. `flushSync` makes React paint the card before `render` returns. `destroy` removes the entry, and React unmounts the card. The engine calls `render` only from a timer or a promise callback, never inside a React render. So `flushSync` is safe there.
 
 ```tsx
 import { useSyncExternalStore } from 'react'
@@ -267,7 +278,27 @@ function MyCard({ ctx }: { ctx: HovercardRenderContext<HovercardData> }) {
 }
 ```
 
-Pass `render: renderCard` in the `hovercard` option. `MyCard` is a short sample; replace it with your own component.
+Pass `renderCard` as `render`, next to the required `fetchMetadata`:
+
+```ts
+Hyperlink.configure({
+  hovercard: {
+    fetchMetadata: async ({ href }) => {
+      const res = await fetch(`/metadata?url=${encodeURIComponent(href)}`)
+      if (!res.ok) return null
+      const page = await res.json()
+      return {
+        title: page.title,
+        description: page.description,
+        image: page.image ? { url: page.image } : undefined
+      }
+    },
+    render: renderCard
+  }
+})
+```
+
+`ctx.data` is your `fetchMetadata` answer, as it came. So map `image` to `{ url }` for a custom card too. A plain string gives `image.url` as `undefined` in `MyCard`, and the picture wait has no URL to load. `MyCard` is a short sample; replace it with your own component.
 
 Mount `HovercardPortals` once per page, even with two editors or two React roots. One store serves every editor. Render it inside your providers. A portal keeps the React context of the place it renders, so a theme provider above it reaches the card.
 
@@ -285,6 +316,8 @@ The third argument of `useSyncExternalStore` is the server snapshot. A stable em
 The engine calls `fetchMetadata` once per hover, and it keeps no cache. Dedupe requests by URL in your own code, so a hover and the click that follows share one request.
 
 ## Keys
+
+Mod is Cmd on macOS and Ctrl elsewhere.
 
 - A bare Shift, Control, Alt, Meta, AltGraph or CapsLock keeps the card open.
 - So do the arrow keys, Home, End, PageUp, PageDown, F1 to F12 and Mod-C.

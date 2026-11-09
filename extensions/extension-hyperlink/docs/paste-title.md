@@ -88,7 +88,7 @@ The job ends for good, and its signal aborts, when any of these happens first:
 
 - The link text stops being the pasted URL. Typing inside the link, deleting it, an undo of the paste, or a peer's edit all count.
 - The link's href changes.
-- The answer comes while the caret or the selection edge sits inside the link. A swap then would move the caret.
+- The answer comes while the caret or a selection edge sits strictly inside the link, with link text on both sides. A swap then would move the caret. A caret at either edge of the link does not count. Nor does a selection that covers exactly the whole link, since its edges sit at the link's edges. Only the caret and selection at the moment the answer comes count. Right after a paste the caret sits at the link's end, so the swap runs.
 - The editor is read-only or destroyed when the answer comes.
 - Five jobs wait at once, and a sixth paste starts. The oldest job ends.
 
@@ -149,9 +149,9 @@ The swap is one transaction. It goes through `closeHistory(tr)` from `@tiptap/pm
 | `preventAutolink` | Keeps autolink off the new text.                                         |
 | `pasteTitle`      | `true`. Lets your app tell the swap apart from an edit.                  |
 
-The hovercard's [`applyTitle`](./hovercard.md#draw-your-own-card) sends the same two transactions, so a click on **Use page title** undoes the same way and also carries `pasteTitle`. One difference: `applyTitle` then focuses the editor with the caret after the new text. A click on the card can leave focus outside the editor, so this makes the next `Mod-z` reach it. A paste never moves focus, so the paste swap needs no focus call.
-
 An empty transaction follows the swap. It also goes through `closeHistory(tr)` and carries `inputRule`. It closes the undo step, so typing after the swap is a step of its own. The swap never sets `addToHistory: false`: under Yjs that would make the paste impossible to undo.
+
+The hovercard's [`applyTitle`](./hovercard.md#draw-your-own-card) sends the same two transactions: the swap and the empty one. So a click on **Use page title** undoes the same way and also carries `pasteTitle`. One difference: `applyTitle` then focuses the editor with the caret after the new text. A click on the card can leave focus outside the editor, so this makes the next `Mod-z` reach it. A paste never moves focus, so the paste swap needs no focus call.
 
 ```ts
 editor.on('transaction', ({ transaction }) => {

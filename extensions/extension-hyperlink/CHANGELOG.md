@@ -17,7 +17,7 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 - **Paste title.** The `pasteTitle` option names a pasted bare URL after its page, in one undo step. It keeps a look-alike address out of the title.
 - **One open hook.** The `navigate` option opens every link the package opens: Mod-click, a middle click, `Alt-Enter` and the preview's Open.
 - **Keyboard.** `Mod-k` inside a link opens its preview with focus inside, and Escape returns to the same caret.
-- **Upgrading from 2.2.0.** No export or option was removed. The peer and `linkifyjs` ranges rose, and 13 default behaviours changed. The first entry under Changed lists them, and [Migrating from 2.2 to 2.3](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/migration.md#migrating-from-22-to-23) says what to check for each one.
+- **Upgrading from 2.2.0.** No export or option was removed. The peer and `linkifyjs` ranges rose, and 13 behaviours changed. The first entry under Changed lists them, and [Migrating from 2.2 to 2.3](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/migration.md#migrating-from-22-to-23) says what to check for each one.
 
 ### Added
 
@@ -111,7 +111,7 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 - The new [Hovercard](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/hovercard.md) page covers the built-in card, the data contract and `render`. It has a plain DOM example, a React example, the timing and the keys ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 - The new [Paste title](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/paste-title.md) page covers the rules, the resolver contract and a safe backend ([#683](https://github.com/docs-plus/docs.plus/issues/683)).
-- [Migrating from 2.2 to 2.3](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/migration.md#migrating-from-22-to-23) gives a code change or a check for each item in the upgrade list.
+- [Migrating from 2.2 to 2.3](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/migration.md#migrating-from-22-to-23) gives a code change or a check for each item in the upgrade list, and says what 2.2 did.
 - The custom create and edit popovers in [Popovers](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/popovers.md#bring-your-own-popover) store `toStoredLink(value)`, as the prebuilt forms do.
 - On npm, the docs.plus badge now opens the docs.plus repository. Before, a click opened the badge image.
 
