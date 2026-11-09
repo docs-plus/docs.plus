@@ -26,7 +26,7 @@ const placeholder = (node: JsonNode): JsonNode | null => {
 
 /**
  * No media URL may reach an agent; each media node becomes a placeholder.
- * Run it before `toPortableJson`, which links an embed to its `src`.
+ * Run it before `exportMarkdown`, which writes an embed's `src`.
  */
 export const redactMedia = (doc: JSONContent): JSONContent => mapNodes(doc, placeholder)
 

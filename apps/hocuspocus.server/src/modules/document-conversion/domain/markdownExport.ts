@@ -30,4 +30,4 @@ export const getMarkdownManager = (): MarkdownManager =>
   (markdownManager ??= new MarkdownManager({ extensions: markdownExtensions }))
 
 export const exportMarkdown = (doc: TiptapDocJson): string =>
-  getMarkdownManager().serialize(toPortableJson(doc))
+  getMarkdownManager().serialize(toPortableJson(doc, { keepEmbeds: true }))

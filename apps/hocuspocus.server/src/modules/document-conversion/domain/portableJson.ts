@@ -2,8 +2,9 @@ import { isRecord } from '../../../lib/isRecord'
 import { MAX_TABLE_SPAN, type TiptapDocJson } from '../types'
 import { type JsonNode, mapNodes } from './mapNodes'
 
-// Every embed is an iframe or a player that DOCX, Markdown and ODT cannot express.
-// The `src` is the only part a reader can still follow. `image` is not an embed,
+// Every embed is an iframe or a player that DOCX and ODT cannot express. The `src`
+// is the only part a reader can still follow there. Markdown keeps embeds, because
+// the hypermultimedia kit writes each one as `![type](src)`. `image` is not an embed,
 // so it is left alone here. DOCX and Markdown keep `image` as a picture, while
 // odtExport degrades it to a link (ODF frames need a measured width).
 export const EMBED_NODE_TYPES = new Set([
@@ -45,10 +46,13 @@ const clampColspan = (node: JsonNode): JsonNode | null => {
 export const clampColspans = (doc: TiptapDocJson): TiptapDocJson => mapNodes(doc, clampColspan)
 
 /** Rewrites the nodes only the editor can render, so no writer meets them. */
-export const toPortableJson = (doc: TiptapDocJson): TiptapDocJson =>
+export const toPortableJson = (
+  doc: TiptapDocJson,
+  { keepEmbeds = false }: { keepEmbeds?: boolean } = {}
+): TiptapDocJson =>
   mapNodes(doc, (node) => {
     if (node.type === MEDIA_UPLOAD_PLACEHOLDER) return 'drop'
-    if (typeof node.type === 'string' && EMBED_NODE_TYPES.has(node.type)) {
+    if (!keepEmbeds && typeof node.type === 'string' && EMBED_NODE_TYPES.has(node.type)) {
       return embedToParagraph(node)
     }
     return clampColspan(node)

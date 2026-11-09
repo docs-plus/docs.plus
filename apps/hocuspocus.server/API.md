@@ -995,7 +995,7 @@ The strict decode is Markdown's real gate. A BOM is stripped, so a Windows-writt
 
 Images embedded in a Word file are re-hosted through [the media route](#post-apipluginshypermultimediadocumentid) so the result carries URLs the editor can parse instead of `data:` payloads. This needs `PUBLIC_RESTAPI_URL` — see [ENV.md](./ENV.md#public-origin). Without it, every image becomes a warning and the text still imports.
 
-**A lone media URL becomes a player node.** A paragraph that is only `[url](url)` or an autolink, and whose href is a video, audio, or embed host, becomes that media node. A provider address written as an image — `![youtube](https://youtu.be/…)`, and the same for `vimeo`, `video`, `audio`, and the other embed hosts — is lifted out of its paragraph so `PATCH /content` accepts the JSON. A labeled link, a filter link, a media URL next to other text, and a media URL inside a list item stay links. Picture `width` and `height` stay empty on this JSON. Settings replace writes natural picture size in the browser.
+**A lone media URL becomes a player node.** A paragraph that is only `[url](url)` or an autolink, and whose href is a video, audio, or embed host, becomes that media node. A provider address written as an image — `![youtube](https://youtu.be/…)`, and the same for `vimeo`, `video`, `audio`, and the other embed hosts — is lifted out of its paragraph so `PATCH /content` accepts the JSON. A labeled link, a filter link, a media URL next to other text, and a media URL inside a list item stay links. Picture `width` and `height` stay empty on this JSON unless an option block sets them. Settings replace writes natural picture size in the browser.
 
 ```json
 {
@@ -1016,12 +1016,12 @@ Conversion is lossy in named ways. Import reports what it changed through `warni
 
 **What export drops**
 
-| Content                                                                                             | DOCX                                | Markdown           | ODT                    |
-| --------------------------------------------------------------------------------------------------- | ----------------------------------- | ------------------ | ---------------------- |
-| The eight media embeds (`youtube`, `vimeo`, `loom`, `x`, `spotify`, `soundcloud`, `video`, `audio`) | link to the source                  | link to the source | link to the source     |
-| Images                                                                                              | picture — own origin, PNG/JPEG only | `![alt](src)`      | **link to the source** |
-| Highlight                                                                                           | **dropped**                         | `==text==`         | kept                   |
-| In-progress upload placeholders                                                                     | removed                             | removed            | removed                |
+| Content                                                                                             | DOCX                                | Markdown          | ODT                    |
+| --------------------------------------------------------------------------------------------------- | ----------------------------------- | ----------------- | ---------------------- |
+| The eight media embeds (`youtube`, `vimeo`, `loom`, `x`, `spotify`, `soundcloud`, `video`, `audio`) | link to the source                  | `![youtube](src)` | link to the source     |
+| Images                                                                                              | picture — own origin, PNG/JPEG only | `![alt](src)`     | **link to the source** |
+| Highlight                                                                                           | **dropped**                         | `==text==`        | kept                   |
+| In-progress upload placeholders                                                                     | removed                             | removed           | removed                |
 
 DOCX is the one format whose converter fetches: it downloads every `<img src>` to embed the bytes. `src` is ordinary pad content, so only images on this server's own media origin (`PUBLIC_RESTAPI_URL`) are kept. A third-party or unreachable one is dropped rather than fetched, and with no `PUBLIC_RESTAPI_URL` set no image is embedded at all. An embed becomes a paragraph holding its caption, or its URL when it has no caption. ODF draws a picture through a measured frame. A remote image has no measured width, so ODT gives the reader a link it can follow rather than an empty box.
 
@@ -1029,7 +1029,7 @@ The origin filter is not the last gate. A second filter sniffs the fetched bytes
 
 **What a DOCX round trip loses.** Export to `.docx` and import it back, and the following do not survive: underline, blockquote, code block, horizontal rules, and table header cells. Blockquote and code block each flatten to a paragraph, and table header cells demote to normal cells. Word's own `Title`, `Subtitle` and `Quote` styles are mapped on the way in. So a file authored in Word fares better than one that made this round trip.
 
-**Markdown keeps the media and never its placement.** The two shapes are in the table above: an image exports as `![alt](src)`, an embed as a link. Everything else the node holds is dropped — `width`, `height`, `float`, `margin`, `display`, `clear`, and provider flags such as SoundCloud's `visual`. An image also loses its `title` and its caption. An embed's caption survives, as the link text. Import of a lone embed or media `[url](url)` becomes the player again. It does not restore width, height, or caption. Settings replace writes natural picture size. Export to `.docx`, or apply Tiptap JSON through `PATCH /api/documents/:documentId/content`, when placement matters.
+**Markdown keeps the media, its caption and its placement.** An image exports as `![alt](src)`, and an embed as `![youtube](src)` with its own node name. The caption rides the title slot, `![youtube](src "My caption")`. Placement rides an option block after it, `{width=800 float=right}`, with only the values that differ from the default. `video`, `audio` and `x` also carry their player options there. Import reads all of it back. The page [Media in Markdown](../../docs/media-in-markdown.md) lists the keys. Markdown still drops the image `title` and the provider player options, such as SoundCloud's `visual` and the YouTube start time. Export to `.docx`, or apply Tiptap JSON through `PATCH /api/documents/:documentId/content`, when those matter.
 
 > **No export format carries `toc-id`.** That id is the identity a heading's chat channel, fold state and `?id=` deep link hang off. Imported content has none, so applying it with `mode=replace` re-keys every heading in the document and orphans all three, permanently. Re-editing does not bring them back. **Default to `mode=append`** and reserve `replace` for a document whose heading identities nobody depends on yet. An appended import brings its own title heading with it, and the title-first check only looks at the document's first node. Drop or demote `content[0]` unless you want a second title heading in the middle of the document.
 

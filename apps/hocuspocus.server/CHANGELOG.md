@@ -190,6 +190,12 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 
 ### Changed
 
+- **Markdown export writes each media embed as media, not as a link**
+  ([#244](https://github.com/docs-plus/docs.plus/issues/244)). `exportMarkdown` keeps the eight
+  embeds, and the hypermultimedia kit writes each one as `![youtube](src "caption"){width=800}`.
+  The caption and the layout ride along. DOCX and ODT still write a link to the source. Import
+  reads the new form back. The image builds the kit from workspace source, so ship back and front
+  in one `(build): back front` deploy.
 - **`APP_HOSTS` must hold bare host names.** An entry with a scheme, a port or a path, such as
   `https://docs.plus` or `docs.plus:443`, now stops the server at boot. Before, such an entry
   never matched a pad URL, so a Private pad's cached link card lived out its 24 h TTL with no

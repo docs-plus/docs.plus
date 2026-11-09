@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import { renderDocumentHtml } from '../../domain/documentHtml'
+import { exportMarkdown } from '../../domain/markdownExport'
 import { MAX_TABLE_SPAN, type TiptapDocJson } from '../../types'
 
 const tableWithCell = (colspan: unknown, content: unknown[]): TiptapDocJson =>
@@ -51,6 +52,29 @@ describe('toPortableJson table spans', () => {
       null,
       null
     )
+    expect(html).toContain(`href="${src}"`)
+  })
+})
+
+// DOCX and ODT cannot hold a player, but Markdown has a syntax for one (#244).
+describe('toPortableJson lanes', () => {
+  const src = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+  const doc = {
+    type: 'doc',
+    content: [
+      { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Title' }] },
+      { type: 'youtube', attrs: { src } }
+    ]
+  } as TiptapDocJson
+
+  test('Markdown writes an embed as media syntax, not as a link', () => {
+    const markdown = exportMarkdown(doc)
+    expect(markdown).toContain(`![youtube](${src}`)
+    expect(markdown).not.toContain(`[${src}](${src})`)
+  })
+
+  test('the DOCX HTML still links an embed to its source', async () => {
+    const html = await renderDocumentHtml(doc, 'T', null, null)
     expect(html).toContain(`href="${src}"`)
   })
 })
