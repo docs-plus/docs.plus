@@ -844,7 +844,13 @@ The email for a chat message now opens the document at that message. On Android,
 
 A pasted picture no longer vanishes when its address has no file extension. A picture that fails to load now names the site it comes from.
 
-Sign-in no longer stops when Chrome wrongly says you are offline — needs an account.
+Sign-in no longer stops when Chrome wrongly says you are offline — needs an account. Google sign-in now shows docs.plus in Google's account chooser, and the privacy page lists your data rights.
+
+Renaming a link keeps the link. Before, a link whose text was a web address, such as `example.com`, lost its link when you renamed it — needs a document you can edit.
+
+A document no longer gets an empty title heading added at its end. A link that comes from a Markdown import or an AI app now opens the link preview, like a link you type.
+
+On a phone, closing a link sheet returns focus to the link, and a screen reader skips the page behind the sheet. On iPhone Safari, the chat icon in the table of contents drawer opens the chat again.
 
 ### Safer links, safer server
 
