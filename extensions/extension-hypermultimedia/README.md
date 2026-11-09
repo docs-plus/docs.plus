@@ -32,7 +32,7 @@ npm install @docs.plus/extension-hypermultimedia
 
 Or use `pnpm add @docs.plus/extension-hypermultimedia`, `yarn add @docs.plus/extension-hypermultimedia`, or `bun add @docs.plus/extension-hypermultimedia`.
 
-Requires **`@tiptap/core` ^3.32.0** and **`@tiptap/pm` ^3.32.0** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.32.2** and **`@tiptap/pm` ^3.32.2** (Tiptap 3.x).
 
 This package imports no React, Vue, or Next.js code. Use it from a plain page, Vite, React, Vue, Svelte, Next.js, Nuxt, or SvelteKit. Create the editor in the browser.
 
@@ -41,6 +41,8 @@ React Native has no DOM. Load the editor in a web view.
 Installs one runtime dependency, `@floating-ui/dom`. The popover engine and the tooltip engine ship inside `dist`, so they add no further install.
 
 Upgrading from `1.x`? Version 2.0.0 renames the stored node types to camelCase and renames `Twitter` to `x` — see [Migrating from 1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/migration.md#migrating-from-1x).
+
+Upgrading from `2.2.0`? Nothing was removed, but the Markdown and HTML output changed — see [Upgrading from 2.2.0](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/migration.md#upgrading-from-220).
 
 ## Quickstart
 
@@ -258,7 +260,7 @@ The shots below show every node the kit ships: the local asset files `image`, `v
 | [Resize and loading shell](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/resize-and-loading.md) | Drag-resize limits, the loading shell and a custom overlay                                                              |
 | [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/styling.md)                             | The stylesheet, the `--hm-*` theme tokens, class names                                                                  |
 | [Security](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/security.md)                           | The scheme gate on stored `src` values, the View original allowlist                                                     |
-| [Migrating from 1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/migration.md)                | Renamed node types and exports, removed API, the stored-data migration                                                  |
+| [Migration guide](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/migration.md)                   | Upgrading from 2.2.0: Markdown and HTML output. Migrating from 1.x: renamed node types and exports, removed API         |
 | [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/CHANGELOG.md)                              | Every release and its breaking changes                                                                                  |
 | [For AI coding agents](https://cdn.jsdelivr.net/npm/@docs.plus/extension-hypermultimedia/README.md)                                          | This README as plain Markdown for your agent. The docs are also on [Context7](https://context7.com/docs-plus/docs.plus) |
 

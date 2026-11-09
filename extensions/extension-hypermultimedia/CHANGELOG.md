@@ -10,42 +10,64 @@ historical Conventional Commits format. The project adheres to
 
 ### Highlights
 
-- **Media through Markdown.** Every media node keeps its caption in the title slot, and its size, placement and player options in an option block: `![video](src "Caption"){width=800}`.
-- **Captions through HTML.** All nine nodes render a `<figure data-hm-figure>` with a `<figcaption>`, so a copied caption survives.
+- **Media through Markdown.** Every media node keeps its caption in the title slot. Its size and placement ride an option block: `![video](src "Caption"){width=800}`. So do the `video`, `audio` and `x` player options.
+- **Captions through HTML.** A captioned node of any of the nine kinds renders a `<figure data-hm-figure>` with a `<figcaption>`, so a copied caption survives.
 - **Clear load errors.** A failed image names its site, and every failed media says what failed, in place of "Could not load media".
 - **Pasted images stay.** An `<img>` whose `src` has no file extension now survives paste and HTML import.
-- **Upgrading from 2.2.0.** Markdown export of a resized `audio` or `video` now writes the option block. Import still reads the old form. See [Migrating to the option block](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/migration.md#migrating-to-the-markdown-option-block).
+- **Upgrading from 2.2.0.** No export or option was removed, but the Markdown and HTML output changed. The first entry under Changed lists each change. [Upgrading from 2.2.0](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/migration.md#upgrading-from-220) says what to check.
 
 ### Added
 
 - Markdown carries the media caption in the CommonMark title slot, on all nine nodes, both ways: `![youtube](src "My caption")` ([#244](https://github.com/docs-plus/docs.plus/issues/244)). Before, Markdown dropped every caption. An image title now reads into the caption.
-- Markdown carries layout in an option block after the closing parenthesis: `![youtube](src){width=800 float=right}`. The keys are `width`, `height`, `display`, `float`, `clear`, `margin` and `justify-content`. `image` takes the same block, without `justify-content`. Import reads `justifyContent` too ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
+- Markdown carries layout in an option block after the closing parenthesis: `![youtube](src){width=800 float=right}`. The keys are `width`, `height`, `display`, `float`, `clear`, `margin` and `justify-content`. `image` takes the same block, without `justify-content`. `x` takes it without `width` and `height`. Import reads `justifyContent` too ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
 - The option block carries player options. `video` takes `controls`, `autoplay`, `loop`, `muted`, `preload` and `poster`. `audio` takes the same keys except `poster`. `x` takes `maxwidth`, `theme`, `lang`, `hide_media` and `hide_thread` ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
-- Import drops an unknown key, and a value that fails its check. `poster` passes the same scheme gate as `src`. Export runs every value through the same checks.
+- Import drops an unknown key, and a value that fails its check. `poster` passes the same scheme gate as `src`. Export runs every value through the same checks ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
 - `MediaLoadingShellContext` gains an optional `sourceHost` field. The built-in shell names that site under the error message ([#637](https://github.com/docs-plus/docs.plus/issues/637)).
 
 ### Changed
 
+- **Upgrading from 2.2.0.** No export or option was removed. Check these if your app reads our Markdown or HTML, or depends on the old behaviour. Each one has its own entry in this release:
+  - The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.2`.
+  - Markdown export writes the caption in the title slot, and the options in a `{…}` block after the `)`.
+  - Markdown export leaves out a value equal to the writer's node default. A reader with other node options fills in its own default.
+  - Markdown export writes `(` in a `src` as `%28`.
+  - Markdown import reads an image title as a visible caption.
+  - Markdown import stores the canonical `src` for `x` and `spotify`, not the URL as written.
+  - A captioned node other than `image` renders inside `<figure data-hm-figure>`. The figure takes the clear and margin, and the float when the node is floated. An `x` figure takes none.
+  - The `youtube`, `vimeo`, `spotify` and `loom` iframes carry no `allowfullscreen` attribute. Fullscreen lives in `allow`.
+  - An `<img>` whose `src` has no file extension now imports from HTML.
+  - The error text "Could not load media" is gone, and the stylesheet hides a failed `<img>`.
 - **Markdown export writes the option block, and only for a value that differs from the node default** ([#244](https://github.com/docs-plus/docs.plus/issues/244)). A `video` at 640 × 480 now exports as `![video](src)`. A resized one exports as `![video](src){width=400 height=300}`, where it wrote `![video](src width=400 height=300)` before. Import still reads the old in-parenthesis form. A parser of your own that reads our old export needs the new form. See [Migrating to the option block](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/migration.md#migrating-to-the-markdown-option-block).
-- Markdown export writes both `(` and `)` in a `src` as `%28` and `%29`. Before, only `)` was encoded, so an unbalanced `(` broke the image on import.
+- Markdown export writes both `(` and `)` in a `src` as `%28` and `%29`. Before, only `)` was encoded, so an unbalanced `(` broke the image on import ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
 - The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.2`. It was `^3.31.3`.
-- A popover reads its Tab cycle on each Tab, so a control that renders after it opens joins the cycle.
-- A failed image shows "Couldn’t load this image" and a second line that names the site, for example "From picsum.photos. The link may be broken." The broken-image glyph is hidden. Other media show "Couldn’t load this video", "…audio" or "…embed". Before, every kind showed "Could not load media" ([#637](https://github.com/docs-plus/docs.plus/issues/637)).
+- A popover from the media toolbar, `openMediaPopover` or `openToolbarPopover` reads its Tab cycle on each Tab. So a control that renders after it opens joins the cycle.
+- A failed image shows "Couldn’t load this image" and a second line that names the site, for example "From picsum.photos. The link may be broken." The broken-image glyph is hidden. Other media show "Couldn’t load this video", "…audio" or "…embed". Before, every kind showed "Could not load media" ([#637](https://github.com/docs-plus/docs.plus/issues/637)). A custom shell with no `.hm-loading-shell__message` element gets the new text in its `aria-label`. For an image, the label also names the site.
 
 ### Fixed
 
 - A Spotify track imported from Markdown now gets the 152 px track height, as a pasted track does. Before, it rendered 352 px tall. Import also stores the canonical share URL ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
 - An X post imported from Markdown now stores the normalized `https://x.com/<user>/status/<id>` URL, as paste and `setX` do ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
-- An image alt that holds `[` survives Markdown export. Export now escapes `[` as well as `]`.
+- An image alt that holds `[` survives Markdown export. Export now escapes `[` as well as `]` ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
 - An `<img>` whose `src` has no image file extension, such as `https://picsum.photos/id/1/200/100`, now survives paste and HTML import ([#637](https://github.com/docs-plus/docs.plus/issues/637)). Before, the image vanished with no warning. A bare URL pasted as text still needs an extension to become an image. Pasted web or email HTML can also carry tracking pixels with no extension; those now become image nodes too.
 - Tab and Shift-Tab in a popover skip a control that cannot take focus: one that is disabled, inside `[inert]`, not rendered, or at `tabindex="-1"`. Before, Tab onto a disabled control left focus where it was. The popover engine is bundled, so this package gets the fix too.
 - A caption on `video`, `audio`, `youtube`, `vimeo`, `soundcloud`, `spotify`, `loom` or `x` now survives HTML ([#244](https://github.com/docs-plus/docs.plus/issues/244)). Before, only `image` kept it, so clipboard copy and the toolbar Copy action dropped the text. A captioned node now renders as a `<figure data-hm-figure>` with a `<figcaption>`, and parses it back. For a floated media node, the `<figure>` takes the float, clear and margin, and the media element inside keeps its size. For a media node that is not floated, the `<figure>` takes the clear and margin, so a `margin: auto` media node stays centered. X writes no layout to HTML, so its `<figure>` has no placement. A node without a caption renders the same HTML as before.
 - `youtube`, `vimeo`, `spotify` and `loom` iframes no longer make Chrome log "Allow attribute will take precedence over 'allowfullscreen'". Fullscreen now lives only in the `allow` list. `allowfullscreen: true` adds `fullscreen` there, and `false` removes it. Before, `getHTML()` and clipboard copy wrote `allowfullscreen="true"` beside an `allow` list that already named `fullscreen`. The live YouTube iframe also carried the legacy attribute. The YouTube `allow` default now names `fullscreen`. Old HTML with `allowfullscreen` still parses.
 
+### Documentation
+
+- The README Caveats list what Markdown drops, and `docs/api.md` Caveats name each dropped attribute.
+- `docs/paste-and-import.md` documents the caption title slot and the option block, with every key and its values ([#244](https://github.com/docs-plus/docs.plus/issues/244)).
+- `docs/migration.md` gains Upgrading from 2.2.0. It covers the Markdown option block and the other changes a host should check.
+- `docs/embeds.md` and the `youtube`, `vimeo`, `spotify` and `loom` READMEs say that fullscreen lives only in `allow`.
+- `docs/resize-and-loading.md` and `docs/styling.md` document `sourceHost` and `.hm-loading-shell__detail` ([#637](https://github.com/docs-plus/docs.plus/issues/637)).
+- The README peer line now names `^3.32.2`, the range the package publishes.
+- On npm, the docs.plus badge now opens the docs.plus repository. Before, a click opened the badge image.
+
 ### Internal
 
 - The bundled popover engine gains an optional `onRemove` callback on `createPopover`, which runs after the popover has left the DOM. This package does not use it, and its popovers behave as before.
 - The linked-image spec ignores `img.ProseMirror-separator`. TipTap 3.32 inserts that zero-size image inside a link.
+- The package `author` field and the `LICENSE` copyright line now name Harvey Marzban.
 
 ## [2.2.0] — 2026-10-22
 
