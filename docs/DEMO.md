@@ -676,7 +676,7 @@ There is a fifth mark, <u>underline</u>, and it is the one to reach for least. O
 
 ## Code stays code
 
-Inline code sets **a flag, a path, or a value** apart from the prose: `--frozen-lockfile`, `mode=and`, `heading-scale.ts`. Type a backtick pair, or press ⌘+E (Ctrl+E) — needs a document you can edit.
+Inline code sets **a flag, a path, or a value** apart from the prose: `--frozen-lockfile`, `mode=and`, `heading-scale.ts`. Type a backtick pair, or press ⌘+E (Ctrl+E) — needs a document you can edit. Code can carry other marks too, such as **`bold code`** or [`a linked flag`](https://github.com/docs-plus/docs.plus).
 
 For anything longer than a phrase, use a fenced block and name the language:
 
@@ -959,7 +959,7 @@ Filtered to this section? [Show the whole document](/demo).
 | Export    | Word `.docx`, Markdown `.md`, OpenDocument `.odt` | Asks you to sign in first — needs an account |
 | Import    | `.docx` and `.md` only                            | Needs an account and a document you can edit |
 
-An import file can be up to 10,485,760 bytes. Markdown stops at 65,536 characters.
+A Word file can be up to 40 MB for the document's owner, and 10 MB for anyone else. Markdown stops at 65,536 characters for everyone. An import that would be too large to open in a browser is refused before anything changes.
 
 Signed in, an export opens your browser's save picker where it has one, or the share sheet on iOS. An export is built from the last saved version, so a very recent edit may be missing from it.
 
@@ -1038,7 +1038,7 @@ Everything above then runs the other way round. You can type, move a section, an
 
 Signed in, you get more:
 
-- **Connect an AI app,** such as Claude or ChatGPT. A connected app can read this page and its chat. It edits only documents you own, so it cannot change this one — needs an account.
+- **Connect an AI app,** such as Claude or ChatGPT. A connected app can read this page and its chat. It edits only documents you own, so it cannot change this one. It can move a picture inside a section or rewrite a whole section, and it never deletes media — needs an account.
 - **Keep your documents close.** Your Documents list in Settings shows the documents you own and the ones you joined. Favorite a document you own to keep it at the top, and sort by Last opened — needs an account.
 
 The code is open: [https://github.com/docs-plus/docs.plus](https://github.com/docs-plus/docs.plus).

@@ -45,6 +45,8 @@ This file is the product changelog. Every app, package and extension keeps its o
   limits, quotes, highlights and a new Mermaid diagram. Every heading and every `/demo/<word>`
   filter link is unchanged. The Writing chapter now says that a highlight marks the one line a
   reader must see first.
+- The demo now states the Word import cap per caller, shows bold inline code, and says a
+  connected AI app can move a picture or rewrite a section without deleting media.
 
 ### Internal
 
