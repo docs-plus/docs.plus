@@ -10,6 +10,8 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-11-09
+
 ### Highlights
 
 - **Link icons.** The `linkIcon` option draws an icon before every link. `linkIconMap` builds it from an offline domain table, and `linkIconFetcher` from your own favicon route.

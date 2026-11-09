@@ -8,6 +8,8 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-11-09
+
 ### Highlights
 
 - **Media through Markdown.** Every media node keeps its caption in the title slot. Its size and placement ride an option block: `![video](src "Caption"){width=800}`. So do the `video`, `audio` and `x` player options.

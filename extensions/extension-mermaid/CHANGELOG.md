@@ -4,6 +4,8 @@ All notable changes to `@docs.plus/extension-mermaid` are documented here. The f
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-11-09
+
 ### Highlights
 
 - **Your own code block.** `mermaidNodeView(editor)` draws diagrams inside your own `codeBlock` node view, such as one built with `CodeBlockLowlight.extend({ addNodeView })`.
