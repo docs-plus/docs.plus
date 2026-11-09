@@ -40,7 +40,7 @@ Or use `pnpm add @docs.plus/extension-hyperlink`, `yarn add @docs.plus/extension
 
 Use the matching package name from the table above (`@docs.plus/extension-hypermultimedia`, `@docs.plus/extension-indent`, and so on).
 
-Requires **`@tiptap/core` ^3.32.0** and **`@tiptap/pm` ^3.32.0** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.32.2** and **`@tiptap/pm` ^3.32.2** (Tiptap 3.x).
 
 `extension-hyperlink` installs `@floating-ui/dom` and `linkifyjs`. `extension-hypermultimedia` installs `@floating-ui/dom`. `extension-mermaid` installs `pele`, which declares Node 20 or later. The other three install with no runtime dependencies. None of the six packages declares its own Node or Bun engine floor.
 
@@ -116,7 +116,7 @@ Each package has its own CONTRIBUTING.md — see
 [inline-code](./extension-inline-code/CONTRIBUTING.md),
 [mermaid](./extension-mermaid/CONTRIBUTING.md), and
 [placeholder](./extension-placeholder/CONTRIBUTING.md). Hero or gallery PNGs: `bun run docs:screenshots`
-in the package (`cypress/docs/` → `assets/`). Hero GIFs for hyperlink and hypermultimedia: `bun run docs:gif`, which needs `ffmpeg`. Each `examples/vanilla` app must match its README Quickstart. From the repo root, `bun scripts/check-quickstart-example.ts --write extension-indent` regenerates it. Pass the directory name, not a path.
+in the package (`cypress/docs/` → `assets/`). Hero GIFs for hyperlink, hypermultimedia and mermaid: `bun run docs:gif`, which needs `ffmpeg`. Each `examples/vanilla` app must match its README Quickstart. From the repo root, `bun scripts/check-quickstart-example.ts --write extension-indent` regenerates it. Pass the directory name, not a path.
 
 Monorepo development needs Node `>=24.11.0` and Bun `>=1.4.0`, the floors the root `package.json` sets.
 
