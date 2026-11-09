@@ -12,7 +12,7 @@ import { Fragment, useMemo, useState } from 'react'
 import { InternalLinkChip } from './components/InternalLinkChip'
 import { describeDestination, linkDestination } from './internalDocumentLink'
 import { buildLinkPreviewActions } from './linkPreviewActions'
-import { specialUrlIcon } from './previewShared'
+import { specialUrlIcon } from './specialUrlIcon'
 import { useLinkMetadata } from './useLinkMetadata'
 
 interface LinkPreviewSheetProps {
