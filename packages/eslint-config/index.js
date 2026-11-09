@@ -20,6 +20,8 @@ export default [
       '**/.temp/**',
       // Maintainer notes, including saved scratch harnesses. Gitignored too.
       'Notes/**',
+      // Local agent plan snapshots. Gitignored too.
+      '.superpowers/**',
       '**/.claude/worktrees/**',
       // Workflow scripts are function bodies, not modules: the runtime wraps them,
       // so their top-level `return` is a parse error to ESLint.

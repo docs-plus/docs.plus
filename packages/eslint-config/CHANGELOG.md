@@ -10,6 +10,11 @@ This package is private and ships inside docs.plus, so each heading names the do
 
 ## [Unreleased]
 
+### Fixed
+
+- The base config ignores `.superpowers/**`. That folder holds local agent plan snapshots. Git
+  ignores it, but ESLint does not read `.gitignore`, so the pre-push lint gate refused the push.
+
 ## [2.2.0] — 2026-10-22
 
 ### Fixed
