@@ -22,10 +22,10 @@ Diagrams are drawn by [Pele](https://pele.run), the Mermaid renderer by Steph An
 ## Why use it
 
 - **The diagram follows the text.** The SVG redraws 300 ms after you stop typing, for local and remote edits. A mistake names its line and column, and the last good diagram stays in view.
-- **Charts, not only flowcharts.** Pele detects 33 diagram types, such as sequence, Gantt, pie, radar, sankey, XY chart and mind map. See the [Gallery](#gallery).
-- **Drawn by Pele, loaded on demand.** One chunk loads per diagram type. mermaid.js is not a dependency. Pele's speed claims and our own timing, with their limits, are in [About Pele](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/pele.md).
-- **Size limits measured on real phones.** A diagram over 10,000 characters or 250 arrows shows a message instead of drawing. Larger ones took more than 200 ms on a real Android phone or iPhone. The numbers are in [Measured on real phones](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/pele.md#measured-on-real-phones).
-- **Readers see the diagram, writers see both.** Hide source folds the text away. Read-only editors start folded. Syntax and Copy sit in the same head.
+- **Charts, not only flowcharts.** Pele detects and draws 33 diagram types, such as sequence, Gantt, pie, radar, sankey, XY chart and mind map. See the [Gallery](#gallery).
+- **Drawn by Pele, loaded on demand.** Your bundler emits Pele as separate chunks, and one chunk loads per diagram type. mermaid.js is not a dependency. Pele's speed claims and our own timing, with their limits, are in [About Pele](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/pele.md).
+- **Size limits measured on real phones.** A diagram over 10,000 characters or 250 arrows (`edges`) shows a message instead of drawing. Larger ones took more than 200 ms on a real Android phone or iPhone. The numbers are in [Measured on real phones](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/pele.md#measured-on-real-phones).
+- **Readers see the diagram, writers see both.** The **Hide source** button folds the text away. The `fold` option sets it up. Read-only editors start folded. Syntax and Copy sit beside it, in the head row above the source.
 - **No new node, and a plain fence in storage.** A diagram is a standard `codeBlock` with `language: 'mermaid'`. The document holds a `mermaid` fence, as on GitHub, GitLab and Obsidian, and never the SVG. Removing the extension leaves plain code blocks. Yjs merges the source per character.
 - **Light and dark from your page.** The default colours follow `color-scheme`. Pele's `--pele-*` variables, or the `theme` option, set your own.
 - **Safe defaults, with one gap.** Pele escapes diagram text. Links and remote images are off, and size limits cap the work. The SVG is not sanitized unless you pass `sanitize`, so pass it for sources you do not trust.
@@ -44,7 +44,7 @@ This package imports no React, Vue, or Next.js code. Use it from a plain page, V
 
 React Native has no DOM. Load the editor in a web view.
 
-Installs one runtime dependency: [`pele`](https://www.npmjs.com/package/pele) (`1.8.0`, pinned exactly), the renderer. The package loads it on demand and never bundles it.
+Installs one runtime dependency: [`pele`](https://www.npmjs.com/package/pele) (`1.8.0`, pinned exactly), the renderer. The package loads Pele with a dynamic `import()`, so your bundler emits it as separate chunks. Nothing loads from a CDN. For CSP, see [Content Security Policy](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/security.md#content-security-policy).
 
 Import the stylesheet `@docs.plus/extension-mermaid/styles.css`. The fold control, the head and the actions need it.
 
@@ -55,6 +55,8 @@ Import the stylesheet `@docs.plus/extension-mermaid/styles.css`. The fold contro
 Run this Quickstart in your browser first, with nothing to install. The app lives in [`examples/vanilla`](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-mermaid/examples/vanilla).
 
 The snippet also imports `@tiptap/starter-kit`. Add it with `npm install @tiptap/starter-kit` when your app has none yet.
+
+Your page needs `color-scheme: light dark` in its CSS, such as `:root { color-scheme: light dark; }`. Without it, diagrams keep the light colours in dark mode.
 
 ```ts
 import { Editor } from '@tiptap/core'
@@ -74,12 +76,13 @@ You should see the source with a two-box flowchart under it. Edit the source, an
 
 ## Caveats
 
-- **Only the exact language `mermaid` draws.** A fence tagged `Mermaid` with a capital M stays plain code in Markdown. An HTML round trip keeps only the first word, so ` ```mermaid title ` becomes a diagram there.
+- **Only the exact language `mermaid` draws.** A fence tagged `Mermaid` with a capital M stays plain code. Markdown keeps all the text after the backticks as the language, so ` ```mermaid title ` stays plain code. In HTML, that text becomes two classes, and the parser reads only `language-mermaid`. So the same block becomes a diagram after an HTML round trip.
 - **The editor needs a `codeBlock` node.** Without one, nothing draws and `insertMermaid` returns false.
-- **A host `addNodeView` on `codeBlock` wins.** It replaces the diagram view, for example `CodeBlockLowlight.extend({ addNodeView })`. Call [`mermaidNodeView`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/guide.md#keep-your-own-code-block-view) in that view to keep diagrams. In development, the console warns once. The page needs a global `process`.
+- **A host `addNodeView` on `codeBlock` wins.** It replaces the diagram view, for example `CodeBlockLowlight.extend({ addNodeView })`. Call [`mermaidNodeView`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/guide.md#keep-your-own-code-block-view) in that view to keep diagrams. In development, the console warns once per editor: `[extension-mermaid] Another node view owns codeBlock…`. The check reads `process.env.NODE_ENV`, so without a global `process` it stays off. Diagrams still draw or fail the same way.
+- **Among plugin views on `codeBlock`, the first one wins.** A higher extension `priority` comes first. At equal priority, the extension listed last comes first. A plugin view is a `nodeViews.codeBlock` prop on a ProseMirror plugin. This view hands every block that is not `mermaid` to the next plugin view. A plugin view that comes before this one takes `mermaid` blocks too, so no diagram draws. In development, the console warns.
 - **Without `styles.css`, the fold control, the head and the actions render unstyled, and Pele's own error box shows.** Add the stylesheet. Or set `fold: false`, `helpLink: false` and `copy: false`, and copy the three rules from [Without `styles.css`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/guide.md#without-stylescss).
 - **The default colours need `color-scheme`.** They use `light-dark()`. Set `color-scheme: light dark` on your page, or the light colours always show.
-- **Pele has no time limit.** Keep `limits` on. `edges` counts flowchart and agentflow only. See [Security](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/security.md).
+- **Pele has no time limit.** Keep `limits` on. `edges` counts arrows in flowchart and agentflow (a Pele diagram type) only. See [Security](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/security.md).
 - **The SVG is not sanitized by default.** Pass `sanitize` when sources come from people you do not trust. See [Sanitizing the SVG](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/security.md#sanitizing-the-svg).
 
 The full list, with the reason for each, is in [Caveats](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/api.md#caveats).
@@ -92,7 +95,17 @@ The full list, with the reason for each, is in [Caveats](https://github.com/docs
 editor.chain().focus().insertMermaid().run()
 ```
 
-The command inserts a four-line example and puts the caret at the end of the source. Gate the button with `editor.can().insertMermaid()`. It does not check that a diagram can draw. Read the active state with `editor.isActive('codeBlock', { language: 'mermaid' })`. See [Commands](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/api.md#commands).
+The command inserts a four-line flowchart and puts the caret at the end of the source. Gate the button with `editor.can().insertMermaid()`. It does not check that a diagram can draw. Read the active state with `editor.isActive('codeBlock', { language: 'mermaid' })`. See [Commands](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/api.md#commands).
+
+Writers can also type ` ```mermaid ` and then a space or Enter. The code block input rule makes a diagram block, and it matches lowercase only. A Markdown `mermaid` fence loads as a diagram when your editor parses Markdown, for example with `@tiptap/markdown`.
+
+### Change the size limits
+
+```ts
+Mermaid.configure({ limits: { characters: 20000 } })
+```
+
+A missing field keeps its default, so `edges` stays 250 here. Each diagram block is checked on its own. `characters` counts the whole source, spaces and `accTitle` lines included. A block over a limit shows "This diagram is too large to draw." and is never drawn. `onStateChange` then reports `state: 'error'` with `error.code` `'limit'`. Only flowchart and agentflow have an edge count, so other types, such as sequence, have only the `characters` limit. No limit covers the whole document. Pele has no time limit, so raise the limits with care. See [Options](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/api.md#options).
 
 ### Sanitize the SVG
 
@@ -124,7 +137,7 @@ Mermaid.configure({
 })
 ```
 
-`durationMs` covers Pele plus the sanitizer. It is null for every state except `ready` and `error`. See [onStateChange](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/api.md#onstatechange).
+With the built-in view, a block shows a spinner under the source while Pele loads. After a `load-error`, it shows "Could not load the diagram renderer." and a **Try again** button. `durationMs` covers Pele plus the sanitizer. It is null for every state except `ready` and `error`. See [onStateChange](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/api.md#onstatechange).
 
 ## Gallery
 

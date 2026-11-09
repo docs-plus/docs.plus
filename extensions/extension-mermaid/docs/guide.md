@@ -4,7 +4,7 @@ Part of the [`@docs.plus/extension-mermaid` README](../README.md).
 
 ## Theming
 
-Pele reads CSS variables named `--pele-*`. You can set them in CSS, or pass the `theme` option. The option sets each variable on the frame element with `style.setProperty`, so a strict CSP does not block it.
+Pele reads CSS variables named `--pele-*`. You can set them in CSS, or pass the `theme` option. The frame is the `.mermaid-diagram` element that wraps each diagram block. The option sets each variable on the frame with `style.setProperty`, so a strict CSP does not block it.
 
 Set the variables on `.mermaid-diagram` itself, never on an ancestor. The shipped `styles.css` defines its defaults on `.mermaid-diagram`, and those defaults shadow any inherited value. Setting them inline on the frame at runtime is safe: the drawn diagram recolours in place and is not drawn again.
 
@@ -41,7 +41,7 @@ The default colours use `light-dark()`. They follow the nearest `color-scheme` o
 
 `series` sets chart and category colours. Pele repeats them after eight. A list longer than eight is cut to the first eight.
 
-The frame has two package tokens: `--mermaid-diagram-border` and `--mermaid-diagram-radius`.
+The frame has two package tokens: `--mermaid-diagram-border` and `--mermaid-diagram-radius`. They style the frame around the block. `--mermaid-diagram-radius` rounds the frame corners, and its default is `8px`. The `radius` field sets `--pele-radius`, which rounds shapes inside the drawn diagram.
 
 ### Without `styles.css`
 
@@ -63,7 +63,7 @@ The first rule hides Pele's own error box, because the view shows the error. The
 
 ## Fold and the Syntax button
 
-Each viewer can hide the source of a diagram. The choice is not stored in the document, so collaborators never see it.
+Each viewer can hide the source of a diagram with the **Hide source** button. The `fold` option sets up that button. The choice is not stored in the document, so collaborators never see it.
 
 - **Option.** `fold` takes `{ initial, remember }`, or `false` to remove the button. `initial` is `'open'`, `'folded'` or `'folded-when-read-only'`. The default is `'folded-when-read-only'`, so writers start open and read-only editors start folded.
 - **When it is read.** The start state is read once, when the block's node view is built. If the editor turns read-only later, the block does not refold.
@@ -72,7 +72,7 @@ Each viewer can hide the source of a diagram. The choice is not stored in the do
 - **The summary.** A folded block shows a line such as "Mermaid source · 4 lines hidden". Clicking it opens the source. The click moves no caret.
 - **Empty source.** A block with no source never folds.
 
-The head row holds these controls:
+The head row sits above the source. It holds these controls:
 
 - At rest, only the `mermaid` label shows, in the right corner.
 - On hover or keyboard focus, the label swaps in place for **Syntax**, **Copy** and **Hide source**.
@@ -102,6 +102,7 @@ interface MermaidView {
 The contract:
 
 - Pele mounts into `diagram`. The extension clears only `diagram`, and never the rest of `dom`.
+- A snapshot is the block's `state`, `error` and `diagramType`. The extension publishes a new snapshot when the state changes or a draw completes.
 - `update` runs once when the view is built, with the first snapshot, and then on each publish. The `onStateChange` event extends that snapshot with `editor`, `getPos` and `durationMs`.
 - The extension sets `data-state` on `dom`, sets `contenteditable="false"` on it, and gives `diagram` `overflow: hidden` and `contain: paint`.
 - `destroy` runs when the block leaves the editor. Free your own resources there.
@@ -151,11 +152,28 @@ The built-in view uses no live region. Error text goes in through `textContent` 
 
 ## Syntax highlighting
 
-With `@tiptap/extension-code-block-lowlight`, register a `mermaid` language that matches nothing. Otherwise `highlightAuto` guesses the language on every diagram change.
+`@tiptap/extension-code-block-lowlight` has no node view of its own. So diagrams draw, and you write no node view code. The order of `CodeBlockLowlight` and `Mermaid` in the list does not matter. Install it and `lowlight` yourself. Turn off StarterKit's code block, because both define `codeBlock`. Then register a `mermaid` language that matches nothing. Otherwise `highlightAuto` guesses the language on every diagram change.
 
 ```ts
+import { Editor } from '@tiptap/core'
+import StarterKit from '@tiptap/starter-kit'
+import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
+import { common, createLowlight } from 'lowlight'
+import { Mermaid } from '@docs.plus/extension-mermaid'
+
+const lowlight = createLowlight(common)
 lowlight.register('mermaid', () => ({ name: 'Mermaid', contains: [] }))
+
+const editor = new Editor({
+  extensions: [
+    StarterKit.configure({ codeBlock: false }),
+    CodeBlockLowlight.configure({ lowlight }),
+    Mermaid
+  ]
+})
 ```
+
+The empty language gives the diagram source no colours. If you extend `CodeBlockLowlight` with your own `addNodeView`, read [Keep your own code block view](#keep-your-own-code-block-view).
 
 The lowlight plugin also highlights every code block again whenever the caret is in any code block, diagrams included. So in a document with many code blocks, each keystroke in a diagram redoes that work. A host can copy the plugin and skip `mermaid` blocks. docs.plus does that in [`code-block-lowlight.ts`](https://github.com/docs-plus/docs.plus/blob/main/apps/webapp/src/components/TipTap/extensions/code-block-lowlight.ts). The one changed rule:
 
@@ -171,13 +189,17 @@ An `addNodeView` on `codeBlock` always wins over this extension's view, so no di
 ```ts
 import { mermaidNodeView } from '@docs.plus/extension-mermaid'
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { ReactNodeViewRenderer } from '@tiptap/react'
 
-const isMermaid = (node) => node.attrs.language === 'mermaid'
+import { CodeBlockComponent } from './CodeBlockComponent' // your own React component
+
+const isMermaid = (node: ProseMirrorNode) => node.attrs.language === 'mermaid'
 
 export const CodeBlock = CodeBlockLowlight.extend({
   addNodeView() {
     const mermaid = mermaidNodeView(this.editor)
+    // Any node view renderer works here. React is only the example.
     const own = ReactNodeViewRenderer(CodeBlockComponent, {
       // Rebuild when a block enters or leaves mermaid, so the right view takes it.
       update: ({ oldNode, newNode, updateProps }) => {
@@ -194,4 +216,19 @@ export const CodeBlock = CodeBlockLowlight.extend({
 - Keep `Mermaid` in the same editor. `mermaidNodeView` throws without it.
 - Your view must rebuild when a block's language changes to or from `mermaid`, as the `update` above does. Otherwise the block keeps the wrong view.
 - A diagram block shows this extension's head, not your view. So a language picker in your view does not appear on diagram blocks.
-- The same `update` rule applies to a plugin view that ranks below this extension: it receives every block that is not `mermaid`.
+- A plugin view is a `nodeViews.codeBlock` prop on a ProseMirror plugin. Among plugin views, the first one wins. A higher extension `priority` comes first. At equal priority, the extension listed last in `extensions` comes first. `Mermaid` has the default priority, 100.
+- A plugin view that comes after this extension receives every block that is not `mermaid`. The same `update` rule applies to it.
+- A plugin view that comes before this extension takes `mermaid` blocks too. No diagram draws, unless that view calls `mermaidNodeView`. In development, this case also shows the warning below.
+
+### The development warning
+
+When another node view owns `codeBlock`, the console shows this warning. That view is an `addNodeView`, or a plugin view that comes before this extension.
+
+```
+[extension-mermaid] Another node view owns codeBlock, so diagrams do not draw. Use mermaidNodeView in that view: https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/guide.md#keep-your-own-code-block-view
+```
+
+- It fires at most once per editor. A second editor on the same page can warn again. The check runs when the editor view is built and on each view update.
+- It never fires once your view calls `mermaidNodeView`.
+- It fires only when a global `process` exists and `process.env.NODE_ENV` is not `production`. This is the same check as Tiptap's own development warnings.
+- Without a global `process`, the check stays off. Diagrams draw or fail the same way. Many bundlers replace `process.env.NODE_ENV` but do not define `process` in the browser. Vite is one. There the warning never shows, so check the rules above by hand.

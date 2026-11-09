@@ -30,6 +30,7 @@ All notable changes to `@docs.plus/extension-mermaid` are documented here. The f
 - The caveats give the node view order in Tiptap terms: `addNodeView` first, then priority, then the extension listed last. They also say that `can().insertMermaid()` does not check drawing. The API reference adds that with `editorProps.nodeViews`, `setEditable` and `setOptions` rebuild the blocks, so `MermaidFold.initial` is read again ([#630](https://github.com/docs-plus/docs.plus/issues/630)).
 - The guide shows how a host can skip lowlight work for `mermaid` blocks ([#631](https://github.com/docs-plus/docs.plus/issues/631)).
 - On npm, the docs.plus badge now opens the docs.plus repository. Before, a click opened the badge image.
+- The caveats quote the development warning and say it fires once per editor. They explain why ` ```mermaid title ` draws only after an HTML round trip. A plugin view that comes first also blocks diagrams. The guide adds a plain `CodeBlockLowlight` setup, a typed node view recipe and a section on the warning. The README shows how to type a diagram block and change `limits`, and what a block shows while Pele loads. The guide defines plugin view order and tells the two radius tokens apart.
 
 ### Internal
 
