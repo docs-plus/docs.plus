@@ -107,6 +107,8 @@ Check every page the release makes wrong: `README.md` (extension status), `exten
 - **Promote outcomes only.** No known gaps, no refactor talk, no CI talk (maintainer ruling, 2026-10-13).
 - **Include a stats section,** for example "43 days in numbers". Every figure must trace to §Facts to gather.
 - **Include a "⚡ Faster and steadier" section** when the release has benchmarks (§Benchmarks).
+- **List every user-facing change: the note covers the whole changelog, not a pick.** Write the note from the root `CHANGELOG.md` entry, not from memory or the marketing story. Before you call the note done, run `bun .agents/skills/release-product/scripts/note-coverage.ts X.Y.Z`. It lists each Added, Changed, Fixed, Security and Removed entry that the note does not mention. Put each one in the note. Leave one out only with a reason you can name: internal, CI or deploy, admin-only, or already counted (for example, inside "N security issues closed"). Show the maintainer that list of exclusions. On 2.3.0 the first note missed eleven user-visible changes, among them a link-rename fix, heading links and chats, the tick rail card and Google sign-in branding. The maintainer had to ask twice (ruling, 2026-11-09).
+- **The demo's What's new gets the same check.** Each note bullet that a reader can try needs a line in `docs/DEMO.md`, or a stated reason why not.
 - Put the banner on top as a `<picture>` with a dark `source`, served from `https://docs.plus/demo-assets/`. Create the Release after the deploy, so these URLs work. On 2.1.0 the PNGs rode on Release assets while the deploy ran; that was a stopgap, and it added two download rows the maintainer questioned.
 
 ### 5. Demo page
