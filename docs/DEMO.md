@@ -852,6 +852,8 @@ A document no longer gets an empty title heading added at its end. A link that c
 
 On a phone, closing a link sheet returns focus to the link, and a screen reader skips the page behind the sheet. On iPhone Safari, the chat icon in the table of contents drawer opens the chat again.
 
+The title row of the table of contents no longer offers "Delete section", which could delete the whole document. A middle-click or a Cmd-click on a row in your Documents list opens it in a new tab — needs an account. Opening a link preview no longer changes the document for the people editing with you.
+
 ### Safer links, safer server
 
 A crafted web page can no longer stall our server while the server builds its link preview. Error reports no longer carry the address of a link you preview.
