@@ -776,7 +776,9 @@ The newest release comes first. Most parts end with a filter link to the place o
 
 ## docs.plus 2.3.0
 
-Released on OWED-RELEASE-DATE.
+![docs.plus 2.3.0: a pad with link chips for a heading, a chat, a filter, a version and the top, a preview of a heading's chat, a docs.plus card for a shared pad, and a section dragged in the outline](/demo-assets/release-2.3.0-banner.png)
+
+Released on 9 November 2026.
 
 This release is about links. You see where a link goes before you click it, and a link you share shows what it holds.
 
