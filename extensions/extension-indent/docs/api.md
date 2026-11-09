@@ -132,7 +132,7 @@ Literal indent is text, not a node attribute, and Tab is a shared key. Both fact
 - `CodeBlock` with `enableTabIndentation: true` inserts its own spaces, not `indentChars`. It binds Tab at priority `100`, and it sizes the indent from its own `tabSize`. To use `indentChars` there, keep the option `false` and add a `codeBlock` rule. For a top-level code block, that rule is `{ textblock: 'codeBlock', parent: 'doc' }`.
 - `indentChars: ''` is not a full off switch. Both commands return `false` on an empty string, but the Tab handler still runs the list sink and the table move. Use `enabled: false` to leave Tab unclaimed.
 - `editor.getHTML()` writes the indent out, and `setContent(savedHtml)` drops it on load. HTML parsing collapses a whitespace run unless you pass `parseOptions`. See [Persistence](./guide.md#persistence).
-- In Markdown, an indent does not survive reliably. Markdown has no indent syntax, so export writes the literal leading characters. On import, four or more spaces, or one tab, start a code block. A two-space indent survives, except right after a list. There, any indented line joins the last list item.
+- In Markdown, an indent does not survive reliably. Markdown has no indent syntax, so export writes the literal leading characters. On import, four or more spaces, or one tab, start a code block. A two-space indent survives, except right after a list. There, a line indented two or more spaces, or one tab, joins the last list item. It loses some or all of its indent.
 
 ## TypeScript
 

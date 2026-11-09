@@ -32,7 +32,7 @@ npm install @docs.plus/extension-indent
 
 Or use `pnpm add @docs.plus/extension-indent`, `yarn add @docs.plus/extension-indent`, or `bun add @docs.plus/extension-indent`.
 
-Requires **`@tiptap/core` ^3.32.0** and **`@tiptap/pm` ^3.32.0** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.32.2** and **`@tiptap/pm` ^3.32.2** (Tiptap 3.x).
 
 This package imports no React, Vue, or Next.js code. Use it from a plain page, Vite, React, Vue, Svelte, Next.js, Nuxt, or SvelteKit. Create the editor in the browser.
 
@@ -85,7 +85,7 @@ You should see one paragraph that asks you to press Tab. Click before its first 
 - **`configure({ allowedIndentContexts })` replaces the default allowlist instead of merging into it.** Passing one rule drops both defaults, so list every rule you keep.
 - **Headings, code blocks and every textblock outside the default allowlist ignore Tab.** In those textblocks Tab moves focus out of the editor, because the handler returns `false`. Add one rule for each textblock and parent you need.
 - **`editor.getHTML()` writes the indent out, and `setContent(savedHtml)` drops it on load.** See [Keep the indent in saved HTML](#keep-the-indent-in-saved-html).
-- **In Markdown, an indent does not survive reliably.** On import, four or more spaces, or one tab, start a code block. Right after a list, any indented line joins the last list item.
+- **In Markdown, an indent does not survive reliably.** On import, four or more spaces, or one tab, start a code block. Right after a list, a line indented two or more spaces, or one tab, joins the last list item. It loses some or all of its indent.
 
 The full list, with the reason for each, is in [Caveats](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/api.md#caveats).
 

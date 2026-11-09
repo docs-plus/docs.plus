@@ -8,7 +8,16 @@ No behaviour change. The Tiptap peer floor rises to `^3.32.2`, aligned to the fa
 
 ### Changed
 
-- The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.2`. It was `^3.31.3`.
+- The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.2`. It was `^3.31.3`. If your app runs an older Tiptap 3, upgrade both packages first.
+
+### Documentation
+
+- The README and `docs/api.md` Caveats now say what Markdown does to an indent ([#606](https://github.com/docs-plus/docs.plus/issues/606)). Export writes the literal leading characters. On import, four or more spaces, or one tab, start a code block. Right after a list, a line indented two or more spaces, or one tab, joins the last list item. It loses some or all of its indent.
+- On npm, the docs.plus badge now opens the docs.plus repository. Before, a click opened the badge image.
+
+### Internal
+
+- The package `author` field and the `LICENSE` copyright line now name Harvey Marzban.
 
 ## [2.2.0] — 2026-10-22
 
