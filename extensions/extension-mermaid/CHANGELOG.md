@@ -6,19 +6,20 @@ All notable changes to `@docs.plus/extension-mermaid` are documented here. The f
 
 ### Highlights
 
-- **Your own code block.** `mermaidNodeView(editor)` draws diagrams inside your own `codeBlock` node view, such as `CodeBlockLowlight`.
-- **Other code blocks pass through.** A code block that is not `mermaid` now goes to the next plugin's node view.
-- **A clear warning.** In development, a warning appears when another node view owns `codeBlock` and no diagram can draw.
+- **Your own code block.** `mermaidNodeView(editor)` draws diagrams inside your own `codeBlock` node view, such as one built with `CodeBlockLowlight.extend({ addNodeView })`.
+- **Other code blocks pass through.** A code block that is not `mermaid` now goes to the next plugin's `nodeViews.codeBlock`.
+- **A clear warning.** In development, `console.warn` fires once when another node view owns `codeBlock` and no diagram can draw. The page needs a global `process`, or the check stays off.
+- **Upgrading from 2.2.0.** No export or option was removed. Most apps need no change. Two things behave differently. A plugin `nodeViews.codeBlock` that ranks below this one now gets every block that is not `mermaid`. Its `update` must return `false` when a block's language changes to or from `mermaid`, as [Keep your own code block view](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/guide.md#keep-your-own-code-block-view) shows. And an app with its own `addNodeView` on `codeBlock` can now see the development warning. To draw diagrams there, call `mermaidNodeView`.
 
 ### Added
 
 - `mermaidNodeView(editor)` draws diagrams inside your own `codeBlock` node view. The guide has a recipe for `CodeBlockLowlight.extend({ addNodeView })` ([#628](https://github.com/docs-plus/docs.plus/issues/628)).
-- In development, a warning appears once per editor when another node view owns `codeBlock`. In that case, no diagram can draw ([#629](https://github.com/docs-plus/docs.plus/issues/629)).
+- In development, a warning appears once per editor when another node view owns `codeBlock`. In that case, no diagram can draw. The check needs a global `process` with `NODE_ENV` not set to `production`, the same check as Tiptap's own development warnings ([#629](https://github.com/docs-plus/docs.plus/issues/629)).
 
 ### Changed
 
 - The `@tiptap/core` and `@tiptap/pm` peer floor is now `^3.32.2`. It was `^3.31.3`.
-- `pele` stays at `1.8.0`. Version `1.9.0` changes diagram labels. This package does not take that yet.
+- `pele` stays pinned at `1.8.0`, though npm has newer versions. Pele `1.9.0` changes how labels draw, for example HTML tags inside a label. This package does not take that yet.
 
 ### Fixed
 
@@ -26,8 +27,14 @@ All notable changes to `@docs.plus/extension-mermaid` are documented here. The f
 
 ### Documentation
 
-- The caveats give the node view order in Tiptap terms: `addNodeView` first, then priority, then the extension listed last. They also say that `can().insertMermaid()` does not check drawing ([#630](https://github.com/docs-plus/docs.plus/issues/630)).
+- The caveats give the node view order in Tiptap terms: `addNodeView` first, then priority, then the extension listed last. They also say that `can().insertMermaid()` does not check drawing. The API reference adds that with `editorProps.nodeViews`, `setEditable` and `setOptions` rebuild the blocks, so `MermaidFold.initial` is read again ([#630](https://github.com/docs-plus/docs.plus/issues/630)).
 - The guide shows how a host can skip lowlight work for `mermaid` blocks ([#631](https://github.com/docs-plus/docs.plus/issues/631)).
+- On npm, the docs.plus badge now opens the docs.plus repository. Before, a click opened the badge image.
+
+### Internal
+
+- The Cypress spec `node-view-owner.cy.ts` covers the hand-off, `mermaidNodeView` and the warning ([#627](https://github.com/docs-plus/docs.plus/issues/627), [#628](https://github.com/docs-plus/docs.plus/issues/628), [#629](https://github.com/docs-plus/docs.plus/issues/629)). The playground it drives uses `@tiptap/extension-code-block`, a new dev dependency.
+- The package `author` field and the `LICENSE` copyright line now name Harvey Marzban.
 
 ## [2.2.0] — 2026-10-22
 

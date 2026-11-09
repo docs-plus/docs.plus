@@ -169,7 +169,7 @@ import type {
 
 - **Only the exact language `mermaid` draws.** A fence tagged `Mermaid` with a capital M stays plain code in Markdown. An HTML round trip keeps only the first word, so ` ```mermaid title ` becomes a diagram there.
 - **The editor needs a `codeBlock` node.** Without one, nothing draws and `insertMermaid` returns false.
-- **A host `addNodeView` on `codeBlock` wins.** It replaces the diagram view, for example `CodeBlockLowlight.extend({ addNodeView })`. Call [`mermaidNodeView`](./guide.md#keep-your-own-code-block-view) in that view to keep diagrams. In development, the console warns once. A hidden diagram never changes the saved document.
+- **A host `addNodeView` on `codeBlock` wins.** It replaces the diagram view, for example `CodeBlockLowlight.extend({ addNodeView })`. Call [`mermaidNodeView`](./guide.md#keep-your-own-code-block-view) in that view to keep diagrams. In development, the console warns once. The page needs a global `process`. A hidden diagram never changes the saved document.
 - **Among plugin views on `codeBlock`, the first one wins.** A higher extension `priority` comes first. At equal priority, the extension listed last comes first. This view hands every block that is not `mermaid` to the next plugin view.
 - **The head row cannot be replaced.** `view` replaces only the preview, which sits below the source. The head's text and labels are English. To remove the head, set all three of `fold: false`, `helpLink: false` and `copy: false`.
 - **Without `styles.css`, the fold control, the head and the actions render unstyled, and Pele's own error box shows.** Add the stylesheet. Or set `fold: false`, `helpLink: false` and `copy: false`, and copy the three rules from [Without `styles.css`](./guide.md#without-stylescss).

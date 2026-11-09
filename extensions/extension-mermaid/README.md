@@ -38,7 +38,7 @@ npm install @docs.plus/extension-mermaid
 
 Or use `pnpm add @docs.plus/extension-mermaid`, `yarn add @docs.plus/extension-mermaid`, or `bun add @docs.plus/extension-mermaid`.
 
-Requires **`@tiptap/core` ^3.32.0** and **`@tiptap/pm` ^3.32.0** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.32.2** and **`@tiptap/pm` ^3.32.2** (Tiptap 3.x).
 
 This package imports no React, Vue, or Next.js code. Use it from a plain page, Vite, React, Vue, Svelte, Next.js, Nuxt, or SvelteKit. Create the editor in the browser.
 
@@ -76,7 +76,7 @@ You should see the source with a two-box flowchart under it. Edit the source, an
 
 - **Only the exact language `mermaid` draws.** A fence tagged `Mermaid` with a capital M stays plain code in Markdown. An HTML round trip keeps only the first word, so ` ```mermaid title ` becomes a diagram there.
 - **The editor needs a `codeBlock` node.** Without one, nothing draws and `insertMermaid` returns false.
-- **A host `addNodeView` on `codeBlock` wins.** It replaces the diagram view, for example `CodeBlockLowlight.extend({ addNodeView })`. Call [`mermaidNodeView`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/guide.md#keep-your-own-code-block-view) in that view to keep diagrams. In development, the console warns once.
+- **A host `addNodeView` on `codeBlock` wins.** It replaces the diagram view, for example `CodeBlockLowlight.extend({ addNodeView })`. Call [`mermaidNodeView`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/guide.md#keep-your-own-code-block-view) in that view to keep diagrams. In development, the console warns once. The page needs a global `process`.
 - **Without `styles.css`, the fold control, the head and the actions render unstyled, and Pele's own error box shows.** Add the stylesheet. Or set `fold: false`, `helpLink: false` and `copy: false`, and copy the three rules from [Without `styles.css`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/guide.md#without-stylescss).
 - **The default colours need `color-scheme`.** They use `light-dark()`. Set `color-scheme: light dark` on your page, or the light colours always show.
 - **Pele has no time limit.** Keep `limits` on. `edges` counts flowchart and agentflow only. See [Security](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/security.md).
@@ -195,7 +195,7 @@ Each block is a plain `mermaid` fence, drawn with the default colours. Each scre
 | Guide                                                                                                      | What it covers                                                                                                          |
 | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | [API reference](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/api.md) | Options, commands, states, `onStateChange`, fixed behaviour, class names, TypeScript exports, and the full caveats list |
-| [Guide](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/guide.md)       | Theming, source folding, the view slot, accessible names, and syntax highlighting                                       |
+| [Guide](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/guide.md)       | Theming, source folding, the view slot, accessible names, syntax highlighting, and your own code block view             |
 | [Security](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/security.md) | Untrusted sources, limits, sanitizing the SVG, and CSP                                                                  |
 | [About Pele](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/pele.md)   | What Pele is, how this package uses it, and the credit                                                                  |
 | [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/CHANGELOG.md)    | Every release and its breaking changes                                                                                  |
