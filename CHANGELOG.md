@@ -258,6 +258,9 @@ blocks to the next node view ([#627](https://github.com/docs-plus/docs.plus/issu
 
 ### Fixed
 
+- Renaming a link no longer removes it when its old text was a web address, such as an
+  autolinked `example.com` or a pasted link whose title holds a domain
+  ([extension-hyperlink](extensions/extension-hyperlink/CHANGELOG.md)).
 - On a phone, the link sheet for a `mailto:`, `tel:` or `slack://` link shows a mail, phone or
   Slack icon, as the desktop preview does. It showed an empty grey box before
   ([#517](https://github.com/docs-plus/docs.plus/issues/517)).

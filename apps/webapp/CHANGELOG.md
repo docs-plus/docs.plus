@@ -244,6 +244,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- Renaming a link in the edit form no longer removes it when its old text was a web address.
+  The fix is in `@docs.plus/extension-hyperlink`.
 - The phone link sheet shows a glyph for a link with no web address: mail for `mailto:`, phone
   for `tel:`, chat for `slack://`, and so on. The desktop preview does the same. Before, the sheet
   showed a grey box. A web link whose site icon fails to load still shows the grey box

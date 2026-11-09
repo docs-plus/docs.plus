@@ -1,6 +1,6 @@
 import { type Command, getMarkRange } from '@tiptap/core'
 
-import { HYPERLINK_MARK_NAME } from '../constants'
+import { HYPERLINK_MARK_NAME, PREVENT_AUTOLINK_META } from '../constants'
 import { createURLDecisions, type URLDecisions } from '../url-decisions'
 import { logger } from '../utils/logger'
 import { validateURL } from '../utils/validateURL'
@@ -62,6 +62,10 @@ export const editHyperlinkCommand =
     }
 
     if (!dispatch) return true
+
+    // Autolink drops a mark whose text stops looking like a URL. An edit that renames
+    // "example.com" to "our site" is deliberate, so it must keep its link.
+    tr.setMeta(PREVENT_AUTOLINK_META, true)
 
     const currentText = tr.doc.textBetween(range.from, range.to)
     const text = newText || currentText

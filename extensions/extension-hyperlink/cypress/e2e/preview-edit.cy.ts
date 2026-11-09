@@ -114,6 +114,18 @@ describe('previewHyperlinkPopover + editHyperlinkPopover — prebuilt preview / 
       cy.get(URL_INPUT).invoke('val').should('contain', 'example.com')
     })
 
+    it('keeps the link when it renames text that is an address', () => {
+      // Autolink drops a mark whose text stops looking like a URL; the edit must not trigger it.
+      cy.setEditorContent('<p>Visit <a href="https://example.com">example.com</a> now.</p>')
+      cy.get('#editor a').click()
+      cy.get(`${PREVIEW} .edit`).click()
+      cy.get(TEXT_INPUT).clear().type('our site')
+      cy.get(APPLY).click()
+      cy.get(EDIT).should('not.exist')
+      cy.get('#editor a').should('have.attr', 'href', 'https://example.com')
+      cy.get('#editor a').should('contain.text', 'our site')
+    })
+
     it('updates href and text on Apply', () => {
       cy.get(TEXT_INPUT).clear().type('New Label')
       cy.get(URL_INPUT).clear().type('https://new.example.com')
