@@ -18,7 +18,7 @@
     },
     "./package.json": "./package.json"
   },
-  "author": "Hossein Marzban",
+  "author": "Harvey Marzban",
   "license": "MIT",
   "type": "module",
   "homepage": "https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-placeholder#readme",

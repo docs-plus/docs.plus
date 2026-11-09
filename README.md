@@ -155,10 +155,10 @@ docs.plus began as a fork of [Etherpad](https://github.com/ether/etherpad). We c
 
 Etherpad struggled when many people worked in one long document, for example a hundred people at once. So in September 2022, after our last Etherpad-based tag, `v1.8.18`, we started again on [Tiptap](https://tiptap.dev), [ProseMirror](https://prosemirror.net) and [Yjs](https://yjs.dev). We owe a lot to Etherpad and its contributors, and we thank them.
 
-docs.plus is a free and open-source project by [Newspeak House](https://newspeak.house), seed funded by Grant for the Web and Nesta. Hossein Marzban ([HMarzban](https://github.com/HMarzban)) maintains it.
+docs.plus is a free and open-source project by [Newspeak House](https://newspeak.house), seed funded by Grant for the Web and Nesta. Harvey Marzban ([HMarzban](https://github.com/HMarzban)) maintains it.
 
 **Built with** Bun, Next.js, React, Hono, Hocuspocus, Supabase, PostgreSQL and Redis. [Pele](https://pele.run) draws the Mermaid diagrams.
 
 ## License
 
-[MIT](LICENSE) © 2023-2026 Hossein Marzban
+[MIT](LICENSE) © 2023-2026 Harvey Marzban

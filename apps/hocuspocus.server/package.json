@@ -33,7 +33,7 @@
     "migrate:media-node-names:dry": "bun --env-file=../../.env.local src/scripts/migrate-media-node-names.ts --dry-run"
   },
   "keywords": [],
-  "author": "Hossein Marzban",
+  "author": "Harvey Marzban",
   "type": "module",
   "devDependencies": {
     "@types/web-push": "^3.6.4",

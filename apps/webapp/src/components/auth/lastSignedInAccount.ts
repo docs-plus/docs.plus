@@ -25,7 +25,7 @@ export function rememberSignedInAccount(profile: Profile, email: string | null |
 
   const source =
     profile.display_name || profile.full_name || profile.fullname || profile.username || ''
-  // First token only, so "Hossein Marzban" greets as "Hossein".
+  // First token only, so "Harvey Marzban" greets as "Harvey".
   const name = (source.trim().split(/\s+/)[0] ?? '').slice(0, MAX_NAME_LENGTH)
   if (!name) return
 

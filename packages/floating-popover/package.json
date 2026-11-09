@@ -19,7 +19,7 @@
     },
     "./package.json": "./package.json"
   },
-  "author": "Hossein Marzban",
+  "author": "Harvey Marzban",
   "license": "MIT",
   "type": "module",
   "repository": {

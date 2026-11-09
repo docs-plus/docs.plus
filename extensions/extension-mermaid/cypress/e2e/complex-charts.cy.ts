@@ -791,7 +791,7 @@ Shared pad,Chat,70`,
     topic: 'the v2.3.0 board',
     source: `kanban
   todo[Todo]
-    t1[Inline link icons]@{ ticket: 512, assigned: 'hossein', priority: 'High' }
+    t1[Inline link icons]@{ ticket: 512, assigned: 'harvey', priority: 'High' }
     t2[TOC section move]@{ ticket: 499, priority: 'Very High' }
   doing[In progress]
     t3[Mermaid phone run]@{ ticket: 530, assigned: 'edward', priority: 'Low' }
@@ -813,7 +813,7 @@ Shared pad,Chat,70`,
       'Release banner',
       '512',
       '530',
-      'hossein',
+      'harvey',
       'edward'
     ],
     parts: {
