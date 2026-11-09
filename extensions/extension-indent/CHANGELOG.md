@@ -17,6 +17,8 @@ No behaviour change. The Tiptap peer floor rises to `^3.32.2`, aligned to the fa
 - The table-cell caveat now names the `tableCell` and `tableHeader` rules that `indent()` needs. The table caveat also says Tab adds a row in the last cell. A new list caveat says Tab sinks and Shift-Tab lifts a list item. The first item at any level cannot sink. Shift-Tab lifts even an item with a literal indent, so call `outdent()` to remove that indent.
 - The README defines a line: one non-empty textblock. A hard break does not start a new line.
 - The Markdown caveat now names `@tiptap/markdown`, and the README says a two-space paragraph indent survives import. The `preserveWhitespace` note says the option keeps every whitespace run, not only the indent.
+- The README now shows the `Editor` constructor form of `parseOptions` for saved HTML. It shows the `taskItem` rule, and it says items that can sink still sink under a `listItem` rule. It says a paragraph in a list item inside a blockquote needs the `listItem` rule.
+- The Markdown caveat says two steps at the two-space default start a code block on import. The Upgrading within 2.x section now asks for one Tiptap version in one install command.
 - On npm, the docs.plus badge now opens the docs.plus repository. Before, a click opened the badge image.
 
 ### Internal

@@ -20,8 +20,8 @@ Tiptap extension for literal indent: Tab inserts an indent string at the caret o
 ## Why use it
 
 - **Lists and tables keep Tab.** The extension registers at priority `25`, below the Tiptap default `100`. Tiptap runs the higher priority first. So `@tiptap/extension-list` sinks list items and `@tiptap/extension-table` moves between cells first. `@tiptap/starter-kit` includes the list extension, but not the table extension.
-- **Keyboard users can still leave the editor.** When nothing claims Tab, the key falls through to the browser default. Tab focus navigation keeps working. This is by design, not a bug.
-- **You choose where indent applies.** Each rule names a textblock type and its direct parent type, never a further ancestor. The default allowlist holds two rules: paragraphs under `doc`, and paragraphs under `blockquote`. Headings, code blocks and every other textblock stay excluded until you add a rule.
+- **Keyboard users can still leave the editor.** When nothing claims Tab, this extension's handler returns `false`. The key then falls through to any later keymap and to the browser default. Tab focus navigation keeps working. This is by design, not a bug.
+- **You choose where indent applies.** Each rule names a textblock type and its direct parent type, never a further ancestor. So a paragraph in a list item inside a blockquote has parent `listItem`, and only a `listItem` rule covers it. The default allowlist holds two rules: paragraphs under `doc`, and paragraphs under `blockquote`. Headings, code blocks and every other textblock stay excluded until you add a rule.
 - **Selections indent line by line.** Any non-empty selection indents at each line start, and it never replaces the selected text. A line is one non-empty textblock, such as a paragraph. A hard break does not start a new line.
 
 ## Install
@@ -40,7 +40,7 @@ React Native has no DOM. Load the editor in a web view.
 
 Installs with no runtime dependencies.
 
-Coming from `0.1.x`? Read [Migrating from 0.1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/migration.md#migrating-from-01x) first. `2.0.0` needs Tiptap 3, renames one option, and drops `indentCSS`, the UMD file and deep imports.
+Coming from `0.1.x`? Read [Migrating from 0.1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/migration.md#migrating-from-01x) first. `2.0.0` needs Tiptap 3. It replaces `allowedNodeTypes`, a list of type names, with `allowedIndentContexts`, a list of `{ textblock, parent }` rules. It also drops `indentCSS`, the UMD file and deep imports.
 
 On `2.x` already? [Upgrading within 2.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/migration.md#upgrading-within-2x) lists the Tiptap range each release needs. No `2.x` release after `2.0.0` changes behaviour, options, commands or exports.
 
@@ -77,7 +77,7 @@ const editor = new Editor({
 })
 ```
 
-The snippet keeps `indentChars` at the two-space default, and it needs no CSS. You need one CSS rule only when you pass `injectCSS: false`, or when your stylesheet overrides `white-space` on `.ProseMirror`. See [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/guide.md#styling). In React, pass the same `extensions` array to `useEditor` from `@tiptap/react`.
+The snippet keeps `indentChars` at the two-space default, and it needs no CSS. You need one CSS rule only when you pass the `Editor` option `injectCSS: false`, or when your stylesheet overrides `white-space` on `.ProseMirror`. See [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/guide.md#styling). In React, pass the same `extensions` array to `useEditor` from `@tiptap/react`.
 
 You should see one paragraph that asks you to press Tab. Click before its first word and press Tab: the text moves two spaces to the right. Press Shift-Tab to move it back.
 
@@ -86,9 +86,9 @@ You should see one paragraph that asks you to press Tab. Click before its first 
 - **Tab in a table cell never inserts an indent, whatever your allowlist holds.** `@tiptap/extension-table` moves to the next cell, and in the last cell it adds a row. Call `editor.commands.indent()` from a toolbar button instead. The command needs a `{ textblock: 'paragraph', parent: 'tableCell' }` rule, and a `tableHeader` rule for header cells. Without them it returns `false`.
 - **`configure({ allowedIndentContexts })` replaces the default allowlist instead of merging into it.** Passing one rule drops both defaults, so list every rule you keep.
 - **Headings, code blocks, list items that cannot sink, and every textblock outside the allowlist ignore Tab.** The extension leaves the key alone there, so the browser moves focus out of the editor. Shift-Tab with no indent to remove does the same. Add one rule for each textblock and parent you need.
-- **In a list item, Tab sinks the item and Shift-Tab lifts it.** The first item of any list, nested or not, cannot sink. A `{ textblock: 'paragraph', parent: 'listItem' }` rule makes Tab insert a literal indent there. Shift-Tab still lifts the item and keeps the indent, so call `editor.commands.outdent()` from a toolbar button instead. Task items need their own rule. See [List item paragraphs](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/api.md#allowedindentcontexts).
+- **In a list item, Tab sinks the item and Shift-Tab lifts it.** The first item of any list, nested or not, cannot sink. A `{ textblock: 'paragraph', parent: 'listItem' }` rule makes Tab insert a literal indent there. Items that can sink still sink with the rule present. Shift-Tab still lifts the item and keeps the indent, so call `editor.commands.outdent()` from a toolbar button instead. Task items need their own rule, `{ textblock: 'paragraph', parent: 'taskItem' }`. See [List item paragraphs](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/api.md#allowedindentcontexts).
 - **`editor.getHTML()` writes the indent out, and `setContent(savedHtml)` drops it on load.** See [Keep the indent in saved HTML](#keep-the-indent-in-saved-html).
-- **In Markdown, an indent does not survive reliably.** This covers `@tiptap/markdown`. Export writes the literal leading characters. On import, a two-space indent on a paragraph survives. Four or more spaces, or one tab, start a code block. Right after a list, a line indented two or more spaces, or one tab, joins the last list item. The line loses some or all of its indent. To keep it, store `getJSON()` instead.
+- **In Markdown, an indent does not survive reliably.** This covers `@tiptap/markdown`. Export writes the literal leading characters. On import, a two-space indent on a paragraph survives. Four or more spaces, or one tab, start a code block. Two steps at the two-space default make four spaces, so they start a code block too. Right after a list, a line indented two or more spaces, or one tab, joins the last list item. The line loses some or all of its indent. To keep it, store `getJSON()` instead.
 
 The full list, with the reason for each, is in [Caveats](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/api.md#caveats).
 
@@ -118,6 +118,16 @@ HTML parsing collapses a whitespace run and strips the leading one. Pass `parseO
 
 ```ts
 editor.commands.setContent(savedHtml, { parseOptions: { preserveWhitespace: true } })
+```
+
+The `Editor` constructor parses `content` the same way. There, `parseOptions` is a top-level option:
+
+```ts
+const editor = new Editor({
+  extensions: [StarterKit, Indent],
+  content: savedHtml,
+  parseOptions: { preserveWhitespace: true }
+})
 ```
 
 This keeps every whitespace run in that HTML, not only the indent. Whitespace between block tags is still dropped. `editor.getJSON()` round-trips the indent with no extra option. See [Persistence](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/guide.md#persistence).

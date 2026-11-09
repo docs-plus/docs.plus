@@ -32,15 +32,15 @@ The `0.1.x` default was `['paragraph', 'listItem', 'orderedList']`. So list item
 
 The package root exports `Indent`, `IndentContextRule` and `IndentOptions`. `IndentContext` is internal, and `0.1.x` did not export it either.
 
-`allowedIndentContexts` is required on the resolved `IndentOptions` type. You need no action: `configure()` still accepts partials. The `2.x` default stays `paragraph` under `doc` and `paragraph` under `blockquote`.
+In TypeScript, `IndentOptions` now lists `allowedIndentContexts` as a required field. `configure()` takes a partial object, so your calls still compile. Add the field only when you type a whole object as `IndentOptions`. The `2.x` default stays `paragraph` under `doc` and `paragraph` under `blockquote`.
 
 Full breaking-change list: [CHANGELOG.md](../CHANGELOG.md).
 
 ## Upgrading within 2.x
 
-No `2.x` release after `2.0.0` changes behaviour, options, commands or exports. Each upgrade needs only the Tiptap range below. Upgrade `@tiptap/core` and `@tiptap/pm` first when your app runs an older Tiptap 3.
+No `2.x` release after `2.0.0` changes behaviour, options, commands or exports. Each upgrade needs only the Tiptap range below.
 
-Move every other `@tiptap/*` package to the same version as `@tiptap/core`, `@tiptap/starter-kit` included. Tiptap packages pin each other exactly. For example, `@tiptap/starter-kit` `3.32.2` depends on `@tiptap/core` `3.32.2`, not on a range.
+Pick one Tiptap version inside that range. Install every `@tiptap/*` package at exactly that version, `@tiptap/starter-kit` included, in one command. Tiptap packages pin each other exactly. For example, `@tiptap/starter-kit` `3.32.2` depends on `@tiptap/core` `3.32.2`, not on a range.
 
 | Release | `@tiptap/core` and `@tiptap/pm` | Change                           |
 | ------- | ------------------------------- | -------------------------------- |
@@ -49,4 +49,10 @@ Move every other `@tiptap/*` package to the same version as `@tiptap/core`, `@ti
 | `2.2.0` | `^3.31.3`                       | None                             |
 | `2.3.0` | `^3.32.2`                       | Peer floor raised from `^3.31.3` |
 
-So from `2.2.0` to `2.3.0`, raise every `@tiptap/*` package to `3.32.2` or later, then bump this package. Your code needs no change. Details: [CHANGELOG.md](../CHANGELOG.md).
+So from `2.2.0` to `2.3.0`, move every `@tiptap/*` package to one version, `3.32.2` or later. Bump this package in the same install. Your code needs no change:
+
+```sh
+npm install @tiptap/core@3.32.2 @tiptap/pm@3.32.2 @tiptap/starter-kit@3.32.2 @docs.plus/extension-indent@2.3.0
+```
+
+Add each other `@tiptap/*` package your app uses to that command, at the same version. With pnpm, Yarn or Bun, pass the same list to `pnpm add`, `yarn add` or `bun add`. Details: [CHANGELOG.md](../CHANGELOG.md).
