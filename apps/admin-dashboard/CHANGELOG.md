@@ -10,6 +10,8 @@ This app is private and ships inside docs.plus, so each heading names the docs.p
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-11-09
+
 ### Security
 
 - The dashboard runs Next.js 16.4.4, for the October Next.js advisories. Redeploy the dashboard.

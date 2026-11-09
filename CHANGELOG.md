@@ -10,6 +10,8 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-11-09
+
 ### Highlights
 
 - **Links now show where they go.** A link icon before each pad link shows the site's
@@ -1505,7 +1507,8 @@ docs.plus reaches this tag through two code lines. They share no common ancestor
 
 ---
 
-[Unreleased]: https://github.com/docs-plus/docs.plus/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/docs-plus/docs.plus/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/docs-plus/docs.plus/releases/tag/v2.3.0
 [2.2.0]: https://github.com/docs-plus/docs.plus/releases/tag/v2.2.0
 [2.1.0]: https://github.com/docs-plus/docs.plus/releases/tag/v2.1.0
 [2.0.1]: https://github.com/docs-plus/docs.plus/releases/tag/v2.0.1

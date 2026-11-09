@@ -10,6 +10,8 @@ This package is private and ships inside docs.plus, so each heading names the do
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-11-09
+
 ### Internal
 
 - `playwright` moves from `^1.64.0` to `^1.64.1`.

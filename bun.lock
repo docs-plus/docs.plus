@@ -80,7 +80,7 @@
     },
     "apps/hocuspocus.server": {
       "name": "@docs.plus/hocuspocus",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "dependencies": {
         "@docs.plus/email-templates": "workspace:*",
         "@docs.plus/extension-hyperlink": "workspace:*",
@@ -143,7 +143,7 @@
     },
     "apps/webapp": {
       "name": "@docs.plus/webapp",
-      "version": "2.2.0",
+      "version": "2.3.0",
       "dependencies": {
         "@dicebear/core": "^10.7.0",
         "@dicebear/styles": "^10.6.0",

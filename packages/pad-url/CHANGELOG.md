@@ -10,6 +10,8 @@ This package is private and ships inside docs.plus, so each heading names the do
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-11-09
+
 ### Added
 
 - First version. The package holds the pure pad link rules in `padUrlCore` (`format`, `plan`,

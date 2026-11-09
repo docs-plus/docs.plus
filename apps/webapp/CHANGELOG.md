@@ -16,6 +16,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-11-09
+
 ### Highlights
 
 - **Pad links now show a link icon.** A link with no icon stays a plain link. The icon is the site's favicon, the docs.plus logo, or

@@ -10,6 +10,8 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-11-09
+
 ### Highlights
 
 - **Prisma 7 reads big documents faster and with less memory ([#198](https://github.com/docs-plus/docs.plus/issues/198)).**
@@ -1910,7 +1912,8 @@ This package shipped as `2.0.0-beta.103` with the webapp. There is no earlier ho
 
 ---
 
-[Unreleased]: https://github.com/docs-plus/docs.plus/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/docs-plus/docs.plus/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/docs-plus/docs.plus/releases/tag/v2.3.0
 [2.2.0]: https://github.com/docs-plus/docs.plus/releases/tag/v2.2.0
 [2.1.0]: https://github.com/docs-plus/docs.plus/releases/tag/v2.1.0
 [2.0.1]: https://github.com/docs-plus/docs.plus/releases/tag/v2.0.1

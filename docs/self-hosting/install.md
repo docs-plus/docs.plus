@@ -13,7 +13,7 @@ git clone https://github.com/docs-plus/docs.plus.git
 cd docs.plus
 ```
 
-The clone starts on `main`, which can hold changes that no release has yet. Install from the newest release tag instead. At the time of writing, that tag is `v2.2.0`.
+The clone starts on `main`, which can hold changes that no release has yet. Install from the newest release tag instead. At the time of writing, that tag is `v2.3.0`.
 
 At the root of the clone, list the tags, newest first, and check out the newest tag:
 

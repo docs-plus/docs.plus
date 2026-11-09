@@ -10,6 +10,8 @@ This package is private and ships inside docs.plus, so each heading names the do
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-11-09
+
 ### Breaking
 
 - **Three member functions take a `documentId` ([#574](https://github.com/docs-plus/docs.plus/issues/574)).**
