@@ -10,6 +10,11 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ## [Unreleased]
 
+### Changed
+
+- Bold, italic, strike, highlight and links can now sit on inline code, as in Notion. Before,
+  Markdown import dropped the bold from ``**`x`**`` and the MCP refused the write ([#721](https://github.com/docs-plus/docs.plus/issues/721)).
+
 ### Documentation
 
 - The demo's 2.3.0 section names more fixes: the link rename, the empty title heading, imported

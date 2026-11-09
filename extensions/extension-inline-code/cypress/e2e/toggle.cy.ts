@@ -37,16 +37,13 @@ describe('inline code — toggle', () => {
     cy.get('#editor code').should('have.text', 'one two three')
   })
 
-  // Pins `excludes: '_'` (the documented Breaking single-mark contract). If it
-  // regresses, code-formatted text silently keeps bold/italic styling.
-  it('applying inline code over bold+italic text strips the other marks', () => {
+  // #721: other marks may sit on code text. If `excludes: '_'` returns, code
+  // silently strips bold and italic from the selection.
+  it('applying inline code over bold+italic text keeps the other marks', () => {
     cy.setEditorContent('<p><strong><em>both</em></strong></p>')
     cy.selectText('both')
     cy.toggleInlineCode()
-    cy.get('#editor strong').should('not.exist')
-    cy.get('#editor em').should('not.exist')
-    cy.get('#editor code').should('have.text', 'both')
-    cy.getEditor().should((e) => expect(e.getHTML()).to.contain('<code>both</code>'))
+    cy.get('#editor code strong em').should('have.text', 'both')
   })
 
   it('toggling off from a collapsed caret clears code mode for the next char', () => {

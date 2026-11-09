@@ -16,6 +16,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ## [Unreleased]
 
+### Changed
+
+- In the pad, bold, italic, strike, highlight and links can sit on inline code. Inline code still
+  turns an old `code` span into inline code ([#721](https://github.com/docs-plus/docs.plus/issues/721)).
+
 ## [2.3.0] — 2026-11-09
 
 ### Highlights

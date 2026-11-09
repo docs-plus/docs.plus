@@ -10,6 +10,11 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ## [Unreleased]
 
+### Changed
+
+- Markdown export keeps bold, italic, strike and highlight outside the backticks of inline code, so
+  a round trip keeps them ([#721](https://github.com/docs-plus/docs.plus/issues/721)).
+
 ## [2.3.0] — 2026-11-09
 
 ### Highlights

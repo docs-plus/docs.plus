@@ -4,7 +4,7 @@ Clean-room Cypress suite against `test/playground/main.ts` via `@docs.plus/playg
 
 | Spec                         | What it proves                                                                                                                                                                                        |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `toggle.cy.ts`               | Selection toggle on/off/extend; collapsed-caret toggle-off clears code mode; `excludes: '_'` strips bold/italic when code is applied                                                                  |
+| `toggle.cy.ts`               | Selection toggle on/off/extend; collapsed-caret toggle-off clears code mode; bold/italic stay when code is applied                                                                                    |
 | `input-rule.cy.ts`           | Backtick rule via real typing; triple backticks stay literal; a prefix char equal to the content survives; other rules never rewrite code spans; Backspace right after the rule restores the literals |
 | `paste.cy.ts`                | Paste rule converts backtick text; a prefix char equal to the content survives; bare `<code>` HTML parses; `<pre><code>` does not become inline                                                       |
 | `stored-mark-caret.cy.ts`    | Collapsed-caret entry rides stored marks — no zero-width space enters the document                                                                                                                    |

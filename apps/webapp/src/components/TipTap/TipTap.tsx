@@ -217,7 +217,8 @@ const Editor = ({
     Mermaid.configure({ sanitize: sanitizeDiagramSvg, onStateChange: reportDiagramState }),
     // InlineCode (priority 101) wins backtick input + Mod-e over StarterKit's
     // `code` mark; `code` stays enabled so existing collab docs keep their marks.
-    InlineCode,
+    // Excluding `code` keeps toggle and Mod-e converting an old `code` span (#721).
+    InlineCode.extend({ excludes: 'inlineCode code' }),
     Superscript,
     Subscript,
     TextAlign,

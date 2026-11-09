@@ -42,8 +42,8 @@ export const InlineCode = Mark.create<InlineCodeOptions>({
   // produce inlineCode when a host leaves StarterKit's `code` enabled (README).
   priority: 101,
 
-  // Upstream `@tiptap/extension-code` parity: code text never stacks other marks.
-  excludes: '_',
+  // No `excludes`: bold, italic, strike, highlight and links may sit on code
+  // text, as in Notion. Upstream `@tiptap/extension-code` sets `'_'` instead.
 
   // `@tiptap/core` suppresses other extensions' input rules inside code-marked
   // text only via this spec flag (Typography/bold rules must not rewrite code).

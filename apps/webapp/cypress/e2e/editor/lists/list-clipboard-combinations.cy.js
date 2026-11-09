@@ -220,8 +220,6 @@ describe('List Clipboard Combinations', () => {
       ],
       'https://beta.example'
     )
-    // The code mark declares excludes: '_', so it strips every other mark on its
-    // run. A code item cannot also carry strike, highlight or a link.
     applyFormattingAndHyperlink(
       items[2],
       [

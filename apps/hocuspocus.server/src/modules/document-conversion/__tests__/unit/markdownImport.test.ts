@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
+import { exportMarkdown } from '../../domain/markdownExport'
 import { importMarkdown, parseMarkdown } from '../../domain/markdownImport'
 
 const types = (content: Record<string, unknown>[]) => content.map((node) => node.type)
@@ -26,6 +27,22 @@ describe('parseMarkdown', () => {
       'bold',
       'hyperlink'
     ])
+  })
+
+  // #721: at its editor priority the code mark nests outside bold, so export
+  // wrote `**` inside the backticks and the next import read literal asterisks.
+  test('round-trips bold, italic and stored `code` marks on inline code', () => {
+    const markdown = '- **`hovercard`** takes *`x`* and ~~`y`~~'
+
+    expect(exportMarkdown(parseMarkdown(markdown))).toBe(markdown)
+    expect(
+      exportMarkdown({
+        type: 'doc',
+        content: [
+          { type: 'paragraph', content: [{ type: 'text', text: 'old', marks: [{ type: 'code' }] }] }
+        ]
+      })
+    ).toBe('`old`')
   })
 
   test('still turns a bare media URL on its own line into media', () => {

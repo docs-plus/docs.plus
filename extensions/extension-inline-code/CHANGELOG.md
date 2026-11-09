@@ -4,6 +4,21 @@ All notable changes to `@docs.plus/extension-inline-code` are documented here. T
 
 ## [Unreleased]
 
+### Highlights
+
+- Other marks may now sit on inline code text, as in Notion. Bold, italic, strike, highlight and links stay when you apply inline code ([#721](https://github.com/docs-plus/docs.plus/issues/721)).
+
+### Changed
+
+- The mark no longer sets `excludes: '_'`. Before, applying inline code removed every other mark from the selection. A Markdown import dropped the bold from ``**`x`**``, and a schema check refused that text.
+- Over a span that carries StarterKit's `code` mark, `setInlineCode()` and `toggleInlineCode()` now change nothing. Before, they replaced `code` with `inlineCode`. `Mod-e` over that span now removes `code`, so the text ends plain. Before, the span stayed `code`. Hosts with `StarterKit.configure({ code: false })` see no change. To keep the old conversion, extend the mark with `excludes: 'inlineCode code'`, as docs.plus does in its pad.
+
+### Documentation
+
+- The Caveats no longer say that inline code removes other marks.
+- A new caveat: with `@tiptap/markdown`, bold, italic, strike or highlight on code exports with the delimiters inside the backticks, such as `` `**x**` ``. No error is raised. The caveat gives the fix for a Markdown export.
+- The StarterKit `code` caveats describe the new `Mod-e` and command results.
+
 ## [2.3.0] — 2026-11-09
 
 No behaviour change. The Tiptap peer floor rises to `^3.32.2`, aligned to the family.
