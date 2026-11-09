@@ -131,6 +131,11 @@ Check every page the release makes wrong: `README.md` (extension status), `exten
 - Third-party logos imply "works with". Confirm each one is true for MCP clients.
 - **Render.** `.agents/skills/release-product/scripts/render-banner.js` (`bun <script> <artboard> <logo.svg> <out.html>`) expands the artboard into one page. Then render it at 2× with headless Chrome: `--headless=new --force-device-scale-factor=2 --window-size=1280,720 --screenshot=<out.png>`. Look at the PNG before saving it.
 - Save `release-X.Y.Z-banner.png`, `release-X.Y.Z-banner-dark.png` and both HTML sources in `apps/webapp/public/demo-assets/`.
+- **What the maintainer rejected on 2.3.0, in five rounds.** A banner that sells one feature, such as one hovercard on an empty well. A clean window with only two actions. A grid of equal tiles. Captions over the UI ("You paste", "A web page"). Each one read as a manual page, not as the product.
+- **What the maintainer accepted on 2.3.0.** One real pad window as the stage: outline, presence faces and an unread badge. Every new piece sits in it or breaks out of it, slightly tilted (−2.5°, 1.5° or 2°). The headline is a short verb beat ("Link it. Peek at it. Move it."), and the subline names every piece drawn. The strip holds five numbers with icon tiles.
+- **Draw each piece from its code.** Read the component and its SCSS before you draw it: chip kinds and icons, preview layout and strings, the drag card, the ghost slot and the nest ring. A server-rendered image, such as the share card, goes in as the real PNG from production (`og:image`). Embed it in the HTML source as a `data:` URI, and point other logos at `../icons/logo.svg`, so the source works from disk and on docs.plus.
+- **Numbers come from the audited ledger only** (§Benchmarks). A number marked "Note" or that needs "dev build" or "laptop" beside it stays in the release note, not on the banner. On 2.3.0, a label count (37 `bug` issues) differed from the audited count (33 fixed). The ledger wins.
+- **Before saving, check the live facts again.** That means the share card bytes, a repository's "Updated" date and every count. Recheck them if the release date slips.
 
 ### 7. Readiness
 
