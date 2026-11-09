@@ -13,6 +13,15 @@ No behaviour change. The Tiptap peer floor rises to `^3.32.2`, aligned to the fa
 ### Documentation
 
 - On npm, the docs.plus badge now opens the docs.plus repository. Before, a click opened the badge image.
+- The README says what changes from 2.2.0, and that `@tiptap/core` and `@tiptap/pm` are peer dependencies.
+- The README says the Safari before 16.4 fallback covers both rules and every iOS browser before 16.4.
+- The README names the `inlineCode` mark, the three commands, and the stored JSON rename.
+- The README Markdown task shows the `@tiptap/markdown` install and import.
+- The sample CSS keeps a plain `background` line for browsers without `light-dark()`, such as Safari before 17.5.
+- The sample CSS sets the text `color` too, so the span stays readable in dark mode on Safari before 17.5. The docs say the page needs `color-scheme: light dark`.
+- The docs say which pastes convert. A paste from a Tiptap or ProseMirror editor keeps its backticks. An empty pair or double backticks stay literal.
+- The stored JSON caveat says Tiptap logs the `RangeError` as a console warning by default, and does not throw it to your code.
+- The README says `@tiptap/extension-code` must go too, and that every `@tiptap/*` package should share one version.
 
 ### Internal
 

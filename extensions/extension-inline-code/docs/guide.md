@@ -11,11 +11,16 @@ CodeBlock renders `<pre><code>`, so a bare `code` selector matches both elements
 ```css
 .ProseMirror :not(pre) > code {
   background: #f3f4f6;
+  background: light-dark(#f3f4f6, #374151);
+  color: #111827;
+  color: light-dark(#111827, #f9fafb);
   border-radius: 4px;
   padding: 0.15em 0.3em;
   font-size: 0.9em;
 }
 ```
+
+`light-dark()` picks the dark value only when your page sets `color-scheme: light dark`. Browsers without `light-dark()`, such as Safari before 17.5, use the first `background` and `color` lines. They show dark text on a light background, in dark mode too.
 
 To target the mark by class instead, set one through `HTMLAttributes` and drop the `:not(pre)` selector:
 
@@ -26,6 +31,9 @@ InlineCode.configure({ HTMLAttributes: { class: 'inline-code' } })
 ```css
 .inline-code {
   background: #f3f4f6;
+  background: light-dark(#f3f4f6, #374151);
+  color: #111827;
+  color: light-dark(#111827, #f9fafb);
   border-radius: 4px;
   padding: 0.15em 0.3em;
 }
@@ -42,12 +50,14 @@ export const pasteRegex = /(?<=^|[^`])`([^`]+)`(?!`)/g
 
 `inputRegex` is end-anchored and non-global, because a global flag moves the input-rule plugin's `lastIndex`. `pasteRegex` keeps the global flag, so one paste converts every span it finds.
 
-The prefix lookbehind sits in both regexes, so the character before the opening backtick stays out of the match. Typing `` x`x` `` marks the content alone and keeps the leading `x` plain. The backtick rules build these patterns at runtime with `new RegExp`, so an engine with no lookbehind can still load the bundle. On Safari before 16.4 they fall back to an in-match prefix, and a non-space character before the opening backtick is removed.
+The prefix lookbehind sits in both regexes, so the character before the opening backtick stays out of the match. Typing `` x`x` `` marks the content alone and keeps the leading `x` plain. The backtick rules build these patterns at runtime with `new RegExp`, so an engine with no lookbehind can still load the bundle. On Safari before 16.4 they fall back to the `@tiptap/extension-code` in-match prefix, and a non-space character before the opening backtick is removed. On iOS before 16.4 this holds in every browser, because every iOS browser uses the Safari engine.
 
 ### Where the rules do not fire
 
 - Inside a code block. The CodeBlock NodeSpec sets `code`, which suppresses every input rule.
 - On triple backticks. `a ```x``` b` stays literal.
+- On an empty pair or double backticks. ` `` ` and ` ``x`` ` stay literal, because each rule needs one or more characters that are not backticks between single backticks.
+- On a paste copied from a Tiptap or ProseMirror editor. Tiptap skips paste rules when the clipboard HTML carries `data-pm-slice`. A plain-text paste and a paste from a web page convert.
 - On pasted `<pre><code>` markup. Neither rule sees it: `parseHTML` rejects a `<code>` whose parent is `PRE`, so the paste stays a code block.
 - On a match that spans a non-text inline node — see [Caveats](./api.md#caveats).
 

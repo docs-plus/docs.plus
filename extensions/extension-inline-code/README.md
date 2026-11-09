@@ -21,10 +21,10 @@ It takes the place of `@tiptap/extension-code` and StarterKit's `code` mark, wit
 
 ## Why use it
 
-- **No stray space when you leave a code span.** `@tiptap/extension-code` inserts a space when `ArrowRight` exits a code span. This mark inserts no character into the document.
-- **The character before the opening backtick stays plain.** Typing `` x`x` `` marks the content alone. A rule that captures that character in its match can delete or wrongly mark it.
-- **No code span across a hard break or a mention.** The input rule declines a match that spans a non-text inline node. `@tiptap/extension-code` has no such check, so its rule converts the match.
-- **Code spans keep their backticks in Markdown.** The mark claims the `codespan` token, so a code span survives export and import once the host loads `@tiptap/markdown`. A mark without Markdown hooks exports the text with no backticks.
+- **No stray space when you leave a code span.** `@tiptap/extension-code` inserts a space when `ArrowRight` exits a code span. This mark never inserts a character. At the end of the document, `ArrowRight` makes the next character plain. In an earlier paragraph, press `Mod-e` instead — see [Caveats](#caveats).
+- **The character before the opening backtick stays plain.** Typing `` x`x` `` marks the content alone. The `@tiptap/extension-code` rule captures that character in its match, so it can delete it or mark it. Safari before 16.4 is the exception — see [Install](#install).
+- **No code span across a hard break or a mention.** The typing rule declines a match that spans a hard break, a mention, or any other inline item that is not text. `@tiptap/extension-code` has no such check, so its rule converts the match.
+- **Code spans keep their backticks in Markdown.** The mark handles Markdown code spans (the `codespan` token). So a code span survives export and import once your app loads `@tiptap/markdown`. A mark without Markdown hooks exports the text with no backticks.
 
 ## Install
 
@@ -34,7 +34,7 @@ npm install @docs.plus/extension-inline-code
 
 Or use `pnpm add @docs.plus/extension-inline-code`, `yarn add @docs.plus/extension-inline-code`, or `bun add @docs.plus/extension-inline-code`.
 
-Requires **`@tiptap/core` ^3.32.2** and **`@tiptap/pm` ^3.32.2** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.32.2** and **`@tiptap/pm` ^3.32.2** (Tiptap 3.x). They are peer dependencies. If your app does not have them yet, run `npm install @tiptap/core@^3.32.2 @tiptap/pm@^3.32.2`. Keep every `@tiptap/*` package in your app on the same version.
 
 This package imports no React, Vue, or Next.js code. Use it from a plain page, Vite, React, Vue, Svelte, Next.js, Nuxt, or SvelteKit. Create the editor in the browser.
 
@@ -42,7 +42,9 @@ React Native has no DOM. Load the editor in a web view.
 
 Installs with no runtime dependencies.
 
-On Safari and iOS Safari before 16.4, which have no RegExp lookbehind, the rules fall back to the upstream pattern. There, a non-space character before the opening backtick is removed.
+Safari before 16.4 has no RegExp lookbehind. The package still loads there. Both the typing rule and the paste rule fall back to the `@tiptap/extension-code` pattern. So a non-space character before the opening backtick is removed: typing `` x`y` `` deletes the `x`. Safari 16.4 and later keep that character plain. On iOS before 16.4, this applies to every browser, because every iOS browser uses the Safari engine.
+
+Upgrading from `2.2.0` to `2.3.0`? No behavior changed. The Tiptap peer floor rose from `^3.31.3` to `^3.32.2`. First move `@tiptap/core`, `@tiptap/pm` and your other `@tiptap/*` packages to `^3.32.2`, then update this package. For an older `2.x`, read each entry in the [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/CHANGELOG.md).
 
 Upgrading from `@tiptap/extension-code`? See [Migrating from `@tiptap/extension-code`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/migration.md).
 
@@ -69,32 +71,37 @@ const editor = new Editor({
 })
 ```
 
-The snippet passes no `element`, so attach the editor to the mount point, then load a sample line:
+Not using StarterKit? Add `InlineCode` to your own extensions list. There is no `code` mark to turn off.
+
+The snippet passes no `element`, so attach the editor to the mount point with `editor.mount()`, a Tiptap 3 method. Then load a sample line:
 
 ```ts
 editor.mount(document.querySelector('#editor')!)
 editor.commands.setContent('<p>Call <code>render()</code> first.</p>')
 ```
 
-The package ships no CSS, so the span inherits no styling of its own. Add this rule to see the span. `light-dark()` follows your page's `color-scheme`, so the span stays readable in dark mode. [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/guide.md#styling) has more rules.
+The package ships no CSS. Browsers show `<code>` in a monospace font, and nothing more. Add this rule to give the span a background. `light-dark()` follows your page's `color-scheme`. Set `color-scheme: light dark` on `:root`, or the light values always apply. Browsers without `light-dark()`, such as Safari before 17.5, use the first `background` and `color` lines. That keeps dark text on a light background, in dark mode too. [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/guide.md#styling) has more rules.
 
 ```css
 .ProseMirror :not(pre) > code {
+  background: #f3f4f6;
   background: light-dark(#f3f4f6, #374151);
+  color: #111827;
+  color: light-dark(#111827, #f9fafb);
   border-radius: 4px;
   padding: 0.15em 0.3em;
   font-size: 0.9em;
 }
 ```
 
-You should see one paragraph, with `render()` on a grey background. Type text between single backticks, and the backticks go away. Select a word and press `Mod-e` (Cmd on macOS, Ctrl elsewhere) to toggle the mark. Pasted backtick text converts the same way.
+You should see one paragraph, with `render()` on a grey background. Type text between single backticks. When you type the closing backtick, both backticks go away, the text becomes code, and the next character you type is plain. Select a word and press `Mod-e` (Cmd on macOS, Ctrl elsewhere) to toggle the mark. Text with backtick pairs that you paste from a plain-text source or a web page converts too. A paste copied from a Tiptap or ProseMirror editor keeps its backticks. An empty pair or a double-backtick span stays literal.
 
 ## Caveats
 
-- **Keep `StarterKit.configure({ code: false })`.** Otherwise two marks render `<code>`, and `Mod-e` over an existing `code` span stays `code`.
-- **Stored JSON with a `code` mark does not load.** Once `code` is off, that JSON throws a `RangeError`, and the editor keeps an empty paragraph. Rename the mark first — see [Migrating from `@tiptap/extension-code`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/migration.md).
-- **`excludes: '_'` strips every other mark.** Applying inline code drops bold, italic and links from the selection, so code text never stacks other marks. Apply inline code first, then the surrounding formatting outside the span.
-- **`ArrowRight` clears the stored mark only at the document end.** At the end of a paragraph in the middle of a document the key does nothing, so the next character stays code. Press `Mod-e`, or run `toggleInlineCode()`.
+- **Keep `StarterKit.configure({ code: false })`.** Otherwise two marks render `<code>`: StarterKit's `code` and this package's `inlineCode`. `Mod-e` on text that already has `code` leaves it `code`, not `inlineCode`. `@tiptap/extension-code` adds the same `code` mark, so remove it from your extensions list too.
+- **Stored JSON with a `code` mark does not load.** This package names its mark `inlineCode`. Once `code` is off, JSON with a `code` mark fails with a `RangeError`. Tiptap catches it and logs `[tiptap warn]: Invalid content.` to the console. By default your code gets no error, and the editor keeps an empty paragraph. Before you load it, change every `"type": "code"` mark to `"type": "inlineCode"`. Stored HTML loads as is. A rename script is in [Migrating from `@tiptap/extension-code`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/migration.md).
+- **Inline code removes every other mark from its text.** The mark sets `excludes: '_'`. So applying inline code drops bold, italic and links from the selection. Apply inline code first, then add other formatting outside the span.
+- **`ArrowRight` leaves a code span only at the document end.** Put the caret at the end of a code span that ends any earlier paragraph. The next character you type is still code, and `ArrowRight` moves the caret to the next paragraph. Press `Mod-e`, or run `toggleInlineCode()`, then type.
 
 The full list, with the reason for each, is in [Caveats](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/api.md#caveats).
 
@@ -106,7 +113,7 @@ The full list, with the reason for each, is in [Caveats](https://github.com/docs
 editor.chain().focus().toggleInlineCode().run()
 ```
 
-Read the active state with `editor.isActive('inlineCode')`. Gate the button with `editor.can().toggleInlineCode()`. The three commands are listed in [Commands](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/api.md#commands).
+Read the active state with `editor.isActive('inlineCode')`. `inlineCode` is the mark's name. Gate the button with `editor.can().toggleInlineCode()`. The extension adds three commands: `setInlineCode()`, `toggleInlineCode()` and `unsetInlineCode()`. Each is described in [Commands](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/api.md#commands).
 
 ### Style the mark with a class
 
@@ -119,6 +126,9 @@ InlineCode.configure({ HTMLAttributes: { class: 'inline-code' } })
 ```css
 .inline-code {
   background: #f3f4f6;
+  background: light-dark(#f3f4f6, #374151);
+  color: #111827;
+  color: light-dark(#111827, #f9fafb);
   border-radius: 4px;
   padding: 0.15em 0.3em;
 }
@@ -126,9 +136,15 @@ InlineCode.configure({ HTMLAttributes: { class: 'inline-code' } })
 
 ### Export and import Markdown
 
-A code span survives Markdown export and import, once the host loads `@tiptap/markdown`. The package does not load `@tiptap/markdown` itself. Add `Markdown` next to `InlineCode`, then read and write Markdown:
+A code span survives Markdown export and import, once your app loads `@tiptap/markdown`. This package does not load it. Install it with `npm install @tiptap/markdown`. Then add `Markdown` next to `InlineCode`, and read and write Markdown:
 
 ```ts
+import { Markdown } from '@tiptap/markdown'
+
+const editor = new Editor({
+  extensions: [StarterKit.configure({ code: false }), InlineCode, Markdown]
+})
+
 editor.commands.setContent('Call `render()` first.', { contentType: 'markdown' })
 editor.getMarkdown() // 'Call `render()` first.'
 ```
