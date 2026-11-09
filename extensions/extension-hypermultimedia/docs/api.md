@@ -100,7 +100,7 @@ Player parameters are per node. See [Embeds](./embeds.md) for the provider keys,
 
 ## Commands
 
-Ten commands land on `editor.commands`. Each provider insert command returns `false` for a `src` that fails its provider check. `setImage`, `setVideo` and `setAudio` return `false` only for an empty `src`. No insert command runs the scheme gate — see [Security](./security.md).
+Ten commands land on `editor.commands`: one insert command per node, plus `updateImageDimensions`. Each provider insert command returns `false` for a `src` that fails its provider check. `setImage`, `setVideo` and `setAudio` return `false` only for an empty `src`. No insert command runs the scheme gate — see [Security](./security.md).
 
 ```ts
 editor.commands.setImage({ src: 'https://example.com/photo.png', alt: 'Example' })
@@ -122,7 +122,11 @@ For unlisted Vimeo videos, pass the full URL with its path hash or `h` query par
 Chain any of them like a normal Tiptap command:
 
 ```ts
-editor.chain().focus().setYoutubeVideo({ src: 'https://youtu.be/dQw4w9WgXcQ', start: 42 }).run()
+editor
+  .chain()
+  .focus('end')
+  .setYoutubeVideo({ src: 'https://youtu.be/dQw4w9WgXcQ', start: 42 })
+  .run()
 ```
 
 Every insert command accepts the layout options `width`, `height`, `margin`, `float`, `clear` and `display`. Every command except `setImage` also accepts `justifyContent`. `setX` is the exception on size. The `x` node declares no `width` and no `height` attribute, so both values type-check and then do nothing. Size an X post through `maxwidth`:
@@ -130,7 +134,7 @@ Every insert command accepts the layout options `width`, `height`, `margin`, `fl
 ```ts
 editor
   .chain()
-  .focus()
+  .focus('end')
   .setX({
     src: 'https://x.com/user/status/123',
     maxwidth: 550,
@@ -179,10 +183,13 @@ The media toolbar, the paste path, the insert commands and the caption each carr
 - **A link extension can claim a media URL before the kit sees it.** Veto media URLs in the link extension: `Hyperlink.configure({ shouldAutoLink: (url) => !isMediaUrl(url) })`. See [Paste precedence](./paste-and-import.md#paste-precedence).
 - **`isMediaUrl` matches every provider, whatever the kit configuration says.** A host that disables providers then vetoes URLs nothing will claim. Compose the veto from the per-provider validators you enabled.
 - **`setImage`, `setVideo` and `setAudio` accept any non-empty `src` string.** The scheme gate runs on `parseHTML`, on markdown import, and in the Replace URL form. It never runs in the commands. Validate host-supplied URLs before you call them. See [Security](./security.md).
+- **An insert can replace media at the start of a new document.** A new editor starts with `Selection.atStart`, which selects a leading media node. `focus()` keeps that selection, and every insert command replaces the selection. Call `focus('end')` first, or set your own selection.
 - **`setX` types `width` and `height` but the `x` node stores neither.** `setX` accepts both values, and the node then ignores them. Size an X post with `maxwidth`.
 - **`dnt` cannot be set per node.** It is a kit option and a node attribute. But `AddXOptions` omits it, so `setX` cannot write it in a type-safe way. Set it on the kit.
 - **A drag can appear to stop early.** Resize clamps to a 160 × 80 minimum, and `soundcloud` and `spotify` raise the height floor further. See [Resize](./resize-and-loading.md#resize).
 - **Markdown drops the `youtube`, `vimeo`, `soundcloud`, `spotify` and `loom` player options.** The caption, the layout keys and the `video` and `audio` player options survive. The `x` options survive too, except `dnt` and `align`. The image `title`, YouTube `start`, SoundCloud `visual` and the other player options of those five nodes do not. Import also drops an option-block value that fails its check. See [Caption and options](./paste-and-import.md#caption-and-options).
+- **Markdown imports an audio or video URL with a query string as an image.** An `audio` or `video` URL must end in a media file extension, with no query string or fragment. Otherwise `![audio](…/podcast?id=42)` becomes an `image` node, and its player options are lost. No option widens the URL check. See [Markdown import/export](./paste-and-import.md#markdown-importexport).
+- **A Content Security Policy can block every player.** The browser blocks a provider iframe whose host the page's `frame-src` does not allow. The `x` node also needs `script-src` and `connect-src` grants. [Content Security Policy](./security.md#content-security-policy) lists the hosts.
 - **The kit has no translation option.** Its loading and error text are English. So are the caption placeholder, the Replace URL form and toolbar names such as "More actions". A custom shell can show other loading and error words. But with no `.hm-loading-shell__message` element, the kit sets the English error as its `aria-label`. A `mediaActions` function can give each toolbar action your own `label`. See [Loading shell](./resize-and-loading.md#loading-shell).
 - **The paste handler drops pasted image files silently without a listener.** Add an `editorFileUpload` listener and insert the nodes yourself. See [Image file paste (`editorFileUpload`)](./paste-and-import.md#image-file-paste-editorfileupload).
 

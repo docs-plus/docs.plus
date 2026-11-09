@@ -99,7 +99,7 @@ Every media node view carries an editable `<figcaption>`. The text lives in the 
 
 A captioned node of any of the nine types renders as a `<figure data-hm-figure>` with a `<figcaption>` in HTML, and the node parses it back. So `getHTML()`, clipboard copy and the toolbar Copy action keep the caption. The parser reads the `<figcaption>` into the `caption` attribute only, never into a paragraph. For a floated media node, the `<figure>` takes the float, clear and margin, so the caption floats with the media element. The media element inside keeps its width and height. For a media node that is not floated, the `<figure>` takes the clear and margin, so a `margin: auto` media node stays centered. Image always puts its float, clear and margin on the `<figure>`. X writes no layout to HTML, so its `<figure>` has no placement. A node without a caption renders no `<figure>`.
 
-One limit applies. Markdown export never carries a caption. See [Caveats](./api.md#caveats).
+Markdown carries the caption too, in the title slot: `![video](src "My caption")`. Export joins a caption with several lines into one line. See [Caption and options](./paste-and-import.md#caption-and-options).
 
 ## Bring your own toolbar
 

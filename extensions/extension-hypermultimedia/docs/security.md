@@ -15,3 +15,21 @@ The read side carries its own allowlist on purpose. View original permits `https
 ## Embeds
 
 Embed URL parsing rejects an invalid host before insert. X and Loom paste paths carry dedicated security specs. Hosts should still validate storage and CSP for an iframe `src` the same way they do for a user-authored link.
+
+### Content Security Policy
+
+A page with a Content Security Policy must allow each player host, or the browser blocks the player. Allow these hosts in `frame-src`:
+
+- `www.youtube.com`, and `www.youtube-nocookie.com` when you set `nocookie`
+- `player.vimeo.com`
+- `w.soundcloud.com`
+- `open.spotify.com`
+- `www.loom.com`
+
+The `x` node loads differently. It fetches `publish.x.com` and loads `https://platform.twitter.com/widgets.js`. That script then makes its own requests and opens its own frames. docs.plus allows this set for X:
+
+- `script-src`: `platform.twitter.com`, `platform.x.com`
+- `connect-src`: `publish.x.com`, `publish.twitter.com`, `syndication.x.com`, `syndication.twitter.com`, `platform.twitter.com`, `platform.x.com`
+- `frame-src`: `platform.twitter.com`, `platform.x.com`, `syndication.twitter.com`, `syndication.x.com`
+
+Without the `connect-src` or `script-src` grant, the post shows as a plain quote with a link. Without the `frame-src` grant, the browser blocks the post frame.

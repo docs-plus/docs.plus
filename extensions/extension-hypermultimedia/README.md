@@ -32,7 +32,7 @@ npm install @docs.plus/extension-hypermultimedia
 
 Or use `pnpm add @docs.plus/extension-hypermultimedia`, `yarn add @docs.plus/extension-hypermultimedia`, or `bun add @docs.plus/extension-hypermultimedia`.
 
-Requires **`@tiptap/core` ^3.32.2** and **`@tiptap/pm` ^3.32.2** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.32.2** and **`@tiptap/pm` ^3.32.2** (Tiptap 3.x). They are peer dependencies. If your app does not have them yet, run `npm install @tiptap/core@^3.32.2 @tiptap/pm@^3.32.2`.
 
 This package imports no React, Vue, or Next.js code. Use it from a plain page, Vite, React, Vue, Svelte, Next.js, Nuxt, or SvelteKit. Create the editor in the browser.
 
@@ -50,7 +50,7 @@ Upgrading from `2.2.0`? No export or option was removed, but the Markdown and HT
 
 Run this Quickstart in your browser first, with nothing to install. The app lives in [`examples/vanilla`](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/examples/vanilla).
 
-The host page needs one mount point: `<div id="editor"></div>`. The snippet also imports `@tiptap/starter-kit`. Add it with `npm install @tiptap/starter-kit` when your app has none yet.
+The host page needs one mount point: `<div id="editor"></div>`. The snippet also imports `@tiptap/starter-kit`. Add it with `npm install @tiptap/starter-kit@^3.32.2` when your app has none yet. Keep it on the same Tiptap version as `@tiptap/core`.
 
 ```ts
 import { Editor } from '@tiptap/core'
@@ -76,8 +76,11 @@ You should see the image in the editor. Hover it with a mouse: the media toolbar
 - **`resizeGripper: false` removes the whole media toolbar for that node.** To remove the drag handles alone, replace the media toolbar with [`mediaToolbar`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/media-toolbar.md#bring-your-own-toolbar).
 - **A link extension can claim a media URL before the kit sees it.** See [Keep media URLs out of a link extension](#keep-media-urls-out-of-a-link-extension).
 - **The paste handler drops pasted image files silently without a listener.** Add an `editorFileUpload` listener, as [Image file paste](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/paste-and-import.md#image-file-paste-editorfileupload) shows.
+- **An insert can replace media at the start of a new document.** A new editor selects a leading media node, and an insert replaces the selection. Call `focus('end')` first, as [Insert media by command](#insert-media-by-command) shows.
+- **A Content Security Policy can block every player.** Allow each provider host in `frame-src`. [Content Security Policy](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/security.md#content-security-policy) lists the hosts, and the extra grants for `x`.
 - **The kit has no translation option.** Its loading and error text are English. A custom shell can show other words, but screen readers still hear the English error. See [Loading shell](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/resize-and-loading.md#loading-shell).
 - **Markdown drops the `youtube`, `vimeo`, `soundcloud`, `spotify` and `loom` player options.** The caption, the layout keys and the `video` and `audio` player options survive. The `x` options survive too, except `dnt` and `align`. See [Caption and options](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/paste-and-import.md#caption-and-options).
+- **Markdown imports an audio or video URL with a query string as an image.** `![audio](…/podcast?id=42)` becomes an `image` node, and its player options are lost. No option widens the URL check. See [Markdown import/export](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/paste-and-import.md#markdown-importexport).
 
 The full list, with the reason for each, is in [Caveats](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/api.md#caveats).
 
@@ -85,15 +88,40 @@ The full list, with the reason for each, is in [Caveats](https://github.com/docs
 
 ### Insert media by command
 
-Each provider insert command returns `false` for a `src` that fails its provider check. Chain any of them like a normal Tiptap command. The command inserts the node at the selection and replaces any selected content:
+Each provider insert command returns `false` for a `src` that fails its provider check. Chain any of them like a normal Tiptap command. The command inserts the node at the selection and replaces any selected content.
+
+A new editor whose content starts with media has that node selected. So in the Quickstart, `focus()` then an insert replaces the image. Use `focus('end')` to put the caret in the empty last paragraph:
 
 ```ts
-editor.chain().focus().setYoutubeVideo({ src: 'https://youtu.be/dQw4w9WgXcQ', start: 42 }).run()
+editor
+  .chain()
+  .focus('end')
+  .setYoutubeVideo({ src: 'https://youtu.be/dQw4w9WgXcQ', start: 42 })
+  .run()
 ```
 
-To start with a video in `content`, pass JSON: `{ type: 'doc', content: [{ type: 'youtube', attrs: { src } }] }`.
+The player replaces that empty paragraph, so the document holds the image, then the player. StarterKit then adds a new empty paragraph below the player. After an insert, the new node is selected. So call `focus('end')` again before the next insert at the end. To insert several nodes at the caret, pass them to one `insertContent` call, as [Image file paste](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/paste-and-import.md#image-file-paste-editorfileupload) shows.
 
-No insert command runs the [scheme gate](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/security.md#write-side-the-scheme-gate), the check that rejects `javascript:`, `data:` and other unsafe URL schemes. Validate host-supplied URLs before you insert them. [Commands](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/api.md#commands) lists all ten.
+`setYoutubeVideo` takes an `https://` URL in one of four forms: `youtu.be/<id>`, `youtube.com/watch?v=<id>`, `youtube.com/embed/<id>` or `youtube.com/shorts/<id>`. Any `*.youtube.com` host works, such as `m.youtube.com`.
+
+No insert command runs the [scheme gate](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/security.md#write-side-the-scheme-gate), the check that rejects `javascript:`, `data:` and other unsafe URL schemes. Validate host-supplied URLs before you insert them. [Commands](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/api.md#commands) lists all ten: one insert command per node, such as `setImage`, plus `updateImageDimensions`.
+
+To start with media in `content`, pass JSON. Each node is `{ type, attrs }`, and `src` is the one attribute you must set:
+
+```ts
+const content = {
+  type: 'doc',
+  content: [
+    { type: 'image', attrs: { src: 'https://docs.plus/demo-assets/sample-photo.jpg' } },
+    { type: 'youtube', attrs: { src: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' } },
+    { type: 'paragraph' }
+  ]
+}
+```
+
+JSON content skips both the provider check and the scheme gate. So validate its URLs too.
+
+HTML content reads a provider player only inside its wrapper, such as `<div data-youtube-video><iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe></div>`. The iframe `src` takes the embed URL, or any form `setYoutubeVideo` takes. The editor drops a bare `<iframe>`, except a Spotify embed. [HTML import](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/paste-and-import.md#html-import) lists the wrapper for every node.
 
 ### Keep media URLs out of a link extension
 

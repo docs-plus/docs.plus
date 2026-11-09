@@ -64,6 +64,9 @@ historical Conventional Commits format. The project adheres to
 - The README and `docs/api.md` Caveats say the kit has no translation option. `docs/migration.md` shows how a custom shell shows its own error words, and why screen readers still hear English.
 - The README peer line now names `^3.32.2`, the range the package publishes.
 - On npm, the docs.plus badge now opens the docs.plus repository. Before, a click opened the badge image.
+- The README says how to install the Tiptap peers and which YouTube URL forms an insert takes. It shows a JSON document with an image and a YouTube node. It warns that an insert in a new editor replaces leading media unless you call `focus('end')` first. The README and `docs/api.md` Caveats add two silent failures: that insert, and an audio or video URL with a query string, which Markdown imports as an image.
+- `docs/paste-and-import.md` and `docs/migration.md` say the old size form needs `width=` before `height=`. They say an `image` token in that form imports as text. `docs/paste-and-import.md` says export escapes the caption for you and turns each line break into one space.
+- `docs/migration.md` quotes the loading text and lists the six `ctx` fields. It says only `image` sets `sourceHost`. `docs/media-toolbar.md` no longer says Markdown drops the caption.
 
 ### Internal
 
