@@ -1,8 +1,8 @@
 // Lists every user-facing changelog entry of a release that the release note does not mention.
 // An entry counts as covered when one of its docs.plus issue numbers or commit hashes is in the
-// note, compared as whole tokens. An entry with no reference counts as covered when its bold lead
-// phrase is in the note, and otherwise prints under "check by hand". Sub-bullets are entries too,
-// so one covered child never hides its siblings. Usage:
+// note, compared as whole tokens. An issue that several entries cite proves only one of them, so
+// such entries print under "shared issue". An entry with no reference counts as covered when its
+// bold lead phrase is in the note, and otherwise prints under "check by hand". Usage:
 //   bun note-coverage.ts <X.Y.Z> [note] [changelog]
 // Defaults: Notes/release-X.Y.Z/RELEASE-NOTES.md and CHANGELOG.md, from the repo root.
 import { readFileSync } from 'node:fs'
@@ -48,8 +48,9 @@ const noteCommits = commitRefs(note)
 // Short and full hashes name one commit, so compare by prefix in both directions.
 const sameCommit = (a: string, b: string): boolean => a.startsWith(b) || b.startsWith(a)
 
-const missing: string[] = []
-const manual: string[] = []
+// Sub-bullets are entries too, so one covered child never hides its siblings.
+type Entry = { section: string; block: string; issues: string[]; commits: string[] }
+const entries: Entry[] = []
 let section = ''
 for (const raw of entry.split(/\n(?=\s*(?:### |- ))/)) {
   const block = raw.trimStart()
@@ -59,24 +60,37 @@ for (const raw of entry.split(/\n(?=\s*(?:### |- ))/)) {
     continue
   }
   if (!block.startsWith('- ') || !USER_FACING.has(section)) continue
+  entries.push({ section, block, issues: [...issueRefs(block)], commits: commitRefs(block) })
+}
+
+const citations = new Map<string, number>()
+for (const { issues } of entries)
+  for (const n of issues) citations.set(n, (citations.get(n) ?? 0) + 1)
+
+const missing: string[] = []
+const shared: string[] = []
+const manual: string[] = []
+for (const { section, block, issues, commits } of entries) {
   const summary = block.slice(2).replace(/\s+/g, ' ').slice(0, 110)
-  const issues = [...issueRefs(block)]
-  const commits = commitRefs(block)
   if (!issues.length && !commits.length) {
     const lead = leadIn(block)
     if (!(lead && noteFlat.includes(lead))) manual.push(`${section}: ${summary}`)
     continue
   }
-  const covered =
-    issues.some((n) => noteIssues.has(n)) ||
-    commits.some((h) => noteCommits.some((c) => sameCommit(h, c)))
-  if (!covered) missing.push(`${section} [${issues.map((n) => `#${n}`).join(' ')}]: ${summary}`)
+  const label = `${section} [${issues.map((n) => `#${n}`).join(' ')}]: ${summary}`
+  const byCommit = commits.some((h) => noteCommits.some((c) => sameCommit(h, c)))
+  const byIssue = issues.filter((n) => noteIssues.has(n))
+  if (byCommit || byIssue.some((n) => citations.get(n) === 1)) continue
+  if (byIssue.length) shared.push(label)
+  else missing.push(label)
 }
 
 console.log(`Not in the note (${missing.length}):`)
 for (const line of missing) console.log(`  - ${line}`)
+console.log(`\nShared issue: the note cites it, but check this entry by hand (${shared.length}):`)
+for (const line of shared) console.log(`  - ${line}`)
 console.log(`\nNo reference, check by hand (${manual.length}):`)
 for (const line of manual) console.log(`  - ${line}`)
 console.log(
-  '\nEach line goes in the note, or stays changelog-only for a reason you can name (internal, CI, admin-only).'
+  '\nFor each line, write "note line N" or a reason it stays changelog-only (internal, CI, admin-only).'
 )

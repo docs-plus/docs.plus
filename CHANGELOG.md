@@ -24,6 +24,10 @@ This file is the product changelog. Every app, package and extension keeps its o
   not mention, as whole issue and commit tokens, and checks each sub-bullet. The 2.3.0 note had
   missed nineteen user-facing changes before this check. The `release-extensions` skill now says to
   re-record a package's demo GIF before a publish, because npm freezes the README.
+- `note-coverage.ts` now lists entries whose issue the note cites but that share it with other
+  entries. One `#242` link had marked eighteen entries as covered, among them the link keys and
+  three privacy fixes. The skill now asks for a written decision per line in
+  `Notes/release-X.Y.Z/COVERAGE.md`, and records the rule that a half mention is a miss.
 
 ## [2.3.0] — 2026-11-09
 
