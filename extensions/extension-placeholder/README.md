@@ -13,7 +13,7 @@
   </picture>
 </p>
 
-Tiptap placeholder extension that shows hint text in the empty textblock at the cursor.
+Tiptap placeholder extension that shows hint text in the empty textblock at the cursor. One hint shows at a time.
 
 A textblock is a node that holds inline text, such as a paragraph or a heading.
 
@@ -21,10 +21,11 @@ A textblock is a node that holds inline text, such as a paragraph or a heading.
 
 ## Why use it
 
-- **Nested hints need no full-document scan.** This package walks up from the cursor. Tiptap's built-in reaches a nested paragraph only with `includeChildren`. That mode scans the whole document at start, then each top-level block a change touches.
-- **Migration starts with one import swap.** Four of the built-in's seven options keep their names and defaults. The callback form also receives `parentName` and `doc`.
-- **Nested blocks work with no extra option.** An empty paragraph inside a list item or blockquote gets the hint. The built-in needs `includeChildren` for that.
-- **Metadata-only transactions skip the rebuild.** An awareness ping in a collaborative editor keeps the previous decoration set. With default options, the built-in re-evaluates the `placeholder` callback on every editor update.
+- **Nested blocks work with no full-document scan.** An empty paragraph inside a list item or blockquote gets the hint with no extra option. The extension walks up from the cursor, so the cost tracks nesting depth, not document length. Tiptap's built-in reaches a nested paragraph only with `includeChildren`. That mode scans the whole document at start, then each top-level block a change touches.
+- **Migration starts with one import swap.** `placeholder`, `emptyNodeClass`, `emptyEditorClass` and `showOnlyWhenEditable` keep the built-in's names and defaults. The callback form also receives `parentName` and `doc`.
+- **Metadata-only transactions skip the rebuild.** A transaction that changes neither the document nor the selection keeps the previous hint. An awareness ping in a collaborative editor is one example. With default options, the built-in re-runs the `placeholder` callback on every editor update.
+
+Keep the built-in when you need a hint in every empty block at once (`showOnlyCurrent: false`). This package shows one hint, at the cursor.
 
 ## Install
 
@@ -34,13 +35,15 @@ npm install @docs.plus/extension-placeholder
 
 Or use `pnpm add @docs.plus/extension-placeholder`, `yarn add @docs.plus/extension-placeholder`, or `bun add @docs.plus/extension-placeholder`.
 
-Requires **`@tiptap/core` ^3.32.2** and **`@tiptap/pm` ^3.32.2** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.32.2** and **`@tiptap/pm` ^3.32.2**. That means Tiptap 3.32.2 or a later 3.x release. An earlier 3.x release does not meet the range.
 
 This package imports no React, Vue, or Next.js code. Use it from a plain page, Vite, React, Vue, Svelte, Next.js, Nuxt, or SvelteKit. Create the editor in the browser.
 
 React Native has no DOM. Load the editor in a web view.
 
 Installs with no runtime dependencies.
+
+Upgrading from `2.2.0` to `2.3.0`? No behavior changed. No option, callback field or class name changed either, so your `Placeholder.configure({ … })` call needs no edit. Only the peer floor moved. The peer floor is the lowest Tiptap version this package accepts. It rose from `^3.31.3` to `^3.32.2`. So move `@tiptap/core` and `@tiptap/pm` to 3.32.2 or later first. Keep your other `@tiptap/*` packages, such as `@tiptap/starter-kit`, on that same version. The release is a minor, not a breaking change. See the [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-placeholder/CHANGELOG.md).
 
 To move from Tiptap's built-in Placeholder, see [Migrating from the built-in Placeholder](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-placeholder/docs/migration.md#migrating-from-the-built-in-placeholder).
 
@@ -83,14 +86,14 @@ The package ships no CSS, so add this rule to your page to render the hint:
 }
 ```
 
-You should see the hint `Write something …` in the empty editor as soon as the page loads. Click in the editor and type a character, and the hint disappears. Press Enter, and the hint moves to the new empty paragraph.
+You should see the hint `Write something …` in the empty editor as soon as the page loads. A new editor puts its cursor in the first paragraph, even before you click, and the hint does not need focus. Click in the editor and type a character, and the hint disappears. Press Enter, and the hint moves to the new empty paragraph.
 
 ## Caveats
 
 - **Nothing renders without CSS.** The package ships no stylesheet, and the extension writes the hint text into a `data-placeholder` attribute. Add the rule in [Quickstart](#quickstart).
 - **Two placeholder extensions collide.** This extension and Tiptap's built-in both register the name `placeholder`. Tiptap logs the warning `[tiptap warn]: Duplicate extension names found: ['placeholder']. This can lead to issues.`, and both plugins decorate the document.
-- **`showOnlyCurrent`, `includeChildren` and `dataAttribute` do not exist.** TypeScript rejects them in a `.configure({ … })` literal. A plain JavaScript host gets no error, and the extension ignores the key. The option map in [Migrating from the built-in Placeholder](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-placeholder/docs/migration.md#migrating-from-the-built-in-placeholder) gives the replacement for each one.
-- **The callback runs only on a document or selection change.** Hint text from outside the document, i18n text for example, does not refresh on its own. Force a rebuild with `editor.view.dispatch(editor.state.tr.setSelection(editor.state.selection))`.
+- **`showOnlyCurrent`, `includeChildren` and `dataAttribute` do not exist.** TypeScript rejects them in a `.configure({ … })` literal. A plain JavaScript host gets no error and no warning, and the extension ignores the key. The option map in [Migrating from the built-in Placeholder](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-placeholder/docs/migration.md#migrating-from-the-built-in-placeholder) gives the replacement for each one.
+- **The callback runs only on a document or selection change.** Hint text from outside the document, i18n text for example, does not refresh on its own. Force a rebuild with `editor.view.dispatch(editor.state.tr.setSelection(editor.state.selection))`. This transaction changes no document content, so it adds no undo step.
 
 The full list, with the reason for each, is in [Caveats](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-placeholder/docs/api.md#caveats).
 
@@ -98,7 +101,7 @@ The full list, with the reason for each, is in [Caveats](https://github.com/docs
 
 ### Set a hint per textblock type
 
-A string sets one hint for every empty textblock. A callback sets the hint per textblock:
+A string gives every textblock the same hint. A callback picks the hint per textblock. Either way, only the empty textblock at the cursor shows it.
 
 ```ts
 Placeholder.configure({
@@ -111,11 +114,13 @@ Placeholder.configure({
 })
 ```
 
-An empty paragraph inside a list item reports `node.type.name === 'paragraph'` and `parentName === 'listItem'`. The callback receives four more fields, listed in [`placeholder`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-placeholder/docs/api.md#placeholder).
+An empty paragraph inside a list item reports `node.type.name === 'paragraph'` and `parentName === 'listItem'`. A top-level paragraph reports `parentName === 'doc'`. For one hint per heading level, read `node.attrs.level`. A callback that returns `''` shows no hint in that textblock.
+
+The callback also receives `pos`, `doc`, `hasAnchor` and `editor`. Each field is described in [`placeholder`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-placeholder/docs/api.md#placeholder).
 
 ### Show the hint only in an empty document
 
-Swap the selector of the Quickstart rule for the selector below:
+While the whole document is empty, the extension adds the class `is-editor-empty` to the textblock that holds the hint. The `emptyEditorClass` option renames it. Swap the selector of the Quickstart rule for the selector below:
 
 ```css
 .ProseMirror .is-editor-empty[data-placeholder]::before {

@@ -17,7 +17,9 @@ The extension reads `showOnlyWhenEditable` at render time. `editor.setEditable()
 
 ### `placeholder`
 
-A string sets one hint for every empty textblock. A callback sets the hint per textblock, and receives one object:
+A string gives every textblock the same hint. A callback picks the hint per textblock, and receives one object. Either way, only the empty textblock at the cursor shows the hint.
+
+The callback object holds these fields:
 
 - `node` — the empty textblock at the cursor.
 - `parentName` — type name of the parent node, for example `doc`, `listItem` or `blockquote`.
@@ -52,13 +54,13 @@ The extension adds at most one `data-placeholder` decoration per state, and it t
 - **Nothing renders without CSS.** The package ships no stylesheet, and the extension writes the hint text into a `data-placeholder` attribute. Add the rule in [Styling](./guide.md#styling).
 - **Two placeholder extensions collide.** This extension and Tiptap's built-in both register the name `placeholder`. Tiptap logs the warning `[tiptap warn]: Duplicate extension names found: ['placeholder']. This can lead to issues.`, and both plugins decorate the document.
 - **A single space counts as content.** The check is `isNodeEmpty(node)` with the default `ignoreWhitespace: false`. A paragraph holding one space, or one hard break, shows no hint.
-- **`showOnlyCurrent`, `includeChildren` and `dataAttribute` do not exist.** TypeScript rejects them in a `.configure({ … })` literal. A plain JavaScript host gets no error, and the extension ignores the key. The option map in [Migrating from the built-in Placeholder](./migration.md#migrating-from-the-built-in-placeholder) gives the replacement for each one.
+- **`showOnlyCurrent`, `includeChildren` and `dataAttribute` do not exist.** TypeScript rejects them in a `.configure({ … })` literal. A plain JavaScript host gets no error and no warning, and the extension ignores the key. The option map in [Migrating from the built-in Placeholder](./migration.md#migrating-from-the-built-in-placeholder) gives the replacement for each one.
 - **`emptyNodeClass` takes a string only.** Tiptap's built-in also takes a callback. Here the extension writes a callback into the `class` attribute as source text. TypeScript rejects it, and a plain JavaScript host gets no error.
 - **An empty hint removes the classes too.** A `placeholder` string or callback that resolves to `''` emits no decoration, so `emptyNodeClass` and `emptyEditorClass` disappear as well. Return a placeholder string of one space to keep the classes without visible text.
 - **A selection at document depth hides the hint.** ⌘A or Ctrl+A produces an `AllSelection` whose anchor sits at that depth. A node selection on a top-level node does the same. The hint returns when the selection moves back into a textblock.
 - **The hint stays after blur.** Nothing in the extension reads `editor.isFocused`, so the decoration survives a blur. Hide it with a CSS rule — see [Styling](./guide.md#styling).
 - **Do not rely on the hint for accessibility.** It is generated content on a `::before` pseudo-element, outside the document. Set `aria-label` or `aria-placeholder` on the editable element yourself.
-- **The callback runs only on a document or selection change.** The extension rebuilds when a transaction changes the document or sets the selection. Hint text from outside the document, i18n text for example, does not refresh on its own. Force a rebuild with `editor.view.dispatch(editor.state.tr.setSelection(editor.state.selection))`. The same rule keeps the hint stable under [Collaborative editing](./guide.md#collaborative-editing).
+- **The callback runs only on a document or selection change.** The extension rebuilds when a transaction changes the document or sets the selection. Hint text from outside the document, i18n text for example, does not refresh on its own. Force a rebuild with `editor.view.dispatch(editor.state.tr.setSelection(editor.state.selection))`. This transaction changes no document content, so it adds no undo step. The same rule keeps the hint stable under [Collaborative editing](./guide.md#collaborative-editing).
 
 ## TypeScript
 
