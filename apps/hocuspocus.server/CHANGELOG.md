@@ -10,6 +10,18 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ## [Unreleased]
 
+### Breaking
+
+- Pull `traefik:v3.6` at 3.6.18 or later before the deploy, or Traefik does not start. See
+  Migration.
+- Set `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`. Without them, the production worker `/health`
+  reports `unhealthy` ([#608](https://github.com/docs-plus/docs.plus/issues/608)).
+- `get_document_member_previews`, `get_document_members` and
+  `admin_get_document_member_counts` take new parameter names
+  ([#574](https://github.com/docs-plus/docs.plus/issues/574)). See Migration item 1.
+- `POST /api/email/send-digest` is removed, so it answers `404`
+  ([#661](https://github.com/docs-plus/docs.plus/issues/661)). See Removed.
+
 ### Migration
 
 Push six Supabase migrations with this deploy, in this order. The full record of each migration
@@ -18,7 +30,7 @@ is in [`packages/supabase/CHANGELOG.md`](../../packages/supabase/CHANGELOG.md).
 1. `20261023120000` drops and re-creates `get_document_member_previews`,
    `get_document_members` and `admin_get_document_member_counts` with new parameter names
    (`p_document_ids`, `p_document_id`) and a `document_id` result column. An old client
-   gets an error until both sides land.
+   gets an error until both sides land ([#574](https://github.com/docs-plus/docs.plus/issues/574)).
 2. `20261024120000` blocks profile, preference and push writes after an account erase
    ([#579](https://github.com/docs-plus/docs.plus/issues/579)).
 3. `20261025120000` drops `get_bookmark_count` and `admin_get_user_notification_subs`
@@ -31,7 +43,8 @@ is in [`packages/supabase/CHANGELOG.md`](../../packages/supabase/CHANGELOG.md).
    ([#647](https://github.com/docs-plus/docs.plus/issues/647)). The server still sends a correct
    link for a row queued before it.
 6. `20261031130000` replaces `compile_digest_emails`, so each digest notification carries its
-   `queue_id`. A message queued before it keeps the shared list until it drains.
+   `queue_id`. A message queued before it keeps the shared list until it drains
+   ([#648](https://github.com/docs-plus/docs.plus/issues/648)).
 
 Run `packages/supabase/scripts/check-grants.sql` once, after all six.
 
@@ -39,31 +52,51 @@ Push `20261103120000` ([#661](https://github.com/docs-plus/docs.plus/issues/661)
 backend is live. It drops `document_slug` from the immediate email payload, which an older server
 still reads.
 
-Do not push `20261026120000` ([#570](https://github.com/docs-plus/docs.plus/issues/570)) with
-this deploy. It closes default privileges in `pgmq` and `storage`. Push it only after the
-production row-5 read on 2026-10-28 and the #553 phase 2 run on or after 2026-11-01. Then run
-`check-grants.sql` again.
+Push `20261026120000` ([#570](https://github.com/docs-plus/docs.plus/issues/570)) with the
+other migrations. It closes default privileges in `pgmq` and `storage`, and existing grants do
+not change. Then run `check-grants.sql` again and expect 0 rows.
+
+The Supabase Auth mail templates moved to `packages/supabase/templates/`. After the frontend
+deploy, paste `magic-link.html` into **Magic Link** and `confirm-signup.html` into **Confirm
+signup**. Paste them after the deploy, not before: the new links need the new frontend.
 
 The bundled `scripts/traefik/traefik.yml` now drops query strings from the access log. That key
 needs Traefik v3.6.18 or later, and older builds refuse it and do not start. Before you deploy
-this commit, run `docker pull traefik:v3.6` on the production host. Check that
-`docker run --rm traefik:v3.6 version` prints 3.6.18 or later. The deploy copies `traefik.yml`
-into the live config folder, so any Traefik restart after it reads the new key. A 3.6.17 or
-older image then does not start.
+this release, run `docker pull traefik:v3.6` on the production host. Check that
+`docker run --rm traefik:v3.6 version` prints 3.6.18 or later. The repository deploy copies
+`traefik.yml` into the live config folder, so any Traefik restart after it reads the new key. A
+3.6.17 or older image then does not start. A self-hosted install copies the file in
+[upgrade item 5](../../docs/self-hosting/install.md#upgrade-to-a-new-release).
 
-Before you deploy this commit, check that `.env.production` holds both `VAPID_PUBLIC_KEY` and
-`VAPID_PRIVATE_KEY`. Without them, the worker healthcheck fails and the deploy rolls back.
+Before you deploy this release, check that `.env.production` holds both `VAPID_PUBLIC_KEY` and
+`VAPID_PRIVATE_KEY`. Without them, the worker healthcheck fails. The repository deploy workflow
+then rolls back. That workflow also stops when `VAPID_PUBLIC_KEY` and
+`NEXT_PUBLIC_VAPID_PUBLIC_KEY` differ ([#609](https://github.com/docs-plus/docs.plus/issues/609)).
+
+This release adds five environment values. All five are optional, and an empty value keeps the
+default. [ENV.md](./ENV.md) gives the full rules.
+
+| Variable                                        | Default                                                  | What it does                                                                                                                              |
+| ----------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| [`APP_HOSTS`](./ENV.md#core-application)        | The `APP_URL` host and its `www.` form                   | The hosts that serve pads. Each entry must be a bare host name, such as `docs.plus`. A scheme, a port or a path stops the server at boot. |
+| [`SOCIAL_CARD_KINDS`](./ENV.md#social-card)     | Empty, so every card kind is off                         | The social card kinds to turn on. Set the same value on `rest-api` and `hocuspocus-worker`. An unknown name stops the server at boot.     |
+| [`LINK_ICON_MAX_BYTES`](./ENV.md#link-metadata) | `32768`                                                  | Byte cap for one favicon. Write a plain byte count.                                                                                       |
+| [`GITHUB_TOKEN`](./ENV.md#link-metadata)        | Unset: 60 GitHub calls an hour per server address        | GitHub repository facts in link previews. Use public-repository read access only, with an expiry of 366 days or less.                     |
+| [`STACKEXCHANGE_KEY`](./ENV.md#link-metadata)   | Unset: 300 Stack Exchange calls a day per server address | Stack Overflow facts in link previews. It is a key, not a secret.                                                                         |
 
 The deploy's `migrate` step applies two Prisma migrations for the social card. `20261101120000`
 adds `DocumentMetadata.cardData`, and `20261101130000` adds `Documents.changeSummary`. Each adds
-one nullable `jsonb` column. After the deploy, run `scripts/backfill-card-data.ts` once: a dry
-run first, then `--apply`. Run it in a one-off container, never in `rest-api` or the worker.
-Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is set.
+one nullable `jsonb` column. Every card kind ships off, so readers see no change until
+`SOCIAL_CARD_KINDS` is set. Before you turn the `document` kind on, run
+`scripts/backfill-card-data.ts` once: a dry run first, then `--apply`. Run it in a one-off
+container, never in `rest-api` or the worker. Without it, a pad that nobody saved since the
+upgrade shows only its title on its card.
 
 ### Added
 
 - DOCX import has a new warning code, `tracked-changes-accepted`. A file with tracked
-  changes imports with every change accepted, and the import says so.
+  changes imports with every change accepted, and the import says so
+  ([#662](https://github.com/docs-plus/docs.plus/issues/662)).
 - `GET /api/metadata/archive?url=` asks the Wayback Machine for the closest copy of a page. It
   answers only `https://web.archive.org/web/` snapshots, never saves a page, and never sends a
   docs.plus pad link. A hit is cached 1 h and no copy 10 min; an archive that does not answer is
@@ -112,10 +145,12 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
   - Every kind draws on one frame: a background with a soft glow and a faded logo, and no
     text under 30 px. A text title steps from 104 to 88 to 72 px, then is cut at a word, with
     "…". The Filter card's title is its chip row.
-  - The template id is now `social-card-3`, so every card URL changed and crawlers fetch the
-    new image.
-  - The Fallback card is now the homepage card, `og-card-1280x640.png?v=8164407d`, at
-    1280 × 640. `og-card-pad-1200x630.png` stays in place for crawler caches.
+  - A Chat link whose `m` is not a message id draws the Chat card, as the hovercard does.
+  - The card template id is `social-card-3`. A change that moves drawn pixels bumps it, so every
+    card URL changes and crawlers fetch the new image.
+  - The Fallback card is the homepage card, `og-card-1280x640.png?v=8164407d`, at 1280 × 640.
+    `og-card-pad-1200x630.png` is served too, for crawlers that cached it from a pre-release
+    deploy.
 - **The worker stores what the card draws.** Each save writes `DocumentMetadata.cardData`: the
   first blocks and the outline. While `SOCIAL_CARD_KINDS` holds `version`, each stored version
   enqueues a job on the new `version-change-summary` queue. That job writes
@@ -150,6 +185,8 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
     from its JobPosting JSON-LD. A GitHub repository shows stars, language and last push, read
     from api.github.com. A Stack Overflow question shows its answer count and whether an answer is
     accepted, read from api.stackexchange.com.
+  - The server reads body JSON-LD only on a job page whose head holds no JobPosting at all. That
+    read stops at 256 KiB or 1 s.
   - The metadata response gains `kind`, `facts` and `fallback`. The change is additive.
     `fallback: true` marks the fallback card, also on a cache hit.
   - A fallback card says why it has no preview, in `miss`: `blocked` (the page answered 4xx),
@@ -190,20 +227,21 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 
 ### Changed
 
+- When several people edit one document on two collaboration replicas, fast typing costs less
+  Redis traffic. On a 5.36 MB edited document, one keystroke cost 281 KB. Now it costs about 70
+  KB at one key per 50 ms, and about 120 KB at one key per 100 ms. A bun patch on
+  `@hocuspocus/extension-redis` 3.4.4 sends the sync request at once, then at most once per
+  250 ms, and once more after the last change. Re-apply or drop the patch on any bump of that
+  package ([#595](https://github.com/docs-plus/docs.plus/issues/595)).
 - **Markdown export writes each media embed as media, not as a link**
   ([#244](https://github.com/docs-plus/docs.plus/issues/244)). `exportMarkdown` keeps the eight
   embeds, and the hypermultimedia kit writes each one as `![youtube](src "caption"){width=800}`.
   The caption and the layout ride along. DOCX and ODT still write a link to the source. Import
   reads the new form back. The image builds the kit from workspace source, so ship back and front
   in one `(build): back front` deploy.
-- **`APP_HOSTS` must hold bare host names.** An entry with a scheme, a port or a path, such as
-  `https://docs.plus` or `docs.plus:443`, now stops the server at boot. Before, such an entry
-  never matched a pad URL, so a Private pad's cached link card lived out its 24 h TTL with no
-  warning. Check the value before you deploy.
-- The JSON-LD tail of a job page is read only when the head holds no JobPosting at all. A head
-  posting with no usable facts no longer costs up to 1 s on the tail.
 - **Every pad link the server sends goes through `src/lib/padLink.ts`, over the shared
-  package `@docs.plus/pad-url`.** Push, email, digest, the content-change notice, the
+  package `@docs.plus/pad-url`
+  ([#648](https://github.com/docs-plus/docs.plus/issues/648)).** Push, email, digest, the content-change notice, the
   new-document mail and MCP use it. MCP `create_document` renames reserved slugs through the
   package's list, the same list the webapp uses.
 - **The html stage parses page heads with our own scraper, not metascraper
@@ -214,7 +252,8 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
   was lost. It also reads `name="og:*"` tags and meta names in any case, which metascraper missed.
   MDN, go.dev and Dropbox now get a picture, and 163.com and Ryanair a description. It keeps the page's own quote marks, and it no longer reads author or date from body
   text such as bylines. `src/modules/link-metadata/BENCHMARK.md` holds the numbers and the method.
-  Card fields come from the head only, and the read stops at the head end. A job page also
+  Card fields come from the head only, and the read stops at the first `</head` or `<body`. A
+  page that leaves out `</head>` therefore sends no body tags to the scraper. A job page also
   reads body JSON-LD, for its facts only. A page whose only title is a body `h1` now gets the fallback card.
 - **Link-metadata fetches name docs.plus and read less
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).**
@@ -234,28 +273,18 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
   ([#599](https://github.com/docs-plus/docs.plus/issues/599)).** A reconnect burst no longer
   calls Supabase Auth once per connection.
 
-### Removed
-
-- `templates/`, the three Supabase Auth mail templates. They moved to
-  `packages/supabase/templates/`, because the Supabase CLI accepts no template path outside
-  `packages/`. See the [supabase changelog](../../packages/supabase/CHANGELOG.md).
-- `metascraper`, its nine plugins, `@metascraper/helpers` and the root `overrides` pin ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
-  Their `jsdom`, `re2`, `chrono-node` and `mime@4` copies leave the server tree with them. The
-  pin existed because those helpers crashed REST at boot on Bun. `entities` 7.0.1 now decodes
-  HTML.
-- `POST /api/email/send-digest` ([#661](https://github.com/docs-plus/docs.plus/issues/661)). It
-  was a service-role route, and nothing called it. Digests send only through the pgmq queue.
-  `DigestDocument.workspace_id` is now required.
-
 ### Fixed
 
-- **A link card's page head now ends at the first `<body` as well as at `</head`.** A page that
-  left out `</head>` sent its body, up to 1 MiB, to the head scraper, and body tags could fill
-  card fields.
 - A GitHub link to a reserved path, such as `/orgs/x` or `/topics/x`, no longer spends a call
   from the anonymous 60-an-hour budget on a 404.
-- A social card link whose `m` is not a message id now draws the Chat card, as the hovercard
-  does. Before, it fell back to the Document card.
+- **One socket close counts once
+  ([#601](https://github.com/docs-plus/docs.plus/issues/601)).** Hocuspocus 3.4.4 runs
+  `onDisconnect` twice for one close. The first run now takes the connection's marker, so Last
+  left and the view duration are written once for each close.
+- **A new picture `keyId` is not a content change
+  ([#474](https://github.com/docs-plus/docs.plus/issues/474)).** A Settings replace writes a new
+  `keyId` on every picture. Before, the versions diff, the changes route and the digest read such a
+  section as removed plus added. Now they ignore `keyId`, as they already ignored `toc-id`.
 - A content write (`PATCH /content`, create with content, MCP) now gives a new id to a heading
   whose `toc-id` equals the pad's `documentId`. That id belongs to the pad-wide chat room.
 - The admin MCP Usage page no longer fails with a 500 when no OAuth app is registered. With no clients,
@@ -265,11 +294,13 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
   ([#647](https://github.com/docs-plus/docs.plus/issues/647)).** Before, it linked
   `${appUrl}?chatroom=…`, which opens Home. The link is now `/<pad>?chatroom=…&msg_id=…`, with
   the pad slug read by document id when the mail is sent.
-- **A digest never links a junk draft pad, and leaves out a pad its reader cannot open.** Digest
+- **A digest never links a junk draft pad, and leaves out a pad its reader cannot open
+  ([#648](https://github.com/docs-plus/docs.plus/issues/648)).** Digest
   links came from `workspaces.slug`, which holds `lower(documentId)` for documents made after
   2026-08-09, so a link could mint a new empty pad. A trashed pad, a Private pad of someone else,
   or a pad with no metadata row now drops out of the mail, and a failed metadata read defers it.
-- **A digest row reads the status of its own mail.** Each mail settles only its own queue rows. A
+- **A digest row reads the status of its own mail
+  ([#648](https://github.com/docs-plus/docs.plus/issues/648)).** Each mail settles only its own queue rows. A
   left-out document's rows read `skipped`, not `sent`, and a dead-lettered mail reads `failed`
   even when another mail in the same digest was delivered. The admin `sent` count drops to match.
   When a digest fails partway, only rows no queued mail carries read `failed`. A digest that
@@ -310,16 +341,16 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
 
 ### Security
 
-- **A table `colspan` is clamped to `MAX_TABLE_SPAN` (64) on every export and on DOCX import.**
-  Before, only ODT export clamped it. One stored huge value could make each later DOCX or
+- **A table `colspan` is clamped to `MAX_TABLE_SPAN` (64) on every export and on DOCX import
+  ([#662](https://github.com/docs-plus/docs.plus/issues/662)).** Before, only ODT export clamped it. One stored huge value could make each later DOCX or
   Markdown export allocate gigabytes and stop the REST process.
-- **The favicon route fetches only a link's registrable domain.** An AI agent can be tricked
-  into writing a link such as `https://<data>.attacker.example` into a pad. Every reader's pad then
-  asked `GET /api/metadata/icon` for that origin, and the server looked up and fetched the full host,
-  so the data reached the attacker with no click. The route now reduces the origin to its registrable
-  domain, by the ICANN suffix list only (`tldts`), before any DNS lookup. An IP origin stays as it is,
-  and a host with no registrable domain is a clean miss. Subdomain sites now show their parent site's
-  icon: `docs.google.com` shows Google's, and `*.github.io` shows GitHub's.
+- **The favicon route fetches only a link's registrable domain.** An AI agent can be tricked into
+  writing a link such as `https://<data>.attacker.example` into a pad. Every reader's pad then
+  asks `GET /api/metadata/icon` for that origin. The route reduces the origin to its registrable
+  domain, by the ICANN suffix list only (`tldts`), before any DNS lookup. So the full host is never
+  looked up or fetched, and the data in it never reaches the attacker. An IP origin stays as it
+  is, and a host with no registrable domain is a clean miss. Subdomain sites show their parent
+  site's icon: `docs.google.com` shows Google's, and `*.github.io` shows GitHub's.
 - **Link card text carries no control or bidi characters.** `capCard` cleans every text field:
   the title, the description, fact text, names, image alt and the oEmbed provider. It turns each
   whitespace run into one space. Then it drops the C0, DEL and C1 controls and the bidi controls
@@ -335,6 +366,9 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
   moved to `meta:v4`, so link cards are fetched again once after the deploy.
   - New setting `APP_HOSTS`: the hosts that serve pads. Empty means the `APP_URL` host and its
     `www.` form. Production sets `docs.plus,new.docs.plus,www.new.docs.plus`.
+  - Each `APP_HOSTS` entry must be a bare host name. An entry with a scheme, a port or a path,
+    such as `https://docs.plus` or `docs.plus:443`, stops the server at boot. Such an entry
+    could never match a pad URL, so that pad's cached cards would stay for their full 24 h.
 - **One WebSocket message is capped at 16 MiB again ([#651](https://github.com/docs-plus/docs.plus/issues/651)).**
   Bun 1.4.4 obeys the `ws` `maxPayload` option, and its default is 100 MiB. Bun 1.4.3 and
   older refused anything over 16 MiB on their own. The collaboration server now passes
@@ -342,8 +376,8 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
   logs its cap and its Bun version at start. CI now runs Bun 1.4.4, the version production
   ships ([#650](https://github.com/docs-plus/docs.plus/issues/650)).
 - **A crafted page can no longer block the REST server ([#242](https://github.com/docs-plus/docs.plus/issues/242)).** metascraper took 28 s
-  on one crafted 262 KB page. On all 28 crafted inputs up to 1 MiB,
-  the new scraper's worst case was 46 to 53 ms across five runs on the same laptop.
+  on one crafted 262 KB page. On 2026-11-06, the new scraper's slowest crafted input at 1 MiB
+  took 29.0 to 33.3 ms across five runs, on the same laptop with Bun 1.4.4.
 - **Link-metadata values and logs are bounded
   ([#242](https://github.com/docs-plus/docs.plus/issues/242)).**
   - Every stored and returned string has a cap. Title, description and image alt keep 300
@@ -369,9 +403,26 @@ Every card kind ships off, so readers see no change until `SOCIAL_CARD_KINDS` is
   reason `rate-limited`, the same reply as the count cap. The budget is provisional, and
   [#602](https://github.com/docs-plus/docs.plus/issues/602) may change it.
 
+### Removed
+
+- `templates/`, the three Supabase Auth mail templates. They moved to
+  `packages/supabase/templates/`, because the Supabase CLI accepts no template path outside
+  `packages/`. See the [supabase changelog](../../packages/supabase/CHANGELOG.md).
+- `metascraper`, its nine plugins, `@metascraper/helpers` and the root `overrides` pin ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
+  Their `jsdom`, `re2`, `chrono-node` and `mime@4` copies leave the server tree with them. The
+  pin existed because those helpers crashed REST at boot on Bun. `entities` 7.0.1 now decodes
+  HTML.
+- `POST /api/email/send-digest` ([#661](https://github.com/docs-plus/docs.plus/issues/661)). It
+  was a service-role route, and nothing called it. Digests send only through the pgmq queue.
+  `DigestDocument.workspace_id` is now required.
+
 ### Internal
 
-- `@sentry/bun` is `11.9.0`. The init uses the same `dataCollection` baseline as the webapp.
+- A save no longer rewrites an unchanged grid preview, and the version insert returns only the
+  version number ([#598](https://github.com/docs-plus/docs.plus/issues/598)). Before, each save
+  rewrote the `DocumentMetadata` row and sent the whole snapshot back inside the row lock.
+
+- `@sentry/bun` is `11.10.0`. The init uses the same `dataCollection` baseline as the webapp.
 - Prisma is `7.10.1` ([#198](https://github.com/docs-plus/docs.plus/issues/198)). `prisma.config.ts` holds the schema path and the database URL. The client generates into `src/generated/prisma`, which is gitignored.
 - The root overrides pin `prosemirror-model` `1.25.12`, `prosemirror-transform` `1.12.2`, and `prosemirror-view` `1.42.6`.
 - `prosemirror-changeset` stays `2.4.1`. `@tiptap/pm` 3.32.2 asks for `^2.4.4`. Later versions halve `MAX_DIFF_SIZE`.

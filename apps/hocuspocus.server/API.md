@@ -41,7 +41,7 @@ Three schemes apply, by route group:
 | Supabase user JWT + `admin_users` row | `/api/admin/*`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `Authorization: Bearer <jwt>`                                             |
 | Supabase OAuth token with `client_id` | `/api/mcp` — see [MCP connector](#mcp-connector); admin routes refuse these tokens                                                                                                                                                                                                                                                                                                                                                                                                                                               | `Authorization: Bearer <jwt>`                                             |
 
-> **`GET /api/documents/:slug` auth (shipped — owner-scoped private):** `optionalUser` attaches the caller. Public docs return full metadata to anyone; private docs are **owner-only** — anonymous or ownerless-private → `403 { access: 'sign-in-required' }`, signed-in non-owner → `403 { access: 'denied' }`. See the slug access matrix below.
+> **`GET /api/documents/:slug` auth (shipped — owner-scoped private):** `optionalPadReader` attaches the caller. Public docs return full metadata to anyone; private docs are **owner-only** — anonymous or ownerless-private → `403 { access: 'sign-in-required' }`, signed-in non-owner → `403 { access: 'denied' }`. See the slug access matrix below.
 
 Service-role checks use a constant-time compare (`verifyServiceRole` in `src/lib/auth.ts`). When `SUPABASE_SERVICE_ROLE_KEY` is unset they fail closed in **every** environment, non-production included. Admin routes verify the JWT with Supabase, then require a matching row in `admin_users` (`src/api/middleware/adminAuth.ts`); failures return `401` (no/invalid token) or `403` (not an admin).
 
@@ -175,7 +175,7 @@ Fetch one document by slug. When no row matches, returns a synthesized draft (`c
 | `userId` | string (query) | Optional; accepted for access context   |
 | `card`   | string (query) | `1` asks for the social card; see below |
 
-**Auth (shipped — owner-scoped private):** `optionalUser` attaches the caller (owner identity is `token.sub`, never the `userId` query param), and the controller applies:
+**Auth (shipped — owner-scoped private):** `optionalPadReader` attaches the caller (owner identity is `token.sub`, never the `userId` query param), and the controller applies:
 
 | Document                 | Viewer                                | Result                                                                       |
 | ------------------------ | ------------------------------------- | ---------------------------------------------------------------------------- |
@@ -189,7 +189,9 @@ Fetch one document by slug. When no row matches, returns a synthesized draft (`c
 
 The `403` body is `{ success: false, error: { code: 'FORBIDDEN', message }, access }`; the top-level `access` hint drives the webapp private gate's CTA. Draft slugs (no DB row) are unchanged — synthesized draft, never treated as private.
 
-**Social card.** Next sends `card=1` on a full page load, never on a client-side `x-nextjs-data` read. With `card=1`, and when a kind in `SOCIAL_CARD_KINDS` can draw the pad, the reply carries `card: { query, title, alt, path }`. The page head points `og:image` at [`card.png`](#get-apidocumentsdocumentidcardpng) with `query`. The pad link's own sub-ids (`id`, `chatroom` as `c`, `msg_id` as `m`, filter terms as `t`, `mode`, `version`) pass through the same way. Without `card=1`, the reply has no `card` field and the server makes no card read. The stored card data never leaves REST.
+**Deadlines ([#596](https://github.com/docs-plus/docs.plus/issues/596)).** `optionalPadReader` is `optionalUser` with a 2 s deadline on the Supabase Auth read of a `GET`. A `HEAD` keeps the shared bound. A late Auth read counts as unreachable, so a Private pad answers the `503` row above. The owner-profile read has its own 2 s deadline. A late one returns the pad with a `null` owner profile.
+
+**Social card.** Next sends `card=1` on a full page load, never on a client-side `x-nextjs-data` read. With `card=1`, and when a kind in `SOCIAL_CARD_KINDS` can draw the pad, the reply carries `card: { query, title, description, alt, path }`. `title` is the `og:title`, and `description` is the `og:description` sentence. Either is `null` when the page keeps its own value. The page head points `og:image` at [`card.png`](#get-apidocumentsdocumentidcardpng) with `query`. The pad link's own sub-ids (`id`, `chatroom` as `c`, `msg_id` as `m`, filter terms as `t`, `mode`, `version`) pass through the same way. Without `card=1`, the reply has no `card` field and the server makes no card read. The stored card data never leaves REST.
 
 ### GET /api/documents/:docName/hovercard
 
@@ -1416,6 +1418,8 @@ Two audit routes are easy to misread. `/audit/media-storage` and `/audit/media-s
 | GET    | `/documents/stale`             | List stale documents |
 | POST   | `/documents/stale/bulk-delete` | Bulk delete stale    |
 
+All three answer `500` when the view-stats read fails or Supabase is not set. The bulk delete then purges nothing ([#578](https://github.com/docs-plus/docs.plus/issues/578)).
+
 **Notification audit**
 
 | Method | Path                                        | Purpose                        |
@@ -1528,6 +1532,8 @@ const provider = new HocuspocusProvider({
 The document `name` is the room id (Prisma `documentId`); the server never trusts a client-supplied id in the token for authorization. A room name outside `[A-Za-z0-9_-]`, 1 to 100 characters, is refused ([#426](https://github.com/docs-plus/docs.plus/issues/426)).
 
 A signed-in socket closes with code `4408` at its access token's `exp`. A client should reconnect with a fresh token, and the server then checks the identity again. The webapp provider does this. In production, a token already past `exp` is refused like an invalid one. Elsewhere, it falls back to anonymous ([#430](https://github.com/docs-plus/docs.plus/issues/430)).
+
+One inbound message may be at most 16 MiB. A larger message closes the socket with code `1009` ([#651](https://github.com/docs-plus/docs.plus/issues/651)).
 
 ### Private documents
 
