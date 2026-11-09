@@ -356,7 +356,7 @@ A slow page opens the card with grey bars, and the content then replaces them in
 
 The last line of the card holds **Copy link** and **Open in new tab**. When a link's text is its own address, the line also offers **Use page title** — needs a document you can edit. Move off the link and the card, and it closes 300 ms later. Shift, the arrow keys and Copy keep it open. Any other key closes it.
 
-Settings › Appearance › **Show link previews on hover** turns the cards off — needs an account. A touch screen has no hover, so a tap opens the click card instead.
+Settings › Appearance › **Link previews** has three switches: **Show link previews on hover**, **Use page titles for pasted links** and **Use pad titles for pasted pad links** — needs an account. A touch screen has no hover, so a tap opens the click card instead.
 
 ## Out to the web
 
@@ -366,7 +366,7 @@ The card's title is itself a link, so one click on the title goes there — try 
 
 Middle-click a link, or hold ⌘ (Ctrl) and click it, to skip the card and open it in a new tab — try it here. On a document you can edit, a link shows the hand cursor only while you hold ⌘ or Ctrl. On this page, links always show it. Press Enter on a focused link to open its card, even on this page.
 
-With the caret inside a link, ⌘+K (Ctrl+K) opens its card, and Alt+Enter opens the link — needs a document you can edit.
+With the caret inside a link, ⌘+K (Ctrl+K) opens its card, and Escape takes you back to the same spot. Alt+Enter opens the link — needs a document you can edit.
 
 A Stack Overflow question shows its answer count. It adds **Accepted answer** when one is accepted: [Why is conditional processing of a sorted array faster than of an unsorted array?](https://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-processing-an-unsorted-array) — try it here. A Wikipedia article shows its opening lines, and its lead picture when it has one: [Collaborative real-time editor](https://en.wikipedia.org/wiki/Collaborative_real-time_editor) — try it here. A job post shows where the job is, how it is worked, and when it was posted.
 
@@ -494,11 +494,11 @@ _Bold, italic, strikethrough, highlight: four marks, four jobs._
 
 Each mark has a toolbar button and a key, from `⌘+B` for bold to `⌘+⇧+H` for highlight — needs a document you can edit. Highlight also survives Markdown, as `==text==`. Clear formatting, or `⌘+\`, takes the marks off and keeps headings and links — needs a document you can edit.
 
-There is a fifth mark, underline, and it is the one to reach for least. On a page full of links, an underlined word claims to be one.
+There is a fifth mark, underline, and it is the one to reach for least. On a page full of links, an underlined word claims to be one. In Markdown it travels as `<u>text</u>`.
 
 ## Code stays code
 
-Inline code sets **a flag, a path, or a value** apart from the prose: `--frozen-lockfile`, `mode=and`, `heading-scale.ts`. Type a backtick pair, or press `Mod-e` — needs a document you can edit.
+Inline code sets **a flag, a path, or a value** apart from the prose: `--frozen-lockfile`, `mode=and`, `heading-scale.ts`. Type a backtick pair, or press `⌘+E` — needs a document you can edit.
 
 For anything longer than a phrase, use a fenced block and name the language. The pad colours **exactly nine**: `html`, `css`, `js`, `ts`, `markdown`, `python`, `yaml`, `json`, and `bash`. Name a block `mermaid` and the pad draws it instead — see [📊 Diagrams](/demo/pele).
 
@@ -848,17 +848,27 @@ Sign-in no longer stops when Chrome wrongly says you are offline — needs an ac
 
 Renaming a link keeps the link. Before, a link whose text was a web address, such as `example.com`, lost its link when you renamed it — needs a document you can edit.
 
+The link form stores the link you meant. It refuses text that is not one link, such as `hello google.com`, drops a trailing comma or period, and keeps the `)` at the end of a Wikipedia link — needs a document you can edit.
+
 A document no longer gets an empty title heading added at its end. A link that comes from a Markdown import or an AI app now opens the link preview, like a link you type.
 
 On a phone, closing a link sheet returns focus to the link, and a screen reader skips the page behind the sheet. On iPhone Safari, the chat icon in the table of contents drawer opens the chat again.
 
-The title row of the table of contents no longer offers "Delete section", which could delete the whole document. A middle-click or a Cmd-click on a row in your Documents list opens it in a new tab — needs an account. Opening a link preview no longer changes the document for the people editing with you.
+The title row of the table of contents no longer offers "Delete section", which could delete the whole document. A middle-click or a ⌘-click (Ctrl-click) on a row in your Documents list opens it in a new tab — needs an account. Opening a link preview no longer changes the document for the people editing with you.
+
+A link preview shows the site's icon again, not a tiny copy of the page's picture. Changing only a link's address no longer undoes a co-editor's change to its text. Typing in a diagram no longer highlights every code block in the document again.
+
+In the table of contents, a section dropped below a folded row lands after that row's whole section. A notification row names the document, an old message link no longer opens the wrong chat, and a heading tapped in the phone drawer stays in the address.
 
 ### Safer links, safer server
 
 A crafted web page can no longer stall our server while the server builds its link preview. Error reports no longer carry the address of a link you preview.
 
 An erased account can no longer write back its profile, its preferences or its devices for push alerts.
+
+Link pictures load through our server too: the page picture in a card, and the Vimeo, SoundCloud, Spotify and Loom thumbnails in chat and Insert media. Card text drops control and bidi characters, so a page title can no longer flip how a card reads.
+
+A chat email or digest leaves out a document its reader cannot open, such as someone else's Private document or one in Trash. The server also caps what one connection or one file can cost: History replies, one collaboration message, and a table's column span.
 
 ### Faster and steadier
 

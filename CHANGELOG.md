@@ -16,6 +16,9 @@ This file is the product changelog. Every app, package and extension keeps its o
   links, phone link sheets, the iPhone chat icon, Google sign-in branding, the title-row Delete,
   Documents list rows that open in a new tab, and a link preview that no longer changes the
   document.
+- The demo now names the Escape key, the three Link previews switches, the link form cleanup,
+  underline in Markdown, five more fixes and four more safety changes. Its keys use ⌘ notation
+  throughout.
 
 ### Internal
 
