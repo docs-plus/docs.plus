@@ -152,7 +152,7 @@ The built-in view uses no live region. Error text goes in through `textContent` 
 
 ## Syntax highlighting
 
-`@tiptap/extension-code-block-lowlight` has no node view of its own. So diagrams draw, and you write no node view code. The order of `CodeBlockLowlight` and `Mermaid` in the list does not matter. Install it and `lowlight` yourself. Turn off StarterKit's code block, because both define `codeBlock`. Then register a `mermaid` language that matches nothing. Otherwise `highlightAuto` guesses the language on every diagram change.
+`@tiptap/extension-code-block-lowlight` has no node view of its own. So diagrams draw, and you write no node view code. The order of `CodeBlockLowlight` and `Mermaid` in the list does not matter. Install them yourself with `npm install @tiptap/extension-code-block-lowlight@^3.32.2 lowlight@^3 highlight.js@^11`. `createLowlight` and `common` exist only in lowlight 3. Turn off StarterKit's code block, because both define `codeBlock`. Then register a `mermaid` language that matches nothing. Otherwise `highlightAuto` guesses the language on every diagram change.
 
 ```ts
 import { Editor } from '@tiptap/core'
@@ -160,6 +160,7 @@ import StarterKit from '@tiptap/starter-kit'
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
 import { common, createLowlight } from 'lowlight'
 import { Mermaid } from '@docs.plus/extension-mermaid'
+import '@docs.plus/extension-mermaid/styles.css'
 
 const lowlight = createLowlight(common)
 lowlight.register('mermaid', () => ({ name: 'Mermaid', contains: [] }))
@@ -175,12 +176,44 @@ const editor = new Editor({
 
 The empty language gives the diagram source no colours. If you extend `CodeBlockLowlight` with your own `addNodeView`, read [Keep your own code block view](#keep-your-own-code-block-view).
 
-The lowlight plugin also highlights every code block again whenever the caret is in any code block, diagrams included. So in a document with many code blocks, each keystroke in a diagram redoes that work. A host can copy the plugin and skip `mermaid` blocks. docs.plus does that in [`code-block-lowlight.ts`](https://github.com/docs-plus/docs.plus/blob/main/apps/webapp/src/components/TipTap/extensions/code-block-lowlight.ts). The one changed rule:
+The lowlight plugin also highlights every code block again whenever the caret is in any code block, diagrams included. So in a document with many code blocks, each keystroke in a diagram redoes that work. A host can copy the plugin and skip `mermaid` blocks. The package does not export the plugin, so copy its source file. It is [`lowlight-plugin.ts`](https://github.com/ueberdosis/tiptap/blob/main/packages/extension-code-block-lowlight/src/lowlight-plugin.ts) in the Tiptap repository. Copy the file from the Tiptap version you install. Add this rule to your copy:
 
 ```ts
 const isHighlighted = (name: string) => (node: ProseMirrorNode) =>
   node.type.name === name && node.attrs.language !== 'mermaid'
 ```
+
+Use the rule in four places, where the upstream file tests `node.type.name === name`:
+
+- the `findChildren` walk in `getDecorations`;
+- the `oldNodes` list in `apply`;
+- the `newNodes` list in `apply`;
+- the caret check in `apply`. Replace `[oldNodeName, newNodeName].includes(name)` with `isHighlighted(name)(oldState.selection.$head.parent) || isHighlighted(name)(newState.selection.$head.parent)`.
+
+Skip the caret check, and typing in a diagram still highlights every block again. With the copy in place, the empty `mermaid` language is no longer needed.
+
+Then swap your copy in for the upstream plugin. Its key starts with `lowlight$`. `LowlightPlugin` is your copy, and it takes one object, as upstream does.
+
+```ts
+export const CodeBlock = CodeBlockLowlight.extend({
+  addProseMirrorPlugins() {
+    // ProseMirror keeps a plugin's key string on `plugin.key`, but its type hides the field.
+    const base = (this.parent?.() ?? []).filter(
+      (plugin) => !(plugin as unknown as { key: string }).key.startsWith('lowlight$')
+    )
+    return [
+      ...base,
+      LowlightPlugin({
+        name: this.name,
+        lowlight: this.options.lowlight,
+        defaultLanguage: this.options.defaultLanguage
+      })
+    ]
+  }
+})
+```
+
+Use `CodeBlock` in place of `CodeBlockLowlight` in the extensions list. Compare your copy with the upstream file when you update Tiptap.
 
 ## Keep your own code block view
 
@@ -216,9 +249,34 @@ export const CodeBlock = CodeBlockLowlight.extend({
 - Keep `Mermaid` in the same editor. `mermaidNodeView` throws without it.
 - Your view must rebuild when a block's language changes to or from `mermaid`, as the `update` above does. Otherwise the block keeps the wrong view.
 - A diagram block shows this extension's head, not your view. So a language picker in your view does not appear on diagram blocks.
-- A plugin view is a `nodeViews.codeBlock` prop on a ProseMirror plugin. Among plugin views, the first one wins. A higher extension `priority` comes first. At equal priority, the extension listed last in `extensions` comes first. `Mermaid` has the default priority, 100.
+- A plugin view is a `nodeViews.codeBlock` prop on a ProseMirror plugin. Among plugin views, the first one wins. A higher extension `priority` comes first. At equal priority, the extension listed last in `extensions` comes first. `Mermaid` has the default priority, 100. So with `extensions: [Mermaid, Other]` at equal priority, `Other` comes first. With `[Other, Mermaid]`, `Mermaid` comes first and hands the other blocks on.
 - A plugin view that comes after this extension receives every block that is not `mermaid`. The same `update` rule applies to it.
 - A plugin view that comes before this extension takes `mermaid` blocks too. No diagram draws, unless that view calls `mermaidNodeView`. In development, this case also shows the warning below.
+
+### Use it in a plugin view
+
+`mermaidNodeView` returns a Tiptap node view renderer. It takes one props object, as `addNodeView` passes. A ProseMirror plugin `nodeViews.codeBlock` prop passes positional arguments instead. So wrap the call there. In a Tiptap extension, the editor is `this.editor` inside `addProseMirrorPlugins`:
+
+```ts
+import { Extension } from '@tiptap/core'
+import type { NodeViewRendererProps } from '@tiptap/core'
+import { Plugin } from '@tiptap/pm/state'
+import type { NodeViewConstructor } from '@tiptap/pm/view'
+import { mermaidNodeView } from '@docs.plus/extension-mermaid'
+
+export const MyCodeBlockView = Extension.create({
+  name: 'myCodeBlockView',
+  addProseMirrorPlugins() {
+    const mermaid = mermaidNodeView(this.editor)
+    const codeBlock: NodeViewConstructor = (node, view, getPos) =>
+      // yourView is your own NodeViewConstructor.
+      mermaid({ node, view, getPos } as NodeViewRendererProps) ?? yourView(node, view, getPos)
+    return [new Plugin({ props: { nodeViews: { codeBlock } } })]
+  }
+})
+```
+
+The renderer reads only `node` and `getPos` from the props, so the cast is safe today. It returns a ProseMirror `NodeView` for a `mermaid` block and `null` for any other block.
 
 ### The development warning
 
@@ -231,4 +289,4 @@ When another node view owns `codeBlock`, the console shows this warning. That vi
 - It fires at most once per editor. A second editor on the same page can warn again. The check runs when the editor view is built and on each view update.
 - It never fires once your view calls `mermaidNodeView`.
 - It fires only when a global `process` exists and `process.env.NODE_ENV` is not `production`. This is the same check as Tiptap's own development warnings.
-- Without a global `process`, the check stays off. Diagrams draw or fail the same way. Many bundlers replace `process.env.NODE_ENV` but do not define `process` in the browser. Vite is one. There the warning never shows, so check the rules above by hand.
+- Without a global `process`, the check stays off. The check changes only whether the warning shows, never which view draws. Many bundlers replace `process.env.NODE_ENV` but do not define `process` in the browser. Vite is one. There the warning never shows, and no option turns it on. To check by hand, load a `mermaid` block. If no `.mermaid-diagram` element appears, another view owns `codeBlock`.

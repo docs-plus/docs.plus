@@ -30,7 +30,7 @@ Mermaid.configure({
 })
 ```
 
-A missing `limits` field keeps its default. Each diagram block is checked on its own. `characters` is the length of the whole source string, spaces, comments and `accTitle` lines included. `edges` counts arrows in flowchart and agentflow only. Agentflow is a Pele diagram type. Other diagram types have no edge count.
+A missing `limits` field keeps its default. Each diagram block is checked on its own. `characters` is the source's JavaScript `length`, spaces, comments and `accTitle` lines included. A source of exactly the limit draws. Most emoji count 2, a flag counts 4, and a family emoji counts 11. `edges` counts each link Pele draws, so a chain `A --> B --> C` is 2. `A --> B & C` is 2, and `A & B --> C & D` is 4. `<-->`, `-.->`, `==>`, `---` and `~~~` count 1 each. It counts in flowchart and agentflow only. Agentflow is a Pele diagram type. Other diagram types have no edge count. A limit has no `false` setting. `Infinity` lifts it, and `0` blocks every diagram. Pele's own fixed caps still apply. On a `limit` error, a block that drew before keeps its last good diagram, dimmed by `styles.css`.
 
 ## Commands
 
@@ -161,20 +161,20 @@ import type {
 
 `Mermaid` and `mermaidNodeView` are named exports. There is no default export. The `Commands` augmentation adds `insertMermaid` to `editor.commands`. No Pele type appears in the public types, so a Pele release cannot break your build.
 
-`mermaidNodeView(editor)` returns a renderer for your own `codeBlock` `addNodeView`. It draws `mermaid` blocks and returns `null` for every other block. See [Keep your own code block view](./guide.md#keep-your-own-code-block-view).
+`mermaidNodeView(editor)` returns a renderer for your own `codeBlock` `addNodeView`. It draws `mermaid` blocks and returns `null` for every other block. See [Keep your own code block view](./guide.md#keep-your-own-code-block-view). For a raw ProseMirror plugin view, see [Use it in a plugin view](./guide.md#use-it-in-a-plugin-view).
 
 `MermaidFold.initial` is read once, when the block's node view is built. A later change of `editor.isEditable` does not refold the block. One exception: when the app passes `editorProps.nodeViews`, `setEditable` and `setOptions` rebuild the blocks, so the start state is read again.
 
 ## Caveats
 
-- **Only the exact language `mermaid` draws.** A fence tagged `Mermaid` with a capital M stays plain code. Markdown keeps all the text after the backticks as the language, so ` ```mermaid title ` stays plain code. In HTML, that text becomes two classes, and the parser reads only `language-mermaid`. So the same block becomes a diagram after an HTML round trip.
+- **Only the exact language `mermaid` draws.** A fence tagged `Mermaid` with a capital M stays plain code. Markdown keeps all the text after the backticks as the language, so ` ```mermaid title ` stays plain code. In HTML, that text becomes two classes, and the parser reads only `language-mermaid`. So the same block becomes a diagram after an HTML round trip. This follows from how the two parsers read the language, not from this package. Tag the fence `mermaid` alone.
 - **The editor needs a `codeBlock` node.** Without one, nothing draws and `insertMermaid` returns false.
-- **A host `addNodeView` on `codeBlock` wins.** It replaces the diagram view, for example `CodeBlockLowlight.extend({ addNodeView })`. Call [`mermaidNodeView`](./guide.md#keep-your-own-code-block-view) in that view to keep diagrams. In development, the console warns once per editor: `[extension-mermaid] Another node view owns codeBlock…`. The check reads `process.env.NODE_ENV`, so without a global `process` it stays off. Diagrams still draw or fail the same way. A hidden diagram never changes the saved document.
-- **Among plugin views on `codeBlock`, the first one wins.** A higher extension `priority` comes first. At equal priority, the extension listed last comes first. A plugin view is a `nodeViews.codeBlock` prop on a ProseMirror plugin. This view hands every block that is not `mermaid` to the next plugin view. A plugin view that comes before this one takes `mermaid` blocks too, so no diagram draws. In development, the console warns.
+- **A host `addNodeView` on `codeBlock` wins.** It replaces the diagram view, for example `CodeBlockLowlight.extend({ addNodeView })`. Call [`mermaidNodeView`](./guide.md#keep-your-own-code-block-view) in that view to keep diagrams. In development, the console warns once per editor: `[extension-mermaid] Another node view owns codeBlock…`. The check reads `process.env.NODE_ENV`, so without a global `process` it stays off. The check changes only whether the warning shows. It never changes which view draws. A hidden diagram never changes the saved document.
+- **Among plugin views on `codeBlock`, the first one wins.** A higher extension `priority` comes first. At equal priority, the extension listed last comes first. So `extensions: [Mermaid, Other]` lets `Other` take every block, and no diagram draws. A plugin view is a `nodeViews.codeBlock` prop on a ProseMirror plugin. This view hands every block that is not `mermaid` to the next plugin view. A plugin view that comes before this one takes `mermaid` blocks too, so no diagram draws. In development, the console shows the same warning. To fix it, list `Mermaid` after the other extension, or give `Mermaid` a higher `priority`. Or call `mermaidNodeView` in that plugin view through a wrapper, as [Use it in a plugin view](./guide.md#use-it-in-a-plugin-view) shows.
 - **The head row cannot be replaced.** `view` replaces only the preview, which sits below the source. The head's text and labels are English. To remove the head, set all three of `fold: false`, `helpLink: false` and `copy: false`.
 - **Without `styles.css`, the fold control, the head and the actions render unstyled, and Pele's own error box shows.** Add the stylesheet. Or set `fold: false`, `helpLink: false` and `copy: false`, and copy the three rules from [Without `styles.css`](./guide.md#without-stylescss).
 - **The default colours need `color-scheme`.** They use `light-dark()`. Set `color-scheme: light dark` on your page, or the light colours always show.
-- **Pele has no time limit.** Keep `limits` on. `edges` counts arrows in flowchart and agentflow (a Pele diagram type) only. See [Security](./security.md).
+- **Pele has no time limit.** `limits` is the only cap on its work, so raise it with care. `edges` counts arrows in flowchart and agentflow (a Pele diagram type) only. See [Security](./security.md).
 - **The SVG is not sanitized by default.** Pass `sanitize` when sources come from people you do not trust. See [Sanitizing the SVG](./security.md#sanitizing-the-svg).
 
 More caveats, each with a reason:
