@@ -52,8 +52,31 @@ Never decide these alone. Each one changed the v2.1.0 work.
   - issues closed since the base date: `gh issue list --state closed --search "closed:>=<date>"`, split by the `bug` and `Security` labels;
   - test count from the last green `check:ci` output;
   - Supabase migrations added under `packages/supabase/migrations/`.
+- **Benchmarks.** Every before-and-after number since the base, audited as §Benchmarks says. When a release has one, it goes into the release note, the demo page and the changelog Highlights (maintainer ruling, 2026-11-09).
 - **Changed packages.** Which `package.json` files must move, and which extension `src/` trees changed.
 - **Headline features.** Read the closed issues and the commits. Ask the maintainer which UI items to show; on 2.1.0 the Find bar and the Share card QR code were missed until they sent screenshots.
+
+## Benchmarks
+
+Built on 2.3.0 (2026-11-09), where an audit corrected about 30 claims before they shipped. The ledger and its evidence are in `Notes/local-docs/2026-11-09-v230-team/`.
+
+1. **Collect.** Read every `perf` commit body, the issue comments that hold results, and each module's `BENCHMARK.md`. Put each number in one ledger, `BENCHMARKS.md`, beside the release notes. A row holds the before and after, where it ran (production, laptop, dev build, headless Chrome), n, the source, and a Use: Promote, Note, Internal or No claim.
+2. **Audit.** Two agents check every row against its source, and assume it is wrong until proved. Save what they read in an `evidence/` folder.
+3. **Re-run** what runs locally, one at a time: `apps/hocuspocus.server/scripts/bench-link-extractor.ts`, `redis-sync-probe.ts` and `bench-prisma-bytea.ts`. Record the date, machine, command and raw output. Mark a re-run row 🔁, and say whether one side or both sides ran again.
+4. **Promote.**
+   - The release note gets a "⚡ Faster and steadier" table: Before, Now, Measured on.
+   - The demo page gets a `### Faster and steadier` H3 in the release's What's new entry.
+   - Each changelog gets a Highlights bullet.
+   - Quote only Promote and Note rows.
+5. **Proof-check.** Two agents test every claim in the finished copy against the ledger. Fix every finding before the copy ships.
+
+Rules the 2.3.0 audit found:
+
+- **Keep the condition.** "In a dev build" and "on one laptop" stay in every sentence that quotes such a number.
+- **Compare release to release.** Never quote a "before" that includes a feature that never shipped. On 2.3.0 that turned 330 → 129 ms into 213 → 129 ms.
+- **No production claim without a production before.** A production "after" alone is "its longest frame is …", never "opens faster".
+- **Name the measured thing.** A fill frame is not page open, and a pad that renders is not one that opens.
+- **Counts trace to logs.** Save the test logs, and recount tests, issues and commits at the tag.
 
 ## Artifacts and their rules
 
@@ -83,6 +106,7 @@ Check every page the release makes wrong: `README.md` (extension status), `exten
 - Use the approved warm tone from v2.0.1: one emoji per heading, the symptom before the fix, small tables, and a surprise at the end.
 - **Promote outcomes only.** No known gaps, no refactor talk, no CI talk (maintainer ruling, 2026-10-13).
 - **Include a stats section,** for example "43 days in numbers". Every figure must trace to §Facts to gather.
+- **Include a "⚡ Faster and steadier" section** when the release has benchmarks (§Benchmarks).
 - Put the banner on top as a `<picture>` with a dark `source`, served from `https://docs.plus/demo-assets/`. Create the Release after the deploy, so these URLs work. On 2.1.0 the PNGs rode on Release assets while the deploy ran; that was a stopgap, and it added two download rows the maintainer questioned.
 
 ### 5. Demo page
@@ -90,6 +114,7 @@ Check every page the release makes wrong: `README.md` (extension status), `exten
 - Source: `docs/DEMO.md`, shown at https://docs.plus/demo. It is a read-only document. The owner pastes it through Settings → Markdown replace.
 - First run a feature-truth audit: check every claim on the page against the code, and fix the lines that are now wrong.
 - The page ends with one H1, `# 🆕 What's new`, newest release first. Add the release as `## docs.plus X.Y.Z` right under that H1, with the banner image, the date, and one H3 per headline. End each H3 with a filter link such as `/demo/connected%20app`. Never add a second What's new H1 (maintainer ruling, 2026-10-22).
+- When the release has benchmarks, add a `### Faster and steadier` H3 with the Promote rows, each with its condition (§Benchmarks). Its filter term must appear only in that H3.
 
 ### 6. Banner
 

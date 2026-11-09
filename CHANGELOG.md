@@ -444,6 +444,9 @@ blocks to the next node view ([#627](https://github.com/docs-plus/docs.plus/issu
   AI attribution, such as `Co-authored-by: Cursor`, and "Generated with" banners. A human
   co-author line still passes.
   [CONTRIBUTING.md](CONTRIBUTING.md) lists the rules.
+- The `release-product` skill has a Benchmarks section. Every speed or reliability number is
+  checked against its source and re-run where it runs locally. It then goes into the release
+  note, the demo page and the changelog Highlights with the place it was measured.
 - Each house skill has one copy, in `.agents/skills/<name>/`. `.cursor/skills/<name>` is a
   symlink to it, and `check:agent-docs` fails when it is not. Prettier now checks the house
   skills, which it had skipped.
