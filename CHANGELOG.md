@@ -25,6 +25,9 @@ This file is the product changelog. Every app, package and extension keeps its o
 - Replace with a file now has a cap per person. The document owner may upload a Word file of up to
   40 MB; everyone else keeps 10 MB. Markdown stays at 65,536 characters for everyone, because a
   bench showed larger Markdown blocks the server ([#722](https://github.com/docs-plus/docs.plus/issues/722)).
+- Home and pads load less JavaScript. The social-link icons now ship as the 71 icons they use,
+  not three whole icon packs. In the build's route table, Home's first load drops from 3.82 MB to
+  952 kB, and a pad's from 1.83 MB to 925 kB ([#732](https://github.com/docs-plus/docs.plus/issues/732)).
 
 ### Security
 
