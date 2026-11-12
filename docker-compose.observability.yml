@@ -132,7 +132,7 @@ services:
       loki: { condition: service_started }
     labels:
       - 'traefik.enable=true'
-      # Grafana serves /metrics without auth; nothing outside the stack reads it.
+      # Second layer behind GF_METRICS_ENABLED=false: the edge refuses /metrics even if the flag comes back (#745).
       - 'traefik.http.routers.grafana.rule=Host(`grafana.docs.plus`) && !PathPrefix(`/metrics`)'
       - 'traefik.http.routers.grafana.entrypoints=websecure'
       - 'traefik.http.routers.grafana.tls.certresolver=letsencrypt'
