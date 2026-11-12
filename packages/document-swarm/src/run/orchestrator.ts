@@ -29,7 +29,7 @@ async function pace(page: import('playwright').Page, options: RunOptions): Promi
 }
 
 export async function runSwarm(options: RunOptions): Promise<number> {
-  const hostKind = assertAllowedSwarmHost(options.url, options.users, options.force)
+  assertAllowedSwarmHost(options.url, options.users, options.force)
   const target = await preflightSwarmTarget(options.url)
   const actors = await loadActors(options.actorsFile, options.users)
 
@@ -124,7 +124,7 @@ export async function runSwarm(options: RunOptions): Promise<number> {
       ? 'until-stopped (Ctrl+C)'
       : `${Math.round(options.durationMs / 1000)}s`
   console.log(
-    `Swarm ${options.mode} → "${target.slug}" (${hostKind}) — ${actors.length} actor(s), ` +
+    `Swarm ${options.mode} → "${target.slug}" (local) — ${actors.length} actor(s), ` +
       `contention ${options.contention}${options.shuffle ? ', shuffle' : ''}, ${window}`
   )
 
