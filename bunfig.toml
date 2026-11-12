@@ -11,6 +11,10 @@ exact = false
 # Registry configuration
 registry = "https://registry.npmjs.org"
 
+# A new resolve skips versions younger than this, so a hijacked release can be
+# pulled first. The lockfile is unaffected. Integer seconds: "3d" broke Bun 1.4.1.
+minimumReleaseAge = 259200  # 3 days, in seconds
+
 [install.scopes]
 # Scoped registry configurations can be added here if needed
 # "@myorg" = { url = "https://registry.myorg.com", token = "$MY_TOKEN" }

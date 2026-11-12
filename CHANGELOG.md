@@ -38,6 +38,9 @@ This file is the product changelog. Every app, package and extension keeps its o
   session, the only kind the app uses ([#755](https://github.com/docs-plus/docs.plus/issues/755)).
 - Grafana's internal `/metrics` page is no longer public. Grafana stops making those metrics, and
   the public router refuses any path under `/metrics` ([#745](https://github.com/docs-plus/docs.plus/issues/745)).
+- A new dependency version must be 3 days old before the root `bunfig.toml`, Dependabot or
+  `bun run update` takes it, so a hijacked release can be pulled first. The lockfile is unaffected
+  ([#653](https://github.com/docs-plus/docs.plus/issues/653)).
 
 ### Documentation
 

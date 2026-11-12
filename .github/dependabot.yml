@@ -23,6 +23,10 @@ updates:
     directory: '/'
     schedule:
       interval: 'monthly'
+    # Hold new versions 3 days, the same window as the root bunfig.toml
+    # minimumReleaseAge. Without it, a fresh resolve of a younger target fails.
+    cooldown:
+      default-days: 3
     commit-message:
       prefix: 'chore(deps)'
     open-pull-requests-limit: 5
