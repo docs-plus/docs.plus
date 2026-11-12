@@ -166,10 +166,12 @@ jobs:
           got=0
           for _i in $(seq 1 6); do
             got=$(docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T grafana sh -c 'printf "user = \"admin:%s\"\n" "$GF_SECURITY_ADMIN_PASSWORD" | curl -sfK - http://localhost:3000/api/v1/provisioning/alert-rules' | grep -o '"ruleGroup":"' | wc -l || true)
-            [ "${got}" -eq "${want}" ] && break
+            [ "${got}" -ge "${want}" ] && break
             sleep 5
           done
-          [ "${got}" -eq "${want}" ] || { echo "::error::live Grafana has ${got} of ${want} rules"; exit 1; }
+          # Live Grafana keeps rules that no file names any more: provisioning deletes only through deleteRules.
+          [ "${got}" -ge "${want}" ] || { echo "::error::live Grafana has ${got} of ${want} rules"; exit 1; }
+          [ "${got}" -eq "${want}" ] || echo "::warning::live Grafana has ${got} rules, ${want} in the files. Remove the extra uids with deleteRules or in the UI."
           # Loki and Prometheus may restart in this deploy (#712, #749). Wait up to 60 s for both data sources, then go on.
           for _i in $(seq 1 12); do
             docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T grafana sh -c 'for u in loki prometheus; do printf "user = \"admin:%s\"\n" "$GF_SECURITY_ADMIN_PASSWORD" | curl -sfK - "http://localhost:3000/api/datasources/uid/$u/health" || exit 1; done' >/dev/null 2>&1 && break
