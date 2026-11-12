@@ -69,10 +69,9 @@ This file is the product changelog. Every app, package and extension keeps its o
 - The observability deploy now loads the Grafana alert rules in a throwaway container first, so
   a broken rule file stops the deploy instead of looping Grafana. After the deploy it fails on any
   rule in error health and names each one ([#753](https://github.com/docs-plus/docs.plus/issues/753)).
-- Prometheus now keeps 45 days of metrics, capped at 3 GiB, up from 15 days. Every v2.3.6
-  before-and-after read needs more than 15 days of history ([#749](https://github.com/docs-plus/docs.plus/issues/749)).
-- `apps/hocuspocus.server/scripts/bench-mcp-session.ts` drives the #726 MCP write benchmark through
-  the public `/api/mcp` route on a private scratch pad, then deletes it ([#726](https://github.com/docs-plus/docs.plus/issues/726)).
+- Prometheus now keeps up to 45 days of metrics, up from 15. Its size cap drops from 4 GiB to
+  3 GiB, and Prometheus removes the oldest data first at that cap. The before-and-after reads for
+  the host move need more than 15 days of history ([#749](https://github.com/docs-plus/docs.plus/issues/749)).
 - Alert rules leave out health probes and metric scrapes, which were 92.8 % of REST requests. A
   failing database health check now warns on its own, and MCP latency has its own 5 s rule
   ([#710](https://github.com/docs-plus/docs.plus/issues/710)).
@@ -80,7 +79,8 @@ This file is the product changelog. Every app, package and extension keeps its o
   notes in the agent docs ([#725](https://github.com/docs-plus/docs.plus/issues/725)). It never ran, because no `dev` branch exists, so CI
   time is unchanged.
 - The chatroom and editor browser suites now alert Telegram only when a suite turns red after a
-  green run. In the last 30 runs of each, that is 3 alerts instead of every red push ([#557](https://github.com/docs-plus/docs.plus/issues/557)).
+  green run. Over the last 30 chatroom and 16 editor push runs, that is 3 alerts in all instead of
+  27, one per red run ([#557](https://github.com/docs-plus/docs.plus/issues/557)).
 
 ## [2.3.0] — 2026-11-09
 

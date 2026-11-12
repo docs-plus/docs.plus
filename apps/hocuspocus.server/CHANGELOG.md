@@ -33,6 +33,18 @@ This file is the operator and API changelog. The pad product lives in the [root 
   `scripts/bench-import.ts` holds the adversarial bench
   ([#722](https://github.com/docs-plus/docs.plus/issues/722)).
 
+### Removed
+
+- The `docker/config-templates/env.staging` template is removed, with the stage notes in ENV.md
+  and CLAUDE.md ([#725](https://github.com/docs-plus/docs.plus/issues/725)).
+
+### Internal
+
+- `seedRestAlertSeries` seeds the `GET /health/database` 503 series at 0, so the database-health
+  alert counts the first 503 after a deploy ([#710](https://github.com/docs-plus/docs.plus/issues/710)).
+- `scripts/bench-mcp-session.ts` drives the #726 MCP write benchmark through the public `/api/mcp`
+  route on a private scratch pad, then deletes it ([#726](https://github.com/docs-plus/docs.plus/issues/726)).
+
 ## [2.3.0] — 2026-11-09
 
 ### Highlights

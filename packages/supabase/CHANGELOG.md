@@ -10,6 +10,15 @@ This package is private and ships inside docs.plus, so each heading names the do
 
 ## [Unreleased]
 
+### Security
+
+- `20261112120000` revokes EXECUTE on `get_channel_notif_state`,
+  `get_unread_notifications_paginated` and `get_workspace_notifications` from `public` and `anon`,
+  and grants it to `authenticated`. The migration fails unless anon has lost it and authenticated
+  holds it. `service_role` may lose a grant it held only through PUBLIC (ruling 2026-11-11).
+  `scripts/10-functions.sql` and `scripts/07-1-notification-functions.sql` hold the paired
+  statements ([#755](https://github.com/docs-plus/docs.plus/issues/755)).
+
 ## [2.3.0] — 2026-11-09
 
 ### Breaking

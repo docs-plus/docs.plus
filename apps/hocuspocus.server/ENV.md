@@ -239,7 +239,7 @@ The rules:
 
 Production also needs `EMAIL_UNSUBSCRIBE_SECRET` and `PUBLIC_RESTAPI_URL`. Without the URL, the one-click `List-Unsubscribe` header is dropped. The docs.plus deploy workflows refuse to deploy when any of these four is empty: `EMAIL_PROVIDER`, `EMAIL_FROM`, `EMAIL_UNSUBSCRIBE_SECRET` and `PUBLIC_RESTAPI_URL`.
 
-The host of `PUBLIC_RESTAPI_URL`, or else of `APP_URL`, names the provider idempotency keys. Two deployments therefore never share a key.
+The host of `PUBLIC_RESTAPI_URL`, or else of `APP_URL`, names the provider idempotency keys. Two deployments on different hosts therefore never share a key.
 
 `RESEND_WEBHOOK_SECRET` is optional. It is the `whsec_` signing secret of the Resend webhook endpoint. When it is set and valid, REST mounts `POST /api/email/webhooks/resend`, which records bounces and complaints ([API.md](./API.md#post-apiemailwebhooksresend)). When it is unset, that path answers 404. A value that is not base64, or decodes to under 24 bytes, counts as unset. REST then logs `email webhook secret invalid` at error level. Product mail never waits for this secret, and no deploy check reads it.
 
