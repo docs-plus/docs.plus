@@ -69,6 +69,8 @@ This file is the product changelog. Every app, package and extension keeps its o
   rule in error health and names each one ([#753](https://github.com/docs-plus/docs.plus/issues/753)).
 - Prometheus now keeps 45 days of metrics, capped at 3 GiB, up from 15 days. Every v2.3.6
   before-and-after read needs more than 15 days of history ([#749](https://github.com/docs-plus/docs.plus/issues/749)).
+- `apps/hocuspocus.server/scripts/bench-mcp-session.ts` drives the #726 MCP write benchmark through
+  the public `/api/mcp` route on a private scratch pad, then deletes it ([#726](https://github.com/docs-plus/docs.plus/issues/726)).
 
 ## [2.3.0] — 2026-11-09
 
