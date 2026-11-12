@@ -13,6 +13,7 @@ import type { Subprocess } from 'bun'
 import Redis from 'ioredis'
 import pino from 'pino'
 
+import { buildFixture, mulberry32, paragraph, PARAGRAPH_CHARS, sentence } from './lib/benchFixture'
 import { makeOpenProvider, sleep } from './lib/e2eHarness'
 import {
   spawnWorker,
@@ -52,52 +53,8 @@ const logFile = outPath.replace(/\.json$/, '') + '.log'
 const SLUG_PREFIX = 'bench-content-write-'
 // Production runs BULLMQ_CONCURRENCY = WORKER_DB_POOL_SIZE, default 10 (docker-compose.prod.yml).
 const WORKER_CONCURRENCY = 10
-const PARAGRAPHS_PER_SECTION = 20
-const PARAGRAPH_CHARS = 350
 // A fixed stand-in for the MCP caller, so every write mints a `trigger = 'mcp'` row.
 const ACTOR = { sub: '00000000-0000-4000-8000-000000000726' }
-
-// --- Seeded text, so both sides of a comparison write the same bytes.
-const mulberry32 = (start: number) => {
-  let a = start
-  return () => {
-    a = (a + 0x6d2b79f5) | 0
-    let t = Math.imul(a ^ (a >>> 15), 1 | a)
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
-const WORDS = (
-  'the document section heading change review editor version history people write share ' +
-  'team plan notes meeting project draft update chat reply link table list quote code'
-).split(' ')
-const sentence = (rand: () => number, chars: number) => {
-  let out = ''
-  while (out.length < chars) out += `${WORDS[Math.floor(rand() * WORDS.length)]} `
-  return out.trim()
-}
-const heading = (level: number, text: string) => ({
-  type: 'heading',
-  attrs: { level },
-  content: [{ type: 'text', text }]
-})
-const paragraph = (text: string) => ({ type: 'paragraph', content: [{ type: 'text', text }] })
-
-const buildFixture = (rand: () => number) => {
-  const content: object[] = [heading(1, 'Bench document')]
-  let textBytes = 0
-  let sections = 0
-  while (textBytes < targetBytes) {
-    sections++
-    content.push(heading(2, `Section ${sections}`))
-    for (let p = 0; p < PARAGRAPHS_PER_SECTION; p++) {
-      const text = sentence(rand, PARAGRAPH_CHARS)
-      content.push(paragraph(text))
-      textBytes += text.length
-    }
-  }
-  return { doc: { type: 'doc', content }, sections }
-}
 
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
 const newDocumentId = () => [...randomBytes(19)].map((byte) => BASE62[byte % 62]).join('')
@@ -287,7 +244,7 @@ for (let run = 1; run <= runs; run++) {
   })
 
   // The seed write goes through the same hop, so the stored head is a real snapshot.
-  const fixture = buildFixture(rand)
+  const fixture = buildFixture(rand, targetBytes)
   const fixtureJsonBytes = Buffer.byteLength(JSON.stringify(fixture.doc))
   const seeded = await client.apply({ documentId, mode: 'replace', content: fixture.doc as never })
   if (seeded.status !== 'applied') throw new Error(`seed write failed: ${JSON.stringify(seeded)}`)
@@ -404,7 +361,7 @@ for (let run = 1; run <= runs; run++) {
     run,
     mode,
     fixture: {
-      sections: fixture.sections,
+      sections: fixture.sections.length,
       jsonBytes: fixtureJsonBytes,
       storedBytes,
       version: head?.version,
