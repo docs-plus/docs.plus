@@ -34,6 +34,8 @@ This file is the product changelog. Every app, package and extension keeps its o
 - Every import is now refused when it holds more than 50,000 nodes, nests deeper than 100
   levels, or when its saved state would pass 12 MiB. A larger document could not open in a browser
   ([#722](https://github.com/docs-plus/docs.plus/issues/722)).
+- Three notification lookups no longer answer a signed-out caller. They now need a signed-in
+  session, the only kind the app uses ([#755](https://github.com/docs-plus/docs.plus/issues/755)).
 
 ### Documentation
 

@@ -927,6 +927,12 @@ grant execute on function public.get_channel_members_by_last_read_update(charact
 grant execute on function public.get_unread_notif_count(character varying) to anon, authenticated, service_role;
 grant execute on function public.fetch_mentioned_users(character varying, text) to anon, authenticated, service_role;
 
+-- Signed-in only (#755): close public and anon.
+revoke execute on function public.get_unread_notifications_paginated(character varying, text, integer, integer) from public, anon;
+grant execute on function public.get_unread_notifications_paginated(character varying, text, integer, integer) to authenticated;
+revoke execute on function public.get_channel_notif_state(character varying) from public, anon;
+grant execute on function public.get_channel_notif_state(character varying) to authenticated;
+
 -- ============================================================
 -- v2 chatroom RPCs (paired with migrations 20260513140500..20260513142000).
 -- ============================================================
