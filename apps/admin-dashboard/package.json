@@ -36,7 +36,7 @@
     "eslint": "catalog:",
     "eslint-config-next": "^16.4.4",
     "postcss": "^8.5.32",
-    "sass": "^1.107.1",
+    "sass": "^1.108.1",
     "typescript": "catalog:"
   }
 }
