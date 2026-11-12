@@ -1,5 +1,5 @@
 [run]
-# Puts a node link to bun first on PATH, so the Prisma CLI in the entrypoint runs on Bun.
+# bun run puts a node shim to Bun first on PATH, so the prisma:* scripts run the Prisma CLI on Bun. bunx and the image entrypoint do not read this key.
 bun = true
 
 [test]
