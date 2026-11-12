@@ -62,6 +62,9 @@ This file is the product changelog. Every app, package and extension keeps its o
   entries. One `#242` link had marked eighteen entries as covered, among them the link keys and
   three privacy fixes. The skill now asks for a written decision per line in
   `Notes/release-X.Y.Z/COVERAGE.md`, and records the rule that a half mention is a miss.
+- The observability deploy now loads the Grafana alert rules in a throwaway container first, so
+  a broken rule file stops the deploy instead of looping Grafana. After the deploy it fails on any
+  rule in error health and names each one ([#753](https://github.com/docs-plus/docs.plus/issues/753)).
 
 ## [2.3.0] — 2026-11-09
 

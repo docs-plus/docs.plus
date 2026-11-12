@@ -95,6 +95,40 @@ jobs:
       - name: 🔧 Ensure network
         run: docker network create docsplus-network 2>/dev/null || true
 
+      - name: 🧪 Check Grafana provisioning
+        # A broken rule file makes Grafana exit at start and loop, so load the tree in a
+        # throwaway container first (#753). No network and no alert execution: the
+        # rendered contact points hold the real Telegram token.
+        run: |
+          for f in scripts/observability/grafana/provisioning/dashboards/json/*.json; do
+            # python3, not jq: the runner host has no jq (read 2026-11-12).
+            python3 -m json.tool "$f" >/dev/null || { echo "::error::dashboard JSON does not parse: $f"; exit 1; }
+          done
+          img=$(docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" config --images | grep '^grafana/grafana:')
+          docker rm -fv grafana-provision-check >/dev/null 2>&1 || true
+          # No --rm, so a crashed container keeps its logs until the final rm -fv.
+          docker run -d --name grafana-provision-check --network none -e GF_UNIFIED_ALERTING_EXECUTE_ALERTS=false \
+            -e GF_SECURITY_ADMIN_PASSWORD=provision-check \
+            -v "${PWD}/scripts/observability/grafana/provisioning:/etc/grafana/provisioning:ro" "${img}" >/dev/null
+          ok=0
+          for _i in $(seq 1 24); do
+            if docker exec grafana-provision-check wget -qO- http://localhost:3000/api/health 2>/dev/null | grep -q ok; then ok=1; break; fi
+            sleep 5
+          done
+          want=$(cat scripts/observability/grafana/provisioning/alerting/rules-*.yml | grep -cE '^      - uid:')
+          got=0
+          # Health ok can come before alert provisioning ends, so retry the count.
+          for _i in $(seq 1 6); do
+            got=$(docker exec grafana-provision-check sh -c 'printf "user = \"admin:%s\"\n" "$GF_SECURITY_ADMIN_PASSWORD" | curl -sfK - http://localhost:3000/api/v1/provisioning/alert-rules' | grep -o '"ruleGroup":"' | wc -l || true)
+            [ "${got}" -eq "${want}" ] && break
+            sleep 5
+          done
+          docker logs grafana-provision-check 2>&1 | grep -iE 'provision|invalid' | tail -5 || true
+          docker rm -fv grafana-provision-check >/dev/null 2>&1 || true
+          [ "${ok}" = 1 ] || { echo "::error::Grafana did not start on the new provisioning"; exit 1; }
+          [ "${got}" -eq "${want}" ] || { echo "::error::Grafana loaded ${got} of ${want} rules"; exit 1; }
+          echo "✅ Grafana provisioning loads: got = want = ${want}"
+
       - name: 🚀 Deploy stack
         env:
           ACTION_IN: ${{ inputs.action }}
@@ -121,10 +155,38 @@ jobs:
       - name: 🩺 Verify
         run: |
           docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" ps
-          # Grafana ships wget; a single probe after a short settle is fine.
-          sleep 10
-          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T grafana \
-            wget -qO- http://localhost:3000/api/health | grep -q ok && echo "✅ grafana healthy"
+          # A failed probe inside an && list never exits bash, so each check ends in exit 1 (#753).
+          ok=0
+          for _i in $(seq 1 18); do
+            if docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T grafana wget -qO- http://localhost:3000/api/health 2>/dev/null | grep -q ok; then ok=1; echo "✅ grafana healthy"; break; fi
+            sleep 5
+          done
+          [ "${ok}" = 1 ] || { echo "::error::grafana not healthy after ~90s"; exit 1; }
+          want=$(cat scripts/observability/grafana/provisioning/alerting/rules-*.yml | grep -cE '^      - uid:')
+          got=0
+          for _i in $(seq 1 6); do
+            got=$(docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T grafana sh -c 'printf "user = \"admin:%s\"\n" "$GF_SECURITY_ADMIN_PASSWORD" | curl -sfK - http://localhost:3000/api/v1/provisioning/alert-rules' | grep -o '"ruleGroup":"' | wc -l || true)
+            [ "${got}" -eq "${want}" ] && break
+            sleep 5
+          done
+          [ "${got}" -eq "${want}" ] || { echo "::error::live Grafana has ${got} of ${want} rules"; exit 1; }
+          # Loki and Prometheus may restart in this deploy (#712, #749). Wait up to 60 s for both data sources, then go on.
+          for _i in $(seq 1 12); do
+            docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T grafana sh -c 'for u in loki prometheus; do printf "user = \"admin:%s\"\n" "$GF_SECURITY_ADMIN_PASSWORD" | curl -sfK - "http://localhost:3000/api/datasources/uid/$u/health" || exit 1; done' >/dev/null 2>&1 && break
+            sleep 5
+          done
+          # Two 1-minute evaluations, so a broken expr reaches error health.
+          # A rule that errors because a data source is down fails too (ruling 2026-11-11).
+          sleep 150
+          rules=$(docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T grafana sh -c 'printf "user = \"admin:%s\"\n" "$GF_SECURITY_ADMIN_PASSWORD" | curl -sfK - http://localhost:3000/api/prometheus/grafana/api/v1/rules') || { echo "::error::could not read Grafana rule health"; exit 1; }
+          bad=$(printf '%s' "${rules}" | python3 -c 'import json, sys
+          for g in json.load(sys.stdin)["data"]["groups"]:
+              for r in g["rules"]:
+                  if r.get("health") == "error":
+                      print(r.get("uid") or r.get("name"), r.get("lastError") or "")') || { echo "::error::could not parse Grafana rule health"; exit 1; }
+          errs=$(printf '%s' "${bad}" | grep -c . || true)
+          echo "want=${want} got=${got} error_health=${errs}"
+          [ -z "${bad}" ] || { printf '%s\n' "${bad}" | while read -r line; do echo "::error::rule in error health: ${line}"; done; exit 1; }
           # GlitchTip cold-boots + migrates and ships no wget/curl (only python3) — poll up to ~90s.
           ok=0
           for _i in $(seq 1 18); do
