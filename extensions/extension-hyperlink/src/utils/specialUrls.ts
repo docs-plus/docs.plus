@@ -64,110 +64,78 @@ export type SpecialUrlInfo = {
     | 'other'
 }
 
-const COMMUNICATION_URLS: Record<string, SpecialUrlInfo> = {
-  'mailto:': { type: 'email', title: 'Email', category: 'communication' },
-  'tel:': { type: 'phone', title: 'Phone', category: 'communication' },
-  'telprompt:': { type: 'phone', title: 'Phone', category: 'communication' },
-  'sms:': { type: 'sms', title: 'SMS', category: 'communication' },
-  'facetime:': { type: 'facetime', title: 'FaceTime', category: 'communication' },
-  'facetime-audio:': {
-    type: 'facetime-audio',
-    title: 'FaceTime Audio',
-    category: 'communication'
-  }
-}
+type Row = readonly [string, SpecialUrlType, string, SpecialUrlInfo['category']]
+const toEntries = (rows: readonly Row[]): Array<[string, SpecialUrlInfo]> =>
+  rows.map(([key, type, title, category]) => [key, { type, title, category }])
 
-const SOCIAL_URLS: Record<string, SpecialUrlInfo> = {
-  'whatsapp:': { type: 'whatsapp', title: 'WhatsApp', category: 'social' },
-  'tg:': { type: 'telegram', title: 'Telegram', category: 'social' },
-  'discord:': { type: 'discord', title: 'Discord', category: 'social' },
-  'skype:': { type: 'skype', title: 'Skype', category: 'social' },
-  'slack:': { type: 'slack', title: 'Slack', category: 'social' },
-  'twitter:': { type: 'twitter', title: 'Twitter', category: 'social' },
-  'fb:': { type: 'facebook', title: 'Facebook', category: 'social' },
-  'instagram:': { type: 'instagram', title: 'Instagram', category: 'social' },
-  'linkedin:': { type: 'linkedin', title: 'LinkedIn', category: 'social' },
-  'snapchat:': { type: 'snapchat', title: 'Snapchat', category: 'social' },
-  'reddit:': { type: 'reddit', title: 'Reddit', category: 'social' },
-  'tiktok:': { type: 'tiktok', title: 'TikTok', category: 'social' }
-}
+const ALL_SPECIAL_URLS_ENTRIES = /* @__PURE__ */ toEntries([
+  ['mailto:', 'email', 'Email', 'communication'],
+  ['tel:', 'phone', 'Phone', 'communication'],
+  ['telprompt:', 'phone', 'Phone', 'communication'],
+  ['sms:', 'sms', 'SMS', 'communication'],
+  ['facetime:', 'facetime', 'FaceTime', 'communication'],
+  ['facetime-audio:', 'facetime-audio', 'FaceTime Audio', 'communication'],
+  ['whatsapp:', 'whatsapp', 'WhatsApp', 'social'],
+  ['tg:', 'telegram', 'Telegram', 'social'],
+  ['discord:', 'discord', 'Discord', 'social'],
+  ['skype:', 'skype', 'Skype', 'social'],
+  ['slack:', 'slack', 'Slack', 'social'],
+  ['twitter:', 'twitter', 'Twitter', 'social'],
+  ['fb:', 'facebook', 'Facebook', 'social'],
+  ['instagram:', 'instagram', 'Instagram', 'social'],
+  ['linkedin:', 'linkedin', 'LinkedIn', 'social'],
+  ['snapchat:', 'snapchat', 'Snapchat', 'social'],
+  ['reddit:', 'reddit', 'Reddit', 'social'],
+  ['tiktok:', 'tiktok', 'TikTok', 'social'],
+  ['zoommtg:', 'zoom', 'Zoom Meeting', 'communication'],
+  ['zoomus:', 'zoom', 'Zoom', 'communication'],
+  ['msteams:', 'teams', 'Microsoft Teams', 'communication'],
+  ['webex:', 'webex', 'Cisco Webex', 'communication'],
+  ['calshow:', 'calendar', 'Calendar', 'apple'],
+  ['x-apple-calevent:', 'calendar', 'Calendar Event', 'apple'],
+  ['x-apple-reminder:', 'reminders', 'Reminders', 'apple'],
+  ['contacts:', 'contacts', 'Contacts', 'apple'],
+  ['maps:', 'maps', 'Maps', 'apple'],
+  ['map:', 'maps', 'Maps', 'apple'],
+  ['music:', 'music', 'Apple Music', 'apple'],
+  ['videos:', 'apple-tv', 'Apple TV', 'apple'],
+  ['mobilenotes:', 'notes', 'Notes', 'apple'],
+  ['photos-redirect:', 'photos', 'Photos', 'apple'],
+  ['shortcuts:', 'shortcuts', 'Shortcuts', 'apple'],
+  ['itms-apps:', 'app-store', 'App Store', 'apple'],
+  ['github:', 'github', 'GitHub', 'development'],
+  ['gitlab:', 'gitlab', 'GitLab', 'development'],
+  ['vscode:', 'vscode', 'VS Code', 'development'],
+  ['notion:', 'notion', 'Notion', 'productivity'],
+  ['obsidian:', 'obsidian', 'Obsidian', 'productivity'],
+  ['figma:', 'figma', 'Figma', 'development'],
+  ['youtube:', 'youtube', 'YouTube', 'entertainment'],
+  ['spotify:', 'spotify', 'Spotify', 'entertainment'],
+  ['netflix:', 'netflix', 'Netflix', 'entertainment'],
+  ['twitch:', 'twitch', 'Twitch', 'entertainment'],
+  ['amazon:', 'amazon', 'Amazon', 'shopping'],
+  ['uber:', 'uber', 'Uber', 'other'],
+  ['lyft:', 'lyft', 'Lyft', 'other']
+] as const satisfies readonly Row[])
 
-const MEETING_URLS: Record<string, SpecialUrlInfo> = {
-  'zoommtg:': { type: 'zoom', title: 'Zoom Meeting', category: 'communication' },
-  'zoomus:': { type: 'zoom', title: 'Zoom', category: 'communication' },
-  'msteams:': { type: 'teams', title: 'Microsoft Teams', category: 'communication' },
-  'webex:': { type: 'webex', title: 'Cisco Webex', category: 'communication' }
-}
-
-const APPLE_URLS: Record<string, SpecialUrlInfo> = {
-  'calshow:': { type: 'calendar', title: 'Calendar', category: 'apple' },
-  'x-apple-calevent:': { type: 'calendar', title: 'Calendar Event', category: 'apple' },
-  'x-apple-reminder:': { type: 'reminders', title: 'Reminders', category: 'apple' },
-  'contacts:': { type: 'contacts', title: 'Contacts', category: 'apple' },
-  'maps:': { type: 'maps', title: 'Maps', category: 'apple' },
-  'map:': { type: 'maps', title: 'Maps', category: 'apple' },
-  'music:': { type: 'music', title: 'Apple Music', category: 'apple' },
-  'videos:': { type: 'apple-tv', title: 'Apple TV', category: 'apple' },
-  'mobilenotes:': { type: 'notes', title: 'Notes', category: 'apple' },
-  'photos-redirect:': { type: 'photos', title: 'Photos', category: 'apple' },
-  'shortcuts:': { type: 'shortcuts', title: 'Shortcuts', category: 'apple' },
-  'itms-apps:': { type: 'app-store', title: 'App Store', category: 'apple' }
-}
-
-const PRODUCTIVITY_URLS: Record<string, SpecialUrlInfo> = {
-  'github:': { type: 'github', title: 'GitHub', category: 'development' },
-  'gitlab:': { type: 'gitlab', title: 'GitLab', category: 'development' },
-  'vscode:': { type: 'vscode', title: 'VS Code', category: 'development' },
-  'notion:': { type: 'notion', title: 'Notion', category: 'productivity' },
-  'obsidian:': { type: 'obsidian', title: 'Obsidian', category: 'productivity' },
-  'figma:': { type: 'figma', title: 'Figma', category: 'development' }
-}
-
-const ENTERTAINMENT_URLS: Record<string, SpecialUrlInfo> = {
-  'youtube:': { type: 'youtube', title: 'YouTube', category: 'entertainment' },
-  'spotify:': { type: 'spotify', title: 'Spotify', category: 'entertainment' },
-  'netflix:': { type: 'netflix', title: 'Netflix', category: 'entertainment' },
-  'twitch:': { type: 'twitch', title: 'Twitch', category: 'entertainment' }
-}
-
-const SHOPPING_URLS: Record<string, SpecialUrlInfo> = {
-  'amazon:': { type: 'amazon', title: 'Amazon', category: 'shopping' },
-  'uber:': { type: 'uber', title: 'Uber', category: 'other' },
-  'lyft:': { type: 'lyft', title: 'Lyft', category: 'other' }
-}
-
-const ALL_SPECIAL_URLS = {
-  ...COMMUNICATION_URLS,
-  ...SOCIAL_URLS,
-  ...MEETING_URLS,
-  ...APPLE_URLS,
-  ...PRODUCTIVITY_URLS,
-  ...ENTERTAINMENT_URLS,
-  ...SHOPPING_URLS
-}
-
-const DOMAIN_MAPPINGS: Record<string, SpecialUrlInfo> = {
-  'wa.me': { type: 'whatsapp', title: 'WhatsApp', category: 'social' },
-  't.me': { type: 'telegram', title: 'Telegram', category: 'social' },
-  'discord.gg': { type: 'discord', title: 'Discord Invite', category: 'social' },
-  'zoom.us': { type: 'zoom', title: 'Zoom Meeting', category: 'communication' },
-  'meet.google.com': { type: 'meet', title: 'Google Meet', category: 'communication' },
-  'teams.microsoft.com': {
-    type: 'teams',
-    title: 'Microsoft Teams',
-    category: 'communication'
-  },
-  'github.com': { type: 'github', title: 'GitHub', category: 'development' },
-  'gitlab.com': { type: 'gitlab', title: 'GitLab', category: 'development' },
-  'figma.com': { type: 'figma', title: 'Figma', category: 'development' },
-  'notion.so': { type: 'notion', title: 'Notion', category: 'productivity' },
-  'twitter.com': { type: 'twitter', title: 'Twitter', category: 'social' },
-  'x.com': { type: 'twitter', title: 'X (Twitter)', category: 'social' },
-  'instagram.com': { type: 'instagram', title: 'Instagram', category: 'social' },
-  'linkedin.com': { type: 'linkedin', title: 'LinkedIn', category: 'social' },
-  'youtube.com': { type: 'youtube', title: 'YouTube', category: 'entertainment' },
-  'spotify.com': { type: 'spotify', title: 'Spotify', category: 'entertainment' }
-}
+const DOMAIN_MAPPINGS_ENTRIES = /* @__PURE__ */ toEntries([
+  ['wa.me', 'whatsapp', 'WhatsApp', 'social'],
+  ['t.me', 'telegram', 'Telegram', 'social'],
+  ['discord.gg', 'discord', 'Discord Invite', 'social'],
+  ['zoom.us', 'zoom', 'Zoom Meeting', 'communication'],
+  ['meet.google.com', 'meet', 'Google Meet', 'communication'],
+  ['teams.microsoft.com', 'teams', 'Microsoft Teams', 'communication'],
+  ['github.com', 'github', 'GitHub', 'development'],
+  ['gitlab.com', 'gitlab', 'GitLab', 'development'],
+  ['figma.com', 'figma', 'Figma', 'development'],
+  ['notion.so', 'notion', 'Notion', 'productivity'],
+  ['twitter.com', 'twitter', 'Twitter', 'social'],
+  ['x.com', 'twitter', 'X (Twitter)', 'social'],
+  ['instagram.com', 'instagram', 'Instagram', 'social'],
+  ['linkedin.com', 'linkedin', 'LinkedIn', 'social'],
+  ['youtube.com', 'youtube', 'YouTube', 'entertainment'],
+  ['spotify.com', 'spotify', 'Spotify', 'entertainment']
+] as const satisfies readonly Row[])
 
 /**
  * Classify `url` against the catalog. `null` means a plain web URL (favicon).
@@ -176,7 +144,7 @@ const DOMAIN_MAPPINGS: Record<string, SpecialUrlInfo> = {
 export const getSpecialUrlInfo = (url: string): SpecialUrlInfo | null => {
   const lowerUrl = url.toLowerCase()
 
-  for (const [scheme, info] of Object.entries(ALL_SPECIAL_URLS)) {
+  for (const [scheme, info] of ALL_SPECIAL_URLS_ENTRIES) {
     if (lowerUrl.startsWith(scheme)) {
       return info
     }
@@ -190,7 +158,7 @@ export const getSpecialUrlInfo = (url: string): SpecialUrlInfo | null => {
     // Loop covers both exact matches (`cleanHostname === domain`) and
     // subdomain suffixes (`api.github.com` → `github.com`); a separate
     // direct-lookup fast path was redundant and dropped.
-    for (const [domain, info] of Object.entries(DOMAIN_MAPPINGS)) {
+    for (const [domain, info] of DOMAIN_MAPPINGS_ENTRIES) {
       if (cleanHostname === domain || cleanHostname.endsWith(`.${domain}`)) {
         return info
       }

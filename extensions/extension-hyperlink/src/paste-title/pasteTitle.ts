@@ -114,6 +114,8 @@ function endRun(state: PasteTitleState, run: Run): void {
 }
 
 export function oneUrl(text: string): ReturnType<typeof find>[number] | null {
+  // A link match never holds whitespace, so skip the linkify scan of a long multi-word paste.
+  if (!text || /\s/.test(text)) return null
   const links = find(text)
   return links.length === 1 && links[0].type === 'url' && links[0].value === text ? links[0] : null
 }

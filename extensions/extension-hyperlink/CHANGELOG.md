@@ -10,6 +10,20 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ## [Unreleased]
 
+### Changed
+
+- Autolink finds the changed ranges of a transaction in one pass, instead of Tiptap's `getChangedRanges`, which costs O(steps²). A plain-text paste of 2,000 paragraphs and select-all formatting on a long document no longer pause the editor for as long. The result is the same, checked against `getChangedRanges` on every step type. A clipboard that holds whitespace also skips the single-URL scan in the paste handler and in `pasteTitle`, because a URL never holds whitespace.
+
+### Fixed
+
+- With `autolink: true`, formatting part of a link no longer removes the link from part of its text. A mark such as bold, italic, strike, underline or code splits the link into pieces. Autolink judged each piece alone, so a piece like `exam` lost its link. Autolink now checks the whole link, and it skips a change that leaves the text the same. Text that stops being a URL still loses its link, as before. Code still removes the link where it lands, because the code mark excludes other marks.
+- Autolink no longer rewrites a link that is already there. When a link's label looked like a URL but the link pointed elsewhere, a space or a bold after it made the label the new target. The link now keeps its own target, as in `@tiptap/extension-link`.
+
+### Internal
+
+- The special-URL catalog is now typed rows instead of seven objects joined by a spread. Results and their order are unchanged, and the public `SpecialUrlType` union is the same. A StarterKit app ships about 1.3 kB less minified.
+- `scripts/bench/` compares the working tree with a git ref, plus a control copy of the ref that shows the noise. It reports bytes, 18 behaviour cases and speed, in jsdom and in a real browser. Run `NODE_ENV=production bun scripts/bench/run.ts`; its README says how to read the table.
+
 ## [2.3.0] — 2026-11-09
 
 ### Highlights

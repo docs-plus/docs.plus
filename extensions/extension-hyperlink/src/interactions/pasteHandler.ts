@@ -17,6 +17,8 @@ export function createPasteHandlerInteraction(ctx: LinkContext): Plugin {
         })
 
         // Historical contract: only fire when the clipboard IS one URL, not when it merely contains one.
+        // A link match never holds whitespace, so skip the linkify scan of a long multi-word paste.
+        if (/\s/.test(textContent)) return false
         const link = find(textContent).find((item) => item.isLink && item.value === textContent)
         if (!textContent || !link) return false
 

@@ -1,13 +1,8 @@
-import {
-  combineTransactionSteps,
-  findChildrenInRange,
-  getChangedRanges,
-  getMarksBetween,
-  type NodeWithPos
-} from '@tiptap/core'
+import { findChildrenInRange, getMarkRange, getMarksBetween, type NodeWithPos } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 
 import { PREVENT_AUTOLINK_META } from '../constants'
+import { changedRanges } from './changedRanges'
 import type { LinkContext } from './types'
 
 const TRAILING_WHITESPACE_RE = /\s$/
@@ -33,9 +28,8 @@ export function createAutolinkInteraction(ctx: LinkContext): Plugin {
       }
 
       const { tr } = newState
-      const transform = combineTransactionSteps(oldState.doc, [...transactions])
-      const { mapping } = transform
-      const changes = getChangedRanges(transform)
+      // Tiptap's combineTransactionSteps + getChangedRanges cost O(steps²) on a big paste or Bold.
+      const { changes, map } = changedRanges(transactions)
       // `?? null` keeps the plugin working in schemas without a `code` mark.
       const codeMarkType = newState.schema.marks.code ?? null
 
@@ -43,16 +37,25 @@ export function createAutolinkInteraction(ctx: LinkContext): Plugin {
         for (const oldMark of getMarksBetween(oldRange.from, oldRange.to, oldState.doc).filter(
           (item) => item.mark.type === type
         )) {
-          const newFrom = mapping.map(oldMark.from)
-          const newTo = mapping.map(oldMark.to)
+          // Other marks split one link into several text nodes, so check the whole link.
+          const oldLink =
+            getMarkRange(oldState.doc.resolve(oldMark.from), type, oldMark.mark.attrs) ?? oldMark
+          const newFrom = map(oldLink.from)
+          const newTo = map(oldLink.to)
           const newMarks = getMarksBetween(newFrom, newTo, newState.doc).filter(
             (item) => item.mark.type === type
           )
 
           if (!newMarks.length) continue
 
-          const newMark = newMarks[0]
-          const oldLinkText = oldState.doc.textBetween(oldMark.from, oldMark.to, undefined, ' ')
+          const oldLinkText = oldState.doc.textBetween(oldLink.from, oldLink.to, undefined, ' ')
+          // A mark-only change (bold, code) keeps the text, so leave the link alone.
+          // '\n' makes a split into two blocks count as a text change.
+          if (newState.doc.textBetween(newFrom, newTo, '\n', ' ') === oldLinkText) continue
+
+          const first = newMarks[0]
+          const newMark =
+            getMarkRange(newState.doc.resolve(first.from), type, first.mark.attrs) ?? first
           const newLinkText = newState.doc.textBetween(newMark.from, newMark.to, undefined, ' ')
           // `detect` (no gating) so a tightened `isAllowedUri` can't retroactively strip valid marks.
           const wasLink = urls.detect(oldLinkText)
@@ -124,6 +127,8 @@ export function createAutolinkInteraction(ctx: LinkContext): Plugin {
             const node = newState.doc.nodeAt(from)
             return !node?.marks.some((m) => m.type === codeMarkType)
           })
+          // A link already there may point somewhere else; never rewrite it. Matches upstream.
+          .filter(({ from, to }) => !newState.doc.rangeHasMark(from, to, type))
           .forEach(({ from, to, href }) => {
             tr.addMark(from, to, type.create({ href }))
           })
