@@ -172,14 +172,14 @@ groups:
               refId: C
 
       - uid: dep-postgres-db-size
-        title: Postgres databases above 60% of cluster disk
+        title: Postgres databases above 60% of cluster disk minus WAL
         condition: C
         for: 5m
         noDataState: OK
         execErrState: Error
         labels:
-          # One rule, two severities: 80% of disk minus WAL pages as critical.
-          severity: '{{ if gt $values.B.Value 48476717056.0 }}critical{{ else }}warning{{ end }}'
+          # 0.6 x 64,424,509,440 B (60 GiB disk) minus max_wal_size 3,062,890,496 B (ruled 2026-11-12, #727).
+          severity: warning
         annotations:
           summary: 'All databases on the collab cluster hold {{ humanize1024 $values.B.Value }}B. The bar is 60% of the disk minus WAL, and this sum leaves WAL out (https://github.com/docs-plus/docs.plus/issues/727).'
         data:
@@ -211,6 +211,48 @@ groups:
               expression: B
               conditions:
                 - evaluator: { type: gt, params: [35591815168] }
+              refId: C
+
+      - uid: dep-postgres-db-size-critical
+        title: Postgres databases above 80% of cluster disk minus WAL
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          # 0.8 x the same disk minus the same WAL. Its own rule, so the warning stays firing.
+          severity: critical
+        annotations:
+          summary: 'All databases on the collab cluster hold {{ humanize1024 $values.B.Value }}B. The bar is 80% of the disk minus WAL, and this sum leaves WAL out (https://github.com/docs-plus/docs.plus/issues/727).'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # The disk is shared, so the sum covers every datname (ruled 2026-11-11).
+              # dep-postgres-down pages when the exporter stops, so no data is OK.
+              expr: 'sum(pg_database_size_bytes)'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [48476717056] }
               refId: C
 
       - uid: dep-postgres-db-growth
