@@ -449,6 +449,8 @@ export const seedRestAlertSeries = (): void => {
   for (const outcome of MEMBER_READ_OUTCOMES) {
     socialCardMemberReadsTotal.inc({ outcome }, 0)
   }
+  // Only this 5xx series: the database-health alert reads it (#710).
+  httpRequestsTotal.inc({ method: 'GET', route: '/health/database', status: '503' }, 0)
 }
 
 export const seedWorkerAlertSeries = (): void => {

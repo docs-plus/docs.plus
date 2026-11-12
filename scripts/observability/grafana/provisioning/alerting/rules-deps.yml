@@ -45,6 +45,48 @@ groups:
                 - evaluator: { type: lt, params: [1] }
               refId: C
 
+      - uid: dep-rest-db-health-503
+        title: REST database health check failing (2+ in 15m)
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: REST's Prisma check on /health/database answered 503 at least twice in 15m. On 2026-11-01 this was the only early sign, 3 h 39 min before page loads failed (https://github.com/docs-plus/docs.plus/issues/710).
+        data:
+          - refId: A
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # increase() extrapolates: one 503 read 1.034 and two read 2.069 on 2026-11-01,
+              # so 1.5 means two. The first 503 after a REST start counts only when REST
+              # seeds this series at 0.
+              expr: 'sum(increase(http_requests_total{job="rest-api",route="/health/database",status="503"}[15m]))'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [1.5] }
+              refId: C
+
       - uid: dep-redis-down
         title: Redis down (redis_up==0)
         condition: C

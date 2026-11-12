@@ -71,6 +71,9 @@ This file is the product changelog. Every app, package and extension keeps its o
   before-and-after read needs more than 15 days of history ([#749](https://github.com/docs-plus/docs.plus/issues/749)).
 - `apps/hocuspocus.server/scripts/bench-mcp-session.ts` drives the #726 MCP write benchmark through
   the public `/api/mcp` route on a private scratch pad, then deletes it ([#726](https://github.com/docs-plus/docs.plus/issues/726)).
+- Alert rules leave out health probes and metric scrapes, which were 92.8 % of REST requests. A
+  failing database health check now warns on its own, and MCP latency has its own 5 s rule
+  ([#710](https://github.com/docs-plus/docs.plus/issues/710)).
 
 ## [2.3.0] — 2026-11-09
 
