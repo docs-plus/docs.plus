@@ -30,6 +30,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: chatroom-e2e-${{ github.ref }}
@@ -72,8 +73,10 @@ jobs:
       - name: 📣 Notify chatroom E2E failure
         if: failure() && github.event_name == 'push'
         env:
+          GH_TOKEN: ${{ github.token }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        # Red after green only (#557 mode a): a suite already red stays quiet.
         run: |
-          bash scripts/ci/notify-telegram.sh - \
+          bash .github/scripts/notify-e2e-red-after-green.sh chatroom-e2e.yml \
             "🧪 Chatroom E2E FAILED on main (${GITHUB_SHA::9}): ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"

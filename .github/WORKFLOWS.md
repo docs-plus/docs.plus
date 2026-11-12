@@ -41,11 +41,11 @@ This file is intentionally not named `README.md` so the repository root `README.
   - Needs three repo secrets: `RUNNER_WATCHDOG_TOKEN` (fine-grained PAT, repo Administration: read), `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`. Without them each run warns with the missing names and checks nothing
 - `workflows/chatroom-e2e.yml`
   - Chatroom browser tests on a PR or push to `main` when webapp, extension or package code changes, plus `workflow_dispatch`
-  - A failed `push` run sends a Telegram alert through `scripts/ci/notify-telegram.sh`, with the `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` repo secrets. It is not a deploy gate
+  - A failed `push` run sends a Telegram alert only when the suite turns red after a green run (`.github/scripts/notify-e2e-red-after-green.sh`, ruled on #557 2026-11-12). A suite that stays red does not alert again. It uses the `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` repo secrets, and it is not a deploy gate
 - `workflows/editor-e2e.yml`
   - Editor browser tests on the `/editor` playground, on a push to `main` with the `chatroom-e2e.yml` paths list, plus `workflow_dispatch`. No pull request trigger ([#477](https://github.com/docs-plus/docs.plus/issues/477))
   - `scripts/test-editor.sh` sets `EDITOR_ONLY_STACK` through `CYPRESS_EXPOSE`, so the three `filter/*` specs, which need REST and WS, report as pending
-  - A failed `push` run sends a Telegram alert like `chatroom-e2e.yml`. It is not a deploy gate
+  - A failed `push` run alerts only on red after green, like `chatroom-e2e.yml`. It is not a deploy gate
 - `workflows/lockstep-guard.yml`
   - Fails a PR that changes an extension `package.json` when the publishable extension versions differ. The `lockstep-bypass` label skips it
 - `workflows/supabase-policies.yml`

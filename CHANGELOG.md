@@ -77,6 +77,8 @@ This file is the product changelog. Every app, package and extension keeps its o
 - The dead stage pipeline is removed: `stage.docs.plus.yml`, the staging env template and the stage
   notes in the agent docs ([#725](https://github.com/docs-plus/docs.plus/issues/725)). It never ran, because no `dev` branch exists, so CI
   time is unchanged.
+- The chatroom and editor browser suites now alert Telegram only when a suite turns red after a
+  green run. In the last 30 runs of each, that is 3 alerts instead of every red push ([#557](https://github.com/docs-plus/docs.plus/issues/557)).
 
 ## [2.3.0] — 2026-11-09
 
