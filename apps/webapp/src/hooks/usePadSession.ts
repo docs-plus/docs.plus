@@ -78,8 +78,7 @@ export default function usePadSession(doc: DocumentMetadata): void {
   // does nothing.
   useEffect(() => {
     joinKeyRef.current = sessionKey
-    const { settings, setWorkspaceSetting } = useStore.getState()
-    if (settings.workspaceJoin !== 'pending') setWorkspaceSetting('workspaceJoin', 'pending')
+    useStore.getState().setWorkspaceSetting('workspaceJoin', 'pending')
     return () => {
       joinKeyRef.current = ''
     }
