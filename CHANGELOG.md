@@ -36,6 +36,8 @@ This file is the product changelog. Every app, package and extension keeps its o
   ([#722](https://github.com/docs-plus/docs.plus/issues/722)).
 - Three notification lookups no longer answer a signed-out caller. They now need a signed-in
   session, the only kind the app uses ([#755](https://github.com/docs-plus/docs.plus/issues/755)).
+- Grafana's internal `/metrics` page is no longer public. Grafana stops making those metrics, and
+  the public router refuses any path under `/metrics` ([#745](https://github.com/docs-plus/docs.plus/issues/745)).
 
 ### Documentation
 

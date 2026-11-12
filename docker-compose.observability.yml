@@ -122,6 +122,8 @@ services:
       GF_SERVER_ROOT_URL: https://grafana.docs.plus
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+      # No Prometheus job scrapes Grafana (#745). Re-enable behind GF_METRICS_BASIC_AUTH_* first.
+      GF_METRICS_ENABLED: 'false'
     volumes:
       - ./scripts/observability/grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana-data:/var/lib/grafana
@@ -130,7 +132,8 @@ services:
       loki: { condition: service_started }
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.grafana.rule=Host(`grafana.docs.plus`)'
+      # Grafana serves /metrics without auth; nothing outside the stack reads it.
+      - 'traefik.http.routers.grafana.rule=Host(`grafana.docs.plus`) && !PathPrefix(`/metrics`)'
       - 'traefik.http.routers.grafana.entrypoints=websecure'
       - 'traefik.http.routers.grafana.tls.certresolver=letsencrypt'
       - 'traefik.http.routers.grafana.middlewares=security-headers@file'
