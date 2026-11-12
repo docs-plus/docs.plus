@@ -28,6 +28,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   JavaScript. In the build's route table, `/` drops from 3.82 MB to 952 kB and `/[...slugs]` from
   1.83 MB to 925 kB ([#732](https://github.com/docs-plus/docs.plus/issues/732)).
 
+### Fixed
+
+- GlitchTip browser counts are usable again. The Safari IndexedDB flood now sends one warning per
+  page load, not hundreds. next-pwa's service-worker register errors (AbortError and Cache.add)
+  are dropped. Network failures and closed-database errors still report ([#752](https://github.com/docs-plus/docs.plus/issues/752)).
+
 ## [2.3.0] — 2026-11-09
 
 ### Highlights
