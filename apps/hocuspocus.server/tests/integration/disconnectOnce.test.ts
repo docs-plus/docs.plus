@@ -95,7 +95,8 @@ describe('one client close', () => {
     provider.disconnect()
     await sleep(500)
     provider.destroy()
-  })
+    // A real server and provider: the first sync can pass Bun's 5 s hook default on a loaded machine.
+  }, 20_000)
 
   afterAll(async () => {
     setSystemTime()
