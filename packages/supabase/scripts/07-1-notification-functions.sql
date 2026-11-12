@@ -127,3 +127,7 @@ comment on function get_workspace_notifications(uuid, varchar, int, int, boolean
 -- (idempotent — safe to re-run)
 -- ============================================================
 ALTER FUNCTION public.get_workspace_notifications(p_user_id uuid, p_workspace_id character varying, p_limit integer, p_offset integer, p_is_read boolean) SET search_path = public;
+
+-- Signed-in only (#755): close public and anon.
+revoke execute on function public.get_workspace_notifications(uuid, character varying, integer, integer, boolean) from public, anon;
+grant execute on function public.get_workspace_notifications(uuid, character varying, integer, integer, boolean) to authenticated;
