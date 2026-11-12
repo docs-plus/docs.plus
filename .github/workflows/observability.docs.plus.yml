@@ -148,8 +148,8 @@ jobs:
                 run --rm --entrypoint promtool prometheus check config /etc/prometheus/prometheus.yml
               docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d --remove-orphans
               # `up -d` never re-reads bind-mounted config files on unchanged containers;
-              # restart forces prometheus.yml + grafana provisioning to be picked up.
-              docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" restart prometheus grafana ;;
+              # restart forces prometheus.yml, grafana provisioning, and the loki and alloy configs to load (#712).
+              docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" restart prometheus grafana loki alloy ;;
           esac
 
       - name: 🩺 Verify
