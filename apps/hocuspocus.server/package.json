@@ -89,7 +89,7 @@
     "rate-limiter-flexible": "^11.2.3",
     "short-unique-id": "^5.3.2",
     "slugify": "^1.6.9",
-    "tldts": "^6.1.86",
+    "tldts": "^7.4.19",
     "web-push": "^3.6.7",
     "yjs": "catalog:",
     "zod": "^4.6.7"
