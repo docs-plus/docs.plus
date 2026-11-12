@@ -6,7 +6,7 @@ groups:
     interval: 1m
     rules:
       - uid: slo-http-5xx-ratio
-        title: HTTP 5xx ratio per service (>5%)
+        title: REST API 5xx ratio (>5%)
         condition: C
         for: 10m
         noDataState: OK
@@ -98,13 +98,14 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'REST /api/mcp request p95 latency above 5s for 10m. The 5s bar was ruled on 2026-11-11 (#710), and #726 rechecks it after its after-session.'
+          summary: 'REST /api/mcp request p95 latency above 5s for 10m.'
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
+              # The 5s bar was ruled on 2026-11-11 (#710). #726 rechecks it after its after-session.
               expr: 'histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="rest-api",route="/api/mcp"}[5m])))'
               instant: true
               intervalMs: 1000
