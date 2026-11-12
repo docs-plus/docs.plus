@@ -171,6 +171,89 @@ groups:
                 - evaluator: { type: gt, params: [0.8] }
               refId: C
 
+      - uid: dep-postgres-db-size
+        title: Postgres databases above 60% of cluster disk
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          # One rule, two severities: 80% of disk minus WAL pages as critical.
+          severity: '{{ if gt $values.B.Value 48476717056.0 }}critical{{ else }}warning{{ end }}'
+        annotations:
+          summary: 'All databases on the collab cluster hold {{ humanize1024 $values.B.Value }}B. The bar is 60% of the disk minus WAL, and this sum leaves WAL out (https://github.com/docs-plus/docs.plus/issues/727).'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # The disk is shared, so the sum covers every datname (ruled 2026-11-11).
+              # dep-postgres-down pages when the exporter stops, so no data is OK.
+              expr: 'sum(pg_database_size_bytes)'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [35591815168] }
+              refId: C
+
+      - uid: dep-postgres-db-growth
+        title: Postgres databases grew more than 128 MiB in 24h
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: 'All databases on the collab cluster grew {{ humanize1024 $values.B.Value }}B in 24h. On 2026-11-07 they grew 199,221,248 B with no MCP write (https://github.com/docs-plus/docs.plus/issues/761).'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # A dump and restore or a major upgrade shrinks the sum, so that day
+              # reads a negative delta and stays Normal.
+              expr: 'sum(pg_database_size_bytes) - sum(pg_database_size_bytes offset 24h)'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [134217728] }
+              refId: C
+
       - uid: dep-tls-cert-expiry
         title: TLS certificate expiring within 14 days
         condition: C

@@ -89,6 +89,10 @@ This file is the product changelog. Every app, package and extension keeps its o
   94.8 % of its memory limit ([#712](https://github.com/docs-plus/docs.plus/issues/712)).
 - Loki gets 768 MiB, up from 512 MiB, with `GOMEMLIMIT` at 576 MiB. It idled at 448–485 MiB, about 5 %
   below the old limit ([#712](https://github.com/docs-plus/docs.plus/issues/712)).
+- Two new alert rules watch the shared collab Postgres cluster. One warns when its databases pass
+  60 % of the disk minus WAL, and turns critical at 80 %. The other warns when they grow more than
+  128 MiB in 24 hours. Over 15 days of history it would have fired once, on the 2026-11-07 growth
+  ([#727](https://github.com/docs-plus/docs.plus/issues/727)).
 
 ## [2.3.0] — 2026-11-09
 
