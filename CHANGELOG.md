@@ -87,6 +87,8 @@ This file is the product changelog. Every app, package and extension keeps its o
 - Loki refuses a log query that spans more than 7 days, or any range inside a query longer than 25
   hours, instant queries included. One 7-day instant query had read 2.7 GB and taken Loki to
   94.8 % of its memory limit ([#712](https://github.com/docs-plus/docs.plus/issues/712)).
+- Loki gets 768 MiB, up from 512 MiB, with `GOMEMLIMIT` at 576 MiB. It idled at 448–485 MiB, about 5 %
+  below the old limit ([#712](https://github.com/docs-plus/docs.plus/issues/712)).
 
 ## [2.3.0] — 2026-11-09
 
