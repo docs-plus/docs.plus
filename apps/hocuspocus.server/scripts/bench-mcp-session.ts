@@ -8,7 +8,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import { dirname, join } from 'node:path'
 
-import { buildFixture, mulberry32, PARAGRAPH_CHARS, sentence } from './lib/benchFixture'
+import { buildFixture, mulberry32, nextEdit, PARAGRAPH_CHARS } from './lib/benchFixture'
 
 const HELP = `bench-mcp-session.ts: one MCP edit session against a docs.plus REST host (#726).
 
@@ -594,18 +594,17 @@ try {
     const read = await callTool(MCP_TOKEN, 'read_document', { slug, section_id: sectionId })
     const rev = read.outcome === 'ok' ? parseRev(read.text) : null
     const blocks = parseBlockCount(read.text)
-    // Draw both values every time, so the rand stream stays aligned with the local bench.
-    const from = Math.floor(rand() * Math.max(blocks, 1))
-    const markdown = sentence(rand, PARAGRAPH_CHARS)
+    // Draw the edit every time, so the rand stream stays aligned with the local bench.
+    const next = nextEdit(rand, blocks)
     let edit: (RpcResult & { retried: boolean }) | null = null
     if (rev && blocks > 0) {
       edit = await callTool(MCP_TOKEN, 'edit_blocks', {
         slug,
         section_id: sectionId,
         rev,
-        after_block: from,
+        after_block: next.from,
         remove_blocks: 1,
-        markdown
+        markdown: next.text
       })
     }
     const editOutcome = edit

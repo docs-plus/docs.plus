@@ -13,7 +13,7 @@ import type { Subprocess } from 'bun'
 import Redis from 'ioredis'
 import pino from 'pino'
 
-import { buildFixture, mulberry32, paragraph, PARAGRAPH_CHARS, sentence } from './lib/benchFixture'
+import { buildFixture, mulberry32, nextEdit, paragraph } from './lib/benchFixture'
 import { makeOpenProvider, sleep } from './lib/e2eHarness'
 import {
   spawnWorker,
@@ -44,6 +44,8 @@ const runs = Number(option('--runs', '1'))
 const gapMs = Number(option('--gap-ms', '0'))
 const redisDb = Number(option('--redis-db', '8'))
 const targetBytes = Number(option('--target-mib', '3')) * 1024 * 1024
+// Also refuses NaN. Without it the fixture has no section, and the first write fails late.
+if (!(targetBytes > 0)) throw new Error('--target-mib must be above 0')
 const seed = Number(option('--seed', '726'))
 const stamp = new Date().toISOString().replace(/[:.]/g, '-')
 const loadAtStart = os.loadavg()
@@ -291,16 +293,15 @@ for (let run = 1; run <= runs; run++) {
     const sectionId = ids[(i * 37) % ids.length]
     const section = findSection(read.content, sectionId)
     if (!section) throw new Error(`section ${sectionId} not found`)
-    const blocks = section.end - section.start
-    const from = Math.floor(rand() * blocks)
+    const edit = nextEdit(rand, section.end - section.start)
     const outcome = await client.apply({
       documentId,
       mode: 'blocks',
       sectionId,
       rev: section.rev,
-      from,
-      to: from + 1,
-      content: { type: 'doc', content: [paragraph(sentence(rand, PARAGRAPH_CHARS))] } as never,
+      from: edit.from,
+      to: edit.from + 1,
+      content: { type: 'doc', content: [paragraph(edit.text)] } as never,
       actor: ACTOR
     })
     const done = performance.now()

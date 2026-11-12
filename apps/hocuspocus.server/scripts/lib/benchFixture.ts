@@ -1,6 +1,7 @@
 // The #726 bench fixture. bench-content-write.ts and bench-mcp-session.ts both build it,
 // so a local run and a session run with one seed write the same text. A change to the
-// word list, the sizes or the order of rand() calls breaks that comparison.
+// word list, the sizes or the order of rand() calls breaks that comparison. The module
+// also owns the write stream (`nextEdit`), so both write loops draw in one order.
 export const PARAGRAPH_CHARS = 350
 const PARAGRAPHS_PER_SECTION = 20
 
@@ -19,7 +20,7 @@ const WORDS = (
   'team plan notes meeting project draft update chat reply link table list quote code'
 ).split(' ')
 
-export const sentence = (rand: () => number, chars: number) => {
+const sentence = (rand: () => number, chars: number) => {
   let out = ''
   while (out.length < chars) out += `${WORDS[Math.floor(rand() * WORDS.length)]} `
   return out.trim()
@@ -55,3 +56,9 @@ export const buildFixture = (rand: () => number, targetBytes: number) => {
   }
   return { doc: { type: 'doc', content }, sections }
 }
+
+/** One write: the block to replace, then its new text, drawn from rand() in that order. */
+export const nextEdit = (rand: () => number, blocks: number) => ({
+  from: Math.floor(rand() * Math.max(blocks, 1)),
+  text: sentence(rand, PARAGRAPH_CHARS)
+})
