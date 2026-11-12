@@ -27,6 +27,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   `si` packs. Its computed-key read of a whole-pack `import()` had put every icon in first-load
   JavaScript. In the build's route table, `/` drops from 3.82 MB to 952 kB and `/[...slugs]` from
   1.83 MB to 925 kB ([#732](https://github.com/docs-plus/docs.plus/issues/732)).
+- Typing in a pad no longer writes the same save status to the workspace store on every
+  keystroke. Store writes per 100 characters fall from 101 to 2 ([#736](https://github.com/docs-plus/docs.plus/issues/736)).
 
 ### Fixed
 

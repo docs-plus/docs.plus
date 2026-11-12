@@ -55,7 +55,7 @@ export const NO_DOCUMENT = { documentId: undefined } as unknown as DocumentMetad
 export const selectDocumentId = (state: { settings: Workspace }): string | undefined =>
   state.settings.metadata.documentId
 
-const workspaceStore = immer<IWorkspaceStore>((set) => ({
+const workspaceStore = immer<IWorkspaceStore>((set, get) => ({
   settings: {
     metadata: NO_DOCUMENT,
     providerStatus: 'saved',
@@ -72,6 +72,9 @@ const workspaceStore = immer<IWorkspaceStore>((set) => ({
     workspaceJoin: 'pending'
   },
   setWorkspaceSetting: (key, value) => {
+    // Typing re-sends the same status on every keystroke. An equal value would still
+    // replace `settings` and wake every mounted selector, so skip the write.
+    if (Object.is(get().settings[key], value)) return
     return set((state) => ({
       settings: { ...state.settings, [key]: value }
     }))
