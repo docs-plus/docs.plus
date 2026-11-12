@@ -25,6 +25,16 @@ limits_config:
   retention_period: 720h # 30d
   reject_old_samples: true
   reject_old_samples_max_age: 168h
+  # One [7d] instant query read 2.7 GB and took Loki to 94.8 % (2026-11-10). Run long reads as hour windows.
+  max_query_length: 169h
+  max_query_range: 25h
+  tsdb_max_query_parallelism: 8
+  max_query_parallelism: 4
+  split_queries_by_interval: 1h # default, pinned on purpose
+  # Loki splits an instant [8d] into [1h] pieces, so max_query_range never sees it. Off, the engine refuses it.
+  split_instant_metric_queries_by_interval: 0s
+querier:
+  max_concurrent: 2
 compactor:
   working_directory: /loki/compactor
   retention_enabled: true

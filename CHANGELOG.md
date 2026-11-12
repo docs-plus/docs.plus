@@ -81,6 +81,9 @@ This file is the product changelog. Every app, package and extension keeps its o
 - The chatroom and editor browser suites now alert Telegram only when a suite turns red after a
   green run. Over the last 30 chatroom and 16 editor push runs, that is 3 alerts in all instead of
   27, one per red run ([#557](https://github.com/docs-plus/docs.plus/issues/557)).
+- Loki refuses a log query that spans more than 7 days, or any range inside a query longer than 25
+  hours, instant queries included. One 7-day instant query had read 2.7 GB and taken Loki to
+  94.8 % of its memory limit ([#712](https://github.com/docs-plus/docs.plus/issues/712)).
 
 ## [2.3.0] — 2026-11-09
 
