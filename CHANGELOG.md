@@ -38,9 +38,9 @@ This file is the product changelog. Every app, package and extension keeps its o
   session, the only kind the app uses ([#755](https://github.com/docs-plus/docs.plus/issues/755)).
 - Grafana's internal `/metrics` page is no longer public. Grafana stops making those metrics, and
   the public router refuses any path under `/metrics` ([#745](https://github.com/docs-plus/docs.plus/issues/745)).
-- A new dependency version must be 3 days old before the root `bunfig.toml`, Dependabot or
-  `bun run update` takes it, so a hijacked release can be pulled first. The lockfile is unaffected
-  ([#653](https://github.com/docs-plus/docs.plus/issues/653)).
+- New dependency versions now wait 3 days before `bun add`, a new resolve, Dependabot or
+  `bun run update` takes them, so a hijacked release can be pulled first. A frozen install of the
+  lockfile is unaffected ([#653](https://github.com/docs-plus/docs.plus/issues/653)).
 
 ### Documentation
 
@@ -87,12 +87,12 @@ This file is the product changelog. Every app, package and extension keeps its o
 - Loki refuses a log query that spans more than 7 days, or any range inside a query longer than 25
   hours, instant queries included. One 7-day instant query had read 2.7 GB and taken Loki to
   94.8 % of its memory limit ([#712](https://github.com/docs-plus/docs.plus/issues/712)).
-- Loki gets 768 MiB, up from 512 MiB, with `GOMEMLIMIT` at 576 MiB. It idled at 448–485 MiB, about 5 %
-  below the old limit ([#712](https://github.com/docs-plus/docs.plus/issues/712)).
-- Two new alert rules watch the shared collab Postgres cluster. One warns when its databases pass
-  60 % of the disk minus WAL, and turns critical at 80 %. The other warns when they grow more than
-  128 MiB in 24 hours. Over 15 days of history it would have fired once, on the 2026-11-07 growth
-  ([#727](https://github.com/docs-plus/docs.plus/issues/727)).
+- Loki gets 768 MiB, up from 512 MiB, with `GOMEMLIMIT` at 576 MiB. It idled at 448–485 MiB, up to
+  95 % of the old limit ([#712](https://github.com/docs-plus/docs.plus/issues/712)).
+- Three new alert rules watch the shared collab Postgres cluster. Two fire when the size of its
+  databases plus WAL room passes 60 % of the disk (warning) and 80 % (critical). The third warns
+  when they grow more than 128 MiB in 24 hours. Over 15 days of history it would have fired once,
+  on the 2026-11-07 growth ([#727](https://github.com/docs-plus/docs.plus/issues/727)).
 
 ## [2.3.0] — 2026-11-09
 
