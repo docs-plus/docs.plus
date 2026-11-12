@@ -44,6 +44,9 @@ This file is the operator and API changelog. The pad product lives in the [root 
   alert counts the first 503 after a deploy ([#710](https://github.com/docs-plus/docs.plus/issues/710)).
 - `scripts/bench-mcp-session.ts` drives the #726 MCP write benchmark through the public `/api/mcp`
   route on a private scratch pad, then deletes it ([#726](https://github.com/docs-plus/docs.plus/issues/726)).
+- `bunfig.toml` drops keys that never applied and default test coverage. The backend unit suite takes
+  16.21 s, down from 16.93 s (median of 5, one laptop), and no run writes a literal `~` folder
+  ([#657](https://github.com/docs-plus/docs.plus/issues/657)).
 
 ## [2.3.0] — 2026-11-09
 
