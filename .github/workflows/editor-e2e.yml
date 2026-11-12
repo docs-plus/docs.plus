@@ -60,5 +60,5 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         # Red after green only (#557 mode a): a suite already red stays quiet.
         run: |
-          bash .github/scripts/notify-e2e-red-after-green.sh editor-e2e.yml \
+          bash .github/scripts/notify-e2e-red-after-green.sh \
             "🧪 Editor E2E FAILED on main (${GITHUB_SHA::9}): ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
