@@ -58,10 +58,9 @@ services:
     image: prom/prometheus:v3.12.0
     container_name: docsplus-prometheus
     restart: unless-stopped
+    # Retention lives in prometheus.yml (storage.tsdb), not in flags (#749).
     command:
       - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.retention.time=15d
-      - --storage.tsdb.retention.size=4GB
       - --storage.tsdb.wal-compression
       - --web.enable-lifecycle
     volumes:

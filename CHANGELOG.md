@@ -65,6 +65,8 @@ This file is the product changelog. Every app, package and extension keeps its o
 - The observability deploy now loads the Grafana alert rules in a throwaway container first, so
   a broken rule file stops the deploy instead of looping Grafana. After the deploy it fails on any
   rule in error health and names each one ([#753](https://github.com/docs-plus/docs.plus/issues/753)).
+- Prometheus now keeps 45 days of metrics, capped at 3 GiB, up from 15 days. Every v2.3.6
+  before-and-after read needs more than 15 days of history ([#749](https://github.com/docs-plus/docs.plus/issues/749)).
 
 ## [2.3.0] — 2026-11-09
 

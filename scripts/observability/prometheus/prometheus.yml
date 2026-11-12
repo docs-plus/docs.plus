@@ -1,6 +1,13 @@
 global:
   scrape_interval: 30s
   evaluation_interval: 30s
+# The size cap counts blocks, WAL and head chunks. Prometheus reads GB as GiB,
+# so 3GB is 3,221,225,472 B (#749).
+storage:
+  tsdb:
+    retention:
+      time: 45d
+      size: 3GB
 scrape_configs:
   - job_name: cadvisor
     # Infra metrics — dashboards/alerts use 5m rates; 60s cuts ingest without losing signal.
@@ -73,3 +80,11 @@ scrape_configs:
         target_label: instance
       - target_label: __address__
         replacement: blackbox-exporter:9115
+  # The keep-list holds the self-scrape under 200 series; the full set is about 1,159.
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'prometheus_tsdb_.*|prometheus_build_info|prometheus_config_last_reload_successful'
+        action: keep
