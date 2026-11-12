@@ -1,6 +1,6 @@
 name: Quality Lint
 
-# Shared lint/format/style gate for stage and prod pipelines.
+# Shared lint/format/style gate for the prod pipeline.
 on:
   workflow_call: {}
 

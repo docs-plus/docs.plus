@@ -193,7 +193,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **Swarm Target** — a document URL the swarm may open. v1: must be public and not Read-only (and not soft-deleted); otherwise the swarm refuses to start.
 - **Demo mode** — paced fake collaboration meant to be watched on a live pad (join, write, format, heading chat).
 - **Stress mode** — same Swarm Actors and Swarm Target, higher concurrency and tighter loops to probe load. Not a separate product — a mode of the same swarm.
-- **Swarm Host** — an allowlisted deployment the swarm may hit (local or stage). Production hosts are out of scope.
+- **Swarm Host** — an allowlisted deployment the swarm may hit (local only: `localhost`, `127.0.0.1`, `*.local`). Production hosts are out of scope.
 - **Swarm Script** — a named, fixed collaboration routine (e.g. prose, task-list, academy, chat) an actor can run.
 - **Shuffle** — optional assignment mode: actors draw Swarm Scripts from a weighted pool instead of a fixed round-robin. Default remains deterministic assignment.
 - **Write Target** — the pad section a Swarm Actor may type under for one script turn (not the Swarm Target document URL). Opaque to Swarm Scripts: Contention policy resolves it inside the pad module; scripts never see heading labels or RunOptions.
@@ -203,7 +203,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **Ramp** — staggered actor join over a window at the start of a Swarm Run. Default join pattern; optional churn (leave/rejoin mid-run) is a later add-on.
 - **Script Outcome** — what a Swarm Script returns after one turn (success plus optional counters such as chat sends). The Swarm Run folds outcomes into the Swarm Report; scripts never mutate report state.
 - **Swarm Report** — end-of-run operator summary for Stress (and optional Demo): joins, script actions, chat sends, errors; hard-failure threshold drives exit code. Reconnects appear only when a real Ramp/churn path increments them. Not a CI gate in v1.
-- **Actor cap** — hard ceiling on concurrent Swarm Actors per Swarm Host (local higher than stage); over-cap runs require an explicit force override.
+- **Actor cap** — hard ceiling on concurrent Swarm Actors per Swarm Host (20 for local); over-cap runs require an explicit force override.
 
 ## Face inputs / Stack geometry
 

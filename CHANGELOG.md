@@ -74,6 +74,9 @@ This file is the product changelog. Every app, package and extension keeps its o
 - Alert rules leave out health probes and metric scrapes, which were 92.8 % of REST requests. A
   failing database health check now warns on its own, and MCP latency has its own 5 s rule
   ([#710](https://github.com/docs-plus/docs.plus/issues/710)).
+- The dead stage pipeline is removed: `stage.docs.plus.yml`, the staging env template and the stage
+  notes in the agent docs ([#725](https://github.com/docs-plus/docs.plus/issues/725)). It never ran, because no `dev` branch exists, so CI
+  time is unchanged.
 
 ## [2.3.0] — 2026-11-09
 

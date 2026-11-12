@@ -3,7 +3,7 @@ import { provision } from './actors/provision.ts'
 import { parseProvisionOptions, parseRunOptions } from './config.ts'
 import { runSwarm } from './run/orchestrator.ts'
 
-const USAGE = `document-swarm — seeded multi-actor bot for docs.plus pads (local/stage only)
+const USAGE = `document-swarm — seeded multi-actor bot for docs.plus pads (local only)
 
 Usage:
   document-swarm provision [--count <n>] [--actors-file <path>] [--force]
@@ -17,8 +17,8 @@ Modes:
   stress  headless, bounded duration, high contention, exit code from Swarm Report
 
 Safety:
-  Only local + stage hosts are allowed; production URLs are refused.
-  Actor caps: local 20, stage 10 (override with --force).
+  Only local hosts are allowed; production URLs are refused.
+  Actor cap: 20 local (override with --force).
 
 Env (from ../../.env.local): NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
   SUPABASE_SERVICE_ROLE_KEY, and a REST base (SERVER_RESTAPI_URL / NEXT_PUBLIC_RESTAPI_URL).`

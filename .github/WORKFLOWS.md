@@ -18,10 +18,6 @@ This file is intentionally not named `README.md` so the repository root `README.
   - Two GitHub settings are manual, not code ([#437](https://github.com/docs-plus/docs.plus/issues/437)). The `production` environment should allow only `main`. A `prod.docs.plus` runner group should accept only `prod.docs.plus.yml` and `observability.docs.plus.yml` from `main`
   - On success, posts a `deploy <sha>` annotation to Grafana. On failure, it notifies Telegram (credentials from the host's `.env.observability`). The rollback runs only after `🚀 Deploy Services` has started (`ROLL_STARTED`). The notice has five texts: aborted before touching prod (env guard or missing images; production unchanged), stopped in Ensure Infrastructure (app unchanged), migration failed (app unchanged), rolled back to the previous tag, or rollback failed (manual intervention). The `images` job sends its own notice when it fails (env guard, disk guard or image build). `🧹 Remove Unshipped Images` removes the images of a run whose deploy never started.
   - Every run, the weekly cron included, ends with `📊 Run Report`. It writes job times, deploy steps and the benchmark metrics (M1, M2g, M2i, M3, M4, M5, W, M6) to the run summary. It reads the API only and never fails the run
-- `workflows/stage.docs.plus.yml`
-  - Staging CI/CD pipeline (**not yet migrated** to the four-domain grammar; uses loose `contains()` on `front`/`back`)
-  - Triggers: push to `dev`, PR to `dev`, and `workflow_dispatch`. No `dev` branch exists now, so only a manual `workflow_dispatch` runs this workflow
-  - Stages: quality gates → build verification → staging deploy
 - `workflows/discord-activity.yml`
   - Push activity notifications to the `#github` Discord channel via `DISCORD_GITHUB_WEBHOOK`
   - Omits `(build):` deploy-trigger commits from the list; a push that is only those commits does not post
@@ -59,7 +55,7 @@ This file is intentionally not named `README.md` so the repository root `README.
 - `workflows/discord-release.yml`
   - Posts a published release or prerelease to Discord
 
-`backend-ci.yml` and `quality-lint.yml` are reusable workflows (`workflow_call`). The prod workflow calls both. The stage workflow calls only `quality-lint.yml`.
+`backend-ci.yml` and `quality-lint.yml` are reusable workflows (`workflow_call`). The prod workflow calls both.
 
 ## Deployment trigger grammar (production)
 

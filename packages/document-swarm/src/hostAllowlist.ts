@@ -3,18 +3,15 @@
  * See root CONTEXT.md §Document swarm for `Swarm Host` / `Actor cap` glossary.
  */
 
-export type SwarmHostKind = 'local' | 'stage'
+export type SwarmHostKind = 'local'
 
 export class SwarmHostRefusedError extends Error {}
 export class ActorCapExceededError extends Error {}
 
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1'])
 const LOCAL_HOSTNAME_SUFFIX = '.local'
-const STAGE_HOSTNAME = 'stage.docs.plus'
-const STAGE_HOSTNAME_SUFFIX = '.stage.docs.plus'
 
 export const ACTOR_CAP_LOCAL = 20
-export const ACTOR_CAP_STAGE = 10
 
 export function classifySwarmHost(rawUrl: string): SwarmHostKind {
   let hostname: string
@@ -25,16 +22,16 @@ export function classifySwarmHost(rawUrl: string): SwarmHostKind {
   }
 
   if (LOCAL_HOSTNAMES.has(hostname) || hostname.endsWith(LOCAL_HOSTNAME_SUFFIX)) return 'local'
-  if (hostname === STAGE_HOSTNAME || hostname.endsWith(STAGE_HOSTNAME_SUFFIX)) return 'stage'
 
   throw new SwarmHostRefusedError(
-    `Swarm Host "${hostname}" is not allowlisted. Allowed hosts: localhost, 127.0.0.1, *.local, ` +
-      `${STAGE_HOSTNAME}, *${STAGE_HOSTNAME_SUFFIX}. Production hosts are refused by design.`
+    `Swarm Host "${hostname}" is not allowlisted. Allowed hosts: localhost, 127.0.0.1, *.local. Production hosts are refused by design.`
   )
 }
 
+const ACTOR_CAPS: Record<SwarmHostKind, number> = { local: ACTOR_CAP_LOCAL }
+
 export function actorCapFor(hostKind: SwarmHostKind): number {
-  return hostKind === 'local' ? ACTOR_CAP_LOCAL : ACTOR_CAP_STAGE
+  return ACTOR_CAPS[hostKind]
 }
 
 export function assertWithinActorCap(users: number, hostKind: SwarmHostKind, force: boolean): void {

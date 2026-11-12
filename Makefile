@@ -33,7 +33,7 @@ help:
 	@echo "  bun --filter @docs.plus/hocuspocus dev:worker     - Worker"
 	@echo "  bun --filter @docs.plus/supabase_back start|stop  - Supabase up / down"
 	@echo ""
-	@echo "Document swarm (local/stage only — @docs.plus/document-swarm):"
+	@echo "Document swarm (local only — @docs.plus/document-swarm):"
 	@echo "  make swarm-demo URL=<doc>    - Watchable multi-user demo (headed; Ctrl+C to stop)"
 	@echo "  make swarm-stress URL=<doc>  - Concurrent load run (headless, bounded)"
 	@echo "    vars: URL (required), USERS=<n>, ARGS=\"--shuffle --duration 2m --force\""
@@ -227,12 +227,12 @@ dev-backend:
 		"bun --filter @docs.plus/hocuspocus dev:worker"
 
 # =============================================================================
-# DOCUMENT SWARM (local/stage bot — @docs.plus/document-swarm)
+# DOCUMENT SWARM (local bot — @docs.plus/document-swarm)
 # =============================================================================
 # Sugar over `bun run --filter @docs.plus/document-swarm run …`. Provision the actor
 # pool once first: `bun run --filter @docs.plus/document-swarm provision --count <n>`.
 # Vars: URL=<doc-url> (required), USERS=<n>, ARGS="--shuffle --duration 2m --force".
-# The tool itself refuses non-local/stage hosts and enforces per-host actor caps.
+# The tool itself refuses non-local hosts and enforces the local Actor cap.
 
 SWARM_RUN = bun run --filter @docs.plus/document-swarm run
 

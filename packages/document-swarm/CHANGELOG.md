@@ -10,6 +10,13 @@ This package is private and ships inside docs.plus, so each heading names the do
 
 ## [Unreleased]
 
+### Removed
+
+- `stage.docs.plus` and `*.stage.docs.plus` are no longer allowed as the Swarm Host, because stage no
+  longer exists ([#725](https://github.com/docs-plus/docs.plus/issues/725)). Only `localhost`, `127.0.0.1` and `*.local` remain, and
+  production stays refused. The stage Actor cap is gone. The local cap stays 20, and `--force` still
+  overrides it.
+
 ## [2.3.0] — 2026-11-09
 
 ### Internal

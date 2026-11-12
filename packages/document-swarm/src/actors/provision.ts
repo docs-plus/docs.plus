@@ -9,7 +9,7 @@ const ACTOR_EMAIL_DOMAIN = 'docs.plus.local'
 const LIST_USERS_PAGE_SIZE = 1000
 
 // Deterministic so a run can sign in (and re-provision self-heal) without the file;
-// these are throwaway local/stage identities, never real accounts.
+// these are throwaway local identities, never real accounts.
 const PASSWORD_SUFFIX = 'Sw@rm-4ctor-2026'
 
 function actorEmail(index: number): string {
