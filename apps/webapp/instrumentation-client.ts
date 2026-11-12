@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/nextjs'
 
 import { sentryDataCollection } from './sentryDataCollection'
-import { CHUNK_ERROR_PATTERNS } from './src/utils/chunkErrorPatterns'
+import { matchesChunkError } from './src/utils/chunkErrorPatterns'
 import { isChunkRecoveryExhausted } from './src/utils/chunkLoadRecovery'
 
 // iOS Safari emits SW-lifecycle errors during an update check (network blip / browser
@@ -28,18 +28,25 @@ const IDB_INACTIVE_PATTERNS: readonly RegExp[] = [
 ]
 let idbInactiveReported = false
 
-// A linked cause can carry the real error, so test every value, not only the first.
+// Sentry lists linked causes first and the thrown error last, so test every value.
 const exceptionValues = (event: Sentry.Event): string[] =>
   (event.exception?.values ?? []).map((ex) => ex.value ?? '').filter(Boolean)
 
 const matchesAny = (values: string[], patterns: readonly RegExp[]): boolean =>
   values.some((value) => patterns.some((re) => re.test(value)))
 
-const isNonActionable = (event: Sentry.Event): boolean => {
-  const values = exceptionValues(event)
+const isNonActionable = (values: string[]): boolean => {
   if (matchesAny(values, SW_LIFECYCLE_PATTERNS)) return true
   // Chunk errors are auto-recovered by reload; report only once recovery gave up.
-  if (matchesAny(values, CHUNK_ERROR_PATTERNS)) return !isChunkRecoveryExhausted()
+  if (values.some(matchesChunkError)) return !isChunkRecoveryExhausted()
+  return false
+}
+
+const throttleIdbInactive = (event: Sentry.Event, values: string[]): boolean => {
+  if (!matchesAny(values, IDB_INACTIVE_PATTERNS)) return false
+  if (idbInactiveReported) return true
+  idbInactiveReported = true
+  event.level = 'warning'
   return false
 }
 
@@ -52,12 +59,8 @@ if (dsn) {
     tracesSampleRate: 0,
     dataCollection: sentryDataCollection,
     beforeSend(event) {
-      if (matchesAny(exceptionValues(event), IDB_INACTIVE_PATTERNS)) {
-        if (idbInactiveReported) return null
-        idbInactiveReported = true
-        event.level = 'warning'
-      }
-      if (event.exception && isNonActionable(event)) return null
+      const values = exceptionValues(event)
+      if (throttleIdbInactive(event, values) || isNonActionable(values)) return null
       return event
     }
   })
