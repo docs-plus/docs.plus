@@ -353,6 +353,42 @@ jobs:
           EXT_ONLY: ${{ matrix.ext }}
         run: bash scripts/extension-preflight.sh
 
+  # Bytes are exact, so one run per PR is enough; timings never run in CI.
+  # Report only: head is above a bytes-budget.json limit today, so --budget stays out.
+  extension-bytes:
+    name: 📏 Ext bytes (extension-hyperlink)
+    needs: [triage, changes]
+    if: |
+      github.event_name == 'pull_request' &&
+      needs.triage.outputs.skip_app_ci != 'true' &&
+      needs.changes.outputs.docs_only != 'true' &&
+      contains(fromJson(needs.changes.outputs.changed_extensions || '[]'), 'extension-hyperlink')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-bun
+      # The bench builds src/ itself, but src/ imports the floating packages through their dist/.
+      - uses: ./.github/actions/build-extensions
+        with:
+          extensions: extension-hyperlink
+      - name: 📏 Bytes against main
+        working-directory: extensions/extension-hyperlink
+        run: |
+          # A PR checkout has no local main; the bench reads main's src/ with git archive.
+          git fetch --no-tags --depth=1 origin +refs/heads/main:refs/heads/main
+          NODE_ENV=production bun scripts/bench/run.ts --ref main --bytes-only \
+            --save "${RUNNER_TEMP}/extension-bytes.json" | tee -a "${GITHUB_STEP_SUMMARY}"
+      - name: 📤 Upload byte rows
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: extension-bytes-${{ github.sha }}
+          path: ${{ runner.temp }}/extension-bytes.json
+          retention-days: 30
+          overwrite: true
+
   webapp-unit-tests:
     name: 🧪 Webapp Unit Tests
     runs-on: ubuntu-latest
@@ -1306,6 +1342,7 @@ jobs:
         security,
         back-validation,
         extension-tests,
+        extension-bytes,
         webapp-unit-tests,
         build,
         images,

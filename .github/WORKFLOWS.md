@@ -130,6 +130,7 @@ The script classes each changed path by the first row that matches.
 | Type Check                             | `webapp`, `admin` or `backend` is on                                  |
 | Backend Validation                     | Pull request: `backend` is on. Push without `(build):`: never.        |
 | Ext suites                             | The extension filter selects the suite, and `docs_only` is not `true` |
+| Ext bytes                              | Pull request only, when the filter selects `extension-hyperlink`      |
 | Webapp Unit Tests                      | `webapp` is on                                                        |
 | Build Verification                     | `webapp` or `admin` is on, and every gate passed or was skipped       |
 | deploy, observability, Uptime Kuma     | Unchanged                                                             |
