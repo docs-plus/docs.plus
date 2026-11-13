@@ -171,6 +171,48 @@ groups:
                 - evaluator: { type: gt, params: [0] }
               refId: C
 
+      - uid: loki-memory-high
+        title: Loki memory above 80% of its limit
+        condition: C
+        for: 10m
+        # Our own wide LogQL reads took Loki to 94.8 % of its limit (2026-11-10). A backtest
+        # found 9 such episodes in 13 days on 512M. On 768M: none in 27 h, peak 91 % (#712).
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: Loki passed 80% of its memory. Stop any wide LogQL query; run it as one-hour windows, one at a time.
+          runbook_url: 'https://github.com/docs-plus/docs.plus/blob/main/docs/RUNBOOK-backend.md#loki-near-its-memory-limit'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'max(max_over_time(container_memory_working_set_bytes{name="docsplus-loki"}[5m])) / clamp_min(max(container_spec_memory_limit_bytes{name="docsplus-loki"}), 1)'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0.8] }
+              refId: C
+
       - uid: dep-redis-evictions
         title: Redis evicting keys (volatile-lru active)
         condition: C

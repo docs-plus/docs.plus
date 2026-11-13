@@ -244,3 +244,9 @@ Commands below use the `dc` alias from [Before you start](#before-you-start).
 
 4. If memory stays high while `ws_active_connections` falls, a room is wedged rather than busy. Hocuspocus unloads a room as soon as its last connection closes, so memory should follow connections down. Go to [Edits arriving but no document saved](#edits-arriving-but-no-document-saved).
 5. Check `stateless_relay_dropped_total`. A burst means a client is pushing oversized frames at the relay. The 64 KiB budget already drops them, so this is a probe and not the cause, but it is worth reporting.
+
+## Loki near its memory limit
+
+Grafana alert: `Loki memory above 80% of its limit`. Run forensic LogQL as one-hour windows, one at a time, each with a timeout, and watch this alert clear before the next one.
+
+If no query runs, compare `container_memory_rss{name="docsplus-loki"}` with the working set. If RSS is well below 80 %, the cause is page cache, which the kernel reclaims before a kill.
