@@ -78,6 +78,13 @@ Rules the 2.3.0 audit found:
 - **Name the measured thing.** A fill frame is not page open, and a pad that renders is not one that opens.
 - **Counts trace to logs.** Save the test logs, and recount tests, issues and commits at the tag.
 
+Rules the 2.3.8 bench work found:
+
+- **Isolate one change before you clear it.** A run of the full head against the last release hid a +4.5 % cost of one change under the gains of the others. Run base = the commit before the change, head = the change, before you call its cost noise.
+- **Keep a control in every timed run.** `control` is a copy of `base`. Its change is the noise of that run. Quote a head change only when every session sits outside the control range; report σ and the MDE beside it.
+- **Pin every browser for a series.** Use Chrome for Testing and Playwright's WebKit, which do not update themselves. A system browser can update mid-series (Firefox 159 became 160 on 2026-11-13) or lose focus (Safari). Record the version per session, and void a session whose version or focus changed.
+- **Prove the harness compares what it claims.** A marker that exists only in `base` must appear only in `base`'s build. On 2026-11-13 every variant was built from the working tree, so `base` equalled `head`; a skeptic caught it before any timed run.
+
 ## Artifacts and their rules
 
 Every prose file follows the [tech-writer](../tech-writer/SKILL.md) skill and Simplified English.
