@@ -13,7 +13,9 @@ import { isRoomSealed } from '../lib/accessRealtime'
 import { drainContributors } from '../lib/contributors'
 import { buildStoreJobId, enqueueStoreDocument } from '../lib/queue'
 import { stripSnapshotMetadata } from '../lib/snapshotMetadata'
+import { loadedStateBytes } from '../lib/loadedStateBytes'
 import {
+  documentHeadBytes,
   documentPersistFallbackTotal,
   documentSnapshotBytes,
   documentStoreRejectionsTotal
@@ -36,6 +38,24 @@ import { migrationExtensions } from '../lib/migration-extensions'
 import type { MachineVersionTrigger, StoreDocumentContext } from '../types'
 
 const getServerName = () => `${config.app.name}_${generateRandomId(4)}`
+
+// Both run on the load and save paths. A metric that throws there must not fail a load
+// or wedge the store debouncer, so each one swallows its own error.
+const noteLoadedBytes = (document: object, bytes: number) => {
+  try {
+    loadedStateBytes.set(document, bytes)
+  } catch {
+    // The gauge reads 0 for this room instead.
+  }
+}
+
+const noteFallbackHead = (bytes: number) => {
+  try {
+    documentHeadBytes.observe(bytes)
+  } catch {
+    // The row landed; only its size sample is lost.
+  }
+}
 
 const generateDefaultState = () => {
   const ydoc = new Y.Doc()
@@ -145,7 +165,7 @@ const configureExtensions = (): { extensions: Extension[]; redisWired: boolean }
 
   extensions.push(
     new Database({
-      async fetch({ documentName }: { documentName: string }) {
+      async fetch({ documentName, document }: { documentName: string; document: object }) {
         try {
           const doc = await prisma.documents.findFirst({
             where: { documentId: documentName },
@@ -178,7 +198,13 @@ const configureExtensions = (): { extensions: Extension[]; redisWired: boolean }
                   migrationExtensions
                 )
                 const migratedState = Buffer.from(Y.encodeStateAsUpdate(newYdoc))
-                return await persistMigratedSnapshot(documentName, doc.version, migratedState)
+                const served = await persistMigratedSnapshot(
+                  documentName,
+                  doc.version,
+                  migratedState
+                )
+                noteLoadedBytes(document, served.byteLength)
+                return served
               }
             } catch (migrationErr) {
               dbLogger.warn(
@@ -188,6 +214,7 @@ const configureExtensions = (): { extensions: Extension[]; redisWired: boolean }
             }
           }
 
+          noteLoadedBytes(document, rawState.byteLength)
           return rawState
         } catch (err) {
           dbLogger.error({ err }, 'Error fetching document data')
@@ -246,6 +273,7 @@ const configureExtensions = (): { extensions: Extension[]; redisWired: boolean }
         // and a second drain there would find an empty set.
         const contributors = drainContributors(document)
         const stateBuffer: Buffer = state
+        noteLoadedBytes(document, stateBuffer.byteLength)
         // Observed above the try so the queue-down fallback is counted too. Both
         // arms persist these same bytes.
         documentSnapshotBytes.observe(stateBuffer.byteLength)
@@ -314,10 +342,11 @@ const configureExtensions = (): { extensions: Extension[]; redisWired: boolean }
                   },
                   select: { version: true }
                 })
+                return versionData.length
               })
 
             try {
-              await saveMergedVersion()
+              noteFallbackHead(await saveMergedVersion())
             } catch (raceErr) {
               // FOR UPDATE can't stop two concurrent fallbacks computing the
               // same nextVersion under READ COMMITTED. On the (documentId,
@@ -329,7 +358,7 @@ const configureExtensions = (): { extensions: Extension[]; redisWired: boolean }
                 raceErr.code === 'P2002'
               ) {
                 try {
-                  await saveMergedVersion()
+                  noteFallbackHead(await saveMergedVersion())
                 } catch (retryErr) {
                   // A third writer landed between the retry's re-read and its
                   // insert. Give up on this flush rather than loop; the next

@@ -72,6 +72,10 @@ The storage design is settled and is not the thing to change: one full Yjs snaps
   - **It does not bind today.** Production baseline RSS is 130 MB to 154 MB against the 1024 M limit, leaving about 874 MB. Loading the entire production corpus at once would cost about 310 MB. Both collaboration replicas were measured idle: `ws_active_connections` and `ws_active_documents` were `0`.
   - **One document is the exception.** The largest head is 5,357,733 B, so that single room costs about 118 MB of RSS. About seven copies fill a replica. Watch that size class rather than the document count.
   - **The sticky cookie shards browsers, not rooms.** Traefik pins one cookie jar. Two people editing one document get independent cookies and land on different replicas. Never cite stickiness as a scaling mitigation.
+- **Watch stored head size with `document_head_bytes`, not `document_snapshot_bytes`** (#750). `document_snapshot_bytes` is the raw state the store hook sends, before the worker merges and strips it. `document_head_bytes` is the stored row, observed once per commit by the worker and by the queue-down fallback.
+  - The worker logs "Document head size warning" at `warn`. The reason is `large` above 4 MiB, or `growth` for a head of 1 MiB or more that grew by 25 % or more. The line carries ids, sizes, phase times and memory, and no user fields.
+  - The line reaches Loki only with `QUEUE_LOG_LEVEL=warn`. Pino writes a numeric level, and Alloy labels it, so the LogQL selector is `level="40"`, never `level="warn"`.
+  - `ws_loaded_state_bytes` sums the stored bytes of every loaded room on one replica, and `ws_loaded_state_max_bytes` is the largest. At the RSS slope above, the `realtime-ws-loaded-bytes` threshold of 30e6 B is about 82 % of 1 GiB.
 
 ## Documented hazards we accept
 

@@ -115,22 +115,73 @@ export const wsActiveDocuments = new Gauge({
   }
 })
 
-// Full document load bracket (onLoadDocument → afterLoadDocument), includes the
-// Database fetch (Postgres read) regardless of extension order.
+// Stored bytes of each loaded room, read at scrape time like ws_active_documents. RSS
+// costs about 23.1x stored bytes, so the sum predicts replica memory. The provider
+// returns one value per loaded room.
+let loadedStateProvider: (() => Iterable<number>) | null = null
+export const setLoadedStateProvider = (fn: () => Iterable<number>): void => {
+  loadedStateProvider = fn
+}
+
+const readLoadedState = (): { sum: number; max: number } => {
+  let sum = 0
+  let max = 0
+  for (const bytes of loadedStateProvider?.() ?? []) {
+    sum += bytes
+    if (bytes > max) max = bytes
+  }
+  return { sum, max }
+}
+
+export const wsLoadedStateBytes = new Gauge({
+  name: 'ws_loaded_state_bytes',
+  help: 'Sum of the stored state bytes of every room loaded on this replica',
+  registers: [register],
+  collect() {
+    if (loadedStateProvider) this.set(readLoadedState().sum)
+  }
+})
+
+export const wsLoadedStateMaxBytes = new Gauge({
+  name: 'ws_loaded_state_max_bytes',
+  help: 'Stored state bytes of the largest room loaded on this replica',
+  registers: [register],
+  collect() {
+    if (loadedStateProvider) this.set(readLoadedState().max)
+  }
+})
+
+// Size classes of a stored or loaded Yjs state. Few, fixed values keep the label
+// bounded. Edges are 1 MiB, 4 MiB and 16 MiB.
+export const SIZE_CLASSES = ['lt1m', '1to4m', '4to16m', 'ge16m'] as const
+export type SizeClass = (typeof SIZE_CLASSES)[number]
+
+export const sizeClass = (bytes: number): SizeClass => {
+  if (bytes < 1048576) return 'lt1m'
+  if (bytes < 4194304) return '1to4m'
+  if (bytes < 16777216) return '4to16m'
+  return 'ge16m'
+}
+
+// Load bracket, onLoadDocument to afterLoadDocument. Priority 1001 (#726 Decision 3) puts
+// it outside the Redis extension, so it holds the Postgres fetch and the decode, not the
+// Redis subscribe. The ladder runs to 30 s because big pads took 1 to 2.5 s on 2026-11-11.
 export const documentLoadDuration = new Histogram({
   name: 'document_load_duration_seconds',
   help: 'Document load time in seconds (fetch + decode)',
-  buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
+  labelNames: ['size_class'] as const,
+  buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 20, 30],
   registers: [register]
 })
 
-// Hocuspocus store-hook OVERHEAD (Y.Doc decode + base64 encode + BullMQ enqueue),
-// NOT DB write latency. The real Postgres write runs async in the worker and is
-// measured by job_duration_seconds{queue=store-documents}. Only the queue-down
-// fallback path includes a direct write.
+// Store-hook wall time: the redlock acquire and the enqueue, not the DB write. Priority
+// 1001 (#726 Decision 3) keeps the lock release and the 1 s direct-connection sleep out.
+// The worker's write is job_duration_seconds{queue=store-documents}. Only the queue-down
+// fallback includes a direct write.
 export const documentPersistDuration = new Histogram({
   name: 'document_persist_duration_seconds',
   help: 'Hocuspocus store-hook duration in seconds (enqueue overhead, not DB write)',
+  labelNames: ['size_class'] as const,
   buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
   registers: [register]
 })
@@ -377,10 +428,9 @@ export const ydocUpdateBytes = new Histogram({
   registers: [register]
 })
 
-// The whole stored state, not one update, so the ladder runs well past
-// ydoc_update_bytes. Largest measured row is 244,903 B. The top bucket is 64 MiB
-// because a loaded room costs 16.5-17x its snapshot in heap, which already
-// exceeds the 1024 M WS replica ceiling.
+// The raw state the store hook sends, before the worker merges and strips it. Largest
+// measured head is 12,518,586 B (2026-11-11). The top bucket is 64 MiB because a loaded
+// room costs 16.5-17x its snapshot in heap, which already exceeds the 1024 M WS ceiling.
 export const documentSnapshotBytes = new Histogram({
   name: 'document_snapshot_bytes',
   help: 'Size in bytes of each stored document snapshot',
@@ -388,10 +438,42 @@ export const documentSnapshotBytes = new Histogram({
   registers: [register]
 })
 
+// The stored size: the version row after merge and strip. Unlabelled on purpose. The
+// worker and the queue-down fallback observe it once per committed row.
+export const documentHeadBytes = new Histogram({
+  name: 'document_head_bytes',
+  help: 'Size of each stored version row, after merge and strip',
+  buckets: [65536, 262144, 1048576, 4194304, 8388608, 16777216, 67108864],
+  registers: [register]
+})
+
+// A superset of the prom-client defaults, so quantiles below 10 s still compare across
+// the change. The old ladder stopped at 10 s.
 export const jobDuration = new Histogram({
   name: 'job_duration_seconds',
   help: 'Background job processing time in seconds',
   labelNames: ['queue', 'status'] as const,
+  buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 20, 30, 60, 120],
+  registers: [register]
+})
+
+export const STORE_JOB_PHASES = [
+  'state_fetch',
+  'head_read',
+  'merge_strip',
+  'insert',
+  'commit',
+  'card'
+] as const
+export type StoreJobPhase = (typeof STORE_JOB_PHASES)[number]
+
+// Wall time of each store-job phase, by the incoming state's size class. Not seeded: no
+// alert reads it. Their sum should match job_duration_seconds within about 10 %.
+export const storeJobPhaseSeconds = new Histogram({
+  name: 'store_job_phase_seconds',
+  help: 'Store job time in seconds, by phase and incoming state size class',
+  labelNames: ['phase', 'size_class'] as const,
+  buckets: [0.005, 0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 20, 30, 60],
   registers: [register]
 })
 
@@ -436,6 +518,11 @@ export const seedWsAlertSeries = (): void => {
   }
   for (const mode of APPLY_MODES) {
     documentContentApplyTotal.inc({ mode, outcome: 'error' }, 0)
+  }
+  // realtime-doc-persist-slow and realtime-doc-persist-stalled read the persist series.
+  for (const size_class of SIZE_CLASSES) {
+    documentPersistDuration.zero({ size_class })
+    documentLoadDuration.zero({ size_class })
   }
 }
 

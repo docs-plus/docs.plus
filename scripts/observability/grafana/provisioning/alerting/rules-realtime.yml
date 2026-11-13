@@ -56,7 +56,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: store-hook enqueue overhead p99 >0.5s (blocks WS event loop). Actual DB write latency is covered by worker rules.
+          summary: 'Store-hook wall time p99 >0.5s: the redlock acquire plus the enqueue, not a measured event-loop block. Read nodejs_eventloop_lag_max_seconds{job="hocuspocus-server"} first. Worker rules cover the DB write.'
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }
@@ -340,4 +340,45 @@ groups:
               expression: B
               conditions:
                 - evaluator: { type: gt, params: [0] }
+              refId: C
+
+      - uid: realtime-ws-loaded-bytes
+        title: WS replica holds over 30 MB of loaded room state
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: 'One WebSocket replica holds more than 30e6 B of loaded room state. RSS costs about 23.1x stored bytes, so that is about 82 % of the 1 GiB limit. Check ws_loaded_state_max_bytes for one large room before you restart anything.'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # Per instance on purpose: memory is per replica, and a replica
+              # multiplies room memory, it never divides it (#750).
+              expr: 'max by (instance) (ws_loaded_state_bytes{job="hocuspocus-server"})'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [30000000] }
               refId: C

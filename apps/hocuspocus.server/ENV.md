@@ -361,6 +361,8 @@ The backend code or its container entrypoint reads these names directly. The sch
 | `PUSH_LOG_LEVEL`                 | `LOG_LEVEL` |
 | `ADMIN_LOG_LEVEL`                | `LOG_LEVEL` |
 
+Production sets `QUEUE_LOG_LEVEL=warn` in the source env file, so queue `warn` lines reach Loki. One of them is "Document head size warning" ([#750](https://github.com/docs-plus/docs.plus/issues/750)). Without it, a production `LOG_LEVEL=error` hides them.
+
 `LOG_LEVEL` in this table means the resolved base level, with its own default. Production Compose sets `REST_LOG_LEVEL` to `info` when the env file leaves it unset; see [Loading](#loading). So the `error` fallback for `REST_LOG_LEVEL` applies only outside that compose file.
 
 ### Error reporting and startup

@@ -16,7 +16,13 @@ import { refreshDocumentGridPreview } from './documentGridPreview'
 import { sendNewDocumentNotification } from './email/document-notification'
 import { captureUnknown } from './instrument'
 import { queueLogger } from './logger'
-import { recordJobOutcome } from './metrics'
+import {
+  documentHeadBytes,
+  recordJobOutcome,
+  sizeClass,
+  type StoreJobPhase,
+  storeJobPhaseSeconds
+} from './metrics'
 import { ydocToPmJson } from './nested-flat-migration'
 import { firstEditOwner } from './ownerAccess'
 import { prisma } from './prisma'
@@ -386,6 +392,64 @@ async function resolveJobState(data: StoreDocumentData): Promise<Buffer> {
   throw new Error(`Store job state missing or expired (${data.stateKey ?? 'no stateKey'})`)
 }
 
+type PhaseMs = Partial<Record<StoreJobPhase, number>>
+type MemorySample = { rss: number; heapUsed: number; arrayBuffers: number }
+
+const HEAD_WARN_BYTES = 4 * 1024 * 1024
+const HEAD_GROWTH_MIN_BYTES = 1024 * 1024
+const HEAD_GROWTH_RATIO = 1.25
+
+const sampleMemory = (): MemorySample | null => {
+  try {
+    const { rss, heapUsed, arrayBuffers } = process.memoryUsage()
+    return { rss, heapUsed, arrayBuffers }
+  } catch {
+    return null
+  }
+}
+
+// Every metric and log call in the store job goes through these two helpers. A throw
+// after the commit would retry a durable save and append a duplicate row, so neither
+// helper ever throws.
+const recordStorePhases = (phaseMs: PhaseMs, incomingBytes: number) => {
+  try {
+    const size_class = sizeClass(incomingBytes)
+    for (const [phase, ms] of Object.entries(phaseMs)) {
+      storeJobPhaseSeconds.observe({ phase, size_class }, ms / 1000)
+    }
+  } catch {
+    // The save outranks its phase samples.
+  }
+}
+
+const noteHeadSize = (
+  documentId: string,
+  version: number,
+  bytes: number,
+  previousBytes: number,
+  extra: Record<string, unknown> = {}
+) => {
+  try {
+    documentHeadBytes.observe(bytes)
+    const large = bytes > HEAD_WARN_BYTES
+    const growth =
+      previousBytes > 0 &&
+      bytes >= HEAD_GROWTH_MIN_BYTES &&
+      bytes >= previousBytes * HEAD_GROWTH_RATIO
+    if (large || growth) {
+      queueLogger.warn(
+        { documentId, version, bytes, previousBytes, reason: large ? 'large' : 'growth', ...extra },
+        'Document head size warning'
+      )
+    }
+  } catch {
+    // The save outranks its size sample.
+  }
+}
+
+const roundMs = (phaseMs: PhaseMs): PhaseMs =>
+  Object.fromEntries(Object.entries(phaseMs).map(([k, v]) => [k, Math.round(v * 10) / 10]))
+
 export const createDocumentWorker = () => {
   const redisPublisher = getRedisPublisher()
   // Worker MUST have dedicated connection (uses blocking commands)
@@ -396,6 +460,13 @@ export const createDocumentWorker = () => {
     async (job: Job<StoreDocumentData>) => {
       const { data } = job
       let rawState: Buffer | null = null
+      // Each phase sums across slug retries and is observed once, in the finally block.
+      const phaseMs: PhaseMs = {}
+      const addPhase = (phase: StoreJobPhase, since: number) => {
+        phaseMs[phase] = (phaseMs[phase] ?? 0) + (performance.now() - since)
+      }
+      let incomingBytes = 0
+      const memoryBefore = sampleMemory()
 
       try {
         const startTime = Date.now()
@@ -404,8 +475,11 @@ export const createDocumentWorker = () => {
         // Decode + metadata strip run in this worker, never in the WS store hook.
         // That work is the CPU-heavy half of a save and it must stay off the event
         // loop serving live connections.
+        const fetchStarted = performance.now()
         rawState = await resolveJobState(data)
+        addPhase('state_fetch', fetchStarted)
         const incoming = new Uint8Array(rawState)
+        incomingBytes = incoming.byteLength
 
         // READ COMMITTED + FOR UPDATE serializes appends but cannot stop two
         // concurrent jobs computing the same nextVersion. No row exists on first
@@ -416,10 +490,13 @@ export const createDocumentWorker = () => {
         // The slug retry wraps the WHOLE transaction. A P2002 aborts the Postgres
         // transaction, so retrying inside it only ever hit 25P02, and the next
         // debounce re-enqueued into the same dead end.
-        const { version, versionData, createdSlug, isFirstCreation } = await withUniqueSlug(
-          baseSlug,
-          (candidateSlug) =>
-            prisma.$transaction(
+        // head_read starts at the $transaction call, so it holds the pool wait, BEGIN and
+        // the FOR UPDATE lock wait too. commit runs from the callback's return to resolve.
+        let callbackDone = 0
+        const { version, versionData, previousBytes, createdSlug, isFirstCreation } =
+          await withUniqueSlug(baseSlug, async (candidateSlug) => {
+            const headReadStarted = performance.now()
+            const result = await prisma.$transaction(
               async (tx) => {
                 // FOR UPDATE lock on the latest row. ORDER BY version is served
                 // top-1 by the (documentId, version) unique index. ORDER BY id DESC
@@ -434,6 +511,7 @@ export const createDocumentWorker = () => {
             FOR UPDATE
           `
                 const existingDoc = existingDocs[0] ?? null
+                addPhase('head_read', headReadStarted)
 
                 const isFirst = !existingDoc
                 const nextVersion = existingDoc ? existingDoc.version + 1 : 1
@@ -442,11 +520,15 @@ export const createDocumentWorker = () => {
                 // stale snapshot the newest version, and divergent replicas union.
                 // Merge RAW and strip the RESULT: mergeUpdates only unions delete
                 // sets, so the strip's decode is what drops deleted text.
+                const mergeStarted = performance.now()
                 const versionData = existingDoc
                   ? stripSnapshotMetadata(
                       Y.mergeUpdates([new Uint8Array(existingDoc.data), incoming])
                     )
                   : stripSnapshotMetadata(incoming)
+                addPhase('merge_strip', mergeStarted)
+                // insert also holds the first-save metadata upsert below.
+                const insertStarted = performance.now()
 
                 // Handle first-time document creation; the title stays the BASE
                 // slug, so a collision suffixes the slug without renaming the doc.
@@ -479,10 +561,13 @@ export const createDocumentWorker = () => {
                   // The full row would send the snapshot back inside the lock.
                   select: { version: true }
                 })
+                addPhase('insert', insertStarted)
+                callbackDone = performance.now()
 
                 return {
                   version: doc.version,
                   versionData,
+                  previousBytes: existingDoc ? existingDoc.data.byteLength : 0,
                   createdSlug: slug,
                   isFirstCreation: isFirst
                 }
@@ -491,7 +576,9 @@ export const createDocumentWorker = () => {
               // latency, not P2028 errors that burn the retry budget.
               { maxWait: 5000, timeout: 15000 }
             )
-        )
+            addPhase('commit', callbackDone)
+            return result
+          })
 
         // Claim-check key served its purpose; TTL remains the backstop.
         if (data.stateKey) {
@@ -506,6 +593,7 @@ export const createDocumentWorker = () => {
 
         enqueueChangeSummary({ documentId: data.documentName, version })
 
+        const cardStarted = performance.now()
         try {
           // One decode feeds both writes; the card write never throws.
           const decoded = ydocToPmJson(versionData)
@@ -518,6 +606,15 @@ export const createDocumentWorker = () => {
             'Failed to persist document grid preview'
           )
         }
+        addPhase('card', cardStarted)
+
+        // After the commit, so a slug or P2002 retry counts once. Ids and sizes only.
+        noteHeadSize(data.documentName, version, versionData.byteLength, previousBytes, {
+          phaseMs: roundMs(phaseMs),
+          stateBytes: incomingBytes,
+          memoryBefore,
+          memoryAfter: sampleMemory()
+        })
 
         // Send email notification AFTER transaction commits (fire-and-forget)
         if (isFirstCreation && createdSlug) {
@@ -616,6 +713,8 @@ export const createDocumentWorker = () => {
         }
 
         throw err // Re-throw to trigger retry
+      } finally {
+        recordStorePhases(phaseMs, incomingBytes)
       }
     },
     {

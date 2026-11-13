@@ -16,8 +16,28 @@ This file is the operator and API changelog. The pad product lives in the [root 
   ownership and the section `rev`. `rewrite_section` clones every kept media node into place and
   never re-creates media from Markdown ([#719](https://github.com/docs-plus/docs.plus/issues/719)), ([#720](https://github.com/docs-plus/docs.plus/issues/720)).
 
+- New metrics ([#750](https://github.com/docs-plus/docs.plus/issues/750)):
+  - `document_head_bytes` observes each stored version row, after merge and strip.
+  - `store_job_phase_seconds{phase, size_class}` times the store-job phases `state_fetch`,
+    `head_read`, `merge_strip`, `insert`, `commit` and `card`.
+  - `ws_loaded_state_bytes` and `ws_loaded_state_max_bytes` gauge the loaded room bytes on each
+    WebSocket replica. The new alert rule `realtime-ws-loaded-bytes` fires above 30e6 B for 5 min.
+- The worker logs one `warn` line, "Document head size warning", for a head above 4 MiB (`large`).
+  It also logs one for a head of 1 MiB or more that grew by 25 % or more (`growth`).
+
 ### Changed
 
+- `document_load_duration_seconds` and `document_persist_duration_seconds` carry a `size_class`
+  label: `lt1m`, `1to4m`, `4to16m` or `ge16m`. Each class is seeded at 0 on the WebSocket process.
+  The load ladder now runs to 30 s ([#750](https://github.com/docs-plus/docs.plus/issues/750)).
+- `job_duration_seconds` gains the buckets 20, 30, 60 and 120 s and keeps every old edge.
+  Quantiles above 10 s across this change are not comparable
+  ([#750](https://github.com/docs-plus/docs.plus/issues/750)).
+- The metrics extension runs at priority 1001, above the Redis extension. The load timer no
+  longer holds the Redis subscribe. The store-hook timer now holds the redlock acquire, and drops
+  the lock release and the 1 s direct-connection sleep. Compare both timers by exact mean
+  (`_sum/_count`), on one side of this change only
+  ([#726](https://github.com/docs-plus/docs.plus/issues/726)).
 - `POST /api/documents/:docId/import` caps a Word upload by caller: 40 MiB for the owner and
   10 MiB for everyone else. The unpacked text stays capped at 40 MiB for both. The route's body
   limit follows the owner cap. `MAX_MARKDOWN_CHARS` stays 64 KiB

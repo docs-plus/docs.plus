@@ -21,6 +21,7 @@ import { countActiveConnections } from './lib/health'
 import { handleHistoryStateless, WATCH_RATE_LIMITED } from './lib/history-stateless'
 import { captureUnknown, flushObservability } from './lib/instrument'
 import { decodeJwtClaims, isConnectedAppToken } from './lib/jwtClaims'
+import { loadedStateBytes } from './lib/loadedStateBytes'
 import { wsLogger } from './lib/logger'
 import {
   documentLoadDuration,
@@ -31,6 +32,8 @@ import {
   seedWsAlertSeries,
   setActiveConnectionsProvider,
   setActiveDocumentsProvider,
+  setLoadedStateProvider,
+  sizeClass,
   statelessRelayDroppedTotal,
   wsAuthRejectionsTotal,
   wsAwarenessFramesDroppedTotal,
@@ -187,11 +190,26 @@ function roomDocumentId(document: { name?: string }): string | null {
   return typeof n === 'string' && n.length > 0 ? n : null
 }
 
-// High priority so the load/store START timers run BEFORE the Database extension's
-// own onLoadDocument/onStoreDocument (priority sort: higher runs first). Otherwise
-// the bracket would begin AFTER the prisma fetch / enqueue and observe ≈0.
+// A throw out of a load or store hook rejects that hook, and then the pad does not open
+// or save. A metric must never cost that.
+const observeHookSeconds = (
+  histogram: typeof documentLoadDuration | typeof documentPersistDuration,
+  document: object,
+  started: number
+) => {
+  try {
+    const size_class = sizeClass(loadedStateBytes.get(document) ?? 0)
+    histogram.observe({ size_class }, (Date.now() - started) / 1000)
+  } catch {
+    // The hook outranks its metric.
+  }
+}
+
+// Priority 1001 (#726 Decision 3): higher runs first, so both timers sit outside the
+// Redis extension (1000) and the Database extension. The load timer then leaves out the
+// Redis subscribe. The store timer gains the redlock acquire and loses the release and sleep.
 const metricsExtension = {
-  priority: 1000,
+  priority: 1001,
 
   async onLoadDocument({ document }: { document: object }) {
     loadStartedAt.set(document, Date.now())
@@ -200,7 +218,7 @@ const metricsExtension = {
   async afterLoadDocument({ document }: { document: object }) {
     const started = loadStartedAt.get(document)
     if (started === undefined) return
-    documentLoadDuration.observe((Date.now() - started) / 1000)
+    observeHookSeconds(documentLoadDuration, document, started)
     loadStartedAt.delete(document)
   },
 
@@ -211,7 +229,7 @@ const metricsExtension = {
   async afterStoreDocument({ document }: { document: object }) {
     const started = storeStartedAt.get(document)
     if (started === undefined) return
-    documentPersistDuration.observe((Date.now() - started) / 1000)
+    observeHookSeconds(documentPersistDuration, document, started)
     storeStartedAt.delete(document)
   },
 
@@ -610,6 +628,12 @@ const server = new Server(serverConfig, { maxPayload: MAX_WS_MESSAGE_BYTES })
 // /health/websocket can never report different numbers.
 setActiveDocumentsProvider(() => server.hocuspocus.documents.size)
 setActiveConnectionsProvider(() => countActiveConnections(server.hocuspocus))
+// A room with no entry yet counts 0, so a load in flight never inflates the sum.
+setLoadedStateProvider(function* () {
+  for (const document of server.hocuspocus.documents.values()) {
+    yield loadedStateBytes.get(document) ?? 0
+  }
+})
 seedWsAlertSeries()
 
 server.listen()

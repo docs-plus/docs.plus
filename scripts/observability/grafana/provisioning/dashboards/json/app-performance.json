@@ -1589,6 +1589,256 @@
       }
     },
     {
+      "id": 64,
+      "type": "timeseries",
+      "title": "Store Job Phase p95 by Phase",
+      "description": "store_job_phase_seconds (#750): p95 of each store-job phase, all size classes. head_read holds the pool wait, BEGIN and the FOR UPDATE lock wait.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 167
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (phase, le) (rate(store_job_phase_seconds_bucket{job=\"hocuspocus-worker\"}[1h])))",
+          "refId": "A",
+          "legendFormat": "{{phase}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 65,
+      "type": "timeseries",
+      "title": "Store Job Mean by Size Class",
+      "description": "Exact mean store-job time per job, by incoming state size class: all phases summed, over jobs that fetched state. job_duration_seconds has no size_class label, so this panel uses the phase histogram.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 167
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (size_class) (rate(store_job_phase_seconds_sum{job=\"hocuspocus-worker\"}[1h])) / sum by (size_class) (rate(store_job_phase_seconds_count{job=\"hocuspocus-worker\",phase=\"state_fetch\"}[1h]))",
+          "refId": "A",
+          "legendFormat": "{{size_class}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 66,
+      "type": "timeseries",
+      "title": "Document Load p95 by Size Class",
+      "description": "document_load_duration_seconds by size_class (#750). After #726 Decision 3 the timer holds the fetch and decode, not the Redis subscribe.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 175
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (size_class, le) (rate(document_load_duration_seconds_bucket{job=\"hocuspocus-server\"}[15m])))",
+          "refId": "A",
+          "legendFormat": "{{size_class}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 67,
+      "type": "timeseries",
+      "title": "Loaded Room Bytes vs RSS (WebSocket)",
+      "description": "ws_loaded_state_bytes and ws_loaded_state_max_bytes beside process_resident_memory_bytes, per WebSocket instance. RSS costs about 23.1x stored bytes.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 175
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "ws_loaded_state_bytes{job=\"hocuspocus-server\"}",
+          "refId": "A",
+          "legendFormat": "{{instance}} loaded"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "ws_loaded_state_max_bytes{job=\"hocuspocus-server\"}",
+          "refId": "B",
+          "legendFormat": "{{instance}} largest room"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "process_resident_memory_bytes{job=\"hocuspocus-server\"}",
+          "refId": "C",
+          "legendFormat": "{{instance}} RSS"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      }
+    },
+    {
       "id": 53,
       "type": "row",
       "title": "Background Jobs (pgmq · cron)",
@@ -1596,7 +1846,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 167
+        "y": 183
       },
       "collapsed": false
     },
@@ -1612,7 +1862,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 168
+        "y": 184
       },
       "targets": [
         {
@@ -1669,7 +1919,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 168
+        "y": 184
       },
       "targets": [
         {
@@ -1726,7 +1976,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 168
+        "y": 184
       },
       "targets": [
         {
@@ -1779,7 +2029,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 176
+        "y": 192
       },
       "collapsed": false
     },
@@ -1796,7 +2046,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 177
+        "y": 193
       },
       "targets": [
         {
@@ -1854,7 +2104,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 177
+        "y": 193
       },
       "targets": [
         {
@@ -1912,7 +2162,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 185
+        "y": 201
       },
       "targets": [
         {
@@ -1979,7 +2229,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 185
+        "y": 201
       },
       "targets": [
         {
@@ -2063,7 +2313,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 193
+        "y": 209
       },
       "targets": [
         {
@@ -2130,7 +2380,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 193
+        "y": 209
       },
       "targets": [
         {
