@@ -13,7 +13,24 @@ const LAST_WHITESPACE_RE = /\s\S*$/
 // `\S+` (not split on `' '`) so NBSP / narrow NBSP / tab / ideographic space
 // also fire the autolink boundary that the user expects.
 const WORD_RE = /\S+/g
+const SPACE_RE = /\s/
 const IMAGE_MARKDOWN_CONTEXT_CHARS = 15
+
+// Scans back from the end, so a 250k-character block costs only its last words, not one match per word.
+const lastWordEnd = (text: string): number => {
+  let end = text.length
+  while (end > 0 && SPACE_RE.test(text[end - 1])) end--
+  return end
+}
+// Words that end at or after `from`, a text offset; a word that `from` cuts into counts whole.
+function wordsEndingFrom(text: string, from: number): RegExpExecArray[] {
+  let start = Math.max(0, Math.min(from, text.length))
+  while (start > 0 && !SPACE_RE.test(text[start - 1])) start--
+  return [...text.slice(start).matchAll(WORD_RE)].map((word) => {
+    word.index += start
+    return word
+  })
+}
 
 // Dictation, an IME phrase or a text replacement inserts many words in one typed transaction.
 // prosemirror-view scrolls typed input; paste, drop, history, y-sync and mark steps are not typing.
@@ -119,15 +136,13 @@ export function createAutolinkInteraction(ctx: LinkContext): Plugin {
 
         if (!textBlock || !textBeforeWhitespace) continue
 
-        const words = [...textBeforeWhitespace.matchAll(WORD_RE)]
         const textStart = textBlock.pos + 1
-        const candidates =
-          chunkFrom === undefined
-            ? words.slice(-1)
-            : words.filter(
-                (word, i) =>
-                  i === words.length - 1 || textStart + word.index + word[0].length >= chunkFrom
-              )
+        // The last word is always a candidate, as before #780: a second space still links it.
+        const lastEnd = lastWordEnd(textBeforeWhitespace)
+        const candidates = wordsEndingFrom(
+          textBeforeWhitespace,
+          chunkFrom === undefined ? lastEnd : Math.min(chunkFrom - textStart, lastEnd)
+        )
 
         // The image-markdown and code-mark filters below are document-context, not URL gates — they stay local.
         candidates
