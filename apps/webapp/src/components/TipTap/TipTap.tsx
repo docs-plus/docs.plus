@@ -34,6 +34,7 @@ import ts from 'highlight.js/lib/languages/typescript'
 import html from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
 import { createLowlight } from 'lowlight'
+import { Marked, type marked } from 'marked'
 import ShortUniqueId from 'short-unique-id'
 import * as Y from 'yjs'
 
@@ -162,7 +163,10 @@ const Editor = ({
       nested: true
     }),
 
-    Markdown,
+    // One Marked per editor: the shared `marked` keeps every editor's tokenizers,
+    // so each closed pad's Doc and provider stay live (#781). The option is typed
+    // as the callable module export; the manager uses only methods a Marked has.
+    Markdown.configure({ marked: new Marked() as unknown as typeof marked }),
 
     TitleDocument,
 

@@ -76,6 +76,7 @@
     "highlight.js": "^11.12.0",
     "immer": "catalog:",
     "lowlight": "^3.3.0",
+    "marked": "catalog:",
     "mobile-detect": "^1.4.5",
     "motion": "^13.5.1",
     "next": "15.5.28",

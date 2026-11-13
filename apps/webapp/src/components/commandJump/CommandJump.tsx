@@ -265,7 +265,6 @@ export function CommandJump({ surface }: { surface: CommandJumpSurface }) {
 
   const user = useAuthStore((state) => state.profile)
   const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
-  const editor = useStore((state) => state.settings.editor.instance)
   const isMobile = useStore((state) => state.settings.editor.isMobile) ?? false
   const { isHistory } = useHistoryHash()
   const signedIn = Boolean(user && isAuthServiceAvailable)
@@ -280,12 +279,14 @@ export function CommandJump({ surface }: { surface: CommandJumpSurface }) {
         signedIn,
         isHistory,
         isMobile,
-        editor: editor ?? null,
+        // Read at open, not at render: a render-scope `editor` would stay alive in the
+        // closure context that the stable `navigate` shares, and keep an old pad (#781).
+        editor: useStore.getState().settings.editor.instance ?? null,
         navigate
       })
     )
     setOpen(true)
-  }, [surface, signedIn, isHistory, isMobile, editor, navigate])
+  }, [surface, signedIn, isHistory, isMobile, navigate])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

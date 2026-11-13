@@ -189,6 +189,7 @@
     "eslint-plugin-simple-import-sort": "^14.0.0",
     "globals": "^17.14.0",
     "jsdom": "^26.1.0",
+    "marked": "^17.0.6",
     "start-server-and-test": "^2.1.5",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"

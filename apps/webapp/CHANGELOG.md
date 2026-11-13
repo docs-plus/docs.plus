@@ -45,6 +45,13 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   like another address ([#772](https://github.com/docs-plus/docs.plus/issues/772)).
 - A link you remove stays removed while others edit the pad. Other people's editors no longer link
   text they did not type ([#771](https://github.com/docs-plus/docs.plus/issues/771)).
+- Moving between pads no longer keeps every pad you left in memory. Each pad editor now gets its
+  own Markdown parser, so a closed pad's document, connection and offline copy can be freed. After
+  20 pad switches in a local production build, live documents fall from 21 to 2: the open pad and
+  one older editor that other code still holds. Command jump no longer keeps one of them
+  ([#781](https://github.com/docs-plus/docs.plus/issues/781)).
+- Dictation, an IME phrase or a text replacement that inserts a URL in the middle of a phrase now
+  links it, as typed words do ([#780](https://github.com/docs-plus/docs.plus/issues/780)).
 - GlitchTip browser counts are usable again. The Safari IndexedDB flood now sends one warning per
   page load, not hundreds. next-pwa's service-worker register errors (AbortError and Cache.add)
   are dropped. Network failures and closed-database errors still report ([#752](https://github.com/docs-plus/docs.plus/issues/752)).
