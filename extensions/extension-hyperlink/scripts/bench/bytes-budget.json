@@ -1,5 +1,5 @@
 {
-  "note": "Gzip byte limits for head: the base gz values of `--ref npm:2.3.0 --bytes-only`. null means no limit.",
-  "starterKitAppGz": 25213,
-  "helperOnlyGz": 121398
+  "note": "Gzip byte limits for head, set to the measured head on 2026-11-13 by maintainer ruling (2.3.0 plus #770-#780). Raise a limit only on purpose, in the same change. null means no limit.",
+  "starterKitAppGz": 26040,
+  "helperOnlyGz": 9862
 }

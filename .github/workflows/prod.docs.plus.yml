@@ -354,7 +354,7 @@ jobs:
         run: bash scripts/extension-preflight.sh
 
   # Bytes are exact, so one run per PR is enough; timings never run in CI.
-  # Report only: head is above a bytes-budget.json limit today, so --budget stays out.
+  # Fails when head is above a scripts/bench/bytes-budget.json limit (maintainer ruling, 2026-11-13).
   extension-bytes:
     name: 📏 Ext bytes (extension-hyperlink)
     needs: [triage, changes]
@@ -379,7 +379,9 @@ jobs:
         run: |
           # A PR checkout has no local main; the bench reads main's src/ with git archive.
           git fetch --no-tags --depth=1 origin +refs/heads/main:refs/heads/main
+          set -o pipefail
           NODE_ENV=production bun scripts/bench/run.ts --ref main --bytes-only \
+            --budget scripts/bench/bytes-budget.json \
             --save "${RUNNER_TEMP}/extension-bytes.json" | tee -a "${GITHUB_STEP_SUMMARY}"
       - name: 📤 Upload byte rows
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

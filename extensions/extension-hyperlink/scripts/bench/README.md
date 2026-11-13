@@ -49,17 +49,17 @@ With a git ref, only `src/` differs between variants. All variants use this work
 
 `bytes-budget.json` holds gzip limits for head's `starterKitApp` and `helperOnly` rows. With `--budget scripts/bench/bytes-budget.json`, `run.ts` exits 1 when head is above a limit.
 
-The limits are the `base` gzip values of `--ref npm:2.3.0 --bytes-only`, the published 2.3.0 file. A `null` limit prints "no limit set" and passes.
+The limits are head's measured gzip values on 2026-11-13: the published 2.3.0 file plus #770 to #780, by maintainer ruling. A change that adds bytes on purpose raises the limit in the same change. A `null` limit prints "no limit set" and passes.
 
 ## CI
 
 The `extension-bytes` job in `.github/workflows/prod.docs.plus.yml` runs once per pull request that starts this package's suite, not once per matrix leg. That is any change under this package, and any shared input in `.github/filters/extensions.yaml`. It runs:
 
 ```bash
-NODE_ENV=production bun scripts/bench/run.ts --ref main --bytes-only
+NODE_ENV=production bun scripts/bench/run.ts --ref main --bytes-only --budget scripts/bench/bytes-budget.json
 ```
 
-It writes the table to the run summary and uploads the saved JSON. It posts no PR comment and never runs on the production host. The `--budget` check is not in CI. Head is above the `starterKitApp` limit today, so CI would fail. Timings never run in CI: hosted runners swing about 2×.
+It writes the table to the run summary and uploads the saved JSON. It posts no PR comment and never runs on the production host. The job fails when head is above a budget limit. Timings never run in CI: hosted runners swing about 2×.
 
 ## What an npm user's app pays
 
