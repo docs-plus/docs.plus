@@ -46,7 +46,7 @@ Read from the env file, with a Compose default. Editing these keys in `.env.prod
 | `DO_STORAGE_MAX_FILE_SIZE` | `10485760`                  | `rest-api`, `hocuspocus-server` |
 | `VAPID_SUBJECT`            | `mailto:support@docs.plus`  | `hocuspocus-worker`             |
 
-On `hocuspocus-worker` only, `DB_POOL_SIZE` and `BULLMQ_CONCURRENCY` both take `WORKER_DB_POOL_SIZE` (default `10`). So `DB_POOL_SIZE` and `BULLMQ_CONCURRENCY` in the env file do nothing on the worker. Set `WORKER_DB_POOL_SIZE` instead.
+On `hocuspocus-worker` only, `DB_POOL_SIZE` takes `WORKER_DB_POOL_SIZE` (default `10`), and `BULLMQ_CONCURRENCY` takes `WORKER_STORE_CONCURRENCY` (default `1`). So `DB_POOL_SIZE` and `BULLMQ_CONCURRENCY` in the env file do nothing on the worker. Set those two instead.
 
 ## Required
 
@@ -137,16 +137,19 @@ Redis is optional; features degrade gracefully without it (rate limiting is disa
 
 Read by `src/lib/prisma.ts` from the validated config only. There are no runtime fallbacks. The schema defaults apply only where Compose does not set the key. See [Loading](#loading).
 
-| Variable               | Type   | Default  |
-| ---------------------- | ------ | -------- |
-| `DB_POOL_SIZE`         | number | `10`     |
-| `DB_IDLE_TIMEOUT`      | number | `300000` |
-| `DB_CONNECT_TIMEOUT`   | number | `10000`  |
-| `DB_STATEMENT_TIMEOUT` | number | `60000`  |
-| `DB_QUERY_TIMEOUT`     | number | `60000`  |
-| `WORKER_DB_POOL_SIZE`  | number | `10`     |
+| Variable                   | Type   | Default  |
+| -------------------------- | ------ | -------- |
+| `DB_POOL_SIZE`             | number | `10`     |
+| `DB_IDLE_TIMEOUT`          | number | `300000` |
+| `DB_CONNECT_TIMEOUT`       | number | `10000`  |
+| `DB_STATEMENT_TIMEOUT`     | number | `60000`  |
+| `DB_QUERY_TIMEOUT`         | number | `60000`  |
+| `WORKER_DB_POOL_SIZE`      | number | `10`     |
+| `WORKER_STORE_CONCURRENCY` | number | `1`      |
 
-`WORKER_DB_POOL_SIZE` is read by `docker-compose.prod.yml`, not by the schema. On the worker it sets both `DB_POOL_SIZE` and `BULLMQ_CONCURRENCY`. Concurrency then matches the pool, so jobs do not wait for a connection.
+`WORKER_DB_POOL_SIZE` and `WORKER_STORE_CONCURRENCY` are read by `docker-compose.prod.yml`, not by the schema. On the worker the first sets `DB_POOL_SIZE` and the second sets `BULLMQ_CONCURRENCY`.
+
+`WORKER_STORE_CONCURRENCY` is bound by memory, not by the pool. Locally, 4 large saves queued on one worker peaked at 1,255.6 MiB of RSS at concurrency 10, and at 882.8 MiB at concurrency 1 (n = 5, #737). Keep it at or below `WORKER_DB_POOL_SIZE`, or jobs wait for a connection. The pool stays 10, because email, push, change summaries and pgmq share it. `WORKER_STORE_CONCURRENCY=10` rolls back fully. `2` answers a `store_job_wait_seconds` p95 above 2 s. Set either in the host source `.env`, never only in `.env.production`.
 
 ## Storage
 
@@ -294,7 +297,7 @@ from it, because a mail client posts the URL itself and runs no JavaScript.
 | `BULLMQ_RATE_LIMIT_MAX`      | number | `300`   |
 | `BULLMQ_RATE_LIMIT_DURATION` | number | `1000`  |
 
-On the worker, production Compose sets `BULLMQ_CONCURRENCY` from `WORKER_DB_POOL_SIZE`; see [Loading](#loading).
+On the worker, production Compose sets `BULLMQ_CONCURRENCY` from `WORKER_STORE_CONCURRENCY` (default `1`); see [Loading](#loading).
 
 ## Worker
 

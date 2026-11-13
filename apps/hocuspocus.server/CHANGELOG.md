@@ -24,9 +24,18 @@ This file is the operator and API changelog. The pad product lives in the [root 
     WebSocket replica. The new alert rule `realtime-ws-loaded-bytes` fires above 30e6 B for 5 min.
 - The worker logs one `warn` line, "Document head size warning", for a head above 4 MiB (`large`).
   It also logs one for a head of 1 MiB or more that grew by 25 % or more (`growth`).
+- `store_job_wait_seconds` times how long a store job waits before its first start. Retries and
+  stall reruns are left out ([#737](https://github.com/docs-plus/docs.plus/issues/737)).
+- Two alert rules ([#737](https://github.com/docs-plus/docs.plus/issues/737)): `incident-oom-kill` fires
+  on any kernel OOM kill in 10 min, and `incident-rss-peak` warns when a process passes 80 % of its
+  memory limit in 5 min.
 
 ### Changed
 
+- Each worker replica runs one store job at a time. `BULLMQ_CONCURRENCY` on the worker now reads
+  `WORKER_STORE_CONCURRENCY` (default `1`), not `WORKER_DB_POOL_SIZE`. The worker memory limit rises
+  from 1G to 2G ([#737](https://github.com/docs-plus/docs.plus/issues/737)). Roll back with
+  `WORKER_STORE_CONCURRENCY=10` in the host source `.env`.
 - `document_load_duration_seconds` and `document_persist_duration_seconds` carry a `size_class`
   label: `lt1m`, `1to4m`, `4to16m` or `ge16m`. Each class is seeded at 0 on the WebSocket process.
   The load ladder now runs to 30 s ([#750](https://github.com/docs-plus/docs.plus/issues/750)).

@@ -477,6 +477,16 @@ export const storeJobPhaseSeconds = new Histogram({
   registers: [register]
 })
 
+// Queue wait of a store job's first start: processedOn minus the add time. Retries and
+// stall reruns are left out: their backoff and lock time are not queue wait. Unlabelled,
+// so it starts at 0.
+export const storeJobWaitSeconds = new Histogram({
+  name: 'store_job_wait_seconds',
+  help: 'Time a store job waits in the queue before its first start, in seconds',
+  buckets: [0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30, 60, 120],
+  registers: [register]
+})
+
 export const jobsTotal = new Counter({
   name: 'jobs_total',
   help: 'Total background jobs processed',

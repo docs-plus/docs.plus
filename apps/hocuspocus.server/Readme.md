@@ -32,6 +32,8 @@ The three processes scale on different signals, and a replica does not buy the s
 
 **The worker costs twice as much per replica.** Add it last, and only when queue depth demands it.
 
+**Each worker replica runs one store job at a time.** `WORKER_STORE_CONCURRENCY` (default `1`) is bound by memory, not by the pool: at concurrency 10, several large saves on one replica passed 1 GiB of RSS. See [ENV.md](./ENV.md#database-pool).
+
 Postgres connections are the shared ceiling. Each replica holds its pool for the process lifetime, so the fleet total is the sum across all three processes. Check the deployed `max_connections` before raising any replica count.
 
 ## Tech stack

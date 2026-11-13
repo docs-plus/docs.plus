@@ -21,7 +21,8 @@ import {
   recordJobOutcome,
   sizeClass,
   type StoreJobPhase,
-  storeJobPhaseSeconds
+  storeJobPhaseSeconds,
+  storeJobWaitSeconds
 } from './metrics'
 import { ydocToPmJson } from './nested-flat-migration'
 import { firstEditOwner } from './ownerAccess'
@@ -422,6 +423,15 @@ const recordStorePhases = (phaseMs: PhaseMs, incomingBytes: number) => {
   }
 }
 
+const recordStoreJobWait = (job: Job<StoreDocumentData>) => {
+  try {
+    if (job.attemptsStarted !== 1 || !job.processedOn) return
+    storeJobWaitSeconds.observe(Math.max(0, job.processedOn - job.timestamp) / 1000)
+  } catch {
+    // A metric never fails the job it measures.
+  }
+}
+
 const noteHeadSize = (
   documentId: string,
   version: number,
@@ -732,6 +742,8 @@ export const createDocumentWorker = () => {
       maxStalledCount: 2 // After 2 stalls (2 min), consider it failed
     }
   )
+
+  worker.on('active', (job) => recordStoreJobWait(job))
 
   worker.on('completed', (job) => {
     recordJobOutcome(worker.name, 'completed', job)

@@ -419,11 +419,13 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_HOST: docsplus-redis
       REDIS_PORT: 6379
-      # Concurrency is pinned to the pool per replica: more concurrent jobs
-      # than connections just converts queue latency into P2028 pool-wait
-      # errors that burn the retry budget (overrides env_file's global value).
+      # Keep store concurrency at or below the pool, or jobs turn queue latency
+      # into P2028 pool-wait errors (both override env_file's global value). One
+      # store job per replica bounds a large save's RSS peak (#737). 10 rolls back
+      # fully; 2 answers a slow wait. The pool stays 10: email, push, change
+      # summaries and pgmq share it.
       DB_POOL_SIZE: ${WORKER_DB_POOL_SIZE:-10}
-      BULLMQ_CONCURRENCY: ${WORKER_DB_POOL_SIZE:-10}
+      BULLMQ_CONCURRENCY: ${WORKER_STORE_CONCURRENCY:-1}
       DB_IDLE_TIMEOUT: 30000
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
@@ -483,7 +485,7 @@ services:
           # Workers now own the Yjs decode/strip CPU for every save — give
           # them burst headroom; throughput is DB-bound, not quota-bound.
           cpus: '2.0'
-          memory: 1G
+          memory: 2G
         reservations:
           cpus: '0.5'
           memory: 256M
