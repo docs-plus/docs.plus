@@ -1,17 +1,33 @@
 import { findChildrenInRange, getMarkRange, getMarksBetween, type NodeWithPos } from '@tiptap/core'
-import { Plugin, PluginKey } from '@tiptap/pm/state'
+import { isHistoryTransaction } from '@tiptap/pm/history'
+import { type EditorState, Plugin, PluginKey, type Transaction } from '@tiptap/pm/state'
+import { ReplaceStep } from '@tiptap/pm/transform'
 
 import { PREVENT_AUTOLINK_META } from '../constants'
 import { changedRanges } from './changedRanges'
-import { isRemoteSync } from './remoteSync'
+import { isRemoteSync, ySyncOrigin } from './remoteSync'
 import type { LinkContext } from './types'
 
 const TRAILING_WHITESPACE_RE = /\s$/
+const LAST_WHITESPACE_RE = /\s\S*$/
+// `\S+` (not split on `' '`) so NBSP / narrow NBSP / tab / ideographic space
+// also fire the autolink boundary that the user expects.
+const WORD_RE = /\S+/g
 const IMAGE_MARKDOWN_CONTEXT_CHARS = 15
 
-// `\s+` (not `' '`) is required so NBSP / narrow NBSP / tab / ideographic-space
-// also fire the autolink boundary that the user expects.
-const tokenizeWords = (text: string): string[] => text.split(/\s+/).filter((s) => s !== '')
+// Dictation, an IME phrase or a text replacement inserts many words in one typed transaction.
+// prosemirror-view scrolls typed input; paste, drop, history, y-sync and mark steps are not typing.
+function isTypedChunk(tr: Transaction, state: EditorState): boolean {
+  const uiEvent = tr.getMeta('uiEvent')
+  return (
+    uiEvent !== 'paste' &&
+    uiEvent !== 'drop' &&
+    tr.steps.every((step) => step instanceof ReplaceStep) &&
+    tr.scrolledIntoView &&
+    !isHistoryTransaction(tr) &&
+    ySyncOrigin(tr, state) === null
+  )
+}
 
 export function createAutolinkInteraction(ctx: LinkContext): Plugin {
   const { urls, type } = ctx
@@ -28,6 +44,7 @@ export function createAutolinkInteraction(ctx: LinkContext): Plugin {
       if (skip) return
 
       const { tr } = newState
+      const typedChunk = transactions.every((transaction) => isTypedChunk(transaction, newState))
       // Tiptap's combineTransactionSteps + getChangedRanges cost O(steps²) on a big paste or Bold.
       const { changes, map } = changedRanges(transactions)
       // `?? null` keeps the plugin working in schemas without a `code` mark.
@@ -74,6 +91,8 @@ export function createAutolinkInteraction(ctx: LinkContext): Plugin {
 
         let textBlock: NodeWithPos | undefined
         let textBeforeWhitespace: string | undefined
+        // Set for a typed chunk: a finished word that ends at or after it is a candidate too.
+        let chunkFrom: number | undefined
 
         if (nodesInChangedRanges.length > 1) {
           textBlock = nodesInChangedRanges[0]
@@ -83,38 +102,42 @@ export function createAutolinkInteraction(ctx: LinkContext): Plugin {
             undefined,
             ' '
           )
-        } else if (
-          nodesInChangedRanges.length &&
-          TRAILING_WHITESPACE_RE.test(
-            newState.doc.textBetween(newRange.from, newRange.to, ' ', ' ')
-          )
-        ) {
-          textBlock = nodesInChangedRanges[0]
-          textBeforeWhitespace = newState.doc.textBetween(
-            textBlock.pos,
-            newRange.to,
-            undefined,
-            ' '
-          )
+        } else if (nodesInChangedRanges.length) {
+          const inserted = newState.doc.textBetween(newRange.from, newRange.to, ' ', ' ')
+          let end = TRAILING_WHITESPACE_RE.test(inserted) ? newRange.to : -1
+          // Stop after the last whitespace: the word after it may still be typed.
+          if (end === -1 && typedChunk) {
+            const lastWhitespace = inserted.search(LAST_WHITESPACE_RE)
+            if (lastWhitespace !== -1) end = newRange.from + lastWhitespace + 1
+          }
+          if (end !== -1) {
+            textBlock = nodesInChangedRanges[0]
+            textBeforeWhitespace = newState.doc.textBetween(textBlock.pos, end, undefined, ' ')
+            if (typedChunk) chunkFrom = newRange.from
+          }
         }
 
         if (!textBlock || !textBeforeWhitespace) continue
 
-        const wordsBeforeWhitespace = tokenizeWords(textBeforeWhitespace)
-        if (!wordsBeforeWhitespace.length) continue
-
-        const lastWordBeforeSpace = wordsBeforeWhitespace[wordsBeforeWhitespace.length - 1]
-        const lastWordAndBlockOffset =
-          textBlock.pos + textBeforeWhitespace.lastIndexOf(lastWordBeforeSpace)
+        const words = [...textBeforeWhitespace.matchAll(WORD_RE)]
+        const textStart = textBlock.pos + 1
+        const candidates =
+          chunkFrom === undefined
+            ? words.slice(-1)
+            : words.filter(
+                (word, i) =>
+                  i === words.length - 1 || textStart + word.index + word[0].length >= chunkFrom
+              )
 
         // The image-markdown and code-mark filters below are document-context, not URL gates — they stay local.
-        urls
-          .forWrite({ kind: 'text', text: lastWordBeforeSpace })
-          .map((result) => ({
-            href: result.href,
-            from: lastWordAndBlockOffset + result.start + 1,
-            to: lastWordAndBlockOffset + result.end + 1
-          }))
+        candidates
+          .flatMap((word) =>
+            urls.forWrite({ kind: 'text', text: word[0] }).map((result) => ({
+              href: result.href,
+              from: textStart + word.index + result.start,
+              to: textStart + word.index + result.end
+            }))
+          )
           .filter(({ from }) => {
             const contextStart = Math.max(0, from - IMAGE_MARKDOWN_CONTEXT_CHARS)
             const beforeLink = newState.doc.textBetween(contextStart, from, ' ', ' ')

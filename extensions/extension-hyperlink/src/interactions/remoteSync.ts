@@ -18,18 +18,22 @@ function ySyncPlugin(state: EditorState): Plugin | null {
   return found
 }
 
-/** A peer's change or a first load, not y-undo. y-tiptap marks y-undo with `isUndoRedoOperation`. */
-export function isRemoteSync(transactions: readonly Transaction[], state: EditorState): boolean {
+/**
+ * Whether y-sync wrote this change from the Y.Doc: `peer` is a peer's change or a first load,
+ * `undo` is a y-undo. Another plugin's reply to such a change counts as the same origin.
+ */
+export function ySyncOrigin(tr: Transaction, state: EditorState): 'peer' | 'undo' | null {
   const ySync = ySyncPlugin(state)
-  if (!ySync) return false
-  const remote = (tr: Transaction): boolean => {
-    const meta = tr.getMeta(ySync) as YSyncMeta
-    return !!meta?.isChangeOrigin && !meta.isUndoRedoOperation
+  if (!ySync) return null
+  const origin = (t: Transaction | undefined) => {
+    const meta = t?.getMeta(ySync) as YSyncMeta
+    if (!meta?.isChangeOrigin) return null
+    return meta.isUndoRedoOperation ? 'undo' : 'peer'
   }
-  return transactions.every((tr) => {
-    if (!tr.docChanged) return true
-    // Another plugin's reply to a peer's change is not this user's typing either.
-    const root = tr.getMeta('appendedTransaction') as Transaction | undefined
-    return remote(tr) || (!!root && remote(root))
-  })
+  return origin(tr) ?? origin(tr.getMeta('appendedTransaction') as Transaction | undefined)
+}
+
+/** Every doc change in the batch came from a peer or a first load, not from y-undo. */
+export function isRemoteSync(transactions: readonly Transaction[], state: EditorState): boolean {
+  return transactions.every((tr) => !tr.docChanged || ySyncOrigin(tr, state) === 'peer')
 }

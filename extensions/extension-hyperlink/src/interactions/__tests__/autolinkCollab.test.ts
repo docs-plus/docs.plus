@@ -306,3 +306,36 @@ describe('y-undo', () => {
     expect(yLinks(da)).toEqual(['example.com->https://example.com'])
   })
 })
+
+// y-tiptap scrolls a Y change only with a focused view whose DOM selection is in view. The DOM
+// stub here never meets that, so these set the scroll by hand, as a real browser does.
+describe('a one-chunk insert that y-sync writes takes no chunk path (#780)', () => {
+  const chunk = (editor: Editor, meta: { isChangeOrigin: boolean; isUndoRedoOperation: boolean }) =>
+    editor.view.dispatch(
+      editor.state.tr
+        .insertText('see example.com now', 1)
+        .setMeta(ySyncPluginKey, meta)
+        .scrollIntoView()
+    )
+
+  it('a peer insert is not linked', () => {
+    const { A } = pair()
+    chunk(A, { isChangeOrigin: true, isUndoRedoOperation: false })
+    expect(show(A)).toBe('see example.com now')
+  })
+
+  it('a y-undo insert is not linked', () => {
+    const { A } = pair()
+    chunk(A, { isChangeOrigin: true, isUndoRedoOperation: true })
+    expect(show(A)).toBe('see example.com now')
+  })
+
+  it('a local chunk links, and the peer gets the link', () => {
+    const { A, B } = pair()
+    A.view.dispatch(A.state.tr.insertText('see example.com now', 1).scrollIntoView())
+    expect([show(A), show(B)]).toEqual([
+      'see [example.com](https://example.com) now',
+      'see [example.com](https://example.com) now'
+    ])
+  })
+})

@@ -1,10 +1,11 @@
 import '../../link-icons/__tests__/setupDom'
 
-import { Editor, type Extensions, Mark, Node } from '@tiptap/core'
-import { history, redo, undo, undoDepth } from '@tiptap/pm/history'
+import { Editor, type EditorOptions, type Extensions, Mark, Node } from '@tiptap/core'
+import { closeHistory, history, redo, undo, undoDepth } from '@tiptap/pm/history'
 import { Plugin } from '@tiptap/pm/state'
 import { afterEach, describe, expect, it } from 'bun:test'
 
+import { PREVENT_AUTOLINK_META } from '../../constants'
 import { Hyperlink } from '../../hyperlink'
 import { Doc, Paragraph, Text } from '../../link-icons/__tests__/minimalSchema'
 import { enterKey } from '../../link-icons/linkIconEnter'
@@ -46,7 +47,7 @@ const ListItem = Node.create({
 })
 
 const editors: Editor[] = []
-function make(html: string, extra: Extensions = []): Editor {
+function make(html: string, extra: Extensions = [], options: Partial<EditorOptions> = {}): Editor {
   const element = document.createElement('div')
   document.body.append(element)
   const editor = new Editor({
@@ -61,7 +62,8 @@ function make(html: string, extra: Extensions = []): Editor {
       ...extra,
       Hyperlink.configure({ autolink: true })
     ],
-    content: html
+    content: html,
+    ...options
   })
   editors.push(editor)
   return editor
@@ -248,5 +250,150 @@ describe('undo and redo of a partial format', () => {
     redo(e.state, e.view.dispatch)
     expect(e.getHTML()).toContain('<strong>')
     expect(hrefs(e)).toEqual(all(11))
+  })
+})
+
+// prosemirror-view turns one input event (dictation, an IME phrase, a text replacement) into
+// one insert: handleTextInput first, then a scrolled insertText.
+function insertChunk(e: Editor, text: string) {
+  const { view } = e
+  const { from, to } = view.state.selection
+  const insert = () => view.state.tr.insertText(text, from, to).scrollIntoView()
+  if (!view.someProp('handleTextInput', (f) => f(view, from, to, text, insert)))
+    view.dispatch(insert())
+}
+const typeKeys = (e: Editor, text: string) => [...text].forEach((ch) => insertChunk(e, ch))
+const atEnd = (e: Editor) => e.commands.setTextSelection(e.state.doc.content.size - 1)
+function links(e: Editor): string[] {
+  const out: string[] = []
+  e.state.doc.descendants((n) => {
+    const link = n.marks.find((m) => m.type.name === 'hyperlink')
+    if (n.isText && link) out.push(`${n.text}=${link.attrs.href}`)
+  })
+  return out
+}
+const MID = 'see example.com now '
+const MID_LINKED = [`example.com=${HREF}`]
+// The HTML parser drops a trailing space, so a loaded paragraph holds this.
+const MID_HTML = '<p>see example.com now</p>'
+
+describe('one typed chunk links every finished URL in it (#780)', () => {
+  it('links a URL in the middle of the chunk', () => {
+    const e = make('<p></p>')
+    insertChunk(e, MID)
+    expect(links(e)).toEqual(MID_LINKED)
+  })
+
+  it('links every URL the chunk touches, and not an older one before it', () => {
+    const e = make('<p>old foo.org text</p>')
+    atEnd(e)
+    insertChunk(e, ' see a.com and b.org ok ')
+    expect(links(e)).toEqual(['a.com=https://a.com', 'b.org=https://b.org'])
+  })
+
+  it('leaves the word after the last whitespace alone, because it may still be typed', () => {
+    const e = make('<p></p>')
+    insertChunk(e, 'see a.com b.org')
+    expect(links(e)).toEqual(['a.com=https://a.com'])
+  })
+
+  it('key-by-key typing links as before', () => {
+    const e = make('<p></p>')
+    typeKeys(e, MID)
+    expect(links(e)).toEqual(MID_LINKED)
+  })
+
+  it('a second space still links the word before the first', () => {
+    const e = make('<p></p>')
+    // A URL that loaded or synced unlinked, with one space after it.
+    e.view.dispatch(
+      e.state.tr.insertText('see example.com ', 1).setMeta(PREVENT_AUTOLINK_META, true)
+    )
+    expect(links(e)).toEqual([])
+    atEnd(e)
+    insertChunk(e, ' ')
+    expect(links(e)).toEqual(MID_LINKED)
+  })
+
+  it('one undo removes the chunk and its link together', () => {
+    const e = make('<p></p>')
+    insertChunk(e, MID)
+    expect(undoDepth(e.state)).toBe(1)
+    undo(e.state, e.view.dispatch)
+    expect(e.state.doc.textContent).toBe('')
+  })
+
+  it('keeps a custom href and links the new URL', () => {
+    const custom = 'https://other.example/x'
+    const e = make(`<p><a href="${custom}">example.com</a></p>`)
+    atEnd(e)
+    insertChunk(e, ' and foo.org now ')
+    expect(links(e)).toEqual([`example.com=${custom}`, 'foo.org=https://foo.org'])
+  })
+
+  it('skips a URL inside image Markdown', () => {
+    const e = make('<p></p>')
+    insertChunk(e, '![a](example.com) now ')
+    expect(links(e)).toEqual([])
+  })
+
+  it('skips words inside a code mark', () => {
+    const e = make('<p><code>run</code></p>')
+    atEnd(e)
+    insertChunk(e, ` ${MID}`)
+    expect(links(e)).toEqual([])
+  })
+})
+
+describe('only typed input takes the chunk path (#780)', () => {
+  // The paste rule links a paste or a drop. With paste rules off, only the last-word rule is left.
+  for (const uiEvent of ['paste', 'drop']) {
+    it(`a ${uiEvent} keeps the last-word rule`, () => {
+      const e = make('<p></p>', [], { enablePasteRules: false })
+      e.view.dispatch(e.state.tr.insertText(MID, 1).setMeta('uiEvent', uiEvent).scrollIntoView())
+      expect(links(e)).toEqual([])
+    })
+  }
+
+  it('a paste with paste rules on links as before', () => {
+    const e = make('<p></p>')
+    e.view.dispatch(e.state.tr.insertText(MID, 1).setMeta('uiEvent', 'paste').scrollIntoView())
+    expect(links(e)).toEqual(MID_LINKED)
+  })
+
+  it('Bold over a sentence adds no link', () => {
+    const e = make(MID_HTML)
+    e.view.dispatch(e.state.tr.addMark(1, 20, e.schema.marks.bold.create()).scrollIntoView())
+    expect(links(e)).toEqual([])
+  })
+
+  it('an insert that does not scroll keeps the last-word rule', () => {
+    const e = make('<p></p>')
+    e.view.dispatch(e.state.tr.insertText(MID, 1))
+    expect(links(e)).toEqual([])
+  })
+
+  it('setContent then focus adds no link', () => {
+    const e = make('<p></p>')
+    e.chain().setContent(`<p>${MID}</p>`).focus('end').run()
+    expect(links(e)).toEqual([])
+  })
+
+  it('redo of an unlinked chunk adds no link', () => {
+    const e = make('<p></p>')
+    e.view.dispatch(e.state.tr.insertText(MID, 1))
+    e.view.dispatch(closeHistory(e.state.tr))
+    undo(e.state, e.view.dispatch)
+    redo(e.state, e.view.dispatch)
+    expect(e.state.doc.textContent).toBe(MID)
+    expect(links(e)).toEqual([])
+  })
+
+  it('undo of a deletion adds no link', () => {
+    const e = make(MID_HTML)
+    e.view.dispatch(closeHistory(e.state.tr.delete(5, 20)))
+    undo(e.state, e.view.dispatch)
+    expect(e.state.doc.textContent).toBe(MID.trimEnd())
+    expect(links(e)).toEqual([])
   })
 })
