@@ -24,7 +24,7 @@ const fits = (n: Node, o: number): boolean =>
   o <= (n.nodeType === Node.ELEMENT_NODE ? n.childNodes.length : (n.textContent ?? '').length)
 
 // Our handler runs before prosemirror-view's own (input.ts:50-52); the microtask runs after it, with composing false.
-export const linkIconCompositionSweep = new Plugin({
+export const linkIconCompositionSweep = /* @__PURE__ */ new Plugin({
   props: {
     handleDOMEvents: {
       compositionend(view) {

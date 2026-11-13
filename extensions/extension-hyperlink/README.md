@@ -22,7 +22,7 @@ It replaces the `@tiptap/extension-link` mark that StarterKit v3 bundles.
 ## Why use it
 
 - **Autolink covers more than web URLs.** As you type, bare domains get `https://`, emails become `mailto:`, and E.164 phones become `tel:`. App schemes from a catalog of 47, such as `whatsapp://`, autolink too.
-- **The link UI is included.** Prebuilt create, preview, and edit popovers ship with the package. `Mod-k` opens the create-link form with no configuration. Inside a link, `Mod-k` opens that link's preview when `popovers.previewHyperlink` is set, and `Alt-Enter` opens the link. Mod-click opens a link in a new tab. Every open uses a new tab until you set the `navigate` option. `@tiptap/extension-link` binds no keyboard shortcut.
+- **The link UI is included.** Prebuilt create, preview, and edit popovers ship with the package. With `Hyperlink`, `Mod-k` opens the create-link form with no configuration. Inside a link, `Mod-k` opens that link's preview when `popovers.previewHyperlink` is set, and `Alt-Enter` opens the link. Mod-click opens a link in a new tab. Every open uses a new tab until you set the `navigate` option. `@tiptap/extension-link` binds no keyboard shortcut.
 - **Every boundary checks the scheme.** `isSafeHref` blocks `javascript:`, `data:`, `vbscript:`, `file:`, and `blob:` on parse, import, write, serialize, and navigation. An embedded tab or newline cannot hide a scheme from the gate.
 - **Your `@tiptap/extension-link` configuration ports over.** `isAllowedUri` takes the same `(uri, ctx)` shape as `@tiptap/extension-link`, so an existing policy works unchanged. `setLink`, `unsetLink`, and `toggleLink` stay as aliases. `[label](url)` round-trips with `@tiptap/markdown`.
 
@@ -91,7 +91,7 @@ To show a card when the pointer rests on a link, add the `hovercard` option. See
 ## Caveats
 
 - **`StarterKit.configure({ link: false })` is required, not stylistic.** StarterKit v3 bundles `@tiptap/extension-link` by default. The two marks collide on the `setLink` / `unsetLink` / `toggleLink` command names. Your `extensions` array order then decides which mark each command writes, with no warning. If you keep Link only to load stored `link` marks, parsed and pasted HTML still gives `hyperlink`. This package's `a[href]` rule runs at priority 51, above Link's default 50.
-- **A click on a link, and `Mod-k` inside a link, need `popovers.previewHyperlink`.** The three openers, `openPreviewHyperlink`, `openEditHyperlink` and `openCreateHyperlink`, fall back to the prebuilt factory when a slot is `null`. The click handler and `Mod-k` do not. Leave `previewHyperlink` at `null`, and a click on a link opens no popover. `Mod-k` inside a link then does nothing, and it never opens the create form there.
+- **A click on a link, and `Mod-k` inside a link, need `popovers.previewHyperlink`.** With `Hyperlink`, the three openers, `openPreviewHyperlink`, `openEditHyperlink` and `openCreateHyperlink`, fall back to the prebuilt factory when a slot is `null`. `HyperlinkBase` has no fallback, so an empty slot opens nothing. The click handler and `Mod-k` inside a link do not fall back, with either mark. Leave `previewHyperlink` at `null`, and a click on a link opens no popover. `Mod-k` inside a link then does nothing, and it never opens the create form there.
 - **`linkOnPaste: false` does not stop every paste from linking.** The linkify paste rule stays registered, so a pasted bare URL still becomes a link. To stop that path too, set `shouldAutoLink: () => false`, which every autolink path consults.
 - **`HTMLAttributes.target` reaches the DOM.** `HTMLAttributes: { target: '_blank' }` does emit `<a target="_blank">`. A browser-driven `target="_blank"` navigation skips the click gate. Leave `target` at `null` and let the click handler open the link.
 - **Markdown keeps only the link `href`.** Export writes `[text](href)`, and import reads the href alone, so a link `title` is lost both ways. A custom `rel` is lost too, and import sets the default `rel`. `target`, `class` and `image` never reach Markdown, by design.
@@ -130,6 +130,17 @@ editor.commands.openCreateHyperlinkPopover()
 ```
 
 `openCreateHyperlinkPopover` opens UI, so `editor.can().openCreateHyperlinkPopover()` reports availability without mounting anything. With nothing selected, the prebuilt form inserts the typed URL as its own link text.
+
+### Leave out the prebuilt popovers
+
+Pass all three popover slots? Then use `HyperlinkBase` in place of `Hyperlink`. It is the same mark without the prebuilt preview, edit and create forms, so a StarterKit app ships about 2 kB gzip less. With `HyperlinkBase`, an empty slot opens nothing, and `openPreviewHyperlink` and `openCreateHyperlink` return `false`. With no create slot, `editor.can().openCreateHyperlinkPopover()` returns `false`, and the mark leaves `Mod-k` outside a link to the browser. Keep `Hyperlink` when you use any prebuilt form, or when you are unsure.
+
+```ts
+import { HyperlinkBase } from '@docs.plus/extension-hyperlink'
+
+// Each slot is your own factory: (options) => HTMLElement | null.
+HyperlinkBase.configure({ popovers: { previewHyperlink, editHyperlink, createHyperlink } })
+```
 
 ### Style document links
 

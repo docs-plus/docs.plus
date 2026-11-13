@@ -9,12 +9,17 @@ if [ -n "${EXT_ONLY:-}" ]; then
   for e in $EXT_ONLY; do ONLY_ARGS+=(--only "$e"); done
 fi
 
+pure_tmp=$(mktemp -d)
+trap 'rm -rf "$pure_tmp"' EXIT
+
 list=$(bun scripts/publishable-extensions.ts "${ONLY_ARGS[@]}") || exit 1
 while read -r dir; do
   echo "preflight @docs.plus/${dir}"
   bun run --filter "@docs.plus/${dir}" prepublishOnly
   # The StackBlitz example is the README Quickstart; the two must not drift.
   bun scripts/check-quickstart-example.ts "$dir"
+  # The script reads the package's tsup config and skips a package that does not opt in.
+  bun scripts/check-pure-annotations.ts --tmp "$pure_tmp/$dir" "extensions/${dir}"
 done <<< "$list"
 
 # Both packages style one global `.floating-tooltip`; skins must stay byte-identical

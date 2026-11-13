@@ -10,19 +10,26 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ## [Unreleased]
 
+### Added
+
+- `HyperlinkBase`, the same mark without the prebuilt preview, edit and create forms. Use it when you pass all three popover slots. A StarterKit app with three slots then bundles 6,873 B minified, or 2,053 B gzip, less than with `Hyperlink`. With `HyperlinkBase`, an empty slot opens nothing. `openPreviewHyperlink` and `openCreateHyperlink` then return `false`, and so does `editor.can().openCreateHyperlinkPopover()` with no create slot. `Hyperlink` behaves as before, and its openers still fall back to the prebuilt forms. That fallback now lives in the mark's storage. With the `can()` check, this costs a StarterKit app with `Hyperlink` 250 B minified, or 90 B gzip. A `Hyperlink.extend` whose `addStorage` does not call `this.parent()` loses the fallback ([#775](https://github.com/docs-plus/docs.plus/issues/775)).
+
 ### Changed
 
-- Autolink finds the changed ranges of a transaction in one pass, instead of Tiptap's `getChangedRanges`, which costs O(steps²). A plain-text paste of 2,000 paragraphs and select-all formatting on a long document no longer pause the editor for as long. The result is the same, checked against `getChangedRanges` on every step type. A clipboard that holds whitespace also skips the single-URL scan in the paste handler and in `pasteTitle`, because a URL never holds whitespace.
+- Autolink finds the changed ranges of a transaction in one pass, instead of Tiptap's `getChangedRanges`, which costs O(steps²). A plain-text paste of 2,000 paragraphs and select-all formatting on a long document no longer pause the editor for as long. The result is the same, checked against `getChangedRanges` on every step type. A clipboard that holds whitespace also skips the single-URL scan in the paste handler and in `pasteTitle`, because a URL never holds whitespace ([#773](https://github.com/docs-plus/docs.plus/issues/773)).
+- With `autolink: true`, Enter inside a link now keeps both halves linked to the old target, as in `@tiptap/extension-link`. Before, autolink checked only the first half. That half lost its link when it was not a URL on its own, such as `exam` in `example.com`. One undo still restores the whole link ([#778](https://github.com/docs-plus/docs.plus/issues/778)).
+- Helper-only imports now tree-shake. An app that imports only `normalizeHref` now bundles 19,997 B minified instead of 368,244 B. With only `isSafeHref`, it bundles 19,148 B. The ESM build now keeps `/* @__PURE__ */` comments, so a bundler can drop the unused editor code. A StarterKit app pays the same bytes as before. To keep those comments, `dist/index.js` keeps its whitespace. Without a bundler it is 23,907 B larger minified, or about 4.5 kB gzip. `dist/index.cjs` is unchanged ([#774](https://github.com/docs-plus/docs.plus/issues/774)).
 
 ### Fixed
 
-- With `autolink: true`, formatting part of a link no longer removes the link from part of its text. A mark such as bold, italic, strike, underline or code splits the link into pieces. Autolink judged each piece alone, so a piece like `exam` lost its link. Autolink now checks the whole link, and it skips a change that leaves the text the same. Text that stops being a URL still loses its link, as before. Code still removes the link where it lands, because the code mark excludes other marks.
-- Autolink no longer rewrites a link that is already there. When a link's label looked like a URL but the link pointed elsewhere, a space or a bold after it made the label the new target. The link now keeps its own target, as in `@tiptap/extension-link`.
+- With `autolink: true`, formatting part of a link no longer removes the link from part of its text. A mark such as bold, italic, strike, underline or code splits the link into pieces. Autolink judged each piece alone, so a piece like `exam` lost its link. Autolink now checks the whole link, and it skips a change that leaves the text the same. Text that stops being a URL still loses its link, as before. Code still removes the link where it lands, because the code mark excludes other marks ([#770](https://github.com/docs-plus/docs.plus/issues/770)).
+- With Yjs collaboration, autolink no longer brings back a link that a peer removed. Each client links only what its own user typed. Text that a peer or the server writes is no longer autolinked on other clients. A client that opens the pad does not link it either. A y-undo still autolinks on the client that undoes ([#771](https://github.com/docs-plus/docs.plus/issues/771)).
+- Autolink no longer rewrites a link that is already there. When a link's label looked like a URL but the link pointed elsewhere, a space or a bold after it made the label the new target. The link now keeps its own target, as in `@tiptap/extension-link` ([#772](https://github.com/docs-plus/docs.plus/issues/772)).
 
 ### Internal
 
-- The special-URL catalog is now typed rows instead of seven objects joined by a spread. Results and their order are unchanged, and the public `SpecialUrlType` union is the same. A StarterKit app ships about 1.3 kB less minified.
-- `scripts/bench/` compares the working tree with a git ref, plus a control copy of the ref that shows the noise. It reports bytes, 18 behaviour cases and speed, in jsdom and in a real browser. Run `NODE_ENV=production bun scripts/bench/run.ts`; its README says how to read the table.
+- The special-URL catalog is now typed rows instead of seven objects joined by a spread. Results and their order are unchanged, and the public `SpecialUrlType` union is the same. A StarterKit app ships about 1.3 kB less minified ([#776](https://github.com/docs-plus/docs.plus/issues/776)).
+- `scripts/bench/` compares the working tree with a git ref, plus a control copy of the ref that shows the noise. It reports bytes, 19 behaviour cases and speed, in jsdom and in a real browser. Run `NODE_ENV=production bun scripts/bench/run.ts`; its README says how to read the table ([#770](https://github.com/docs-plus/docs.plus/issues/770)).
 
 ## [2.3.0] — 2026-11-09
 

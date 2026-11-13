@@ -25,7 +25,7 @@ export interface HyperlinkPublicCommands<ReturnType> {
   unsetHyperlink: () => ReturnType
   /** Toggle; same gates as `setHyperlink`. */
   toggleHyperlink: (attributes: SetHyperlinkAttributes) => ReturnType
-  /** Open the create popover (configured `popovers.createHyperlink` or the prebuilt fallback); no-op only when the factory returns `null`. See docs/api.md → Commands. */
+  /** Open the create popover: `popovers.createHyperlink`, else the prebuilt form under `Hyperlink` only. `false` when nothing opens. See docs/api.md → Commands. */
   openCreateHyperlinkPopover: (attributes?: Partial<HyperlinkAttributes>) => ReturnType
   editHyperlinkText: (text: string) => ReturnType
   editHyperlinkHref: (href: string) => ReturnType

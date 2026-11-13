@@ -81,10 +81,11 @@ export function createPopoverController(): PopoverController {
   }
 }
 
-let defaultController: PopoverController = createPopoverController()
+// Created on first use, so importing the package runs nothing.
+let defaultController: PopoverController | undefined
 
 export function getDefaultController(): PopoverController {
-  return defaultController
+  return (defaultController ??= createPopoverController())
 }
 
 export function setDefaultController(controller: PopoverController): void {

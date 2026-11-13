@@ -1,7 +1,7 @@
 import type { Editor } from '@tiptap/core'
 
-import { HYPERLINK_MARK_NAME, SAFE_WINDOW_FEATURES } from '../constants'
-import type { HyperlinkStorage } from '../hyperlink'
+import { SAFE_WINDOW_FEATURES } from '../constants'
+import { hyperlinkStorage } from '../openers/getHyperlinkOptions'
 import type { LinkContext } from './types'
 
 const defaultNavigate = (href: string): void => {
@@ -21,8 +21,5 @@ export function openLink(linkCtx: LinkContext, href: string, opts: { newTab: boo
 
 /** For surfaces that hold only the editor, such as the prebuilt preview popover. */
 export function getLinkContext(editor: Editor): LinkContext | null {
-  const storage = (editor.storage as Record<string, HyperlinkStorage | undefined>)[
-    HYPERLINK_MARK_NAME
-  ]
-  return storage?.context ?? null
+  return hyperlinkStorage(editor)?.context ?? null
 }

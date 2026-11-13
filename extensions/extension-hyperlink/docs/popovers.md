@@ -87,11 +87,11 @@ The three named openers open a popover from outside the click handler. Call them
 
 | Opener                                     | Anchor                    | Slot                        | Returns                                                  |
 | ------------------------------------------ | ------------------------- | --------------------------- | -------------------------------------------------------- |
-| `openPreviewHyperlink(opts)`               | `opts.link` (anchor node) | `popovers.previewHyperlink` | `boolean` — `false` when the factory returns `null`.     |
+| `openPreviewHyperlink(opts)`               | `opts.link` (anchor node) | `popovers.previewHyperlink` | `boolean` — `false` when nothing opens.                  |
 | `openEditHyperlink(opts)`                  | `opts.link` (anchor node) | `popovers.editHyperlink`    | `void` — the opt-out is not observable at the call site. |
-| `openCreateHyperlink(editor, attributes?)` | Current selection         | `popovers.createHyperlink`  | `boolean` — `false` when the factory returns `null`.     |
+| `openCreateHyperlink(editor, attributes?)` | Current selection         | `popovers.createHyperlink`  | `boolean` — `false` when nothing opens.                  |
 
-Each opener reads its slot from `Hyperlink.configure({ popovers })`. Each opener falls back to the prebuilt factory when the slot is empty. It then builds the content and mounts through the controller. A factory that returns `null` opts out, which is the usual mobile path, and the opener then does nothing. Read the return value when your host routes to a bottom sheet.
+Each opener reads its slot from `configure({ popovers })` on `Hyperlink` or `HyperlinkBase`. With `Hyperlink`, an opener falls back to the prebuilt factory when the slot is empty. `HyperlinkBase` has no prebuilt factory, so an empty slot opens nothing. `openPreviewHyperlink` and `openCreateHyperlink` then return `false`, and `openEditHyperlink` does nothing. With a factory in place, the opener builds the content and mounts it through the controller. A factory that returns `null` opts out, which is the usual mobile path, and the opener then does nothing. Read the return value when your host routes to a bottom sheet.
 
 `buildPreviewOptionsFromAnchor({ editor, link, nodePos?, validate?, isAllowedUri?, markName? })` rebuilds a full `PreviewHyperlinkOptions` from a live `<a>` node, with no hand-rolled `posAtDOM` → `mark.attrs` lookup. `openPreviewHyperlink(buildPreviewOptionsFromAnchor({ editor, link }))` is the canonical edit-to-preview handoff.
 

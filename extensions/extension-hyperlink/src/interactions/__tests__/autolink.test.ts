@@ -1,21 +1,14 @@
 import '../../link-icons/__tests__/setupDom'
 
-import { Editor, Mark, Node } from '@tiptap/core'
+import { Editor, type Extensions, Mark, Node } from '@tiptap/core'
 import { history, redo, undo, undoDepth } from '@tiptap/pm/history'
 import { Plugin } from '@tiptap/pm/state'
 import { afterEach, describe, expect, it } from 'bun:test'
 
 import { Hyperlink } from '../../hyperlink'
+import { Doc, Paragraph, Text } from '../../link-icons/__tests__/minimalSchema'
+import { enterKey } from '../../link-icons/linkIconEnter'
 
-const Doc = Node.create({ name: 'doc', topNode: true, content: 'block+' })
-const Paragraph = Node.create({
-  name: 'paragraph',
-  group: 'block',
-  content: 'inline*',
-  parseHTML: () => [{ tag: 'p' }],
-  renderHTML: () => ['p', 0]
-})
-const Text = Node.create({ name: 'text', group: 'inline' })
 const Bold = Mark.create({
   name: 'bold',
   parseHTML: () => [{ tag: 'strong' }],
@@ -33,8 +26,27 @@ const History = Mark.create({
   addProseMirrorPlugins: () => [history() as Plugin]
 })
 
+// The real list nodes live in @tiptap/extension-list, which this package does not install.
+const BulletList = Node.create({
+  name: 'bulletList',
+  group: 'block',
+  content: 'listItem+',
+  parseHTML: () => [{ tag: 'ul' }],
+  renderHTML: () => ['ul', 0]
+})
+const ListItem = Node.create({
+  name: 'listItem',
+  content: 'paragraph block*',
+  defining: true,
+  parseHTML: () => [{ tag: 'li' }],
+  renderHTML: () => ['li', 0],
+  addKeyboardShortcuts() {
+    return { Enter: () => this.editor.commands.splitListItem(this.name) }
+  }
+})
+
 const editors: Editor[] = []
-function make(html: string): Editor {
+function make(html: string, extra: Extensions = []): Editor {
   const element = document.createElement('div')
   document.body.append(element)
   const editor = new Editor({
@@ -46,6 +58,7 @@ function make(html: string): Editor {
       Bold,
       Code,
       History,
+      ...extra,
       Hyperlink.configure({ autolink: true })
     ],
     content: html
@@ -155,6 +168,66 @@ describe('autolink leaves alone what it does not own', () => {
     const e = make(`<p><a href="${CUSTOM}">example.com</a></p>`)
     e.view.dispatch(e.state.tr.insertText(' foo.org ', 12))
     expect(hrefs(e)).toEqual([...all(11, CUSTOM), '', ...all(7, 'https://foo.org'), ''])
+  })
+})
+
+// Ruled on #778 (option B): both halves keep the old target, as in upstream @tiptap/extension-link.
+describe('Enter inside a link', () => {
+  const pressEnter = (e: Editor, pos: number) => {
+    e.commands.setTextSelection(pos)
+    return e.view.someProp('handleKeyDown', (f) => f(e.view, enterKey()))
+  }
+  const paragraphs = (e: Editor) => {
+    const out: string[] = []
+    e.state.doc.forEach((block) => out.push(block.textContent))
+    return out
+  }
+  const CUSTOM = 'https://other.example/x'
+
+  for (const [name, html, text, href] of [
+    ['example.com', LINK, 'example.com', HREF],
+    ['a "click here" label', `<p><a href="${HREF}">click here</a></p>`, 'click here', HREF],
+    [
+      'a link with a bold part',
+      `<p><a href="${HREF}"><strong>exam</strong>ple.com</a></p>`,
+      'example.com',
+      HREF
+    ],
+    ['a custom href', `<p><a href="${CUSTOM}">example.com</a></p>`, 'example.com', CUSTOM]
+  ]) {
+    for (const pos of [1, 3, 5, 8, 10]) {
+      it(`at ${pos} in ${name} keeps both halves linked, and one undo restores the link`, () => {
+        const e = make(html)
+        const before = e.getHTML()
+        expect(pressEnter(e, pos)).toBe(true)
+        expect(paragraphs(e)).toEqual([text.slice(0, pos - 1), text.slice(pos - 1)])
+        expect(hrefs(e)).toEqual(all(text.length, href))
+        expect(undoDepth(e.state)).toBe(1)
+        undo(e.state, e.view.dispatch)
+        expect(e.getHTML()).toBe(before)
+        expect(paragraphs(e)).toEqual([text])
+        expect(hrefs(e)).toEqual(all(text.length, href))
+      })
+    }
+  }
+
+  it('in a list item keeps both halves linked, and one undo restores the link', () => {
+    const e = make(`<ul><li>${LINK}</li></ul>`, [BulletList, ListItem])
+    const items = () => {
+      const out: string[] = []
+      e.state.doc.firstChild!.forEach((item) => out.push(item.textContent))
+      return out
+    }
+    const before = e.getHTML()
+    // ul, li and p each open one position, so the text starts at 3 and `exam|ple.com` is 7.
+    expect(pressEnter(e, 7)).toBe(true)
+    expect(items()).toEqual(['exam', 'ple.com'])
+    expect(hrefs(e)).toEqual(all(11))
+    expect(undoDepth(e.state)).toBe(1)
+    undo(e.state, e.view.dispatch)
+    expect(e.getHTML()).toBe(before)
+    expect(items()).toEqual(['example.com'])
+    expect(hrefs(e)).toEqual(all(11))
   })
 })
 

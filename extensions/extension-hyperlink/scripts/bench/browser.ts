@@ -21,7 +21,8 @@ const { values } = parseArgs({
 await buildVariants(values.ref!)
 
 // The page yields with MessageChannel: an occluded window throttles setTimeout, not this.
-// A setTimeout lag over 100 ms still means the browser treated the page as background.
+// The lag probe runs after an idle second: right after a workload, the editor's own queued work
+// (about 120 ms after a big paste) would look like throttling. Idle lag over 50 ms means background.
 const entry = `
 import { Editor } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
@@ -34,9 +35,10 @@ const env = { Editor, StarterKit, win: window, stage }
 const median = (a) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)]
 const yieldOnce = () => new Promise((r) => { const c = new MessageChannel(); c.port1.onmessage = () => r(); c.port2.postMessage(0) })
 const timerLag = () => new Promise((r) => { const t = performance.now(); setTimeout(() => r(performance.now() - t), 0) })
+const idleLag = () => new Promise((r) => setTimeout(r, 1000)).then(timerLag)
 async function main() {
   const result = { userAgent: navigator.userAgent, runs: RUNS, speed: {} }
-  let hidden = document.visibilityState !== 'visible', lag = await timerLag()
+  let hidden = document.visibilityState !== 'visible', lag = await idleLag()
   document.addEventListener('visibilitychange', () => { if (document.visibilityState !== 'visible') hidden = true })
   for (const [name, w] of Object.entries(WORKLOADS)) {
     status.textContent = 'running ' + name
@@ -49,12 +51,12 @@ async function main() {
       ;(times[v] ??= []).push(ms); docs[v] = JSON.stringify(editor.getJSON())
       editor.destroy(); stage.replaceChildren()
     }
-    lag = Math.max(lag, await timerLag())
+    lag = Math.max(lag, await idleLag())
     result.speed[name] = { unit: w.unit }
     for (const v of names) result.speed[name][v] = { median: +median(times[v]).toFixed(3), sameDocAsBase: docs[v] === docs.base }
   }
   result.maxTimerLagMs = +lag.toFixed(1)
-  result.background = hidden || lag > 100
+  result.background = hidden || lag > 50
   status.textContent = 'done'
   await fetch('/result', { method: 'POST', body: JSON.stringify(result) })
 }
@@ -100,7 +102,7 @@ if (values.save) await Bun.write(values.save, JSON.stringify(result, null, 1))
 
 const pct = (a: number, b: number) => `${b >= a ? '+' : ''}${(((b - a) / a) * 100).toFixed(0)}%`
 console.log(
-  `\n${result.userAgent}, ${result.runs} rounds. Max timer lag ${result.maxTimerLagMs} ms.`
+  `\n${result.userAgent}, ${result.runs} rounds. Max idle timer lag ${result.maxTimerLagMs} ms.`
 )
 console.log(
   result.background

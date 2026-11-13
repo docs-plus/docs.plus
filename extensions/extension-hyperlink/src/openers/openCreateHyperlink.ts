@@ -4,8 +4,7 @@ import type { Editor } from '@tiptap/core'
 import { HYPERLINK_MARK_NAME, OFFSCREEN_COORD_PX } from '../constants'
 import { createPopover, getDefaultController } from '../floating-popover'
 import type { CreateHyperlinkOptions, HyperlinkAttributes } from '../hyperlink'
-import createHyperlinkPopover from '../popovers/createHyperlinkPopover'
-import { getHyperlinkOptions } from './getHyperlinkOptions'
+import { getHyperlinkOptions, openerFactory } from './getHyperlinkOptions'
 import { setActivePopoverOwner } from './popoverOwnership'
 
 const INPUT_FOCUS_DELAY_MS = 100
@@ -19,7 +18,7 @@ export function openCreateHyperlink(
   attributes: Partial<HyperlinkAttributes> = {}
 ): boolean {
   const options = getHyperlinkOptions(editor, 'openCreateHyperlink')
-  const factory = options.popovers.createHyperlink ?? createHyperlinkPopover
+  const factory = openerFactory(editor, 'createHyperlink', 'openCreateHyperlink')
 
   const popoverOptions: CreateHyperlinkOptions = {
     editor,
@@ -28,7 +27,7 @@ export function openCreateHyperlink(
     attributes
   }
 
-  const content = factory(popoverOptions)
+  const content = factory?.(popoverOptions)
   if (!content) return false
 
   const { from, to } = editor.state.selection

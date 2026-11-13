@@ -8,7 +8,7 @@ import { join } from 'node:path'
 
 import type { Options } from 'tsup'
 
-import { defineTiptapExtensionConfig } from '../../../../tsup.base'
+import packageConfig from '../../tsup.config'
 import { loadEsbuild, OUT, PKG, resolveFromPkg, type Variant, VARIANTS } from './paths'
 
 async function sourceOf(variant: Variant, ref: string): Promise<string> {
@@ -32,12 +32,16 @@ async function sourceOf(variant: Variant, ref: string): Promise<string> {
   return dir
 }
 
-// The bench builds outside the package, so it passes the externals tsup would read from package.json.
+// Every variant builds with this tree's tsup config, so `base` is the ref's `src/`, not its npm file.
 async function tsupBuild(srcDir: string, outDir: string) {
+  if (typeof packageConfig === 'function' || Array.isArray(packageConfig))
+    throw new Error('tsup.config.ts must export one options object')
   const { build } = await import(resolveFromPkg('tsup'))
   const pkg = await Bun.file(join(PKG, 'package.json')).json()
+  // The bench builds outside the package, so it passes the externals tsup would read from package.json.
   const external = [...Object.keys(pkg.dependencies), ...Object.keys(pkg.peerDependencies)]
-  const config = defineTiptapExtensionConfig({ external })
+  // The package's own config, so opt-ins such as `keepPureAnnotations` match the shipped dist.
+  const config: Options = { ...packageConfig, external }
   const esbuildOptions: NonNullable<Options['esbuildOptions']> = (options, context) => {
     config.esbuildOptions?.(options, context)
     options.nodePaths = [join(PKG, 'node_modules')]

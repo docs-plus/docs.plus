@@ -1,6 +1,7 @@
-const FOCUSABLE_SELECTOR = ['button', '[href]', 'input', 'select', 'textarea', '[tabindex]']
-  .map((part) => `${part}:not([tabindex="-1"])`)
-  .join(', ')
+// A plain literal: nothing runs at load, so a bundler can drop this module unused.
+const FOCUSABLE_SELECTOR =
+  'button:not([tabindex="-1"]), [href]:not([tabindex="-1"]), input:not([tabindex="-1"]), ' +
+  'select:not([tabindex="-1"]), textarea:not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])'
 
 // Skips controls that cannot take focus. Without this, Tab onto a disabled
 // Apply button is a dead end: the key is cancelled and focus() does nothing.

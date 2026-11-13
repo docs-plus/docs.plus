@@ -20,6 +20,8 @@ _shared: &shared
   - 'scripts/extension-preflight.sh'
   # extension-preflight.sh runs it to compare each README Quickstart with examples/vanilla.
   - 'scripts/check-quickstart-example.ts'
+  # extension-preflight.sh runs it on packages that keep PURE comments (#774).
+  - 'scripts/check-pure-annotations.ts'
   # The workflow that runs these suites, and this filter.
   - '.github/workflows/prod.docs.plus.yml'
   - '.github/filters/**'

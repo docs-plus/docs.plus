@@ -7,7 +7,7 @@ const chromeAndroid = (): boolean =>
   /Chrome\/\d/.test(navigator.userAgent)
 
 // Built like prosemirror-view's keyEvent(), which handleKeyDown props expect.
-const enterKey = (): KeyboardEvent => {
+export const enterKey = (): KeyboardEvent => {
   const event = document.createEvent('Event') as KeyboardEvent & { keyCode: number }
   event.initEvent('keydown', true, true)
   Object.assign(event, { keyCode: 13, key: 'Enter', code: 'Enter' })

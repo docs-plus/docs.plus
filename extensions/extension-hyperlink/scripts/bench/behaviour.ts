@@ -42,15 +42,26 @@ function typeAt(e: Editor, pos: number, text: string) {
       view.dispatch(insert())
   }
 }
-// One character per text character: L when linked, '.' when not. Custom-href cases print the hrefs.
+// One character per text character: L when linked, '.' when not. '¶' starts each later textblock.
+// Custom-href cases print the hrefs.
 const coverage = (e: Editor) => {
   let s = ''
+  let blocks = 0
   e.state.doc.descendants((n) => {
+    if (n.isTextblock && blocks++) s += '¶'
     if (n.isText)
       for (let i = 0; i < n.text!.length; i++)
         s += n.marks.some((m) => m.type.name === 'hyperlink') ? 'L' : '.'
   })
   return s
+}
+// Built like prosemirror-view's keyEvent(), in the editor's own window.
+function pressEnter(e: Editor, pos: number) {
+  e.commands.setTextSelection(pos)
+  const ev = e.view.dom.ownerDocument.createEvent('Event') as KeyboardEvent & { keyCode: number }
+  ev.initEvent('keydown', true, true)
+  Object.assign(ev, { keyCode: 13, key: 'Enter', code: 'Enter' })
+  return e.view.someProp('handleKeyDown', (f) => f(e.view, ev))
 }
 const hrefs = (e: Editor) => {
   const seen = new Set<string>()
@@ -158,6 +169,13 @@ const CASES: Case[] = [
     content: '<p>see example.com</p>',
     act: (e) => typeAt(e, 16, ' '),
     want: '....LLLLLLLLLLL.'
+  },
+  {
+    group: 'enter',
+    name: 'enter inside a link',
+    content: ONE,
+    act: (e) => pressEnter(e, 5),
+    want: 'LLLL¶LLLLLLL'
   },
   {
     group: 'href',

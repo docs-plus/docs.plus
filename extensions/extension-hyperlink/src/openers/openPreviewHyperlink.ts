@@ -1,6 +1,5 @@
 import type { PreviewHyperlinkOptions } from '../hyperlink'
-import previewHyperlinkPopover from '../popovers/previewHyperlinkPopover'
-import { getHyperlinkOptions } from './getHyperlinkOptions'
+import { openerFactory } from './getHyperlinkOptions'
 import { openPreviewPopover } from './openPreviewPopover'
 import { setActivePopoverOwner } from './popoverOwnership'
 
@@ -11,9 +10,7 @@ import { setActivePopoverOwner } from './popoverOwnership'
  */
 export function openPreviewHyperlink(opts: PreviewHyperlinkOptions): boolean {
   const { editor } = opts
-  const { popovers } = getHyperlinkOptions(editor, 'openPreviewHyperlink')
-  const factory = popovers.previewHyperlink ?? previewHyperlinkPopover
-  const content = factory(opts)
+  const content = openerFactory(editor, 'previewHyperlink', 'openPreviewHyperlink')?.(opts)
   if (!content) return false
 
   setActivePopoverOwner(editor, openPreviewPopover(opts.link, content))

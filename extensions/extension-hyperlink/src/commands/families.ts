@@ -3,6 +3,7 @@
 // aliases share the canonical references so policy changes flow through
 // both names.
 
+import { openerFactory } from '../openers/getHyperlinkOptions'
 import { openCreateHyperlink } from '../openers/openCreateHyperlink'
 import type { URLDecisions } from '../url-decisions'
 import { editHyperlinkCommand } from './editHyperlinkCommand'
@@ -51,9 +52,12 @@ export function uiCommands(): UIFamily {
   return {
     // Opening UI is a side effect, so a dry run (`editor.can()`) must report
     // availability without mounting a popover and evicting the open one.
+    // Under `HyperlinkBase` with no create slot, nothing can open.
     openCreateHyperlinkPopover:
       (attributes) =>
       ({ editor, dispatch }) =>
-        dispatch ? openCreateHyperlink(editor, attributes ?? {}) : true
+        dispatch
+          ? openCreateHyperlink(editor, attributes ?? {})
+          : !!openerFactory(editor, 'createHyperlink', 'openCreateHyperlinkPopover')
   }
 }

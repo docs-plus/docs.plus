@@ -88,9 +88,11 @@
     "@docs.plus/playground": "workspace:*",
     "@docs.plus/release-tooling": "workspace:*",
     "@tiptap/core": "catalog:",
+    "@tiptap/extension-collaboration": "catalog:",
     "@tiptap/markdown": "catalog:",
     "@tiptap/pm": "catalog:",
     "@tiptap/starter-kit": "catalog:",
+    "@tiptap/y-tiptap": "catalog:",
     "@types/jsdom": "catalog:",
     "@types/node": "catalog:",
     "bun-types": "catalog:",
@@ -100,6 +102,7 @@
     "jsdom": "catalog:",
     "start-server-and-test": "catalog:",
     "tsup": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "yjs": "catalog:"
   }
 }

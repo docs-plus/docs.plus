@@ -18,6 +18,7 @@ Versioning follows [Semantic Versioning](https://semver.org/) and commits follow
 
 ### Changed
 
+- Importing the package runs nothing. The default controller is created on first use, and the focusable selector is a plain string. The production ESM also keeps `/* @__PURE__ */` comments. A bundle that imports `extension-hyperlink` for one helper can now drop this package. The CJS is unchanged ([#774](https://github.com/docs-plus/docs.plus/issues/774)).
 - `createPopover` reads its Tab cycle on each Tab, so a control that renders after `show()` joins the cycle. One `keydown` listener on the root, bound in `show()`, replaces one listener per control ([#242](https://github.com/docs-plus/docs.plus/issues/242)).
 
 ### Fixed

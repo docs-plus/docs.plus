@@ -17,18 +17,23 @@ const n = (x: number) => x.toLocaleString('en-US')
 const signed = (x: number) => (x > 0 ? '+' : '') + n(x)
 const pct = (a: number, b: number) =>
   a === 0 ? '—' : `${b >= a ? '+' : ''}${(((b - a) / a) * 100).toFixed(0)}%`
-const size = (s: Size) => `${n(s.min)} / ${n(s.gz)}`
+const size = (s?: Size) => (s ? `${n(s.min)} / ${n(s.gz)}` : '—')
 
 /** One table: `base` (the ref) against `head` (this tree). `control` sets the noise floor for speed. */
 export function renderTable(r: BenchResult): string {
   const rows: string[][] = []
-  const byteRow = (label: string, pick: (b: Bytes) => Size) => {
+  const byteRow = (label: string, pick: (b: Bytes) => Size | undefined) => {
     const a = pick(r.bytes.base)
     const b = pick(r.bytes.head)
-    rows.push([label, size(a), size(b), `${signed(b.min - a.min)} / ${signed(b.gz - a.gz)}`])
+    if (!a && !b) return
+    const change = a && b ? `${signed(b.min - a.min)} / ${signed(b.gz - a.gz)}` : '—'
+    rows.push([label, size(a), size(b), change])
   }
   byteRow('Bytes: npm `dist/index.js` (min / gz)', (b) => b.distEsm)
   byteRow('Bytes: a StarterKit app pays (min / gz)', (b) => b.starterKitApp)
+  byteRow('Bytes: a StarterKit app with three own slots pays (min / gz)', (b) => b.slotsApp)
+  byteRow('Bytes: a StarterKit app with `HyperlinkBase` pays (min / gz)', (b) => b.baseApp)
+  byteRow('Bytes: `HyperlinkBase` with three own slots pays (min / gz)', (b) => b.baseSlotsApp)
   byteRow('Bytes: `normalizeHref`-only import (min / gz)', (b) => b.helperOnly)
   const ba = r.behaviour.base
   const bh = r.behaviour.head

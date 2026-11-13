@@ -9,8 +9,27 @@ import type { Options } from 'tsup'
 
 const isProduction = process.env.NODE_ENV === 'production'
 
-export function defineTiptapExtensionConfig(overrides: Partial<Options> = {}): Options {
-  return {
+export type TiptapExtensionConfigOverrides = Partial<Options> & {
+  /**
+   * Keeps PURE comments in the production ESM, so an app's bundler can drop unused code.
+   * The ESM then keeps its whitespace and grows. The CJS stays fully minified.
+   */
+  keepPureAnnotations?: boolean
+}
+
+// The configs that opted in. The preflight asks `keepsPureAnnotations`, so the option is the one source.
+const pureOptIns = new WeakSet<Options>()
+
+/** True for a config built with `keepPureAnnotations: true`. Read by scripts/check-pure-annotations.ts. */
+export function keepsPureAnnotations(config: unknown): boolean {
+  return typeof config === 'object' && config !== null && pureOptIns.has(config as Options)
+}
+
+export function defineTiptapExtensionConfig(
+  overrides: TiptapExtensionConfigOverrides = {}
+): Options {
+  const { keepPureAnnotations = false, ...rest } = overrides
+  const config: Options = {
     entry: ['src/index.ts'],
     outDir: 'dist',
     format: ['esm', 'cjs'],
@@ -21,20 +40,29 @@ export function defineTiptapExtensionConfig(overrides: Partial<Options> = {}): O
     },
     sourcemap: isProduction,
     clean: isProduction,
-    minify: isProduction,
+    // With `keepPureAnnotations`, esbuildOptions below sets the minify parts per format.
+    minify: isProduction && !keepPureAnnotations,
     outExtension({ format }) {
       return {
         js: format === 'esm' ? '.js' : '.cjs'
       }
     },
-    esbuildOptions(options) {
+    esbuildOptions(options, context) {
       // Strip dev-noise calls in production but preserve `console.warn` /
       // `console.error` — those are the channels the eslint config allows
       // for legitimate runtime signals to consumers.
       if (isProduction) {
         options.pure = ['console.log', 'console.debug']
+        if (keepPureAnnotations) {
+          // esbuild drops every comment when it minifies whitespace. CJS is not tree-shaken.
+          options.minifySyntax = true
+          options.minifyIdentifiers = true
+          options.minifyWhitespace = context.format === 'cjs'
+        }
       }
     },
-    ...overrides
+    ...rest
   }
+  if (keepPureAnnotations) pureOptIns.add(config)
+  return config
 }

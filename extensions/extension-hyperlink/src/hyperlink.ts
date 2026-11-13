@@ -31,6 +31,9 @@ import {
   trackPasteTitle
 } from './paste-title/pasteTitle'
 import type { PasteTitleOptions } from './paste-title/types'
+import createHyperlinkPopover from './popovers/createHyperlinkPopover'
+import editHyperlinkPopover from './popovers/editHyperlinkPopover'
+import previewHyperlinkPopover from './popovers/previewHyperlinkPopover'
 import { isSafeHref } from './url-decisions'
 import { DEFAULT_PROTOCOL, normalizeHref } from './utils/normalizeHref'
 
@@ -144,6 +147,8 @@ export interface HyperlinkStorage {
   context: LinkContext | null
   /** Internal: the armed paste and the pending title runs of this editor. Do not touch it. */
   pasteTitle: PasteTitleState
+  /** The openers' fallback for an empty slot. Empty under `HyperlinkBase`. */
+  prebuiltPopovers?: HyperlinkOptions['popovers']
 }
 
 // linkifyjs has one process-global scheme registry that warns once it auto-inits
@@ -157,221 +162,235 @@ function registerProtocolOnce(scheme: string, optionalSlashes?: boolean): void {
   registerCustomProtocol(scheme, optionalSlashes)
 }
 
-export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
-  name: HYPERLINK_MARK_NAME,
+// The forms sit in storage, not in option defaults. `configure` deep-merges options.
+// The click and Mod-k gates read the slots, so a default there opens a preview that 2.3.0 does not.
+function createHyperlinkMark(prebuiltPopovers: HyperlinkOptions['popovers']) {
+  return Mark.create<HyperlinkOptions, HyperlinkStorage>({
+    name: HYPERLINK_MARK_NAME,
 
-  priority: 1000,
+    priority: 1000,
 
-  keepOnSplit: false,
+    keepOnSplit: false,
 
-  // Text typed at either edge stays outside the link, as in Google Docs.
-  // Upstream Tiptap ties this to `autolink`; this package does not (#374).
-  inclusive: false,
+    // Text typed at either edge stays outside the link, as in Google Docs.
+    // Upstream Tiptap ties this to `autolink`; this package does not (#374).
+    inclusive: false,
 
-  // Markdown import/export lives with the mark itself (inert unless the host
-  // also loads a Markdown extension). Parsing applies the locked `hyperlink` mark name.
-  markdownTokenName: 'link',
+    // Markdown import/export lives with the mark itself (inert unless the host
+    // also loads a Markdown extension). Parsing applies the locked `hyperlink` mark name.
+    markdownTokenName: 'link',
 
-  parseMarkdown: (token: MarkdownToken, helpers: MarkdownParseHelpers) => {
-    // Markdown import is a write boundary like any other: normalize for
-    // canonical parity, then blank unsafe schemes (mirrors parseHTML).
-    const href = normalizeHref(token.href || '')
-    return helpers.applyMark(HYPERLINK_MARK_NAME, helpers.parseInline(token.tokens ?? []), {
-      href: isSafeHref(href) ? href : ''
-    })
-  },
+    parseMarkdown: (token: MarkdownToken, helpers: MarkdownParseHelpers) => {
+      // Markdown import is a write boundary like any other: normalize for
+      // canonical parity, then blank unsafe schemes (mirrors parseHTML).
+      const href = normalizeHref(token.href || '')
+      return helpers.applyMark(HYPERLINK_MARK_NAME, helpers.parseInline(token.tokens ?? []), {
+        href: isSafeHref(href) ? href : ''
+      })
+    },
 
-  renderMarkdown: (node: JSONContent, helpers: MarkdownRendererHelpers, _ctx: RenderContext) => {
-    // Serialize is a write boundary too: blank an unsafe href (mirrors renderHTML)
-    // and percent-encode what marked.js cannot tokenise. The marked.js href grammar
-    // stops at whitespace and the first `)`. The label is untouchable from here:
-    // the serializer keeps only the slices around `renderChildren()`.
-    const content = helpers.renderChildren(node)
-    const raw = node.attrs?.href || ''
-    const href = (isSafeHref(raw) ? raw : '').replace(/\)/g, '%29').replace(/\s/g, '%20')
-    return `[${content}](${href})`
-  },
+    renderMarkdown: (node: JSONContent, helpers: MarkdownRendererHelpers, _ctx: RenderContext) => {
+      // Serialize is a write boundary too: blank an unsafe href (mirrors renderHTML)
+      // and percent-encode what marked.js cannot tokenise. The marked.js href grammar
+      // stops at whitespace and the first `)`. The label is untouchable from here:
+      // the serializer keeps only the slices around `renderChildren()`.
+      const content = helpers.renderChildren(node)
+      const raw = node.attrs?.href || ''
+      const href = (isSafeHref(raw) ? raw : '').replace(/\)/g, '%29').replace(/\s/g, '%20')
+      return `[${content}](${href})`
+    },
 
-  addStorage() {
-    return { context: null, pasteTitle: createPasteTitleState() }
-  },
+    addStorage() {
+      return { context: null, pasteTitle: createPasteTitleState(), prebuiltPopovers }
+    },
 
-  onCreate() {
-    this.options.protocols.forEach((protocol) => {
-      if (typeof protocol === 'string') {
-        registerProtocolOnce(protocol)
-      } else {
-        registerProtocolOnce(protocol.scheme, protocol.optionalSlashes)
+    onCreate() {
+      this.options.protocols.forEach((protocol) => {
+        if (typeof protocol === 'string') {
+          registerProtocolOnce(protocol)
+        } else {
+          registerProtocolOnce(protocol.scheme, protocol.optionalSlashes)
+        }
+      })
+    },
+
+    // No linkifyjs.reset() here — it clears the global registry and breaks
+    // coexisting editors. Close only this editor's open popover so its
+    // body-appended host + document listeners + floating-ui observers don't
+    // outlive the editor.
+    onDestroy() {
+      closeOwnedPopover(this.editor)
+      endPasteTitleRuns(this.storage.pasteTitle)
+    },
+
+    onTransaction({ transaction, appendedTransactions }) {
+      const pasteTitle = this.storage.pasteTitle
+      if (!pasteTitle.armed && pasteTitle.runs.size === 0) return
+      if (!this.options.pasteTitle) return
+      trackPasteTitle(
+        getContext(this),
+        this.options.pasteTitle,
+        pasteTitle,
+        transaction,
+        appendedTransactions
+      )
+    },
+
+    addOptions() {
+      return {
+        openOnClick: true,
+        linkOnPaste: true,
+        autolink: true,
+        protocols: [],
+        HTMLAttributes: {
+          target: null,
+          rel: 'noopener noreferrer nofollow',
+          class: null
+        },
+        popovers: {
+          previewHyperlink: null,
+          editHyperlink: null,
+          createHyperlink: null
+        },
+        validate: undefined,
+        defaultProtocol: DEFAULT_PROTOCOL,
+        isAllowedUri: undefined,
+        shouldAutoLink: undefined,
+        enableClickSelection: false,
+        exitable: false,
+        linkIcon: undefined,
+        navigate: undefined,
+        hovercard: undefined,
+        pasteTitle: undefined
       }
-    })
-  },
+    },
 
-  // No linkifyjs.reset() here — it clears the global registry and breaks
-  // coexisting editors. Close only this editor's open popover so its
-  // body-appended host + document listeners + floating-ui observers don't
-  // outlive the editor.
-  onDestroy() {
-    closeOwnedPopover(this.editor)
-    endPasteTitleRuns(this.storage.pasteTitle)
-  },
-
-  onTransaction({ transaction, appendedTransactions }) {
-    const pasteTitle = this.storage.pasteTitle
-    if (!pasteTitle.armed && pasteTitle.runs.size === 0) return
-    if (!this.options.pasteTitle) return
-    trackPasteTitle(
-      getContext(this),
-      this.options.pasteTitle,
-      pasteTitle,
-      transaction,
-      appendedTransactions
-    )
-  },
-
-  addOptions() {
-    return {
-      openOnClick: true,
-      linkOnPaste: true,
-      autolink: true,
-      protocols: [],
-      HTMLAttributes: {
-        target: null,
-        rel: 'noopener noreferrer nofollow',
-        class: null
-      },
-      popovers: {
-        previewHyperlink: null,
-        editHyperlink: null,
-        createHyperlink: null
-      },
-      validate: undefined,
-      defaultProtocol: DEFAULT_PROTOCOL,
-      isAllowedUri: undefined,
-      shouldAutoLink: undefined,
-      enableClickSelection: false,
-      exitable: false,
-      linkIcon: undefined,
-      navigate: undefined,
-      hovercard: undefined,
-      pasteTitle: undefined
-    }
-  },
-
-  addAttributes() {
-    return {
-      href: {
-        default: null
-      },
-      // `target` stays on the mark (Yjs back-compat) but `rendered: false`.
-      // Emitting `<a target="_blank">` would let the browser bypass the click-handler
-      // guard and revive the historical `target="_blank"` phishing surface.
-      // Pinned by AGENTS.md.
-      target: {
-        default: this.options.HTMLAttributes.target,
-        rendered: false
-      },
-      rel: {
-        default: this.options.HTMLAttributes.rel
-      },
-      // Never read or render `class` from content: a pasted `fixed inset-0`
-      // would apply page-level utilities. The developer's `HTMLAttributes.class`
-      // still reaches the `<a>` through `mergeAttributes` in renderHTML.
-      class: {
-        default: this.options.HTMLAttributes.class,
-        parseHTML: () => null,
-        rendered: false
-      },
-      title: {
-        default: null
-      },
-      // `image` is preview-popover metadata (favicon / OG); `<a>` has no such attr, so don't emit.
-      image: {
-        default: null,
-        rendered: false
-      }
-    }
-  },
-
-  parseHTML() {
-    // `isSafeHref` is the single XSS gate at every boundary (parseHTML,
-    // input/paste rules, command, click, preview). Returning `false`
-    // here tells ProseMirror to skip the mark.
-    return [
-      { tag: '.hyperlink-icon', ignore: true, priority: 1000 },
-      {
-        tag: 'a[href]',
-        // Above the default 50, so a host that keeps StarterKit's Link for stored
-        // `link` marks still parses every new <a href> as `hyperlink`. On a tie,
-        // the mark registered first wins, and StarterKit usually comes first.
-        priority: 51,
-        getAttrs: (node: HTMLElement | string) => {
-          if (typeof node === 'string') return false
-          const href = node.getAttribute('href') ?? ''
-          return isSafeHref(href) ? null : false
+    addAttributes() {
+      return {
+        href: {
+          default: null
+        },
+        // `target` stays on the mark (Yjs back-compat) but `rendered: false`.
+        // Emitting `<a target="_blank">` would let the browser bypass the click-handler
+        // guard and revive the historical `target="_blank"` phishing surface.
+        // Pinned by AGENTS.md.
+        target: {
+          default: this.options.HTMLAttributes.target,
+          rendered: false
+        },
+        rel: {
+          default: this.options.HTMLAttributes.rel
+        },
+        // Never read or render `class` from content: a pasted `fixed inset-0`
+        // would apply page-level utilities. The developer's `HTMLAttributes.class`
+        // still reaches the `<a>` through `mergeAttributes` in renderHTML.
+        class: {
+          default: this.options.HTMLAttributes.class,
+          parseHTML: () => null,
+          rendered: false
+        },
+        title: {
+          default: null
+        },
+        // `image` is preview-popover metadata (favicon / OG); `<a>` has no such attr, so don't emit.
+        image: {
+          default: null,
+          rendered: false
         }
       }
-    ]
-  },
+    },
 
-  renderHTML({ HTMLAttributes }) {
-    // Defense-in-depth on READ — a hostile mark could reach here via
-    // Yjs replay, foreign `addMark`, or schema migration. Blank the
-    // href so a bad mark never round-trips into a clickable
-    // `javascript:` anchor downstream. (Matches @tiptap/extension-link v3.)
-    const safe = isSafeHref(HTMLAttributes.href as string | null | undefined)
-      ? HTMLAttributes
-      : { ...HTMLAttributes, href: '' }
-    return ['a', mergeAttributes(this.options.HTMLAttributes, safe), 0]
-  },
+    parseHTML() {
+      // `isSafeHref` is the single XSS gate at every boundary (parseHTML,
+      // input/paste rules, command, click, preview). Returning `false`
+      // here tells ProseMirror to skip the mark.
+      return [
+        { tag: '.hyperlink-icon', ignore: true, priority: 1000 },
+        {
+          tag: 'a[href]',
+          // Above the default 50, so a host that keeps StarterKit's Link for stored
+          // `link` marks still parses every new <a href> as `hyperlink`. On a tie,
+          // the mark registered first wins, and StarterKit usually comes first.
+          priority: 51,
+          getAttrs: (node: HTMLElement | string) => {
+            if (typeof node === 'string') return false
+            const href = node.getAttribute('href') ?? ''
+            return isSafeHref(href) ? null : false
+          }
+        }
+      ]
+    },
 
-  addCommands() {
-    return buildHyperlinkCommands({
-      markName: this.name,
-      options: this.options,
-      urls: getContext(this).urls
-    })
-  },
+    renderHTML({ HTMLAttributes }) {
+      // Defense-in-depth on READ — a hostile mark could reach here via
+      // Yjs replay, foreign `addMark`, or schema migration. Blank the
+      // href so a bad mark never round-trips into a clickable
+      // `javascript:` anchor downstream. (Matches @tiptap/extension-link v3.)
+      const safe = isSafeHref(HTMLAttributes.href as string | null | undefined)
+        ? HTMLAttributes
+        : { ...HTMLAttributes, href: '' }
+      return ['a', mergeAttributes(this.options.HTMLAttributes, safe), 0]
+    },
 
-  addKeyboardShortcuts() {
-    // Mod-k previews the link around the caret; elsewhere it opens the create form.
-    const shortcuts: Record<string, () => boolean> = {
-      'Mod-k': () =>
-        openPreviewAtSelection(this.editor) || this.editor.commands.openCreateHyperlinkPopover(),
-      'Alt-Enter': () => {
-        const link = linkAtSelection(this.editor.state, this.type)
-        if (!link) return false
-        openLink(getContext(this), link.href, { newTab: false })
-        return true
+    addCommands() {
+      return buildHyperlinkCommands({
+        markName: this.name,
+        options: this.options,
+        urls: getContext(this).urls
+      })
+    },
+
+    addKeyboardShortcuts() {
+      // Mod-k previews the link around the caret; elsewhere it opens the create form.
+      const shortcuts: Record<string, () => boolean> = {
+        'Mod-k': () =>
+          openPreviewAtSelection(this.editor) || this.editor.commands.openCreateHyperlinkPopover(),
+        'Alt-Enter': () => {
+          const link = linkAtSelection(this.editor.state, this.type)
+          if (!link) return false
+          openLink(getContext(this), link.href, { newTab: false })
+          return true
+        }
       }
+
+      if (this.options.exitable) {
+        shortcuts.ArrowRight = () => exitMarkOnArrowRight(this.editor, this.type)
+      }
+
+      return shortcuts
+    },
+
+    addInputRules() {
+      return createInteractions(getContext(this)).inputRules
+    },
+
+    addPasteRules() {
+      return createInteractions(getContext(this)).pasteRules
+    },
+
+    addMarkView() {
+      return linkIconMarkView(this.options.linkIcon)
+    },
+
+    addProseMirrorPlugins() {
+      const ctx = getContext(this)
+      const plugins = [...createInteractions(ctx).plugins]
+      if (this.options.linkIcon) plugins.push(linkIconCompositionSweep, linkIconEnter(this.name))
+      if (this.options.hovercard) plugins.push(createHovercardPlugin(ctx, this.options.hovercard))
+      if (this.options.pasteTitle)
+        plugins.push(createPasteTitlePlugin(ctx, this.storage.pasteTitle))
+      return plugins
     }
+  })
+}
 
-    if (this.options.exitable) {
-      shortcuts.ArrowRight = () => exitMarkOnArrowRight(this.editor, this.type)
-    }
+/** The mark without the prebuilt popovers. An opener with an empty slot opens nothing. */
+export const HyperlinkBase = /* @__PURE__ */ createHyperlinkMark({})
 
-    return shortcuts
-  },
-
-  addInputRules() {
-    return createInteractions(getContext(this)).inputRules
-  },
-
-  addPasteRules() {
-    return createInteractions(getContext(this)).pasteRules
-  },
-
-  addMarkView() {
-    return linkIconMarkView(this.options.linkIcon)
-  },
-
-  addProseMirrorPlugins() {
-    const ctx = getContext(this)
-    const plugins = [...createInteractions(ctx).plugins]
-    if (this.options.linkIcon) plugins.push(linkIconCompositionSweep, linkIconEnter(this.name))
-    if (this.options.hovercard) plugins.push(createHovercardPlugin(ctx, this.options.hovercard))
-    if (this.options.pasteTitle) plugins.push(createPasteTitlePlugin(ctx, this.storage.pasteTitle))
-    return plugins
-  }
+export const Hyperlink = /* @__PURE__ */ createHyperlinkMark({
+  previewHyperlink: previewHyperlinkPopover,
+  editHyperlink: editHyperlinkPopover,
+  createHyperlink: createHyperlinkPopover
 })
 
 // One `LinkContext` per editor, cached on `storage.context` and shared across

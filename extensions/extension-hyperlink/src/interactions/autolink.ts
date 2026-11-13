@@ -3,6 +3,7 @@ import { Plugin, PluginKey } from '@tiptap/pm/state'
 
 import { PREVENT_AUTOLINK_META } from '../constants'
 import { changedRanges } from './changedRanges'
+import { isRemoteSync } from './remoteSync'
 import type { LinkContext } from './types'
 
 const TRAILING_WHITESPACE_RE = /\s$/
@@ -19,13 +20,12 @@ export function createAutolinkInteraction(ctx: LinkContext): Plugin {
     appendTransaction: (transactions, oldState, newState) => {
       const docChanges =
         transactions.some((transaction) => transaction.docChanged) && !oldState.doc.eq(newState.doc)
-      const shouldSkipAutolink = transactions.some((transaction) =>
-        transaction.getMeta(PREVENT_AUTOLINK_META)
-      )
-
-      if (!docChanges || shouldSkipAutolink) {
-        return
-      }
+      // Each client autolinks only what its own user typed (#771).
+      const skip =
+        !docChanges ||
+        transactions.some((transaction) => transaction.getMeta(PREVENT_AUTOLINK_META)) ||
+        isRemoteSync(transactions, newState)
+      if (skip) return
 
       const { tr } = newState
       // Tiptap's combineTransactionSteps + getChangedRanges cost O(steps²) on a big paste or Bold.
@@ -50,8 +50,8 @@ export function createAutolinkInteraction(ctx: LinkContext): Plugin {
 
           const oldLinkText = oldState.doc.textBetween(oldLink.from, oldLink.to, undefined, ' ')
           // A mark-only change (bold, code) keeps the text, so leave the link alone.
-          // '\n' makes a split into two blocks count as a text change.
-          if (newState.doc.textBetween(newFrom, newTo, '\n', ' ') === oldLinkText) continue
+          // No block separator: Enter inside a link keeps both halves linked, as upstream does (#778).
+          if (newState.doc.textBetween(newFrom, newTo, undefined, ' ') === oldLinkText) continue
 
           const first = newMarks[0]
           const newMark =

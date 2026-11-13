@@ -3,8 +3,7 @@ import { hideTooltip } from '@docs.plus/floating-tooltip'
 import { OFFSCREEN_COORD_PX } from '../constants'
 import { createPopover, getDefaultController } from '../floating-popover'
 import type { EditHyperlinkOptions } from '../hyperlink'
-import editHyperlinkPopover from '../popovers/editHyperlinkPopover'
-import { getHyperlinkOptions } from './getHyperlinkOptions'
+import { openerFactory } from './getHyperlinkOptions'
 import { findLiveEquivalentAnchor } from './liveAnchor'
 import { setActivePopoverOwner } from './popoverOwnership'
 
@@ -15,9 +14,7 @@ import { setActivePopoverOwner } from './popoverOwnership'
  */
 export function openEditHyperlink(opts: EditHyperlinkOptions): void {
   const { editor } = opts
-  const { popovers } = getHyperlinkOptions(editor, 'openEditHyperlink')
-  const factory = popovers.editHyperlink ?? editHyperlinkPopover
-  const content = factory(opts)
+  const content = openerFactory(editor, 'editHyperlink', 'openEditHyperlink')?.(opts)
   if (!content) return
   let referenceLink = findLiveEquivalentAnchor(editor, opts.link, opts.nodePos)
   let hideQueued = false
