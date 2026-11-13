@@ -11,7 +11,7 @@ import { linkDestination } from './internalDocumentLink'
 import { runInternalDocumentLink } from './internalDocumentLinkActions'
 
 // The webapp ships its own preview popover (`previewHyperlink` factory wired
-// into `Hyperlink.configure`), so the extension's hardened
+// into `HyperlinkBase.configure`), so the extension's hardened
 // `previewHyperlinkPopover` is never on this click path. Reuse the extension's
 // exported `SAFE_WINDOW_FEATURES` so both stacks pass `'noopener,noreferrer'`.
 

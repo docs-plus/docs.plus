@@ -18,6 +18,13 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- The pad and the chat composer load `HyperlinkBase`, so they no longer ship the extension's
+  built-in link forms. First-load JS drops 2 kB on `/`, the pad route and `_app` (local `build:ci`)
+  ([#775](https://github.com/docs-plus/docs.plus/issues/775)).
+- Enter inside a link keeps both halves linked to the old address
+  ([#778](https://github.com/docs-plus/docs.plus/issues/778)).
+- Pasting a long text and select-all formatting run faster, because autolink finds the changed
+  text in one pass ([#773](https://github.com/docs-plus/docs.plus/issues/773)).
 - The Replace with a file card shows the caps that apply to you, and checks the file before upload.
   The owner may send a Word file of up to 40 MB; everyone else 10 MB. Sharing a file into the
   installed app uses the owner caps ([#722](https://github.com/docs-plus/docs.plus/issues/722)).
@@ -32,6 +39,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- Bold, italic, strike, underline or code on part of a link keeps the whole link, in the pad and in
+  chat ([#770](https://github.com/docs-plus/docs.plus/issues/770)).
+- A link keeps its own address when you type a space or format next to it, even when its text looks
+  like another address ([#772](https://github.com/docs-plus/docs.plus/issues/772)).
+- A link you remove stays removed while others edit the pad. Other people's editors no longer link
+  text they did not type ([#771](https://github.com/docs-plus/docs.plus/issues/771)).
 - GlitchTip browser counts are usable again. The Safari IndexedDB flood now sends one warning per
   page load, not hundreds. next-pwa's service-worker register errors (AbortError and Cache.add)
   are dropped. Network failures and closed-database errors still report ([#752](https://github.com/docs-plus/docs.plus/issues/752)).

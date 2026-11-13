@@ -14,7 +14,7 @@ import {
   getComposerState,
   syncComposerDraft
 } from '@db/messageComposerDB'
-import { Hyperlink, linkAtSelection } from '@docs.plus/extension-hyperlink'
+import { HyperlinkBase, linkAtSelection } from '@docs.plus/extension-hyperlink'
 import { Indent } from '@docs.plus/extension-indent'
 import { InlineCode } from '@docs.plus/extension-inline-code'
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
@@ -177,7 +177,7 @@ export const useTiptapEditor = ({
           },
           showOnlyWhenEditable: false
         }),
-        Hyperlink.configure({
+        HyperlinkBase.configure({
           protocols: ['ftp', 'mailto'],
           linkOnPaste: true,
           openOnClick: true,

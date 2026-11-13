@@ -37,6 +37,7 @@ Extension-internal rules (schema, commands, click handling, safety/normalization
 ### Webapp-Owned Hyperlink Popovers
 
 - The extension stays host-agnostic. `popovers.createHyperlink` / `popovers.editHyperlink` are callbacks returning `HTMLElement | null`.
+- The pad and the composer load `HyperlinkBase`, not `Hyperlink` (#775). `getHyperlinkPopoverConfig` and `getHyperlinkPopoverConfigAtInvoke` fill all three slots, so the pad bundles no prebuilt form. A new editor surface must fill every slot, because under `HyperlinkBase` an empty slot opens nothing.
 - Desktop create/edit entries create an empty host and set only `host.dataset.testid`. Never set `host.className`.
 - Register `{ host, props }` via `setActivePopover` in `hyperlinkPopoverStore.ts`.
 - Webapp Edit forms fill Text through `getHyperlinkDisplayText` in `linkMarkUtils.ts`, never from `innerText` directly.

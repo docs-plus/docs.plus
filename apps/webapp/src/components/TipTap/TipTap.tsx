@@ -1,5 +1,5 @@
 import Config from '@config'
-import { Hyperlink } from '@docs.plus/extension-hyperlink'
+import { HyperlinkBase } from '@docs.plus/extension-hyperlink'
 import { HyperMultimediaKit, isMediaUrl } from '@docs.plus/extension-hypermultimedia'
 import { Indent } from '@docs.plus/extension-indent'
 import { InlineCode } from '@docs.plus/extension-inline-code'
@@ -227,7 +227,7 @@ const Editor = ({
       hoverChat: editable,
       selectionChat: editable && !isMobile
     }),
-    Hyperlink.configure({
+    HyperlinkBase.configure({
       protocols: ['ftp', 'mailto'],
       linkOnPaste: false,
       autolink: true,
