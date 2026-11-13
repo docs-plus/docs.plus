@@ -89,6 +89,11 @@ This file is the product changelog. Every app, package and extension keeps its o
   94.8 % of its memory limit ([#712](https://github.com/docs-plus/docs.plus/issues/712)).
 - Loki gets 768 MiB, up from 512 MiB, with `GOMEMLIMIT` at 576 MiB. It idled at 448–485 MiB, up to
   95 % of the old limit ([#712](https://github.com/docs-plus/docs.plus/issues/712)).
+- Alloy drops the routine lines of `loki`, `glitchtip-worker` and `docker-socket-proxy` before
+  they reach Loki. Together they were 1.38 million lines a day, 92.5 to 94.2 % of all stored lines.
+  Warn and error lines, Loki's slow-query log and refused proxy calls still arrive. No drop touches
+  an app service. A new warning, `loki-memory-high`, fires when Loki stays above 80 % of its
+  memory limit for 10 minutes ([#712](https://github.com/docs-plus/docs.plus/issues/712)).
 - Three new alert rules watch the shared collab Postgres cluster. Two fire when the size of its
   databases plus WAL room passes 60 % of the disk (warning) and 80 % (critical). The third warns
   when they grow more than 128 MiB in 24 hours. Over 15 days of history it would have fired once,

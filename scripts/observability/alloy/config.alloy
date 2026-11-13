@@ -22,6 +22,24 @@ loki.source.docker "logs" {
 }
 
 loki.process "pino" {
+  // Loki's own info lines were half of all stored lines (#712). Keep warn, error and the
+  // slow-query log. Fast query lines are almost all Grafana's own alert checks.
+  stage.match {
+    selector = "{service=\"loki\"} |~ \"^level=info \" !~ \"caller=metrics.go.* latency=slow\""
+    action   = "drop"
+  }
+  // GlitchTip's scheduler logs three lines per routine task. Its lines carry no level, so
+  // any line that names an error, a failure or a warning passes.
+  stage.match {
+    selector = "{service=\"glitchtip-worker\"} |~ \"Task .* (succeeded|finished)|Enqueuing due task|Processing task\" !~ \"(?i)error|exception|traceback|fail|warn|critical\""
+    action   = "drop"
+  }
+  // The proxy logs every Docker API call. LOG_LEVEL does not quiet it on v0.5.0. Any status
+  // but 200 still reaches Loki. A log stream cut after its 200 is dropped; Alloy reconnects.
+  stage.match {
+    selector = "{service=\"docker-socket-proxy\"} |~ \"dockerbackend/dockersocket \\\\S+ 200 \""
+    action   = "drop"
+  }
   stage.json {
     expressions = { level = "level" }
   }
