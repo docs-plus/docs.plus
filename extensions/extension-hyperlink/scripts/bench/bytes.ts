@@ -65,3 +65,25 @@ export async function measureBytes(variant: Variant): Promise<Bytes> {
     helperOnly: await bundle("import {normalizeHref} from 'HL';console.log(normalizeHref)")
   }
 }
+
+type Budget = { starterKitAppGz: number | null; helperOnlyGz: number | null }
+
+/** Checks head's gzip bytes against the budget file. A `null` limit is not set yet, so it passes. */
+export async function checkBudget(
+  head: Bytes,
+  file: string
+): Promise<{ over: boolean; report: string }> {
+  const budget = (await Bun.file(file).json()) as Budget
+  const rows: [keyof Budget, number][] = [
+    ['starterKitAppGz', head.starterKitApp.gz],
+    ['helperOnlyGz', head.helperOnly.gz]
+  ]
+  let over = false
+  const lines = rows.map(([key, gz]) => {
+    const limit = budget[key]
+    if (limit === null) return `- ${key}: ${gz} B, no limit set`
+    over ||= gz > limit
+    return `- ${key}: ${gz} B, limit ${limit} B${gz > limit ? ', OVER' : ''}`
+  })
+  return { over, report: `Budget (${file}):\n${lines.join('\n')}` }
+}

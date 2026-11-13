@@ -171,6 +171,14 @@ const CASES: Case[] = [
     want: '....LLLLLLLLLLL.'
   },
   {
+    group: 'chunk',
+    // One scrolled insert, as dictation or an IME phrase commit sends it (#780).
+    name: 'mid URL in a one-chunk insert',
+    content: '<p></p>',
+    act: (e) => e.view.dispatch(e.state.tr.insertText('see example.com now ', 1).scrollIntoView()),
+    want: '....LLLLLLLLLLL.....'
+  },
+  {
     group: 'enter',
     name: 'enter inside a link',
     content: ONE,

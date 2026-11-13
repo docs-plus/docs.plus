@@ -1,6 +1,7 @@
 /**
  * Timed user actions, shared by the jsdom run and the browser page. Each run builds a fresh editor,
- * times one action, and returns the editor with `ms` set. Sizes match the 2026-11-12 review.
+ * times one action, and returns the editor with `ms` set. Stress sizes match the 2026-11-12 review;
+ * common sizes (25 blocks, 30 lines) match a new pad, as the bench plan sets them.
  */
 import type { ChainedCommands, Editor } from '@tiptap/core'
 
@@ -21,9 +22,13 @@ const para = (i: number, html: boolean) => {
     ? `<p>Paragraph ${i} has some words and <a href="${a}">${a}</a> then more text and <a href="https://${b}">${b}</a> end.</p>`
     : `Paragraph ${i} has some words and ${a} then more text and ${b} end.`
 }
-const HTML_2000 = Array.from({ length: 2000 }, (_, i) => para(i, true)).join('')
-const HTML_500 = Array.from({ length: 500 }, (_, i) => para(i, true)).join('')
-const TEXT_2000 = Array.from({ length: 2000 }, (_, i) => para(i, false)).join('\n')
+const html = (n: number) => Array.from({ length: n }, (_, i) => para(i, true)).join('')
+const text = (n: number) => Array.from({ length: n }, (_, i) => para(i, false)).join('\n')
+const HTML_2000 = html(2000)
+const HTML_500 = html(500)
+const HTML_25 = html(25)
+const TEXT_2000 = text(2000)
+const TEXT_30 = text(30)
 const TYPED = 'hello world see example.com now and type more words here mail me@x.io ok '
   .repeat(14)
   .slice(0, 1000)
@@ -69,31 +74,46 @@ function timed(editor: Editor, action: () => void): Timed {
   return { editor, ms: performance.now() - t }
 }
 
+const pasteText = (content: string): Workload => ({
+  unit: 'ms',
+  run: (env, mod) => {
+    const e = make(env, mod, '<p></p>')
+    e.commands.focus('end')
+    return timed(e, () => paste(env, e, content))
+  }
+})
+const boldAll = (content: string): Workload => ({
+  unit: 'ms',
+  run: (env, mod) => {
+    const e = make(env, mod, content)
+    return timed(e, () => bold(e.chain().selectAll()).run())
+  }
+})
+const typeEnd = (content: string): Workload => ({
+  unit: 'µs/key',
+  run: (env, mod) => {
+    const e = make(env, mod, content)
+    e.commands.setTextSelection(e.state.doc.content.size - 1)
+    const r = timed(e, () => typeChars(e, TYPED))
+    return { editor: e, ms: (r.ms * 1000) / TYPED.length }
+  }
+})
+const mount = (content: string): Workload => ({
+  unit: 'ms',
+  run: (env, mod) => {
+    const t = performance.now()
+    const e = make(env, mod, content)
+    return { editor: e, ms: performance.now() - t }
+  }
+})
+
 export const WORKLOADS: Record<string, Workload> = {
-  pasteText2000: {
-    unit: 'ms',
-    run: (env, mod) => {
-      const e = make(env, mod, '<p></p>')
-      e.commands.focus('end')
-      return timed(e, () => paste(env, e, TEXT_2000))
-    }
-  },
-  boldAll2000: {
-    unit: 'ms',
-    run: (env, mod) => {
-      const e = make(env, mod, HTML_2000)
-      return timed(e, () => bold(e.chain().selectAll()).run())
-    }
-  },
-  typeEnd2000: {
-    unit: 'µs/key',
-    run: (env, mod) => {
-      const e = make(env, mod, HTML_2000)
-      e.commands.setTextSelection(e.state.doc.content.size - 1)
-      const r = timed(e, () => typeChars(e, TYPED))
-      return { editor: e, ms: (r.ms * 1000) / TYPED.length }
-    }
-  },
+  pasteText30: pasteText(TEXT_30),
+  pasteText2000: pasteText(TEXT_2000),
+  boldAll25: boldAll(HTML_25),
+  boldAll2000: boldAll(HTML_2000),
+  typeEnd25: typeEnd(HTML_25),
+  typeEnd2000: typeEnd(HTML_2000),
   pasteOverSelection250k: {
     unit: 'ms',
     run: (env, mod) => {
@@ -109,12 +129,6 @@ export const WORKLOADS: Record<string, Workload> = {
       return timed(e, () => bold(e.chain().setTextSelection({ from: 5, to: 9 })).run())
     }
   },
-  mount1000Links: {
-    unit: 'ms',
-    run: (env, mod) => {
-      const t = performance.now()
-      const e = make(env, mod, HTML_500)
-      return { editor: e, ms: performance.now() - t }
-    }
-  }
+  mount50Links: mount(HTML_25),
+  mount1000Links: mount(HTML_500)
 }
