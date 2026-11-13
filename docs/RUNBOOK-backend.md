@@ -208,13 +208,15 @@ To apply an env change, recreate the containers, as [Configuration](self-hosting
 
 ## WS container out of memory
 
-Grafana alert: `Container memory near limit (OOM risk)`. Severity critical, above 90% of the cgroup limit for 5 minutes. The alert names the container. This section covers a `hocuspocus-server` container; the same alert fires for any other container, and those are not this page.
+Grafana alert: `Container memory near limit (OOM risk)`. Severity critical, above 90% of the cgroup limit for 5 minutes. The alert names the container. This section covers the `hocuspocus-server` and `hocuspocus-worker` containers; the same alert fires for any other container, and those are not this page.
 
 `Container crash loop (restarts increasing)` is the same failure one step later. An OOM kill shows as exit code 137.
 
 **The lever is room count, not a setting.** A loaded room costs 16.5–17x its stored snapshot in heap, and about 23x in RSS. The cgroup kills on RSS, so use that slope. The limit is 1024M per replica, and the process itself floors at roughly 130–154 MB. The ceiling is therefore document size times the number of rooms loaded at once.
 
 **Adding replicas does not lower this.** Every replica serving one connection to a document holds its own complete copy of it. A hot room is therefore loaded on each of them. Measured 2026-09-05. Replicas raise connection capacity, never room capacity.
+
+**A `hocuspocus-worker` peak comes from one store job on a large pad, not from rooms.** `Process memory peak near its container limit` or `Kernel OOM kill on the production host` may fire first. Before a restart, find the largest pad in the worker's "Document head size warning" lines (LogQL `level="40"`). Each worker runs one store job at a time (`WORKER_STORE_CONCURRENCY`).
 
 Commands below use the `dc` alias from [Before you start](#before-you-start).
 

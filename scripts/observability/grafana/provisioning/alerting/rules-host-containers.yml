@@ -87,6 +87,90 @@ groups:
                 - evaluator: { type: gt, params: [0] }
               refId: C
 
+      - uid: incident-oom-kill
+        title: Kernel OOM kill on the production host
+        condition: C
+        for: 0s
+        # incident-oom-risk needs 5m above 0.9 of the limit, so a store-job peak of a few
+        # seconds never trips it. The kernel counter sees the kill itself (#737).
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: The kernel killed a process for memory in the last 10m. On the host, run dmesg -T and look for killed process. The counter is host-wide.
+          runbook_url: 'https://github.com/docs-plus/docs.plus/blob/main/docs/RUNBOOK-backend.md#ws-container-out-of-memory'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'sum(increase(node_vmstat_oom_kill[10m]))'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C
+
+      - uid: incident-rss-peak
+        title: Process memory peak near its container limit
+        condition: C
+        for: 0s
+        # Each arm is 80 % of that service's limit: worker 2G, server 1G, rest-api 512M.
+        # Change an arm when its limit in docker-compose.prod.yml changes (#737).
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: Job {{ $labels.job }} on {{ $labels.instance }} passed 80 % of its memory limit in the last 5m. The thresholds follow the limits in docker-compose.prod.yml.
+          runbook_url: 'https://github.com/docs-plus/docs.plus/blob/main/docs/RUNBOOK-backend.md#ws-container-out-of-memory'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'max by (job, instance) (max_over_time(process_resident_memory_bytes{job="hocuspocus-worker"}[5m])) > 1717986918 or max by (job, instance) (max_over_time(process_resident_memory_bytes{job="hocuspocus-server"}[5m])) > 858993459 or max by (job, instance) (max_over_time(process_resident_memory_bytes{job="rest-api"}[5m])) > 429496729'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C
+
       - uid: dep-redis-evictions
         title: Redis evicting keys (volatile-lru active)
         condition: C
