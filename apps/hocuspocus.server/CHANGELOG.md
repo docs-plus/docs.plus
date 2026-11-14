@@ -75,7 +75,7 @@ This file is the operator and API changelog. The pad product lives in the [root 
   route on a private scratch pad, then deletes it ([#726](https://github.com/docs-plus/docs.plus/issues/726)).
 - `scripts/bench-link-tolerance/` measures how much load the link-metadata routes take, against a
   fake origin on loopback, with no traffic off the machine. At the production limits (one replica,
-  1 CPU, 512M), the image relay runs out of memory first: REST held 50/s of 2 MiB images, and was
+  1 CPU, 512M), on one laptop, the image relay runs out of memory first: REST held 50/s of 2 MiB images from a 2.5 s origin, and was
   OOM-killed at 100/s or 200/s. The module `BENCHMARK.md` holds the numbers.
 - `bunfig.toml` drops keys that never applied and default test coverage. The backend unit suite takes
   16.21 s, down from 16.93 s (median of 5, one laptop), and no run writes a literal `~` folder

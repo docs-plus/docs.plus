@@ -35,7 +35,9 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   JavaScript. In the build's route table, `/` drops from 3.82 MB to 952 kB and `/[...slugs]` from
   1.83 MB to 925 kB ([#732](https://github.com/docs-plus/docs.plus/issues/732)).
 - Typing in a pad no longer writes the same save status to the workspace store on every
-  keystroke. Store writes per 100 characters fall from 101 to 2 ([#736](https://github.com/docs-plus/docs.plus/issues/736)).
+  keystroke. On a local profiling build (n = 5, 100 characters at 8 per second), store writes
+  per 100 characters fall from 101 to 2 ([#735](https://github.com/docs-plus/docs.plus/issues/735),
+  Step 0 of [#736](https://github.com/docs-plus/docs.plus/issues/736)).
 
 ### Fixed
 
@@ -47,14 +49,15 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   text they did not type ([#771](https://github.com/docs-plus/docs.plus/issues/771)).
 - Moving between pads no longer keeps every pad you left in memory. Each pad editor now gets its
   own Markdown parser, so a closed pad's document, connection and offline copy can be freed. After
-  20 pad switches in a local production build, live documents fall from 21 to 2: the open pad and
+  20 pad switches in a local production build (2 runs), live documents fall from 21 to 2: the open pad and
   one older editor that other code still holds. Command jump no longer keeps one of them
   ([#781](https://github.com/docs-plus/docs.plus/issues/781)).
 - Dictation, an IME phrase or a text replacement that inserts a URL in the middle of a phrase now
   links it, as typed words do ([#780](https://github.com/docs-plus/docs.plus/issues/780)).
 - GlitchTip browser counts are usable again. The Safari IndexedDB flood now sends one warning per
-  page load, not hundreds. next-pwa's service-worker register errors (AbortError and Cache.add)
-  are dropped. Network failures and closed-database errors still report ([#752](https://github.com/docs-plus/docs.plus/issues/752)).
+  page load, in a local console check. In production it had sent 252 events per trace (GlitchTip
+  197 and 200, 30 days to 2026-11-11). next-pwa's service-worker register errors (AbortError and
+  Cache.add) are dropped. Network failures and closed-database errors still report ([#752](https://github.com/docs-plus/docs.plus/issues/752)).
 
 ## [2.3.0] — 2026-11-09
 

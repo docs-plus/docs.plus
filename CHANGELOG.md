@@ -75,7 +75,7 @@ This file is the product changelog. Every app, package and extension keeps its o
 - Prometheus now keeps up to 45 days of metrics, up from 15. Its size cap drops from 4 GiB to
   3 GiB, and Prometheus removes the oldest data first at that cap. The before-and-after reads for
   the host move need more than 15 days of history ([#749](https://github.com/docs-plus/docs.plus/issues/749)).
-- Alert rules leave out health probes and metric scrapes, which were 92.8 % of REST requests. A
+- Alert rules leave out health probes and metric scrapes, which were 92.8 % of REST requests (441,735 of 476,161 in the 7 days to 2026-11-10). A
   failing database health check now warns on its own, and MCP latency has its own 5 s rule
   ([#710](https://github.com/docs-plus/docs.plus/issues/710)).
 - The dead stage pipeline is removed: `stage.docs.plus.yml`, the staging env template and the stage
@@ -84,13 +84,13 @@ This file is the product changelog. Every app, package and extension keeps its o
 - The chatroom and editor browser suites now alert Telegram only when a suite turns red after a
   green run. Over the last 30 chatroom and 16 editor push runs, that is 3 alerts in all instead of
   27, one per red run ([#557](https://github.com/docs-plus/docs.plus/issues/557)).
-- Loki refuses a log query that spans more than 7 days, or any range inside a query longer than 25
+- Loki refuses a log query that spans more than 169 hours, or any range inside a query longer than 25
   hours, instant queries included. One 7-day instant query had read 2.7 GB and taken Loki to
   94.8 % of its memory limit ([#712](https://github.com/docs-plus/docs.plus/issues/712)).
-- Loki gets 768 MiB, up from 512 MiB, with `GOMEMLIMIT` at 576 MiB. It idled at 448–485 MiB, up to
-  95 % of the old limit ([#712](https://github.com/docs-plus/docs.plus/issues/712)).
+- Loki gets 768 MiB, up from 512 MiB, with `GOMEMLIMIT` at 576 MiB. It idled at 448–485 MiB of
+  its old 512 MiB limit ([#712](https://github.com/docs-plus/docs.plus/issues/712)).
 - Alloy drops the routine lines of `loki`, `glitchtip-worker` and `docker-socket-proxy` before
-  they reach Loki. Together they were 1.39 million lines a day, 92.5 to 94.2 % of all stored lines.
+  they reach Loki. Together they wrote a median of 1,392,680 lines a day (2026-11-04 to 2026-11-10), 92.5 to 94.2 % of all stored lines.
   Warn and error lines, Loki's slow-query log and refused proxy calls still arrive. No drop touches
   an app service. A new warning, `loki-memory-high`, fires when Loki stays above 80 % of its
   memory limit for 10 minutes ([#712](https://github.com/docs-plus/docs.plus/issues/712)).
