@@ -3,8 +3,8 @@
  * Usage (from apps/hocuspocus.server):
  *   bun scripts/bench-link-tolerance/run.ts <scenario> [--smoke] [--dry-run] [--layer=2]
  *     [--variant=module|baseline|coalesce] [--rates=a,b] [--concurrency=1,4] [--step=S]
- *     [--warmup=S] [--ip=pool|none|many] [--order=reverse] [--redis=docker|native]
- *     [--conn=pooled|fresh] [--out=<dir>] [--rate-limit-max=N] [--keep-redis] [--force-long]
+ *     [--warmup=S] [--ip=pool|none|many] [--order=reverse]
+ *     [--conn=pooled|fresh] [--out=<dir>] [--rate-limit-max=N] [--force-long]
  * Appends JSON lines to <out>/<scenario>.jsonl: one session header, one line per step, one footer.
  */
 import { createHash } from 'node:crypto'
@@ -42,7 +42,6 @@ const RAW_DIR = join(ROOT, 'Notes/local-docs/2026-11-13-link-scraper-tolerance/r
 const CORPUS_DIR = join(ROOT, 'Notes/local-docs/2026-10-26-242-hovercard/bench/corpus/pages')
 const LOCK_PATH = join(RAW_DIR, '.bench.lock')
 const PORTS = { rest: 4620, origin: 4621, side: 4622, redis: 6391 }
-const REDIS_CONTAINER = 'linkbench-redis'
 const REST = `http://127.0.0.1:${PORTS.rest}`
 const ORIGIN = `http://127.0.0.1:${PORTS.origin}`
 const SIDE = `http://127.0.0.1:${PORTS.side}`
@@ -82,7 +81,8 @@ const ratesOverride = flag('rates')?.split(',').map(Number)
 const concurrencyRamp = flag('concurrency')?.split(',').map(Number)
 const ipOverride = flag('ip') as DriverConfig['ip'] | undefined
 const order = flag('order') === 'reverse' ? 'reverse' : 'forward'
-const redisBackend = flag('redis') === 'native' ? 'native' : 'docker'
+// Redis runs as a child redis-server only. The Docker path never ran end to end and was deleted.
+const redisBackend = 'native'
 // `fresh`: REST opens a new connection per fetch (B4 arm). Every miss number names its transport.
 const conn = flag('conn') === 'fresh' ? 'fresh' : 'pooled'
 const TRANSPORT = `${conn} loopback, no DNS, no TLS`
@@ -272,8 +272,6 @@ const procs: Proc[] = []
 const own = {
   lock: false,
   redis: false,
-  /** The owner label of the container this run started or adopted; rm only while it matches. */
-  redisLabel: '',
   redisPid: 0,
   redisProc: null as Proc | null,
   paused: false,
@@ -333,13 +331,6 @@ const acquireLock = async (): Promise<string | null> => {
       const cmd = (await run(['ps', '-o', 'command=', '-p', String(pid)], 3000)).out
       if (/bench-link-tolerance|redis-server .*6391/.test(cmd)) process.kill(pid, 'SIGKILL')
     }
-    if (info.redisBackend !== 'native' && info.session) {
-      const label = await docker(
-        ['inspect', '-f', '{{index .Config.Labels "linkbench.owner"}}', REDIS_CONTAINER],
-        15_000
-      )
-      if (label.ok && label.out === info.session) await docker(['rm', '-f', REDIS_CONTAINER])
-    }
     try {
       unlinkSync(LOCK_PATH)
     } catch {
@@ -368,88 +359,31 @@ const spawnChild = (cmd: string[], opts: Parameters<typeof Bun.spawn>[1]) => {
 }
 
 const startRedis = async (): Promise<{ version: string; digest: string; reused: boolean }> => {
-  if (redisBackend === 'native') {
-    if (await portBusy(PORTS.redis)) throw new Error(`port ${PORTS.redis} (redis) is busy`)
-    const p = Bun.spawn(
-      [
-        'redis-server',
-        '--port',
-        String(PORTS.redis),
-        '--bind',
-        '127.0.0.1',
-        '--save',
-        '',
-        '--appendonly',
-        'no',
-        '--protected-mode',
-        'yes'
-      ],
-      {
-        stdout: Bun.file(join(outDir, 'logs', `${scenario}-${session}.redis.log`)),
-        // A pipe nobody reads fills and blocks Redis, which would read as a Redis stall.
-        stderr: Bun.file(join(outDir, 'logs', `${scenario}-${session}.redis.stderr.log`))
-      }
-    )
-    own.redis = true
-    own.redisPid = p.pid
-    own.redisProc = p
-    writeLock()
-  } else {
-    const ping = await docker(['version', '--format', '{{.Server.Version}}'], 15_000)
-    if (!ping.ok)
-      throw new Error(
-        `Docker daemon did not answer in 15 s (${ping.timedOut ? 'timeout' : ping.err})`
-      )
-    const state = await docker([
-      'inspect',
-      '-f',
-      '{{index .Config.Labels "linkbench.owner"}} {{.State.Running}} {{.State.Paused}}',
-      REDIS_CONTAINER
-    ])
-    let reused = false
-    own.redisLabel = session
-    if (!state.ok) {
-      if (await portBusy(PORTS.redis)) throw new Error(`port ${PORTS.redis} (redis) is busy`)
-      const started = await docker(
-        [
-          'run',
-          '-d',
-          '--pull=never',
-          '--name',
-          REDIS_CONTAINER,
-          '--label',
-          `linkbench.owner=${session}`,
-          '-p',
-          `127.0.0.1:${PORTS.redis}:6379`,
-          'redis:alpine'
-        ],
-        30_000
-      )
-      if (!started.ok) throw new Error(`docker run failed: ${started.err}`)
-    } else {
-      // We hold the lock, so a bench owner is gone (crashed or --keep-redis). Adopt only a
-      // container that carries a bench session label; anything else is not ours to touch.
-      const [label, running, paused] = state.out.split(' ')
-      if (!/^\d{8}T\d{6}$/.test(label ?? ''))
-        throw new Error(
-          `${REDIS_CONTAINER} exists without a bench owner label (${label}); refusing`
-        )
-      reused = true
-      own.redisLabel = label
-      if (paused === 'true') await docker(['unpause', REDIS_CONTAINER])
-      else if (running === 'false') await docker(['start', REDIS_CONTAINER])
+  if (await portBusy(PORTS.redis)) throw new Error(`port ${PORTS.redis} (redis) is busy`)
+  const p = Bun.spawn(
+    [
+      'redis-server',
+      '--port',
+      String(PORTS.redis),
+      '--bind',
+      '127.0.0.1',
+      '--save',
+      '',
+      '--appendonly',
+      'no',
+      '--protected-mode',
+      'yes'
+    ],
+    {
+      stdout: Bun.file(join(outDir, 'logs', `${scenario}-${session}.redis.log`)),
+      // A pipe nobody reads fills and blocks Redis, which would read as a Redis stall.
+      stderr: Bun.file(join(outDir, 'logs', `${scenario}-${session}.redis.stderr.log`))
     }
-    own.redis = true
-    const port = await docker(['port', REDIS_CONTAINER, '6379/tcp'])
-    if (!port.out.split('\n').includes(`127.0.0.1:${PORTS.redis}`))
-      throw new Error(`${REDIS_CONTAINER} does not own 127.0.0.1:${PORTS.redis} (${port.out})`)
-    writeLock()
-    for (let i = 0; i < 40 && (await redisCmd(['PING'])) !== 'PONG'; i++) await sleep(250)
-    const digest = (await docker(['image', 'inspect', 'redis:alpine', '--format', '{{.Id}}'])).out
-    const info = await redisInfo()
-    if (!info) throw new Error('bench Redis did not answer on 6391')
-    return { version: info.version, digest, reused }
-  }
+  )
+  own.redis = true
+  own.redisPid = p.pid
+  own.redisProc = p
+  writeLock()
   for (let i = 0; i < 40 && (await redisCmd(['PING'])) !== 'PONG'; i++) await sleep(250)
   const info = await redisInfo()
   // FLUSHALL goes only to a server proven to be our own child.
@@ -465,9 +399,7 @@ const startRedis = async (): Promise<{ version: string; digest: string; reused: 
 }
 
 const pauseRedis = async (pause: boolean) => {
-  if (redisBackend === 'native') {
-    if (own.redisPid) process.kill(own.redisPid, pause ? 'SIGSTOP' : 'SIGCONT')
-  } else await docker([pause ? 'pause' : 'unpause', REDIS_CONTAINER])
+  if (own.redisPid) process.kill(own.redisPid, pause ? 'SIGSTOP' : 'SIGCONT')
   own.paused = pause
 }
 
@@ -481,20 +413,9 @@ const cleanup = (reason: string) =>
       p.kill('SIGTERM')
       if ((await withTimeout(p.exited, 8000)) === null) p.kill('SIGKILL')
     }
-    if (own.redis && !has('keep-redis')) {
-      if (redisBackend === 'native' && own.redisProc) {
-        own.redisProc.kill('SIGTERM')
-        if ((await withTimeout(own.redisProc.exited, 5000)) === null) own.redisProc.kill('SIGKILL')
-      } else if (redisBackend === 'docker') {
-        const label = await docker([
-          'inspect',
-          '-f',
-          '{{index .Config.Labels "linkbench.owner"}}',
-          REDIS_CONTAINER
-        ])
-        if (label.ok && own.redisLabel && label.out === own.redisLabel)
-          await docker(['rm', '-f', REDIS_CONTAINER])
-      }
+    if (own.redis && own.redisProc) {
+      own.redisProc.kill('SIGTERM')
+      if ((await withTimeout(own.redisProc.exited, 5000)) === null) own.redisProc.kill('SIGKILL')
     }
     if (own.headerWritten && !own.footerWritten && jsonlPath) {
       appendFileSync(
@@ -1566,7 +1487,7 @@ const sessionFacts = async () => {
       run(['pmset', '-g', 'therm'], 3000),
       run(['git', 'rev-parse', 'HEAD'], 5000),
       run(['git', 'status', '--porcelain', '--', 'apps/hocuspocus.server', 'bun.lock'], 10_000),
-      docker(['ps', '--format', '{{.Names}}'], redisBackend === 'docker' ? 15_000 : 5000),
+      docker(['ps', '--format', '{{.Names}}'], 5000),
       docker(['version', '--format', '{{.Server.Version}}'], 5000),
       run(['pmset', '-g'], 3000),
       run(
@@ -1949,9 +1870,10 @@ const main = async () => {
     process.exitCode = 2
     return
   }
-  if (has('keep-redis') && redisBackend === 'native') {
+  // Old command lines pass --redis=native; that stays accepted, since it is now the only path.
+  if ((flag('redis') && flag('redis') !== 'native') || has('keep-redis')) {
     console.error(
-      'refused: --keep-redis applies to the container only; a kept native Redis blocks 6391'
+      'refused: --redis=docker and --keep-redis were removed. Redis runs as a child redis-server.'
     )
     process.exitCode = 2
     return
@@ -2094,8 +2016,7 @@ const main = async () => {
     facts: startFacts,
     redis: {
       backend: redisBackend,
-      ...redis,
-      container: redisBackend === 'docker' ? REDIS_CONTAINER : undefined
+      ...redis
     },
     rest: {
       pid: rest.pid,

@@ -36,21 +36,20 @@ Options:
 - `--step=S` and `--warmup=S`: seconds per step and warm-up. Without `--step`, a full step lasts long enough for 2,000 requests, up to 30 s.
 - `--ip=pool|none|many`: the address mode of the ramps. The default `pool` sends 64 addresses, as Traefik would.
 - `--order=reverse`: runs each ramp from its highest rate down.
-- `--redis=docker|native`: `docker` (the default) runs the `linkbench-redis` container. `native` runs `redis-server` as a child on 127.0.0.1:6391. Use it only when Docker is down, and never compare numbers across backends.
+- Redis always runs as a child `redis-server` on 127.0.0.1:6391. The Docker path was deleted on 2026-11-14, because it never ran end to end. `--redis=native` is still accepted; `--redis=docker` and `--keep-redis` are refused.
 - `--conn=pooled|fresh`: `fresh` makes REST open one new connection per fetch. On one loopback destination the ephemeral ports (49152-65535) and a 30 s TIME_WAIT cap it near 546 per second; a step that meets `EADDRNOTAVAIL` is void. Every miss number names its transport, for example `pooled loopback, no DNS, no TLS`.
 - `--no-fence` is refused. Unfenced, a shim bypass reached a real peer on the LAN (review, 2026-11-14). Use `fence-cost.ts`.
 - `--layer=2 --variant=module|baseline|coalesce`: runs `layer2.ts` in place of `src/index.ts`.
 - `--rate-limit-max=N`: the REST `RATE_LIMIT_MAX`. By default the runner computes it from the plan, so that no ramp meets a 429.
 - `--out=<dir>`: the results folder.
-- `--keep-redis`: leaves the Redis container running. It is refused with `--redis=native`.
 - `--force-long`: runs a plan whose worst case is over 450 s.
 
 ## Safety
 
-- One runner at a time: the runner takes `raw/.bench.lock` (an exclusive create) before any other check. A second runner refuses, and it touches nothing. A lock whose pid is dead is stale: the next runner kills that run's leftover children and removes its container, then takes the lock.
+- One runner at a time: the runner takes `raw/.bench.lock` (an exclusive create) before any other check. A second runner refuses, and it touches nothing. A lock whose pid is dead is stale: the next runner kills that run's leftover children and its `redis-server`, then takes the lock.
 - The lock file is written whole, then linked into place, so no reader sees an empty lock.
-- The runner removes only what it started. The container carries the label `linkbench.owner=<session>`. It adopts an existing container only when that label names a bench session, and it removes the container only while the label still equals the one it started or adopted. `docker run` uses `--pull=never`. Every Docker call has a 15 s deadline, so a hung daemon aborts the run instead of wedging it. The Docker path has not run end to end yet: every macOS session on 2026-11-13 and 2026-11-14 used `--redis=native`.
-- SIGINT, SIGTERM and SIGHUP tear down. The children (origin, REST, driver) also exit within a second when their parent pid is no longer the runner, so a SIGKILL leaves no Bun process. A native `redis-server` survives a SIGKILL until the next runner clears the stale lock.
+- The runner removes only what it started. Before it flushes Redis, it checks that 6391 answers from its own `redis-server` child.
+- SIGINT, SIGTERM and SIGHUP tear down. The children (origin, REST, driver) also exit within a second when their parent pid is no longer the runner, so a SIGKILL leaves no Bun process. The `redis-server` child survives a SIGKILL until the next runner clears the stale lock.
 - REST always runs under `sandbox-exec`. Outbound connects go only to 127.0.0.1:4621 (origin), :6391 (bench Redis) and :4622 (its own side port, for the foreign-peer control). The mDNSResponder socket is refused. So `Bun.fetch` (which Bun 1.4.4 does not let the shim wrap), `node:net`, DNS and shared services on other loopback ports (6379, 5432, 54321) are refused too.
 - Every session proves its fence at start and at end: REST dials the runner's canary port on 127.0.0.1, and the dial must fail in under 100 ms with nothing accepted. Unfenced it would open, so the check tells the two cases apart without a packet off the machine. The kernel does not log these denials for a `sandbox-exec` profile here, so the run cannot count them.
 
