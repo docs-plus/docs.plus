@@ -35,9 +35,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   JavaScript. In the build's route table, `/` drops from 3.82 MB to 952 kB and `/[...slugs]` from
   1.83 MB to 925 kB ([#732](https://github.com/docs-plus/docs.plus/issues/732)).
 - Typing in a pad no longer writes the same save status to the workspace store on every
-  keystroke. On a local profiling build (n = 5, 100 characters at 8 per second), store writes
-  per 100 characters fall from 101 to 2 ([#735](https://github.com/docs-plus/docs.plus/issues/735),
-  Step 0 of [#736](https://github.com/docs-plus/docs.plus/issues/736)).
+  keystroke. On a local profiling build on one laptop (n = 5, 100 characters at 8 per second, 4×
+  CPU throttle), store writes per 100 characters fall from 101 to 2. React commits and typing INP
+  did not fall, so this is not a speed gain ([#736](https://github.com/docs-plus/docs.plus/issues/736)
+  Step 0, from [#735](https://github.com/docs-plus/docs.plus/issues/735)).
 
 ### Fixed
 
