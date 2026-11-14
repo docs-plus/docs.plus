@@ -30,6 +30,13 @@ This file is the operator and API changelog. The pad product lives in the [root 
   on any kernel OOM kill in 10 min, and `incident-rss-peak` warns when a process passes 80 % of its
   memory limit in 5 min.
 
+- Link-metadata metrics ([#792](https://github.com/docs-plus/docs.plus/issues/792)):
+  `link_metadata_shed_total`, `link_metadata_cache_timeouts_total{op}`,
+  `link_metadata_joins_total`, `link_metadata_image_busy_total`,
+  `link_metadata_stage_seconds{stage, outcome}` and `link_metadata_parse_seconds{pass}`. A shed
+  answer looks like a real miss on the wire, so only these counters tell them apart. A new row on
+  the App Performance dashboard shows them.
+
 ### Changed
 
 - Each worker replica runs one store job at a time. `BULLMQ_CONCURRENCY` on the worker now reads

@@ -1,5 +1,6 @@
 import { decodeHTML } from 'entities'
 
+import { linkMetadataParseSeconds } from '../../../lib/metrics'
 import type { Scraper } from '../domain/types'
 import { findJobPosting, jobPostingFacts, postingFacts } from './jobPosting'
 
@@ -309,7 +310,7 @@ const indexElements = (elements: Element[]) => {
  * order, in one HTMLRewriter pass. `jobFacts` reads the body for JobPosting facts only; no other
  * body rule runs (h1 titles, page images, logos, bylines), so the card fields stay head-only.
  */
-export const createHeadScraper = (): Scraper => ({
+const headScraper: Scraper = {
   scrape: async ({ html, url }) => {
     const { elements, title: titleText, jsonLd, htmlLang } = collect(html)
     const roots = parseRoots(jsonLd)
@@ -449,5 +450,26 @@ export const createHeadScraper = (): Scraper => ({
       })
       .transform(body)
     return jobPostingFacts(parseRoots(jsonLd.scripts), new Date())
+  }
+}
+
+// Every parse is timed, a throw included: a crafted page is the slow case the Rust triggers
+// read (#792). The scrape never awaits, so the timer holds only its own CPU work.
+export const createHeadScraper = (): Scraper => ({
+  scrape: async (input) => {
+    const stop = linkMetadataParseSeconds.startTimer({ pass: 'head' })
+    try {
+      return await headScraper.scrape(input)
+    } finally {
+      stop()
+    }
+  },
+  jobFacts: (body) => {
+    const stop = linkMetadataParseSeconds.startTimer({ pass: 'job-tail' })
+    try {
+      return headScraper.jobFacts(body)
+    } finally {
+      stop()
+    }
   }
 })

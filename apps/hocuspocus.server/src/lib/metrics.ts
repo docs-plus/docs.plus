@@ -390,6 +390,74 @@ export const socialCardDataWritesTotal = new Counter({
   registers: [register]
 })
 
+// A shed answer is a 200 fallback card or a no-store 204, so no HTTP series can tell it
+// from a real miss. One count per refused cold-work slot, on any link route.
+export const linkMetadataShedTotal = new Counter({
+  name: 'link_metadata_shed_total',
+  help: 'Link-metadata cold work refused at once because the in-flight cap was full',
+  registers: [register]
+})
+
+// A timed-out read is served as a miss. Without this, a Redis stall looks like a cold cache.
+// `read` covers the card and pad generation reads; `write` is the card write.
+const LINK_CACHE_OPS = ['read', 'write'] as const
+
+export const linkMetadataCacheTimeoutsTotal = new Counter({
+  name: 'link_metadata_cache_timeouts_total',
+  help: 'Link-metadata Redis calls that passed their time bound, by operation',
+  labelNames: ['op'] as const,
+  registers: [register]
+})
+
+// A joined request runs no stage, so the stage histogram cannot count it. It may have
+// joined a leader's cache read, not only a scrape.
+export const linkMetadataJoinsTotal = new Counter({
+  name: 'link_metadata_joins_total',
+  help: 'Link-metadata requests that joined a flight already running for the same cache key',
+  registers: [register]
+})
+
+// The busy answer is a no-store 204, the same status as a clean miss. This counts the
+// chunked-body buffer cap only; a refused cold-work slot counts as shed.
+export const linkMetadataImageBusyTotal = new Counter({
+  name: 'link_metadata_image_busy_total',
+  help: 'Image relays refused because the chunked-body buffer cap was full',
+  registers: [register]
+})
+
+// The `stages` log field mixes DNS, fetch, read and parse in one duration. `timeout` is the
+// stage's own timer; every other non-hit reason is `miss`, and the log keeps the reason.
+const LINK_STAGE_SERIES = [
+  { stage: 'oembed', outcome: 'hit' },
+  { stage: 'oembed', outcome: 'miss' },
+  { stage: 'special', outcome: 'hit' },
+  { stage: 'special', outcome: 'miss' },
+  { stage: 'special', outcome: 'timeout' },
+  { stage: 'html', outcome: 'hit' },
+  { stage: 'html', outcome: 'miss' },
+  { stage: 'html', outcome: 'timeout' }
+] as const
+
+export const linkMetadataStageSeconds = new Histogram({
+  name: 'link_metadata_stage_seconds',
+  help: 'Link-metadata pipeline stage time in seconds, by stage and outcome',
+  labelNames: ['stage', 'outcome'] as const,
+  buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
+  registers: [register]
+})
+
+// Two Rust reopen triggers read parse time, and the 0.05 edge is the 50 ms lag trigger. The
+// slowest crafted 1 MiB page took 29 to 33 ms, and the page cap is 1 MiB.
+const LINK_PARSE_PASSES = ['head', 'job-tail'] as const
+
+export const linkMetadataParseSeconds = new Histogram({
+  name: 'link_metadata_parse_seconds',
+  help: 'HTMLRewriter parse time of one page in seconds, by pass',
+  labelNames: ['pass'] as const,
+  buckets: [0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1],
+  registers: [register]
+})
+
 // `skipped`: retention removed the version, or its row is gone.
 const CHANGE_SUMMARY_OUTCOMES = ['ok', 'skipped', 'failed'] as const
 export type ChangeSummaryOutcome = (typeof CHANGE_SUMMARY_OUTCOMES)[number]
@@ -548,6 +616,17 @@ export const seedRestAlertSeries = (): void => {
   }
   // Only this 5xx series: the database-health alert reads it (#710).
   httpRequestsTotal.inc({ method: 'GET', route: '/health/database', status: '503' }, 0)
+  // No alert reads these. At production traffic a first event may be the only one in the
+  // 7-day read (#792), and increase() never counts a first event.
+  for (const op of LINK_CACHE_OPS) {
+    linkMetadataCacheTimeoutsTotal.inc({ op }, 0)
+  }
+  for (const labels of LINK_STAGE_SERIES) {
+    linkMetadataStageSeconds.zero(labels)
+  }
+  for (const pass of LINK_PARSE_PASSES) {
+    linkMetadataParseSeconds.zero({ pass })
+  }
 }
 
 export const seedWorkerAlertSeries = (): void => {

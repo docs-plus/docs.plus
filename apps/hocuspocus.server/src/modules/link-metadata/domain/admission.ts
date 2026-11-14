@@ -1,3 +1,5 @@
+import { linkMetadataShedTotal } from '../../../lib/metrics'
+
 /** A held slot. Calling it more than once frees the slot only once. */
 export type Release = () => void
 
@@ -11,7 +13,10 @@ export const createAdmission = (max: number): Admission => {
   let held = 0
   return {
     tryAcquire: () => {
-      if (held >= max) return null
+      if (held >= max) {
+        linkMetadataShedTotal.inc()
+        return null
+      }
       held += 1
       let released = false
       return () => {

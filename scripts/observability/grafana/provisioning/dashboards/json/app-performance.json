@@ -2424,6 +2424,353 @@
           "showLegend": true
         }
       }
+    },
+    {
+      "id": 68,
+      "type": "row",
+      "title": "Link metadata (rest-api)",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 217
+      },
+      "collapsed": false
+    },
+    {
+      "id": 69,
+      "type": "timeseries",
+      "title": "Link Metadata Stage p95 by Stage",
+      "description": "link_metadata_stage_seconds, 1 h window. Time of each pipeline stage on a cold request, on the metadata and image routes. The fallback is not a stage.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 218
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (stage, le) (rate(link_metadata_stage_seconds_bucket{job=\"rest-api\"}[1h])))",
+          "refId": "A",
+          "legendFormat": "{{stage}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 70,
+      "type": "timeseries",
+      "title": "Link Metadata Stage Outcomes per Hour",
+      "description": "link_metadata_stage_seconds_count. timeout is the stage's own timer (special 3 s, html 8 s). Every other non-hit is miss; the stages log field keeps the reason.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 218
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (stage, outcome) (increase(link_metadata_stage_seconds_count{job=\"rest-api\"}[1h]))",
+          "refId": "A",
+          "legendFormat": "{{stage}} {{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 71,
+      "type": "timeseries",
+      "title": "Link Metadata Parse p50 / p95 by Pass",
+      "description": "link_metadata_parse_seconds, 1 h window. HTMLRewriter time of one page. head is the head scrape; job-tail is the JobPosting body read.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 226
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.5, sum by (pass, le) (rate(link_metadata_parse_seconds_bucket{job=\"rest-api\"}[1h])))",
+          "refId": "A",
+          "legendFormat": "p50 {{pass}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (pass, le) (rate(link_metadata_parse_seconds_bucket{job=\"rest-api\"}[1h])))",
+          "refId": "B",
+          "legendFormat": "p95 {{pass}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 72,
+      "type": "timeseries",
+      "title": "Link Metadata Shed, Joins, Busy, Cache Timeouts and Slow Parses per Hour",
+      "description": "shed: cold work refused at the in-flight cap. joined: a request shared a flight for the same key. image busy: the chunked-body buffer cap. parse > 50 ms: the Rust lag trigger.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 226
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(increase(link_metadata_shed_total{job=\"rest-api\"}[1h]))",
+          "refId": "A",
+          "legendFormat": "shed"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(increase(link_metadata_joins_total{job=\"rest-api\"}[1h]))",
+          "refId": "B",
+          "legendFormat": "joined"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(increase(link_metadata_image_busy_total{job=\"rest-api\"}[1h]))",
+          "refId": "C",
+          "legendFormat": "image busy"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (op) (increase(link_metadata_cache_timeouts_total{job=\"rest-api\"}[1h]))",
+          "refId": "D",
+          "legendFormat": "cache timeout {{op}}"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(increase(link_metadata_parse_seconds_count{job=\"rest-api\"}[1h])) - sum(increase(link_metadata_parse_seconds_bucket{job=\"rest-api\",le=\"0.05\"}[1h]))",
+          "refId": "E",
+          "legendFormat": "parse > 50 ms"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 73,
+      "type": "timeseries",
+      "title": "Link Metadata Parse Share of HTML Stage (upper bound)",
+      "description": "Parse time over html stage time, 1 h window. Request time is at least stage time, so this is an upper bound on the mean parse share of request time. It is a mean, not a p95.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 234
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "100 * sum(rate(link_metadata_parse_seconds_sum{job=\"rest-api\"}[1h])) / clamp_min(sum(rate(link_metadata_stage_seconds_sum{job=\"rest-api\",stage=\"html\"}[1h])), 1e-9)",
+          "refId": "A",
+          "legendFormat": "parse share %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      }
     }
   ]
 }

@@ -1,7 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 
+import { linkMetadataCacheTimeoutsTotal } from '../../../../lib/metrics'
 import type { StageResult } from '../../domain/types'
 import { CACHE_TIMEOUT_MS, createRedisCache } from '../../infra/redisCache'
+
+const timeouts = async (op: 'read' | 'write'): Promise<number> =>
+  (await linkMetadataCacheTimeoutsTotal.get()).values.find((v) => v.labels.op === op)?.value ?? 0
 
 const fakeIoredis = () => {
   const store = new Map<string, string>()
@@ -52,7 +56,9 @@ describe('createRedisCache', () => {
   test('set serializes JSON and uses EX TTL in seconds', async () => {
     const fake = fakeIoredis()
     const cache = createRedisCache(fake as any)
+    const before = await timeouts('write')
     await cache.set('k', sample, 1234)
+    expect(await timeouts('write')).toBe(before)
     const last = fake._last!
     expect(last.key).toBe('k')
     expect(JSON.parse(last.value)).toEqual(sample)
@@ -64,9 +70,11 @@ describe('createRedisCache', () => {
     const stalled = { get: () => new Promise(() => {}), set: () => new Promise(() => {}) }
 
     test('get is a miss after the bound', async () => {
+      const before = await timeouts('read')
       const start = performance.now()
       expect(await createRedisCache(stalled as any).get('k')).toBeNull()
       expect(performance.now() - start).toBeGreaterThanOrEqual(CACHE_TIMEOUT_MS - 5)
+      expect(await timeouts('read')).toBe(before + 1)
     }, 1000)
 
     // A '0' here would serve a narrowed pad's old card; the throw makes the pipeline skip the cache.
@@ -81,8 +89,10 @@ describe('createRedisCache', () => {
       expect(outcome).toContain('timed out')
     }, 1000)
 
-    test('set resolves after the bound', async () => {
+    test('set resolves after the bound, and counts the timeout', async () => {
+      const before = await timeouts('write')
       await createRedisCache(stalled as any).set('k', sample, 60)
+      expect(await timeouts('write')).toBe(before + 1)
     }, 1000)
   })
 

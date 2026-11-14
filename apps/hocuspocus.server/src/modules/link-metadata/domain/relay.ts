@@ -1,3 +1,4 @@
+import { linkMetadataImageBusyTotal } from '../../../lib/metrics'
 import { readCappedBody } from '../../../lib/readCappedBody'
 import { coldWork } from './admission'
 import { safeFetch } from './ssrf'
@@ -174,7 +175,10 @@ export const relayImage = async (
     if (!response.ok) return statusMiss(response.status)
     const length = declaredLength(response)
     if (length === null) {
-      if (bufferedRelays >= MAX_BUFFERED_RELAYS) return 'busy'
+      if (bufferedRelays >= MAX_BUFFERED_RELAYS) {
+        linkMetadataImageBusyTotal.inc()
+        return 'busy'
+      }
       bufferedRelays += 1
       try {
         return await bufferImage(response, hop, maxBytes)

@@ -1,3 +1,4 @@
+import { linkMetadataJoinsTotal } from '../../../lib/metrics'
 import { type Admission, coldWork } from './admission'
 import { canonicalize } from './canonicalize'
 import { isSafeUrl } from './ssrf'
@@ -240,6 +241,7 @@ export const runPipeline = async (input: PipelineInput): Promise<PipelineResult>
   if (!key) return resolve(input, canonical, padSlug, null)
   const shared = flights.get(key)
   if (shared) {
+    linkMetadataJoinsTotal.inc()
     const result = await shared
     // The key ignores case and tracking params, so each caller keeps its own requested URL.
     return result.kind === 'success'

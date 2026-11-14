@@ -3,7 +3,7 @@ import type { Context } from 'hono'
 import { runPipeline } from '../domain/pipeline'
 import { isMiss, relayImage, sniffImageType } from '../domain/relay'
 import type { Miss, OwnImage, RelayedImage, StreamedImage } from '../domain/types'
-import type { ControllerDeps } from './controller'
+import { type ControllerDeps, observeStage } from './controller'
 
 export type ImageControllerDeps = ControllerDeps & { ownImage?: OwnImage }
 
@@ -50,7 +50,8 @@ export const createImageController = (deps: ImageControllerDeps) => {
       cache: deps.cache,
       stages: deps.stages,
       publicUrl: deps.publicUrl,
-      padSlugOf: deps.padSlugOf
+      padSlugOf: deps.padSlugOf,
+      onStage: observeStage
     })
     if (result.kind === 'success' && result.shed) return busy()
     const src = result.kind === 'success' ? result.payload.image?.url : undefined

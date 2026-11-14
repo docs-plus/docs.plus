@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
+import { linkMetadataCacheTimeoutsTotal } from '../../../lib/metrics'
 import { TIMED_OUT, withinTimeout } from '../../../lib/withinTimeout'
 import type { RedisClient } from '../../../types/redis.types'
 import type { ArchiveCache, ArchiveSnapshot, Cache, CacheEntry } from '../domain/types'
@@ -12,7 +13,10 @@ export const CACHE_TIMEOUT_MS = 150
 
 const boundedGet = async (redis: RedisClient, key: string): Promise<string | null> => {
   const raced = await withinTimeout(redis.get(key), CACHE_TIMEOUT_MS)
-  if (raced === TIMED_OUT) throw new Error(`Redis get timed out after ${CACHE_TIMEOUT_MS} ms`)
+  if (raced === TIMED_OUT) {
+    linkMetadataCacheTimeoutsTotal.inc({ op: 'read' })
+    throw new Error(`Redis get timed out after ${CACHE_TIMEOUT_MS} ms`)
+  }
   return raced
 }
 
@@ -32,10 +36,11 @@ const jsonStore = (redis: RedisClient | null) => ({
   set: async (key: string, value: unknown, ttlSeconds: number): Promise<void> => {
     try {
       if (redis) {
-        await withinTimeout(
+        const raced = await withinTimeout(
           redis.set(key, JSON.stringify(value), 'EX', ttlSeconds),
           CACHE_TIMEOUT_MS
         )
+        if (raced === TIMED_OUT) linkMetadataCacheTimeoutsTotal.inc({ op: 'write' })
       }
     } catch {
       /* swallow — cache is best-effort */

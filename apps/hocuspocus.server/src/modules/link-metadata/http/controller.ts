@@ -1,6 +1,7 @@
 import type { Context } from 'hono'
 import type { Logger } from 'pino'
 
+import { linkMetadataStageSeconds } from '../../../lib/metrics'
 import { type PipelineStages, runPipeline, type StageEvent } from '../domain/pipeline'
 import type { Cache, ErrorResponse, MetadataResponse, PadSlugOf } from '../domain/types'
 
@@ -17,6 +18,14 @@ const NEGATIVE_CACHE_HEADER = 'public, max-age=600'
 // A shed card says nothing about the link, so the next hover asks again.
 const SHED_CACHE_HEADER = 'no-store'
 
+// The fallback event always reads 0 ms, so it is not a stage. Only the stage's own timer is
+// `timeout`; every other non-hit reason is `miss`.
+export const observeStage = (e: StageEvent): void => {
+  if (e.stage === 'fallback') return
+  const outcome = e.hit ? 'hit' : e.reason === 'timeout' ? 'timeout' : 'miss'
+  linkMetadataStageSeconds.observe({ stage: e.stage, outcome }, e.durationMs / 1000)
+}
+
 export const createController = (deps: ControllerDeps) => {
   return async (c: Context): Promise<Response> => {
     const { url: requestedUrl } = c.req.valid('query' as never) as { url: string }
@@ -31,7 +40,10 @@ export const createController = (deps: ControllerDeps) => {
       stages: deps.stages,
       publicUrl: deps.publicUrl,
       padSlugOf: deps.padSlugOf,
-      onStage: (e) => stageEvents.push(e)
+      onStage: (e) => {
+        stageEvents.push(e)
+        observeStage(e)
+      }
     })
 
     if (result.kind === 'error') {
