@@ -69,6 +69,9 @@ This file is the operator and API changelog. The pad product lives in the [root 
   answer `204`, and the archive route answers `miss: "unreachable"`. Each of those answers sends
   `Cache-Control: no-store` and writes nothing to Redis. A streamed image frees its slot when the
   stream starts ([#787](https://github.com/docs-plus/docs.plus/issues/787)).
+- Link-metadata requests for one URL and language that arrive together share one cache read and
+  one fetch per process. A joined request takes no cold-work slot and answers `cached: true`
+  ([#791](https://github.com/docs-plus/docs.plus/issues/791)).
 - A link-metadata Redis read or write, and the pad generation read, give up after 150 ms. A slow
   read counts as a miss and a slow write is dropped, so a stalled Redis no longer holds a request
   for the shared 60 s `commandTimeout` ([#789](https://github.com/docs-plus/docs.plus/issues/789)).

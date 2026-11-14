@@ -466,4 +466,92 @@ describe('runPipeline', () => {
       expect(admission.inFlight()).toBe(0)
     })
   })
+
+  // The map lives at module level, so each test uses its own host.
+  describe('one flight per cache key', () => {
+    const gated = () => {
+      let open = () => {}
+      const gate = new Promise<void>((resolve) => (open = resolve))
+      const stage = { calls: 0, open }
+      const oembed = async () => {
+        stage.calls += 1
+        await gate
+        return ok('joined')
+      }
+      return { stage, stages: { oembed, special: async () => null, html: noHtml } }
+    }
+
+    test('callers on one key run the stages once and keep their own requested URL', async () => {
+      const cache = fakeCache()
+      const { stage, stages } = gated()
+      const a = runPipeline({
+        requestedUrl: 'https://join.example/',
+        acceptLanguage: 'en',
+        cache,
+        stages
+      })
+      const b = runPipeline({
+        requestedUrl: 'https://JOIN.example/?utm_source=x',
+        acceptLanguage: 'en',
+        cache,
+        stages
+      })
+      stage.open()
+      const [first, second] = await Promise.all([a, b])
+      expect(stage.calls).toBe(1)
+      expect(first).toMatchObject({
+        fromCache: false,
+        payload: { requested_url: 'https://join.example/' }
+      })
+      expect(second).toMatchObject({
+        fromCache: true,
+        payload: { title: 'joined', requested_url: 'https://JOIN.example/?utm_source=x' }
+      })
+    })
+
+    test('callers with another language do not join', async () => {
+      const cache = fakeCache()
+      const { stage, stages } = gated()
+      const a = runPipeline({
+        requestedUrl: 'https://lang.example/',
+        acceptLanguage: 'en',
+        cache,
+        stages
+      })
+      const b = runPipeline({
+        requestedUrl: 'https://lang.example/',
+        acceptLanguage: 'fa',
+        cache,
+        stages
+      })
+      stage.open()
+      await Promise.all([a, b])
+      expect(stage.calls).toBe(2)
+    })
+
+    test('a settled flight is gone, so the next caller runs again', async () => {
+      const cache = { ...fakeCache(), get: async () => null }
+      const { stage, stages } = gated()
+      stage.open()
+      const input = { requestedUrl: 'https://settle.example/', acceptLanguage: 'en', cache, stages }
+      await runPipeline(input)
+      await runPipeline(input)
+      expect(stage.calls).toBe(2)
+    })
+
+    test("a shed leader's joiner gets the shed answer, not a cache hit", async () => {
+      const { stage, stages } = gated()
+      const input = {
+        requestedUrl: 'https://shed.example/',
+        acceptLanguage: 'en',
+        cache: fakeCache(),
+        stages,
+        admission: createAdmission(0)
+      }
+      const [first, second] = await Promise.all([runPipeline(input), runPipeline(input)])
+      expect(stage.calls).toBe(0)
+      expect(first).toMatchObject({ shed: true, fromCache: false })
+      expect(second).toMatchObject({ shed: true, fromCache: false })
+    })
+  })
 })

@@ -214,8 +214,12 @@ const keyFor = async (
   }
 }
 
+// One flight per cache key in this process. A joined caller waits for the leader's cache
+// read and stages, so it takes no admission slot and sends nothing to the origin.
+const flights = new Map<string, Promise<PipelineResult>>()
+
 export const runPipeline = async (input: PipelineInput): Promise<PipelineResult> => {
-  const { requestedUrl, acceptLanguage, cache, publicUrl, padSlugOf } = input
+  const { requestedUrl, acceptLanguage, cache, padSlugOf } = input
 
   if (!isSafeUrl(requestedUrl)) {
     let parsed: URL | null = null
@@ -232,7 +236,32 @@ export const runPipeline = async (input: PipelineInput): Promise<PipelineResult>
   const canonical = canonicalize(requestedUrl)
   const padSlug = padSlugOf?.(canonical) ?? null
   const key = await keyFor(cache, canonical, acceptLanguage, padSlug)
+  // A failed generation read gives no key. That pad card must not be shared, so it runs alone.
+  if (!key) return resolve(input, canonical, padSlug, null)
+  const shared = flights.get(key)
+  if (shared) {
+    const result = await shared
+    // The key ignores case and tracking params, so each caller keeps its own requested URL.
+    return result.kind === 'success'
+      ? {
+          ...result,
+          fromCache: result.shed !== true,
+          payload: { ...result.payload, requested_url: requestedUrl }
+        }
+      : result
+  }
+  const flight = resolve(input, canonical, padSlug, key).finally(() => flights.delete(key))
+  flights.set(key, flight)
+  return flight
+}
 
+const resolve = async (
+  input: PipelineInput,
+  canonical: string,
+  padSlug: string | null,
+  key: string | null
+): Promise<PipelineResult> => {
+  const { requestedUrl, cache, publicUrl } = input
   const cached = key ? await cache.get(key) : null
   if (cached) {
     const { fallback, retry, miss, ...payload } = cached
