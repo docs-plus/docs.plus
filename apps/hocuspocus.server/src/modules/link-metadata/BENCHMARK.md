@@ -164,15 +164,15 @@ against a fake origin on loopback. There is no DNS lookup, no TLS, and no traffi
 `rest-api` replica. It ran in the OrbStack VM on one Apple M5 Max laptop, with Bun
 `1.4.4+38afee6c8` and Redis 8.8.0. Traffic is pooled loopback to one local origin.
 
-| Shape                                | Highest rate held                             | What breaks first                                                                                                                                  |
-| ------------------------------------ | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Image relay (2 MiB, 2.5 s origin)    | 50/s                                          | **Memory.** At 100/s `memory.peak` reached 512 MiB, with 2092 `memory.max` events. REST was OOM-killed at 100/s in one run and 200/s in the other. |
-| Hostile heads (7 lanes)              | 48/s                                          | CPU, then memory, then an OOM kill at 96/s.                                                                                                        |
-| Cache miss, fast origin, open loop   | 1600/s                                        | CPU, then memory, then an OOM kill at 6400/s.                                                                                                      |
-| Cache miss, fast origin, closed loop | 5186.73/s at 16 in flight                     | CPU levels off. The best was 5665.53/s at 64 in flight. `memory.current` stayed at 265.3 MiB or less.                                              |
-| Hosts that never answer              | hang@20                                       | **The outbound pool.** At hang@40 the fast lane's p95 rose to 1625.28 ms, from 4.62 ms at hang@20. CPU and memory stayed flat.                     |
-| Cache hit                            | 12800/s, the top of the ramp                  | Nothing broke.                                                                                                                                     |
-| Icon                                 | 100/s by the knee rule; valid steps to 3200/s | Nothing broke.                                                                                                                                     |
+| Shape                                | Highest rate held                             | What breaks first                                                                                                                                               |
+| ------------------------------------ | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Image relay (2 MiB, 2.5 s origin)    | 50/s                                          | **Memory, before #786.** At 100/s `memory.peak` reached 512 MiB, with 2092 `memory.max` events. REST was OOM-killed at 100/s in one run and 200/s in the other. |
+| Hostile heads (7 lanes)              | 48/s                                          | CPU, then memory, then an OOM kill at 96/s.                                                                                                                     |
+| Cache miss, fast origin, open loop   | 1600/s                                        | CPU, then memory, then an OOM kill at 6400/s.                                                                                                                   |
+| Cache miss, fast origin, closed loop | 5186.73/s at 16 in flight                     | CPU levels off. The best was 5665.53/s at 64 in flight. `memory.current` stayed at 265.3 MiB or less.                                                           |
+| Hosts that never answer              | hang@20                                       | **The outbound pool.** At hang@40 the fast lane's p95 rose to 1625.28 ms, from 4.62 ms at hang@20. CPU and memory stayed flat.                                  |
+| Cache hit                            | 12800/s, the top of the ramp                  | Nothing broke.                                                                                                                                                  |
+| Icon                                 | 100/s by the knee rule; valid steps to 3200/s | Nothing broke.                                                                                                                                                  |
 
 The OOM kill made the image, hostile and open-loop miss sessions void. The kill is the break being
 measured, so those rows still stand. Real-delay misses, huge pages, herds and a Redis stall ran on
@@ -189,39 +189,44 @@ macOS only, with no CPU quota and no cgroup.
 ### After #786: the image relay streams
 
 The table above is the before. #786 streams an image that declares its length and buffers at
-most 32 that do not. Base and head ran in turns, 3 sessions each per lane, on the condition above.
-Base is the code at `9f0e2be02`, head is the change. Every session is void: the host ran another
-project's dev server and browser tests, and each base session ended in an OOM kill. Values are the
-range over the 3 sessions.
+most 32 that do not. Slot 0 (2026-11-14) ran both arms from `git archive`: base is `9f0e2be02`,
+head is `daad326fe`, and both carry the `daad326fe` bench. The condition is the one above, and the
+client reads at full speed. Each cell is the range over 3 valid sessions.
 
-| Lane, rate                | Base `memory.current` max | Base answers      | Head `memory.current` max | Head answers                                       |
-| ------------------------- | ------------------------- | ----------------- | ------------------------- | -------------------------------------------------- |
-| Declared length, 25/s     | 329.3-389 MiB             | 750 × `200`       | 218.8-223.3 MiB           | 750 × `200`                                        |
-| Declared length, 100/s    | 486.3-496.4 MiB           | 1568-2000 × `200` | 332.2-334.9 MiB           | 2000 × `200`                                       |
-| Declared length, 200/s    | OOM kill (3 of 3)         | 0                 | 371.7-395.3 MiB           | 1163-1172 × `200`, 999-1003 × `204`, 825-835 reset |
-| No declared length, 25/s  | 340.1-360.3 MiB           | 750 × `200`       | 270.1-280.3 MiB           | 388-390 × `200`, 360-362 × `204`                   |
-| No declared length, 100/s | 496.1-510.8 MiB           | 2000 × `200`      | 298.9-302.7 MiB           | 256 × `200`, 1744 × `204`                          |
-| No declared length, 200/s | OOM kill (3 of 3)         | 0                 | 269.2-319.1 MiB           | 192 × `200`, 2808 × `204`                          |
+A session is valid under the maintainer ruling of 2026-11-14. A step is void only when other
+processes used more than 250 % CPU. An OOM kill counts as a valid memory break. macOS alone read
+155-275 % with all other work off, so the old 150 % line voided every session.
 
-- With a declared length, the head answered every image to 100/s with less memory. At 200/s it
-  stayed up, but the outbound pool filled (p95 7513.58-7562.45 ms). The 5 s timer turned fetches
-  still waiting into `204`. It cut 825-835 streams already sending, and the client saw a reset.
-  Before, a late image was a `204` cached for 600 s. Now a cut stream is a failed load, never cached.
-  The pool is #788.
+| Lane, rate                | Base `memory.current` max | Base answers                     | Head `memory.current` max | Head answers                                        |
+| ------------------------- | ------------------------- | -------------------------------- | ------------------------- | --------------------------------------------------- |
+| Declared length, 25/s     | 357.3-422.2 MiB           | 750 × `200`                      | 216.2-261.3 MiB           | 750 × `200`                                         |
+| Declared length, 50/s     | 419.6-453.6 MiB           | 1500 × `200`                     | 256.5-285.5 MiB           | 1500 × `200`                                        |
+| Declared length, 100/s    | 503-511.4 MiB             | 2000 × `200`                     | 323.2-359.7 MiB           | 2000 × `200`                                        |
+| Declared length, 200/s    | OOM kill (3 of 3)         | 0                                | 383-442.5 MiB             | 1150-1176 × `200`, 1004-1024 × `204`, 819-832 reset |
+| No declared length, 25/s  | 328.8-386.3 MiB           | 750 × `200`                      | 267.6-336.9 MiB           | 387-389 × `200`, 361-363 × `204`                    |
+| No declared length, 100/s | 496.9-512 MiB             | 1755-2000 × `200`, 2 of 3 killed | 266.3-292.1 MiB           | 256 × `200`, 1744 × `204`                           |
+| No declared length, 200/s | OOM kill (3 of 3 by here) | 0                                | 276.2-334.8 MiB           | 192 × `200`, 2808 × `204`                           |
+
+- With a declared length, every head session used less memory than every base session at 25,
+  50 and 100/s. At 200/s the head stayed up and the base was killed in 3 of 3.
+- At 200/s the outbound pool filled (head p95 7511.69-7653.9 ms). The 5 s timer turned fetches
+  still waiting into `204`, and cut 819-832 streams already sending, so the client saw a reset.
+  Before, a late image was a `204` cached for 600 s. Now a cut stream is a failed load. The pool
+  is #788.
+- At 200/s the head's `memory.peak` reached 422.7-456.9 MiB, above the 409.6 MiB line. Below
+  200/s it stayed under the line.
 - With no declared length, the head serves about 13 images per second (32 reads of 2.5 s) and
-  answers `204` for the rest. Memory stayed near 300 MiB.
+  answers `204` for the rest. It sheds load here, so its memory does not compare like for like
+  with the base. A page whose image has no declared length gets no picture under that load.
 - Bun's server sends any stream chunked, even with a `content-length` header. So the bench's
   declared-length lane runs on a `node:http` listener (`/imglen/`, port 4623).
-- The committed code changed after the review: a coded body counts as undeclared, and one
-  `AbortSignal.timeout` holds the 5 s bound. One more declared-length session ran on it
-  (`20261114T084906`, void by host CPU). Its answers match. At 100/s `memory.current` was 369 MiB,
-  and `anon` was 313.8 MiB, inside the head range of 312.2-315.1 MiB. Page cache made the
-  difference.
-- A cut chunked image is not cached by Chrome 156: it was fetched again on every load, while a whole
-  one with the same `Cache-Control` was not. Safari was not checked.
+- Chrome 156 did not cache a cut chunked image in one check of 3 loads: it was fetched again on
+  every load, while a whole one with the same `Cache-Control` was not. Safari was not checked.
+- Every memory figure assumes a client that reads at full speed. A slow reader makes REST hold
+  the unread part of the image.
 
 The full report, the raw data and the Linux runner are in
-`Notes/local-docs/2026-11-13-link-scraper-tolerance/`. The #786 runs are in its `raw/linux/786/`.
+`Notes/local-docs/2026-11-13-link-scraper-tolerance/`. Slot 0 is in its `raw/linux/s0/` (`judged.tsv`); the earlier void runs are in `raw/linux/786/`.
 
 ## Measure it again
 

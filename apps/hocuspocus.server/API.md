@@ -1241,6 +1241,8 @@ A fallback card may carry `miss`, which says why there is no preview. A cache hi
 
 A site API miss wins over the page's own miss, because that API may answer later.
 
+**A busy server answers the fallback card without caching it.** Each process runs at most 64 cold link-metadata requests at once: a metadata cache miss, an image fetch, an icon fetch or an archive lookup ([#787](https://github.com/docs-plus/docs.plus/issues/787)). Past that, a cache miss answers the fallback card with `miss: "unreachable"` and `Cache-Control: no-store`, and nothing is written to Redis. A cache hit is still served.
+
 **A docs.plus pad link loses its cached card when the pad's access narrows.** A URL on a host in `APP_HOSTS` is a pad URL, and its cache key carries the pad's generation. When the pad turns Private, moves to Trash or is erased, the server sets a new generation, so no old card of that pad is read again. The next request that reaches the server then shows the pad's current state; a browser or proxy may still hold a copy for the `Cache-Control` time. The switch is best-effort: if Redis fails, the old cards expire by their TTL (24 h at most). A page that redirects into a pad is not cached.
 
 Errors (`400`) use this module's own shape — top-level `code` and `message`, not the nested envelope:
@@ -1274,6 +1276,7 @@ The page, the chosen href and every redirect go through the same SSRF guard and 
 | `400`  | `{ success, code, message }`, module shape | `public, max-age=86400`  | `INVALID_URL`: `origin` is missing, repeated, too long or not a bare origin. `BLOCKED_URL`: the SSRF guard refused it.                                               |
 | `204`  | Empty                                      | `public, max-age=86400`  | A clean miss: upstream 4xx other than 408 and 429, a 204, a 3xx with no `Location`, an empty body, bytes that are not one of the five types, or a body over the cap. |
 | `204`  | Empty                                      | `public, max-age=600`    | An error miss: a timeout, a network or DNS error, the SSRF guard on any hop, too many redirects, or upstream 5xx, 408 or 429.                                        |
+| `204`  | Empty                                      | `no-store`               | Busy: the process already runs 64 cold link-metadata requests ([#787](https://github.com/docs-plus/docs.plus/issues/787)). Ask again later.                          |
 
 A miss answers `204`, not `404`, because Chrome logs a console error for every image that gets a `404`. An `<img>` still fires `onerror` on the empty `204`. A miss is `max-age=600` when any step had an error miss, and `max-age=86400` otherwise.
 
@@ -1289,13 +1292,13 @@ Takes a page URL and relays its page image (PNG, ICO, GIF, JPEG or WebP, up to 2
 
 The server runs the same pipeline as `GET /api/metadata`, usually a cache hit, and takes the page image (`image.url`) from that result. That is an `og:image`, or an oEmbed or site thumbnail. A fallback result has no image. It fetches that one URL through the SSRF guard, with `User-Agent: DocsplusBot/1.0` and `Accept: image/*`, a 5 s timer and a 2 MiB cap. The timer covers only that fetch; on a cache miss the pipeline runs first. When the image declares a `Content-Length` of 2 MiB or less, the route sniffs its first bytes and then streams the rest. The `200` is sent chunked. A body shorter or longer than it declared ends the transfer without its last chunk, so the browser drops it. An image with no declared length is read whole first, and at most 32 such reads run at once ([#786](https://github.com/docs-plus/docs.plus/issues/786)). The `200` and `204` answers set `Vary: Accept-Language`, because the pipeline reads that header.
 
-| Status | Body                                       | `Cache-Control`         | When                                                                                                                             |
-| ------ | ------------------------------------------ | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `200`  | The image bytes                            | `public, max-age=86400` | The bytes are PNG, ICO, GIF, JPEG or WebP. `Content-Type` comes from the bytes, never from the upstream site.                    |
-| `200`  | The image bytes                            | `public, max-age=600`   | As above, when the page card was built after a special-stage miss or a cut body read.                                            |
-| `400`  | `{ success, code, message }`, module shape | none                    | `INVALID_URL`: `url` is missing or not a valid http(s) URL.                                                                      |
-| `204`  | Empty                                      | `public, max-age=600`   | No image: a fallback page, no page image, the SSRF guard, a timeout, a non-2xx answer, SVG or other bytes, or an oversized body. |
-| `204`  | Empty                                      | `no-store`              | Busy: 32 images with no declared length are already being read. Ask again later.                                                 |
+| Status | Body                                       | `Cache-Control`         | When                                                                                                                                                                                             |
+| ------ | ------------------------------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `200`  | The image bytes                            | `public, max-age=86400` | The bytes are PNG, ICO, GIF, JPEG or WebP. `Content-Type` comes from the bytes, never from the upstream site.                                                                                    |
+| `200`  | The image bytes                            | `public, max-age=600`   | As above, when the page card was built after a special-stage miss or a cut body read.                                                                                                            |
+| `400`  | `{ success, code, message }`, module shape | none                    | `INVALID_URL`: `url` is missing or not a valid http(s) URL.                                                                                                                                      |
+| `204`  | Empty                                      | `public, max-age=600`   | No image: a fallback page, no page image, the SSRF guard, a timeout, a non-2xx answer, SVG or other bytes, or an oversized body.                                                                 |
+| `204`  | Empty                                      | `no-store`              | Busy: the process already runs 64 cold link-metadata requests ([#787](https://github.com/docs-plus/docs.plus/issues/787)), or 32 images with no declared length are being read. Ask again later. |
 
 It shares the `/api/metadata` rate-limit bucket. See [Rate limiting](#rate-limiting).
 
@@ -1313,12 +1316,12 @@ Before the lookup, the server drops tracking params and the fragment from `url`.
 
 The API names snapshots with `http://`. The server upgrades the scheme, then accepts only a URL whose origin is exactly `https://web.archive.org` and whose path starts with `/web/`. Any other URL is a miss.
 
-| Status | Body                                                          | `Cache-Control`        | When                                                                                                   |
-| ------ | ------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------ |
-| `200`  | `{ success: true, url, snapshot: { url, timestamp } }`        | `public, max-age=3600` | The archive holds a copy. `timestamp` is ISO 8601 in UTC.                                              |
-| `200`  | `{ success: true, url, snapshot: null, miss: "none" }`        | `public, max-age=600`  | The archive holds no copy, its snapshot URL failed the check, or `url` is a pad URL.                   |
-| `200`  | `{ success: true, url, snapshot: null, miss: "unreachable" }` | `no-store`             | archive.org timed out, failed, or answered non-2xx or a body that is not JSON.                         |
-| `400`  | `{ success, code, message }`, module shape                    | none                   | `INVALID_URL`: `url` is missing or not a valid http(s) URL. `BLOCKED_URL`: a private or local address. |
+| Status | Body                                                          | `Cache-Control`        | When                                                                                                                                                               |
+| ------ | ------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `200`  | `{ success: true, url, snapshot: { url, timestamp } }`        | `public, max-age=3600` | The archive holds a copy. `timestamp` is ISO 8601 in UTC.                                                                                                          |
+| `200`  | `{ success: true, url, snapshot: null, miss: "none" }`        | `public, max-age=600`  | The archive holds no copy, its snapshot URL failed the check, or `url` is a pad URL.                                                                               |
+| `200`  | `{ success: true, url, snapshot: null, miss: "unreachable" }` | `no-store`             | archive.org timed out, failed, or answered non-2xx or a body that is not JSON. Or the server was busy ([#787](https://github.com/docs-plus/docs.plus/issues/787)). |
+| `400`  | `{ success, code, message }`, module shape                    | none                   | `INVALID_URL`: `url` is missing or not a valid http(s) URL. `BLOCKED_URL`: a private or local address.                                                             |
 
 `url` in the body is the canonical URL the server asked about. Redis keeps a hit for 1 hour and `none` for 10 minutes, under `meta:archive:v1:{sha1(url)}`. It never keeps `unreachable`. The log line names the host only. The route shares the `/api/metadata` rate-limit bucket. See [Rate limiting](#rate-limiting).
 

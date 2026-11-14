@@ -54,13 +54,24 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - Markdown export keeps bold, italic, strike and highlight outside the backticks of inline code, so
   a round trip keeps them ([#721](https://github.com/docs-plus/docs.plus/issues/721)).
 - `GET /api/metadata/image` streams an image that declares its `Content-Length` (2 MiB at most)
-  after the sniff, instead of holding it whole. An image with no declared length is still read
-  whole, at most 32 at once. Past that the route answers `204` with `Cache-Control: no-store`.
-  The bench ran one REST container at 1 CPU and 512M, on one laptop, with 2 MiB images from a
-  2.5 s origin. At 100/s `memory.current` peaked at 332.2-334.9 MiB, down from 486.3-496.4 MiB. At
-  200/s REST is no longer OOM-killed. There, 825-835 of 3000 streams were cut by the 5 s timer, a
-  failed load the browser does not cache. Before, a late image was a cached `204`. Each arm ran 3
-  sessions, all void by host CPU ([#786](https://github.com/docs-plus/docs.plus/issues/786)).
+  after the sniff, instead of reading it whole first. An image with no declared length is still
+  read whole, at most 32 at once. Past that the route answers `204` with `Cache-Control: no-store`.
+  A lab bench ran one REST container at 1 CPU and 512M on one laptop, with 2 MiB images from a
+  2.5 s origin and a client that reads at full speed. Each arm had 3 valid sessions. For images
+  that declare their length, at 100/s the highest `memory.current` was 323.2-359.7 MiB, down from
+  503-511.4 MiB. At 200/s the old code was OOM-killed in 3 of 3 sessions, the new code in none.
+  There, 819-832 of 3000 streams were cut by the 5 s timer. Chrome 156 did not cache a cut stream.
+  Images with no declared length are served at about 13 per second, and the rest get the `204`
+  ([#786](https://github.com/docs-plus/docs.plus/issues/786)).
+- The link-metadata routes run at most 64 cold requests at once per process: a metadata cache
+  miss, an image fetch, an icon fetch and an archive lookup share that count. Past it, the
+  metadata route answers the fallback card with `miss: "unreachable"`, the image and icon routes
+  answer `204`, and the archive route answers `miss: "unreachable"`. Each of those answers sends
+  `Cache-Control: no-store` and writes nothing to Redis. A streamed image frees its slot when the
+  stream starts ([#787](https://github.com/docs-plus/docs.plus/issues/787)).
+- A link-metadata Redis read or write, and the pad generation read, give up after 150 ms. A slow
+  read counts as a miss and a slow write is dropped, so a stalled Redis no longer holds a request
+  for the shared 60 s `commandTimeout` ([#789](https://github.com/docs-plus/docs.plus/issues/789)).
 
 ### Security
 
@@ -85,8 +96,9 @@ This file is the operator and API changelog. The pad product lives in the [root 
   route on a private scratch pad, then deletes it ([#726](https://github.com/docs-plus/docs.plus/issues/726)).
 - `scripts/bench-link-tolerance/` measures how much load the link-metadata routes take, against a
   fake origin on loopback, with no traffic off the machine. At the production limits (one replica,
-  1 CPU, 512M), on one laptop, the image relay runs out of memory first: REST held 50/s of 2 MiB images from a 2.5 s origin, and was
-  OOM-killed at 100/s or 200/s. The module `BENCHMARK.md` holds the numbers.
+  1 CPU, 512M), on one laptop, before #786 the image relay ran out of memory first. REST held
+  50/s of 2 MiB images from a 2.5 s origin, and was OOM-killed at 100/s or 200/s. The module
+  `BENCHMARK.md` holds the numbers.
 - `bunfig.toml` drops keys that never applied and default test coverage. The backend unit suite takes
   16.21 s, down from 16.93 s (median of 5, one laptop), and no run writes a literal `~` folder
   ([#657](https://github.com/docs-plus/docs.plus/issues/657)).

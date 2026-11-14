@@ -139,7 +139,7 @@ export interface ApiKeys {
  */
 export type RelayedImage = { bytes: Uint8Array<ArrayBuffer>; type: string }
 
-/** A page image with a declared length passes through, so its bytes never sit whole in memory. */
+/** A page image with a declared length passes through, so it is never read whole before the first byte goes out. */
 export type StreamedImage = { body: ReadableStream<Uint8Array>; type: string }
 
 export type Miss = 'clean' | 'error'
