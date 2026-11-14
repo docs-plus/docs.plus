@@ -1,5 +1,6 @@
 import type { Context } from 'hono'
 
+import { coldWork } from '../domain/admission'
 import { fetchSiteIcon, iconSiteOrigin } from '../domain/icon'
 import { isMiss } from '../domain/relay'
 import type { Miss, RelayedImage } from '../domain/types'
@@ -8,6 +9,8 @@ const ICON_TIMEOUT_MS = 3000
 const HIT_CACHE_HEADER = 'public, max-age=604800'
 export const CLEAN_MISS_CACHE_HEADER = 'public, max-age=86400'
 const ERROR_MISS_CACHE_HEADER = 'public, max-age=600'
+// A shed fetch says nothing about the icon, so the browser may ask again at once.
+const SHED_CACHE_HEADER = 'no-store'
 
 /**
  * One timer covers every hop, the DNS checks and both body reads. A miss is an
@@ -25,6 +28,8 @@ export const createIconController = ({ iconMaxBytes }: { iconMaxBytes: number })
     // Before any lookup: the requested host may hold data, and only its site is fetched.
     const site = iconSiteOrigin(origin)
     if (!site) return miss('clean')
+    const release = coldWork.tryAcquire()
+    if (!release) return c.body(null, 204, { 'Cache-Control': SHED_CACHE_HEADER })
 
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), ICON_TIMEOUT_MS)
@@ -37,6 +42,7 @@ export const createIconController = ({ iconMaxBytes }: { iconMaxBytes: number })
     } finally {
       clearTimeout(timer)
       controller.abort()
+      release()
     }
   }
 }

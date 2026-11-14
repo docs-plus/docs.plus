@@ -5,6 +5,7 @@ import { Hono } from 'hono'
 import pino from 'pino'
 
 import { createMemoryRedis } from '../../../../../tests/helpers/memory-redis'
+import { COLD_WORK_MAX, coldWork, type Release } from '../../domain/admission'
 import type { OwnImage } from '../../domain/types'
 import { init } from '../../module'
 
@@ -22,6 +23,7 @@ interface WireBody {
   fallback?: boolean
   fetched_at?: string
   oembed?: { html?: string }
+  miss?: string
 }
 const readBody = async (response: Response): Promise<WireBody> =>
   (await response.json()) as WireBody
@@ -599,6 +601,137 @@ describe('routed fetch (integration)', () => {
       const response = await archiveApp()('https://docs.plus/secret-pad')
       expect(await readArchive(response)).toMatchObject({ snapshot: null, miss: 'none' })
       expect(fetchSpy).not.toHaveBeenCalled()
+    })
+  })
+
+  // #787: cold work past the cap is shed at once, with no-store and no cache write.
+  describe('cold-work admission', () => {
+    const page = 'https://example.com/post'
+    let held: Release[] = []
+    const fillCap = () => {
+      while (coldWork.inFlight() < COLD_WORK_MAX) held.push(coldWork.tryAcquire() as Release)
+    }
+    const freeCap = () => {
+      for (const release of held) release()
+      held = []
+    }
+    afterEach(() => {
+      freeCap()
+      // A leaked slot would make later tests shed at random.
+      expect(coldWork.inFlight()).toBe(0)
+    })
+
+    test('a shed metadata miss is a no-store fallback card that caches nothing', async () => {
+      routes[page] = () => html('<title>Real title</title>')
+      const app = buildApp()
+      const request = () =>
+        app.request('http://localhost/api/metadata?url=' + encodeURIComponent(page))
+
+      fillCap()
+      const shed = await request()
+      expect(shed.status).toBe(200)
+      expect(shed.headers.get('cache-control')).toBe('no-store')
+      expect(await readBody(shed)).toMatchObject({
+        fallback: true,
+        miss: 'unreachable',
+        cached: false
+      })
+      expect(fetchedUrls()).toEqual([])
+
+      freeCap()
+      const next = await request()
+      expect(await readBody(next)).toMatchObject({ title: 'Real title', cached: false })
+    })
+
+    test('a cache hit is served while the cap is full', async () => {
+      routes[page] = () => html('<title>Real title</title>')
+      const app = buildApp()
+      const request = () =>
+        app.request('http://localhost/api/metadata?url=' + encodeURIComponent(page))
+      await request()
+
+      fillCap()
+      const hit = await request()
+      expect(await readBody(hit)).toMatchObject({ title: 'Real title', cached: true })
+    })
+
+    test('the image route sheds the page read and the relay with a no-store 204', async () => {
+      routes[page] = () =>
+        html(
+          `<title>Page</title><meta property="og:image" content="https://cdn.example.net/card.png">`
+        )
+      routes['https://cdn.example.net/card.png'] = () => new Response(pngBytes(2048))
+      const app = buildApp()
+      const request = () =>
+        app.request('http://localhost/api/metadata/image?url=' + encodeURIComponent(page))
+
+      fillCap()
+      const pageShed = await request()
+      expect(pageShed.status).toBe(204)
+      expect(pageShed.headers.get('cache-control')).toBe('no-store')
+
+      // With the page card cached, only the relay needs a slot.
+      freeCap()
+      expect((await request()).status).toBe(200)
+      fillCap()
+      const relayShed = await request()
+      expect(relayShed.status).toBe(204)
+      expect(relayShed.headers.get('cache-control')).toBe('no-store')
+      expect(fetchedUrls().filter((url) => url.includes('cdn.example.net'))).toHaveLength(1)
+    })
+
+    // #786 bounds a stream's memory, so a stream holds no slot. One slot per stream capped images near 25.6/s.
+    test('more than 64 held-open image streams are all served', async () => {
+      routes[page] = () =>
+        html(
+          `<title>Page</title><meta property="og:image" content="https://cdn.example.net/card.png">`
+        )
+      routes['https://cdn.example.net/card.png'] = () =>
+        new Response(
+          new ReadableStream({ start: (controller) => controller.enqueue(pngBytes(16)) }),
+          {
+            headers: { 'content-length': '4096' }
+          }
+        )
+      const app = buildApp()
+      const open: Response[] = []
+      // One at a time, so each sniff ends before the next fetch, and only open streams pile up.
+      for (let i = 0; i < COLD_WORK_MAX + 6; i += 1) {
+        open.push(
+          await app.request('http://localhost/api/metadata/image?url=' + encodeURIComponent(page))
+        )
+      }
+      expect(open.map((response) => response.status)).toEqual(Array(COLD_WORK_MAX + 6).fill(200))
+      expect(coldWork.inFlight()).toBe(0)
+      await Promise.all(open.map((response) => response.body?.cancel()))
+    })
+
+    test('a shed icon fetch is a no-store 204 with no fetch', async () => {
+      fillCap()
+      const response = await buildApp().request(
+        'http://localhost/api/metadata/icon?origin=' + encodeURIComponent('https://example.com')
+      )
+      expect(response.status).toBe(204)
+      expect(response.headers.get('cache-control')).toBe('no-store')
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
+    test('a shed archive lookup answers unreachable and caches nothing', async () => {
+      const lookup = 'https://archive.org/wayback/available?url=' + encodeURIComponent(page)
+      routes[lookup] = () => Response.json({ url: page, archived_snapshots: {} })
+      const app = buildApp()
+      const request = () =>
+        app.request('http://localhost/api/metadata/archive?url=' + encodeURIComponent(page))
+
+      fillCap()
+      const shed = await request()
+      expect(shed.headers.get('cache-control')).toBe('no-store')
+      expect(await shed.json()).toMatchObject({ snapshot: null, miss: 'unreachable' })
+      expect(fetchSpy).not.toHaveBeenCalled()
+
+      freeCap()
+      expect(await (await request()).json()).toMatchObject({ snapshot: null, miss: 'none' })
+      expect(fetchedUrls()).toEqual([lookup])
     })
   })
 })

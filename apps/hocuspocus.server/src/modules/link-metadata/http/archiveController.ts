@@ -1,6 +1,7 @@
 import type { Context } from 'hono'
 import type { Logger } from 'pino'
 
+import { coldWork } from '../domain/admission'
 import { archiveCacheKey, lookupSnapshot } from '../domain/archive'
 import { canonicalize } from '../domain/canonicalize'
 import { isSafeUrl } from '../domain/ssrf'
@@ -43,6 +44,9 @@ export const createArchiveController = (deps: ArchiveControllerDeps) => {
     const cached = await deps.archiveCache.get(key)
     if (cached) return answer(c, url, cached.snapshot)
 
+    // A shed lookup answers like an unreachable archive: no-store, and nothing cached.
+    const release = coldWork.tryAcquire()
+    if (!release) return unreachable(c, url)
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), LOOKUP_TIMEOUT_MS)
     let result: Awaited<ReturnType<typeof lookupSnapshot>>
@@ -51,6 +55,7 @@ export const createArchiveController = (deps: ArchiveControllerDeps) => {
     } finally {
       clearTimeout(timer)
       controller.abort()
+      release()
     }
 
     // The host only: a pasted link's path or query can carry a secret.
@@ -58,14 +63,16 @@ export const createArchiveController = (deps: ArchiveControllerDeps) => {
       { host: new URL(url).hostname, result: typeof result === 'string' ? result : 'hit' },
       'archive lookup completed'
     )
-    if (result === 'unreachable') {
-      const body: ArchiveResponse = { success: true, url, snapshot: null, miss: 'unreachable' }
-      return c.json(body, 200, { 'Cache-Control': 'no-store' })
-    }
+    if (result === 'unreachable') return unreachable(c, url)
     const snapshot = result === 'none' ? null : result
     await deps.archiveCache.set(key, snapshot, snapshot ? HIT_TTL_SECONDS : NONE_TTL_SECONDS)
     return answer(c, url, snapshot)
   }
+}
+
+const unreachable = (c: Context, url: string): Response => {
+  const body: ArchiveResponse = { success: true, url, snapshot: null, miss: 'unreachable' }
+  return c.json(body, 200, { 'Cache-Control': 'no-store' })
 }
 
 const answer = (c: Context, url: string, snapshot: ArchiveResponse['snapshot']): Response => {

@@ -1,5 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test'
 
+import { createAdmission } from '../../domain/admission'
 import { runPipeline, type StageEvent } from '../../domain/pipeline'
 import type {
   Cache,
@@ -407,5 +408,62 @@ describe('runPipeline', () => {
     expect(await run()).toMatchObject({ kind: 'success', fromCache: false })
     expect(await run()).toMatchObject({ kind: 'success', fromCache: false })
     expect(html).toHaveBeenCalledTimes(2)
+  })
+
+  // #787: a miss past the cap answers at once and writes nothing.
+  describe('cold-work admission', () => {
+    test('over the cap, a miss is a shed fallback card: no stage runs and nothing is cached', async () => {
+      const cache = fakeCache()
+      const oembed = mock(async () => ok('oembed'))
+      const result = await runPipeline({
+        requestedUrl: 'https://example.com/',
+        acceptLanguage: 'en',
+        cache,
+        stages: { oembed, special: async () => null, html: noHtml },
+        admission: createAdmission(0)
+      })
+
+      expect(result).toMatchObject({
+        kind: 'success',
+        fallback: true,
+        fromCache: false,
+        miss: 'unreachable',
+        shed: true
+      })
+      expect(oembed).not.toHaveBeenCalled()
+      expect(cache.lastTtl).toBe(-1)
+    })
+
+    test('a cache hit is served when the cap is full', async () => {
+      const cache = fakeCache()
+      const { cacheKey } = await import('../../domain/stages/cache')
+      await cache.set(cacheKey('https://example.com/', 'en'), ok('cached'), 60)
+      const result = await runPipeline({
+        requestedUrl: 'https://example.com/',
+        acceptLanguage: 'en',
+        cache,
+        stages: { oembed: async () => null, special: async () => null, html: noHtml },
+        admission: createAdmission(0)
+      })
+      expect(result).toMatchObject({ kind: 'success', fromCache: true })
+      expect('shed' in result).toBe(false)
+    })
+
+    test('the slot is freed when the stages end, a throw included', async () => {
+      const admission = createAdmission(1)
+      const run = (html: () => Promise<never>) =>
+        runPipeline({
+          requestedUrl: 'https://example.com/',
+          acceptLanguage: 'en',
+          cache: { ...fakeCache(), set: async () => Promise.reject(new Error('redis down')) },
+          stages: { oembed: async () => null, special: async () => null, html },
+          admission
+        })
+
+      await expect(run(async () => Promise.reject(new Error('stage')))).rejects.toThrow(
+        'redis down'
+      )
+      expect(admission.inFlight()).toBe(0)
+    })
   })
 })

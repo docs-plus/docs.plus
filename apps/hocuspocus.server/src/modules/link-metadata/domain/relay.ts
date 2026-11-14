@@ -1,4 +1,5 @@
 import { readCappedBody } from '../../../lib/readCappedBody'
+import { coldWork } from './admission'
 import { safeFetch } from './ssrf'
 import { BOT_USER_AGENT, type Miss, type RelayedImage, type StreamedImage } from './types'
 
@@ -154,15 +155,18 @@ const passThrough = (
 }
 
 /**
- * The image route's relay (#786). A body that declares its length, up to `maxBytes`, streams
- * through after the sniff. A chunked body is buffered as before, and is 'busy' when
- * MAX_BUFFERED_RELAYS are already reading.
+ * The image route's relay (#786). A declared-length body up to `maxBytes` streams after the
+ * sniff. A chunked body is buffered, and is 'busy' past MAX_BUFFERED_RELAYS. A cold-work slot
+ * covers the fetch, the sniff and a buffered read, and is 'busy' when none is free (#787).
+ * A stream holds no slot: #786 bounds its memory, and a slot per stream capped images near 25.6/s.
  */
 export const relayImage = async (
   url: string,
   signal: AbortSignal,
   maxBytes: number
 ): Promise<StreamedImage | RelayedImage | Miss | 'busy'> => {
+  const release = coldWork.tryAcquire()
+  if (!release) return 'busy'
   const { hop, response: pending } = openHop(url, signal, 'image/*')
   let streaming = false
   try {
@@ -187,6 +191,7 @@ export const relayImage = async (
     return { body: passThrough(reader, head, length, hop), type }
   } finally {
     if (!streaming) hop.abort()
+    release()
   }
 }
 

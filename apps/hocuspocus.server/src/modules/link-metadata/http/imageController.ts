@@ -42,6 +42,7 @@ export const createImageController = (deps: ImageControllerDeps) => {
     // The pipeline keys on the language, so both answers vary on it.
     c.header('Vary', 'Accept-Language')
     const miss = () => c.body(null, 204, { 'Cache-Control': MISS_CACHE_HEADER })
+    const busy = () => c.body(null, 204, { 'Cache-Control': BUSY_CACHE_HEADER })
 
     const result = await runPipeline({
       requestedUrl: url,
@@ -51,15 +52,16 @@ export const createImageController = (deps: ImageControllerDeps) => {
       publicUrl: deps.publicUrl,
       padSlugOf: deps.padSlugOf
     })
+    if (result.kind === 'success' && result.shed) return busy()
     const src = result.kind === 'success' ? result.payload.image?.url : undefined
     if (!src) return miss()
     // A card built after a special-stage miss or a cut body read may name another image later.
     const retry = result.kind === 'success' && result.retry
 
     try {
-      // One timer for the whole relay, a streamed body included.
+      // One timer bounds the upstream read, a streamed body included. The send to the client has no timer.
       const image = await relay(src, AbortSignal.timeout(IMAGE_TIMEOUT_MS))
-      if (image === 'busy') return c.body(null, 204, { 'Cache-Control': BUSY_CACHE_HEADER })
+      if (image === 'busy') return busy()
       if (isMiss(image)) return miss()
       const headers = {
         'Content-Type': image.type,

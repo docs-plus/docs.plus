@@ -14,6 +14,8 @@ export interface ControllerDeps {
 
 const POSITIVE_CACHE_HEADER = 'public, max-age=3600, stale-while-revalidate=86400'
 const NEGATIVE_CACHE_HEADER = 'public, max-age=600'
+// A shed card says nothing about the link, so the next hover asks again.
+const SHED_CACHE_HEADER = 'no-store'
 
 export const createController = (deps: ControllerDeps) => {
   return async (c: Context): Promise<Response> => {
@@ -57,8 +59,9 @@ export const createController = (deps: ControllerDeps) => {
       fetched_at: new Date().toISOString()
     }
 
-    const pipelineStage =
-      stageEvents.find((e) => e.hit)?.stage ?? (result.fromCache ? 'cache' : 'fallback')
+    const pipelineStage = result.shed
+      ? 'shed'
+      : (stageEvents.find((e) => e.hit)?.stage ?? (result.fromCache ? 'cache' : 'fallback'))
 
     deps.logger.info(
       {
@@ -72,7 +75,10 @@ export const createController = (deps: ControllerDeps) => {
     )
 
     const short = result.fallback || result.retry
-    c.header('Cache-Control', short ? NEGATIVE_CACHE_HEADER : POSITIVE_CACHE_HEADER)
+    c.header(
+      'Cache-Control',
+      result.shed ? SHED_CACHE_HEADER : short ? NEGATIVE_CACHE_HEADER : POSITIVE_CACHE_HEADER
+    )
     c.header('Vary', 'Accept-Language')
     return c.json(response, 200)
   }

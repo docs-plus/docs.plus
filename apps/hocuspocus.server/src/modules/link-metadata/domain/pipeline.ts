@@ -1,3 +1,4 @@
+import { type Admission, coldWork } from './admission'
 import { canonicalize } from './canonicalize'
 import { isSafeUrl } from './ssrf'
 import {
@@ -47,6 +48,8 @@ export interface PipelineInput {
   padSlugOf?: PadSlugOf
   /** Optional logger hook the controller wires up; pipeline stays framework-free. */
   onStage?: (event: StageEvent) => void
+  /** Bounds the stages after a cache miss. Defaults to the process-wide count. */
+  admission?: Admission
 }
 
 /** `retry` means a stage missed or read less for a reason that may clear soon. */
@@ -58,6 +61,8 @@ export type PipelineResult =
       fallback: boolean
       retry: boolean
       miss?: LinkMiss
+      /** Cold work was over its cap. The card is the fallback, and nothing was cached. */
+      shed?: true
     }
   | { kind: 'error'; status: 400; message: string; code: ErrorResponse['code'] }
 
@@ -210,7 +215,7 @@ const keyFor = async (
 }
 
 export const runPipeline = async (input: PipelineInput): Promise<PipelineResult> => {
-  const { requestedUrl, acceptLanguage, cache, stages, publicUrl, padSlugOf, onStage } = input
+  const { requestedUrl, acceptLanguage, cache, publicUrl, padSlugOf } = input
 
   if (!isSafeUrl(requestedUrl)) {
     let parsed: URL | null = null
@@ -241,6 +246,34 @@ export const runPipeline = async (input: PipelineInput): Promise<PipelineResult>
     }
   }
 
+  const slot = (input.admission ?? coldWork).tryAcquire()
+  if (!slot) {
+    // Never cached: a good link must not keep a fallback card for 10 min.
+    const card = capCard(runFallback(canonical, publicUrl), canonical)
+    return {
+      kind: 'success',
+      payload: { ...card, requested_url: requestedUrl },
+      fromCache: false,
+      fallback: true,
+      retry: false,
+      miss: 'unreachable',
+      shed: true
+    }
+  }
+  try {
+    return await runStages(input, canonical, key, padSlug)
+  } finally {
+    slot()
+  }
+}
+
+const runStages = async (
+  input: PipelineInput,
+  canonical: string,
+  key: string | null,
+  padSlug: string | null
+): Promise<PipelineResult> => {
+  const { requestedUrl, acceptLanguage, cache, stages, publicUrl, padSlugOf, onStage } = input
   let retry = false
   // The first reason wins. Special runs before html, and a site API that missed may answer later.
   let missReason: HtmlMiss | SpecialMiss | undefined
