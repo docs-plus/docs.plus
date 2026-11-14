@@ -105,4 +105,5 @@ No domain code changes. No client changes (URL + response shape are identical).
 ## Benchmark
 
 [BENCHMARK.md](BENCHMARK.md) holds the parser numbers, the steps to measure them again, and the
-check to run after a deploy.
+check to run after a deploy. It also holds the load tolerance of the routes at the production
+limits, from `scripts/bench-link-tolerance/`.

@@ -1,9 +1,11 @@
 # Link-metadata benchmark
 
 These are the numbers behind the switch from metascraper to `infra/headScraper.ts` (#242), and the
-steps to measure headScraper again. All numbers below come from one laptop on 2026-10-27. The
-metascraper numbers are a frozen record, because the script no longer runs metascraper. After a
-deploy, use [After a deploy: check production](#after-a-deploy-check-production) to compare.
+steps to measure headScraper again. The parser numbers come from one laptop on 2026-10-27, unless a
+section gives another date. The metascraper numbers are a frozen record, because the script no
+longer runs metascraper. After a deploy, use
+[After a deploy: check production](#after-a-deploy-check-production) to compare. How much load the
+routes take is in [Load tolerance (2026-11-14)](#load-tolerance-2026-11-14).
 
 ## Results (2026-10-27)
 
@@ -151,6 +153,41 @@ production reads it. That is a new measure, not a code change. It is now the slo
 
 Reading the tail costs download time. Warm, on one laptop, Stripe's job page took 115 to 125 ms
 for the head and about 490 ms with the tail. Wikipedia took 125 to 141 ms, and 448 to 797 ms.
+
+## Load tolerance (2026-11-14)
+
+This section says how much load one REST replica takes, and what fails first.
+[`scripts/bench-link-tolerance/`](../../../scripts/bench-link-tolerance/README.md) drives REST
+against a fake origin on loopback. There is no DNS lookup, no TLS, and no traffic off the machine.
+
+**Condition:** one REST container at `--cpus=1 --memory=512m --memory-swap=512m`, the limit of one
+`rest-api` replica. It ran in the OrbStack VM on one Apple M5 Max laptop, with Bun
+`1.4.4+38afee6c8` and Redis 8.8.0. Traffic is pooled loopback to one local origin.
+
+| Shape                                | Highest rate held                             | What breaks first                                                                                                                                  |
+| ------------------------------------ | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Image relay (2 MiB, 2.5 s origin)    | 50/s                                          | **Memory.** At 100/s `memory.peak` reached 512 MiB, with 2092 `memory.max` events. REST was OOM-killed at 100/s in one run and 200/s in the other. |
+| Hostile heads (7 lanes)              | 48/s                                          | CPU, then memory, then an OOM kill at 96/s.                                                                                                        |
+| Cache miss, fast origin, open loop   | 1600/s                                        | CPU, then memory, then an OOM kill at 6400/s.                                                                                                      |
+| Cache miss, fast origin, closed loop | 5186.73/s at 16 in flight                     | CPU levels off. The best was 5665.53/s at 64 in flight. `memory.current` stayed at 265.3 MiB or less.                                              |
+| Hosts that never answer              | hang@20                                       | **The outbound pool.** At hang@40 the fast lane's p95 rose to 1625.28 ms, from 4.62 ms at hang@20. CPU and memory stayed flat.                     |
+| Cache hit                            | 12800/s, the top of the ramp                  | Nothing broke.                                                                                                                                     |
+| Icon                                 | 100/s by the knee rule; valid steps to 3200/s | Nothing broke.                                                                                                                                     |
+
+The OOM kill made the image, hostile and open-loop miss sessions void. The kill is the break being
+measured, so those rows still stand. Real-delay misses, huge pages, herds and a Redis stall ran on
+macOS only, with no CPU quota and no cgroup.
+
+- **REST has no admission limit.** When the driver held 16 to 64 requests in flight, memory stayed
+  flat. When arrivals outran the CPU, the queue grew until the OOM kill.
+- **The image relay holds each image whole in memory.** RSS grew 1.0868 MiB per image in flight
+  (r² 0.997). At 100/s that is about 255 images in flight (Little's law: 100/s × 2.55 s).
+- **Each rate is a per-replica limit.** Production runs 2 replicas, so twice a rate is a projection,
+  not a measured site limit. The CPU limits also depend on the speed of a production vCPU, which
+  was not measured.
+
+The full report, the raw data and the Linux runner are in
+`Notes/local-docs/2026-11-13-link-scraper-tolerance/`.
 
 ## Measure it again
 

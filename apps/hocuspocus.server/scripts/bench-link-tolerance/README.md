@@ -2,6 +2,8 @@
 
 This bench measures how much load the link-metadata routes take, and what fails first. It is not a test. It sends no traffic off the machine.
 
+The results of the 2026-11-14 runs are in the module [BENCHMARK.md](../../src/modules/link-metadata/BENCHMARK.md#load-tolerance-2026-11-14).
+
 ## Files
 
 - `shim.ts`: the preload for the REST process. It rewrites every fetch to `203.0.113.0/24` (TEST-NET-3, port 80) onto the fake origin. It blocks and counts every other fetch, every fetch that does not ask for `redirect: 'manual'`, and every fetch that sets Bun's `proxy` or `unix` option. With `BENCH_CONN=fresh` it sends `keepalive: false`, so each fetch opens a new connection. It keeps every listener on 127.0.0.1. A side port (4622) reports the counters, fetch error codes, the event-loop lag and stalls, and the CPU. Its `/connect-probe` dials only 127.0.0.1, and only the runner's canary port or 4622.
@@ -47,7 +49,7 @@ Options:
 
 - One runner at a time: the runner takes `raw/.bench.lock` (an exclusive create) before any other check. A second runner refuses, and it touches nothing. A lock whose pid is dead is stale: the next runner kills that run's leftover children and removes its container, then takes the lock.
 - The lock file is written whole, then linked into place, so no reader sees an empty lock.
-- The runner removes only what it started. The container carries the label `linkbench.owner=<session>`. It adopts an existing container only when that label names a bench session, and it removes the container only while the label still equals the one it started or adopted. `docker run` uses `--pull=never`. Every Docker call has a 15 s deadline, so a hung daemon aborts the run instead of wedging it. The Docker path has not run end to end yet.
+- The runner removes only what it started. The container carries the label `linkbench.owner=<session>`. It adopts an existing container only when that label names a bench session, and it removes the container only while the label still equals the one it started or adopted. `docker run` uses `--pull=never`. Every Docker call has a 15 s deadline, so a hung daemon aborts the run instead of wedging it. The Docker path has not run end to end yet: every macOS session on 2026-11-13 and 2026-11-14 used `--redis=native`.
 - SIGINT, SIGTERM and SIGHUP tear down. The children (origin, REST, driver) also exit within a second when their parent pid is no longer the runner, so a SIGKILL leaves no Bun process. A native `redis-server` survives a SIGKILL until the next runner clears the stale lock.
 - REST always runs under `sandbox-exec`. Outbound connects go only to 127.0.0.1:4621 (origin), :6391 (bench Redis) and :4622 (its own side port, for the foreign-peer control). The mDNSResponder socket is refused. So `Bun.fetch` (which Bun 1.4.4 does not let the shim wrap), `node:net`, DNS and shared services on other loopback ports (6379, 5432, 54321) are refused too.
 - Every session proves its fence at start and at end: REST dials the runner's canary port on 127.0.0.1, and the dial must fail in under 100 ms with nothing accepted. Unfenced it would open, so the check tells the two cases apart without a packet off the machine. The kernel does not log these denials for a `sandbox-exec` profile here, so the run cannot count them.
@@ -64,4 +66,4 @@ Options:
 - The layer-2 parse share uses the scrape call alone as its numerator, and `miss-fast` has a 0 ms origin. Never quote either number against the Rust trigger. Layer 1 has no parse timer, so no layer-1 run answers "parse above 10 % of request time at p95".
 - The server histogram's lowest bucket is 0.01 s, so it cannot check a sub-10 ms client latency.
 - The stall count has a resolution of about 5 ms around the 50 ms trigger (a 5 ms tick).
-- macOS has no CPU quota and no cgroup. The production limits (1.0 CPU, 512M) need a Linux container series.
+- macOS has no CPU quota and no cgroup, so `run.ts` cannot measure the production limits (1.0 CPU, 512M). A Linux container series measured them on 2026-11-14, with REST at `--cpus=1 --memory=512m` in OrbStack. It used `origin.ts`, `shim.ts` and `driver.ts` with its own runner, which is not in the repo. Never compare its numbers with the macOS numbers as one series.
