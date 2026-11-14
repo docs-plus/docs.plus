@@ -53,9 +53,19 @@ This file is the operator and API changelog. The pad product lives in the [root 
   ([#722](https://github.com/docs-plus/docs.plus/issues/722)).
 - Markdown export keeps bold, italic, strike and highlight outside the backticks of inline code, so
   a round trip keeps them ([#721](https://github.com/docs-plus/docs.plus/issues/721)).
+- `GET /api/metadata/image` streams an image that declares its `Content-Length` (2 MiB at most)
+  after the sniff, instead of holding it whole. An image with no declared length is still read
+  whole, at most 32 at once. Past that the route answers `204` with `Cache-Control: no-store`.
+  The bench ran one REST container at 1 CPU and 512M, on one laptop, with 2 MiB images from a
+  2.5 s origin. At 100/s `memory.current` peaked at 332.2-334.9 MiB, down from 486.3-496.4 MiB. At
+  200/s REST is no longer OOM-killed. There, 825-835 of 3000 streams were cut by the 5 s timer, a
+  failed load the browser does not cache. Before, a late image was a cached `204`. Each arm ran 3
+  sessions, all void by host CPU ([#786](https://github.com/docs-plus/docs.plus/issues/786)).
 
 ### Security
 
+- The oEmbed stage reads its answer through `readApiJson`, capped at 64 KiB. It read a body of any
+  size before ([#786](https://github.com/docs-plus/docs.plus/issues/786)).
 - The import route refuses a result over `MAX_CONTENT_NODES` (`TOO_MANY_NODES`), deeper than
   `MAX_CONTENT_DEPTH` (`TOO_DEEP`), or whose Yjs state would pass `MAX_WS_MESSAGE_BYTES` less 4 MiB
   (`TOO_LARGE_TO_OPEN`). A larger document could not open in a browser.

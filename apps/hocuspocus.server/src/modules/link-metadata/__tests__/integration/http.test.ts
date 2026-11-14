@@ -354,6 +354,96 @@ describe('routed fetch (integration)', () => {
       expect((await response.arrayBuffer()).byteLength).toBe(2048)
     })
 
+    // #786: a declared length streams the image through, and a body that breaks it fails.
+    describe('with a declared length', () => {
+      const sized =
+        (bytes: Uint8Array, length = bytes.byteLength) =>
+        () =>
+          new Response(bytes, { headers: { 'content-length': String(length) } })
+      beforeEach(() => {
+        routes['https://example.com/post'] = pageWithImage('https://cdn.example.net/card.png')
+      })
+
+      test('streams the image through', async () => {
+        routes['https://cdn.example.net/card.png'] = sized(pngBytes(70_000))
+        const response = await requestImage('https://example.com/post')
+        expect(response.status).toBe(200)
+        expect(response.headers.get('content-type')).toBe('image/png')
+        expect((await response.arrayBuffer()).byteLength).toBe(70_000)
+      })
+
+      test('fails the body when the upstream sends less than it declared', async () => {
+        routes['https://cdn.example.net/card.png'] = sized(pngBytes(1024), 4096)
+        const response = await requestImage('https://example.com/post')
+        expect(response.status).toBe(200)
+        // A regression here hangs the read, so race it against a timer to fail fast.
+        const stalled = Bun.sleep(1000).then(() => {
+          throw new Error('the body read hung')
+        })
+        await expect(Promise.race([response.arrayBuffer(), stalled])).rejects.toThrow(
+          'sent 1024 of 4096'
+        )
+      })
+
+      test('fails the body when the upstream sends more than it declared', async () => {
+        const head = pngBytes(16)
+        routes['https://cdn.example.net/card.png'] = () =>
+          new Response(
+            new ReadableStream({
+              start(controller) {
+                controller.enqueue(head)
+                controller.enqueue(new Uint8Array(32))
+                controller.close()
+              }
+            }),
+            { headers: { 'content-length': '32' } }
+          )
+        const response = await requestImage('https://example.com/post')
+        expect(response.status).toBe(200)
+        await expect(response.arrayBuffer()).rejects.toThrow('sent 48 of 32')
+      })
+
+      test('answers 204 for a length over 2 MiB', async () => {
+        routes['https://cdn.example.net/card.png'] = sized(pngBytes(1024), 2 * 1024 * 1024 + 1)
+        expect((await requestImage('https://example.com/post')).status).toBe(204)
+      })
+
+      test('answers 204 for a length under the sniff floor', async () => {
+        routes['https://cdn.example.net/card.png'] = sized(pngBytes(15))
+        expect((await requestImage('https://example.com/post')).status).toBe(204)
+      })
+
+      // Fetch unzips the body but keeps the coded length, so a coded image must be buffered.
+      test('buffers a coded body instead of trusting its length', async () => {
+        routes['https://cdn.example.net/card.png'] = () =>
+          new Response(pngBytes(70_000), {
+            headers: { 'content-length': '144', 'content-encoding': 'gzip' }
+          })
+        const response = await requestImage('https://example.com/post')
+        expect(response.status).toBe(200)
+        expect((await response.arrayBuffer()).byteLength).toBe(70_000)
+      })
+    })
+
+    test('answers a no-store 204 when 32 images with no declared length are reading', async () => {
+      routes['https://example.com/post'] = pageWithImage('https://cdn.example.net/card.png')
+      const open: ReadableStreamDefaultController<Uint8Array>[] = []
+      routes['https://cdn.example.net/card.png'] = () =>
+        new Response(new ReadableStream({ start: (controller) => void open.push(controller) }))
+      const reading = Array.from({ length: 32 }, () => requestImage('https://example.com/post'))
+      while (open.length < 32) await Bun.sleep(5)
+
+      const busy = await requestImage('https://example.com/post')
+      expect(busy.status).toBe(204)
+      expect(busy.headers.get('cache-control')).toBe('no-store')
+
+      for (const controller of open) {
+        controller.enqueue(pngBytes(32))
+        controller.close()
+      }
+      expect((await Promise.all(reading)).map((r) => r.status)).toEqual(Array(32).fill(200))
+    })
+
     test('refuses a page image on a private address', async () => {
       routes['https://example.com/post'] = pageWithImage('https://intranet.example.com/card.png')
       routes['https://intranet.example.com/card.png'] = () => new Response(pngBytes(2048))

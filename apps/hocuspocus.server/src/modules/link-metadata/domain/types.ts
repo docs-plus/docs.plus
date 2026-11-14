@@ -139,6 +139,9 @@ export interface ApiKeys {
  */
 export type RelayedImage = { bytes: Uint8Array<ArrayBuffer>; type: string }
 
+/** A page image with a declared length passes through, so its bytes never sit whole in memory. */
+export type StreamedImage = { body: ReadableStream<Uint8Array>; type: string }
+
 export type Miss = 'clean' | 'error'
 
 /** Reads an image URL this process serves itself, without the network; null for any other URL. */

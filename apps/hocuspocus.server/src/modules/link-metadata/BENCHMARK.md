@@ -186,8 +186,42 @@ macOS only, with no CPU quota and no cgroup.
   not a measured site limit. The CPU limits also depend on the speed of a production vCPU, which
   was not measured.
 
+### After #786: the image relay streams
+
+The table above is the before. #786 streams an image that declares its length and buffers at
+most 32 that do not. Base and head ran in turns, 3 sessions each per lane, on the condition above.
+Base is the code at `9f0e2be02`, head is the change. Every session is void: the host ran another
+project's dev server and browser tests, and each base session ended in an OOM kill. Values are the
+range over the 3 sessions.
+
+| Lane, rate                | Base `memory.current` max | Base answers      | Head `memory.current` max | Head answers                                       |
+| ------------------------- | ------------------------- | ----------------- | ------------------------- | -------------------------------------------------- |
+| Declared length, 25/s     | 329.3-389 MiB             | 750 × `200`       | 218.8-223.3 MiB           | 750 × `200`                                        |
+| Declared length, 100/s    | 486.3-496.4 MiB           | 1568-2000 × `200` | 332.2-334.9 MiB           | 2000 × `200`                                       |
+| Declared length, 200/s    | OOM kill (3 of 3)         | 0                 | 371.7-395.3 MiB           | 1163-1172 × `200`, 999-1003 × `204`, 825-835 reset |
+| No declared length, 25/s  | 340.1-360.3 MiB           | 750 × `200`       | 270.1-280.3 MiB           | 388-390 × `200`, 360-362 × `204`                   |
+| No declared length, 100/s | 496.1-510.8 MiB           | 2000 × `200`      | 298.9-302.7 MiB           | 256 × `200`, 1744 × `204`                          |
+| No declared length, 200/s | OOM kill (3 of 3)         | 0                 | 269.2-319.1 MiB           | 192 × `200`, 2808 × `204`                          |
+
+- With a declared length, the head answered every image to 100/s with less memory. At 200/s it
+  stayed up, but the outbound pool filled (p95 7513.58-7562.45 ms). The 5 s timer turned fetches
+  still waiting into `204`. It cut 825-835 streams already sending, and the client saw a reset.
+  Before, a late image was a `204` cached for 600 s. Now a cut stream is a failed load, never cached.
+  The pool is #788.
+- With no declared length, the head serves about 13 images per second (32 reads of 2.5 s) and
+  answers `204` for the rest. Memory stayed near 300 MiB.
+- Bun's server sends any stream chunked, even with a `content-length` header. So the bench's
+  declared-length lane runs on a `node:http` listener (`/imglen/`, port 4623).
+- The committed code changed after the review: a coded body counts as undeclared, and one
+  `AbortSignal.timeout` holds the 5 s bound. One more declared-length session ran on it
+  (`20261114T084906`, void by host CPU). Its answers match. At 100/s `memory.current` was 369 MiB,
+  and `anon` was 313.8 MiB, inside the head range of 312.2-315.1 MiB. Page cache made the
+  difference.
+- A cut chunked image is not cached by Chrome 156: it was fetched again on every load, while a whole
+  one with the same `Cache-Control` was not. Safari was not checked.
+
 The full report, the raw data and the Linux runner are in
-`Notes/local-docs/2026-11-13-link-scraper-tolerance/`.
+`Notes/local-docs/2026-11-13-link-scraper-tolerance/`. The #786 runs are in its `raw/linux/786/`.
 
 ## Measure it again
 

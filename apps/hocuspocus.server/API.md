@@ -1287,7 +1287,7 @@ The route has its own rate limit. See [Rate limiting](#rate-limiting).
 
 Takes a page URL and relays its page image (PNG, ICO, GIF, JPEG or WebP, up to 2 MiB) through the SSRF guard. SVG never passes. A miss is an empty `204`. The reader's browser never contacts the linked site. `url` is the page URL, with the same rules as `GET /api/metadata`.
 
-The server runs the same pipeline as `GET /api/metadata`, usually a cache hit, and takes the page image (`image.url`) from that result. That is an `og:image`, or an oEmbed or site thumbnail. A fallback result has no image. It fetches that one URL through the SSRF guard, with `User-Agent: DocsplusBot/1.0` and `Accept: image/*`, a 5 s timer and a 2 MiB cap. The timer covers only that fetch; on a cache miss the pipeline runs first. The `200` and `204` answers set `Vary: Accept-Language`, because the pipeline reads that header.
+The server runs the same pipeline as `GET /api/metadata`, usually a cache hit, and takes the page image (`image.url`) from that result. That is an `og:image`, or an oEmbed or site thumbnail. A fallback result has no image. It fetches that one URL through the SSRF guard, with `User-Agent: DocsplusBot/1.0` and `Accept: image/*`, a 5 s timer and a 2 MiB cap. The timer covers only that fetch; on a cache miss the pipeline runs first. When the image declares a `Content-Length` of 2 MiB or less, the route sniffs its first bytes and then streams the rest. The `200` is sent chunked. A body shorter or longer than it declared ends the transfer without its last chunk, so the browser drops it. An image with no declared length is read whole first, and at most 32 such reads run at once ([#786](https://github.com/docs-plus/docs.plus/issues/786)). The `200` and `204` answers set `Vary: Accept-Language`, because the pipeline reads that header.
 
 | Status | Body                                       | `Cache-Control`         | When                                                                                                                             |
 | ------ | ------------------------------------------ | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -1295,6 +1295,7 @@ The server runs the same pipeline as `GET /api/metadata`, usually a cache hit, a
 | `200`  | The image bytes                            | `public, max-age=600`   | As above, when the page card was built after a special-stage miss or a cut body read.                                            |
 | `400`  | `{ success, code, message }`, module shape | none                    | `INVALID_URL`: `url` is missing or not a valid http(s) URL.                                                                      |
 | `204`  | Empty                                      | `public, max-age=600`   | No image: a fallback page, no page image, the SSRF guard, a timeout, a non-2xx answer, SVG or other bytes, or an oversized body. |
+| `204`  | Empty                                      | `no-store`              | Busy: 32 images with no declared length are already being read. Ask again later.                                                 |
 
 It shares the `/api/metadata` rate-limit bucket. See [Rate limiting](#rate-limiting).
 

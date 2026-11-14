@@ -1,3 +1,4 @@
+import { readApiJson } from '../readApiJson'
 import { safeFetch } from '../ssrf'
 import { LINK_PREVIEW_USER_AGENT, STAGE_TIMEOUT_MS, type StageResult } from '../types'
 
@@ -97,9 +98,10 @@ export const runOembed = async (canonicalUrl: string): Promise<StageResult> => {
     })
     if (!response.ok) return null
 
-    const data = (await response.json()) as OembedJson
+    // `readApiJson` caps the body at 64 KiB, as every other API read does.
+    const data = await readApiJson<OembedJson>(response, controller)
     // A reply with no title is a miss. The hostname as title was cached as a 24 h positive.
-    if (!data.title) return null
+    if (!data?.title) return null
 
     return {
       success: true,
