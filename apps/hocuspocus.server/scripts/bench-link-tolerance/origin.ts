@@ -4,6 +4,7 @@
  * The path picks the behaviour; `GET /__stats` counts hits, `?reset=1` starts a new window.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { createServer } from 'node:http'
 import { join } from 'node:path'
 
 const PORT = Number(process.env.BENCH_ORIGIN_PORT ?? 4621)
@@ -270,7 +271,7 @@ const route = async (req: Request, url: URL, kind: string, parts: string[]): Pro
       })
     case 'imgpage':
       return html(
-        `<html><head><title>Image page ${parts[1]}</title><meta property="og:image" content="http://203.0.113.9/img/${parts[1]}.png${url.searchParams.has('slow') ? `?slow=${url.searchParams.get('slow')}` : ''}"></head><body></body></html>`
+        `<html><head><title>Image page ${parts[1]}</title><meta property="og:image" content="http://203.0.113.9/${url.searchParams.has('len') ? 'imglen' : 'img'}/${parts[1]}.png${url.searchParams.has('slow') ? `?slow=${url.searchParams.get('slow')}` : ''}"></head><body></body></html>`
       )
     case 'img':
       return url.searchParams.has('slow')
@@ -282,6 +283,37 @@ const route = async (req: Request, url: URL, kind: string, parts: string[]): Pro
       return new Response('not found', { status: 404 })
   }
 }
+
+// Bun.serve sends every stream chunked, even with a content-length header. Most image hosts
+// declare the size, so `/imglen/` runs on node:http, which keeps it. The shim routes it here.
+const LEN_PORT = Number(process.env.BENCH_LEN_PORT ?? PORT + 2)
+createServer((req, res) => {
+  const url = new URL(req.url ?? '/', 'http://bench')
+  if (!url.pathname.startsWith('/imglen/')) return void res.writeHead(404).end()
+  total += 1
+  const chunk = 64 * 1024
+  const parts = Math.ceil(IMAGE.length / chunk)
+  const ms = Number(url.searchParams.get('slow')) || 2500
+  let sent = 0
+  let open = true
+  streaming += 1
+  if (streaming > streamingMax) streamingMax = streaming
+  const end = () => {
+    clearInterval(timer)
+    if (open) streaming -= 1
+    open = false
+  }
+  res.writeHead(200, { 'content-type': 'image/png', 'content-length': String(IMAGE.length) })
+  const timer = setInterval(() => {
+    res.write(IMAGE.subarray(sent * chunk, (sent + 1) * chunk))
+    sent += 1
+    if (sent >= parts) {
+      end()
+      res.end()
+    }
+  }, ms / parts)
+  res.on('close', end)
+}).listen(LEN_PORT, '127.0.0.1')
 
 Bun.serve({
   port: PORT,

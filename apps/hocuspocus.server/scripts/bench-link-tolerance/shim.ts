@@ -6,6 +6,8 @@
  */
 const BENCH_HOST = /^203\.0\.113\.(\d{1,3})$/
 const ORIGIN = process.env.BENCH_ORIGIN_URL ?? 'http://127.0.0.1:4621'
+// The origin's node:http listener, for images that declare their length (`/imglen/`).
+const LEN_ORIGIN = process.env.BENCH_LEN_ORIGIN_URL ?? 'http://127.0.0.1:4623'
 const SIDE_PORT = Number(process.env.BENCH_SIDE_PORT ?? 4622)
 // `fresh`: one new TCP connection per fetch (keepalive false), as a new host costs in production.
 const CONN = process.env.BENCH_CONN === 'fresh' ? 'fresh' : 'pooled'
@@ -59,7 +61,8 @@ const benchFetch = async (input: string | URL | Request, init?: RequestInit): Pr
     init?.headers ?? (input instanceof Request ? input.headers : undefined)
   )
   headers.set('x-bench-host', url.hostname)
-  const target = `${ORIGIN}${url.pathname}${url.search}`
+  const base = url.pathname.startsWith('/imglen/') ? LEN_ORIGIN : ORIGIN
+  const target = `${base}${url.pathname}${url.search}`
   counters.rewrites += 1
   counters.inflight += 1
   if (counters.inflight > counters.inflightMax) counters.inflightMax = counters.inflight
