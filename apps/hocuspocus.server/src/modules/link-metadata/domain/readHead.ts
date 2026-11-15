@@ -20,10 +20,63 @@ export const firstHeadEnd = (text: string): number => {
   return found.length > 0 ? Math.min(...found) : -1
 }
 
+const LT = 0x3c
+// Each head end after its `<`, as lower-case ASCII bytes.
+const END_TAILS = HEAD_ENDS.map((end) => Buffer.from(end.slice(1), 'latin1'))
+
+/** True when a head end starts at the `<` at `at`. Letters match in either case. */
+const isHeadEnd = (bytes: Uint8Array, at: number): boolean => {
+  for (const tail of END_TAILS) {
+    let i = 0
+    for (; i < tail.length; i += 1) {
+      const want = tail[i]
+      const got = bytes[at + 1 + i]
+      if (got !== want && !(want >= 0x61 && want <= 0x7a && got === want - 0x20)) break
+    }
+    if (i === tail.length) return true
+  }
+  return false
+}
+
+/** A cheap first test for `</h` or `<bo` in either case. Most tags fail it. */
+const mayEnd = (bytes: Uint8Array, at: number): boolean => {
+  const first = bytes[at + 1] | 0x20
+  const second = bytes[at + 2] | 0x20
+  return first === 0x2f ? second === 0x68 : first === 0x62 && second === 0x6f
+}
+
+// One native search per `<` is slow on a tag-dense head, so short gaps are scanned in place.
+const NEAR = 16
+
+/**
+ * The first head end in `chunk`, as an offset into it, or null. It is negative when the end
+ * starts in `carry`, the last bytes before the chunk. Bytes are searched as they are: a string copy of
+ * each chunk and its lower-case copy cost 2 to 3 MiB per 1 MiB head.
+ */
+const findHeadEnd = (carry: Uint8Array, chunk: Uint8Array): number | null => {
+  if (carry.byteLength > 0) {
+    const seam = Buffer.concat([carry, chunk.subarray(0, CARRY)])
+    for (
+      let at = seam.indexOf(LT);
+      at !== -1 && at < carry.byteLength;
+      at = seam.indexOf(LT, at + 1)
+    )
+      if (isHeadEnd(seam, at)) return at - carry.byteLength
+  }
+  for (let at = chunk.indexOf(LT); at !== -1;) {
+    if (mayEnd(chunk, at) && isHeadEnd(chunk, at)) return at
+    const stop = Math.min(at + NEAR, chunk.byteLength)
+    let next = at + 1
+    while (next < stop && chunk[next] !== LT) next += 1
+    at = next < stop ? next : chunk.indexOf(LT, stop)
+  }
+  return null
+}
+
 /**
  * Reads until the first `</head` or `<body`, or `cap`. `bytes` may run past `headEnd`, because a
- * chunk can hold both. `done` means the stream ended. The search reads latin1, so one char is
- * one byte, and the cut never depends on how the network split the page.
+ * chunk can hold both. `done` means the stream ended. The search keeps the last bytes of each
+ * chunk, so the cut never depends on how the network split the page.
  */
 const readToHeadEnd = async (
   reader: Reader,
@@ -31,24 +84,22 @@ const readToHeadEnd = async (
 ): Promise<{ bytes: Uint8Array; headEnd: number; done: boolean }> => {
   const chunks: Uint8Array[] = []
   let total = 0
-  let carry = ''
+  let carry: Uint8Array = EMPTY
   while (total < cap) {
     const next = await reader.read()
     if (next.done) return { bytes: Buffer.concat(chunks, total), headEnd: total, done: true }
     const chunk = next.value.subarray(0, cap - total)
     chunks.push(chunk)
+    const start = total
     total += chunk.byteLength
-    const window =
-      carry + Buffer.from(chunk.buffer, chunk.byteOffset, chunk.byteLength).toString('latin1')
-    const at = firstHeadEnd(window.toLowerCase())
-    if (at !== -1) {
-      return {
-        bytes: Buffer.concat(chunks, total),
-        headEnd: total - (window.length - at),
-        done: false
-      }
-    }
-    carry = window.slice(-CARRY)
+    const at = findHeadEnd(carry, chunk)
+    if (at !== null)
+      return { bytes: Buffer.concat(chunks, total), headEnd: start + at, done: false }
+    // A head end may start in the last CARRY - 1 bytes and finish in the next chunk.
+    carry =
+      chunk.byteLength >= CARRY - 1
+        ? chunk.subarray(chunk.byteLength - (CARRY - 1))
+        : Buffer.concat([carry, chunk]).subarray(-(CARRY - 1))
   }
   return { bytes: Buffer.concat(chunks, total), headEnd: total, done: false }
 }

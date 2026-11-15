@@ -48,6 +48,27 @@ describe('readHead', () => {
       expect(whole).toEqual({ head: '<head><title>T</title>', tail: html.slice(22) })
     })
 
+    // A head end can cross several chunks shorter than itself.
+    test('finds a head end split over many short chunks', async () => {
+      const html = '<head><title>T</title></hEaD><body>'
+      for (let size = 1; size <= 7; size += 1) {
+        const chunks = Array.from({ length: Math.ceil(html.length / size) }, (_, i) =>
+          html.slice(i * size, (i + 1) * size)
+        )
+        expect((await page(streamOf(...chunks))).head).toBe('<head><title>T</title>')
+      }
+    })
+
+    // Each `<` gets a two-byte test first, and gaps under 16 bytes are scanned in place.
+    test('cuts at the true head end past near misses and the scan edge', async () => {
+      const cut = async (head: string) => (await page(streamOf(`${head}</HEAD><body>`))).head
+      for (const head of ['<head><<<', '<head></h1></hea']) expect(await cut(head)).toBe(head)
+      for (let gap = 0; gap <= 20; gap += 1) {
+        const head = `<head><${'x'.repeat(gap)}y/head>`
+        expect(await cut(head)).toBe(head)
+      }
+    })
+
     test('reads at most tail.bytes past </head, and never past the cap', async () => {
       const body = 'b'.repeat(500)
       expect((await page(streamOf('<head></head>', body))).tail).toHaveLength(64)
