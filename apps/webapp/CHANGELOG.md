@@ -16,6 +16,22 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ## [Unreleased]
 
+## [2.3.6] — 2026-11-16
+
+### Highlights
+
+- **Home sends 75 % less JavaScript.** `socialIcons.ts` now loads only the 71 social-link icons it
+  uses. On production, Home's JavaScript over the wire, compressed, fell from 3,869,403 B to
+  965,119 B (2026-11-10 to 2026-11-11). This counts every script Home's HTML lists, fetched once,
+  except `polyfills` and `_ssgManifest`. Google Analytics is not counted ([#732](https://github.com/docs-plus/docs.plus/issues/732)).
+
+### Changed
+
+- `socialIcons.ts` loads one small map of the 71 social-link icons, not the whole `fa`, `fa6` and
+  `si` packs. Its computed-key read of a whole-pack `import()` had put every icon in first-load
+  JavaScript. In the build's route table, `/` drops from 3.82 MB to 952 kB and `/[...slugs]` from
+  1.83 MB to 925 kB ([#732](https://github.com/docs-plus/docs.plus/issues/732)).
+
 ## [2.3.0] — 2026-11-09
 
 ### Highlights

@@ -10,6 +10,19 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ## [Unreleased]
 
+## [2.3.6] — 2026-11-16
+
+### Migration
+
+Push one Supabase migration with this deploy. The full record is in
+[`packages/supabase/CHANGELOG.md`](../../packages/supabase/CHANGELOG.md).
+
+1. `20261112120000` revokes EXECUTE on `get_channel_notif_state`,
+   `get_unread_notifications_paginated` and `get_workspace_notifications` from `public` and
+   `anon`, and grants it to `authenticated`. It fails unless `anon` has lost it and
+   `authenticated` holds it. A `service_role` that held them only through `PUBLIC` may lose them
+   too ([#755](https://github.com/docs-plus/docs.plus/issues/755)).
+
 ## [2.3.0] — 2026-11-09
 
 ### Highlights
