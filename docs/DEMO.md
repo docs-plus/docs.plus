@@ -1049,6 +1049,41 @@ Filtered to this section? [Show the whole document](/demo).
 
 The newest release comes first. Most parts end with a filter link to the place on this page that shows it.
 
+## docs.plus 2.3.6
+
+![docs.plus 2.3.6: the home page sends 75 % less code, from 3,869,403 to 965,119 bytes. Three cards show faster document reads after our database moved to London: 180 to 7.5 ms, 1,365 to 46.5 ms, and 72.6 to 5.0 ms](/demo-assets/release-2.3.6-banner.png)
+
+Released on 16 November 2026.
+
+This release makes the home page lighter. We also moved the database that stores your documents to London, so our server gets them much faster.
+
+### Faster and steadier
+
+==The home page now sends your browser 75 % less code.== It has less to download before it can show itself.
+
+Each row says where we measured it.
+
+|                                                           | Before          | Now               | Measured on                                                                                            |
+| --------------------------------------------------------- | --------------- | ----------------- | ------------------------------------------------------------------------------------------------------ |
+| Home page code your browser downloads, compressed         | 3,869,403 bytes | **965,119 bytes** | our live site, 2026-11-10 to 2026-11-11                                                                |
+| Time until the home page's biggest piece appears          | 21.71 s         | **7.35 s**        | a lab test of our live site on one laptop, Lighthouse mobile run, middle of 5 runs                     |
+| Typical time for our server to get a document             | 180 ms          | **7.5 ms**        | our live site, first 24 hours after the database move                                                  |
+| The same, in the slow case (1 request in 20 was slower)   | 1,365 ms        | **46.5 ms**       | our live site, the same 24 hours                                                                       |
+| Typical time for our database to answer one test question | 72.6 ms         | **5.0 ms**        | our live site, the same 24 hours                                                                       |
+| Typical time for a fix of ours to reach the live site     | 1,090 s         | **630 s**         | our deploy pipeline: 14 deploys from 2026-09-22 to 2026-10-20, against 8 from 2026-11-03 to 2026-11-07 |
+
+_The three database rows come from moving the database that stores documents from New York (NYC1) to London on 2026-11-11, with an upgrade from PostgreSQL 14 to 18.6. The move is a change to our servers, not to the docs.plus code. "Typical" is the middle request: half were faster. London also answered more requests: 3,213 against 608 per 24 hours. This is one server step, not the time to open a document. Large documents did not load faster._
+
+The home page row counts each file the home page lists, fetched once, except `polyfills` and `_ssgManifest`. Google Analytics is not counted. In the lab row, the biggest piece is the card that offers to install the app. It is a lab test, not a real phone. The deploy changes behind the last row shipped in 2.3.0, and this release measured them.
+
+On this page: [/demo/lab test](/demo/lab%20test).
+
+### Safer by default
+
+**Three notification lookups now need you to be signed in.** Before, people who were not signed in could run them. The app only ever ran them signed in, so nothing changes for you.
+
+Read every change in the [GitHub Release](https://github.com/docs-plus/docs.plus/releases/tag/v2.3.6) and the [CHANGELOG](https://github.com/docs-plus/docs.plus/blob/main/CHANGELOG.md).
+
 ## docs.plus 2.3.0
 
 ![docs.plus 2.3.0: a pad with link chips for a heading, a chat, a filter, a version and the top, a preview of a heading's chat, a docs.plus card for a shared pad, and a section dragged in the outline](/demo-assets/release-2.3.0-banner.png)
@@ -1208,7 +1243,7 @@ All 3,101 tests pass on commit `aab825125`, run on the same laptop.
 
 _"Laptop" means one Apple M5 Max with Bun 1.4.4. Every timing traces to a commit or an issue._
 
-On this page: [/demo/steadier](/demo/steadier).
+On this page: [/demo/offline copy](/demo/offline%20copy).
 
 Read every change in the [GitHub Release](https://github.com/docs-plus/docs.plus/releases/tag/v2.3.0) and the [CHANGELOG](https://github.com/docs-plus/docs.plus/blob/main/CHANGELOG.md).
 
