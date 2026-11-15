@@ -1078,8 +1078,10 @@ details.
   ([#424](https://github.com/docs-plus/docs.plus/issues/424)).
 
 - Send fewer cursor updates while people edit. Editors no longer resend an
-  unchanged cursor, or send back a cursor they just received. At 40 clients,
-  WebSocket CPU fell from 33% to 3% per replica.
+  unchanged cursor, or send back a cursor they just received. At 40 clients
+  in a local test, WebSocket CPU fell from 33.0 % to 3.1 % per replica
+  (−90 %), and cursor messages fell 1,153× (−99 %). Typing did not get
+  faster.
 
 - Ask a signed-out visitor to sign in before they paste or upload media,
   import or export. They used to get a failed request and an error toast.

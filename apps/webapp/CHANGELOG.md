@@ -846,6 +846,15 @@ release and the self-hosting steps are in the
 
 ### Changed
 
+- **Live cursors use 90 % less of the server.** `hooks/guardProviderAwareness.ts`
+  wraps the provider's awareness. It skips a `cursor` write equal to the
+  stored value (`@tiptap/y-tiptap` 3.0.6+ re-sends it after every remote
+  edit, [ueberdosis/y-tiptap#55](https://github.com/ueberdosis/y-tiptap/issues/55)),
+  and skips re-sending awareness the provider just received
+  (`@hocuspocus/provider` 3.x; fixed upstream in 4.5.0). In a local test
+  with 40 browser editors, WebSocket CPU fell from 33.0 % to 3.1 % per
+  replica (−90 %), and cursor messages fell 1,153× (−99 %). Edit latency did
+  not change.
 - **/privacy names Resend as the email provider.** Resend sends sign-in,
   notification and digest mail. Supabase sends sign-in links through Resend.
   A new "Where mail data goes" section says that Resend sends from Ireland
