@@ -280,6 +280,26 @@ One hostile lane alone at 16 in flight, 15 s, then 30 s idle:
 - The floor comes from reading a 1 MiB head, not from the tag count: `huge-head` holds as much as the floods.
 - The full hostile mix at 64 in flight: 962-1050 answers before, 3180-3534 after; `memory.peak` 503.1-512 MiB before, 470.1-493.9 MiB after.
 
+### Copy cut: the head-end search reads bytes (base `cf8435df7`, head + the byte search)
+
+One hostile lane alone at 16 in flight, 15 s, then 30 s idle. 3 valid sessions per arm and cell.
+
+| Lane                | Answers, base | Head        | p95, base        | Head             | `memory.peak`, base | Head            |
+| ------------------- | ------------- | ----------- | ---------------- | ---------------- | ------------------- | --------------- |
+| `itemprop-flood`    | 2263-2525     | 2554-2785   | 113.32-137.43 ms | 100.03-112.05 ms | 379.2-512 MiB       | 382.1-402.8 MiB |
+| `huge-head`         | 6760-7418     | 12219-13391 | 52.42-59.66 ms   | 34.12-36.21 ms   | 433.6-512 MiB       | 400.7-417.3 MiB |
+| `no-head-end`       | 7230-8292     | 12446-12828 | 40.62-46.48 ms   | 28.36-28.99 ms   | 449.4-512 MiB       | 389.9-438.5 MiB |
+| `page` (real heads) | 73952-76128   | 72892-85961 | 4.53-4.68 ms     | 4.19-5.18 ms     | 317-379.8 MiB       | 302.6-363.4 MiB |
+
+| Full hostile mix | Answers, base | Head        | p95, base        | Head             |
+| ---------------- | ------------- | ----------- | ---------------- | ---------------- |
+| 64 in flight     | 3486-3556     | 4637-4752   | 319.26-326.91 ms | 247.6-261.93 ms  |
+| 128 in flight    | 6033-6863     | 8408-8547   | 577-600.25 ms    | 426.23-436.24 ms |
+| 256 in flight    | 11506-12491   | 15189-16070 | 595.94-600.72 ms | 441.58-466.71 ms |
+
+- The anon max moved little (`huge-head` 359-374 to 350.9-363.6 MiB), so the floor of a 1 MiB head is still there. The peak and the time per page dropped.
+- A first build checked every `<` in JavaScript and made `itemprop-flood` about 35 % slower (slot 7). The committed search skips short gaps in place and tests two bytes before a full compare.
+
 ## Measure it again
 
 Run every command from `apps/hocuspocus.server`. `<dir>` is any empty folder outside the repo.

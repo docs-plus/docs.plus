@@ -98,6 +98,12 @@ This file is the operator and API changelog. The pad product lives in the [root 
   317.3-345.83 ms against 969.59-1182.4 ms. `memory.peak` stayed at 470.1-493.9 MiB; before, it
   reached 503.1-512 MiB. The memory floor of a 1 MiB head did not move. Normal pages lost about
   2 % of throughput (3 sessions each).
+- The html stage finds the head end by searching the raw bytes, not a lower-case string copy of
+  each chunk. That copy cost 2 to 3 MiB per 1 MiB head. All 190 saved corpus results stayed
+  byte-identical. On the lab bench at 16 in flight, a 1 MiB head with few tags got 12219-13391
+  answers in 15 s, against 6760-7418, and its `memory.peak` stayed at 400.7-417.3 MiB; before, it
+  reached 433.6-512 MiB. The full hostile mix at 64 in flight got 4637-4752 answers, against
+  3486-3556, with p95 247.6-261.93 ms against 319.26-326.91 ms (3 sessions each).
 
 ### Security
 
