@@ -23,22 +23,17 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   ([#775](https://github.com/docs-plus/docs.plus/issues/775)).
 - Enter inside a link keeps both halves linked to the old address
   ([#778](https://github.com/docs-plus/docs.plus/issues/778)).
-- Pasting a long text and select-all formatting run faster, because autolink finds the changed
+- Pasting a long text and select-all formatting take less work, because autolink finds the changed
   text in one pass ([#773](https://github.com/docs-plus/docs.plus/issues/773)).
 - The Replace with a file card shows the caps that apply to you, and checks the file before upload.
   The owner may send a Word file of up to 40 MB; everyone else 10 MB. Sharing a file into the
   installed app uses the owner caps ([#722](https://github.com/docs-plus/docs.plus/issues/722)).
 - In the pad, bold, italic, strike, highlight and links can sit on inline code. Inline code still
   turns an old `code` span into inline code ([#721](https://github.com/docs-plus/docs.plus/issues/721)).
-- `socialIcons.ts` loads one small map of the 71 social-link icons, not the whole `fa`, `fa6` and
-  `si` packs. Its computed-key read of a whole-pack `import()` had put every icon in first-load
-  JavaScript. In the build's route table, `/` drops from 3.82 MB to 952 kB and `/[...slugs]` from
-  1.83 MB to 925 kB ([#732](https://github.com/docs-plus/docs.plus/issues/732)).
 - Typing in a pad no longer writes the same save status to the workspace store on every
   keystroke. On a local profiling build on one laptop (n = 5, 100 characters at 8 per second, 4×
   CPU throttle), store writes per 100 characters fall from 101 to 2. React commits and typing INP
-  did not fall, so this is not a speed gain ([#736](https://github.com/docs-plus/docs.plus/issues/736)
-  Step 0, from [#735](https://github.com/docs-plus/docs.plus/issues/735)).
+  did not fall, so this is not a speed gain ([#736](https://github.com/docs-plus/docs.plus/issues/736) Step 0).
 
 ### Fixed
 
@@ -59,6 +54,22 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   page load, in a local console check. In production it had sent 252 events per trace (GlitchTip
   197 and 200, 30 days to 2026-11-11). next-pwa's service-worker register errors (AbortError and
   Cache.add) are dropped. Network failures and closed-database errors still report ([#752](https://github.com/docs-plus/docs.plus/issues/752)).
+
+## [2.3.6] — 2026-11-16
+
+### Highlights
+
+- **Home sends 75 % less JavaScript.** `socialIcons.ts` now loads only the 71 social-link icons it
+  uses. On production, Home's JavaScript over the wire, compressed, fell from 3,869,403 B to
+  965,119 B (2026-11-10 to 2026-11-11). This counts every script Home's HTML lists, fetched once,
+  except `polyfills` and `_ssgManifest`. Google Analytics is not counted ([#732](https://github.com/docs-plus/docs.plus/issues/732)).
+
+### Changed
+
+- `socialIcons.ts` loads one small map of the 71 social-link icons, not the whole `fa`, `fa6` and
+  `si` packs. Its computed-key read of a whole-pack `import()` had put every icon in first-load
+  JavaScript. In the build's route table, `/` drops from 3.82 MB to 952 kB and `/[...slugs]` from
+  1.83 MB to 925 kB ([#732](https://github.com/docs-plus/docs.plus/issues/732)).
 
 ## [2.3.0] — 2026-11-09
 

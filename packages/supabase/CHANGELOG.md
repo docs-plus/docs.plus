@@ -10,6 +10,8 @@ This package is private and ships inside docs.plus, so each heading names the do
 
 ## [Unreleased]
 
+## [2.3.6] — 2026-11-16
+
 ### Security
 
 - `20261112120000` revokes EXECUTE on `get_channel_notif_state`,

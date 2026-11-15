@@ -25,17 +25,12 @@ This file is the product changelog. Every app, package and extension keeps its o
 - Replace with a file now has a cap per person. The document owner may upload a Word file of up to
   40 MB; everyone else keeps 10 MB. Markdown stays at 65,536 characters for everyone, because a
   bench showed larger Markdown blocks the server ([#722](https://github.com/docs-plus/docs.plus/issues/722)).
-- Home and pads load less JavaScript. The social-link icons now ship as the 71 icons they use,
-  not three whole icon packs. In the build's route table, Home's first load drops from 3.82 MB to
-  952 kB, and a pad's from 1.83 MB to 925 kB ([#732](https://github.com/docs-plus/docs.plus/issues/732)).
 
 ### Security
 
 - Every import is now refused when it holds more than 50,000 nodes, nests deeper than 100
   levels, or when its saved state would pass 12 MiB. A larger document could not open in a browser
   ([#722](https://github.com/docs-plus/docs.plus/issues/722)).
-- Three notification lookups no longer answer a signed-out caller. They now need a signed-in
-  session, the only kind the app uses ([#755](https://github.com/docs-plus/docs.plus/issues/755)).
 - Grafana's internal `/metrics` page is no longer public. Grafana stops making those metrics, and
   the public router refuses any path under `/metrics` ([#745](https://github.com/docs-plus/docs.plus/issues/745)).
 - New dependency versions now wait 3 days before `bun add`, a new resolve, Dependabot or
@@ -98,6 +93,41 @@ This file is the product changelog. Every app, package and extension keeps its o
   databases plus WAL room passes 60 % of the disk (warning) and 80 % (critical). The third warns
   when they grow more than 128 MiB in 24 hours. Over 15 days of history it would have fired once,
   on the 2026-11-07 growth ([#727](https://github.com/docs-plus/docs.plus/issues/727)).
+
+## [2.3.6] — 2026-11-16
+
+### Highlights
+
+- **The home page sends your browser 75 % less code.** On our live site, the home page code,
+  compressed, fell from 3,869,403 to 965,119 bytes, from 2026-11-10 to 2026-11-11. This counts each
+  file the home page lists, fetched once, except `polyfills` and `_ssgManifest`. Google Analytics is
+  not counted ([#732](https://github.com/docs-plus/docs.plus/issues/732)).
+- **Our server gets a document faster since the database move. This is a server change, not docs.plus
+  code.** On 2026-11-11 the database that stores documents moved from New York (NYC1) to London,
+  with an upgrade from PostgreSQL 14 to 18.6. In the first 24 hours on our live site, the typical
+  time (the middle request) for our server to get a document fell from 180 ms to 7.5 ms. In the slow
+  case, where 1 request in 20 was slower, it fell from 1,365 ms to 46.5 ms. The typical time for the
+  database to answer one test question fell from 72.6 ms to 5.0 ms. London also answered more
+  requests: 3,213 against 608 per 24 hours. This is one server step, not the time to open a
+  document. Large documents did not load faster. A server you run yourself does not get this from
+  the upgrade ([#728](https://github.com/docs-plus/docs.plus/issues/728)).
+
+### Changed
+
+- Home and pads load less JavaScript. The social-link icons now ship as the 71 icons they use,
+  not three whole icon packs. On production, Home's JavaScript over the wire, compressed, fell from
+  3,869,403 B to 965,119 B (2026-11-10 to 2026-11-11). This counts every script Home lists, fetched
+  once, except `polyfills` and `_ssgManifest`. Google Analytics is not counted ([#732](https://github.com/docs-plus/docs.plus/issues/732)).
+
+### Security
+
+- Three notification lookups no longer answer a signed-out caller. They now need a signed-in
+  session, the only kind the app uses ([#755](https://github.com/docs-plus/docs.plus/issues/755)).
+
+### Documentation
+
+- The demo's What's new has a docs.plus 2.3.6 part, with its measured numbers and where each was
+  measured.
 
 ## [2.3.0] — 2026-11-09
 
