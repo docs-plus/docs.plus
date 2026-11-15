@@ -1051,7 +1051,7 @@ The newest release comes first. Most parts end with a filter link to the place o
 
 ## docs.plus 2.3.6
 
-![docs.plus 2.3.6: the home page sends 75 % less code, from 3,869,403 to 965,119 bytes. Three cards show faster document reads after our database moved to London: 180 to 7.5 ms, 1,365 to 46.5 ms, and 72.6 to 5.0 ms](/demo-assets/release-2.3.6-banner.png)
+![docs.plus 2.3.6: the home page sends 75 % less code, from 3,869,403 to 965,119 bytes. Three cards show faster document reads after our database moved to London: 180 to 7.5 ms (96 % less time), 1,365 to 46.5 ms (97 % less), and 72.6 to 5.0 ms (93 % less)](/demo-assets/release-2.3.6-banner.png)
 
 Released on 16 November 2026.
 
@@ -1063,14 +1063,14 @@ This release makes the home page lighter. We also moved the database that stores
 
 Each row says where we measured it.
 
-|                                                           | Before          | Now               | Measured on                                                                                            |
-| --------------------------------------------------------- | --------------- | ----------------- | ------------------------------------------------------------------------------------------------------ |
-| Home page code your browser downloads, compressed         | 3,869,403 bytes | **965,119 bytes** | our live site, 2026-11-10 to 2026-11-11                                                                |
-| Time until the home page's biggest piece appears          | 21.71 s         | **7.35 s**        | a lab test of our live site on one laptop, Lighthouse mobile run, middle of 5 runs                     |
-| Typical time for our server to get a document             | 180 ms          | **7.5 ms**        | our live site, first 24 hours after the database move                                                  |
-| The same, in the slow case (1 request in 20 was slower)   | 1,365 ms        | **46.5 ms**       | our live site, the same 24 hours                                                                       |
-| Typical time for our database to answer one test question | 72.6 ms         | **5.0 ms**        | our live site, the same 24 hours                                                                       |
-| Typical time for a fix of ours to reach the live site     | 1,090 s         | **630 s**         | our deploy pipeline: 14 deploys from 2026-09-22 to 2026-10-20, against 8 from 2026-11-03 to 2026-11-07 |
+|                                                           | Before          | Now               | Change             | Measured on                                                                                            |
+| --------------------------------------------------------- | --------------- | ----------------- | ------------------ | ------------------------------------------------------------------------------------------------------ |
+| Home page code your browser downloads, compressed         | 3,869,403 bytes | **965,119 bytes** | **75 % less**      | our live site, 2026-11-10 to 2026-11-11                                                                |
+| Time until the home page's biggest piece appears          | 21.71 s         | **7.35 s**        | **66 % sooner**    | a lab test of our live site on one laptop, Lighthouse mobile run, middle of 5 runs                     |
+| Typical time for our server to get a document             | 180 ms          | **7.5 ms**        | **96 % less time** | our live site, first 24 hours after the database move                                                  |
+| The same, in the slow case (1 request in 20 was slower)   | 1,365 ms        | **46.5 ms**       | **97 % less time** | our live site, the same 24 hours                                                                       |
+| Typical time for our database to answer one test question | 72.6 ms         | **5.0 ms**        | **93 % less time** | our live site, the same 24 hours                                                                       |
+| Typical time for a fix of ours to reach the live site     | 1,090 s         | **630 s**         | **42 % less time** | our deploy pipeline: 14 deploys from 2026-09-22 to 2026-10-20, against 8 from 2026-11-03 to 2026-11-07 |
 
 _The three database rows come from moving the database that stores documents from New York (NYC1) to London on 2026-11-11, with an upgrade from PostgreSQL 14 to 18.6. The move is a change to our servers, not to the docs.plus code. "Typical" is the middle request: half were faster. London also answered more requests: 3,213 against 608 per 24 hours. This is one server step, not the time to open a document. Large documents did not load faster._
 

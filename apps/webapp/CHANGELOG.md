@@ -68,8 +68,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 - `socialIcons.ts` loads one small map of the 71 social-link icons, not the whole `fa`, `fa6` and
   `si` packs. Its computed-key read of a whole-pack `import()` had put every icon in first-load
-  JavaScript. In the build's route table, `/` drops from 3.82 MB to 952 kB and `/[...slugs]` from
-  1.83 MB to 925 kB ([#732](https://github.com/docs-plus/docs.plus/issues/732)).
+  JavaScript. In the build's route table, `/` drops from 3.82 MB to 952 kB (75 % less) and
+  `/[...slugs]` from 1.83 MB to 925 kB (49 % less) ([#732](https://github.com/docs-plus/docs.plus/issues/732)).
 
 ## [2.3.0] — 2026-11-09
 
