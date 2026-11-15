@@ -1321,6 +1321,17 @@ Released on 13 October 2026.
 
 This release brings AI apps into your documents, and adds new ways to find, share and chat.
 
+### Live cursors use 90 % less of the server
+
+When people edit a document together, each person sees the others' cursors move. Before this release, each editor sent its cursor again after every edit by someone else, even when it had not moved. ==Now an unchanged cursor stays quiet, and the server does 90 % less work for it.==
+
+|                        | Before | Now       | Change    |
+| ---------------------- | ------ | --------- | --------- |
+| Server CPU, one server | 33.0 % | **3.1 %** | **−90 %** |
+| Cursor messages sent   | 1,153  | **1**     | **−99 %** |
+
+_Cursor messages are per 1 sent now. A local test with 40 browser editors in one document, before and after two small checks in the editor. Typing did not get faster; the gain is server work. Two library defaults caused it: [y-tiptap](https://github.com/ueberdosis/y-tiptap/issues/55) re-sends an unchanged cursor, and the Hocuspocus 3.x provider sends back the cursors it receives. Thanks to both projects._
+
 ### Your AI app can work in your documents
 
 You can now connect Claude, ChatGPT or another AI app to docs.plus. It signs in as you, on a consent page — needs an account.
