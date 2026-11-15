@@ -228,6 +228,58 @@ processes used more than 250 % CPU. An OOM kill counts as a valid memory break. 
 The full report, the raw data and the Linux runner are in
 `Notes/local-docs/2026-11-13-link-scraper-tolerance/`. Slot 0 is in its `raw/linux/s0/` (`judged.tsv`); the earlier void runs are in `raw/linux/786/`.
 
+## After #787 to #792, and the tag budget (2026-11-15)
+
+Same condition as above: one REST container at `--cpus=1 --memory=512m`, OrbStack on one laptop, a client that reads at full speed. Each arm was built from `git archive`, with the same bench. Each cell is the range over valid sessions, 3 per arm unless noted. A step is void above 250 % other-process CPU. An OOM kill counts as a valid memory break, and CPU inside the VM during a kill is kill-caused (maintainer rulings, 2026-11-14 and 2026-11-15).
+
+### #787: shed cold work past 64 in flight (base `df910c6b1`, head `e5d3e92b9`)
+
+| Lane                          | Base                                                     | Head                                                                      |
+| ----------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `miss-fast@6400`              | OOM-killed in 3 of 3                                     | Up in 3 of 3; 96000 answered, 30194-45519 fallback cards, 267.6-307.5 MiB |
+| `image-len@200`               | 1133-1166 × `200`, 808-830 reset, p95 7573.41-7600.39 ms | 1471-1480 × `200`, 0 reset, p95 4026.97-4048.37 ms                        |
+| `hang@20+fast@20`, good links | 0 fallback, p95 4.89-6.01 ms                             | 1208-1211 of 2000 fallback                                                |
+| `hang@40+fast@20`, good links | 0 fallback, p95 1625.19-1626.34 ms                       | 1616-1617 of 2000 fallback                                                |
+
+- The hang cost is open. A waiting request that holds no working slot (W2, with one deadline per request) brought fallback to 0 and 417-418 of 2000, but REST was then OOM-killed under hostile pages in 3 of 3 sessions. It was not committed.
+
+### #789: Redis frozen for 10 s, 50/s (base `ca9d555ce`, head `df910c6b1`)
+
+| `redis-stall-ip-none@50`    | Base (3)             | Head (2)         |
+| --------------------------- | -------------------- | ---------------- |
+| p95                         | 8302.5-8319.8 ms     | 306.26-306.48 ms |
+| max                         | 10044.88-10076.01 ms | 315.75-316.58 ms |
+| Origin fetches per URL, max | 1                    | 6                |
+
+### #791: one fetch per burst (base `061fee04d`, head `f62a5e383`)
+
+| Burst on one new link | Origin fetches, base | Head | Fallback cards, base | Head |
+| --------------------- | -------------------- | ---- | -------------------- | ---- |
+| 10                    | 10                   | 1    | 0                    | 0    |
+| 50                    | 50                   | 1    | 0                    | 0    |
+| 200                   | 64                   | 1    | 680                  | 0    |
+| 500                   | 64                   | 1    | 2180                 | 0    |
+
+### #792: metrics overhead (base `f62a5e383`, head `d216267d9`)
+
+`miss-fast@c16` is CPU-bound (about 92.5 % of one core). Answers per second: base 4288.2-4974.07, head 4282.67-4998.47. p95: 4.7-5.63 ms and 4.61-5.67 ms. The ranges overlap fully.
+
+### Tag budget (base `b7888dce1`, head + the 10,000-tag cut)
+
+One hostile lane alone at 16 in flight, 15 s, then 30 s idle:
+
+| Lane                          | Answers, base | Head        | anon max, base  | Head            |
+| ----------------------------- | ------------- | ----------- | --------------- | --------------- |
+| `itemprop-flood`              | 400-401       | 2453-2553   | 364.8-372.9 MiB | 353.8-362.4 MiB |
+| `many-meta`                   | 625-656       | 1752-2002   | 344.2-351.1 MiB | 339.4-345.7 MiB |
+| `deep-nesting`                | 945-977       | 6147-7126   | 356.5-399.1 MiB | 340.2-351 MiB   |
+| `huge-head` (1 MiB, few tags) | 6573-7695     | 6392-7233   | 348.4-367 MiB   | 353.4-371.3 MiB |
+| `page` (real heads)           | 75136-76275   | 73577-74826 | 238.1-247.9 MiB | 243.2-256.9 MiB |
+
+- After 30 s idle, anon fell to 119.2-157.1 MiB in every lane, so the level is not a leak.
+- The floor comes from reading a 1 MiB head, not from the tag count: `huge-head` holds as much as the floods.
+- The full hostile mix at 64 in flight: 962-1050 answers before, 3180-3534 after; `memory.peak` 503.1-512 MiB before, 470.1-493.9 MiB after.
+
 ## Measure it again
 
 Run every command from `apps/hocuspocus.server`. `<dir>` is any empty folder outside the repo.

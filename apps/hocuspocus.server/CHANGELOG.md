@@ -35,7 +35,9 @@ This file is the operator and API changelog. The pad product lives in the [root 
   `link_metadata_joins_total`, `link_metadata_image_busy_total`,
   `link_metadata_stage_seconds{stage, outcome}` and `link_metadata_parse_seconds{pass}`. A shed
   answer looks like a real miss on the wire, so only these counters tell them apart. A new row on
-  the App Performance dashboard shows them.
+  the App Performance dashboard shows them. On a CPU-bound bench at 16 in flight, answers per second
+  read 4282.67-4998.47 with the metrics and 4288.2-4974.07 without (3 sessions each), so their cost
+  is below what the bench can see.
 
 ### Changed
 
@@ -75,13 +77,27 @@ This file is the operator and API changelog. The pad product lives in the [root 
   metadata route answers the fallback card with `miss: "unreachable"`, the image and icon routes
   answer `204`, and the archive route answers `miss: "unreachable"`. Each of those answers sends
   `Cache-Control: no-store` and writes nothing to Redis. A streamed image frees its slot when the
-  stream starts ([#787](https://github.com/docs-plus/docs.plus/issues/787)).
+  stream starts. On the lab bench (3 sessions each), a miss flood at 6400/s OOM-killed REST in 3 of
+  3 sessions before and in none after. At 20 hanging hosts per second, 1208-1211 of 2000 good links
+  got a fallback card, against 0 before ([#787](https://github.com/docs-plus/docs.plus/issues/787)).
 - Link-metadata requests for one URL and language that arrive together share one cache read and
-  one fetch per process. A joined request takes no cold-work slot and answers `cached: true`
+  one fetch per process. A joined request takes no cold-work slot and answers `cached: true`. In
+  a burst of 500 requests for one new link, the origin got 1 fetch, against 64 before, and 0
+  requests got a fallback card, against 2180 (3 sessions each)
   ([#791](https://github.com/docs-plus/docs.plus/issues/791)).
 - A link-metadata Redis read or write, and the pad generation read, give up after 150 ms. A slow
   read counts as a miss and a slow write is dropped, so a stalled Redis no longer holds a request
-  for the shared 60 s `commandTimeout` ([#789](https://github.com/docs-plus/docs.plus/issues/789)).
+  for the shared 60 s `commandTimeout`. With Redis frozen for 10 s at 50 requests per second, the
+  slowest request took 315.75-316.58 ms, against 10044.88-10076.01 ms before (2 and 3 sessions).
+  While Redis is frozen, the cache cannot answer, so one URL reached the origin up to 6 times
+  ([#789](https://github.com/docs-plus/docs.plus/issues/789)).
+- The html stage cuts a page head before its 10,001st `<`, before any decode. The largest real head
+  in the 95-page corpus held 345, and all 190 saved results stayed byte-identical. A crafted head
+  of 87,381 tags made one parser callback and one object per tag. On the lab bench, a flood of
+  hostile pages at 64 in flight got 3180-3534 answers in 15 s, against 962-1050, with p95
+  317.3-345.83 ms against 969.59-1182.4 ms. `memory.peak` stayed at 470.1-493.9 MiB; before, it
+  reached 503.1-512 MiB. The memory floor of a 1 MiB head did not move. Normal pages lost about
+  2 % of throughput (3 sessions each).
 
 ### Security
 
