@@ -236,6 +236,28 @@ describe('runHtmlScrape', () => {
     expect(receivedLength).toBe(1024 * 1024)
   })
 
+  // A crafted tag flood made one parser callback and one object per tag.
+  test('cuts the head before its 10,001st tag', async () => {
+    const start = '<html><head><title>Kept</title>'
+    fetchSpy.mockResolvedValue(
+      new Response(`${start}${'<i itemprop>'.repeat(20_000)}</head><body></body></html>`, {
+        status: 200,
+        headers: { 'content-type': 'text/html' }
+      })
+    )
+    let received = ''
+    const scraper: Scraper = {
+      jobFacts: () => undefined,
+      scrape: async ({ html: h }) => {
+        received = h
+        return { title: 'scraped' }
+      }
+    }
+    await runHtmlScrape('https://example.com', scraper, undefined)
+    expect(received.startsWith(start)).toBe(true)
+    expect(received.split('<').length - 1).toBe(10_000)
+  })
+
   test('stops pulling the stream at the 1 MiB cap', async () => {
     const sixMegs = new Uint8Array(6 * 1024 * 1024)
     let pulls = 0

@@ -12,6 +12,9 @@ import { primaryLangSubtag } from './cache'
 // Bounds the bytes read and parsed; a 5 MiB parse cost about 850 ms and 116 MiB of heap.
 // The head scraper's slowest crafted 1 MiB input measured 29 to 33 ms on 2026-11-06 (BENCHMARK.md).
 const MAX_PAGE_BYTES = 1024 * 1024
+// A real head held at most 345 `<` in the 95-page corpus. A crafted head of 87,381 tags made one
+// parser callback and one object per tag, so the head is cut before the tag past this count.
+const MAX_HEAD_TAGS = 10_000
 // Job boards put JobPosting JSON-LD in the body: Stripe 49 B after `</head`, Lever 8 KB.
 // Reading it cost 300 to 700 ms a page, so only a job-looking URL with no head posting reads it.
 const JSON_LD_TAIL: TailLimit = { bytes: 256 * 1024, ms: 1_000 }
@@ -77,6 +80,16 @@ const decodeSegment = (segment: string): string => {
   } catch {
     return segment
   }
+}
+
+/** The head up to its first MAX_HEAD_TAGS `<` bytes. A native byte search, before any decode. */
+const cutAtTagBudget = (head: Uint8Array): Uint8Array => {
+  let at = -1
+  for (let seen = 0; seen <= MAX_HEAD_TAGS; seen += 1) {
+    at = head.indexOf(0x3c, at + 1)
+    if (at === -1) return head
+  }
+  return head.subarray(0, at)
 }
 
 const pickCharset = (head: Uint8Array, contentType: string | null): string | null => {
@@ -146,8 +159,9 @@ export const runHtmlScrape = async (
     }
 
     const page = await readPage(response, controller, MAX_PAGE_BYTES)
-    const charset = pickCharset(page.head, contentType)
-    const meta = await scraper.scrape({ html: decodeBody(page.head, charset), url: baseUrl })
+    const head = cutAtTagBudget(page.head)
+    const charset = pickCharset(head, contentType)
+    const meta = await scraper.scrape({ html: decodeBody(head, charset), url: baseUrl })
     if (!meta.title) return 'no-title'
     let facts = meta.facts
     let retry = false
