@@ -44,7 +44,9 @@ services:
     image: grafana/alloy:v1.17.0
     container_name: docsplus-alloy
     restart: unless-stopped
-    command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
+    # Our command replaces the image default, so name the volume path. Without it the
+    # log positions sit in the container layer, and a recreate resends old logs (#783).
+    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
     volumes:
       - ./scripts/observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
       - alloy-data:/var/lib/alloy/data
