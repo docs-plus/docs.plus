@@ -125,6 +125,7 @@ Check every page the release makes wrong: `README.md` (extension status), `exten
 ### 5. Demo page
 
 - Source: `docs/DEMO.md`, shown at https://docs.plus/demo. It is a read-only document. The owner publishes it through the docs.plus MCP tools, section by section (§4).
+- **A new picture written through the MCP needs its size in the Markdown.** The server leaves width and height empty, and the pad then draws the picture at 320×240. Add the size block on the image line, such as `{width=830 height=467}` for a 16:9 picture in the 830px column. No MCP tool can remove a picture after the write, so get this right the first time (found on 2.3.6).
 - First run a feature-truth audit: check every claim on the page against the code, and fix the lines that are now wrong.
 - Write the release's What's new in plain words, as §4 Release note rules: each H3 names what a reader can now do or see, before any detail.
 - The page ends with one H1, `# 🆕 What's new`, newest release first. Add the release as `## docs.plus X.Y.Z` right under that H1, with the banner image, the date, and one H3 per headline. End each H3 with a filter link such as `/demo/connected%20app`. Never add a second What's new H1 (maintainer ruling, 2026-10-22).
@@ -140,13 +141,13 @@ Check every page the release makes wrong: `README.md` (extension status), `exten
 ### 6. Banner
 
 - Use the Claude Design canvas with the docs.plus design system (`Artifact` quickstart with `intent: "design"`). Make three or more concepts at 1280×720 and let the maintainer pick or combine.
-- What worked on 2.1.0: a real pad scene (outline, Find bar, AI app card, QR card, voice note), a big version number, and a strip of real numbers with Lucide icons. It ships in a light theme and a dark theme.
+- What worked on 2.1.0: a real pad scene (TOC, Find bar, AI app card, QR card, voice note), a big version number, and a strip of real numbers with Lucide icons. It ships in a light theme and a dark theme.
 - **Use real product pieces.** Make the QR code with `.agents/skills/release-product/scripts/qr-svg.ts`; it opens the demo. Take AI logos and icons from `react-icons`, the same set as `apps/webapp/src/utils/aiAppBrands.ts`. Use only numbers from §Facts to gather.
 - Third-party logos imply "works with". Confirm each one is true for MCP clients.
 - **Render.** `.agents/skills/release-product/scripts/render-banner.js` (`bun <script> <artboard> <logo.svg> <out.html>`) expands the artboard into one page. Then render it at 2× with headless Chrome: `--headless=new --force-device-scale-factor=2 --window-size=1280,720 --screenshot=<out.png>`. Look at the PNG before saving it.
 - Save `release-X.Y.Z-banner.png`, `release-X.Y.Z-banner-dark.png` and both HTML sources in `apps/webapp/public/demo-assets/`.
 - **What the maintainer rejected on 2.3.0, in five rounds.** A banner that sells one feature, such as one hovercard on an empty well. A clean window with only two actions. A grid of equal tiles. Captions over the UI ("You paste", "A web page"). Each one read as a manual page, not as the product.
-- **What the maintainer accepted on 2.3.0.** One real pad window as the stage: outline, presence faces and an unread badge. Every new piece sits in it or breaks out of it, slightly tilted (−2.5°, 1.5° or 2°). The headline is a short verb beat ("Link it. Peek at it. Move it."), and the subline names every piece drawn. The strip holds five numbers with icon tiles.
+- **What the maintainer accepted on 2.3.0.** One real pad window as the stage: TOC, presence faces and an unread badge. Every new piece sits in it or breaks out of it, slightly tilted (−2.5°, 1.5° or 2°). The headline is a short verb beat ("Link it. Peek at it. Move it."), and the subline names every piece drawn. The strip holds five numbers with icon tiles.
 - **Draw each piece from its code.** Read the component and its SCSS before you draw it: chip kinds and icons, preview layout and strings, the drag card, the ghost slot and the nest ring. A server-rendered image, such as the share card, goes in as the real PNG from production (`og:image`). Embed it in the HTML source as a `data:` URI, and point other logos at `../icons/logo.svg`, so the source works from disk and on docs.plus.
 - **Plain words on the banner too** (§4 Release note). The headline and subline must make sense to a reader with no technical knowledge.
 - **Numbers come from the audited ledger only** (§Benchmarks). A number marked "Note" or that needs "dev build" or "laptop" beside it stays in the release note, not on the banner. On 2.3.0, a label count (37 `bug` issues) differed from the audited count (33 fixed). The ledger wins.
@@ -170,7 +171,7 @@ The maintainer runs these steps, in this order.
 5. `git tag vX.Y.Z && git push origin vX.Y.Z`, after the deploy commit.
 6. `gh release create vX.Y.Z --title "docs.plus X.Y.Z" --latest --notes-file Notes/release-X.Y.Z/RELEASE-NOTES.md`, after the banner is live.
 7. Publish the changed `docs/DEMO.md` sections on /demo through the docs.plus MCP tools, then check the banner in light and dark, and that every new picture loads.
-8. Refresh the Context7 library.
+8. Check that the `Context7: refresh library` run for the GitHub Release is green. GitHub starts it only when the tagged commit holds `.github/workflows/context7-refresh.yml`. If no run appears, run `gh workflow run context7-refresh.yml`.
 
 ## Traps that bit on 2.1.0
 

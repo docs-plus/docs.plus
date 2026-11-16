@@ -828,7 +828,7 @@ details.
   and F3 step through the matches, and Escape closes the bar. Find opens a
   folded section to show a match, and folds it again when you move on. A
   short selection fills in the query. On a phone, Find is a docked row, and
-  the outline drawer offers it too
+  the TOC drawer offers it too
   ([#393](https://github.com/docs-plus/docs.plus/issues/393)).
 
 - Type `/` on an empty line to insert a block. The list offers Heading 1 to 6,
@@ -868,7 +868,7 @@ details.
   and the kind of report. Home does not show the row.
 
 - Skip to the document from the keyboard. Skip to main content now leads into
-  the pad. Most phone sheets and the outline and History drawers keep keyboard
+  the pad. Most phone sheets and the TOC and History drawers keep keyboard
   focus inside while they are open. Escape closes them, and focus goes back to
   the control that opened them.
 
@@ -1020,7 +1020,7 @@ details.
     ([#371](https://github.com/docs-plus/docs.plus/issues/371)).
   - The heading chat button shows while the pointer is over its section
     ([#372](https://github.com/docs-plus/docs.plus/issues/372)).
-  - Outline rows of one heading level line up. The phone outline spans the full drawer,
+  - TOC rows of one heading level line up. The phone TOC spans the full drawer,
     and screen readers name an empty heading by its level
     ([#373](https://github.com/docs-plus/docs.plus/issues/373)).
   - Clear formatting removes text styles only. It keeps headings, Block style and links
@@ -1031,7 +1031,7 @@ details.
     ([#366](https://github.com/docs-plus/docs.plus/issues/366)).
 - **Every click menu works like the right-click menus** ([#391](https://github.com/docs-plus/docs.plus/issues/391)). The Documents ⋮
   menu has four clear groups, and Private and Read-only are check rows inside it.
-  Shift+F10 or the Menu key on a focused row opens the outline and chat menus. Menu rows
+  Shift+F10 or the Menu key on a focused row opens the TOC and chat menus. Menu rows
   show a keyboard focus outline.
 - **Loading screens match the page they turn into** ([#463](https://github.com/docs-plus/docs.plus/issues/463),
   [#464](https://github.com/docs-plus/docs.plus/issues/464)). The pad skeleton keeps its bones inside the sheet. Chat, panels and
@@ -1240,7 +1240,7 @@ details.
 - Notify the person that a picked chat mention names, even after a rename. A
   typed @name still notifies whoever holds that name now
   ([#415](https://github.com/docs-plus/docs.plus/issues/415)).
-- Keep the faces on outline headings after someone leaves. They used to go
+- Keep the faces on TOC headings after someone leaves. They used to go
   blank. The header count no longer counts people who left.
 - Open the chat message hover menu on the first pointer move. When a card slid
   under a still pointer, the menu stayed closed until the pointer left and came
@@ -1449,7 +1449,7 @@ the new layer structure, so only 2 of 165 steps could be cached.
 ### Highlights
 
 - **Heading Chatroom.** Open chat from a heading or the TOC. See unread on TOC rows and heading chips.
-- **TOC.** The desktop TOC and the mobile TOC both show the outline and fold. Presence and drag are desktop only. Long titles wrap.
+- **TOC.** The desktop TOC and the mobile TOC both show the headings and fold. Presence and drag are desktop only. Long titles wrap.
 - **Document Version History.** List versions, compare two, and restore one. Share `#history?version=` links.
 - **Private / Read-only.** Private is owner-only. Turning Private ON clears and disables Read-only.
 - **Document conversion.** Import Word or Markdown. Export Word, Markdown, or OpenDocument. Print a PDF from the browser print dialog.

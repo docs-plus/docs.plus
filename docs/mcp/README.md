@@ -206,7 +206,7 @@ You ask in your own words. To point at one document, paste its link or give its 
 | -------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | `find_documents`     | Lists or finds your documents, or searches public ones, by title            | "Find my docs.plus document called Launch plan."                       |
 | `create_document`    | Makes a new document that you own                                           | "Create a docs.plus document called Trip plan and write an outline."   |
-| `get_outline`        | Shows the headings of a document                                            | "Show me the outline of my launch plan."                               |
+| `get_outline`        | Shows the headings of a document                                            | "Show me the TOC of my launch plan."                                   |
 | `read_document`      | Reads a whole document, or one section                                      | "Summarize the Budget section."                                        |
 | `append_to_document` | Adds text at the end of a document you own                                  | "Add a Next steps section at the end."                                 |
 | `replace_text`       | Changes words inside one paragraph, in a document you own                   | "In the Budget section, change 'high' to 'low'."                       |

@@ -1086,7 +1086,7 @@ Read every change in the [GitHub Release](https://github.com/docs-plus/docs.plus
 
 ## docs.plus 2.3.0
 
-![docs.plus 2.3.0: a pad with link chips for a heading, a chat, a filter, a version and the top, a preview of a heading's chat, a docs.plus card for a shared pad, and a section dragged in the outline](/demo-assets/release-2.3.0-banner.png)
+![docs.plus 2.3.0: a pad with link chips for a heading, a chat, a filter, a version and the top, a preview of a heading's chat, a docs.plus card for a shared pad, and a section dragged in the TOC](/demo-assets/release-2.3.0-banner.png)
 
 Released on 9 November 2026.
 

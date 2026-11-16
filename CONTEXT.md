@@ -2,25 +2,25 @@
 
 Shared names for docs.plus domain concepts. Architecture reviews and deepenings use these terms at seams.
 
-## Pad outline
+## Pad TOC
 
 - **Title** — the first line of the document. Always a heading. Its Block style cannot change.
 - **Pad title** — `DocumentMetadata.title`. Header rename, Documents list, social card, TOC label, and breadcrumbs. Not Title. The two stores are not kept in sync. A signed-in rename posts a workspace-chat notice (`title_changed`). History paints the latest live notice and the snapshot username. Chat paints the live username.
   _Avoid_: Title, Outline Title, document title
 - **Title write** — changing Pad title. Same persist and room relay for the pad and the Documents list. Stored Pad title is plain text, not HTML. Does not write Title. Client home: `apps/webapp/src/utils/titleWrite.ts`.
-- **Block style** — the outline role of the caret block: Title, Subtitle, heading level 1–6, or Normal. Not visual size.
+- **Block style** — the TOC role of the caret block: Title, Subtitle, heading level 1–6, or Normal. Not visual size.
 - **Subtitle** — a paragraph style, not a heading. It is not a TOC heading.
 - **HeadingScale** — visual size by rank inside a section. Distinct from Block style. The same heading level can look larger or smaller depending on the section.
-- **Heading slug trail** (`?h=`) — outline ancestry from the target heading up through each parent to Title. Not a join of every heading before the target. Each slug uses only `[a-z0-9.-]`, and `>` joins them like a breadcrumb. `id=` is the resolver.
+- **Heading slug trail** (`?h=`) — TOC ancestry from the target heading up through each parent to Title. Not a join of every heading before the target. Each slug uses only `[a-z0-9.-]`, and `>` joins them like a breadcrumb. `id=` is the resolver.
 - **Pad URL** — the one module that builds, writes and reads pad addresses, except the exceptions listed in `apps/webapp/CLAUDE.md` §Pad URL (`padUrl`, `apps/webapp/src/services/padUrl.ts`; pure core `padUrlCore` in the shared package `packages/pad-url`, which the server builds its links from too). `link` builds from the Pad base, `go` changes the Live address and picks the history writer, and `read` parses old forms too. `padUrlCore.place` names the one place an address opens: filter, then chat, then heading, then document. Callers check the History hash or `?version=` first. A filter term writes a space as `-`, and the filter treats any run of whitespace or hyphens as one gap.
 - **Pad base** — origin plus pad slug, with no filter, chat or heading state. Every copied, shared or stored link starts here.
 - **Live address** — `window.location`. Pad URL plans and writes from it, never from `router.asPath`, which a raw `replaceState` leaves stale. A reader that must re-render on a route change may still read the path and `mode` from `router.asPath`, because raw writes touch only `h` and `id`.
-- **Outline** — the heading tree read from the document: each heading's parent, index, level and section range. One cached walk, `outlineOf(doc)`, serves the TOC rows, the move planner and section actions. An empty heading is in it.
-  _Avoid_: TOC items (the rows are a read of the Outline)
+- **TOC** — the table of contents: the heading tree read from the document, and the rows that show it. Each heading has a parent, index, level and section range. One cached walk, `outlineOf(doc)`, serves the TOC rows, the move planner and section actions. An empty heading is in it. The word `outline` stays only in code names, such as `outlineOf`, and in the MCP tool `get_outline`.
+  _Avoid_: outline, document outline, TOC items
 - **TOC move** — moving a section from the TOC to a target: a gap between visible rows, or onto a row (nest as last child). The slot sets the level. The gap the section left is its home slot and changes nothing. Module: `tocMove.ts`.
-- **Wide TOC** — the desktop outline column. Painted width ≥ 240. Wrap titles, nest, fold, Heading Chat Surface, unread, and presence live here.
+- **Wide TOC** — the desktop TOC column. Painted width ≥ 240. Wrap titles, nest, fold, Heading Chat Surface, unread, and presence live here.
   _Avoid_: Tick rail, persist-rail
-- **Tick rail** — session-only 32px heading minimap (`TocTickRail`) in the pad row. Desktop only. Hides folded descendants. Depth-fits to `min(84% of the viewport, live rail)` and fills leftover slots around the spy. Windows the 8px list. Keep-in-view spy follow. A short stack sits in the middle of the live rail and recenters with `--motion-panel` when chat opens or closes. Persist is last committed Wide TOC width only (`docsy:toc-width`, greater than 240). Refresh and workspace change restore Wide TOC. Not a second outline product.
+- **Tick rail** — session-only 32px heading minimap (`TocTickRail`) in the pad row. Desktop only. Hides folded descendants. Depth-fits to `min(84% of the viewport, live rail)` and fills leftover slots around the spy. Windows the 8px list. Keep-in-view spy follow. A short stack sits in the middle of the live rail and recenters with `--motion-panel` when chat opens or closes. Persist is last committed Wide TOC width only (`docsy:toc-width`, greater than 240). Refresh and workspace change restore Wide TOC. Not a second TOC product.
   _Avoid_: SideContinuum, Outline minimap, persist-rail
 - **Painted width** — the TOC column width this frame. Locks to 32 in `rail` and `settle-to-rail`.
 - **tocWidth** — last committed Wide TOC width only (>240). Never the rail or the 240 abort floor. `useTocResize` writes it on release, not on every pointer move.
@@ -101,7 +101,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 ## Document changes
 
 - **Section** — one heading and the top-level nodes that follow it, the unit the changes route reports on. Not the editor's decoration-based section, and not a Write Target.
-- **Preamble** — the synthetic Section before the first heading. Level 0, owns no heading, and never nests: at any other level it would parent the whole outline.
+- **Preamble** — the synthetic Section before the first heading. Level 0, owns no heading, and never nests: at any other level it would parent the whole TOC.
 - **Anchor** — the newest stored version at or before an instant. `since` and `until` each resolve to one, so a window is two Anchors, never two timestamps.
   The `history.list` reply field `anchor` falls back to the oldest row where the Anchor is null.
 - **Change window** — the version rows between the two Anchors. It supplies the version count, the triggers, and the contributors, and it is read separately from the section compare.
