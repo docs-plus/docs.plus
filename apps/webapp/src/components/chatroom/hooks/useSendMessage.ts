@@ -18,6 +18,10 @@ import { useCallback } from 'react'
 
 export type { SendDraft, SendResult } from '@components/chatroom/types/send.types'
 
+/** A status flip can make the last row taller (the failed line), so the list follows it.
+ * Virtuoso scrolls only when the list sat at the bottom, so a reader who scrolled up stays put. */
+const FOLLOW_ROW_GROWTH = 'smooth' as const
+
 const buildOptimisticMessageRow = (
   clientId: string,
   channelId: string,
@@ -118,23 +122,27 @@ export const useSendMessage = ({
       if (result.ok) {
         trackEvent('send_message')
         if (result.duplicate) {
-          listRef.current?.data.map((i) =>
-            isMessage(i) && i.client_id === clientId
-              ? { ...(i as MessageItem), status: 'sent' as const }
-              : i
+          listRef.current?.data.map(
+            (i) =>
+              isMessage(i) && i.client_id === clientId
+                ? { ...(i as MessageItem), status: 'sent' as const }
+                : i,
+            FOLLOW_ROW_GROWTH
           )
         }
         return 'sent'
       }
 
-      listRef.current?.data.map((i) =>
-        isMessage(i) && i.client_id === clientId
-          ? {
-              ...(i as MessageItem),
-              status: 'failed' as const,
-              row: { ...(i as MessageItem).row, statusError: result.error }
-            }
-          : i
+      listRef.current?.data.map(
+        (i) =>
+          isMessage(i) && i.client_id === clientId
+            ? {
+                ...(i as MessageItem),
+                status: 'failed' as const,
+                row: { ...(i as MessageItem).row, statusError: result.error }
+              }
+            : i,
+        FOLLOW_ROW_GROWTH
       )
       return 'failed'
     },
@@ -170,17 +178,19 @@ export const useSendMessage = ({
         },
         uid
       )
-      listRef.current?.data.map((i) =>
-        isMessage(i) && i.client_id === clientId
-          ? {
-              ...(i as MessageItem),
-              status: result.ok ? ('sent' as const) : ('failed' as const),
-              row: {
-                ...(i as MessageItem).row,
-                statusError: result.ok ? undefined : result.error
+      listRef.current?.data.map(
+        (i) =>
+          isMessage(i) && i.client_id === clientId
+            ? {
+                ...(i as MessageItem),
+                status: result.ok ? ('sent' as const) : ('failed' as const),
+                row: {
+                  ...(i as MessageItem).row,
+                  statusError: result.ok ? undefined : result.error
+                }
               }
-            }
-          : i
+            : i,
+        FOLLOW_ROW_GROWTH
       )
     },
     [channelId, listRef, onAuthRequired]
