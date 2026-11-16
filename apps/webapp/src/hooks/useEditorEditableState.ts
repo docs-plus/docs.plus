@@ -13,6 +13,9 @@ const useEditorEditableState = () => {
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
   const locked = useStore((state) => selectDocumentEditingLocked(state.settings, user?.id))
 
+  // `editor` is not read here. As a dep it rebuilds `syncScope` after a pad switch: built in
+  // the render that brings a new provider, the closure's scope kept the previous pad's editor,
+  // Doc, provider and mirror alive (#782).
   useEffect(() => {
     if (!provider) {
       setWorkspaceSetting('authorizedScope', null)
@@ -29,7 +32,7 @@ const useEditorEditableState = () => {
     return () => {
       provider.off('authenticated', syncScope)
     }
-  }, [provider, setWorkspaceSetting])
+  }, [provider, setWorkspaceSetting, editor])
 
   useEffect(() => {
     if (!editor) return
