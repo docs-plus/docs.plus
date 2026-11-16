@@ -1,0 +1,7 @@
+[Unit]
+Description=docs.plus off-host backup of the %i store
+
+[Service]
+Type=oneshot
+User=@DEPLOY_USER@
+ExecStart=/usr/local/sbin/backup-prod.sh %i

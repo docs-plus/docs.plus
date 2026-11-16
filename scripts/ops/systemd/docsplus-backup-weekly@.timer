@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly docs.plus off-host backup of the %i store
+
+[Timer]
+OnCalendar=Sun *-*-* 04:40:00 UTC
+Persistent=true
+Unit=docsplus-backup@%i.service
+
+[Install]
+WantedBy=timers.target
