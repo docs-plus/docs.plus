@@ -86,3 +86,83 @@ groups:
               conditions:
                 - evaluator: { type: gt, params: [0] }
               refId: C
+
+      # A size-cap deletion or a failed compaction drops history that before-and-after reads need (#749).
+      - uid: prometheus-tsdb-loss
+        title: Prometheus deleted or failed to compact history
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: Prometheus history is at risk. Check disk with df -h / and the size cap in prometheus.yml before the next before-and-after read.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'sum(increase(prometheus_tsdb_size_retentions_total{job="prometheus"}[1h])) + sum(increase(prometheus_tsdb_compactions_failed_total{job="prometheus"}[1h]))'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C
+
+      # Prometheus counts WAL and head chunks against the size cap, so the ratio counts them too.
+      - uid: prometheus-tsdb-near-cap
+        title: Prometheus history is near its size cap
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: Prometheus history is at risk. Check disk with df -h / and the size cap in prometheus.yml before the next before-and-after read.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: '(max(prometheus_tsdb_storage_blocks_bytes{job="prometheus"}) + max(prometheus_tsdb_wal_storage_size_bytes{job="prometheus"}) + max(prometheus_tsdb_head_chunks_storage_size_bytes{job="prometheus"})) / max(prometheus_tsdb_retention_limit_bytes{job="prometheus"})'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0.8] }
+              refId: C
