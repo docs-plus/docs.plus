@@ -18,6 +18,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- The app now says TOC, not "outline", for the heading list. An empty TOC reads "Add headings to
+  build a TOC.", and the install screenshot label reads "Find any section from the TOC".
 - The pad and the chat composer load `HyperlinkBase`, so they no longer ship the extension's
   built-in link forms. First-load JS drops 2 kB on `/`, the pad route and `_app` (local `build:ci`)
   ([#775](https://github.com/docs-plus/docs.plus/issues/775)).
@@ -635,7 +637,7 @@ release and the self-hosting steps are in the
   of that browser follows it.
 
 - **A red dot on Bookmarks shows that In progress holds items.** The dot shows
-  on the desktop toolbar and in the phone outline, before you open the panel.
+  on the desktop toolbar and in the phone TOC, before you open the panel.
 
 - **OAuth consent page at `/oauth/consent`.** It asks "Allow Claude to use
   your docs.plus account?" and shows the signed-in account. It lists what
@@ -802,7 +804,7 @@ release and the self-hosting steps are in the
 - **Find text in the open pad.** On a computer, ⌘F (Ctrl+F) opens a small
   Find bar at the top right of the editor column. The page does not move when
   Find opens. Enter or ⌘G steps to the next match. Shift+Enter or Shift+⌘G
-  steps back. Escape closes the bar. On a phone, Find is in the outline
+  steps back. Escape closes the bar. On a phone, Find is in the TOC
   drawer ([#393](https://github.com/docs-plus/docs.plus/issues/393)).
 
 - **A slash menu inserts a block.** Type `/` on an empty line, then type to
@@ -835,7 +837,7 @@ release and the self-hosting steps are in the
 
 - **The pad has a skip link, and sheets hold the keyboard focus.** A **Skip to
   main content** button is the first Tab stop on a pad. It moves focus to the
-  editor area. Most bottom sheets, and the outline and history drawers, are
+  editor area. Most bottom sheets, and the TOC and history drawers, are
   now named dialogs. Escape closes them, and focus returns to the control
   that opened them.
 
@@ -881,12 +883,12 @@ release and the self-hosting steps are in the
   right-click menu. Screen readers no longer read the "seen" footer as a
   disabled action. On a phone, the long-press menu has 44px rows and closes
   with Escape.
-- **Open the outline and chat menus from the keyboard.** Press Shift+F10 or
-  the Menu key on a focused outline row, or on a link in a message. The menu
+- **Open the TOC and chat menus from the keyboard.** Press Shift+F10 or
+  the Menu key on a focused TOC row, or on a link in a message. The menu
   opens at that item, with its first row focused. Screen readers name the
-  menus "Section options" and "Message options". In the outline menu, Delete
+  menus "Section options" and "Message options". In the TOC menu, Delete
   section loses its info icon, and Chat room uses the default row colour. A
-  right-click on the outline header or on empty chat space now shows the
+  right-click on the TOC header or on empty chat space now shows the
   browser's own menu ([#391](https://github.com/docs-plus/docs.plus/issues/391)).
 
 - **An empty line's hint now shows only its heading chain.** It no longer ends
@@ -1010,7 +1012,7 @@ release and the self-hosting steps are in the
   already did. Open and Copy link stay.
 
 - **The pad loading skeleton matches the loaded pad.** The document bones stay
-  inside the sheet. The outline skeleton draws thin title lines on the
+  inside the sheet. The TOC skeleton draws thin title lines on the
   real row positions, with nest rails, instead of filled slabs. The signed-out
   header shows History and Theme bones. On a phone, the page floor keeps its
   colour through the load ([#463](https://github.com/docs-plus/docs.plus/issues/463)).
@@ -1021,11 +1023,11 @@ release and the self-hosting steps are in the
   so the header does not move when the panel loads. The link preview loader
   uses the house skeleton ([#464](https://github.com/docs-plus/docs.plus/issues/464)).
 
-- **History, link pickers and the outline preview load in place.** The
+- **History, link pickers and the TOC preview load in place.** The
   History sidebar and its Authors tab show bones in the real row positions.
   The History toolbar keeps its copy-link button and shows bones for the
   version text. Show older versions shows a spinner and sends one request.
-  The outline preview card uses the real paddings and does not open when a
+  The TOC preview card uses the real paddings and does not open when a
   section has nothing to show. The link preview, the mobile Link sheet, the
   link suggestions and Command jump show bone rows like their loaded rows.
   An upload left unfinished by an earlier session now says so, with Remove,
@@ -1067,12 +1069,12 @@ release and the self-hosting steps are in the
   size while its link loads, and offers a retry if the link fails. The Filter
   and Insert media loaders use the real body padding, and Insert media no
   longer draws a drop zone ([#463](https://github.com/docs-plus/docs.plus/issues/463), [#464](https://github.com/docs-plus/docs.plus/issues/464)).
-- **The phone outline drawer shows its frame while the pad loads.** Before
+- **The phone TOC drawer shows its frame while the pad loads.** Before
   the first sync, an opened drawer showed only the dimmed page. It now shows
-  the header, the document title, the footer and outline bones at the phone
+  the header, the document title, the footer and TOC bones at the phone
   row size. Find stays disabled until the editor is ready. Bookmarks no
   longer pops into the footer late for a signed-in user. On a computer, the
-  outline no longer fades in after its bones ([#463](https://github.com/docs-plus/docs.plus/issues/463)).
+  TOC no longer fades in after its bones ([#463](https://github.com/docs-plus/docs.plus/issues/463)).
 
 - **The pad skeleton is in the first page load again.** The page shows the
   loading skeleton before any script runs. The skeleton header and toolbar
@@ -1085,16 +1087,16 @@ release and the self-hosting steps are in the
   press the toolbar link button, the URL field has focus, so the first letter
   you type lands there ([#366](https://github.com/docs-plus/docs.plus/issues/366)).
 
-- Outline rows of one heading level now start their titles at the same place.
+- TOC rows of one heading level now start their titles at the same place.
   A heading with no subheadings keeps an empty space where the fold arrow
-  sits, so it no longer shifts left. This holds in the desktop outline and in
-  the phone outline. The fold arrow now tells screen readers whether the
+  sits, so it no longer shifts left. This holds in the desktop TOC and in
+  the phone TOC. The fold arrow now tells screen readers whether the
   section is open ([#373](https://github.com/docs-plus/docs.plus/issues/373)).
 - **Clear formatting keeps headings, Block style and links.** It removes text
   styles only: bold, italic, underline, strike, inline code, highlight,
   superscript and subscript. With no selection it changes no text, and the
   next text you type is plain. Before, a caret in a heading turned the heading
-  into normal text, so its section, outline row and chat went away. The button
+  into normal text, so its section, TOC row and chat went away. The button
   is off when there is nothing to clear. `⌘\` (`Ctrl+\` on Windows and Linux)
   runs it too. The chat composer has the same control at the end of its
   format bar ([#392](https://github.com/docs-plus/docs.plus/issues/392)).
@@ -1107,7 +1109,7 @@ release and the self-hosting steps are in the
   press. It used to take two.
 - Enter that confirms an input-method (IME) candidate no longer saves a
   half-typed rename.
-- An empty heading in the outline has a name for screen readers, such as
+- An empty heading in the TOC has a name for screen readers, such as
   "Heading 2".
 
 - Two plain paragraphs sit 0.25em apart, so short lines under a heading read as
@@ -1216,7 +1218,7 @@ release and the self-hosting steps are in the
 
 - A visitor who pastes or uploads media, imports or exports sees the sign-in
   dialog. It used to send the request, which failed.
-- Heading faces in the outline no longer go blank after someone leaves.
+- Heading faces in the TOC no longer go blank after someone leaves.
 - The header face count leaves out people who left.
 - Remote carets set their color and avatar through checked values. An avatar
   loads only from the profile storage bucket or a Google profile host.

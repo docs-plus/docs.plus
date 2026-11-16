@@ -96,7 +96,7 @@
       "type": "image/png",
       "sizes": "2560x1600",
       "form_factor": "wide",
-      "label": "Find any section from the outline"
+      "label": "Find any section from the TOC"
     },
     {
       "src": "/icons/screenshot-narrow-2-outline.png",
