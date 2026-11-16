@@ -16,6 +16,7 @@ import { clientAuthorsExtension } from './extensions/client-authors.extension'
 import { contributorsExtension } from './extensions/contributors.extension'
 import { READING_MSG } from './extensions/document-occupancy.extension'
 import { decideStatelessRelay, MAX_STATELESS_RELAY_BYTES } from './extensions/statelessRelay'
+import { syncBytesExtension } from './extensions/syncBytes.extension'
 import { type SupabaseUser, verifyServiceRole, verifySupabaseTokenOutcome } from './lib/auth'
 import { countActiveConnections } from './lib/health'
 import { handleHistoryStateless, WATCH_RATE_LIMITED } from './lib/history-stateless'
@@ -457,6 +458,7 @@ const serverConfig = {
   extensions: [
     ...baseConfig.extensions,
     metricsExtension,
+    syncBytesExtension,
     contributorsExtension,
     statelessExtension,
     // Must follow firstEditMetadataExtension: both act on the update that clears

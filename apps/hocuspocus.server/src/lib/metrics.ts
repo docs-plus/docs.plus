@@ -496,6 +496,26 @@ export const ydocUpdateBytes = new Histogram({
   registers: [register]
 })
 
+// #659 phase 1 sizes the sync budget from these two. The top bucket sits past the 16 MiB
+// message cap, because one 60 s window can hold several full messages.
+const SYNC_BYTES_BUCKETS = [1024, 16384, 262144, 1048576, 4194304, 16777216, 33554432, 67108864]
+
+// The y-sync payload of each inbound sync message, seen in beforeSync.
+export const wsSyncMessageBytes = new Histogram({
+  name: 'ws_sync_message_bytes',
+  help: 'Size in bytes of each inbound sync message payload',
+  buckets: SYNC_BYTES_BUCKETS,
+  registers: [register]
+})
+
+// The peak 60 s sliding sum per connection, once a minute and at the close.
+export const wsSyncWindowBytes = new Histogram({
+  name: 'ws_sync_window_bytes',
+  help: 'Peak sync payload bytes one connection sent in any 60 s window',
+  buckets: SYNC_BYTES_BUCKETS,
+  registers: [register]
+})
+
 // The raw state the store hook sends, before the worker merges and strips it. Largest
 // measured head is 12,518,586 B (2026-11-11). The top bucket is 64 MiB because a loaded
 // room costs 16.5-17x its snapshot in heap, which already exceeds the 1024 M WS ceiling.
@@ -602,6 +622,9 @@ export const seedWsAlertSeries = (): void => {
     documentPersistDuration.zero({ size_class })
     documentLoadDuration.zero({ size_class })
   }
+  // The #659 phase 1 read takes p99 and the top filled bucket over 7 days.
+  wsSyncMessageBytes.zero({})
+  wsSyncWindowBytes.zero({})
 }
 
 export const seedRestAlertSeries = (): void => {
