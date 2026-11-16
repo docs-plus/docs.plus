@@ -761,8 +761,12 @@ const shutdown = async (exitCode = 0) => {
     clearTimeout(destroyTimer)
 
     if (destroyFailed === 'timeout') {
+      // A count only, never pad ids: it tells a room that never unloaded from a slow socket (#760).
       wsLogger.error(
-        { timeoutMs: SERVER_DESTROY_TIMEOUT_MS },
+        {
+          timeoutMs: SERVER_DESTROY_TIMEOUT_MS,
+          documentsLoaded: server.hocuspocus.getDocumentsCount()
+        },
         'WebSocket server did not stop in time — continuing shutdown so queues, DB and Sentry still close'
       )
     } else if (destroyFailed) {

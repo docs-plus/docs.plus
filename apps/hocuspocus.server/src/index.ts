@@ -288,13 +288,24 @@ const shutdown = async (exitCode = 0) => {
     // stop() drops that promise. An export or import was therefore cut on every
     // rolling deploy — work that holds no pooled Prisma client to delay the tail.
     let drainTimer: ReturnType<typeof setTimeout> | undefined
-    await Promise.race([
-      server.stop(),
-      new Promise((resolve) => {
-        drainTimer = setTimeout(resolve, DRAIN_TIMEOUT_MS)
+    const drained = await Promise.race([
+      server.stop().then(() => true),
+      new Promise<false>((resolve) => {
+        drainTimer = setTimeout(() => resolve(false), DRAIN_TIMEOUT_MS)
       })
     ])
     clearTimeout(drainTimer)
+    // Without this line a long retire looks the same as a clean one in Loki (#760).
+    if (!drained) {
+      restApiLogger.warn(
+        {
+          timeoutMs: DRAIN_TIMEOUT_MS,
+          pendingRequests: server.pendingRequests,
+          pendingWebSockets: server.pendingWebSockets
+        },
+        'REST server did not drain in time — continuing shutdown'
+      )
+    }
 
     await emailGateway.shutdown()
     await pushGateway.shutdown()
