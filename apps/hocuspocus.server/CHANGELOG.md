@@ -104,6 +104,13 @@ This file is the operator and API changelog. The pad product lives in the [root 
   answers in 15 s, against 6760-7418, and its `memory.peak` stayed at 400.7-417.3 MiB; before, it
   reached 433.6-512 MiB. The full hostile mix at 64 in flight got 4637-4752 answers, against
   3486-3556, with p95 247.6-261.93 ms against 319.26-326.91 ms (3 sessions each).
+- The html stage gives up when a page has sent no response headers after 3 s, redirects
+  included. It waited for the 8 s stage timer before, so a hanging host held a cold-work slot
+  for 8 s. On the lab bench, beside 20 hanging links per second, 0 of 2000 good links got a
+  fallback card, against 1208-1210; beside 40 per second, 941-942 against 1616-1617. Hostile
+  pages, the miss flood and images did not change. In production, 7 of 2043 `/api/metadata`
+  requests took longer than 2.5 s from start to end, so at most 0.34 % can lose a real preview
+  ([#790](https://github.com/docs-plus/docs.plus/issues/790)).
 
 ### Security
 
@@ -280,7 +287,7 @@ upgrade shows only its title on its card.
   - The card draws no people: no message text, no author, no name and no face. Message,
     reaction and reply counts are bucketed 1 to 9, then 10+.
   - The Document card draws the pad's first paragraph and its section names, as
-    "A · B · C · +N more". A truncated outline says "+ more", and "200+ sections" in
+    "A · B · C · +N more". A truncated TOC says "+ more", and "200+ sections" in
     `og:description`.
   - The Document card shows "N people joined" from 3 people. The count is exact to 999. Above
     that it rounds down to one decimal ("1.9k", "12.4k"), so it never overstates.
@@ -311,7 +318,7 @@ upgrade shows only its title on its card.
     `og-card-pad-1200x630.png` is served too, for crawlers that cached it from a pre-release
     deploy.
 - **The worker stores what the card draws.** Each save writes `DocumentMetadata.cardData`: the
-  first blocks and the outline. While `SOCIAL_CARD_KINDS` holds `version`, each stored version
+  first blocks and the TOC. While `SOCIAL_CARD_KINDS` holds `version`, each stored version
   enqueues a job on the new `version-change-summary` queue. That job writes
   `Documents.changeSummary` and costs 99 to 148 ms on a 3.7 MB pair.
 - **Card numbers for later tuning.** The App Performance dashboard has a "Social preview card"
@@ -1276,7 +1283,7 @@ EMAIL_UNSUBSCRIBE_SECRET=<at least 32 characters>
   `GET /api/documents/:documentId/changes?since&until&scope` compares the newest stored
   snapshot at or before `since` with the newest at or before `until`. Service-role only.
   `since` is required, `until` defaults to the moment the request is served, and `scope` is
-  `summary` (default) or `headings`. The `headings` scope adds the full outline tree,
+  `summary` (default) or `headings`. The `headings` scope adds the full TOC tree,
   unchanged headings included. Read-only: nothing is written and no live document loads.
   Two fast paths answer without decoding a snapshot, when both ends resolve to the same
   version row and when two rows hold identical bytes. `changed` comes from the section
@@ -1286,7 +1293,7 @@ EMAIL_UNSUBSCRIBE_SECRET=<at least 32 characters>
   is decoration, and a profile-lookup outage empties `contributors` rather than failing.
   A section that keeps its text and its `toc-id` but changes place is `moved`.
   `summary.sectionsMoved` counts them, and a `moved` section makes `changed` true. An
-  insertion does not mark later sections `moved`. On a very large outline the route
+  insertion does not mark later sections `moved`. On a very large TOC the route
   reports no `moved` section. A section can also carry `removedExcerpt`, the text that
   left, and `runs`, the ordered `same`, `removed` and `added` text around the edit.
 - **Owner-only Favorite.** `PUT /api/documents/:documentId/favorite` accepts
