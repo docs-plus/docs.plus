@@ -7,7 +7,7 @@ set -eo pipefail
 # Compose `--env-file` is the single source of truth. We do NOT also
 # `set -a; source` it elsewhere — that path was double-loading and
 # leaking vars to subshells unintentionally.
-cp "${ENV_SOURCE}" "${ENV_FILE}"
+install -m 600 "${ENV_SOURCE}" "${ENV_FILE}"
 echo "DEPLOY_TAG=${DEPLOY_TAG}" >> "${ENV_FILE}"
 
 # Error capture must never silently regress: both DSNs feed GlitchTip.

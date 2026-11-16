@@ -1041,7 +1041,7 @@ jobs:
           # without having to know the runner's _work directory.
           mkdir -p "${DEPLOY_STATE_DIR}/current"
           cp "${COMPOSE_FILE}" "${DEPLOY_STATE_DIR}/current/${COMPOSE_FILE}"
-          cp "${ENV_FILE}" "${DEPLOY_STATE_DIR}/current/${ENV_FILE}"
+          install -m 600 "${ENV_FILE}" "${DEPLOY_STATE_DIR}/current/${ENV_FILE}"
           echo "✅ Synced compose+env to ${DEPLOY_STATE_DIR}/current/"
 
       - name: 💾 Stash this tag as last-good

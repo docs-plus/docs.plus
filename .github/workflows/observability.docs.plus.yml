@@ -56,7 +56,7 @@ jobs:
 
       - name: 🔐 Prepare environment
         run: |
-          cp "${ENV_SOURCE}" "${ENV_FILE}"
+          install -m 600 "${ENV_SOURCE}" "${ENV_FILE}"
           # Require a real first character: dotenv strips quotes, so KEY="" or
           # whitespace-only values are empty at runtime and must fail here.
           for k in GRAFANA_ADMIN_PASSWORD GLITCHTIP_SECRET_KEY GLITCHTIP_POSTGRES_PASSWORD TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID DATABASE_URL DEADMAN_WEBHOOK_URL REDIS_PASSWORD; do
@@ -216,6 +216,6 @@ jobs:
       - name: 📦 Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: 🔐 Prepare environment
-        run: cp "${ENV_SOURCE}" "${ENV_FILE}"
+        run: install -m 600 "${ENV_SOURCE}" "${ENV_FILE}"
       - name: 🧹 Down (keep volumes)
         run: docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" down
