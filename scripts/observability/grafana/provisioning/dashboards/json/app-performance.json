@@ -67,13 +67,13 @@
       "id": 3,
       "type": "stat",
       "title": "Backend Error % (5xx + no-response)",
-      "description": "Share of backend requests returning 5xx or code=0 (no upstream response).",
+      "description": "Share of backend requests returning 5xx, or code=0 (no upstream response) on rest-api. On hocuspocus, code=0 is a normal WebSocket close, so it is left out (#710).",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 5 },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "100 * sum(rate(traefik_service_requests_total{service=~\"hocuspocus.*|rest-api.*\",code=~\"5..|0\"}[5m])) / clamp_min(sum(rate(traefik_service_requests_total{service=~\"hocuspocus.*|rest-api.*\"}[5m])), 1)",
+          "expr": "100 * (sum(rate(traefik_service_requests_total{service=~\"hocuspocus.*|rest-api.*\",code=~\"5..\"}[5m]) or rate(traefik_service_requests_total{service=~\"rest-api.*\",code=\"0\"}[5m])) or vector(0)) / clamp_min(sum(rate(traefik_service_requests_total{service=~\"hocuspocus.*|rest-api.*\"}[5m])), 1)",
           "refId": "A",
           "legendFormat": "Error %"
         }
@@ -136,12 +136,13 @@
       "id": 5,
       "type": "timeseries",
       "title": "Backend Error Rate by Service (5xx + code=0)",
+      "description": "5xx on both services, and code=0 (no upstream response) on rest-api only. On hocuspocus, code=0 is a normal WebSocket close (#710).",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 9, "x": 15, "y": 1 },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (service) (rate(traefik_service_requests_total{service=~\"hocuspocus.*|rest-api.*\",code=~\"5..|0\"}[5m]))",
+          "expr": "sum by (service) (rate(traefik_service_requests_total{service=~\"hocuspocus.*|rest-api.*\",code=~\"5..\"}[5m]) or rate(traefik_service_requests_total{service=~\"rest-api.*\",code=\"0\"}[5m]))",
           "refId": "A",
           "legendFormat": "{{service}}"
         }
@@ -164,14 +165,14 @@
     {
       "id": 6,
       "type": "timeseries",
-      "title": "Backend p95 Latency by Service",
-      "description": "Edge latency from Traefik service histogram. This is per-service, not per-route (no app /metrics endpoint exists).",
+      "title": "Backend p95 Latency by Service (rest-api)",
+      "description": "Edge latency from the Traefik service histogram, per service. hocuspocus is left out: for a WebSocket, Traefik times the whole connection, so its p95 sits at the top bucket (#710).",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.95, sum by (service, le) (rate(traefik_service_request_duration_seconds_bucket{service=~\"hocuspocus.*|rest-api.*\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (service, le) (rate(traefik_service_request_duration_seconds_bucket{service=~\"rest-api.*\"}[5m])))",
           "refId": "A",
           "legendFormat": "{{service}} p95"
         }
@@ -193,25 +194,26 @@
     {
       "id": 7,
       "type": "timeseries",
-      "title": "Backend Latency Percentiles (hocuspocus + rest-api combined)",
+      "title": "Backend Latency Percentiles (rest-api)",
+      "description": "hocuspocus is left out: for a WebSocket, Traefik times the whole connection (#710).",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(traefik_service_request_duration_seconds_bucket{service=~\"hocuspocus.*|rest-api.*\"}[5m])))",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(traefik_service_request_duration_seconds_bucket{service=~\"rest-api.*\"}[5m])))",
           "refId": "A",
           "legendFormat": "p50"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(traefik_service_request_duration_seconds_bucket{service=~\"hocuspocus.*|rest-api.*\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(traefik_service_request_duration_seconds_bucket{service=~\"rest-api.*\"}[5m])))",
           "refId": "B",
           "legendFormat": "p95"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(traefik_service_request_duration_seconds_bucket{service=~\"hocuspocus.*|rest-api.*\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(traefik_service_request_duration_seconds_bucket{service=~\"rest-api.*\"}[5m])))",
           "refId": "C",
           "legendFormat": "p99"
         }
@@ -724,13 +726,13 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(rate(pg_stat_database_xact_commit[5m]))",
+          "expr": "sum(rate(pg_stat_database_xact_commit{datname=\"prod_docsplus\"}[5m]))",
           "refId": "A",
           "legendFormat": "commits/s"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(rate(pg_stat_database_xact_rollback[5m]))",
+          "expr": "sum(rate(pg_stat_database_xact_rollback{datname=\"prod_docsplus\"}[5m]))",
           "refId": "B",
           "legendFormat": "rollbacks/s"
         }
@@ -754,11 +756,11 @@
       "type": "timeseries",
       "title": "Postgres Buffer Cache Hit %",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 67 },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 67 },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "100 * sum(rate(pg_stat_database_blks_hit[5m])) / clamp_min(sum(rate(pg_stat_database_blks_hit[5m])) + sum(rate(pg_stat_database_blks_read[5m])), 1)",
+          "expr": "100 * sum(rate(pg_stat_database_blks_hit{datname=\"prod_docsplus\"}[5m])) / clamp_min(sum(rate(pg_stat_database_blks_hit{datname=\"prod_docsplus\"}[5m])) + sum(rate(pg_stat_database_blks_read{datname=\"prod_docsplus\"}[5m])), 1)",
           "refId": "A",
           "legendFormat": "cache hit %"
         }
@@ -780,11 +782,47 @@
       }
     },
     {
+      "id": 80,
+      "type": "timeseries",
+      "title": "Postgres Size by Database + Documents Table",
+      "description": "Every database on the cluster, because they share one disk (#727). WAL is not counted, so the disk holds more than these lines show.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 67 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "pg_database_size_bytes",
+          "refId": "A",
+          "legendFormat": "{{datname}}"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "pg_stat_user_tables_size_bytes{relname=\"Documents\"}",
+          "refId": "B",
+          "legendFormat": "{{datname}} · Documents table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "custom": { "lineWidth": 1, "fillOpacity": 10 },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
       "id": 26,
       "type": "timeseries",
       "title": "Redis Ops/sec",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 67 },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 67 },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
@@ -812,7 +850,7 @@
       "type": "timeseries",
       "title": "Redis Memory Used",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 67 },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 67 },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
@@ -962,12 +1000,13 @@
       "id": 32,
       "type": "bargauge",
       "title": "Slowest Services (p95)",
+      "description": "hocuspocus is left out: for a WebSocket, Traefik times the whole connection (#710).",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 84 },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.95, sum by (service, le) (rate(traefik_service_request_duration_seconds_bucket{service=~\"webapp.*|hocuspocus.*|rest-api.*\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (service, le) (rate(traefik_service_request_duration_seconds_bucket{service=~\"webapp.*|rest-api.*\"}[5m])))",
           "refId": "A",
           "legendFormat": "{{service}}",
           "instant": true
@@ -1000,12 +1039,13 @@
       "id": 33,
       "type": "bargauge",
       "title": "Highest Error Rate Services (5xx + code=0)",
+      "description": "code=0 counts only on the HTTP services. On hocuspocus it is a normal WebSocket close (#710).",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 84 },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "100 * sum by (service) (rate(traefik_service_requests_total{service=~\"webapp.*|hocuspocus.*|rest-api.*\",code=~\"5..|0\"}[5m])) / clamp_min(sum by (service) (rate(traefik_service_requests_total{service=~\"webapp.*|hocuspocus.*|rest-api.*\"}[5m])), 0.001)",
+          "expr": "100 * sum by (service) (rate(traefik_service_requests_total{service=~\"webapp.*|hocuspocus.*|rest-api.*\",code=~\"5..\"}[5m]) or rate(traefik_service_requests_total{service=~\"webapp.*|rest-api.*\",code=\"0\"}[5m])) / clamp_min(sum by (service) (rate(traefik_service_requests_total{service=~\"webapp.*|hocuspocus.*|rest-api.*\"}[5m])), 0.001)",
           "refId": "A",
           "legendFormat": "{{service}}",
           "instant": true
@@ -1039,20 +1079,20 @@
       "id": 34,
       "type": "table",
       "title": "Service Bottleneck Summary (p95 · p99 · req/s · error %)",
-      "description": "Per-service edge metrics from Traefik. Sort by p95 or Error % to find the problem service.",
+      "description": "Per-service edge metrics from Traefik. Sort by p95 or Error % to find the problem service. hocuspocus shows req/s and 5xx only: its latency is the WebSocket lifetime, and its code=0 is a normal close (#710).",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 92 },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.95, sum by (service, le) (rate(traefik_service_request_duration_seconds_bucket{service=~\"webapp.*|hocuspocus.*|rest-api.*\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (service, le) (rate(traefik_service_request_duration_seconds_bucket{service=~\"webapp.*|rest-api.*\"}[5m])))",
           "refId": "A",
           "format": "table",
           "instant": true
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.99, sum by (service, le) (rate(traefik_service_request_duration_seconds_bucket{service=~\"webapp.*|hocuspocus.*|rest-api.*\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (service, le) (rate(traefik_service_request_duration_seconds_bucket{service=~\"webapp.*|rest-api.*\"}[5m])))",
           "refId": "B",
           "format": "table",
           "instant": true
@@ -1066,7 +1106,7 @@
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "100 * sum by (service) (rate(traefik_service_requests_total{service=~\"webapp.*|hocuspocus.*|rest-api.*\",code=~\"5..|0\"}[5m])) / clamp_min(sum by (service) (rate(traefik_service_requests_total{service=~\"webapp.*|hocuspocus.*|rest-api.*\"}[5m])), 0.001)",
+          "expr": "100 * sum by (service) (rate(traefik_service_requests_total{service=~\"webapp.*|hocuspocus.*|rest-api.*\",code=~\"5..\"}[5m]) or rate(traefik_service_requests_total{service=~\"webapp.*|rest-api.*\",code=\"0\"}[5m])) / clamp_min(sum by (service) (rate(traefik_service_requests_total{service=~\"webapp.*|hocuspocus.*|rest-api.*\"}[5m])), 0.001)",
           "refId": "D",
           "format": "table",
           "instant": true
@@ -1344,7 +1384,7 @@
       "type": "timeseries",
       "title": "Event Loop Lag by Job",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 134 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 134 },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
@@ -1356,35 +1396,6 @@
       "fieldConfig": {
         "defaults": {
           "unit": "s",
-          "custom": { "lineWidth": 1, "fillOpacity": 10 },
-          "mappings": [],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
-        },
-        "overrides": []
-      },
-      "options": {
-        "tooltip": { "mode": "multi", "sort": "desc" },
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
-      }
-    },
-    {
-      "id": 45,
-      "type": "timeseries",
-      "title": "GC Rate by Job",
-      "description": "rate of nodejs_gc_duration_seconds events from prom-client default metrics.",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 134 },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (job) (rate(nodejs_gc_duration_seconds_count{job=~\"rest-api|hocuspocus-server|hocuspocus-worker\"}[5m]))",
-          "refId": "A",
-          "legendFormat": "{{job}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
           "custom": { "lineWidth": 1, "fillOpacity": 10 },
           "mappings": [],
           "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
