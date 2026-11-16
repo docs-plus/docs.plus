@@ -30,7 +30,7 @@
   "scripts": {
     "build": "NODE_ENV=production bunx tsup",
     "dev": "bunx tsup --watch",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check --no-script",
     "test:unit": "bun test src",
     "test:unit:watch": "bun test --watch src"
   },

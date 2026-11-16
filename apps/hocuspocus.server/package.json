@@ -12,7 +12,7 @@
     "start:ws": "NODE_ENV=production bun src/hocuspocus.server.ts",
     "start:worker": "NODE_ENV=production bun src/hocuspocus.worker.ts",
     "build": "bun build src/index.ts src/hocuspocus.server.ts src/hocuspocus.worker.ts --outdir=dist --target=bun",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check --no-script",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "test:coverage": "bun test --coverage",

@@ -7,7 +7,7 @@
   "main": "index.ts",
   "scripts": {
     "test": "APP_URL=https://docs.plus NEXT_PUBLIC_APP_URL=https://docs.plus bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bun check --no-script"
   },
   "dependencies": {
     "eta": "^4.6.0"

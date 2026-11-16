@@ -22,7 +22,7 @@
     "cypress"
   ],
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bun check --no-script"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

@@ -10,7 +10,7 @@
   "scripts": {
     "provision": "bun --env-file=../../.env.local src/cli.ts provision",
     "run": "bun --env-file=../../.env.local src/cli.ts run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bun check --no-script"
   },
   "dependencies": {
     "@supabase/supabase-js": "catalog:",
