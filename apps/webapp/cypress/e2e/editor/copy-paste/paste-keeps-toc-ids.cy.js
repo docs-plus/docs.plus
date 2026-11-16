@@ -23,16 +23,25 @@ const chord = (key, command) => {
   cdp('Input.dispatchKeyEvent', { type: 'keyDown', ...event, commands: [command] })
   cdp('Input.dispatchKeyEvent', { type: 'keyUp', ...event })
 }
-const selectAll = () => chord('a', 'SelectAll')
-const copy = () => chord('c', 'Copy')
-const cut = () => chord('x', 'Cut')
-const paste = () => chord('v', 'Paste')
+// A CDP key goes to whatever holds focus, so each chord waits for the editor first.
+const editorFocused = () => cy.get(EDITOR).should('have.focus')
+const selectAll = () => editorFocused().then(() => chord('a', 'SelectAll'))
+const copy = () => editorFocused().then(() => chord('c', 'Copy'))
+const cut = () => editorFocused().then(() => chord('x', 'Cut'))
+const paste = () => editorFocused().then(() => chord('v', 'Paste'))
 
 const freshName = (name) => `toc-id-paste-${name}-${Date.now()}`
 
 const openPad = (docName) => {
   cy.visit(`/editor?localPersistence=true&docName=${docName}`)
   cy.get(EDITOR).should('be.visible')
+  // The playground's useClipboardShortcuts re-runs Mod+C and Mod+V a tick later through an
+  // untrusted event, which races the chord's own copy. Stop the chord below the editor.
+  cy.window().then((win) =>
+    win.document.body.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'v')) e.stopPropagation()
+    })
+  )
 }
 
 const seed = () => {
