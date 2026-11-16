@@ -37,4 +37,4 @@ w.Range.prototype.getBoundingClientRect = () =>
 const matches = w.Element.prototype.matches
 w.Element.prototype.matches = function (this: Element, selector: string) {
   return selector === ':modal' ? false : matches.call(this, selector)
-}
+} as typeof matches

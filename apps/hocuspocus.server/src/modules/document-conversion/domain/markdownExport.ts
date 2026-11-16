@@ -31,7 +31,7 @@ const MARKDOWN_SWAPS: Partial<Record<string, (extension: AnyExtension) => Extens
 // StarterKit's `link` stays so stored `link` marks still serialize.
 const markdownExtensions: Extensions = [
   Hyperlink,
-  ...migrationExtensions.flatMap(
+  ...migrationExtensions.flatMap<AnyExtension>(
     (extension) => MARKDOWN_SWAPS[extension.name]?.(extension) ?? [extension]
   )
 ]
