@@ -181,16 +181,19 @@ if (listed.exitCode !== 0) {
       }
     })
     .join('\0')
-  const prettier = resolve(ROOT, 'node_modules/.bin/prettier')
-  const pretty = Bun.spawn(
+  // bun fmt reads the Prettier config and sorts Tailwind classes itself (#655).
+  // --no-script keeps a future `fmt` script from replacing the formatter.
+  const fmt = Bun.spawn(
     [
       'xargs',
       '-0',
-      prettier,
+      'bun',
+      'fmt',
       '--check',
       '--ignore-unknown',
       '--ignore-path',
       resolve(ROOT, '.prettierignore'),
+      '--no-script',
       '--'
     ],
     {
@@ -200,7 +203,7 @@ if (listed.exitCode !== 0) {
       stderr: 'inherit'
     }
   )
-  const code = await pretty.exited
+  const code = await fmt.exited
   record(
     'format',
     code === 0 ? 'pass' : 'fail',
