@@ -241,7 +241,24 @@ Same condition as above: one REST container at `--cpus=1 --memory=512m`, OrbStac
 | `hang@20+fast@20`, good links | 0 fallback, p95 4.89-6.01 ms                             | 1208-1211 of 2000 fallback                                                |
 | `hang@40+fast@20`, good links | 0 fallback, p95 1625.19-1626.34 ms                       | 1616-1617 of 2000 fallback                                                |
 
-- The hang cost is open. A waiting request that holds no working slot (W2, with one deadline per request) brought fallback to 0 and 417-418 of 2000, but REST was then OOM-killed under hostile pages in 3 of 3 sessions. It was not committed.
+- W2, a waiting request that holds no working slot, was tried three times and not committed. With 192 waiting it brought fallback to 0 and 417-418 of 2000, but REST was OOM-killed under hostile pages in 3 of 3 sessions, twice. With 64 waiting it survived, but fallback fell only to 953-955 and 1457-1459.
+- The 3 s header deadline below fixes most of the hang cost.
+
+### Header deadline: 3 s to the first response (base `38a969bc0`, head + `STAGE_TIMEOUT_MS.htmlHeaders`)
+
+| Lane                                  | Base                    | Head                    |
+| ------------------------------------- | ----------------------- | ----------------------- |
+| `hang@20+fast@20`, good-link fallback | 1208-1210 of 2000       | 0 (n = 2)               |
+| `hang@40+fast@20`, good-link fallback | 1616-1617 of 2000       | 941-942 of 2000 (n = 2) |
+| Hanging link, p50 to its card         | shed at once (cap full) | 3001.37-3002.34 ms      |
+| `hostile@c256`, answers               | 14719-16419, up         | 14886-15740, up (n = 2) |
+| `miss-fast@6400`, p95                 | 40.45-49.33 ms          | 38.35-53.84 ms (n = 2)  |
+| `image-len@200`, p95                  | 4036.02-4062.6 ms (2)   | 4030.33-4055.73 ms      |
+| `trickle@16+fast@20`, fallback        | 1000-1005               | 1000-1001 (n = 2)       |
+
+- A hanging link holds a cold slot for 3 s instead of 8 s, so 20 hanging links/s fit under the cap of 64. At 40/s part of the cost stays.
+- A slow body still costs 50 % fallback at 16/s: its headers arrive in time.
+- Cost: in production, 7 of 2043 `/api/metadata` requests took longer than 2.5 s from start to end (0.34 %). A first byte after 3 s is a subset of those.
 
 ### #789: Redis frozen for 10 s, 50/s (base `ca9d555ce`, head `df910c6b1`)
 
