@@ -42,6 +42,7 @@ run '' false 0;                                              expect true true tr
 run 'README.md' true;                                        expect true true true false forced
 run 'packages/document-swarm/src/fixtures/academy.md';       expect true true true false md-under-package-src
 run 'extensions/extension-mermaid/docs/guide.md';            expect false false false true ext-docs-folder
+run '.agents/skills/release-product/scripts/note-coverage.ts'; expect false false false true agents-skill-script
 run 'extensions/extension-hypermultimedia/assets/readme-media/sample.mp4'; expect false false false false nested-assets
 run 'extensions/extension-mermaid/demo.webp';                expect false false false false ext-root-media
 run 'extensions/extension-hypermultimedia/cypress/fixtures/x.png'; expect true false true false media-outside-assets

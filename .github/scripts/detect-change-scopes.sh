@@ -27,9 +27,10 @@ while IFS= read -r f; do
 
   # Docs are neutral, except preflight inputs and anything under a src/ or the
   # served public/ folder. A case `*` also matches `/`, which only widens these.
+  # Only lint reads .agents/ (#759), and lint always runs.
   case "${f}" in
     extensions/*/README.md|extensions/*/CHANGELOG.md|src/*|*/src/*|apps/webapp/public/*) : ;;
-    *.md|docs/*|.github/ISSUE_TEMPLATE/*|LICENSE) docs=$((docs + 1)); echo "docs      ${f}" >&2; continue ;;
+    *.md|docs/*|.agents/*|.github/ISSUE_TEMPLATE/*|LICENSE) docs=$((docs + 1)); echo "docs      ${f}" >&2; continue ;;
   esac
   # Extension README media is neutral. Same set as `_readme_media` in .github/filters/extensions.yaml.
   if [[ "${f}" =~ ^extensions/[^/]+/(assets/|[^/]+\.(gif|png|jpe?g|webp|mp4)$) ]]; then
