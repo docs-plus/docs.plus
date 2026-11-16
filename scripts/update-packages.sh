@@ -68,7 +68,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-NCU=(bunx npm-check-updates --format group --color --cooldown 3d "$UPGRADE" --target "$TARGET")
+# bunx ignores minimumReleaseAge, so pin ncu. Keep it equal to the root devDependency (#653).
+NCU=(bunx npm-check-updates@23.1.1 --format group --color --cooldown 3d "$UPGRADE" --target "$TARGET")
 [[ -n "$INTERACTIVE" ]] && NCU+=("$INTERACTIVE")
 [[ -n "$DEP_FLAG" ]] && NCU+=($DEP_FLAG)
 
