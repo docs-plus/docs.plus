@@ -42,12 +42,23 @@ export const createTally = (): Tally => {
 export const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
+// Port 0 returns an ephemeral port, the range outbound sockets draw from (Linux 32768-60999),
+// so a client socket could take it before the child bound it (EADDRINUSE in CI, 2026-11-16).
+// Pick below that range instead, and never hand the same port out twice in one run.
+const handedOut = new Set<number>()
 export const freePort = (): number => {
-  const probe = Bun.serve({ port: 0, fetch: () => new Response('') })
-  const { port } = probe
-  probe.stop(true)
-  if (port === undefined) throw new Error('Bun.serve did not assign a port')
-  return port
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const port = 20_000 + Math.floor(Math.random() * 12_000)
+    if (handedOut.has(port)) continue
+    try {
+      Bun.serve({ port, fetch: () => new Response('') }).stop(true)
+    } catch {
+      continue
+    }
+    handedOut.add(port)
+    return port
+  }
+  throw new Error('No free port found below the ephemeral range')
 }
 
 export const waitForHttp = async (url: string, timeoutMs = 30_000): Promise<boolean> => {
