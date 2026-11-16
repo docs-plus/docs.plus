@@ -13,9 +13,13 @@ const DOC =
 const cdp = (command, params) =>
   cy.then(() => Cypress.automation('remote:debugger:protocol', { command, params }))
 
+// ProseMirror's Mod is Meta on macOS and Ctrl elsewhere (CDP modifiers: 4 Meta, 2 Ctrl).
+// A Meta chord on Linux skips the editor's select-all, so CI pasted over the wrong range.
+const MOD = Cypress.platform === 'darwin' ? 4 : 2
+
 const chord = (key, command) => {
   const vk = key.toUpperCase().charCodeAt(0)
-  const event = { key, code: `Key${key.toUpperCase()}`, modifiers: 4, windowsVirtualKeyCode: vk }
+  const event = { key, code: `Key${key.toUpperCase()}`, modifiers: MOD, windowsVirtualKeyCode: vk }
   cdp('Input.dispatchKeyEvent', { type: 'keyDown', ...event, commands: [command] })
   cdp('Input.dispatchKeyEvent', { type: 'keyUp', ...event })
 }
