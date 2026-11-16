@@ -170,26 +170,14 @@ module.exports = withPWA({
   },
 
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**', // 🔥 Allow all HTTPS domains
-        port: '',
-        pathname: '/**'
-      },
-      {
-        protocol: 'http',
-        hostname: '*.localhost',
-        port: '',
-        pathname: '/**'
-      },
-      {
-        protocol: 'http',
-        hostname: '127.0.0.1',
-        port: '',
-        pathname: '/**'
-      }
-    ]
+    // No remote host in production: /_next/image must not fetch arbitrary images (#641).
+    remotePatterns:
+      process.env.NODE_ENV === 'production'
+        ? []
+        : [
+            { protocol: 'http', hostname: '*.localhost', port: '', pathname: '/**' },
+            { protocol: 'http', hostname: '127.0.0.1', port: '', pathname: '/**' }
+          ]
   },
   // The prod deploy sets NEXT_SKIP_TYPECHECK=1 on the Docker build only. The
   // `typecheck` job and Build Verification already type-check that commit.
