@@ -70,7 +70,7 @@ Linting runs from the monorepo root (`bun run lint` / `bun run lint:fix`); this 
 | `dev:rest` / `dev:ws` / `dev:worker`       | Watch-mode dev for each process                           |
 | `start:rest` / `start:ws` / `start:worker` | Production start for each process                         |
 | `build`                                    | Bundle all three entries to `dist/` (`--target=bun`)      |
-| `typecheck`                                | `tsc --noEmit`                                            |
+| `typecheck`                                | `bun check --no-script`                                   |
 | `test` / `test:watch` / `test:coverage`    | Bun test runner                                           |
 | `test:e2e` / `test:e2e:content-inject`     | Real-infra E2E (Postgres + Redis; needs `make dev-local`) |
 | `prisma:generate`                          | Generate the Prisma client                                |

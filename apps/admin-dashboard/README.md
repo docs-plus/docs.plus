@@ -31,7 +31,7 @@ bun run dev             # Uses ../../.env.local
 | `start`     | Start standalone server with local env                 |
 | `lint`      | Run ESLint                                             |
 | `lint:fix`  | Fix ESLint issues                                      |
-| `typecheck` | Run `tsc --noEmit`                                     |
+| `typecheck` | Run `bun check --no-script`                            |
 
 ## Project Structure
 

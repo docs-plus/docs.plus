@@ -16,7 +16,7 @@
 **/public
 ./components/icons/icons.jsx
 apps/webapp/src/types/supabase.ts
-# Upstream skills stay as their authors wrote them. The house skills are ours, so Prettier checks them.
+# Upstream skills stay as their authors wrote them. The house skills are ours, so `bun fmt` checks them.
 /.agents/skills/*
 !/.agents/skills/code-janitor
 !/.agents/skills/commit-review

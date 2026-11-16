@@ -329,7 +329,7 @@ refactor(editor): simplify toolbar component
 
 ### Formatting
 
-Prettier formats the code. Check formatting:
+`bun fmt` formats the code. It reads `.prettierrc.json` and `.prettierignore`, and it sorts Tailwind classes. Check formatting:
 
 ```bash
 bun run format
@@ -356,7 +356,7 @@ Husky runs local quality gates before code reaches a remote branch.
 - `.husky/*` contains lightweight wrapper scripts.
 - `scripts/hooks/*.sh` contains the actual hook logic.
 - Active hooks:
-  - `pre-commit`: runs `bun run lint-staged` (staged-file lint and format checks, Prettier included)
+  - `pre-commit`: runs `bun run lint-staged` (ESLint or Stylelint fixes, then `bun fmt`, on staged files)
   - `commit-msg`: validates commit message format
   - `pre-push`: refuses the push if a Next development server is live, then runs `bun run check:ci`
   - `post-merge`: runs `bun install` when `package.json` or `bun.lock` changes
@@ -396,14 +396,14 @@ Full naming convention: [.cursor/docs/scripts-naming-convention.md](./.cursor/do
 | `bun run check`            | Full local report: lint + lint:styles + format + typecheck + check:agent-docs |
 | `bun run check:ci`         | Local replica of the prod quality gates. Husky pre-push runs this.            |
 | `bun run check:push`       | Fast local gate: lint + lint:styles + typecheck (no format)                   |
-| `bun run check:fix`        | Auto-fix all: ESLint + Stylelint + Prettier (in that order)                   |
+| `bun run check:fix`        | Auto-fix all: ESLint + Stylelint + `bun fmt` (in that order)                  |
 | `bun run lint`             | ESLint report                                                                 |
 | `bun run lint:fix`         | ESLint --fix                                                                  |
 | `bun run lint:styles`      | Stylelint report                                                              |
 | `bun run lint:styles:fix`  | Stylelint --fix                                                               |
-| `bun run format`           | Prettier --check                                                              |
-| `bun run format:fix`       | Prettier --write                                                              |
-| `bun run typecheck`        | tsc --noEmit (report only — no fix)                                           |
+| `bun run format`           | `bun fmt --check .`                                                           |
+| `bun run format:fix`       | `bun fmt .` (writes the fixes)                                                |
+| `bun run typecheck`        | `bun check --no-script` in each workspace (report only — no fix)              |
 | `bun run lint-staged`      | Staged-file lint/format, run by the `pre-commit` hook                         |
 | `bun run check:agent-docs` | Cross-reference check across `AGENTS.md`, `CONTEXT.md` and every `CLAUDE.md`  |
 

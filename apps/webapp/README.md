@@ -36,7 +36,7 @@ bun run dev             # Uses ../../.env.local
 | `start:prod`           | Standalone server on **Bun**, port 3001 (container entry) |
 | `start:stage`          | Standalone server on **Bun**, port 3000 (container entry) |
 | `lint` / `lint:fix`    | ESLint                                                    |
-| `typecheck`            | `tsc --noEmit`                                            |
+| `typecheck`            | `bun check --no-script`                                   |
 | `test`                 | Jest unit tests                                           |
 | `test:coverage`        | Jest with coverage                                        |
 | `cypress:open`         | Cypress E2E (interactive)                                 |

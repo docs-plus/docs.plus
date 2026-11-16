@@ -50,21 +50,21 @@ export default libraryConfig
 
 ### Config Features
 
-| Feature          | Base | Next.js   | Library   |
-| ---------------- | ---- | --------- | --------- |
-| TypeScript       | ✅   | ✅        | ✅        |
-| React/JSX        | ✅   | ✅        | ✅        |
-| Prettier         | ✅   | ✅        | ✅        |
-| React Hooks      | -    | ✅        | -         |
-| Console warnings | -    | ✅ (warn) | ✅ (warn) |
-| Strict types     | -    | -         | ✅        |
+| Feature                  | Base | Next.js   | Library   |
+| ------------------------ | ---- | --------- | --------- |
+| TypeScript               | ✅   | ✅        | ✅        |
+| React/JSX                | ✅   | ✅        | ✅        |
+| `eslint-config-prettier` | ✅   | ✅        | ✅        |
+| React Hooks              | -    | ✅        | -         |
+| Console warnings         | -    | ✅ (warn) | ✅ (warn) |
+| Strict types             | -    | -         | ✅        |
 
 ## Lint policy (repo root)
 
 - `bun run lint` — `eslint . --max-warnings=0` (cascades into every package shim).
-- `bun run check` — local report: lint + styles + `prettier --check` + typecheck + `check:agent-docs`. CI does not run this aggregate.
+- `bun run check` — local report: lint + styles + `bun fmt --check` + typecheck + `check:agent-docs`. CI does not run this aggregate.
 - `bun run check:ci` — local replica of the prod quality gates. Husky pre-push runs this.
-- `bun run check:push` — fast local gate: lint + styles + typecheck (no full-repo Prettier; commit hook already writes staged files).
+- `bun run check:push` — fast local gate: lint + styles + typecheck. It skips the full-repo `bun fmt --check`, because the commit hook already formats staged files.
 - Pre-commit `lint-staged` uses `--max-warnings=0` on staged files only.
 - Per-package `lint` scripts are intentionally omitted; run from repo root.
 
