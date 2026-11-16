@@ -1004,7 +1004,7 @@ The unpacked cap is the same for the owner until [#724](https://github.com/docs-
 
 **The body limit follows the caller.** The server reads the document's owner before it reads the body, then limits the body to that caller's cap. It reads `Content-Length` when the request has one. A chunked body is counted as it arrives and refused at the cap.
 
-**Six different `413`s.**
+**Seven different `413`s.**
 
 - `PAYLOAD_TOO_LARGE`: the upload is over the caller's cap. Nobody's body is read past their own cap.
 - `PAYLOAD_TOO_LARGE`: a `.docx` that really unpacks past 40 MiB is refused before the converter opens it. A zip bounds its compressed size, never its inflated one, and 200 KiB of deflated padding reaches 200 MiB.
@@ -1012,8 +1012,9 @@ The unpacked cap is the same for the owner until [#724](https://github.com/docs-
 - `TOO_MANY_NODES`: the converted result holds more than 50 000 nodes (`MAX_CONTENT_NODES`), the cap on every content write.
 - `TOO_DEEP`: the converted result nests deeper than 100 levels (`MAX_CONTENT_DEPTH`), the same cap as every content write.
 - `TOO_LARGE_TO_OPEN`: the result encodes to more than 12 MiB of Yjs state. A browser applies the replace as one update, and a socket message over 16 MiB (`MAX_WS_MESSAGE_BYTES`) is refused, so the document could not load. The 4 MiB margin covers the replaced document's delete set.
+- `TOO_MANY_IMAGES`: the `.docx` holds more than 128 images (`MAX_IMPORT_IMAGES`). The server counts each image the converter reads, and uploads none past the cap.
 
-The last three run on the result of both formats, before the server answers, so a refused import is never applied and never saved. Pictures a refused Word file held are already rehosted, as with any discarded import.
+`TOO_MANY_NODES`, `TOO_DEEP` and `TOO_LARGE_TO_OPEN` run on the result of both formats, before the server answers, so a refused import is never applied and never saved. Pictures a refused Word file held are already rehosted, as with any discarded import.
 
 Images embedded in a Word file are re-hosted through [the media route](#post-apipluginshypermultimediadocumentid) so the result carries URLs the editor can parse instead of `data:` payloads. This needs `PUBLIC_RESTAPI_URL` — see [ENV.md](./ENV.md#public-origin). Without it, every image becomes a warning and the text still imports.
 
@@ -1078,11 +1079,14 @@ An empty `warnings` array does not prove that nothing was lost. The converter dr
 | `413`  | `TOO_MANY_NODES`         | Import result over 50 000 nodes                                                                                                         |
 | `413`  | `TOO_DEEP`               | Import result nested deeper than 100 levels                                                                                             |
 | `413`  | `TOO_LARGE_TO_OPEN`      | Import result over 12 MiB of encoded Yjs state                                                                                          |
+| `413`  | `TOO_MANY_IMAGES`        | A `.docx` with more than 128 images                                                                                                     |
 | `415`  | `UNSUPPORTED_MEDIA_TYPE` | Import of a legacy OLE2 `.doc`                                                                                                          |
 | `422`  | `UNPROCESSABLE_ENTITY`   | Import of a file that is neither a zip nor UTF-8 text, or one too damaged for its converter to open. Retrying will not fix it           |
+| `422`  | `UNPROCESSABLE_ENTITY`   | Import of a zip whose two EOCD entry counts differ, or differ from the headers in its central directory                                 |
 | `429`  | `RATE_LIMIT_EXCEEDED`    | Global rate limiter. The house envelope; the retry seconds ride the `Retry-After` header — see [Rate limiting](#rate-limiting)          |
 | `500`  | `INTERNAL_SERVER_ERROR`  | Export only: the stored snapshot could not be decoded, or the converter threw                                                           |
 | `503`  | `AUTH_UNAVAILABLE`       | Supabase token verification was unreachable                                                                                             |
+| `503`  | `IMPORT_BUSY`            | Import only: this server process is parsing another import. Retry after the `Retry-After` seconds (10)                                  |
 
 ## MCP connector
 

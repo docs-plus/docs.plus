@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 
-import { importDocx } from '../../domain/docxImport'
-import { MAX_TABLE_SPAN } from '../../types'
-import { minimalDocx } from '../fixtures'
+import { importDocx, TooManyImagesError } from '../../domain/docxImport'
+import { MAX_IMPORT_IMAGES, MAX_TABLE_SPAN } from '../../types'
+import { imageDocx, minimalDocx } from '../fixtures'
 
 const run = (text: string) => `<w:r><w:t>${text}</w:t></w:r>`
 
@@ -49,5 +49,30 @@ describe('importDocx table spans', () => {
     )
     expect(JSON.stringify(content)).toContain(`"colspan":${MAX_TABLE_SPAN}`)
     expect(JSON.stringify(content)).not.toContain('1000000')
+  })
+})
+
+// mammoth turns a throw in the image converter into a warning, so a cap that only
+// threw there would still admit the file.
+describe('importDocx image cap', () => {
+  const importImages = async (count: number) => {
+    let uploads = 0
+    const result = importDocx(imageDocx(count), {
+      fallbackTitle: 'Fallback',
+      uploadImage: async () => `https://media.test/${++uploads}.png`
+    })
+    return { result, uploads: () => uploads }
+  }
+
+  test('admits a file at the cap', async () => {
+    const { result, uploads } = await importImages(MAX_IMPORT_IMAGES)
+    await expect(result).resolves.toHaveProperty('content')
+    expect(uploads()).toBe(MAX_IMPORT_IMAGES)
+  })
+
+  test('refuses a file past the cap, and uploads none past it', async () => {
+    const { result, uploads } = await importImages(MAX_IMPORT_IMAGES + 1)
+    await expect(result).rejects.toBeInstanceOf(TooManyImagesError)
+    expect(uploads()).toBe(MAX_IMPORT_IMAGES)
   })
 })

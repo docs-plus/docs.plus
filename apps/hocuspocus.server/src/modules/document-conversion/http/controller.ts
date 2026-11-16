@@ -6,23 +6,25 @@ import slugify from 'slugify'
 import type { PrismaClient } from '../../../generated/prisma/client'
 import { fail, ok } from '../../../http/envelope'
 import { decideDocumentAccess } from '../../../lib/documentAccess'
+import { acquireLargeDecode, LARGE_DECODE_BYTES } from '../../../lib/largeDecodeGate'
 import { ydocToPmJson } from '../../../lib/nested-flat-migration'
 import { isDocumentOwner } from '../../../lib/ownerAccess'
 import { findHeadRow } from '../../document-content/infra/contentStore'
 import { MAX_CONTENT_DEPTH, MAX_CONTENT_NODES } from '../../document-content/types'
 import { exportDocx } from '../domain/docxExport'
-import { importDocx } from '../domain/docxImport'
+import { importDocx, TooManyImagesError } from '../domain/docxImport'
 import { titleHeadingText } from '../domain/ensureTitleHeading'
 import { checkImportSize, type ImportSizeRefusal } from '../domain/importGuards'
 import { exportMarkdown } from '../domain/markdownExport'
 import { importMarkdown } from '../domain/markdownImport'
 import { exportOdt } from '../domain/odtExport'
-import { zipInflateSize } from '../domain/zipInflateSize'
+import { ENTRY_COUNT_MISMATCH, zipInflateSize } from '../domain/zipInflateSize'
 import { createImageUpload } from '../infra/imageUpload'
 import type { ExportFormat, ImportFormat, TiptapDocJson } from '../types'
 import {
   IMPORT_MULTIPART_SLACK_BYTES,
   MAX_IMPORT_BYTES,
+  MAX_IMPORT_IMAGES,
   MAX_IMPORT_YJS_BYTES,
   MAX_INFLATED_IMPORT_BYTES,
   MAX_MARKDOWN_CHARS,
@@ -229,6 +231,9 @@ const SIZE_REFUSALS: Record<ImportSizeRefusal, string> = {
   TOO_LARGE_TO_OPEN: `The import encodes past ${MAX_IMPORT_YJS_BYTES} bytes, so a browser could not load the document`
 }
 
+// Matches the large-decode gate's own wait, so a retry lands after one parse.
+const IMPORT_BUSY_RETRY_SECONDS = '10'
+
 export interface ImportControllerDeps {
   prisma: PrismaClient
   logger: Logger
@@ -278,12 +283,57 @@ export const createPostImportHandler =
         'legacy .doc is not supported — re-save as .docx'
       )
     }
-    // mammoth's unzip is unbounded, so the upload cap alone lets a few hundred
-    // compressed KiB inflate the process to death.
-    if (
-      kind === 'docx' &&
-      (zipInflateSize(buffer, MAX_INFLATED_IMPORT_BYTES) ?? 0) > MAX_INFLATED_IMPORT_BYTES
-    ) {
+
+    // A 306 KiB upload can unpack to 40 MiB, so every import takes the slot. No
+    // queue: a second import answers at once instead of stacking loop blocks.
+    const release = await acquireLargeDecode(Math.max(LARGE_DECODE_BYTES, buffer.length), 0)
+    if (!release) {
+      deps.logger.warn({ code: 'IMPORT_BUSY', uploadBytes: buffer.length }, 'Import refused')
+      c.header('Retry-After', IMPORT_BUSY_RETRY_SECONDS)
+      return fail(
+        c,
+        503,
+        'IMPORT_BUSY',
+        'Another import is running on this server. Try again in a few seconds.'
+      )
+    }
+    // The body is already read, so a client abort cannot skip this `finally`.
+    try {
+      return await convertUpload(c, deps, { documentId, slug: meta.slug, buffer, kind })
+    } finally {
+      release()
+    }
+  }
+
+interface ConvertUploadInput {
+  documentId: string
+  slug: string
+  buffer: Buffer
+  kind: ImportFormat
+}
+
+const convertUpload = async (
+  c: Context,
+  deps: ImportControllerDeps,
+  { documentId, slug, buffer, kind }: ConvertUploadInput
+): Promise<Response> => {
+  // mammoth's unzip is unbounded, so the upload cap alone lets a few hundred
+  // compressed KiB inflate the process to death.
+  if (kind === 'docx') {
+    const unpacked = zipInflateSize(buffer, MAX_INFLATED_IMPORT_BYTES)
+    if (unpacked === ENTRY_COUNT_MISMATCH) {
+      deps.logger.warn(
+        { code: 'ZIP_ENTRY_COUNT_MISMATCH', uploadBytes: buffer.length },
+        'Import refused'
+      )
+      return fail(
+        c,
+        422,
+        'UNPROCESSABLE_ENTITY',
+        'The upload is not a valid zip: its directory does not match its entry count'
+      )
+    }
+    if ((unpacked ?? 0) > MAX_INFLATED_IMPORT_BYTES) {
       return fail(
         c,
         413,
@@ -291,41 +341,54 @@ export const createPostImportHandler =
         `The upload unpacks to more than the ${MAX_INFLATED_IMPORT_BYTES}-byte limit`
       )
     }
+  }
 
-    let markdown: string | null = null
-    if (kind === 'md') {
-      markdown = decodeUtf8(buffer)
-      if (markdown === null) {
-        return fail(c, 422, 'UNPROCESSABLE_ENTITY', 'The upload is neither a .docx file nor text')
-      }
-      // A reject, never a truncate, for owner and non-owner alike. Hostile Markdown
-      // past this blocks the event loop for minutes (bench-import.ts).
-      if (markdown.length > MAX_MARKDOWN_CHARS) {
-        return fail(
-          c,
-          413,
-          'PAYLOAD_TOO_LARGE',
-          `Markdown is capped at ${MAX_MARKDOWN_CHARS} characters — convert the document to .docx and import that instead`
-        )
-      }
+  let markdown: string | null = null
+  if (kind === 'md') {
+    markdown = decodeUtf8(buffer)
+    if (markdown === null) {
+      return fail(c, 422, 'UNPROCESSABLE_ENTITY', 'The upload is neither a .docx file nor text')
     }
-
-    try {
-      const result =
-        markdown === null
-          ? await importDocx(buffer, {
-              fallbackTitle: meta.slug,
-              uploadImage: createImageUpload({ documentId, publicBaseUrl: deps.mediaPublicBaseUrl })
-            })
-          : importMarkdown(markdown, meta.slug)
-      // Refused here, the replace never reaches the room, so nothing is saved.
-      const refusal = checkImportSize(result.content)
-      if (refusal) return fail(c, 413, refusal, SIZE_REFUSALS[refusal])
-      return ok(c, result)
-    } catch (error) {
-      // A truncated or re-zipped file passes the magic-byte sniff and only fails
-      // here, so this stays the caller's problem — retrying will not fix it.
-      deps.logger.error({ err: error, documentId, format: kind }, 'Document import failed')
-      return fail(c, 422, 'UNPROCESSABLE_ENTITY', IMPORT_FAILED[kind])
+    // A reject, never a truncate, for owner and non-owner alike. Hostile Markdown
+    // past this blocks the event loop for minutes (bench-import.ts).
+    if (markdown.length > MAX_MARKDOWN_CHARS) {
+      return fail(
+        c,
+        413,
+        'PAYLOAD_TOO_LARGE',
+        `Markdown is capped at ${MAX_MARKDOWN_CHARS} characters — convert the document to .docx and import that instead`
+      )
     }
   }
+
+  try {
+    const result =
+      markdown === null
+        ? await importDocx(buffer, {
+            fallbackTitle: slug,
+            uploadImage: createImageUpload({ documentId, publicBaseUrl: deps.mediaPublicBaseUrl })
+          })
+        : importMarkdown(markdown, slug)
+    // Refused here, the replace never reaches the room, so nothing is saved.
+    const refusal = checkImportSize(result.content)
+    if (refusal) return fail(c, 413, refusal, SIZE_REFUSALS[refusal])
+    return ok(c, result)
+  } catch (error) {
+    if (error instanceof TooManyImagesError) {
+      deps.logger.warn(
+        { code: 'TOO_MANY_IMAGES', uploadBytes: buffer.length, images: error.images },
+        'Import refused'
+      )
+      return fail(
+        c,
+        413,
+        'TOO_MANY_IMAGES',
+        `The upload holds more than ${MAX_IMPORT_IMAGES} images, the most one import may hold`
+      )
+    }
+    // A truncated or re-zipped file passes the magic-byte sniff and only fails
+    // here, so this stays the caller's problem — retrying will not fix it.
+    deps.logger.error({ err: error, documentId, format: kind }, 'Document import failed')
+    return fail(c, 422, 'UNPROCESSABLE_ENTITY', IMPORT_FAILED[kind])
+  }
+}

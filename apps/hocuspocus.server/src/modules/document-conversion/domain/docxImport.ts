@@ -2,7 +2,7 @@ import { isImageUrl } from '@docs.plus/extension-hypermultimedia'
 import JSZip from 'jszip'
 import mammoth from 'mammoth'
 
-import type { ConversionWarning, ImportResult } from '../types'
+import { type ConversionWarning, type ImportResult, MAX_IMPORT_IMAGES } from '../types'
 import { parseDocumentHtml } from './documentHtml'
 import { ensureTitleHeading, titleHeadingText, titleHeadingWarning } from './ensureTitleHeading'
 import { clampColspans } from './portableJson'
@@ -51,6 +51,14 @@ const hasTrackedChanges = async (buffer: Buffer): Promise<boolean> => {
   return false
 }
 
+/** mammoth turns a throw in `convertImage` into a warning, so the cap is read after the parse. */
+export class TooManyImagesError extends Error {
+  constructor(readonly images: number) {
+    super(`The upload holds more than ${MAX_IMPORT_IMAGES} images`)
+    this.name = 'TooManyImagesError'
+  }
+}
+
 const TRACKED_CHANGES_WARNING: ConversionWarning = {
   code: 'tracked-changes-accepted',
   message:
@@ -70,6 +78,8 @@ export const importDocx = async (
   let position = 0
   const convertImage = mammoth.images.imgElement(async (image) => {
     const index = ++position
+    // Past the cap the import is refused below, so skip the upload.
+    if (index > MAX_IMPORT_IMAGES) throw new Error(`Image ${index} is over the image cap`)
     let src: string
     try {
       src = await uploadImage(await image.readAsBuffer(), image.contentType)
@@ -93,6 +103,7 @@ export const importDocx = async (
     mammoth.convertToHtml({ buffer }, { styleMap: DOCX_STYLE_MAP, convertImage }),
     hasTrackedChanges(buffer)
   ])
+  if (position > MAX_IMPORT_IMAGES) throw new TooManyImagesError(position)
 
   const { doc, branch } = ensureTitleHeading(clampColspans(parseDocumentHtml(html)), fallbackTitle)
   const title = titleHeadingText(doc) || fallbackTitle.trim()

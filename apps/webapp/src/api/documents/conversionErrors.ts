@@ -2,6 +2,7 @@ import {
   formatCount,
   IMPORT_CONTENT_MB,
   IMPORT_MAX_DEPTH,
+  IMPORT_MAX_IMAGES,
   IMPORT_MAX_NODES,
   MARKDOWN_IMPORT_CHARS,
   OWNER_WORD_IMPORT_MB,
@@ -23,11 +24,13 @@ const BY_STATUS: Record<number, string> = {
 
 const SPLIT_IT = 'Split the file and import each part into its own document.'
 
-// Three 413s refuse the converted result, not the file size, so they need their own words.
+// These refuse the file for something other than its size, so they need their own words.
 const BY_CODE: Record<string, string> = {
   TOO_MANY_NODES: `That file has too much in it for one document. A document holds at most ${formatCount(IMPORT_MAX_NODES)} parts. Each paragraph, heading and list item is a part, and so is each change in formatting. ${SPLIT_IT}`,
   TOO_DEEP: `That file nests too deeply for one document. A document allows at most ${IMPORT_MAX_DEPTH} levels, such as a quote inside a quote. Remove some of the nesting and try again.`,
-  TOO_LARGE_TO_OPEN: `That file would make a document too large to open in a browser. A document can hold about ${IMPORT_CONTENT_MB} MB of content. ${SPLIT_IT}`
+  TOO_LARGE_TO_OPEN: `That file would make a document too large to open in a browser. A document can hold about ${IMPORT_CONTENT_MB} MB of content. ${SPLIT_IT}`,
+  TOO_MANY_IMAGES: `That Word file has too many pictures. An import can hold at most ${formatCount(IMPORT_MAX_IMAGES)} pictures. ${SPLIT_IT}`,
+  IMPORT_BUSY: 'The server is busy with another import. Try again in a few seconds.'
 }
 
 export const conversionErrorMessage = (status: number, code?: string): string =>

@@ -83,6 +83,11 @@ export const MAX_EXPORT_INLINED_BYTES = 8 * 1024 * 1024
 // part. This ceiling also bounds how many sockets a single export opens.
 export const MAX_EXPORT_IMAGES = 128
 
+// Counted per `convertImage` call. The public corpus holds at most 18 images, and
+// 128 tiny images added 41 MiB of RSS (8,192 added 243 MiB, bench-import.ts
+// docx-images, #577). It matches export, and bounds the uploads of one import.
+export const MAX_IMPORT_IMAGES = 128
+
 /** Per image; matches the converter's own `downloadTimeout`. */
 export const EXPORT_IMAGE_TIMEOUT_MS = 5_000
 

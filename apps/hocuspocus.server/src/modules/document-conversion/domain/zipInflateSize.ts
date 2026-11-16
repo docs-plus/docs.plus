@@ -28,14 +28,43 @@ const payloadStart = (zip: Buffer, localAt: number): number | null => {
   )
 }
 
+const centralHeaderLength = (zip: Buffer, at: number): number =>
+  CENTRAL_HEADER_BYTES +
+  zip.readUInt16LE(at + 28) +
+  zip.readUInt16LE(at + 30) +
+  zip.readUInt16LE(at + 32)
+
+/** The walk refused the archive because its directory and its EOCD disagree. */
+export const ENTRY_COUNT_MISMATCH = 'entry-count-mismatch'
+
+// The EOCD counts are declared, like sizes. A reader that trusts a smaller count
+// than the directory holds measures fewer entries than the converter opens.
+const countsAgree = (zip: Buffer, eocd: number): boolean => {
+  const onDisk = zip.readUInt16LE(eocd + 8)
+  const total = zip.readUInt16LE(eocd + 10)
+  let walked = 0
+  for (
+    let at = zip.readUInt32LE(eocd + 16);
+    at + CENTRAL_HEADER_BYTES <= zip.length && zip.readUInt32LE(at) === CENTRAL_SIGNATURE;
+    at += centralHeaderLength(zip, at)
+  ) {
+    walked += 1
+  }
+  return onDisk === total && walked === total
+}
+
 /**
  * Measured inflate, not declared size — a bomb states whatever it likes.
  * Abandoned as soon as the running total passes `budget`. `null` means the
  * container could not be read, so the converter gives the verdict instead.
  */
-export const zipInflateSize = (zip: Buffer, budget: number): number | null => {
+export const zipInflateSize = (
+  zip: Buffer,
+  budget: number
+): number | null | typeof ENTRY_COUNT_MISMATCH => {
   const eocd = zip.length >= EOCD_BYTES ? findEocd(zip) : null
   if (eocd === null) return null
+  if (!countsAgree(zip, eocd)) return ENTRY_COUNT_MISMATCH
 
   const entries = zip.readUInt16LE(eocd + 10)
   let at = zip.readUInt32LE(eocd + 16)
@@ -68,11 +97,7 @@ export const zipInflateSize = (zip: Buffer, budget: number): number | null => {
 
     if (total > budget) return total
 
-    at +=
-      CENTRAL_HEADER_BYTES +
-      zip.readUInt16LE(at + 28) +
-      zip.readUInt16LE(at + 30) +
-      zip.readUInt16LE(at + 32)
+    at += centralHeaderLength(zip, at)
   }
 
   return total
