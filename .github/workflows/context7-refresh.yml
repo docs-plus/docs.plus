@@ -1,0 +1,25 @@
+name: 'Context7: refresh library'
+
+# Context7 does not re-crawl on push, so a published product release asks it to
+# re-index `main`. GitHub reads this file from the tagged commit, so a tag without
+# it starts no run. Run it by hand then, or after a docs change with no release.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ask Context7 to re-index main
+        env:
+          CONTEXT7_API_KEY: ${{ secrets.CONTEXT7_API_KEY }}
+        run: |
+          curl -sS --fail-with-body -X POST https://context7.com/api/v1/refresh \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $CONTEXT7_API_KEY" \
+            -d '{"libraryName": "/docs-plus/docs.plus"}'
