@@ -50,6 +50,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   20 pad switches in a local production build (2 runs), live documents fall from 21 to 2: the open pad and
   one older editor that other code still holds. Command jump no longer keeps one of them
   ([#781](https://github.com/docs-plus/docs.plus/issues/781)).
+- Moving between pads no longer keeps the last older pad in memory either. The listener that
+  mirrors the server's edit permission was built in a render that still held the previous pad's
+  editor; it is now rebuilt when the editor changes. After 20 pad switches, live documents fall
+  from 2 to 1 (50 % fewer), in dev and in a local production build (2 runs each)
+  ([#782](https://github.com/docs-plus/docs.plus/issues/782)).
 - Dictation, an IME phrase or a text replacement that inserts a URL in the middle of a phrase now
   links it, as typed words do ([#780](https://github.com/docs-plus/docs.plus/issues/780)).
 - GlitchTip browser counts are usable again. The Safari IndexedDB flood now sends one warning per

@@ -25,6 +25,33 @@ This file is the product changelog. Every app, package and extension keeps its o
 - Replace with a file now has a cap per person. The document owner may upload a Word file of up to
   40 MB; everyone else keeps 10 MB. Markdown stays at 65,536 characters for everyone, because a
   bench showed larger Markdown blocks the server ([#722](https://github.com/docs-plus/docs.plus/issues/722)).
+- Link previews hold up under heavy load. On one server at 1 CPU and 512 MiB in a lab test: a
+  flood of link previews no longer crashes it, images use 28.5–36.8 % less memory at 100 per
+  second, a frozen cache answers in 96.8–96.9 % less time, and 500 requests for one new link make
+  1 fetch instead of 64. A preview for a site that never answers now gives up after 3 s instead
+  of 8 s, so beside 20 such links per second, good links no longer lose their preview (60 % did
+  before). Detail: `apps/hocuspocus.server/CHANGELOG.md`
+  ([#786](https://github.com/docs-plus/docs.plus/issues/786),
+  [#787](https://github.com/docs-plus/docs.plus/issues/787),
+  [#789](https://github.com/docs-plus/docs.plus/issues/789),
+  [#790](https://github.com/docs-plus/docs.plus/issues/790),
+  [#791](https://github.com/docs-plus/docs.plus/issues/791)).
+
+### Fixed
+
+- Links behave: formatting part of a link keeps the whole link, a link keeps its own address when
+  you type next to it, a removed link stays removed while others edit, Enter inside a link gives
+  two linked halves that one undo joins again, and a dictated phrase links a URL in its middle.
+  Detail: `extensions/extension-hyperlink/CHANGELOG.md`
+  ([#770](https://github.com/docs-plus/docs.plus/issues/770),
+  [#771](https://github.com/docs-plus/docs.plus/issues/771),
+  [#772](https://github.com/docs-plus/docs.plus/issues/772),
+  [#778](https://github.com/docs-plus/docs.plus/issues/778),
+  [#780](https://github.com/docs-plus/docs.plus/issues/780)).
+- Moving between pads no longer keeps the pads you left in memory. After 20 pad switches, live
+  documents fall from 21 to 1 (95 % fewer), in a local production build
+  ([#781](https://github.com/docs-plus/docs.plus/issues/781),
+  [#782](https://github.com/docs-plus/docs.plus/issues/782)).
 
 ### Security
 
