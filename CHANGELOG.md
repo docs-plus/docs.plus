@@ -36,6 +36,10 @@ This file is the product changelog. Every app, package and extension keeps its o
   [#789](https://github.com/docs-plus/docs.plus/issues/789),
   [#790](https://github.com/docs-plus/docs.plus/issues/790),
   [#791](https://github.com/docs-plus/docs.plus/issues/791)).
+- Each person now gets one save notice and one access notice per event, not one per
+  collaboration replica. With 2 replicas in a local test, each client got 2 save notices per save
+  before and 1 after (50 % fewer). Detail: `apps/hocuspocus.server/CHANGELOG.md`
+  ([#758](https://github.com/docs-plus/docs.plus/issues/758)).
 
 ### Fixed
 
@@ -52,6 +56,9 @@ This file is the product changelog. Every app, package and extension keeps its o
   documents fall from 21 to 1 (95 % fewer), in a local production build
   ([#781](https://github.com/docs-plus/docs.plus/issues/781),
   [#782](https://github.com/docs-plus/docs.plus/issues/782)).
+- When a chat message fails to send, the list now scrolls with the taller failed message, so its
+  Retry button shows in full. In a local Linux test, the list stopped 16 px short before, and only
+  8 of 24 px of Retry showed ([#730](https://github.com/docs-plus/docs.plus/issues/730)).
 
 ### Security
 
@@ -62,7 +69,20 @@ This file is the product changelog. Every app, package and extension keeps its o
   the public router refuses any path under `/metrics` ([#745](https://github.com/docs-plus/docs.plus/issues/745)).
 - New dependency versions now wait 3 days before `bun add`, a new resolve, Dependabot or
   `bun run update` takes them, so a hijacked release can be pulled first. A frozen install of the
-  lockfile is unaffected ([#653](https://github.com/docs-plus/docs.plus/issues/653)).
+  lockfile is unaffected. `bunx` ignores that wait, so `bun run update` and the manual recipe in
+  `AGENTS.md` pin `npm-check-updates` to 23.1.1 ([#653](https://github.com/docs-plus/docs.plus/issues/653)).
+- The webapp's image route, `/_next/image`, no longer fetches and resizes pictures from other
+  sites. No page uses it. On production, 3 of 3 remote test pictures came back before, and none
+  after ([#641](https://github.com/docs-plus/docs.plus/issues/641)).
+- A Word import now parses one at a time per server process. A second import at the same moment
+  gets `503 IMPORT_BUSY` and can retry after 10 s. A Word file with more than 128 pictures is
+  refused with `413 TOO_MANY_IMAGES`, and a zip whose entry counts disagree is refused with `422`.
+  On one laptop, three imports at once held `/health` for at most 978 ms, against 1678 ms (41 %
+  less time). Detail: `apps/hocuspocus.server/CHANGELOG.md`
+  ([#577](https://github.com/docs-plus/docs.plus/issues/577)).
+- The production deploy now writes its env files as owner-only, with `install -m 600`. `cp` kept
+  an existing copy's mode, so a `chmod` on the host source never reached the copies. Plain `cp`
+  copy sites fall from 4 to none ([#742](https://github.com/docs-plus/docs.plus/issues/742)).
 
 ### Documentation
 
@@ -79,6 +99,10 @@ This file is the product changelog. Every app, package and extension keeps its o
   reader must see first.
 - The demo now states the Word import cap per caller, shows bold inline code, and says a
   connected AI app can move a picture or rewrite a section without deleting media.
+- `CONTRIBUTING.md`, the three app READMEs and the `eslint-config` README now name `bun fmt` and
+  `bun check --no-script` as the format and type-check commands
+  ([#794](https://github.com/docs-plus/docs.plus/issues/794),
+  [#795](https://github.com/docs-plus/docs.plus/issues/795)).
 
 ### Internal
 
@@ -96,10 +120,16 @@ This file is the product changelog. Every app, package and extension keeps its o
   rule in error health and names each one ([#753](https://github.com/docs-plus/docs.plus/issues/753)).
 - Prometheus now keeps up to 45 days of metrics, up from 15. Its size cap drops from 4 GiB to
   3 GiB, and Prometheus removes the oldest data first at that cap. The before-and-after reads for
-  the host move need more than 15 days of history ([#749](https://github.com/docs-plus/docs.plus/issues/749)).
+  the host move need more than 15 days of history. Two new warnings watch Prometheus itself.
+  `prometheus-tsdb-loss` fires when it deletes history at the size cap or fails a compaction.
+  `prometheus-tsdb-near-cap` fires when its history passes 80 % of the cap
+  ([#749](https://github.com/docs-plus/docs.plus/issues/749)).
 - Alert rules leave out health probes and metric scrapes, which were 92.8 % of REST requests (441,735 of 476,161 in the 7 days to 2026-11-10). A
-  failing database health check now warns on its own, and MCP latency has its own 5 s rule
-  ([#710](https://github.com/docs-plus/docs.plus/issues/710)).
+  failing database health check now warns on its own, and MCP latency has its own 5 s rule. The
+  App Performance dashboard now follows the same rules. Its latency panels leave out `hocuspocus`,
+  and code 0 counts as an error only on HTTP services. The commit, rollback and cache-hit panels
+  read only `prod_docsplus`, not every database on the shared cluster. Panels with a wrong value
+  fall from 10 to none ([#710](https://github.com/docs-plus/docs.plus/issues/710)).
 - The dead stage pipeline is removed: `stage.docs.plus.yml`, the staging env template and the stage
   notes in the agent docs ([#725](https://github.com/docs-plus/docs.plus/issues/725)). It never ran, because no `dev` branch exists, so CI
   time is unchanged.
@@ -119,7 +149,43 @@ This file is the product changelog. Every app, package and extension keeps its o
 - Three new alert rules watch the shared collab Postgres cluster. Two fire when the size of its
   databases plus WAL room passes 60 % of the disk (warning) and 80 % (critical). The third warns
   when they grow more than 128 MiB in 24 hours. Over 15 days of history it would have fired once,
-  on the 2026-11-07 growth ([#727](https://github.com/docs-plus/docs.plus/issues/727)).
+  on the 2026-11-07 growth. A new App Performance panel shows the size of each database and of the
+  `Documents` table, without WAL ([#727](https://github.com/docs-plus/docs.plus/issues/727)).
+- A new App Performance panel shows document store outcomes per minute, from the new
+  `document_store_outcome_total` counter ([#703](https://github.com/docs-plus/docs.plus/issues/703)).
+- Alloy keeps its log positions on its volume again (`--storage.path`). The compose command had
+  dropped the flag, so a recreate read every container log again. In a local test, Loki received
+  271,824 lines across one recreate before, and 176 after (99 % fewer). On production, Loki still
+  sends Alloy a few `400` rejections each hour, and their cause is still open
+  ([#783](https://github.com/docs-plus/docs.plus/issues/783)).
+- `scripts/ops/backup-prod.sh` and three systemd units add off-host backups of the production
+  stores. Each dump streams through `age` into object storage, daily or weekly, and nothing is
+  staged on the host disk. The host fills the `@DEPLOY_USER@` placeholder. The store list and the
+  schedule follow the recommended rulings, which are still open
+  ([#748](https://github.com/docs-plus/docs.plus/issues/748)).
+- The image build step samples host load every 5 s and prints an "Image build calls" summary. It
+  holds each call's exit code and seconds, peak load, lowest free memory, swap, restarts and the
+  open WebSocket count. The two calls still run one after the other, so the first deploys give a
+  serial baseline. The first sample took 517 s: 83 s backend, 433 s front
+  ([#567](https://github.com/docs-plus/docs.plus/issues/567)).
+- CI now counts a change under `.agents/**` as docs. No gate except lint reads it. So a skill or
+  memory edit no longer starts Type Check, Webapp Unit Tests and Build Verification: 3 of 3 jobs
+  before, none after. A path under a `src/` folder still counts as code
+  ([#759](https://github.com/docs-plus/docs.plus/issues/759)).
+- The `release-product` skill gains one content-safety checklist, one Measured comment format and
+  one Benchmark section ([#762](https://github.com/docs-plus/docs.plus/issues/762)).
+- The chatroom and editor browser suites pass on `main` again. On the fix commit, 5 back-to-back
+  dispatches per suite failed 0 of 5. Before the paste fix, the editor dispatches failed 2 of 3.
+  Detail: `apps/webapp/CHANGELOG.md` ([#730](https://github.com/docs-plus/docs.plus/issues/730)).
+- `bun run typecheck` runs `bun check --no-script` in all 15 workspaces, not `tsc --noEmit`. On one
+  laptop it took 0.44 s, against 5.28 s (91 % less time, median of 5). The 12 lines that TS 7 and
+  `bun check` refused are fixed. `typescript` stays installed for editors, `next build`,
+  declaration builds and lint ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
+- The format gate runs `bun fmt`, not Prettier: the `format` scripts, the lint-staged tasks and
+  `check:ci`. `bun fmt` formats 0 of the 2,582 gate files differently, Tailwind class sort
+  included. On one laptop, median of 5, the format check took 0.15 s against 10.82 s (98 % less
+  time). `check:ci` took 85.54 s against 97.24 s (12 % less time). Prettier stays installed until
+  the CI step is read ([#795](https://github.com/docs-plus/docs.plus/issues/795)).
 
 ## [2.3.6] — 2026-11-16
 

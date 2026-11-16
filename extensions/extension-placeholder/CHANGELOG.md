@@ -4,6 +4,11 @@ All notable changes to `@docs.plus/extension-placeholder` are documented here. T
 
 ## [Unreleased]
 
+### Internal
+
+- `typecheck` runs `bun check --no-script`, not `tsc --noEmit`
+  ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
+
 ## [2.3.0] — 2026-11-09
 
 No behaviour change. The Tiptap peer floor rises to `^3.32.2`, aligned to the family. To upgrade, move `@tiptap/core` and `@tiptap/pm` to 3.32.2 or later. Nothing else changes for a host.

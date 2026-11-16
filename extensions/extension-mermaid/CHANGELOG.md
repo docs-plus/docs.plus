@@ -4,6 +4,11 @@ All notable changes to `@docs.plus/extension-mermaid` are documented here. The f
 
 ## [Unreleased]
 
+### Internal
+
+- `typecheck` runs `bun check --no-script` on `tsconfig.json` and `tsconfig.test.json`, not
+  `tsc` ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
+
 ## [2.3.0] — 2026-11-09
 
 ### Highlights

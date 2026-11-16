@@ -31,6 +31,10 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 - The special-URL catalog is now typed rows instead of seven objects joined by a spread. Results and their order are unchanged, and the public `SpecialUrlType` union is the same. A StarterKit app ships 1,303 B less minified ([#776](https://github.com/docs-plus/docs.plus/issues/776)).
 - `scripts/bench/` compares the working tree with a git ref, plus a control copy of the ref that shows the noise. It reports bytes, 21 behaviour cases and speed, in jsdom and in a real browser. One case runs two peers on synced Y.Docs, and `remoteType25` and `remoteType2000` time a peer's typing ([#771](https://github.com/docs-plus/docs.plus/issues/771)). Run `NODE_ENV=production bun scripts/bench/run.ts`; its README says how to read the table ([#770](https://github.com/docs-plus/docs.plus/issues/770)).
+- `typecheck` runs `bun check --no-script` on `tsconfig.json` and `tsconfig.test.json`, not
+  `tsc` ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
+- The jsdom `matches` override in `src/link-icons/__tests__/setupDom.ts` keeps the overloaded
+  type of `matches`, so TS 7 accepts it ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
 
 ## [2.3.0] — 2026-11-09
 

@@ -10,6 +10,11 @@ This package is private and ships inside docs.plus, so each heading names the do
 
 ## [Unreleased]
 
+### Documentation
+
+- The README says `check` runs `bun fmt --check`, and that `check:push` skips it. Its feature
+  table names `eslint-config-prettier`, which `index.js` imports ([#795](https://github.com/docs-plus/docs.plus/issues/795)).
+
 ## [2.3.0] — 2026-11-09
 
 ### Fixed

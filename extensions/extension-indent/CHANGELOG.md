@@ -4,6 +4,11 @@ All notable changes to `@docs.plus/extension-indent` are documented here. The fo
 
 ## [Unreleased]
 
+### Internal
+
+- `typecheck` runs `bun check --no-script` on `tsconfig.json` and `tsconfig.test.json`, not
+  `tsc` ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
+
 ## [2.3.0] — 2026-11-09
 
 No behaviour change. The Tiptap peer floor rises to `^3.32.2`, aligned to the family.

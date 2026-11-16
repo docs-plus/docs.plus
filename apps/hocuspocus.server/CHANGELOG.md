@@ -38,6 +38,21 @@ This file is the operator and API changelog. The pad product lives in the [root 
   the App Performance dashboard shows them. On a CPU-bound bench at 16 in flight, answers per second
   read 4282.67-4998.47 with the metrics and 4288.2-4974.07 without (3 sessions each), so their cost
   is below what the bench can see.
+- `ws_sync_message_bytes` observes each inbound sync payload. `ws_sync_window_bytes` observes the
+  peak 60 s sliding sum of one connection, once a minute and once at the close. Both are seeded
+  at 0. Nothing refuses or closes yet: a week of both sets the budget for the later refusal. On one
+  laptop, a sync message took 4,439.5 ns against 4,319.5 ns without the extension (median, n = 8),
+  2 % more time. The two ranges overlap ([#659](https://github.com/docs-plus/docs.plus/issues/659)).
+- `document_store_outcome_total{outcome}` counts what each save did to the version rows:
+  `inserted`, `unchanged`, `coalesced` or `head-moved`. Only `inserted` moves today. The other
+  three are seeded at 0, so #704 and #706 have a before
+  ([#703](https://github.com/docs-plus/docs.plus/issues/703)).
+- `ws_redis_subscriber_reconnects_total` counts each Redis subscriber reconnect after the first
+  connect. It is seeded at 0 ([#758](https://github.com/docs-plus/docs.plus/issues/758)).
+- When the 10 s drain bound fires, rest-api logs one `warn` line, "REST server did not drain in
+  time — continuing shutdown", with `pendingRequests` and `pendingWebSockets`. The WebSocket bound
+  line gains `documentsLoaded`, a count with no pad ids. A long retire then names the open work
+  ([#760](https://github.com/docs-plus/docs.plus/issues/760)).
 
 ### Changed
 
@@ -111,6 +126,13 @@ This file is the operator and API changelog. The pad product lives in the [root 
   pages, the miss flood and images did not change. In production, 7 of 2043 `/api/metadata`
   requests took longer than 2.5 s from start to end, so at most 0.34 % can lose a real preview
   ([#790](https://github.com/docs-plus/docs.plus/issues/790)).
+- `document:saved`, `readOnly`, `private` and `deleted` frames go only to each replica's own
+  connections (`sendToLocalConnections` in `src/lib/accessRealtime.ts`). Every replica already
+  gets the Redis event. `broadcastStateless` also published each frame on the room channel, so
+  each peer sent it once more. With 2 replicas in a local test, each client got 2 frames per save
+  before and 1 after (50 % fewer). Room-channel publishes for 22 events fell from 44 to none. A
+  replica whose subscriber is down now leaves its own clients without these frames until it
+  reconnects ([#758](https://github.com/docs-plus/docs.plus/issues/758)).
 
 ### Security
 
@@ -121,11 +143,27 @@ This file is the operator and API changelog. The pad product lives in the [root 
   (`TOO_LARGE_TO_OPEN`). A larger document could not open in a browser.
   `scripts/bench-import.ts` holds the adversarial bench
   ([#722](https://github.com/docs-plus/docs.plus/issues/722)).
+- The import route parses one import at a time per process (`src/lib/largeDecodeGate.ts`). A
+  second import gets `503 IMPORT_BUSY` with `Retry-After: 10`. An import with more than
+  `MAX_IMPORT_IMAGES` (128) images answers `413 TOO_MANY_IMAGES`, and no image past the cap is
+  uploaded. `zipInflateSize` counts the central directory itself. It answers `422` when the two
+  EOCD counts differ from each other or from that count. `API.md` and the OpenAPI spec list both
+  new codes ([#577](https://github.com/docs-plus/docs.plus/issues/577)).
+  - On one laptop (n = 5), three imports at once held `/health` for at most 978 ms, against
+    1678 ms (41 % less time). Their wall time was 1098 ms, against 2932 ms (62 % less time).
+  - An 8192-image file uploaded 128 images before the refusal, against 8192 (98 % fewer).
+  - The memory of one large parse did not change. The worst file the walk admits still adds
+    845.6 MiB (median). A per-part text cap waits on a ruling.
 
 ### Removed
 
 - The `docker/config-templates/env.staging` template is removed, with the stage notes in ENV.md
   and CLAUDE.md ([#725](https://github.com/docs-plus/docs.plus/issues/725)).
+
+### Documentation
+
+- `Readme.md` names `bun check --no-script` as the type check
+  ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
 
 ### Internal
 
@@ -141,6 +179,28 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - `bunfig.toml` drops keys that never applied and default test coverage. The backend unit suite takes
   16.21 s, down from 16.93 s (median of 5, one laptop), and no run writes a literal `~` folder
   ([#657](https://github.com/docs-plus/docs.plus/issues/657)).
+- `scripts/bench-import.ts docx` runs 5 child processes per size and records the added RSS. Its
+  `docx-images` case benches the image count
+  ([#577](https://github.com/docs-plus/docs.plus/issues/577)).
+- `scripts/probe-ws-frame-repeat.ts` checks whether the WebSocket server repeats large frames, with
+  permessage-deflate off and on. On Bun 1.4.4 arm64, wire bytes matched sent bytes in all 30 runs.
+  Bun 1.4.3, the control, repeated frames at 4 MiB in 5 of 5 runs. The amd64 run is still owed
+  ([#602](https://github.com/docs-plus/docs.plus/issues/602)).
+- `scripts/redis-sync-probe.ts` gains two modes ([#703](https://github.com/docs-plus/docs.plus/issues/703),
+  [#758](https://github.com/docs-plus/docs.plus/issues/758)).
+  - `--mode saved` counts the save and access frames each client gets across replicas.
+  - `--mode rows` runs N collaboration replicas over one Redis, with typers on k of them, and
+    counts version rows (`--instances`, `--typers`, `--sockets`).
+  - `--fixture-seed 726` builds the #726 text in the probe, so every run gets the same
+    3,571,053 B. The replicas start through `prodModeStack.spawnWs`, which now takes a
+    per-instance env.
+- The e2e harness picks ports from 20000-31999, checks each one is free, and never hands one out
+  twice in a run. `freePort` asked the system for port 0, from the range that outbound sockets
+  also use. The test process's own Postgres or Redis client could take that port first. On
+  2026-11-16 that failed Backend E2E with `EADDRINUSE`, and the deploy was skipped ([#730](https://github.com/docs-plus/docs.plus/issues/730)).
+- `typecheck` runs `bun check --no-script`, not `tsc --noEmit`. `markdownExport.ts` names its
+  `flatMap` type, so TS 7 no longer infers `unknown`
+  ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
 
 ## [2.3.6] — 2026-11-16
 

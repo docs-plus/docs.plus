@@ -10,6 +10,17 @@ This app is private and ships inside docs.plus, so each heading names the docs.p
 
 ## [Unreleased]
 
+### Documentation
+
+- `README.md` names `bun check --no-script` as the type check
+  ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
+
+### Internal
+
+- `tsconfig.json` drops `baseUrl` and gives its 8 `paths` a leading `./`, so TS 7 and `bun check`
+  accept it. `bun check` now checks 74 files here, not 0. `typecheck` runs `bun check --no-script`,
+  not `tsc --noEmit` ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
+
 ## [2.3.0] — 2026-11-09
 
 ### Security

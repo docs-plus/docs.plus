@@ -8,6 +8,11 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
+### Internal
+
+- `typecheck` runs `bun check --no-script`, not `tsc --noEmit`
+  ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
+
 ## [2.3.0] — 2026-11-09
 
 ### Highlights

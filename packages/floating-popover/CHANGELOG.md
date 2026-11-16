@@ -42,6 +42,8 @@ Versioning follows [Semantic Versioning](https://semver.org/) and commits follow
 
 - `@floating-ui/dom` moves from `^1.7.6` to `^1.8.0`.
 - The package no longer has its own `lint` and `lint:fix` scripts. The root lint gate checks it.
+- `typecheck` runs `bun check --no-script`, not `tsc --noEmit`
+  ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
 
 ## [2.0.0] — 2026-06-12
 

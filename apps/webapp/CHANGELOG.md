@@ -36,6 +36,9 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   keystroke. On a local profiling build on one laptop (n = 5, 100 characters at 8 per second, 4×
   CPU throttle), store writes per 100 characters fall from 101 to 2. React commits and typing INP
   did not fall, so this is not a speed gain ([#736](https://github.com/docs-plus/docs.plus/issues/736) Step 0).
+- The import card names two new refusals. `TOO_MANY_IMAGES` says an import holds at most 128
+  pictures, and `IMPORT_BUSY` says the server is busy with another import. Both showed in
+  Chromium and WebKit in a local check ([#577](https://github.com/docs-plus/docs.plus/issues/577)).
 
 ### Fixed
 
@@ -61,6 +64,36 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   page load, in a local console check. In production it had sent 252 events per trace (GlitchTip
   197 and 200, 30 days to 2026-11-11). next-pwa's service-worker register errors (AbortError and
   Cache.add) are dropped. Network failures and closed-database errors still report ([#752](https://github.com/docs-plus/docs.plus/issues/752)).
+- A failed chat send no longer hides its Retry button. The three status flips that follow a
+  network reply pass `'smooth'` to Virtuoso's `data.map`, so a list at the bottom follows the
+  taller failed row. A reader who scrolled up stays where they were. In a local Linux test, the
+  list stopped 16 px short before, with 8 of 24 px of Retry showing. After, the gap is 0 px and all
+  24 px show ([#730](https://github.com/docs-plus/docs.plus/issues/730)).
+
+### Security
+
+- Production `next.config.js` sets no `images.remotePatterns`, so `/_next/image` fetches no remote
+  host. The loopback hosts stay for local runs. No code uses `next/image`. On production, 3 of 3
+  remote probe pictures came back before, and none after
+  ([#641](https://github.com/docs-plus/docs.plus/issues/641)).
+
+### Documentation
+
+- `README.md` names `bun check --no-script` as the type check
+  ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
+
+### Internal
+
+- The chatroom and editor browser suites pass on `main` again
+  ([#730](https://github.com/docs-plus/docs.plus/issues/730)). On the fix commit, 5 back-to-back
+  dispatches per suite failed 0 of 5.
+  - `attachments.cy.ts` serves its picture from `cypress/fixtures/feed-image-32.png`. Cypress
+    16.2.1 refuses a fixture path outside that folder, which failed 14 of 21 tests.
+  - `paste-keeps-toc-ids.cy.js` presses Ctrl for Mod on Linux, where ProseMirror reads Mod as Ctrl.
+  - The same spec stops the `/editor` playground's own copy hook at `body`. That hook's second copy
+    replaced the pad slice on Linux. The spec failed 3 of 10 Linux runs before, and 0 of 10 after.
+- `typecheck` runs `bun check --no-script`, not `tsc --noEmit`
+  ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
 
 ## [2.3.6] — 2026-11-16
 

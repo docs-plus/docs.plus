@@ -19,6 +19,11 @@ All notable changes to `@docs.plus/extension-inline-code` are documented here. T
 - A new caveat: with `@tiptap/markdown`, bold, italic, strike or highlight on code exports with the delimiters inside the backticks, such as `` `**x**` ``. No error is raised. The caveat gives the fix for a Markdown export.
 - The StarterKit `code` caveats describe the new `Mod-e` and command results.
 
+### Internal
+
+- `typecheck` runs `bun check --no-script`, not `tsc --noEmit`
+  ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
+
 ## [2.3.0] — 2026-11-09
 
 No behaviour change. The Tiptap peer floor rises to `^3.32.2`, aligned to the family.
