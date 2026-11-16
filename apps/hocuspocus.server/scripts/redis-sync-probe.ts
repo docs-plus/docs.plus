@@ -4,9 +4,15 @@
  * Run from apps/hocuspocus.server:
  *   bun --env-file=../../.env.local scripts/redis-sync-probe.ts --mode publishes
  *   bun --env-file=../../.env.local scripts/redis-sync-probe.ts --mode convergence
+ *   bun --env-file=../../.env.local scripts/redis-sync-probe.ts --mode saved (#758)
  * Options: --fixture <Y update file>, --edits 20, --rounds 30, --step-ms 10, --burst-ms 0, --redis-db 7.
+ * Saved mode: --saves 20, --gap-ms 30000 (0 skips the drop check), --gap-saves 3, --log-dir <dir>.
+ *   bun --env-file=../../.env.local scripts/redis-sync-probe.ts --mode rows (#703)
+ * Rows mode: --instances 2, --typers 1, --sockets <instances>, --cps 5, --minutes 10,
+ * --fixture-bytes 2048 (built from a fixed seed unless --fixture), --concurrency 1,
+ * --count-locks true, --stagger-ms <60000 / typers>.
  */
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, openSync, readFileSync, rmSync } from 'node:fs'
 import net from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -17,6 +23,7 @@ import Redis from 'ioredis'
 import * as Y from 'yjs'
 
 import { freePort, makeOpenProvider, sleep, waitForHttp } from './lib/e2eHarness'
+import { spawnWorker } from './lib/prodModeStack'
 
 // Before the dynamic import: `production` turns on TLS in this process's pool.
 process.env.NODE_ENV = 'test'
@@ -36,7 +43,9 @@ const option = (name: string, fallback: string) => {
   return at === -1 ? fallback : args[at + 1]
 }
 const mode = option('--mode', 'publishes')
-if (mode !== 'publishes' && mode !== 'convergence') throw new Error(`unknown --mode ${mode}`)
+if (mode !== 'publishes' && mode !== 'convergence' && mode !== 'saved' && mode !== 'rows') {
+  throw new Error(`unknown --mode ${mode}`)
+}
 const edits = Number(option('--edits', '20'))
 const rounds = Number(option('--rounds', '30'))
 const redisDb = Number(option('--redis-db', '7'))
@@ -44,9 +53,27 @@ const stepMs = Number(option('--step-ms', '10'))
 // Publishes mode: 0 waits for each edit to land; above 0 types the edits that many ms apart.
 const burstMs = Number(option('--burst-ms', '0'))
 const fixturePath = option('--fixture', DEFAULT_FIXTURE)
+const saves = Number(option('--saves', '20'))
+const gapMs = Number(option('--gap-ms', '30000'))
+const gapSaves = Number(option('--gap-saves', '3'))
+const logDir = option('--log-dir', '')
+const instanceCount = Number(option('--instances', '2'))
+const typerCount = Number(option('--typers', '1'))
+const socketCount = Number(option('--sockets', String(instanceCount)))
+const cps = Number(option('--cps', '5'))
+const minutes = Number(option('--minutes', '10'))
+const fixtureBytes = Number(option('--fixture-bytes', '2048'))
+const workerConcurrency = Number(option('--concurrency', '1'))
+const countLocks = option('--count-locks', 'true') === 'true'
+// 60 s is the store hook's maxDebounce, so the typers' save clocks spread evenly.
+const staggerMs = Number(option('--stagger-ms', String(Math.round(60_000 / typerCount))))
+if (!(instanceCount >= 2 && typerCount >= 1 && typerCount <= instanceCount)) {
+  throw new Error('need --instances 2 or more and --typers between 1 and --instances')
+}
+if (socketCount < instanceCount) throw new Error('--sockets must cover one per instance')
 
 /** Typing and backspacing, so the fixture carries a real delete set. */
-const buildEditedFixture = (targetBytes: number): Uint8Array => {
+const buildEditedFixture = (targetBytes: number, opsPerParagraph = 2000): Uint8Array => {
   const doc = new Y.Doc()
   const fragment = doc.getXmlFragment('default')
   let text = new Y.XmlText()
@@ -57,7 +84,7 @@ const buildEditedFixture = (targetBytes: number): Uint8Array => {
     text = new Y.XmlText()
     paragraph.insert(0, [text])
     fragment.push([paragraph])
-    for (let i = 0; i < 2000; i++) {
+    for (let i = 0; i < opsPerParagraph; i++) {
       if (rand() < 0.3 && text.length > 0) doc.transact(() => text.delete(text.length - 1, 1))
       else doc.transact(() => text.insert(text.length, 'abcdefgh '[i % 9]))
     }
@@ -65,10 +92,19 @@ const buildEditedFixture = (targetBytes: number): Uint8Array => {
   return Y.encodeStateAsUpdate(doc)
 }
 
-const fixture = existsSync(fixturePath)
-  ? new Uint8Array(readFileSync(fixturePath))
-  : buildEditedFixture(1_000_000)
-const fixtureLabel = existsSync(fixturePath) ? fixturePath : 'built: type and delete'
+// Rows mode (#703) never reads Notes/: its default is built from the fixed seed. 100 ops per
+// paragraph lands the 2 KB target at 2,122 B.
+const builtRows = mode === 'rows' && !args.includes('--fixture')
+const fixture = builtRows
+  ? buildEditedFixture(fixtureBytes, 100)
+  : existsSync(fixturePath)
+    ? new Uint8Array(readFileSync(fixturePath))
+    : buildEditedFixture(1_000_000)
+const fixtureLabel = builtRows
+  ? `built: seed 7, ${fixtureBytes} B target`
+  : existsSync(fixturePath)
+    ? fixturePath
+    : 'built: type and delete'
 
 // --- Postgres TLS terminator. Production mode forces TLS; local Postgres has none.
 const scratch = mkdtempSync(join(tmpdir(), 'redis-sync-probe-'))
@@ -160,7 +196,7 @@ const readVarUint = (buf: Buffer, cursor: { at: number }) => {
     scale *= 128
   }
 }
-const TYPES = ['Sync', 'Awareness', 'Auth', 'QueryAwareness', 'SyncReply', 'Stateless']
+const TYPES = ['Sync', 'Awareness', 'Auth', 'QueryAwareness', 'SyncReply', 'Stateless', 'Broadcast']
 const SYNC_STEPS = ['SS1', 'SS2', 'Update']
 
 // Frame layout: [idLen][id][varString document][varUint type][varUint sync step].
@@ -189,27 +225,71 @@ subscriber.on('messageBuffer', (_channel: Buffer, data: Buffer) => {
   })
 })
 
-// --- Two production-mode WS processes.
+// --- Saved mode: A reaches Redis through this proxy, so the drop check can cut A's
+// save subscriber alone. Its psubscribe names this pattern; no other client sends it.
+const SUBSCRIBER_PATTERN = 'doc:*:saved'
+const redisProxy = {
+  refusing: false,
+  subscribers: new Set<net.Socket>(),
+  onSubscriber: null as null | (() => void)
+}
+const redisProxyServer = net.createServer((client) => {
+  if (redisProxy.refusing) return void client.destroy()
+  const upstream = net.connect(redisOptions.port, redisOptions.host)
+  const close = () => {
+    redisProxy.subscribers.delete(client)
+    client.destroy()
+    upstream.destroy()
+  }
+  for (const socket of [client, upstream]) socket.on('error', close).on('close', close)
+  client.on('data', (chunk: Buffer) => {
+    if (!redisProxy.subscribers.has(client) && chunk.includes(SUBSCRIBER_PATTERN)) {
+      redisProxy.subscribers.add(client)
+      redisProxy.onSubscriber?.()
+    }
+    upstream.write(chunk)
+  })
+  upstream.on('data', (chunk: Buffer) => client.write(chunk))
+})
+const redisProxyPort = freePort()
+if (mode === 'saved') {
+  await new Promise<void>((resolve) =>
+    redisProxyServer.listen(redisProxyPort, '127.0.0.1', resolve)
+  )
+}
+
+// --- Production-mode WS processes: two, or --instances.
 interface Instance {
   label: string
   port: number
   internalPort: number
   proc: Subprocess | null
+  env: Record<string, string>
 }
-const instances: Instance[] = ['A', 'B'].map((label) => ({
+const instances: Instance[] = Array.from({ length: instanceCount }, (_, i) =>
+  String.fromCharCode(65 + i)
+).map((label) => ({
   label,
   port: freePort(),
   internalPort: freePort(),
-  proc: null
+  proc: null,
+  env: {}
 }))
+if (mode === 'saved') {
+  instances[0].env = { REDIS_HOST: '127.0.0.1', REDIS_PORT: String(redisProxyPort) }
+}
 
 const start = async (instance: Instance) => {
+  const log = logDir ? openSync(join(logDir, `${instance.label}.log`), 'a') : 'ignore'
   instance.proc = Bun.spawn(['bun', 'src/hocuspocus.server.ts'], {
     cwd: PACKAGE_ROOT,
-    stdout: 'ignore',
+    stdout: log,
     stderr: 'inherit',
     env: {
       ...process.env,
+      ...instance.env,
+      // Step 5 of #758 reads the reconnect warn lines from these logs.
+      ...(logDir ? { REDIS_LOG_LEVEL: 'warn' } : {}),
       NODE_ENV: 'production',
       REDIS: 'true',
       REDIS_DB: String(redisDb),
@@ -410,13 +490,357 @@ const runConvergence = async () => {
   }
 }
 
+const metricValue = async (instance: Instance, series: string) => {
+  const text = await (await fetch(`http://127.0.0.1:${instance.internalPort}/metrics`)).text()
+  const line = text.split('\n').find((l) => l.startsWith(`${series} `))
+  return line ? Number(line.slice(series.length + 1)) : null
+}
+const RECONNECTS = 'ws_redis_subscriber_reconnects_total'
+const RELAY_DROPS = 'stateless_relay_dropped_total{reason="broadcast-frame"}'
+const metricPair = async (series: string) => ({
+  A: await metricValue(instances[0], series),
+  B: await metricValue(instances[1], series)
+})
+
+type Payload = { msg?: string; type?: string; version?: number; state?: boolean }
+
+/**
+ * Publishes `doc:<id>:saved` and `doc:<id>:access` straight to Redis, as the store worker
+ * and REST do, and counts the stateless frames each client gets. The drop check cuts
+ * A's save subscriber at the proxy for `gapMs`, so its reconnect backs off like a real outage.
+ */
+const runSaved = async () => {
+  const pair = await openPair()
+  const inbox: Payload[][] = pair.map((writer) => {
+    const received: Payload[] = []
+    writer.provider.on('stateless', ({ payload }: { payload: string }) => {
+      received.push(JSON.parse(payload))
+    })
+    return received
+  })
+  const roomFrom = frames.length
+  const relayBefore = await metricPair(RELAY_DROPS)
+  let version = 1000
+
+  const publishAndCount = async (
+    channelName: string,
+    body: Record<string, unknown>,
+    match: (p: Payload) => boolean
+  ) => {
+    const from = inbox.map((received) => received.length)
+    await admin.publish(channelName, JSON.stringify({ documentId, ...body }))
+    await sleep(500)
+    const [a, b] = inbox.map((received, i) => received.slice(from[i]).filter(match).length)
+    return { A: a, B: b }
+  }
+  const save = () => {
+    const v = ++version
+    return publishAndCount(
+      `doc:${documentId}:saved`,
+      { version: v, timestamp: Date.now() },
+      (p) => p.msg === 'document:saved' && p.version === v
+    )
+  }
+  const access = (readOnly: boolean) =>
+    publishAndCount(
+      `doc:${documentId}:access`,
+      { readOnly, ownerId: null, timestamp: new Date().toISOString() },
+      (p) => p.type === 'readOnly' && p.state === readOnly
+    )
+  const summary = (counts: { A: number; B: number }[]) => {
+    const all = counts.flatMap((c) => [c.A, c.B])
+    return {
+      n: counts.length,
+      perClient: { A: counts.map((c) => c.A), B: counts.map((c) => c.B) },
+      range: [Math.min(...all), Math.max(...all)]
+    }
+  }
+
+  const savedCounts = []
+  for (let i = 0; i < saves; i++) savedCounts.push(await save())
+  const accessCounts = [await access(true), await access(false)]
+  const roomChannelStateless = frames.slice(roomFrom).filter((f) => f.kind === 'Broadcast').length
+
+  let drop = null
+  if (gapMs > 0) {
+    const reconnectsBefore = await metricPair(RECONNECTS)
+    redisProxy.refusing = true
+    const cut = redisProxy.subscribers.size
+    for (const socket of redisProxy.subscribers) socket.destroy()
+    const gapStart = Date.now()
+    const during = []
+    for (let k = 1; k <= gapSaves; k++) {
+      await sleep(gapStart + (k * gapMs) / (gapSaves + 1) - Date.now())
+      during.push(await save())
+    }
+    await sleep(gapStart + gapMs - Date.now())
+    const back = new Promise<void>((resolve) => (redisProxy.onSubscriber = resolve))
+    const restoredAt = Date.now()
+    redisProxy.refusing = false
+    await Promise.race([back, sleep(30_000)])
+    const resubscribedMs = redisProxy.subscribers.size > 0 ? Date.now() - restoredAt : null
+    await sleep(500)
+    const after = []
+    for (let k = 0; k < gapSaves; k++) after.push(await save())
+    drop = {
+      gapMs,
+      subscriberSocketsCut: cut,
+      resubscribedMs,
+      during: summary(during),
+      after: summary(after),
+      reconnects: { before: reconnectsBefore, after: await metricPair(RECONNECTS) }
+    }
+  }
+
+  const relayAfter = await metricPair(RELAY_DROPS)
+  pair.forEach((writer) => writer.provider.destroy())
+  return {
+    saved: summary(savedCounts),
+    access: summary(accessCounts),
+    // Each replica's broadcastStateless publishes here; each peer sends it again.
+    roomChannelBroadcasts: roomChannelStateless,
+    relayDropsBroadcastFrame: { before: relayBefore, after: relayAfter },
+    drop
+  }
+}
+
+// --- Rows mode (#703): typers on k of R replicas, one worker, version rows per minute.
+type Series = Map<string, number>
+const scrapeSeries = async (url: string): Promise<Series> => {
+  const series: Series = new Map()
+  for (const line of (await (await fetch(url)).text()).split('\n')) {
+    if (!line || line.startsWith('#')) continue
+    const at = line.lastIndexOf(' ')
+    series.set(line.slice(0, at), Number(line.slice(at + 1)))
+  }
+  return series
+}
+/** Null when no series matches, so a counter the build lacks never reads as 0. */
+const sumSeries = (series: Series, name: string, labels: Record<string, string> = {}) => {
+  let total: number | null = null
+  for (const [key, value] of series) {
+    if (key !== name && !key.startsWith(`${name}{`)) continue
+    if (!Object.entries(labels).every(([k, v]) => key.includes(`${k}="${v}"`))) continue
+    total = (total ?? 0) + value
+  }
+  return total
+}
+const delta = (after: number | null, before: number | null) =>
+  after === null || before === null ? null : Math.round((after - before) * 1000) / 1000
+const STORE_OUTCOMES = ['inserted', 'unchanged', 'coalesced', 'head-moved']
+const median = (values: number[]) => {
+  const sorted = [...values].sort((a, b) => a - b)
+  return sorted.length ? sorted[Math.floor(sorted.length / 2)] : null
+}
+
+const runRows = async () => {
+  const worker = await spawnWorker(
+    'worker',
+    { databaseUrl: proxiedUrl.toString(), redisDb, logFile: join(scratch, 'worker.log') },
+    workerConcurrency
+  )
+  process.once('exit', () => worker.proc.kill('SIGKILL'))
+  // The extension's redlock: each acquire runs one script with a fresh value, and a
+  // won acquire runs one `set` inside it. Attempts less wins are the lock skips.
+  const lockKey = `hocuspocus:${documentId}:lock`
+  const lockAttempts = new Set<string>()
+  const lockWins = new Set<string>()
+  const monitor = countLocks ? await admin.monitor() : null
+  monitor?.on('monitor', (_time: string, cmd: string[]) => {
+    const name = cmd[0]?.toLowerCase()
+    if ((name === 'evalsha' || name === 'eval') && cmd.length === 7 && cmd[3] === lockKey) {
+      lockAttempts.add(cmd[5])
+    } else if (name === 'set' && cmd[1] === lockKey) lockWins.add(cmd[2])
+  })
+
+  const writers: Writer[] = []
+  for (const instance of instances) writers.push(await openWriter(instance))
+  writers[0].ydoc.transact(() => {
+    const paragraph = new Y.XmlElement('paragraph')
+    paragraph.insert(0, [new Y.XmlText(PROBE_TEXT)])
+    writers[0].ydoc.getXmlFragment('default').push([paragraph])
+  })
+  const readers: Writer[] = []
+  for (let i = instanceCount; i < socketCount; i++) {
+    const reader = await makeOpenProvider(instances[i % instanceCount].port)(
+      documentId,
+      documentId,
+      ''
+    )
+    if (!reader.synced) throw new Error(`reader ${i} never synced`)
+    readers.push(reader)
+  }
+  const everyone = writers.concat(readers)
+  if (!(await waitFor(() => everyone.every((w) => probeText(w.ydoc) !== null), 15_000))) {
+    throw new Error('the probe paragraph never reached every socket')
+  }
+
+  const queueEmpty = async () =>
+    (await admin.llen('bull:store-documents:wait')) +
+      (await admin.llen('bull:store-documents:active')) ===
+    0
+  // The setup edit saves after the 10 s debounce; let it land before the window opens.
+  const drain = async () => {
+    await sleep(12_000)
+    const deadline = Date.now() + 60_000
+    while (Date.now() < deadline && !(await queueEmpty())) await sleep(250)
+    await sleep(1000)
+  }
+  await drain()
+
+  const snapshot = async () => ({
+    at: Date.now(),
+    rows: await prisma.documents.count({ where: { documentId } }),
+    worker: await scrapeSeries(worker.metricsUrl),
+    ws: await Promise.all(
+      instances.map((i) => scrapeSeries(`http://127.0.0.1:${i.internalPort}/metrics`))
+    ),
+    lockAttempts: lockAttempts.size,
+    lockWins: lockWins.size
+  })
+  type Sample = {
+    cpu: number | null
+    lagMax: number | null
+    lagP99: number | null
+    rss: number | null
+  }
+  const samples: Sample[][] = instances.map(() => [])
+  const sampleWs = async () => {
+    const all = await Promise.all(
+      instances.map((i) => scrapeSeries(`http://127.0.0.1:${i.internalPort}/metrics`))
+    )
+    all.forEach((series, i) =>
+      samples[i].push({
+        cpu: sumSeries(series, 'process_cpu_seconds_total'),
+        lagMax: sumSeries(series, 'nodejs_eventloop_lag_max_seconds'),
+        lagP99: sumSeries(series, 'nodejs_eventloop_lag_p99_seconds'),
+        rss: sumSeries(series, 'process_resident_memory_bytes')
+      })
+    )
+  }
+
+  // Typers that start together share one 60 s save clock, so the redlock skips all but
+  // one save. Typer j starts j x staggerMs in, and the window opens once all type.
+  type Snapshot = Awaited<ReturnType<typeof snapshot>>
+  const intervalMs = 1000 / cps
+  const warmTicks = Math.round(((typerCount - 1) * staggerMs * cps) / 1000)
+  const ticks = warmTicks + Math.round(minutes * 60 * cps)
+  const typingFrom = Date.now()
+  let opened: Snapshot | null = null
+  let nextSample = 0
+  for (let tick = 0; tick < ticks; tick++) {
+    if (tick === warmTicks) {
+      opened = await snapshot()
+      await sampleWs()
+      nextSample = opened.at + 5000
+    }
+    writers.slice(0, typerCount).forEach((writer, j) => {
+      if (tick * intervalMs >= j * staggerMs) insertMarker(writer.ydoc, 'abcdefgh '[tick % 9])
+    })
+    if (opened && Date.now() >= nextSample) {
+      nextSample += 5000
+      await sampleWs()
+    }
+    await sleep(typingFrom + (tick + 1) * intervalMs - Date.now())
+  }
+  if (!opened) throw new Error('the window never opened')
+  await sampleWs()
+  const end = await snapshot()
+  await drain()
+  const tail = await snapshot()
+
+  const events = await admin.xrange('bull:store-documents:events', String(opened.at), '+')
+  const eventCount = (kind: string, from: number, to: number) =>
+    events.filter(([id, fields]) => {
+      const at = Number(id.split('-')[0])
+      return at >= from && at < to && fields[0] === 'event' && fields[1] === kind
+    }).length
+  const queueEvents = (from: Snapshot, to: Snapshot) => ({
+    jobsAdded: eventCount('added', from.at, to.at),
+    jobIdDedupes: eventCount('duplicated', from.at, to.at),
+    lockAttempts: countLocks ? to.lockAttempts - from.lockAttempts : null,
+    lockSkips: countLocks
+      ? to.lockAttempts - from.lockAttempts - (to.lockWins - from.lockWins)
+      : null
+  })
+  const outcomes = (from: Snapshot, to: Snapshot) =>
+    Object.fromEntries(
+      STORE_OUTCOMES.map((outcome) => [
+        outcome,
+        delta(
+          sumSeries(to.worker, 'document_store_outcome_total', { outcome }),
+          sumSeries(from.worker, 'document_store_outcome_total', { outcome })
+        )
+      ])
+    )
+  const completed = (s: Snapshot) =>
+    sumSeries(s.worker, 'jobs_total', { queue: 'store-documents', status: 'completed' })
+  const windowMinutes = (end.at - opened.at) / 60_000
+
+  const ws = instances.map((instance, i) => {
+    const cpuSeconds = delta(samples[i].at(-1)?.cpu ?? null, samples[i][0]?.cpu ?? null)
+    const lagMax = samples[i].map((s) => s.lagMax).filter((v): v is number => v !== null)
+    const lagP99 = samples[i].map((s) => s.lagP99).filter((v): v is number => v !== null)
+    const rss = samples[i].map((s) => s.rss).filter((v): v is number => v !== null)
+    return {
+      label: instance.label,
+      typer: i < typerCount,
+      sockets: 1 + readers.filter((_, r) => (instanceCount + r) % instanceCount === i).length,
+      cpuPercent:
+        cpuSeconds === null ? null : Math.round((cpuSeconds / (windowMinutes * 60)) * 1000) / 10,
+      lagMaxSeconds: lagMax.length ? Math.max(...lagMax) : null,
+      lagP99Seconds: { median: median(lagP99), max: lagP99.length ? Math.max(...lagP99) : null },
+      rssMaxBytes: rss.length ? Math.max(...rss) : null,
+      fallbackInserted: delta(
+        sumSeries(tail.ws[i], 'document_store_outcome_total', { outcome: 'inserted' }),
+        sumSeries(opened.ws[i], 'document_store_outcome_total', { outcome: 'inserted' })
+      )
+    }
+  })
+  const hot = ws.reduce((a, b) => ((b.cpuPercent ?? -1) > (a.cpuPercent ?? -1) ? b : a))
+
+  monitor?.disconnect()
+  everyone.forEach((w) => w.provider.destroy())
+  worker.proc.kill('SIGKILL')
+  await worker.proc.exited
+  return {
+    instances: instanceCount,
+    typers: typerCount,
+    sockets: socketCount,
+    cps,
+    windowMinutes: Math.round(windowMinutes * 1000) / 1000,
+    windowKeystrokesPerTyper: ticks - warmTicks,
+    staggerMs,
+    rows: {
+      window: end.rows - opened.rows,
+      perMinute: Math.round(((end.rows - opened.rows) / windowMinutes) * 1000) / 1000,
+      tail: tail.rows - end.rows
+    },
+    jobsCompleted: {
+      window: delta(completed(end), completed(opened)),
+      tail: delta(completed(tail), completed(end))
+    },
+    storeOutcomes: { window: outcomes(opened, end), tail: outcomes(end, tail) },
+    queue: { window: queueEvents(opened, end), tail: queueEvents(end, tail) },
+    hotReplica: hot.label,
+    ws
+  }
+}
+
 let exitCode = 0
 try {
   await prisma.documentMetadata.create({ data: { documentId, slug: documentId } })
   await prisma.documents.create({ data: { documentId, version: 1, data: Buffer.from(fixture) } })
   await Promise.all(instances.map(start))
 
-  const result = mode === 'publishes' ? await runPublishes() : await runConvergence()
+  const result =
+    mode === 'publishes'
+      ? await runPublishes()
+      : mode === 'saved'
+        ? await runSaved()
+        : mode === 'rows'
+          ? await runRows()
+          : await runConvergence()
   console.log(
     JSON.stringify(
       {
@@ -443,6 +867,7 @@ try {
   subscriber.disconnect()
   admin.disconnect()
   pgProxy.close()
+  if (mode === 'saved') redisProxyServer.close()
   rmSync(scratch, { recursive: true, force: true })
   await prisma.$disconnect()
 }
