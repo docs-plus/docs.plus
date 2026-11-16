@@ -3,7 +3,7 @@ import * as dns from 'node:dns/promises'
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 
 import { runHtmlScrape } from '../../domain/stages/htmlScrape'
-import type { Scraper } from '../../domain/types'
+import { type Scraper, STAGE_TIMEOUT_MS } from '../../domain/types'
 import { createHeadScraper } from '../../infra/headScraper'
 
 const noopScraper: Scraper = {
@@ -217,6 +217,21 @@ describe('runHtmlScrape', () => {
     const result = await runHtmlScrape('https://example.com', noopScraper, undefined)
     expect(result).toBe('status:5xx')
   })
+
+  test('gives up on a host that sends no headers before the stage timer', async () => {
+    fetchSpy.mockImplementation(
+      (_url: unknown, init?: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
+        })
+    )
+    const started = performance.now()
+    const result = await runHtmlScrape('https://example.com/hang', noopScraper, undefined)
+    const elapsed = performance.now() - started
+    expect(result).toBe('timeout')
+    expect(elapsed).toBeGreaterThanOrEqual(STAGE_TIMEOUT_MS.htmlHeaders - 50)
+    expect(elapsed).toBeLessThan(STAGE_TIMEOUT_MS.html)
+  }, 10_000)
 
   test('cuts a chunk that crosses the 1 MiB cap', async () => {
     const big = new Uint8Array(6 * 1024 * 1024)

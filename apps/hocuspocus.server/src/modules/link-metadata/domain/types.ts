@@ -182,7 +182,9 @@ export interface Scraper {
 export const STAGE_TIMEOUT_MS = {
   oembed: 3_000,
   special: 3_000,
-  html: 8_000
+  html: 8_000,
+  // A host that sends no headers in 3 s holds a cold slot for nothing; the cap is 64 (#790).
+  htmlHeaders: 3_000
 } as const
 
 /** A repo answer is about 7 KB and a question about 1 KB. A larger body is a miss, unparsed. */

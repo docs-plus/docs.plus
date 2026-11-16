@@ -123,10 +123,12 @@ export const runHtmlScrape = async (
 ): Promise<HtmlCard | HtmlMiss> => {
   const controller = new AbortController()
   let timedOut = false
-  const timer = setTimeout(() => {
+  const timeOut = () => {
     timedOut = true
     controller.abort()
-  }, STAGE_TIMEOUT_MS.html)
+  }
+  const timer = setTimeout(timeOut, STAGE_TIMEOUT_MS.html)
+  const headersTimer = setTimeout(timeOut, STAGE_TIMEOUT_MS.htmlHeaders)
   const lang = primaryLangSubtag(acceptLanguage)
 
   try {
@@ -139,6 +141,7 @@ export const runHtmlScrape = async (
         ...(lang ? { 'Accept-Language': lang } : {})
       }
     })
+    clearTimeout(headersTimer)
 
     if (!response.ok) {
       if (response.status >= 500) return 'status:5xx'
@@ -191,6 +194,7 @@ export const runHtmlScrape = async (
     return timedOut ? 'timeout' : 'error'
   } finally {
     clearTimeout(timer)
+    clearTimeout(headersTimer)
     // Ends every read: an early return, a head-only page, or a tail. The rest of the
     // body is never downloaded. A no-op once the body was fully read.
     controller.abort()
