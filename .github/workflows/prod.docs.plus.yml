@@ -672,16 +672,6 @@ jobs:
           # deploys of the same commit, with and without it, before removing it.
           backend_flags=(--no-cache)
           if [ "${BACKEND_NO_CACHE}" = "false" ]; then backend_flags=(); fi
-          backend_start=$(date +%s)
-          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
-            build "${backend_flags[@]}" rest-api hocuspocus-server
-          backend_s=$(( $(date +%s) - backend_start ))
-          echo "backend cache A/B: flags='${backend_flags[*]:-cache on}', ${backend_s} s"
-          echo "backend cache A/B: \`${backend_flags[*]:-cache on}\`, ${backend_s} s" >> "$GITHUB_STEP_SUMMARY"
-
-          # No --parallel: it is not a `docker compose build` flag in Compose v2
-          # (absent from `docker compose build --help`). Named services already
-          # build concurrently.
 
           # Typecheck and Build Verification check this commit beside this build,
           # and `deploy` waits for both. An emergency dispatch (skip_quality_gates)
@@ -690,9 +680,83 @@ jobs:
           # own type check.
           NEXT_SKIP_TYPECHECK=1
           if [ "${SKIP_QUALITY_GATES}" = "true" ]; then NEXT_SKIP_TYPECHECK=0; fi
-          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
-            build --build-arg "NEXT_SKIP_TYPECHECK=${NEXT_SKIP_TYPECHECK}" webapp admin-dashboard
 
+          BUILD_DIR="${RUNNER_TEMP}/image-build"
+          mkdir -p "${BUILD_DIR}"
+          : > "${BUILD_DIR}/times.txt"
+
+          # Sum of restart counts over running containers; a rise means a live container died during the build.
+          restarts() { { docker ps -q | xargs -r docker inspect -f '{{.RestartCount}}' 2>/dev/null || true; } | awk '{s += $1} END {print s + 0}'; }
+          unhealthy() { { docker ps -q --filter health=unhealthy || true; } | awk 'END {print NR}'; }
+          RESTARTS_BEFORE=$(restarts)
+          UNHEALTHY_BEFORE=$(unhealthy)
+
+          # Open WebSockets at build start, summed over the collab replicas: the
+          # trial's test condition (#567). Any failed read prints unknown.
+          ws_open() {
+            local ids id v sum=0
+            ids=$(docker ps -q --filter label=com.docker.compose.service=hocuspocus-server 2>/dev/null || true)
+            [ -n "${ids}" ] || { echo unknown; return 0; }
+            for id in ${ids}; do
+              v=$({ docker exec "${id}" bun -e "fetch('http://localhost:4003/metrics', { signal: AbortSignal.timeout(5000) }).then(r => r.text()).then(console.log)" 2>/dev/null || true; } \
+                | awk '$1 == "ws_active_connections" {print $2}')
+              case "${v}" in '' | *[!0-9]*) echo unknown; return 0 ;; esac
+              sum=$((sum + v))
+            done
+            echo "${sum}"
+          }
+          WS_OPEN_START=$(ws_open)
+
+          # Host load, available memory and used swap every 5 s, for the keep-or-revert call (#567).
+          ( while sleep 5; do
+              printf '%s %s %s\n' "$(date +%s)" "$(cut -d' ' -f1 /proc/loadavg)" \
+                "$(awk '/^MemAvailable:/ {a=$2} /^SwapTotal:/ {t=$2} /^SwapFree:/ {f=$2} END {print int(a/1024), int((t-f)/1024)}' /proc/meminfo)"
+            done ) > "${BUILD_DIR}/host.txt" 2>/dev/null &
+          SAMPLER_PID=$!
+          # Stop the sampler on every exit, also on a cancel.
+          stop_all() { kill "${SAMPLER_PID}" 2>/dev/null || true; }
+          trap stop_all EXIT
+          trap 'exit 143' INT TERM
+
+          # Streams one compose build call with a name prefix, so a hung call still shows its log.
+          build_call() {
+            local name=$1 start=$SECONDS rc=0
+            shift
+            docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" build "$@" 2>&1 \
+              | sed -u "s/^/[${name}] /" || rc=$?
+            echo "${name} exit=${rc} seconds=$((SECONDS - start))" >> "${BUILD_DIR}/times.txt"
+            return "${rc}"
+          }
+
+          # The calls stay separate because only the backend passes --no-cache.
+          # Compose v2 has no --parallel flag (AGENTS.md §Docker).
+          STEP_START=$SECONDS
+          BACK_RC=0
+          backend_start=$(date +%s)
+          build_call backend "${backend_flags[@]}" rest-api hocuspocus-server || BACK_RC=$?
+          backend_s=$(( $(date +%s) - backend_start ))
+          echo "backend cache A/B: flags='${backend_flags[*]:-cache on}', ${backend_s} s"
+          echo "backend cache A/B: \`${backend_flags[*]:-cache on}\`, ${backend_s} s" >> "$GITHUB_STEP_SUMMARY"
+          FRONT_RC=0
+          if [ "${BACK_RC}" -eq 0 ]; then build_call front --build-arg "NEXT_SKIP_TYPECHECK=${NEXT_SKIP_TYPECHECK}" webapp admin-dashboard || FRONT_RC=$?; fi
+          kill "${SAMPLER_PID}" 2>/dev/null || true
+
+          RESTARTS_AFTER=$(restarts)
+          UNHEALTHY_AFTER=$(unhealthy)
+          HOST_LINE=$(awk 'NR == 1 {l = $2; m = $3; s0 = $4; s = $4} {if ($2 > l) l = $2; if ($3 < m) m = $3; if ($4 > s) s = $4} END {printf "load1_max %s, mem_avail_min_mb %s, swap_used_start_mb %s, swap_used_max_mb %s, samples %d", l, m, s0, s, NR}' "${BUILD_DIR}/host.txt")
+          {
+            echo "### 🏗️ Image build calls"
+            echo "- wall: $((SECONDS - STEP_START)) s"
+            sed 's/^/- /' "${BUILD_DIR}/times.txt"
+            echo "- host: ${HOST_LINE}"
+            echo "- live containers: restarts_during_build $((RESTARTS_AFTER - RESTARTS_BEFORE)), unhealthy_before ${UNHEALTHY_BEFORE}, unhealthy_after ${UNHEALTHY_AFTER}"
+            echo "- condition: ws_active_connections at build start ${WS_OPEN_START}"
+          } | tee -a "${GITHUB_STEP_SUMMARY}"
+
+          if [ "${BACK_RC}" -ne 0 ] || [ "${FRONT_RC}" -ne 0 ]; then
+            echo "::error::Image build failed: backend exit ${BACK_RC}, front exit ${FRONT_RC}. Read the [backend] and [front] lines above."
+            exit 1
+          fi
           echo "✅ Images built"
 
       # The base image floats on oven/bun:1-slim and CI pins a version, so they
