@@ -6,31 +6,33 @@
  *   bun --env-file=../../.env.local scripts/redis-sync-probe.ts --mode convergence
  *   bun --env-file=../../.env.local scripts/redis-sync-probe.ts --mode saved (#758)
  * Options: --fixture <Y update file>, --edits 20, --rounds 30, --step-ms 10, --burst-ms 0, --redis-db 7.
+ * --fixture-seed 726 builds the #726 bench text in place of --fixture (3,571,053 B, same bytes each run).
  * Saved mode: --saves 20, --gap-ms 30000 (0 skips the drop check), --gap-saves 3, --log-dir <dir>.
  *   bun --env-file=../../.env.local scripts/redis-sync-probe.ts --mode rows (#703)
  * Rows mode: --instances 2, --typers 1, --sockets <instances>, --cps 5, --minutes 10,
- * --fixture-bytes 2048 (built from a fixed seed unless --fixture), --concurrency 1,
+ * --fixture-bytes 2048 (built from seed 7 unless --fixture or --fixture-seed), --concurrency 1,
  * --count-locks true, --stagger-ms <60000 / typers>.
  */
-import { existsSync, mkdtempSync, openSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import net from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import tls from 'node:tls'
 
-import { spawnSync, type Subprocess } from 'bun'
+import { TiptapTransformer } from '@hocuspocus/transformer'
+import type { Subprocess } from 'bun'
 import Redis from 'ioredis'
 import * as Y from 'yjs'
 
-import { freePort, makeOpenProvider, sleep, waitForHttp } from './lib/e2eHarness'
-import { spawnWorker } from './lib/prodModeStack'
+import { migrationExtensions } from '../src/lib/migration-extensions'
+import { buildFixture, mulberry32 } from './lib/benchFixture'
+import { freePort, makeOpenProvider, sleep } from './lib/e2eHarness'
+import { spawnWorker, spawnWs, startPgTlsProxy } from './lib/prodModeStack'
 
 // Before the dynamic import: `production` turns on TLS in this process's pool.
 process.env.NODE_ENV = 'test'
 process.env.LOG_LEVEL = 'warn'
 const { prisma } = await import('../src/lib/prisma')
 
-const PACKAGE_ROOT = new URL('..', import.meta.url).pathname
 const REPO_ROOT = new URL('../../..', import.meta.url).pathname
 // The 5.36 MB edited fixture the 2026-10-23 baseline used. Notes/ is local-only.
 const DEFAULT_FIXTURE = `${REPO_ROOT}Notes/local-docs/2026-10-23-perf-harness/redis-syncstep2-full-walk-per-edit/out/fixtures/real-5357733-c1.bin`
@@ -53,6 +55,11 @@ const stepMs = Number(option('--step-ms', '10'))
 // Publishes mode: 0 waits for each edit to land; above 0 types the edits that many ms apart.
 const burstMs = Number(option('--burst-ms', '0'))
 const fixturePath = option('--fixture', DEFAULT_FIXTURE)
+const fixtureSeed = args.includes('--fixture-seed') ? Number(option('--fixture-seed', '')) : null
+if (fixtureSeed !== null && !Number.isInteger(fixtureSeed)) throw new Error('bad --fixture-seed')
+if (fixtureSeed !== null && args.includes('--fixture')) {
+  throw new Error('pass --fixture or --fixture-seed, not both')
+}
 const saves = Number(option('--saves', '20'))
 const gapMs = Number(option('--gap-ms', '30000'))
 const gapSaves = Number(option('--gap-saves', '3'))
@@ -92,77 +99,47 @@ const buildEditedFixture = (targetBytes: number, opsPerParagraph = 2000): Uint8A
   return Y.encodeStateAsUpdate(doc)
 }
 
+/**
+ * buildFixture(mulberry32(seed), 3 MiB) from benchFixture.ts, as the #726 runs used. Not the
+ * bench-content-write.ts text: that seeds each run with seed + run. A fixed 32-bit client ID
+ * gives the same bytes every run (seed 726: 3,571,053 B).
+ */
+const buildBenchFixture = (seed: number): Uint8Array => {
+  const { doc } = buildFixture(mulberry32(seed), 3 * 1024 * 1024)
+  const built = TiptapTransformer.toYdoc(doc, 'default', migrationExtensions)
+  const fixed = new Y.Doc()
+  fixed.clientID = 2 ** 31 + seed
+  // y-prosemirror writes only elements at the root, never a hook.
+  const nodes = built.getXmlFragment('default').toArray() as Y.XmlElement[]
+  fixed.getXmlFragment('default').insert(
+    0,
+    nodes.map((node) => node.clone())
+  )
+  return Y.encodeStateAsUpdate(fixed)
+}
+
 // Rows mode (#703) never reads Notes/: its default is built from the fixed seed. 100 ops per
 // paragraph lands the 2 KB target at 2,122 B.
-const builtRows = mode === 'rows' && !args.includes('--fixture')
-const fixture = builtRows
-  ? buildEditedFixture(fixtureBytes, 100)
-  : existsSync(fixturePath)
-    ? new Uint8Array(readFileSync(fixturePath))
-    : buildEditedFixture(1_000_000)
-const fixtureLabel = builtRows
-  ? `built: seed 7, ${fixtureBytes} B target`
-  : existsSync(fixturePath)
-    ? fixturePath
-    : 'built: type and delete'
+const builtRows = mode === 'rows' && fixtureSeed === null && !args.includes('--fixture')
+const fixture =
+  fixtureSeed !== null
+    ? buildBenchFixture(fixtureSeed)
+    : builtRows
+      ? buildEditedFixture(fixtureBytes, 100)
+      : existsSync(fixturePath)
+        ? new Uint8Array(readFileSync(fixturePath))
+        : buildEditedFixture(1_000_000)
+const fixtureLabel =
+  fixtureSeed !== null
+    ? `built: #726 bench text, seed ${fixtureSeed}, 3 MiB`
+    : builtRows
+      ? `built: seed 7, ${fixtureBytes} B target`
+      : existsSync(fixturePath)
+        ? fixturePath
+        : 'built: type and delete'
 
-// --- Postgres TLS terminator. Production mode forces TLS; local Postgres has none.
 const scratch = mkdtempSync(join(tmpdir(), 'redis-sync-probe-'))
-const certFiles = { key: join(scratch, 'key.pem'), cert: join(scratch, 'cert.pem') }
-const openssl = spawnSync(
-  [
-    'openssl',
-    'req',
-    '-x509',
-    '-newkey',
-    'rsa:2048',
-    '-nodes',
-    '-days',
-    '1',
-    '-subj',
-    '/CN=localhost',
-    '-keyout',
-    certFiles.key,
-    '-out',
-    certFiles.cert
-  ],
-  { stderr: 'ignore' }
-)
-if (openssl.exitCode !== 0) throw new Error('openssl could not mint the proxy certificate')
-const secureContext = tls.createSecureContext({
-  key: readFileSync(certFiles.key),
-  cert: readFileSync(certFiles.cert)
-})
-
-const databaseUrl = new URL(process.env.DATABASE_URL ?? '')
-const pgHost = databaseUrl.hostname
-const pgPort = Number(databaseUrl.port || 5432)
-const SSL_REQUEST = 80877103
-
-// Answers the SSLRequest with 'S', ends TLS here, and pipes plain bytes to Postgres.
-const pgProxy = net.createServer((raw) => {
-  raw.once('data', (first: Buffer) => {
-    const upstream = net.connect(pgPort, pgHost)
-    upstream.on('error', () => raw.destroy())
-    if (first.length === 8 && first.readUInt32BE(4) === SSL_REQUEST) {
-      raw.write('S')
-      const secure = new tls.TLSSocket(raw, { isServer: true, secureContext })
-      secure.on('error', () => upstream.destroy())
-      secure.pipe(upstream)
-      upstream.pipe(secure)
-    } else {
-      upstream.write(first)
-      raw.pipe(upstream)
-      upstream.pipe(raw)
-    }
-  })
-  raw.on('error', () => undefined)
-})
-const pgProxyPort = freePort()
-await new Promise<void>((resolve) => pgProxy.listen(pgProxyPort, '127.0.0.1', resolve))
-const proxiedUrl = new URL(databaseUrl)
-proxiedUrl.hostname = '127.0.0.1'
-proxiedUrl.port = String(pgProxyPort)
+const pgProxy = await startPgTlsProxy(process.env.DATABASE_URL ?? '')
 
 // --- Redis: a probe DB the dev worker never drains, and a channel subscriber.
 const redisOptions = {
@@ -258,60 +235,27 @@ if (mode === 'saved') {
   )
 }
 
-// --- Production-mode WS processes: two, or --instances.
+// --- Production-mode WS processes: two, or --instances. A restart takes new ports.
 interface Instance {
   label: string
   port: number
-  internalPort: number
+  metricsUrl: string
   proc: Subprocess | null
   env: Record<string, string>
 }
 const instances: Instance[] = Array.from({ length: instanceCount }, (_, i) =>
   String.fromCharCode(65 + i)
-).map((label) => ({
-  label,
-  port: freePort(),
-  internalPort: freePort(),
-  proc: null,
-  env: {}
-}))
+).map((label) => ({ label, port: 0, metricsUrl: '', proc: null, env: {} }))
 if (mode === 'saved') {
   instances[0].env = { REDIS_HOST: '127.0.0.1', REDIS_PORT: String(redisProxyPort) }
 }
 
 const start = async (instance: Instance) => {
-  const log = logDir ? openSync(join(logDir, `${instance.label}.log`), 'a') : 'ignore'
-  instance.proc = Bun.spawn(['bun', 'src/hocuspocus.server.ts'], {
-    cwd: PACKAGE_ROOT,
-    stdout: log,
-    stderr: 'inherit',
-    env: {
-      ...process.env,
-      ...instance.env,
-      // Step 5 of #758 reads the reconnect warn lines from these logs.
-      ...(logDir ? { REDIS_LOG_LEVEL: 'warn' } : {}),
-      NODE_ENV: 'production',
-      REDIS: 'true',
-      REDIS_DB: String(redisDb),
-      DATABASE_URL: proxiedUrl.toString(),
-      HOCUSPOCUS_PORT: String(instance.port),
-      HOCUSPOCUS_INTERNAL_HTTP_PORT: String(instance.internalPort),
-      HOCUSPOCUS_INTERNAL_HTTP_HOST: '127.0.0.1',
-      HOCUSPOCUS_INTERNAL_URL: `http://127.0.0.1:${instance.internalPort}`,
-      HOCUSPOCUS_LOGGER: 'false',
-      HOCUSPOCUS_THROTTLE: 'false',
-      LOG_LEVEL: 'error',
-      WS_LOG_LEVEL: 'error',
-      // Production mode must never report to a remote from a local probe.
-      GLITCHTIP_DSN: ''
-    }
-  })
-  const healthUrl = `http://127.0.0.1:${instance.port}/health/redis`
-  if (!(await waitForHttp(healthUrl, 60_000))) throw new Error(`${instance.label} never came up`)
-  const health = (await (await fetch(healthUrl)).json()) as { status?: string }
-  if (health.status !== 'configured') {
-    throw new Error(`${instance.label}: RedisExtension did not load (${JSON.stringify(health)})`)
-  }
+  const logFile = join(logDir || scratch, `${instance.label}.log`)
+  // Step 5 of #758 reads the reconnect warn lines from these logs.
+  const env = { ...instance.env, ...(logDir ? { REDIS_LOG_LEVEL: 'warn' } : {}) }
+  const ws = await spawnWs(instance.label, { databaseUrl: pgProxy.url, redisDb, logFile }, env)
+  Object.assign(instance, { port: ws.port, metricsUrl: ws.metricsUrl, proc: ws.proc })
 }
 
 const stopAll = () => {
@@ -491,7 +435,7 @@ const runConvergence = async () => {
 }
 
 const metricValue = async (instance: Instance, series: string) => {
-  const text = await (await fetch(`http://127.0.0.1:${instance.internalPort}/metrics`)).text()
+  const text = await (await fetch(instance.metricsUrl)).text()
   const line = text.split('\n').find((l) => l.startsWith(`${series} `))
   return line ? Number(line.slice(series.length + 1)) : null
 }
@@ -636,7 +580,7 @@ const median = (values: number[]) => {
 const runRows = async () => {
   const worker = await spawnWorker(
     'worker',
-    { databaseUrl: proxiedUrl.toString(), redisDb, logFile: join(scratch, 'worker.log') },
+    { databaseUrl: pgProxy.url, redisDb, logFile: join(scratch, 'worker.log') },
     workerConcurrency
   )
   process.once('exit', () => worker.proc.kill('SIGKILL'))
@@ -692,9 +636,7 @@ const runRows = async () => {
     at: Date.now(),
     rows: await prisma.documents.count({ where: { documentId } }),
     worker: await scrapeSeries(worker.metricsUrl),
-    ws: await Promise.all(
-      instances.map((i) => scrapeSeries(`http://127.0.0.1:${i.internalPort}/metrics`))
-    ),
+    ws: await Promise.all(instances.map((i) => scrapeSeries(i.metricsUrl))),
     lockAttempts: lockAttempts.size,
     lockWins: lockWins.size
   })
@@ -706,9 +648,7 @@ const runRows = async () => {
   }
   const samples: Sample[][] = instances.map(() => [])
   const sampleWs = async () => {
-    const all = await Promise.all(
-      instances.map((i) => scrapeSeries(`http://127.0.0.1:${i.internalPort}/metrics`))
-    )
+    const all = await Promise.all(instances.map((i) => scrapeSeries(i.metricsUrl)))
     all.forEach((series, i) =>
       samples[i].push({
         cpu: sumSeries(series, 'process_cpu_seconds_total'),
@@ -868,7 +808,9 @@ try {
   admin.disconnect()
   pgProxy.close()
   if (mode === 'saved') redisProxyServer.close()
-  rmSync(scratch, { recursive: true, force: true })
+  // The replicas log here unless --log-dir, so a failed run keeps the logs.
+  if (exitCode === 0) rmSync(scratch, { recursive: true, force: true })
+  else console.error(`replica logs kept in ${logDir || scratch}`)
   await prisma.$disconnect()
 }
 process.exit(exitCode)
