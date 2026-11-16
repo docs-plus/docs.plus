@@ -3,15 +3,18 @@
  * `@tiptap/extension-link` does. Cases that fail today are the "before" for an open issue.
  */
 import type { Editor } from '@tiptap/core'
+import * as Y from 'yjs'
 
-import type { Env, HyperlinkModule } from './workloads'
+import { collabEditor, type Env, type HyperlinkModule, make } from './workloads'
 
 type Case = {
   group: string
   name: string
   content: string
-  act: (e: Editor) => unknown
+  act: (e: Editor, peer?: Editor) => unknown
   want: string
+  // Two editors on synced Y.Docs, empty at the start. `want` holds both, joined by '|'.
+  peers?: true
 }
 
 const ONE = '<p><a href="https://example.com">example.com</a></p>'
@@ -62,6 +65,16 @@ function pressEnter(e: Editor, pos: number) {
   ev.initEvent('keydown', true, true)
   Object.assign(ev, { keyCode: 13, key: 'Enter', code: 'Enter' })
   return e.view.someProp('handleKeyDown', (f) => f(e.view, ev))
+}
+function syncedPair(env: Env, mod: HyperlinkModule): Editor[] {
+  const [a, b] = [new Y.Doc(), new Y.Doc()]
+  const relay = (from: Y.Doc, to: Y.Doc) =>
+    from.on('update', (update: Uint8Array, origin: unknown) => {
+      if (origin !== to) Y.applyUpdate(to, update, from)
+    })
+  relay(a, b)
+  relay(b, a)
+  return [collabEditor(env, mod, a), collabEditor(env, mod, b)]
 }
 const hrefs = (e: Editor) => {
   const seen = new Set<string>()
@@ -179,6 +192,22 @@ const CASES: Case[] = [
     want: '....LLLLLLLLLLL.....'
   },
   {
+    group: 'collab',
+    // #771: B removes the link; A moves its caret and types. A must not link the word again.
+    name: 'unlink stays after a peer types',
+    content: '',
+    peers: true,
+    act: (b, a) => {
+      typeAt(b, 1, 'see example.com ')
+      select(b, 1, b.state.doc.content.size - 1)
+      b.commands.unsetHyperlink()
+      a!.commands.setTextSelection(1)
+      typeAt(a!, 1, 'Z')
+      a!.commands.setTextSelection(a!.state.doc.content.size - 1)
+    },
+    want: `${'.'.repeat(17)}|${'.'.repeat(17)}`
+  },
+  {
     group: 'enter',
     name: 'enter inside a link',
     content: ONE,
@@ -212,17 +241,13 @@ export function runBehaviour(env: Env, mod: HyperlinkModule): Behaviour {
   const failed: string[] = []
   const groups: Record<string, [number, number]> = {}
   for (const c of CASES) {
-    const element = env.win.document.createElement('div')
-    env.stage.append(element)
-    const e = new env.Editor({
-      element,
-      extensions: [env.StarterKit.configure({ link: false }), mod.Hyperlink],
-      content: c.content
-    })
-    c.act(e)
-    const got = c.want.startsWith('href:') ? `href:${hrefs(e)}` : coverage(e)
-    e.destroy()
-    element.remove()
+    const editors = c.peers ? syncedPair(env, mod) : [make(env, mod, c.content)]
+    c.act(editors[0], editors[1])
+    const got = c.want.startsWith('href:')
+      ? `href:${hrefs(editors[0])}`
+      : editors.map(coverage).join('|')
+    editors.forEach((e) => e.destroy())
+    env.stage.replaceChildren()
     const g = (groups[c.group] ??= [0, 0])
     g[1]++
     if (got === c.want) g[0]++

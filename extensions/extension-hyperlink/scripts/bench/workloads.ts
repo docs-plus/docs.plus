@@ -4,6 +4,8 @@
  * common sizes (25 blocks, 30 lines) match a new pad, as the bench plan sets them.
  */
 import type { ChainedCommands, Editor } from '@tiptap/core'
+import { Collaboration } from '@tiptap/extension-collaboration'
+import * as Y from 'yjs'
 
 export type Env = {
   Editor: typeof Editor
@@ -34,13 +36,27 @@ const TYPED = 'hello world see example.com now and type more words here mail me@
   .slice(0, 1000)
 const WORDS_250K = 'word '.repeat(50000)
 
-function make(env: Env, mod: HyperlinkModule, content: string): Editor {
+export function make(env: Env, mod: HyperlinkModule, content: string): Editor {
   const element = env.win.document.createElement('div')
   env.stage.append(element)
   return new env.Editor({
     element,
     extensions: [env.StarterKit.configure({ link: false }), mod.Hyperlink],
     content
+  })
+}
+
+/** An editor on a Y.Doc, as on a pad. Collaboration brings its own undo, so StarterKit's is off. */
+export function collabEditor(env: Env, mod: HyperlinkModule, doc: Y.Doc): Editor {
+  const element = env.win.document.createElement('div')
+  env.stage.append(element)
+  return new env.Editor({
+    element,
+    extensions: [
+      env.StarterKit.configure({ link: false, undoRedo: false }),
+      mod.Hyperlink,
+      Collaboration.configure({ document: doc })
+    ]
   })
 }
 
@@ -98,6 +114,30 @@ const typeEnd = (content: string): Workload => ({
     return { editor: e, ms: (r.ms * 1000) / TYPED.length }
   }
 })
+// A peer types; only the receiver's applyUpdate of each keystroke is timed (#771).
+const remoteType = (content: string): Workload => ({
+  unit: 'µs/key',
+  run: (env, mod) => {
+    const [sent, got] = [new Y.Doc(), new Y.Doc()]
+    const sender = collabEditor(env, mod, sent)
+    const receiver = collabEditor(env, mod, got)
+    sender.commands.setContent(content)
+    Y.applyUpdate(got, Y.encodeStateAsUpdate(sent))
+    if (receiver.getText() !== sender.getText()) throw new Error('remoteType: receiver not in sync')
+    const updates: Uint8Array[] = []
+    sent.on('update', (update: Uint8Array) => updates.push(update))
+    sender.commands.setTextSelection(sender.state.doc.content.size - 1)
+    typeChars(sender, TYPED)
+    sender.destroy()
+    let ms = 0
+    for (const update of updates) {
+      const t = performance.now()
+      Y.applyUpdate(got, update)
+      ms += performance.now() - t
+    }
+    return { editor: receiver, ms: (ms * 1000) / TYPED.length }
+  }
+})
 const mount = (content: string): Workload => ({
   unit: 'ms',
   run: (env, mod) => {
@@ -114,6 +154,8 @@ export const WORKLOADS: Record<string, Workload> = {
   boldAll2000: boldAll(HTML_2000),
   typeEnd25: typeEnd(HTML_25),
   typeEnd2000: typeEnd(HTML_2000),
+  remoteType25: remoteType(HTML_25),
+  remoteType2000: remoteType(HTML_2000),
   pasteOverSelection250k: {
     unit: 'ms',
     run: (env, mod) => {

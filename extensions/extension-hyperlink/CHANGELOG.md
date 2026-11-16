@@ -30,7 +30,7 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 ### Internal
 
 - The special-URL catalog is now typed rows instead of seven objects joined by a spread. Results and their order are unchanged, and the public `SpecialUrlType` union is the same. A StarterKit app ships 1,303 B less minified ([#776](https://github.com/docs-plus/docs.plus/issues/776)).
-- `scripts/bench/` compares the working tree with a git ref, plus a control copy of the ref that shows the noise. It reports bytes, 20 behaviour cases and speed, in jsdom and in a real browser. Run `NODE_ENV=production bun scripts/bench/run.ts`; its README says how to read the table ([#770](https://github.com/docs-plus/docs.plus/issues/770)).
+- `scripts/bench/` compares the working tree with a git ref, plus a control copy of the ref that shows the noise. It reports bytes, 21 behaviour cases and speed, in jsdom and in a real browser. One case runs two peers on synced Y.Docs, and `remoteType25` and `remoteType2000` time a peer's typing ([#771](https://github.com/docs-plus/docs.plus/issues/771)). Run `NODE_ENV=production bun scripts/bench/run.ts`; its README says how to read the table ([#770](https://github.com/docs-plus/docs.plus/issues/770)).
 
 ## [2.3.0] — 2026-11-09
 
