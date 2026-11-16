@@ -84,7 +84,7 @@ describe('chatroom attachments', () => {
     cy.intercept('GET', '**/storage/v1/object/sign/media/**', (req) => {
       if (/\.(png|jpe?g|gif|webp)(\?|$)/i.test(req.url)) {
         req.reply({
-          fixture: '../../public/icons/favicon-32x32.png',
+          fixture: 'feed-image-32.png',
           headers: { 'content-type': 'image/png' }
         })
       } else {
