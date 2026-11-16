@@ -225,6 +225,14 @@ export const statelessRelayDroppedTotal = new Counter({
   registers: [register]
 })
 
+// Each replica sends save and access frames only to its own clients (#758). While its
+// subscriber is down, its clients get none, and no other replica covers for it.
+export const wsRedisSubscriberReconnectsTotal = new Counter({
+  name: 'ws_redis_subscriber_reconnects_total',
+  help: 'Times the doc:*:saved and doc:*:access Redis subscriber became ready again',
+  registers: [register]
+})
+
 // Content API applies, by mode and outcome. `error` covers a wedged store, which
 // keeps mutating and broadcasting to live clients while never persisting — the
 // operator signal API.md tells callers to watch. Never label by documentId.
@@ -614,6 +622,7 @@ export const seedWsAlertSeries = (): void => {
   for (const reason of ['type-not-allowed', 'broadcast-frame']) {
     statelessRelayDroppedTotal.inc({ reason }, 0)
   }
+  wsRedisSubscriberReconnectsTotal.inc(0)
   for (const mode of APPLY_MODES) {
     documentContentApplyTotal.inc({ mode, outcome: 'error' }, 0)
   }

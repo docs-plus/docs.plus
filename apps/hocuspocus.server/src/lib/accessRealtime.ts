@@ -46,7 +46,15 @@ const sealedRooms = new WeakSet<object>()
 /** A deleted room: its forced close-time flush must not re-create the row. */
 export const isRoomSealed = (document: object): boolean => sealedRooms.has(document)
 
-/** Broadcast access flags and seal connections when Private or Deleted turns on. */
+// Every replica gets each doc:<id>:saved and :access event, so each one sends to its own
+// connections only. broadcastStateless would also publish it, and each peer would send
+// it again: R copies at R replicas (#758).
+export const sendToLocalConnections = (document: Document, frame: Record<string, unknown>) => {
+  const payload = JSON.stringify(frame)
+  for (const connection of document.getConnections()) connection.sendStateless(payload)
+}
+
+/** Send access flags and seal connections when Private or Deleted turns on. */
 export function handleDocumentAccessEvent(
   document: Document,
   documentId: string,
@@ -58,7 +66,7 @@ export function handleDocumentAccessEvent(
     // A soft delete keeps every Documents row, so that branch cannot fire and
     // dropping the flush would only cost every collaborator their last window.
     if (data.purged === true) sealedRooms.add(document)
-    document.broadcastStateless(JSON.stringify({ type: 'deleted', state: true }))
+    sendToLocalConnections(document, { type: 'deleted', state: true })
     for (const connection of document.getConnections()) connection.close()
     redisLogger.info({ documentId, sealed: data.purged === true }, 'Closed deleted document room')
     return
@@ -73,7 +81,7 @@ export function handleDocumentAccessEvent(
 
   if (typeof data.readOnly === 'boolean') {
     const readOnly = data.readOnly
-    document.broadcastStateless(JSON.stringify({ type: 'readOnly', state: readOnly }))
+    sendToLocalConnections(document, { type: 'readOnly', state: readOnly })
     // MessageReceiver reads this per message, so already-open sockets need it
     // too. On an ownerless document this marks every socket read-only while the
     // client predicate keeps the editor live. That divergence is the same one
@@ -87,7 +95,7 @@ export function handleDocumentAccessEvent(
     const ownerId = data.ownerId
     // Carry ownerId so clients decide the redirect on seal-fresh data instead
     // of possibly-stale store metadata; the close below enforces either way.
-    document.broadcastStateless(JSON.stringify({ type: 'private', state: true, ownerId }))
+    sendToLocalConnections(document, { type: 'private', state: true, ownerId })
     for (const connection of document.getConnections()) {
       if (connection.context?.user?.sub !== ownerId) {
         connection.close()
@@ -98,6 +106,6 @@ export function handleDocumentAccessEvent(
   }
 
   if (data.isPrivate === false) {
-    document.broadcastStateless(JSON.stringify({ type: 'private', state: false }))
+    sendToLocalConnections(document, { type: 'private', state: false })
   }
 }

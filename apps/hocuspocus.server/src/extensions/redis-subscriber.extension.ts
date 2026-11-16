@@ -1,6 +1,6 @@
 import type { Extension } from '@hocuspocus/server'
 
-import { handleDocumentAccessEvent } from '../lib/accessRealtime'
+import { handleDocumentAccessEvent, sendToLocalConnections } from '../lib/accessRealtime'
 import { redisLogger } from '../lib/logger'
 import { getRedisSubscriber } from '../lib/redis'
 import type { RedisClient, SaveConfirmation } from '../types'
@@ -35,14 +35,12 @@ export class RedisSubscriberExtension implements Extension {
 
           if (channel.endsWith(':saved')) {
             const data: SaveConfirmation = JSON.parse(message)
-            document.broadcastStateless(
-              JSON.stringify({
-                msg: 'document:saved',
-                documentId: data.documentId,
-                version: data.version,
-                timestamp: data.timestamp
-              })
-            )
+            sendToLocalConnections(document, {
+              msg: 'document:saved',
+              documentId: data.documentId,
+              version: data.version,
+              timestamp: data.timestamp
+            })
             redisLogger.info({ documentId, version: data.version }, 'Broadcasted save confirmation')
             return
           }

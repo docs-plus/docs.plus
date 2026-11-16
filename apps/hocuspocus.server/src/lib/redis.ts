@@ -3,6 +3,7 @@ import Redis, { type RedisOptions } from 'ioredis'
 import { config } from '../config/env'
 import type { RedisClient } from '../types'
 import { redisLogger } from './logger'
+import { wsRedisSubscriberReconnectsTotal } from './metrics'
 
 // Shared BullMQ connection options (identical across the queue/email/push producers).
 export const bullmqConnectionOptions = {
@@ -212,7 +213,12 @@ export const getRedisSubscriber = (): RedisClient | null => {
   if (!redisSubscriber) {
     redisSubscriber = new Redis(config)
 
+    // The first ready is the startup connect, not a reconnect. A drop logs the shared
+    // 'Redis reconnecting...' warn from retryStrategy, beside 'Redis subscriber error'.
+    let readyBefore = false
     redisSubscriber.on('ready', () => {
+      if (readyBefore) wsRedisSubscriberReconnectsTotal.inc()
+      readyBefore = true
       redisLogger.info('Redis subscriber ready')
     })
 
