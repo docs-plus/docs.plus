@@ -317,6 +317,20 @@ One hostile lane alone at 16 in flight, 15 s, then 30 s idle. 3 valid sessions p
 - The anon max moved little (`huge-head` 359-374 to 350.9-363.6 MiB), so the floor of a 1 MiB head is still there. The peak and the time per page dropped.
 - A first build checked every `<` in JavaScript and made `itemprop-flood` about 35 % slower (slot 7). The committed search skips short gaps in place and tests two bytes before a full compare.
 
+### Capacity on current main (slot 12, 2026-11-16)
+
+One image from `54ae753dc` (with the 3 s header deadline), 2 sessions per lane. This is a characterization, not a before/after.
+
+| Lane                                      | Result                                                                                          |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Good links beside 20 / 24 / 28 hanging/s  | 0 / 250-251 / 496 of 2000 fall back (knee between 20 and 24; 64 slots ÷ 3 s = 21.3/s)           |
+| Good links beside 32 / 36 / 40 hanging/s  | 681 / 827 / 941 of 2000 fall back                                                               |
+| `miss-real` (median 250 ms origin), 100/s | 3 of 2000 fall back, p95 962.4-962.74 ms                                                        |
+| `miss-real` at 200 to 1000/s              | origin hits flatten near 180/s per replica (64 ÷ about 0.36 s mean); the rest fall back at once |
+
+- The 3 fallbacks at 100/s are the header deadline's own cost: origins slower than 3 s, 0.12 % of requests. The model predicted 0.16 %.
+- No OOM kill; `memory.current` peaked at 188.6-294.2 MiB.
+
 ## Measure it again
 
 Run every command from `apps/hocuspocus.server`. `<dir>` is any empty folder outside the repo.
