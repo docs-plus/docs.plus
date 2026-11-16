@@ -119,8 +119,15 @@ const spawnEntry = (entry: string, base: StackBase, env: Record<string, string>)
   })
 }
 
-/** Throws unless the Redis extension loaded, because without it no sleep or sync runs. */
-export const spawnWs = async (label: string, base: StackBase): Promise<WsProcess> => {
+/**
+ * Throws unless the Redis extension loaded, because without it no sleep or sync runs.
+ * `env` is per instance and wins, such as one replica's Redis through a proxy.
+ */
+export const spawnWs = async (
+  label: string,
+  base: StackBase,
+  env: Record<string, string> = {}
+): Promise<WsProcess> => {
   const port = freePort()
   const internalPort = freePort()
   const internalUrl = `http://127.0.0.1:${internalPort}`
@@ -132,13 +139,19 @@ export const spawnWs = async (label: string, base: StackBase): Promise<WsProcess
     HOCUSPOCUS_INTERNAL_URL: internalUrl,
     HOCUSPOCUS_LOGGER: 'false',
     HOCUSPOCUS_THROTTLE: 'false',
-    WS_LOG_LEVEL: 'error'
+    WS_LOG_LEVEL: 'error',
+    ...env
   })
   const healthUrl = `http://127.0.0.1:${port}/health/redis`
-  if (!(await waitForHttp(healthUrl, 60_000))) throw new Error(`${label} never came up`)
+  // The caller holds no handle until the return, so a failed start kills its own child.
+  const fail = (message: string) => {
+    proc.kill('SIGKILL')
+    return new Error(message)
+  }
+  if (!(await waitForHttp(healthUrl, 60_000))) throw fail(`${label} never came up`)
   const health = (await (await fetch(healthUrl)).json()) as { status?: string }
   if (health.status !== 'configured') {
-    throw new Error(`${label}: RedisExtension did not load (${JSON.stringify(health)})`)
+    throw fail(`${label}: RedisExtension did not load (${JSON.stringify(health)})`)
   }
   return { label, proc, port, internalUrl, metricsUrl: `${internalUrl}/metrics` }
 }
