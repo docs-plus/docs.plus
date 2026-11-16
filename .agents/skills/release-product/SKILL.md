@@ -85,6 +85,38 @@ Rules the 2.3.8 bench work found:
 - **Pin every browser for a series.** Use Chrome for Testing and Playwright's WebKit, which do not update themselves. A system browser can update mid-series (Firefox 159 became 160 on 2026-11-13) or lose focus (Safari). Record the version per session, and void a session whose version or focus changed.
 - **Prove the harness compares what it claims.** A marker that exists only in `base` must appear only in `base`'s build. On 2026-11-13 every variant was built from the working tree, so `base` equalled `head`; a skeptic caught it before any timed run.
 
+### Content-safety checklist
+
+Run it for any change to a save path, a sync path or a deploy roll. Use a scratch pad you create, in desktop Chrome and phone Safari. Delete the pad after. Never type into `/demo`.
+
+1. Reload. Every typed word is there.
+2. Open the pad in two browsers. Type a unique 20-character marker in each. Each marker appears exactly once in both, by Ctrl+F, after 10 s and after a reload.
+3. Go offline, type a unique 20-character marker, then go online. The marker appears exactly once in the other browser, by Ctrl+F, after 10 s and after a reload.
+4. Close a tab 50 ms after typing. The text is there after reopen.
+5. On a local `make dev-local`, restart one replica while typing a unique 20-character marker. The marker appears exactly once, by Ctrl+F, after 10 s and after a reload.
+6. For 7 days after the deploy, failed store jobs stay at or below the week before the deploy. The store dead-letter queue and `document_persist_fallback_total` stay at 0.
+7. For the same 7 days, `Caught error during storeDocumentHooks` stays at 0 in Loki.
+
+Record each item as pass or fail, with the date, in the Measured comment. Revert if any item 1-5 fails. Rollback is the issue's own Rollback section.
+
+### Measured comment format
+
+Post one comment headed `Measured, <YYYY-MM-DD>`.
+
+- **Question:** what the read answers, in one line.
+- **Setup:** the commit SHA, the runtime version, and the machine: a named laptop, a GitHub runner or production. Name the machine class, never a hostname, address or port.
+- **Method:** the exact command, script path or query, warm or cold, and what was held fixed.
+- **Result:** a table with units. With n of 5 or more, give the median and min–max. Give p95 only at n of 20 or more. An exact count needs no n.
+- **Raw data:** the JSON or CSV. Attach only files with no personal data. Scan the draft for hostnames, addresses, ports, job ids and secrets before you post it.
+- **Not measured:** what the read does not show.
+- **Verdict:** keep or revert, against the pass rule, in one line.
+
+A CI deploy record adds the #554 SP3 line under Result. A vendor number never goes in Result. M1 numbers come only from the #569 `stats.ts` output. n = 5 never comes from `gh run rerun`. Pad fill time comes from `fillcheck.ts`.
+
+### Benchmark section
+
+Each issue that claims a number has one `## Benchmark` section under its summary, with these rows: Metric, Before, After, Condition, How to run, Pass rule, Guard, Owner, Claim. A tracker has a ledger table instead: child, metric, before, after, status. Write "not measured yet" in place of a number nobody has read, and say who reads it and by when.
+
 ## Artifacts and their rules
 
 Every prose file follows the [tech-writer](../tech-writer/SKILL.md) skill and Simplified English.
