@@ -18,6 +18,7 @@ import {
   documentHeadBytes,
   documentPersistFallbackTotal,
   documentSnapshotBytes,
+  documentStoreOutcomeTotal,
   documentStoreRejectionsTotal
 } from '../lib/metrics'
 import { buildHealthReport, healthRoutes, redisSyncHealth } from '../lib/health'
@@ -51,9 +52,10 @@ const noteLoadedBytes = (document: object, bytes: number) => {
 
 const noteFallbackHead = (bytes: number) => {
   try {
+    documentStoreOutcomeTotal.inc({ outcome: 'inserted' })
     documentHeadBytes.observe(bytes)
   } catch {
-    // The row landed; only its size sample is lost.
+    // The row landed; only its count and size sample are lost.
   }
 }
 

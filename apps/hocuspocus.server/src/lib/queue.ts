@@ -18,6 +18,7 @@ import { captureUnknown } from './instrument'
 import { queueLogger } from './logger'
 import {
   documentHeadBytes,
+  documentStoreOutcomeTotal,
   recordJobOutcome,
   sizeClass,
   type StoreJobPhase,
@@ -409,8 +410,8 @@ const sampleMemory = (): MemorySample | null => {
   }
 }
 
-// Every metric and log call in the store job goes through these two helpers. A throw
-// after the commit would retry a durable save and append a duplicate row, so neither
+// Every metric and log call in the store job goes through these helpers. A throw
+// after the commit would retry a durable save and append a duplicate row, so no
 // helper ever throws.
 const recordStorePhases = (phaseMs: PhaseMs, incomingBytes: number) => {
   try {
@@ -429,6 +430,14 @@ const recordStoreJobWait = (job: Job<StoreDocumentData>) => {
     storeJobWaitSeconds.observe(Math.max(0, job.processedOn - job.timestamp) / 1000)
   } catch {
     // A metric never fails the job it measures.
+  }
+}
+
+const countInserted = () => {
+  try {
+    documentStoreOutcomeTotal.inc({ outcome: 'inserted' })
+  } catch {
+    // The row landed; only its count is lost.
   }
 }
 
@@ -589,6 +598,8 @@ export const createDocumentWorker = () => {
             addPhase('commit', callbackDone)
             return result
           })
+
+        countInserted()
 
         // Claim-check key served its purpose; TTL remains the backstop.
         if (data.stateKey) {

@@ -204,6 +204,17 @@ export const documentStoreRejectionsTotal = new Counter({
   registers: [register]
 })
 
+// The before for #704 and #706 (#703). Only `inserted` moves today. The other three
+// outcomes arrive with those issues and read 0 until then. The worker and the
+// queue-down fallback both count, so a panel sums both jobs.
+export const DOCUMENT_STORE_OUTCOMES = ['inserted', 'unchanged', 'coalesced', 'head-moved'] as const
+export const documentStoreOutcomeTotal = new Counter({
+  name: 'document_store_outcome_total',
+  help: 'Document saves by what they did to the version rows, by outcome',
+  labelNames: ['outcome'] as const,
+  registers: [register]
+})
+
 // A DOCX export that loses every image still returns 200 with a readable file,
 // so a misconfigured media origin is invisible without this. Alert on a drop
 // rate near 1, not on any drop: refusing hostile bytes is the feature working.
@@ -619,6 +630,9 @@ export const seedWsAlertSeries = (): void => {
   for (const reason of ['fallback-save-failed', 'version-collision']) {
     documentStoreRejectionsTotal.inc({ reason }, 0)
   }
+  for (const outcome of DOCUMENT_STORE_OUTCOMES) {
+    documentStoreOutcomeTotal.inc({ outcome }, 0)
+  }
   for (const reason of ['type-not-allowed', 'broadcast-frame']) {
     statelessRelayDroppedTotal.inc({ reason }, 0)
   }
@@ -672,6 +686,9 @@ export const seedWorkerAlertSeries = (): void => {
   }
   for (const reason of ['gone', 'failed-count']) {
     pushSubscriptionsDeactivatedTotal.inc({ reason }, 0)
+  }
+  for (const outcome of DOCUMENT_STORE_OUTCOMES) {
+    documentStoreOutcomeTotal.inc({ outcome }, 0)
   }
   for (const outcome of CARD_DATA_WRITE_OUTCOMES) {
     socialCardDataWritesTotal.inc({ outcome }, 0)

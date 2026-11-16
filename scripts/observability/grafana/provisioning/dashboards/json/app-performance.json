@@ -1850,6 +1850,35 @@
       }
     },
     {
+      "id": 81,
+      "type": "timeseries",
+      "title": "Document Store Outcomes per Minute",
+      "description": "document_store_outcome_total by outcome, worker and queue-down fallback summed (#703). Only inserted moves today. unchanged, coalesced and head-moved read 0 until #704 and #706 ship.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 183 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "60 * sum by (outcome) (rate(document_store_outcome_total{job=~\"hocuspocus-server|hocuspocus-worker\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "opm",
+          "custom": { "lineWidth": 1, "fillOpacity": 10 },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
       "id": 53,
       "type": "row",
       "title": "Background Jobs (pgmq · cron)",
@@ -1857,7 +1886,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 183
+        "y": 191
       },
       "collapsed": false
     },
@@ -1873,7 +1902,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 184
+        "y": 192
       },
       "targets": [
         {
@@ -1930,7 +1959,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 184
+        "y": 192
       },
       "targets": [
         {
@@ -1987,7 +2016,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 184
+        "y": 192
       },
       "targets": [
         {
@@ -2040,7 +2069,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 192
+        "y": 200
       },
       "collapsed": false
     },
@@ -2057,7 +2086,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 193
+        "y": 201
       },
       "targets": [
         {
@@ -2115,7 +2144,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 193
+        "y": 201
       },
       "targets": [
         {
@@ -2173,7 +2202,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 201
+        "y": 209
       },
       "targets": [
         {
@@ -2240,7 +2269,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 201
+        "y": 209
       },
       "targets": [
         {
@@ -2324,7 +2353,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 209
+        "y": 217
       },
       "targets": [
         {
@@ -2391,7 +2420,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 209
+        "y": 217
       },
       "targets": [
         {
@@ -2444,7 +2473,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 217
+        "y": 225
       },
       "collapsed": false
     },
@@ -2461,7 +2490,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 218
+        "y": 226
       },
       "targets": [
         {
@@ -2519,7 +2548,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 218
+        "y": 226
       },
       "targets": [
         {
@@ -2577,7 +2606,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 226
+        "y": 234
       },
       "targets": [
         {
@@ -2644,7 +2673,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 226
+        "y": 234
       },
       "targets": [
         {
@@ -2738,7 +2767,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 234
+        "y": 242
       },
       "targets": [
         {
