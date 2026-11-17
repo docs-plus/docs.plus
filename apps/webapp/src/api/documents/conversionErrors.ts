@@ -4,7 +4,8 @@ import {
   IMPORT_MAX_DEPTH,
   IMPORT_MAX_IMAGES,
   IMPORT_MAX_NODES,
-  IMPORT_WORD_PART_MB,
+  IMPORT_WORD_MAX_TAGS,
+  IMPORT_WORD_PARTS_MB,
   MARKDOWN_IMPORT_CHARS,
   OWNER_WORD_IMPORT_MB,
   WORD_IMPORT_MB
@@ -31,7 +32,8 @@ const BY_CODE: Record<string, string> = {
   TOO_DEEP: `That file nests too deeply for one document. A document allows at most ${IMPORT_MAX_DEPTH} levels, such as a quote inside a quote. Remove some of the nesting and try again.`,
   TOO_LARGE_TO_OPEN: `That file would make a document too large to open in a browser. A document can hold about ${IMPORT_CONTENT_MB} MB of content. ${SPLIT_IT}`,
   TOO_MANY_IMAGES: `That Word file has too many pictures. An import can hold at most ${formatCount(IMPORT_MAX_IMAGES)} pictures. ${SPLIT_IT}`,
-  WORD_PART_TOO_LARGE: `That Word file has too much text in one part. Each part of a Word file, such as the main text or the footnotes, can be at most ${IMPORT_WORD_PART_MB} MB once unzipped. ${SPLIT_IT}`,
+  WORD_PART_TOO_LARGE: `That Word file has too much text. A Word file can hold at most ${IMPORT_WORD_PARTS_MB} MB of text once unzipped. The main text, footnotes, endnotes and comments count together. ${SPLIT_IT}`,
+  WORD_TOO_MANY_TAGS: `That Word file has too many paragraphs and changes in formatting. A Word file can hold at most ${formatCount(IMPORT_WORD_MAX_TAGS)} of them together. ${SPLIT_IT}`,
   IMPORT_BUSY: 'The server is busy with another import. Try again in a few seconds.'
 }
 

@@ -1,7 +1,7 @@
 // Copies the backend caps: MAX_OWNER_IMPORT_BYTES, MAX_IMPORT_BYTES, MAX_MARKDOWN_CHARS,
-// MAX_IMPORT_YJS_BYTES, MAX_IMPORT_WORD_PART_BYTES and MAX_IMPORT_IMAGES (document-conversion),
-// MAX_CONTENT_NODES and MAX_CONTENT_DEPTH (document-content). The server decides who owns
-// the document; these only pick the copy.
+// MAX_IMPORT_YJS_BYTES, MAX_IMPORT_WORD_PARTS_BYTES, MAX_IMPORT_WORD_TAGS and
+// MAX_IMPORT_IMAGES (document-conversion), MAX_CONTENT_NODES and MAX_CONTENT_DEPTH
+// (document-content). The server decides who owns the document; these only pick the copy.
 const MB = 1024 * 1024
 export const OWNER_WORD_IMPORT_MB = 40
 export const WORD_IMPORT_MB = 10
@@ -10,7 +10,8 @@ export const IMPORT_CONTENT_MB = 12
 export const IMPORT_MAX_NODES = 50_000
 export const IMPORT_MAX_DEPTH = 100
 export const IMPORT_MAX_IMAGES = 512
-export const IMPORT_WORD_PART_MB = 3
+export const IMPORT_WORD_PARTS_MB = 2.5
+export const IMPORT_WORD_MAX_TAGS = 14_500
 
 export const WORD_DOCUMENT_TYPE =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document'

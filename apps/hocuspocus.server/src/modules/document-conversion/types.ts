@@ -48,13 +48,18 @@ export const IMPORT_MULTIPART_SLACK_BYTES = 1024 * 1024
 
 // A zip bounds its compressed size, never its inflated one: 200 KiB of deflated
 // zeroes reach 200 MiB, and mammoth's unzip has no cap of its own. The owner gets
-// no more. The part cap below bounds each part; several parts still add up.
+// no more. The Word parts cap below binds first on the text mammoth parses.
 export const MAX_INFLATED_IMPORT_BYTES = 4 * MAX_IMPORT_BYTES
 
-// mammoth holds each `word/*.xml` part as one string, so a large part sets the parse
-// peak. A 3 MiB part added about 128 MiB of RSS and finished in a 512M container; a
-// 39 MiB part added 842 MiB and was OOM-killed (bench-import.ts docx, #577).
-export const MAX_IMPORT_WORD_PART_BYTES = 3 * 1024 * 1024
+// Summed over every `word/*.xml` part, because parts add up: in a 512M container 3 MiB
+// split into body and footnotes added 175 MiB of RSS, and 2.5 MiB at most 142 MiB, under
+// the 172 MiB headroom. The tag limit below bounds node-dense text (#577, 2026-11-17).
+export const MAX_IMPORT_WORD_PARTS_BYTES = 2.5 * 1024 * 1024
+
+// `<w:p` and `<w:r` start tags, summed over the same parts. In a 512M container every
+// shape at 14,500 tags added at most 166 MiB (n = 10), and at 15,000 one run of 15 added
+// 178 MiB. The public corpus holds at most 10,000 (#577, 2026-11-17).
+export const MAX_IMPORT_WORD_TAGS = 14_500
 
 // A reject, never a truncate: a silently halved document is worse than a refused
 // one. Applies to every caller. Bigger hostile Markdown blocks REST for minutes

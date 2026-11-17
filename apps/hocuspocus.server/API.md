@@ -1000,7 +1000,7 @@ The strict decode is Markdown's real gate. A BOM is stripped, so a Windows-writt
 | The document owner | 40 MiB (`MAX_OWNER_IMPORT_BYTES`)                | 40 MiB           | 65 536 characters |
 | Anyone else        | 10 MiB (`MAX_IMPORT_BYTES`, the pad's media cap) | 40 MiB           | 65 536 characters |
 
-The unpacked cap is the same for the owner. Each `word/*.xml` part may also unpack to at most 3 MiB ([#577](https://github.com/docs-plus/docs.plus/issues/577)). One part of 39 MiB of Word text added about 842 MiB of memory, and the converter runs before the result guards below.
+The unpacked cap is the same for the owner. The `word/*.xml` parts together may also unpack to at most 2.5 MiB ([#577](https://github.com/docs-plus/docs.plus/issues/577)). One part of 39 MiB of Word text added about 842 MiB of memory, and the converter runs before the result guards below. The cap is a sum, because parts add up: four parts of just under 3 MiB each added 311 MiB in the parse. The same parts may also hold at most 14 500 paragraph and run tags. Bytes do not bound the parse: in a 512 MiB container, 2.5 MiB of one-letter paragraphs added 335 MiB.
 
 **The body limit follows the caller.** The server reads the document's owner before it reads the body, then limits the body to that caller's cap. It reads `Content-Length` when the request has one. A chunked body is counted as it arrives and refused at the cap.
 
@@ -1009,7 +1009,8 @@ The unpacked cap is the same for the owner. Each `word/*.xml` part may also unpa
 - `PAYLOAD_TOO_LARGE`: the upload is over the caller's cap. Nobody's body is read past their own cap.
 - `PAYLOAD_TOO_LARGE`: a `.docx` that really unpacks past 40 MiB is refused before the converter opens it. A zip bounds its compressed size, never its inflated one, and 200 KiB of deflated padding reaches 200 MiB.
 - `PAYLOAD_TOO_LARGE`: Markdown over 65 536 characters, for every caller. That cap rejects; it never truncates, since half a document is worse than a refused one. Larger hostile Markdown blocks the server for minutes or passes 1 GiB of memory (`scripts/bench-import.ts`). Convert the file to `.docx` to get past it.
-- `WORD_PART_TOO_LARGE`: one `word/*.xml` part of a `.docx`, such as the body text or the footnotes, unpacks past 3 MiB (`MAX_IMPORT_WORD_PART_BYTES`). It is refused before the converter opens it, because the converter holds each part in memory as one string.
+- `WORD_PART_TOO_LARGE`: the `word/*.xml` parts of a `.docx`, such as the body text and the footnotes, together unpack past 2.5 MiB (`MAX_IMPORT_WORD_PARTS_BYTES`). It is refused before the converter opens it, because the converter holds each part in memory as one string.
+- `WORD_TOO_MANY_TAGS`: the `word/*.xml` parts of a `.docx` together hold more than 14 500 paragraph and run start tags, local name `p` or `r` under any prefix (`MAX_IMPORT_WORD_TAGS`). It is refused before the converter opens it, because bytes alone do not bound the converter's memory.
 - `TOO_MANY_NODES`: the converted result holds more than 50 000 nodes (`MAX_CONTENT_NODES`), the cap on every content write.
 - `TOO_DEEP`: the converted result nests deeper than 100 levels (`MAX_CONTENT_DEPTH`), the same cap as every content write.
 - `TOO_LARGE_TO_OPEN`: the result encodes to more than 12 MiB of Yjs state. A browser applies the replace as one update, and a socket message over 16 MiB (`MAX_WS_MESSAGE_BYTES`) is refused, so the document could not load. The 4 MiB margin covers the replaced document's delete set.
@@ -1080,7 +1081,8 @@ An empty `warnings` array does not prove that nothing was lost. The converter dr
 | `413`  | `TOO_MANY_NODES`         | Import result over 50 000 nodes                                                                                                         |
 | `413`  | `TOO_DEEP`               | Import result nested deeper than 100 levels                                                                                             |
 | `413`  | `TOO_LARGE_TO_OPEN`      | Import result over 12 MiB of encoded Yjs state                                                                                          |
-| `413`  | `WORD_PART_TOO_LARGE`    | A `.docx` with one `word/*.xml` part that unpacks past 3 MiB                                                                            |
+| `413`  | `WORD_PART_TOO_LARGE`    | A `.docx` whose `word/*.xml` parts together unpack past 2.5 MiB                                                                         |
+| `413`  | `WORD_TOO_MANY_TAGS`     | A `.docx` whose `word/*.xml` parts together hold more than 14 500 paragraph and run tags                                                |
 | `413`  | `TOO_MANY_IMAGES`        | A `.docx` with more than 512 images                                                                                                     |
 | `415`  | `UNSUPPORTED_MEDIA_TYPE` | Import of a legacy OLE2 `.doc`                                                                                                          |
 | `422`  | `UNPROCESSABLE_ENTITY`   | Import of a file that is neither a zip nor UTF-8 text, or one too damaged for its converter to open. Retrying will not fix it           |

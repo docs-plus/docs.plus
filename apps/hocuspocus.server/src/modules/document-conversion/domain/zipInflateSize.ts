@@ -53,11 +53,42 @@ const countsAgree = (zip: Buffer, eocd: number): boolean => {
   return onDisk === total && walked === total
 }
 
-/** The walk refused the archive because one `word/*.xml` part unpacks past `partBudget`. */
+/** The walk refused the archive because its `word/*.xml` parts together unpack past `wordBudget`. */
 export const PART_TOO_LARGE = 'part-too-large'
 
 /** Top-level Word parts. mammoth holds each one it reads as a single string. */
 export const WORD_PART = /^word\/[^/]+\.xml$/
+
+/** The walk refused the archive because its `word/*.xml` parts hold more than `tagBudget` paragraph and run tags. */
+export const TOO_MANY_TAGS = 'too-many-tags'
+
+const LT = 0x3c
+const COLON = 0x3a
+const P = 0x70
+const R = 0x72
+
+// `>`, `/` or XML whitespace ends the name, so `<w:pPr>` and `<w:rPr>` do not count.
+const endsName = (byte: number | undefined): boolean =>
+  byte === 0x3e || byte === 0x2f || byte === 0x20 || byte === 0x09 || byte === 0x0a || byte === 0x0d
+
+/**
+ * Counts start tags whose local name is `p` or `r`, under any prefix or none: mammoth reads
+ * namespaces, so `<x:p>` is a paragraph too. A name stops at the next `<`, which keeps the scan
+ * linear. Stops once the count passes `room`.
+ */
+const countTags = (part: Buffer, room: number): number => {
+  let tags = 0
+  for (let at = part.indexOf(LT); at !== -1 && tags <= room; at = part.indexOf(LT, at + 1)) {
+    let local = at + 1
+    let end = local
+    while (end < part.length && part[end] !== LT && !endsName(part[end])) {
+      if (part[end] === COLON) local = end + 1
+      end += 1
+    }
+    if (end - local === 1 && (part[local] === P || part[local] === R)) tags += 1
+  }
+  return tags
+}
 
 /**
  * Measured inflate, not declared size — a bomb states whatever it likes.
@@ -68,8 +99,9 @@ export const WORD_PART = /^word\/[^/]+\.xml$/
 export const zipInflateSize = (
   zip: Buffer,
   budget: number,
-  partBudget: number
-): number | null | typeof ENTRY_COUNT_MISMATCH | typeof PART_TOO_LARGE => {
+  wordBudget: number,
+  tagBudget: number
+): number | null | typeof ENTRY_COUNT_MISMATCH | typeof PART_TOO_LARGE | typeof TOO_MANY_TAGS => {
   const eocd = zip.length >= EOCD_BYTES ? findEocd(zip) : null
   if (eocd === null) return null
   if (!countsAgree(zip, eocd)) return ENTRY_COUNT_MISMATCH
@@ -77,6 +109,8 @@ export const zipInflateSize = (
   const entries = zip.readUInt16LE(eocd + 10)
   let at = zip.readUInt32LE(eocd + 16)
   let total = 0
+  let words = 0
+  let tags = 0
 
   for (let entry = 0; entry < entries; entry += 1) {
     if (at + CENTRAL_HEADER_BYTES > zip.length) return null
@@ -91,18 +125,19 @@ export const zipInflateSize = (
       at + CENTRAL_HEADER_BYTES,
       at + CENTRAL_HEADER_BYTES + zip.readUInt16LE(at + 28)
     )
-    const partCapped = WORD_PART.test(name) && partBudget < budget - total
+    const isWord = WORD_PART.test(name)
+    const wordCapped = isWord && wordBudget - words < budget - total
+    let part: Buffer
 
     if (method === METHOD_STORED) {
-      if (partCapped && compressed > partBudget) return PART_TOO_LARGE
-      total += compressed
+      part = zip.subarray(from, from + compressed)
     } else if (method === METHOD_DEFLATE) {
       try {
-        total += inflateRawSync(zip.subarray(from, from + compressed), {
-          maxOutputLength: Math.max(1, partCapped ? partBudget : budget - total)
-        }).length
+        part = inflateRawSync(zip.subarray(from, from + compressed), {
+          maxOutputLength: Math.max(1, wordCapped ? wordBudget - words : budget - total)
+        })
       } catch (error) {
-        if (partCapped && (error as { code?: string }).code === 'ERR_BUFFER_TOO_LARGE') {
+        if (wordCapped && (error as { code?: string }).code === 'ERR_BUFFER_TOO_LARGE') {
           return PART_TOO_LARGE
         }
         // Either the entry alone blew the remaining budget or the stream is corrupt.
@@ -113,7 +148,16 @@ export const zipInflateSize = (
       return null
     }
 
+    total += part.length
+    if (isWord) words += part.length
+    // Catches a stored part, and the one byte `maxOutputLength` admits past a spent budget.
+    if (words > wordBudget) return PART_TOO_LARGE
     if (total > budget) return total
+    // Bytes do not bound parse memory: one-letter paragraphs cost far more per byte than prose.
+    if (isWord) {
+      tags += countTags(part, tagBudget - tags)
+      if (tags > tagBudget) return TOO_MANY_TAGS
+    }
 
     at += centralHeaderLength(zip, at)
   }

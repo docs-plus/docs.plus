@@ -16,7 +16,8 @@ import { importDocx } from '../src/modules/document-conversion/domain/docxImport
 import { importMarkdown } from '../src/modules/document-conversion/domain/markdownImport'
 import { zipInflateSize } from '../src/modules/document-conversion/domain/zipInflateSize'
 import {
-  MAX_IMPORT_WORD_PART_BYTES,
+  MAX_IMPORT_WORD_PARTS_BYTES,
+  MAX_IMPORT_WORD_TAGS,
   MAX_INFLATED_IMPORT_BYTES
 } from '../src/modules/document-conversion/types'
 
@@ -116,7 +117,12 @@ const runCase = async (shape: string, sizeLabel: string, docxPath?: string) => {
   let started = performance.now()
   if (docx) {
     // The walk runs first in the handler too, so its memory counts toward the import.
-    row.walk = zipInflateSize(docx, MAX_INFLATED_IMPORT_BYTES, MAX_IMPORT_WORD_PART_BYTES)
+    row.walk = zipInflateSize(
+      docx,
+      MAX_INFLATED_IMPORT_BYTES,
+      MAX_IMPORT_WORD_PARTS_BYTES,
+      MAX_IMPORT_WORD_TAGS
+    )
     row.walkMs = Number((performance.now() - started).toFixed(2))
     started = performance.now()
   }

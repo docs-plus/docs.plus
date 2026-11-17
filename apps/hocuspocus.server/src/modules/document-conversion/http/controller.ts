@@ -18,14 +18,20 @@ import { checkImportSize, type ImportSizeRefusal } from '../domain/importGuards'
 import { exportMarkdown } from '../domain/markdownExport'
 import { importMarkdown } from '../domain/markdownImport'
 import { exportOdt } from '../domain/odtExport'
-import { ENTRY_COUNT_MISMATCH, PART_TOO_LARGE, zipInflateSize } from '../domain/zipInflateSize'
+import {
+  ENTRY_COUNT_MISMATCH,
+  PART_TOO_LARGE,
+  TOO_MANY_TAGS,
+  zipInflateSize
+} from '../domain/zipInflateSize'
 import { createImageUpload } from '../infra/imageUpload'
 import type { ExportFormat, ImportFormat, TiptapDocJson } from '../types'
 import {
   IMPORT_MULTIPART_SLACK_BYTES,
   MAX_IMPORT_BYTES,
   MAX_IMPORT_IMAGES,
-  MAX_IMPORT_WORD_PART_BYTES,
+  MAX_IMPORT_WORD_PARTS_BYTES,
+  MAX_IMPORT_WORD_TAGS,
   MAX_IMPORT_YJS_BYTES,
   MAX_INFLATED_IMPORT_BYTES,
   MAX_MARKDOWN_CHARS,
@@ -321,7 +327,12 @@ const convertUpload = async (
   // mammoth's unzip is unbounded, so the upload cap alone lets a few hundred
   // compressed KiB inflate the process to death.
   if (kind === 'docx') {
-    const unpacked = zipInflateSize(buffer, MAX_INFLATED_IMPORT_BYTES, MAX_IMPORT_WORD_PART_BYTES)
+    const unpacked = zipInflateSize(
+      buffer,
+      MAX_INFLATED_IMPORT_BYTES,
+      MAX_IMPORT_WORD_PARTS_BYTES,
+      MAX_IMPORT_WORD_TAGS
+    )
     // Unmeasured is refused, not admitted: the walk alone bounds mammoth's unzip.
     if (unpacked === null) {
       deps.logger.warn({ code: 'ZIP_UNREADABLE', uploadBytes: buffer.length }, 'Import refused')
@@ -336,7 +347,16 @@ const convertUpload = async (
         c,
         413,
         'WORD_PART_TOO_LARGE',
-        `One word/*.xml part unpacks to more than the ${MAX_IMPORT_WORD_PART_BYTES}-byte limit`
+        `The word/*.xml parts together unpack to more than the ${MAX_IMPORT_WORD_PARTS_BYTES}-byte limit`
+      )
+    }
+    if (unpacked === TOO_MANY_TAGS) {
+      deps.logger.warn({ code: 'WORD_TOO_MANY_TAGS', uploadBytes: buffer.length }, 'Import refused')
+      return fail(
+        c,
+        413,
+        'WORD_TOO_MANY_TAGS',
+        `The word/*.xml parts together hold more than ${MAX_IMPORT_WORD_TAGS} paragraph and run tags`
       )
     }
     if (unpacked === ENTRY_COUNT_MISMATCH) {
