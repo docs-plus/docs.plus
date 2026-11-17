@@ -64,15 +64,27 @@ describe('importDocx image cap', () => {
     return { result, uploads: () => uploads }
   }
 
-  test('admits a file at the cap', async () => {
-    const { result, uploads } = await importImages(MAX_IMPORT_IMAGES)
-    await expect(result).resolves.toHaveProperty('content')
-    expect(uploads()).toBe(MAX_IMPORT_IMAGES)
-  })
+  // Alone each case takes under 0.1 s. After internalApply.test.ts in the same run, the
+  // loop is slower and 512 images took 5.4 s, past the default 5 s timeout.
+  const CAP_TIMEOUT_MS = 30_000
 
-  test('refuses a file past the cap, and uploads none past it', async () => {
-    const { result, uploads } = await importImages(MAX_IMPORT_IMAGES + 1)
-    await expect(result).rejects.toBeInstanceOf(TooManyImagesError)
-    expect(uploads()).toBe(MAX_IMPORT_IMAGES)
-  })
+  test(
+    'admits a file at the cap',
+    async () => {
+      const { result, uploads } = await importImages(MAX_IMPORT_IMAGES)
+      await expect(result).resolves.toHaveProperty('content')
+      expect(uploads()).toBe(MAX_IMPORT_IMAGES)
+    },
+    CAP_TIMEOUT_MS
+  )
+
+  test(
+    'refuses a file past the cap, and uploads none past it',
+    async () => {
+      const { result, uploads } = await importImages(MAX_IMPORT_IMAGES + 1)
+      await expect(result).rejects.toBeInstanceOf(TooManyImagesError)
+      expect(uploads()).toBe(MAX_IMPORT_IMAGES)
+    },
+    CAP_TIMEOUT_MS
+  )
 })

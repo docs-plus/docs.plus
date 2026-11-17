@@ -6,6 +6,7 @@ import { type ConversionWarning, type ImportResult, MAX_IMPORT_IMAGES } from '..
 import { parseDocumentHtml } from './documentHtml'
 import { ensureTitleHeading, titleHeadingText, titleHeadingWarning } from './ensureTitleHeading'
 import { clampColspans } from './portableJson'
+import { WORD_PART } from './zipInflateSize'
 
 export interface ImportDocxOptions {
   fallbackTitle: string
@@ -37,7 +38,6 @@ const toWarning = (message: { type: string; message: string }): ConversionWarnin
   message: message.message
 })
 
-const WORD_PART = /^word\/[^/]+\.xml$/
 const TRACKED_CHANGE = /<w:(ins|del|moveFrom|moveTo)[\s/>]/
 
 // mammoth keeps insertions as plain text and drops deletions, and reports neither.

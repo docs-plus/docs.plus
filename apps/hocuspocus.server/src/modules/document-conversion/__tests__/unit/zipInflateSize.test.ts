@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 
 import { createZip } from '../../domain/zipWriter'
-import { ENTRY_COUNT_MISMATCH, zipInflateSize } from '../../domain/zipInflateSize'
+import { ENTRY_COUNT_MISMATCH, PART_TOO_LARGE, zipInflateSize } from '../../domain/zipInflateSize'
 
 const BUDGET = 64 * 1024
+const PART_BUDGET = 4 * 1024
 const EOCD_BYTES = 22
 
 const archive = () =>
@@ -50,6 +51,28 @@ describe('zipInflateSize', () => {
       expected: null
     },
     {
+      name: 'refuses a word/*.xml part over the part budget',
+      zip: () => createZip([{ name: 'word/document.xml', data: 'x'.repeat(PART_BUDGET + 1) }]),
+      expected: PART_TOO_LARGE
+    },
+    {
+      name: 'refuses a stored word/*.xml part over the part budget',
+      zip: () =>
+        createZip([{ name: 'word/footnotes.xml', data: 'x'.repeat(PART_BUDGET + 1), store: true }]),
+      expected: PART_TOO_LARGE
+    },
+    {
+      name: 'admits a word/*.xml part at the part budget',
+      zip: () => createZip([{ name: 'word/document.xml', data: 'x'.repeat(PART_BUDGET) }]),
+      expected: PART_BUDGET
+    },
+    {
+      // mammoth never holds media or rels as one string, so only the total budget applies.
+      name: 'leaves parts outside word/*.xml to the total budget',
+      zip: () => createZip([{ name: 'word/media/a.xml', data: 'x'.repeat(PART_BUDGET + 1) }]),
+      expected: PART_BUDGET + 1
+    },
+    {
       name: 'returns null with no EOCD record',
       zip: () => Buffer.from('PK\x03\x04 no end'),
       expected: null
@@ -58,13 +81,13 @@ describe('zipInflateSize', () => {
 
   for (const row of rows) {
     test(row.name, () => {
-      expect(zipInflateSize(row.zip(), BUDGET)).toBe(row.expected)
+      expect(zipInflateSize(row.zip(), BUDGET, PART_BUDGET)).toBe(row.expected)
     })
   }
 
   test('stops at the budget, whatever the declared size says', () => {
     const zip = createZip([{ name: 'word/document.xml', data: '0'.repeat(BUDGET * 4) }])
-    const result = zipInflateSize(zip, BUDGET)
+    const result = zipInflateSize(zip, BUDGET, BUDGET * 8)
     expect(typeof result === 'number' && result > BUDGET).toBe(true)
   })
 })

@@ -48,9 +48,13 @@ export const IMPORT_MULTIPART_SLACK_BYTES = 1024 * 1024
 
 // A zip bounds its compressed size, never its inflated one: 200 KiB of deflated
 // zeroes reach 200 MiB, and mammoth's unzip has no cap of its own. The owner gets
-// no more until #724: 40 MiB of unpacked Word text already peaks near 820 MiB of
-// RSS against a 512M container (bench-import.ts docx).
+// no more. The part cap below bounds each part; several parts still add up.
 export const MAX_INFLATED_IMPORT_BYTES = 4 * MAX_IMPORT_BYTES
+
+// mammoth holds each `word/*.xml` part as one string, so a large part sets the parse
+// peak. A 3 MiB part added about 128 MiB of RSS and finished in a 512M container; a
+// 39 MiB part added 842 MiB and was OOM-killed (bench-import.ts docx, #577).
+export const MAX_IMPORT_WORD_PART_BYTES = 3 * 1024 * 1024
 
 // A reject, never a truncate: a silently halved document is worse than a refused
 // one. Applies to every caller. Bigger hostile Markdown blocks REST for minutes
@@ -83,10 +87,10 @@ export const MAX_EXPORT_INLINED_BYTES = 8 * 1024 * 1024
 // part. This ceiling also bounds how many sockets a single export opens.
 export const MAX_EXPORT_IMAGES = 128
 
-// Counted per `convertImage` call. The public corpus holds at most 18 images, and
-// 128 tiny images added 41 MiB of RSS (8,192 added 243 MiB, bench-import.ts
-// docx-images, #577). It matches export, and bounds the uploads of one import.
-export const MAX_IMPORT_IMAGES = 128
+// Counted per `convertImage` call, after the parse, so it bounds the uploads of one
+// import and not parse memory. The public corpus holds at most 18 images. 512 is
+// the 2026-11-16 ruling on #577, and it differs from `MAX_EXPORT_IMAGES` on purpose.
+export const MAX_IMPORT_IMAGES = 512
 
 /** Per image; matches the converter's own `downloadTimeout`. */
 export const EXPORT_IMAGE_TIMEOUT_MS = 5_000

@@ -182,9 +182,25 @@ describe('Document conversion import — caps and size guards', () => {
     expect(await errorOf(response)).toHaveProperty('code', 'TOO_MANY_NODES')
   })
 
-  test('a Word file whose content would not load in a browser is refused', async () => {
+  test('a Word file with one part over the 3 MiB part cap is refused before the parse', async () => {
     const paragraph = `<w:p><w:r><w:t>${'word '.repeat(2000)}</w:t></w:r></w:p>`
-    const response = await importFile(docxFile(paragraph.repeat(1300)), OWNER)
+    const response = await importFile(docxFile(paragraph.repeat(330)), OWNER)
+    expect(response.status).toBe(413)
+    expect(await errorOf(response)).toHaveProperty('code', 'WORD_PART_TOO_LARGE')
+  })
+
+  // The part cap keeps `document.xml` small, so the bulk sits in one long link target
+  // in the rels part, and every link mark repeats it in the Yjs state.
+  test('a Word file whose content would not load in a browser is refused', async () => {
+    const link =
+      '<w:p><w:hyperlink r:id="rIdLink" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:r><w:t>a</w:t></w:r></w:hyperlink></w:p>'
+    const target = `https://example.com/${'a'.repeat(64 * 1024)}`
+    const rels = `<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdLink" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${target}" TargetMode="External"/></Relationships>`
+    const file = new File(
+      [minimalDocx(link.repeat(250), [{ name: 'word/_rels/document.xml.rels', data: rels }])],
+      'garden.docx'
+    )
+    const response = await importFile(file, OWNER)
     expect(response.status).toBe(413)
     expect(await errorOf(response)).toHaveProperty('code', 'TOO_LARGE_TO_OPEN')
   })

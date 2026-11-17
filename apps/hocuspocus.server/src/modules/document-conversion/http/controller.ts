@@ -18,13 +18,14 @@ import { checkImportSize, type ImportSizeRefusal } from '../domain/importGuards'
 import { exportMarkdown } from '../domain/markdownExport'
 import { importMarkdown } from '../domain/markdownImport'
 import { exportOdt } from '../domain/odtExport'
-import { ENTRY_COUNT_MISMATCH, zipInflateSize } from '../domain/zipInflateSize'
+import { ENTRY_COUNT_MISMATCH, PART_TOO_LARGE, zipInflateSize } from '../domain/zipInflateSize'
 import { createImageUpload } from '../infra/imageUpload'
 import type { ExportFormat, ImportFormat, TiptapDocJson } from '../types'
 import {
   IMPORT_MULTIPART_SLACK_BYTES,
   MAX_IMPORT_BYTES,
   MAX_IMPORT_IMAGES,
+  MAX_IMPORT_WORD_PART_BYTES,
   MAX_IMPORT_YJS_BYTES,
   MAX_INFLATED_IMPORT_BYTES,
   MAX_MARKDOWN_CHARS,
@@ -320,7 +321,24 @@ const convertUpload = async (
   // mammoth's unzip is unbounded, so the upload cap alone lets a few hundred
   // compressed KiB inflate the process to death.
   if (kind === 'docx') {
-    const unpacked = zipInflateSize(buffer, MAX_INFLATED_IMPORT_BYTES)
+    const unpacked = zipInflateSize(buffer, MAX_INFLATED_IMPORT_BYTES, MAX_IMPORT_WORD_PART_BYTES)
+    // Unmeasured is refused, not admitted: the walk alone bounds mammoth's unzip.
+    if (unpacked === null) {
+      deps.logger.warn({ code: 'ZIP_UNREADABLE', uploadBytes: buffer.length }, 'Import refused')
+      return fail(c, 422, 'UNPROCESSABLE_ENTITY', IMPORT_FAILED.docx)
+    }
+    if (unpacked === PART_TOO_LARGE) {
+      deps.logger.warn(
+        { code: 'WORD_PART_TOO_LARGE', uploadBytes: buffer.length },
+        'Import refused'
+      )
+      return fail(
+        c,
+        413,
+        'WORD_PART_TOO_LARGE',
+        `One word/*.xml part unpacks to more than the ${MAX_IMPORT_WORD_PART_BYTES}-byte limit`
+      )
+    }
     if (unpacked === ENTRY_COUNT_MISMATCH) {
       deps.logger.warn(
         { code: 'ZIP_ENTRY_COUNT_MISMATCH', uploadBytes: buffer.length },
@@ -333,7 +351,7 @@ const convertUpload = async (
         'The upload is not a valid zip: its directory does not match its entry count'
       )
     }
-    if ((unpacked ?? 0) > MAX_INFLATED_IMPORT_BYTES) {
+    if (unpacked > MAX_INFLATED_IMPORT_BYTES) {
       return fail(
         c,
         413,
