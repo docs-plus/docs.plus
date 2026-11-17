@@ -35,8 +35,17 @@ const exceptionValues = (event: Sentry.Event): string[] =>
 const matchesAny = (values: string[], patterns: readonly RegExp[]): boolean =>
   values.some((value) => patterns.some((re) => re.test(value)))
 
-const isNonActionable = (values: string[]): boolean => {
-  if (matchesAny(values, SW_LIFECYCLE_PATTERNS)) return true
+// A browser wrapper rejects next-pwa's register() (register.js:39, no catch) with a bare "Rejected".
+const SW_REGISTER_FRAME = /serviceWorker\.register|ServiceWorkerContainer/
+const isRegisterRejection = (event: Sentry.Event): boolean =>
+  (event.exception?.values ?? []).some(
+    (ex) =>
+      ex.value === 'Rejected' &&
+      (ex.stacktrace?.frames ?? []).some((f) => SW_REGISTER_FRAME.test(f.function ?? ''))
+  )
+
+const isNonActionable = (event: Sentry.Event, values: string[]): boolean => {
+  if (matchesAny(values, SW_LIFECYCLE_PATTERNS) || isRegisterRejection(event)) return true
   // Chunk errors are auto-recovered by reload; report only once recovery gave up.
   if (values.some(matchesChunkError)) return !isChunkRecoveryExhausted()
   return false
@@ -60,7 +69,7 @@ if (dsn) {
     dataCollection: sentryDataCollection,
     beforeSend(event) {
       const values = exceptionValues(event)
-      if (throttleIdbInactive(event, values) || isNonActionable(values)) return null
+      if (throttleIdbInactive(event, values) || isNonActionable(event, values)) return null
       return event
     }
   })
