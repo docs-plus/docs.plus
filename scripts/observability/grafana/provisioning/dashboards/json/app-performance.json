@@ -1384,7 +1384,7 @@
       "type": "timeseries",
       "title": "Event Loop Lag by Job",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 134 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 134 },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
@@ -1399,6 +1399,45 @@
           "custom": { "lineWidth": 1, "fillOpacity": 10 },
           "mappings": [],
           "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
+      "id": 82,
+      "type": "timeseries",
+      "title": "Event Loop Max Lag by Job (5m)",
+      "description": "Longest event-loop stall per process in each 5m window. The lag panel reads one sample per scrape and misses stalls. The red line is the 1s bar of slo-eventloop-stall (#729).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 134 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max by (job) (max_over_time(nodejs_eventloop_lag_max_seconds{job=~\"rest-api|hocuspocus-server|hocuspocus-worker\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "thresholdsStyle": { "mode": "line" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
         },
         "overrides": []
       },

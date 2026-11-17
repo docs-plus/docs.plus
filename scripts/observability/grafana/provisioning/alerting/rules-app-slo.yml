@@ -210,6 +210,48 @@ groups:
                 - evaluator: { type: gt, params: [0.1] }
               refId: C
 
+      # p99 never passed 0.022 s, so the rule above cannot see a stall (#729). A [5m] window
+      # holds one stall for about 5 min, so for: 5m fires on repeated stalls only (ruled
+      # 2026-11-16). Warning only: one night stall must not page anyone.
+      - uid: slo-eventloop-stall
+        title: Node.js event-loop stall (>1s, repeated)
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Event-loop stalls above 1s on {{ $labels.job }} for 5m. Every open pad on that process froze. The Event Loop Max Lag panel shows each stall.'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'max by (job) (max_over_time(nodejs_eventloop_lag_max_seconds{job=~"rest-api|hocuspocus-server|hocuspocus-worker"}[5m]))'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [1] }
+              refId: C
+
       # A failed card answers a 302 to the Fallback card, never a 5xx, so slo-http-5xx-ratio
       # cannot see it. These two read the card's own counters instead. A failed member read
       # still draws the card, with no count, so it also shows up only here.
