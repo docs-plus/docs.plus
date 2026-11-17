@@ -256,7 +256,7 @@ groups:
               refId: C
 
       - uid: dep-postgres-db-growth
-        title: Postgres databases grew more than 128 MiB in 24h
+        title: Postgres databases grew more than 256 MiB in 24h
         condition: C
         for: 5m
         noDataState: OK
@@ -264,7 +264,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'All databases on the collab cluster grew {{ humanize1024 $values.B.Value }}B in 24h. On 2026-11-07 they grew 199,221,248 B with no MCP write (https://github.com/docs-plus/docs.plus/issues/761).'
+          summary: 'All databases on the collab cluster grew {{ humanize1024 $values.B.Value }}B in 24h, above the 256 MiB bar. The size rules watch the disk itself (https://github.com/docs-plus/docs.plus/issues/727).'
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }
@@ -293,7 +293,7 @@ groups:
               type: threshold
               expression: B
               conditions:
-                - evaluator: { type: gt, params: [134217728] }
+                - evaluator: { type: gt, params: [268435456] }
               refId: C
 
       - uid: dep-tls-cert-expiry
