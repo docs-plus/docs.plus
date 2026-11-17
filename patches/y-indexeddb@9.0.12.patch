@@ -1,0 +1,182 @@
+diff --git a/dist/y-indexeddb.cjs b/dist/y-indexeddb.cjs
+index f613233258d7be3d3d8fb08506aa7ca09e50a457..a55628487c9d8d23691050a84db741dcf5f6eeed 100644
+--- a/dist/y-indexeddb.cjs
++++ b/dist/y-indexeddb.cjs
+@@ -12,6 +12,9 @@ const updatesStoreName = 'updates';
+ 
+ const PREFERRED_TRIM_SIZE = 500;
+ 
++// Deferred, so a throwing 'error' listener cannot escape the Yjs 'update' emit.
++const emitError = (p, err, kind) => queueMicrotask(() => p.emit('error', [err, kind]));
++
+ /**
+  * @param {IndexeddbPersistence} idbPersistence
+  * @param {function(IDBObjectStore):void} [beforeApplyUpdatesCallback]
+@@ -38,13 +41,20 @@ const fetchUpdates = (idbPersistence, beforeApplyUpdatesCallback = () => {}, aft
+  * @param {boolean} forceStore
+  */
+ const storeState = (idbPersistence, forceStore = true) =>
+-  fetchUpdates(idbPersistence)
+-    .then(updatesStore => {
+-      if (forceStore || idbPersistence._dbsize >= PREFERRED_TRIM_SIZE) {
+-        idb.addAutoKey(updatesStore, Y.encodeStateAsUpdate(idbPersistence.doc))
+-          .then(() => idb.del(updatesStore, idb.createIDBKeyRangeUpperBound(idbPersistence._dbref, true)))
+-          .then(() => idb.count(updatesStore).then(cnt => { idbPersistence._dbsize = cnt; }));
+-      }
++  // WebKit ends the fetch transaction before the add, so use a fresh one. The add and the
++  // delete share it: a failed add aborts it, and the delete rolls back.
++  Promise.resolve()
++    .then(() => fetchUpdates(idbPersistence))
++    .then(() => {
++      if (idbPersistence._destroyed || !(forceStore || idbPersistence._dbsize >= PREFERRED_TRIM_SIZE)) return
++      const update = Y.encodeStateAsUpdate(idbPersistence.doc);
++      const [updatesStore] = idb.transact(/** @type {IDBDatabase} */ (idbPersistence.db), [updatesStoreName]);
++      return Promise.all([
++        idb.addAutoKey(updatesStore, update),
++        idb.del(updatesStore, idb.createIDBKeyRangeUpperBound(idbPersistence._dbref, true))
++      ])
++        .then(() => idb.count(idb.transact(/** @type {IDBDatabase} */ (idbPersistence.db), [updatesStoreName], 'readonly')[0]))
++        .then(cnt => { idbPersistence._dbsize = cnt; })
+     });
+ 
+ /**
+@@ -88,14 +98,15 @@ class IndexeddbPersistence extends observable.Observable {
+       /**
+        * @param {IDBObjectStore} updatesStore
+        */
+-      const beforeApplyUpdatesCallback = (updatesStore) => idb.addAutoKey(updatesStore, Y.encodeStateAsUpdate(doc));
++      const beforeApplyUpdatesCallback = (updatesStore) =>
++        idb.addAutoKey(updatesStore, Y.encodeStateAsUpdate(doc)).catch(err => emitError(this, err, 'load'));
+       const afterApplyUpdatesCallback = () => {
+         if (this._destroyed) return this
+         this.synced = true;
+         this.emit('synced', [this]);
+       };
+-      fetchUpdates(this, beforeApplyUpdatesCallback, afterApplyUpdatesCallback);
+-    });
++      return fetchUpdates(this, beforeApplyUpdatesCallback, afterApplyUpdatesCallback)
++    }).catch(err => emitError(this, err, 'load'));
+     /**
+      * Timeout in ms untill data is merged and persisted in idb.
+      */
+@@ -110,15 +121,26 @@ class IndexeddbPersistence extends observable.Observable {
+      */
+     this._storeUpdate = (update, origin) => {
+       if (this.db && origin !== this) {
+-        const [updatesStore] = idb.transact(/** @type {IDBDatabase} */ (this.db), [updatesStoreName]);
+-        idb.addAutoKey(updatesStore, update);
++        // A throw here would stop the Y.Doc emitting updates for the whole session.
++        try {
++          const [updatesStore] = idb.transact(/** @type {IDBDatabase} */ (this.db), [updatesStoreName]);
++          idb.addAutoKey(updatesStore, update).catch(err => emitError(this, err, 'update'));
++        } catch (err) {
++          this.db = null // closed connection: stop writing for this session
++          emitError(this, err, 'update');
++          return
++        }
+         if (++this._dbsize >= PREFERRED_TRIM_SIZE) {
+           // debounce store call
+           if (this._storeTimeoutId !== null) {
+             clearTimeout(this._storeTimeoutId);
+           }
+           this._storeTimeoutId = setTimeout(() => {
+-            storeState(this, false);
++            // Back off, so a failing compaction does not re-encode after every pause.
++            storeState(this, false).catch(err => {
++              this._dbsize = 0;
++              emitError(this, err, 'compact');
++            });
+             this._storeTimeoutId = null;
+           }, this._storeTimeout);
+         }
+diff --git a/src/y-indexeddb.js b/src/y-indexeddb.js
+index 07f4fbb6da0b0b0621b5696370aabf230f7293a8..2a889a899fa6d71e3af54b470001b4b81d3cf826 100644
+--- a/src/y-indexeddb.js
++++ b/src/y-indexeddb.js
+@@ -8,6 +8,9 @@ const updatesStoreName = 'updates'
+ 
+ export const PREFERRED_TRIM_SIZE = 500
+ 
++// Deferred, so a throwing 'error' listener cannot escape the Yjs 'update' emit.
++const emitError = (p, err, kind) => queueMicrotask(() => p.emit('error', [err, kind]))
++
+ /**
+  * @param {IndexeddbPersistence} idbPersistence
+  * @param {function(IDBObjectStore):void} [beforeApplyUpdatesCallback]
+@@ -34,13 +37,20 @@ export const fetchUpdates = (idbPersistence, beforeApplyUpdatesCallback = () =>
+  * @param {boolean} forceStore
+  */
+ export const storeState = (idbPersistence, forceStore = true) =>
+-  fetchUpdates(idbPersistence)
+-    .then(updatesStore => {
+-      if (forceStore || idbPersistence._dbsize >= PREFERRED_TRIM_SIZE) {
+-        idb.addAutoKey(updatesStore, Y.encodeStateAsUpdate(idbPersistence.doc))
+-          .then(() => idb.del(updatesStore, idb.createIDBKeyRangeUpperBound(idbPersistence._dbref, true)))
+-          .then(() => idb.count(updatesStore).then(cnt => { idbPersistence._dbsize = cnt }))
+-      }
++  // WebKit ends the fetch transaction before the add, so use a fresh one. The add and the
++  // delete share it: a failed add aborts it, and the delete rolls back.
++  Promise.resolve()
++    .then(() => fetchUpdates(idbPersistence))
++    .then(() => {
++      if (idbPersistence._destroyed || !(forceStore || idbPersistence._dbsize >= PREFERRED_TRIM_SIZE)) return
++      const update = Y.encodeStateAsUpdate(idbPersistence.doc)
++      const [updatesStore] = idb.transact(/** @type {IDBDatabase} */ (idbPersistence.db), [updatesStoreName])
++      return Promise.all([
++        idb.addAutoKey(updatesStore, update),
++        idb.del(updatesStore, idb.createIDBKeyRangeUpperBound(idbPersistence._dbref, true))
++      ])
++        .then(() => idb.count(idb.transact(/** @type {IDBDatabase} */ (idbPersistence.db), [updatesStoreName], 'readonly')[0]))
++        .then(cnt => { idbPersistence._dbsize = cnt })
+     })
+ 
+ /**
+@@ -84,14 +94,15 @@ export class IndexeddbPersistence extends Observable {
+       /**
+        * @param {IDBObjectStore} updatesStore
+        */
+-      const beforeApplyUpdatesCallback = (updatesStore) => idb.addAutoKey(updatesStore, Y.encodeStateAsUpdate(doc))
++      const beforeApplyUpdatesCallback = (updatesStore) =>
++        idb.addAutoKey(updatesStore, Y.encodeStateAsUpdate(doc)).catch(err => emitError(this, err, 'load'))
+       const afterApplyUpdatesCallback = () => {
+         if (this._destroyed) return this
+         this.synced = true
+         this.emit('synced', [this])
+       }
+-      fetchUpdates(this, beforeApplyUpdatesCallback, afterApplyUpdatesCallback)
+-    })
++      return fetchUpdates(this, beforeApplyUpdatesCallback, afterApplyUpdatesCallback)
++    }).catch(err => emitError(this, err, 'load'))
+     /**
+      * Timeout in ms untill data is merged and persisted in idb.
+      */
+@@ -106,15 +117,26 @@ export class IndexeddbPersistence extends Observable {
+      */
+     this._storeUpdate = (update, origin) => {
+       if (this.db && origin !== this) {
+-        const [updatesStore] = idb.transact(/** @type {IDBDatabase} */ (this.db), [updatesStoreName])
+-        idb.addAutoKey(updatesStore, update)
++        // A throw here would stop the Y.Doc emitting updates for the whole session.
++        try {
++          const [updatesStore] = idb.transact(/** @type {IDBDatabase} */ (this.db), [updatesStoreName])
++          idb.addAutoKey(updatesStore, update).catch(err => emitError(this, err, 'update'))
++        } catch (err) {
++          this.db = null // closed connection: stop writing for this session
++          emitError(this, err, 'update')
++          return
++        }
+         if (++this._dbsize >= PREFERRED_TRIM_SIZE) {
+           // debounce store call
+           if (this._storeTimeoutId !== null) {
+             clearTimeout(this._storeTimeoutId)
+           }
+           this._storeTimeoutId = setTimeout(() => {
+-            storeState(this, false)
++            // Back off, so a failing compaction does not re-encode after every pause.
++            storeState(this, false).catch(err => {
++              this._dbsize = 0
++              emitError(this, err, 'compact')
++            })
+             this._storeTimeoutId = null
+           }, this._storeTimeout)
+         }

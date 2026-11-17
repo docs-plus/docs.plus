@@ -539,6 +539,7 @@
   "patchedDependencies": {
     "@tiptap/y-tiptap@3.0.10": "patches/@tiptap%2Fy-tiptap@3.0.10.patch",
     "@hocuspocus/extension-redis@3.4.4": "patches/@hocuspocus%2Fextension-redis@3.4.4.patch",
+    "y-indexeddb@9.0.12": "patches/y-indexeddb@9.0.12.patch",
   },
   "overrides": {
     "@babel/core": "^7.29.7",

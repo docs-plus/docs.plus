@@ -1,7 +1,7 @@
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
 import { applyAccessStateless } from '@utils/applyAccessStateless'
-import { captureCollabIssueOnce } from '@utils/observability'
+import { captureCollabIssueOnce, captureMessageOnce } from '@utils/observability'
 import { supabaseClient } from '@utils/supabase'
 import { onDocTitleStateless } from '@utils/titleWrite'
 import { useEffect, useRef } from 'react'
@@ -94,9 +94,9 @@ const useYdocAndProvider = ({
         ? new IndexeddbPersistence(documentId, ydocRef.current)
         : null
 
-    // y-indexeddb drops its write promises, so a failed write only shows up as a
-    // transaction abort that bubbles to the db (QuotaExceededError in Chromium).
-    // `_db` is the only handle that reports a failed open; public `db` is a bare field.
+    // The y-indexeddb patch (#751) reports failed writes as an 'error' event. Only a failed
+    // update write means edits stop reaching the mirror. A full disk shows only as a commit
+    // abort (QuotaExceededError in Chromium). `_db` is the only handle for a failed open.
     let mirrorDisposed = false
     const flagMirrorFailed = () => {
       if (!mirrorDisposed) setWorkspaceSetting('mirrorWriteFailed', true)
@@ -104,10 +104,19 @@ const useYdocAndProvider = ({
     persistence?._db
       .then((db) =>
         db.addEventListener('abort', (event) => {
-          if ((event.target as IDBTransaction | null)?.error) flagMirrorFailed()
+          const error = (event.target as IDBTransaction | null)?.error
+          if (error?.name === 'QuotaExceededError') flagMirrorFailed()
         })
       )
       .catch(flagMirrorFailed)
+    persistence?.on('error', (err: unknown, kind: 'update' | 'load' | 'compact') => {
+      if (kind === 'update') flagMirrorFailed()
+      captureMessageOnce(`idb:${kind}`, `idb:${kind}`, {
+        level: 'warning',
+        tags: { surface: 'offline-mirror' },
+        extra: { detail: err instanceof Error ? err.message : String(err) }
+      })
+    })
 
     // y-indexeddb adds a full doc copy on each load and trims only past 500 rows, so the
     // replay grew by about 10 ms per reload of a large pad (#638). Merge to one row once
@@ -119,7 +128,7 @@ const useYdocAndProvider = ({
       void persistence.whenSynced.then(() =>
         setTimeout(() => {
           if (mirrorDisposed || persistence._destroyed || persistence._dbsize <= 1) return
-          storeState(persistence).catch(flagMirrorFailed)
+          storeState(persistence).catch((err) => persistence.emit('error', [err, 'compact']))
         }, MIRROR_COMPACT_DELAY_MS)
       )
     }
