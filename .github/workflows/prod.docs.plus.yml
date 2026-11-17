@@ -149,6 +149,7 @@ jobs:
       needs.triage.outputs.skip_app_ci != 'true'
     permissions:
       contents: read
+      actions: read # the gap step reads the previous push run's jobs
     outputs:
       changed_extensions: ${{ steps.assemble.outputs.list }}
       webapp: ${{ steps.scopes.outputs.webapp }}
@@ -158,6 +159,25 @@ jobs:
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # A new push cancels the older run, and this run diffs only its own push.
+      # If the previous push run stopped before its gates ended, test everything (#759).
+      - id: gap
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          set -uo pipefail
+          api="repos/${GITHUB_REPOSITORY}/actions"
+          prev="$(gh api "${api}/workflows/prod.docs.plus.yml/runs?event=push&branch=${BRANCH}&per_page=20" \
+            --jq "[.workflow_runs[] | select(.run_number < ${RUN_NUMBER})] | max_by(.run_number) | tojson")" || prev=''
+          if [ -n "${prev}" ] && [ "${prev}" != null ]; then
+            jobs="$(gh api "${api}/runs/$(jq -r .id <<< "${prev}")/jobs?per_page=100" --jq .jobs)" || jobs=null
+            prev="$(jq -c --argjson jobs "${jobs}" '{status, conclusion, jobs: $jobs}' <<< "${prev}")" || prev=''
+          fi
+          printf '%s' "${prev}" | bash .github/scripts/detect-cancel-gap.sh
 
       - id: filter
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
@@ -172,7 +192,7 @@ jobs:
           # Covers manual dispatch AND a first push / history rewrite (before == all-zeros SHA).
           # `schedule` is deliberate, not a fallback: the weekly cron is the only
           # automatic run that is not path-filtered, so it exercises every extension.
-          FORCE_ALL: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event.before == '0000000000000000000000000000000000000000' }}
+          FORCE_ALL: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event.before == '0000000000000000000000000000000000000000' || steps.gap.outputs.force == 'true' }}
           R_INDENT: ${{ steps.filter.outputs.extension-indent }}
           R_HYPERLINK: ${{ steps.filter.outputs.extension-hyperlink }}
           R_HMM: ${{ steps.filter.outputs.extension-hypermultimedia }}
@@ -208,7 +228,7 @@ jobs:
         env:
           # The `assemble` fallback, plus every `(build):` push: scopes never
           # narrow a deploy push's gate set.
-          ALL_SCOPES: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event.before == '0000000000000000000000000000000000000000' || (github.event_name == 'push' && needs.triage.outputs.triggered == 'true') }}
+          ALL_SCOPES: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event.before == '0000000000000000000000000000000000000000' || steps.gap.outputs.force == 'true' || (github.event_name == 'push' && needs.triage.outputs.triggered == 'true') }}
           FILE_COUNT: ${{ steps.files.outputs.all_count }}
           # Over 500 paths the list could pass the env size limit; the script turns every scope on.
           FILES_JSON: ${{ fromJSON(steps.files.outputs.all_count || '0') <= 500 && steps.files.outputs.all_files || '[]' }}

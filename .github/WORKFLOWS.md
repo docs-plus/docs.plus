@@ -137,6 +137,8 @@ The script classes each changed path by the first row that matches.
 
 Every scope is on for a `(build):` push, a `workflow_dispatch`, the weekly cron, a missing diff base, more than 500 files, a missing file count, an empty list, or a list whose length differs from the count. The `scopes` step logs one class line per path and a `reason` line.
 
+A new push cancels the older run in its group, and a push run diffs only its own push. So on a push, the `gap` step reads the previous push run and its jobs through `gh api`, with `actions: read`. If that run was cancelled, or has not completed, before every gate job ended, every scope and every extension suite turns on. The step logs `reason=forced-after-cancel`. Deploy-chain jobs and the run report are not gates. An unreadable run also forces every scope, with `reason=forced-unreadable-run` ([#759](https://github.com/docs-plus/docs.plus/issues/759)).
+
 ## Related files
 
 - Composite actions: `actions/setup-bun/action.yml`, `actions/setup-cypress/action.yml`, `actions/build-extensions/action.yml`
@@ -144,5 +146,6 @@ Every scope is on for a `(build):` push, a `workflow_dispatch`, the weekly cron,
 - `setup-bun` pins the Bun version for CI. Bump it by hand. The Docker images stay on `oven/bun:1-slim`. After the build, `🥟 Compare image Bun with CI Bun` writes both versions to the run summary and warns when they differ. It never fails a deploy. When it warns, bump `setup-bun` and `lockstep-guard.yml` together (#650).
 - Trigger tokenizer: `.github/scripts/parse-build-trigger.sh`
 - Change-scope classifier: `.github/scripts/detect-change-scopes.sh` (test: `detect-change-scopes.test.sh`)
+- Cancelled-push check: `.github/scripts/detect-cancel-gap.sh` (test: `detect-cancel-gap.test.sh`)
 - Telegram notifier: `scripts/ci/notify-telegram.sh` (shared by prod deploy, observability, runner-watchdog, chatroom-e2e, and editor-e2e failure steps; never fails the caller)
 - Run report: `.github/scripts/write-run-report.sh` (reads `gh run view --json jobs` output; prints Markdown)
