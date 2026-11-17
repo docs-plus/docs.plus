@@ -68,6 +68,21 @@ export const wsConnectionsTotal = new Counter({
   registers: [register]
 })
 
+// Bound to five values so a client-chosen code cannot grow the series. #739's
+// post-flip stop rule reads 1006 and 1009 per connection.
+const WS_CLOSE_CODES = ['1000', '1001', '1006', '1009'] as const
+export const wsCloseCodeLabel = (code: number): string => {
+  const label = String(code)
+  return (WS_CLOSE_CODES as readonly string[]).includes(label) ? label : 'other'
+}
+
+export const wsDisconnectsTotal = new Counter({
+  name: 'ws_disconnects_total',
+  help: 'WebSocket closes by close code',
+  labelNames: ['code'] as const,
+  registers: [register]
+})
+
 // Labelled so the fail-closed deny is visible too. A metadata lookup that throws
 // (wedged pool, Postgres outage) denies every handshake. Without a counter on
 // that arm the rejection ratio the alert reads FALLS while the outage runs.
@@ -637,6 +652,9 @@ export const seedWsAlertSeries = (): void => {
     statelessRelayDroppedTotal.inc({ reason }, 0)
   }
   wsRedisSubscriberReconnectsTotal.inc(0)
+  for (const code of [...WS_CLOSE_CODES, 'other']) {
+    wsDisconnectsTotal.inc({ code }, 0)
+  }
   for (const mode of APPLY_MODES) {
     documentContentApplyTotal.inc({ mode, outcome: 'error' }, 0)
   }

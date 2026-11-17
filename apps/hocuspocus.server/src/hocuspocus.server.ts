@@ -39,7 +39,9 @@ import {
   wsAuthRejectionsTotal,
   wsAwarenessFramesDroppedTotal,
   wsAwarenessUpdatesTotal,
+  wsCloseCodeLabel,
   wsConnectionsTotal,
+  wsDisconnectsTotal,
   wsMessagesTotal,
   ydocUpdateBytes
 } from './lib/metrics'
@@ -623,6 +625,23 @@ const serverConfig = {
 }
 
 const server = new Server(serverConfig, { maxPayload: MAX_WS_MESSAGE_BYTES })
+
+// Hocuspocus 3.4.4 onDisconnect carries no close code, so read it on the socket (#729).
+// Bun 1.4.4 sends 1009 over maxPayload but reports 1006 to the server's close event;
+// the error code is the only trace. The ws package ships no types here.
+type ClosableSocket = {
+  once(event: 'close', listener: (code: number) => void): void
+  once(event: 'error', listener: (error: { code?: unknown } | undefined) => void): void
+}
+server.webSocketServer.on('connection', (socket: ClosableSocket) => {
+  let refusedCode: number | undefined
+  socket.once('error', (error) => {
+    if (error?.code === 'WS_ERR_UNSUPPORTED_MESSAGE_LENGTH') refusedCode = 1009
+  })
+  socket.once('close', (code) =>
+    wsDisconnectsTotal.inc({ code: wsCloseCodeLabel(refusedCode ?? code) })
+  )
+})
 
 // Read live counts at scrape time rather than tracking inc/dec, which drifts up
 // forever: a load that failed before unload, or a socket rejected pre-auth whose
