@@ -55,7 +55,14 @@ bad() { printf '  FAIL  %s\n' "$*"; FAILS=$((FAILS + 1)); }
 info() { printf '  info  %s\n' "$*"; }
 fact() { FACTS="${FACTS:+$FACTS }$*"; }
 die() { [ -z "${2:-}" ] || NEXT=$2; printf '\nSTOP: %s\n' "$1"; exit 1; }
-confirm() { local a; read -r -p "$1 Type yes to go on: " a || die "no input"; [ "$a" = yes ] || die "not confirmed" "${2:-run $0 $STAGE again when ready}"; }
+# Keys pressed while a step ran (an arrow key, for one) sit in the input and would join the answer.
+confirm() {
+  local a junk
+  while read -r -t 0.2 -n 256 junk; do :; done
+  read -r -p "$1 Type yes to go on: " a || die "no input"
+  a=$(printf '%s' "$a" | sed $'s/\e\\[[0-9;]*[A-Za-z~]//g' | tr -d '[:space:]')
+  [ "$a" = yes ] || die "not confirmed" "${2:-run $0 $STAGE again when ready}"
+}
 
 finish() {
   local rc=$? v=PASS line
