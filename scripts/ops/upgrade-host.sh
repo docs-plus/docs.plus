@@ -823,7 +823,7 @@ cmd_reboot() {
 # and every old library that a binary in /usr/local, /opt or bun's global folder still links.
 CLEAN_KEEP=(unattended-upgrades ntpsec usrmerge)
 cmd_cleanup() {
-  begin 7
+  begin 6
   [ ! -f "$HOP" ] && [ ! -f "$DRAINED" ] || die "an upgrade window is open" "finish it with hop, check or start first"
   [ -z "$(dpkg --audit)" ] || die "dpkg --audit is not empty" "run $0 patch first"
   keep_sudo
