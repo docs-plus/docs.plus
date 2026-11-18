@@ -811,6 +811,101 @@ cmd_reboot() {
   sleep 2; sudo systemctl reboot
 }
 
+# Removes what the release hops left behind: obsolete packages, old kernels, leftover configs and
+# upgrade copies. It keeps the running kernel, one older kernel to boot from, the services below,
+# and every old library that a binary in /usr/local, /opt or bun's global folder still links.
+CLEAN_KEEP=(unattended-upgrades ntpsec usrmerge)
+cmd_cleanup() {
+  begin 7
+  [ ! -f "$HOP" ] && [ ! -f "$DRAINED" ] || die "an upgrade window is open" "finish it with hop, check or start first"
+  [ -z "$(dpkg --audit)" ] || die "dpkg --audit is not empty" "run $0 patch first"
+  keep_sudo
+  local kb; kb=$(df --output=used -k / | tail -n1)
+  local containers pm2on; containers=$(docker ps -q | wc -l); pm2on=$(pm2_list | grep -c ' online$' || true)
+
+  step "decide what must stay (scans native binaries, about 20 s)"
+  local run_k fallback p l obs libs linked
+  local -a keep=()
+  run_k=linux-image-$(uname -r)
+  fallback=$(dpkg-query -W -f='${Package} ${Status}\n' 'linux-image-[0-9]*' 2>/dev/null | awk '/ok installed/{print $1}' | grep -vx "$run_k" | sort -V | tail -n1 || true)
+  keep+=("$run_k"); [ -z "$fallback" ] || keep+=("$fallback")
+  for p in "${CLEAN_KEEP[@]}"; do dpkg-query -W -f='${Status}' "$p" 2>/dev/null | q 'ok installed' && keep+=("$p"); done
+  obs=$(apt list '?obsolete' 2>/dev/null | grep / | cut -d/ -f1 | sort -u || true)
+  libs=$(for p in $obs; do dpkg -L "$p" 2>/dev/null | grep -E '\.so(\.[0-9]+)*$' || true; done | xargs -rn1 basename | sort -u)
+  # find returns 1 on an unreadable folder, ldd returns 1 on a script: both are normal here.
+  linked=$( { find /usr/local -xdev -type f \( -perm -u+x -o -name '*.so' -o -name '*.so.*' \) 2>/dev/null || true
+              find /opt "$HOME/.bun/install/global" -xdev -type f \( -name '*.node' -o -name '*.so' -o -name '*.so.*' \) 2>/dev/null || true; } \
+    | while read -r f; do { ldd "$f" 2>/dev/null || true; } | awk '{print $1}'; done | sort -u | comm -12 - <(echo "$libs") || true)
+  for l in $linked; do p=$(dpkg -S "*/$l" 2>/dev/null | awk -F: 'NR==1{print $1}' || true); [ -z "$p" ] || keep+=("$p"); done
+  mapfile -t keep < <(printf '%s\n' "${keep[@]}" | sort -u)
+  info "keeping: ${keep[*]}"
+  [ -z "$linked" ] || info "old libraries still linked by local binaries: $(echo "$linked" | xargs)"
+  sudo apt-mark manual "${keep[@]}" >/dev/null
+  info "MANUAL: a finished snapshot of this host exists (the cleanup cannot be undone)."
+  confirm "Go on to the package lists?"
+
+  step "obsolete packages (in no current apt source)"
+  local purge sim extra n=0
+  purge=$(comm -23 <(echo "$obs") <(printf '%s\n' "${keep[@]}") | grep . || true)
+  if [ -n "$purge" ]; then
+    n=$(wc -l <<< "$purge")
+    sim=$("${APT[@]}" -s purge $purge 2>/dev/null | awk '/^(Purg|Remv) /{print $2}' | sort -u)
+    extra=$(comm -23 <(echo "$sim") <(echo "$purge") | xargs)
+    [ -z "$extra" ] || die "apt would also remove packages that are not obsolete: $extra" "check them, then remove by hand"
+    echo "$purge" | xargs | fold -s -w 110 | sed 's/^/  /'
+    confirm "Purge these $n obsolete packages?"
+    "${APT[@]}" -y purge $purge
+  else info "none"; fi
+
+  step "packages nothing needs any more (autoremove)"
+  local auto hit
+  auto=$("${APT[@]}" -s autoremove --purge 2>/dev/null | awk '/^(Purg|Remv) /{print $2}' | sort -u)
+  hit=$(comm -12 <(echo "$auto") <(printf '%s\n' "${keep[@]}") | xargs)
+  [ -z "$hit" ] || die "autoremove would remove kept packages: $hit" "mark them manual, then run $0 cleanup again"
+  if [ -n "$auto" ]; then
+    echo "$auto" | xargs | fold -s -w 110 | sed 's/^/  /'
+    confirm "Remove these $(wc -l <<< "$auto") packages?"
+    "${APT[@]}" -y autoremove --purge
+    n=$((n + $(wc -l <<< "$auto")))
+  else info "none"; fi
+
+  step "config files left by removed packages"
+  local rc; rc=$(dpkg -l | awk '/^rc/{print $2}')
+  if [ -n "$rc" ]; then
+    echo "$rc" | xargs | fold -s -w 110 | sed 's/^/  /'
+    confirm "Purge the configs of these $(wc -l <<< "$rc") removed packages?"
+    sudo dpkg --purge $rc >/dev/null
+  else info "none"; fi
+
+  step "upgrade copies and caches"
+  local -a junk=()
+  for p in "$HOME"/apt-*.bak /var/backups/usr-local-node-*; do [ -e "$p" ] && junk+=("$p"); done
+  while read -r p; do [ -n "$p" ] && junk+=("$p"); done < <(sudo find /etc \( -name '*.dpkg-dist' -o -name '*.ucf-dist' -o -name '*.dpkg-old' -o -name '*.ucf-old' \) 2>/dev/null)
+  dpkg-query -W yarn >/dev/null 2>&1 || { [ ! -d "$HOME/.cache/yarn" ] || junk+=("$HOME/.cache/yarn"); }
+  if [ "${#junk[@]}" -gt 0 ]; then
+    { sudo du -sh "${junk[@]}" 2>/dev/null || true; } | sed 's/^/  /'
+    confirm "Delete these ${#junk[@]} paths? (Debian's default config copies only; your own files stay)"
+    sudo rm -rf -- "${junk[@]}"
+  else info "none"; fi
+  docker image prune -f >/dev/null && ok "dangling Docker images pruned"
+
+  step "verify"
+  [ -z "$(dpkg --audit)" ] && ok "dpkg audit clean" || bad "dpkg --audit is not empty"
+  dpkg-query -W -f='${Status}' "$run_k" 2>/dev/null | q 'ok installed' && sudo grep -q "vmlinuz-$(uname -r)" /boot/grub/grub.cfg \
+    && ok "running kernel kept and in grub" || bad "the running kernel is not installed or not in grub.cfg"
+  [ -z "$fallback" ] || { sudo grep -q "vmlinuz-${fallback#linux-image-}" /boot/grub/grub.cfg && ok "fallback kernel ${fallback#linux-image-} in grub" || bad "fallback kernel missing from grub.cfg"; }
+  [ "$(systemctl is-enabled unattended-upgrades 2>/dev/null)" = enabled ] && ok "unattended-upgrades enabled" || bad "unattended-upgrades is not enabled"
+  systemctl is-active ntpsec >/dev/null 2>&1 && ok "ntpsec active" || bad "no time sync service (ntpsec) active"
+  [ ! -x /usr/local/bin/python3.13 ] || { /usr/local/bin/python3.13 -c 'import ssl, hashlib, ctypes, readline' 2>/dev/null && ok "/usr/local Python still loads ssl, hashlib, ctypes" || bad "/usr/local Python lost a module"; }
+  [ "$(docker ps -q | wc -l)" = "$containers" ] && ok "$containers containers still run" || bad "containers: $(docker ps -q | wc -l), before $containers"
+  [ "$(pm2_list | grep -c ' online$' || true)" = "$pm2on" ] && ok "$pm2on PM2 apps still online" || bad "PM2 apps online changed from $pm2on"
+  apt_refresh >/dev/null && ok "apt-get update is clean" || bad "apt-get update fails on: $APT_BROKEN"
+  local freed=$(( (kb - $(df --output=used -k / | tail -n1)) / 1024 ))
+  fact "removed_packages=$n freed=${freed}MiB kernels=$(uname -r)${fallback:+,${fallback#linux-image-}}"
+  [ "$FAILS" = 0 ] || die "$FAILS check(s) failed" "read the FAIL lines; the post-cleanup snapshot is the rollback"
+  NEXT="$0 cves, to see the fixed-not-installed count drop"
+}
+
 cmd_help() {
   cat <<EOF
 Usage: $0 <stage>      (as the deploy user, inside screen or tmux)
@@ -823,6 +918,7 @@ Usage: $0 <stage>      (as the deploy user, inside screen or tmux)
   node       install Node $NODE_MAJOR LTS for the host (NodeSource apt), move the old Node out of PATH
   pm2-boot   newest PM2 with bun, on bun; PM2 apps (TinyDocy) come back after a boot
   reboot     #708: drain the store queue, reboot, then prove all came back (check, start)
+  cleanup    after the last hop: obsolete packages, old kernels, leftover configs and copies
   drain      #747 step 7: preflight, then stop the runner and the app after the store queue drains
   hop        #747 steps 8-9: next release, upgrade, reboot (a rerun resumes a broken hop)
   check      #747 step 10: host checks after the reboot
@@ -836,7 +932,7 @@ EOF
 }
 
 case "$STAGE" in
-  status | inventory | cves | patch | drain | hop | check | start | reboot | sources) "cmd_$STAGE" ;;
+  status | inventory | cves | patch | drain | hop | check | start | reboot | sources | cleanup) "cmd_$STAGE" ;;
   node) cmd_node ;;
   pm2-boot) cmd_pm2_boot ;;
   *) cmd_help; DONE=1; [ "$STAGE" = help ] || exit 1 ;;
