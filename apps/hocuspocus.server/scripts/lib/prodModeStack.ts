@@ -2,6 +2,7 @@ import { mkdtempSync, openSync, readFileSync, rmSync } from 'node:fs'
 import net from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import type { Duplex } from 'node:stream'
 import tls from 'node:tls'
 
 import { spawnSync, type Subprocess } from 'bun'
@@ -43,8 +44,24 @@ export interface WorkerProcess {
   metricsUrl: string
 }
 
-/** Production mode forces TLS on Postgres, and the local one has none, so TLS ends here. */
-export const startPgTlsProxy = async (databaseUrl: string) => {
+/**
+ * Each direction waits half of `delayMs`, so a query and its reply take `delayMs` more. Timers
+ * with one delay fire in the order they were set, so the stream keeps its byte order.
+ */
+const relay = (from: Duplex, to: Duplex, delayMs: number) => {
+  if (delayMs <= 0) {
+    from.pipe(to)
+    return
+  }
+  from.on('data', (chunk: Buffer) => setTimeout(() => to.write(chunk), delayMs / 2))
+  from.on('end', () => setTimeout(() => to.end(), delayMs / 2))
+}
+
+/**
+ * Production mode forces TLS on Postgres, and the local one has none, so TLS ends here.
+ * `delayMs` adds a round trip to every query, such as 70 ms for the NYC1 database (#704).
+ */
+export const startPgTlsProxy = async (databaseUrl: string, delayMs = 0) => {
   const scratch = mkdtempSync(join(tmpdir(), 'prod-mode-stack-'))
   const key = join(scratch, 'key.pem')
   const cert = join(scratch, 'cert.pem')
@@ -76,12 +93,12 @@ export const startPgTlsProxy = async (databaseUrl: string) => {
         raw.write('S')
         const secure = new tls.TLSSocket(raw, { isServer: true, secureContext })
         secure.on('error', () => upstream.destroy())
-        secure.pipe(upstream)
-        upstream.pipe(secure)
+        relay(secure, upstream, delayMs)
+        relay(upstream, secure, delayMs)
       } else {
         upstream.write(first)
-        raw.pipe(upstream)
-        upstream.pipe(raw)
+        relay(raw, upstream, delayMs)
+        relay(upstream, raw, delayMs)
       }
     })
     raw.on('error', () => undefined)

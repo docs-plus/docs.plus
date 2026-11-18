@@ -2,7 +2,8 @@
  * #726 benchmark: MCP-style `blocks` writes on one document of about 3 MiB, through the content
  * client that `edit_blocks` uses, on a local production-mode stack (2 WS, 2 workers, Redis on).
  * Run from apps/hocuspocus.server: bun --env-file=../../.env.local scripts/bench-content-write.ts
- * Options: --mode cold|held, --writes 92, --runs 1, --gap-ms 0, --redis-db 8, --target-mib 3, --out <file>.
+ * Options: --mode cold|held|mixed, --writes 92, --runs 1, --gap-ms 0, --pg-delay-ms 0,
+ * --worker-concurrency 1, --redis-db 8, --target-mib 3, --out <file>.
  */
 import { randomBytes } from 'node:crypto'
 import { readFileSync, statSync, writeFileSync } from 'node:fs'
@@ -38,10 +39,18 @@ const option = (name: string, fallback: string) => {
   return at === -1 ? fallback : args[at + 1]
 }
 const mode = option('--mode', 'cold')
-if (mode !== 'cold' && mode !== 'held') throw new Error(`unknown --mode ${mode}`)
+if (mode !== 'cold' && mode !== 'held' && mode !== 'mixed')
+  throw new Error(`unknown --mode ${mode}`)
 const writes = Number(option('--writes', '92'))
 const runs = Number(option('--runs', '1'))
 const gapMs = Number(option('--gap-ms', '0'))
+// 70 ms models the NYC1 round trip, so store jobs overlap and clashes can show (#704).
+const pgDelayMs = Number(option('--pg-delay-ms', '0'))
+// Production runs BULLMQ_CONCURRENCY = WORKER_STORE_CONCURRENCY, default 1 (#737).
+const workerConcurrency = Number(option('--worker-concurrency', '1'))
+if (!(pgDelayMs >= 0) || !(workerConcurrency >= 1)) {
+  throw new Error('--pg-delay-ms must be 0 or more, and --worker-concurrency 1 or more')
+}
 const redisDb = Number(option('--redis-db', '8'))
 const targetBytes = Number(option('--target-mib', '3')) * 1024 * 1024
 // Also refuses NaN. Without it the fixture has no section, and the first write fails late.
@@ -53,8 +62,6 @@ const outPath = option('--out', join(os.tmpdir(), `bench-content-write-${mode}-$
 const logFile = outPath.replace(/\.json$/, '') + '.log'
 
 const SLUG_PREFIX = 'bench-content-write-'
-// Production runs BULLMQ_CONCURRENCY = WORKER_DB_POOL_SIZE, default 10 (docker-compose.prod.yml).
-const WORKER_CONCURRENCY = 10
 // A fixed stand-in for the MCP caller, so every write mints a `trigger = 'mcp'` row.
 const ACTOR = { sub: '00000000-0000-4000-8000-000000000726' }
 
@@ -146,7 +153,7 @@ const stats = (values: number[]) => {
 }
 
 // --- Stack: a TLS proxy, its own Redis DB, 2 WS and 2 workers in production mode.
-const proxy = await startPgTlsProxy(process.env.DATABASE_URL ?? '')
+const proxy = await startPgTlsProxy(process.env.DATABASE_URL ?? '', pgDelayMs)
 const redis = new Redis({
   host: process.env.REDIS_HOST || '127.0.0.1',
   port: Number(process.env.REDIS_PORT || 6379),
@@ -175,20 +182,26 @@ for (const label of ['A', 'B']) {
 }
 const workers: WorkerProcess[] = []
 for (const label of ['W1', 'W2']) {
-  const worker = await spawnWorker(label, base, WORKER_CONCURRENCY)
+  const worker = await spawnWorker(label, base, workerConcurrency)
   children.push(worker.proc)
   workers.push(worker)
 }
 const scraped = [...ws, ...workers]
 
 // The hop stays on one instance, as a keep-alive socket to one replica does in production.
+// `mixed` splits the writes across both replicas, as on 2026-11-09, while A holds the room.
 const hop = ws[0]
-const client = createContentClient({
-  baseUrl: hop.internalUrl,
-  serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? null,
-  prisma,
-  logger: pino({ level: 'error' })
-})
+const clients = ws.map((instance) => ({
+  label: instance.label,
+  client: createContentClient({
+    baseUrl: instance.internalUrl,
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? null,
+    prisma,
+    logger: pino({ level: 'error' })
+  })
+}))
+const client = clients[0].client
+const hopFor = (i: number) => (mode === 'mixed' ? clients[i % clients.length] : clients[0])
 
 const queueDepth = async () => {
   const lists = await Promise.all([
@@ -264,7 +277,7 @@ for (let run = 1; run <= runs; run++) {
   }
 
   let provider: { destroy: () => void } | null = null
-  if (mode === 'held') {
+  if (mode === 'held' || mode === 'mixed') {
     const open = await makeOpenProvider(hop.port)(documentId, slug, '')
     if (!open.synced) throw new Error('the held-room provider never synced')
     provider = open.provider
@@ -281,10 +294,12 @@ for (let run = 1; run <= runs; run++) {
     }
   }, 5000)
 
-  const calls: { readMs: number; applyMs: number; totalMs: number; status: string }[] = []
+  const calls: { hop: string; readMs: number; applyMs: number; totalMs: number; status: string }[] =
+    []
   for (let i = 0; i < writes; i++) {
+    const { label: hopLabel, client: writer } = hopFor(i)
     const started = performance.now()
-    const read = await client.read(documentId)
+    const read = await writer.read(documentId)
     const readDone = performance.now()
     if (read.status !== 'ok') throw new Error(`read ${i} failed: ${read.status}`)
 
@@ -294,7 +309,7 @@ for (let run = 1; run <= runs; run++) {
     const section = findSection(read.content, sectionId)
     if (!section) throw new Error(`section ${sectionId} not found`)
     const edit = nextEdit(rand, section.end - section.start)
-    const outcome = await client.apply({
+    const outcome = await writer.apply({
       documentId,
       mode: 'blocks',
       sectionId,
@@ -306,6 +321,7 @@ for (let run = 1; run <= runs; run++) {
     })
     const done = performance.now()
     calls.push({
+      hop: hopLabel,
       readMs: round1(readDone - started),
       applyMs: round1(done - readDone),
       totalMs: round1(done - started),
@@ -374,6 +390,12 @@ for (let run = 1; run <= runs; run++) {
       readMs: stats(calls.map((c) => c.readMs)),
       applyMs: stats(calls.map((c) => c.applyMs)),
       totalMs: stats(calls.map((c) => c.totalMs)),
+      totalMsByHop: Object.fromEntries(
+        clients.map(({ label }) => [
+          label,
+          stats(calls.filter((c) => c.hop === label).map((c) => c.totalMs))
+        ])
+      ),
       calls
     },
     server: {
@@ -446,7 +468,9 @@ const report = {
     platform: `${os.platform()} ${os.release()}`,
     loadAvg: { start: loadAtStart, end: os.loadavg() }
   },
-  condition: `${mode} room, ${gapMs > 0 ? `${gapMs} ms between writes` : 'writes back to back'}`,
+  condition:
+    `${mode} room, ${gapMs > 0 ? `${gapMs} ms between writes` : 'writes back to back'}, ` +
+    `${pgDelayMs} ms added per Postgres round trip, worker concurrency ${workerConcurrency}`,
   note:
     'Client timings (ms) and meanSeconds are exact. bucketP* values estimate inside one ' +
     "bucket, as Grafana's histogram_quantile does; use them only to compare with Grafana.",
@@ -455,10 +479,11 @@ const report = {
     writes,
     runs,
     gapMs,
+    pgDelayMs,
     redisDb,
     targetMiB: targetBytes / 2 ** 20,
     seed,
-    workerConcurrency: WORKER_CONCURRENCY
+    workerConcurrency
   },
   results
 }
