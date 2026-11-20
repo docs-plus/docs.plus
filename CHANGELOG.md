@@ -80,6 +80,12 @@ This file is the product changelog. Every app, package and extension keeps its o
   On one laptop, three imports at once held `/health` for at most 978 ms, against 1678 ms (41 %
   less time). Detail: `apps/hocuspocus.server/CHANGELOG.md`
   ([#577](https://github.com/docs-plus/docs.plus/issues/577)).
+- The production server now runs Debian 13. It moved in place from Debian 11, whose security
+  support had ended, one release at a time. Known security issues (CVEs) in its installed
+  packages fell from 6,515 to 1,527 (76 % fewer). The Linux kernel went from 5.10 to 6.12,
+  OpenSSL from 1.1.1w to 3.5.7 and OpenSSH from 8.4p1 to 10.0p1. In the 24 h after the move, no
+  alert fired and no save job failed ([#747](https://github.com/docs-plus/docs.plus/issues/747),
+  [#708](https://github.com/docs-plus/docs.plus/issues/708)).
 - The production deploy now writes its env files as owner-only, with `install -m 600`. `cp` kept
   an existing copy's mode, so a `chmod` on the host source never reached the copies. Plain `cp`
   copy sites fall from 4 to none ([#742](https://github.com/docs-plus/docs.plus/issues/742)).
@@ -158,6 +164,13 @@ This file is the product changelog. Every app, package and extension keeps its o
   271,824 lines across one recreate before, and 176 after (99 % fewer). On production, Loki still
   sends Alloy a few `400` rejections each hour, and their cause is still open
   ([#783](https://github.com/docs-plus/docs.plus/issues/783)).
+- `scripts/ops/upgrade-host.sh` runs every production host change in stages: `patch` monthly,
+  `reboot`, `drain`, `hop`, `check` and `start` for a release, and `cleanup` after the last hop.
+  Each stage logs its whole session and ends with one `RESULT` line. PM2 now runs on bun and
+  restores TinyDocy's apps after a boot; its boot service had failed since 2026-05-01. The
+  `cleanup` stage removed 259 old packages and 3 old kernels
+  ([#747](https://github.com/docs-plus/docs.plus/issues/747),
+  [#708](https://github.com/docs-plus/docs.plus/issues/708)).
 - `scripts/ops/backup-prod.sh` and three systemd units add off-host backups of the production
   stores. Each dump streams through `age` into object storage, daily or weekly, and nothing is
   staged on the host disk. The host fills the `@DEPLOY_USER@` placeholder. The store list and the
