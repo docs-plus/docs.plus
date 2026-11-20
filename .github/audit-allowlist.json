@@ -84,5 +84,10 @@
     "severity": "high",
     "reason": "braces through 3.0.3. npm latest is still 3.0.3, so no patched release exists (checked 2026-10-06). It reaches the tree through stylelint, ESLint, Cypress, and next-pwa's build-time globby. Those callers pass this repo's own glob patterns. No request path hands braces a pattern. Drop this entry when braces 3.0.4 or later is published.",
     "reviewed": "2026-10-06"
+  },
+  "GHSA-7589-6fvf-x4pw": {
+    "severity": "high",
+    "reason": "Reaches us only through the Prisma CLI: @prisma/config 7.10.1, the newest release, pins effect at exactly 3.20.0. No code of ours imports effect. The CLI runs prisma generate and migrations from our own prisma.config.ts, so no request input reaches Schema.TemplateLiteral. Drop this entry when Prisma moves effect to 3.22.1 or later.",
+    "reviewed": "2026-11-20"
   }
 }
