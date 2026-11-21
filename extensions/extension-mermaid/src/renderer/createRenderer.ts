@@ -27,55 +27,11 @@ function detect(mod: PeleModule, source: string): DiagramType | null {
   }
 }
 
-/**
- * Pele counts error lines from the diagram header, not from the frontmatter, `%%{init}%%`
- * or comment lines above it. Provisional: probed on the sampled types only. Agentflow is
- * skipped, because its metadata errors already include them, so its other errors stay short.
- */
-function leadingLines(source: string): number {
-  const lines = source.split(/\r?\n|\r/)
-  let i = 0
-  while (i < lines.length && lines[i].trim() === '') i++
-  if (lines[i]?.trim() === '---') {
-    i++
-    while (i < lines.length && lines[i].trim() !== '---') i++
-    i++
-  }
-  for (; i < lines.length; i++) {
-    const line = lines[i].trim()
-    if (line.startsWith('%%{')) {
-      while (i < lines.length && !lines[i].includes('}%%')) i++
-    } else if (line !== '' && !line.startsWith('%%')) {
-      break
-    }
-  }
-  return Math.min(i, lines.length)
-}
-
-// Pele's own comment pass. It also drops blank lines just above a comment.
-const COMMENT = /^\s*%%(?!{)[^\n]+\n?/gm
-
-/** Pele also skips interior comment lines, so walk the kept lines from the header. Eventmodeling keeps them. */
-function sourceLine(source: string, line: number, type: DiagramType | null): number {
-  const start = leadingLines(source)
-  if (type === 'eventmodeling') return start + line
-  const body = source
-    .split(/\r?\n|\r/)
-    .slice(start)
-    .join('\n')
-  const lines = body.replace(COMMENT, (m) => '\0\n'.repeat(m.split('\n').length - 1)).split('\n')
-  let kept = 0
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i] !== '\0' && ++kept === line) return start + i + 1
-  }
-  return start + line
-}
-
+// Pele 1.10.0 and later count error lines and columns in the source as written.
 function toError(
   mod: PeleModule,
   err: unknown,
   source: string,
-  type: DiagramType | null,
   limits: Required<MermaidLimits>
 ): MermaidError {
   if (!(err instanceof mod.PeleError)) {
@@ -84,15 +40,10 @@ function toError(
   if (err.code === 'limit') {
     return { code: 'limit', message: limitMessage(source, err.message, limits), line: 0, column: 0 }
   }
-  const line = err.line > 0 && type !== 'agentflow' ? sourceLine(source, err.line, type) : err.line
   return {
     code: err.code,
-    // Only the first token: later `line N` text is the echoed source.
-    message:
-      line !== err.line
-        ? err.message.replace(new RegExp(`\\b(line) ${err.line}\\b`, 'i'), `$1 ${line}`)
-        : err.message,
-    line: Math.max(line, 0),
+    message: err.message,
+    line: Math.max(err.line, 0),
     column: err.column
   }
 }
@@ -163,7 +114,7 @@ export function createRenderer(target: HTMLElement, options: RendererOptions): D
         return { state: 'ready', error: null, diagramType: type, durationMs }
       return {
         state: 'error',
-        error: toError(mod, failure, source, type, limits),
+        error: toError(mod, failure, source, limits),
         diagramType: type,
         durationMs
       }

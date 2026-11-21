@@ -40,7 +40,7 @@
     "prosemirror-transform": "1.12.2",
     "prosemirror-view": "1.42.6",
     "source-map-js": "^1.2.2",
-    "pele": "1.8.0"
+    "pele": "1.13.0"
   },
   "prettier": "./.prettierrc.json",
   "scripts": {

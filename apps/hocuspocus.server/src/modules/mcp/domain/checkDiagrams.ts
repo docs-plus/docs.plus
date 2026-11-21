@@ -36,11 +36,9 @@ const sourceOf = (node: JSONContent): string =>
 const diagramSources = (nodes: readonly JSONContent[]): string[] =>
   nodes.flatMap((node) => (isDiagram(node) ? [sourceOf(node)] : diagramSources(node.content ?? [])))
 
-// Pele counts lines from the diagram header and skips comments, so its line number misleads.
-// The caret stays.
+// Pele 1.10.0 and later count the line in the source as written, so the line number stays.
 const tidy = (message: string): string =>
   message
-    .replace(/ on line \d+/g, '')
     .replace(/\n\s*\n/g, '\n')
     .trim()
     .slice(0, 400)

@@ -200,7 +200,7 @@ The release procedure lives in the [`release-extensions`](.agents/skills/release
 - Dependency update flow:
   - Bump version ranges: `bun run update` (patch + minor only; root catalog + every `apps/*`, `extensions/*`, `packages/*` via `scripts/update-packages.sh`). Majors: `bun run update --upgrade`. Preview: `bun run update --dry-run`. The underlying tool is `npm-check-updates` — not `npm-check`, and not a verbose `bun update --recursive` wrapper; keep `scripts/update-packages.sh` minimal.
   - **`bun run update` has no reject option.** For the pins below, run the same `bunx npm-check-updates@23.1.1 --target minor --upgrade --cooldown 3d` calls by hand, with `--reject`, at the root and in each workspace. Keep that pin, the one in `scripts/update-packages.sh` and the root `npm-check-updates` devDependency on one version.
-  - Reject `prosemirror-changeset` and `pele`. Changeset stays at `2.4.1`. Pele stays at `1.8.0`.
+  - Reject `prosemirror-changeset` and `pele`. Changeset stays at `2.4.1`. Pele is pinned exactly at `1.13.0` (2026-11-21, #805). Move Pele on purpose, never in a sweep, and run the `extension-mermaid` Cypress suite.
   - After `update`, run `bun install` at the repo root. Do not run parallel `bun update` / installs inside individual packages; shared `bun.lock` can race with `EEXIST`.
   - **Read the package diff before you merge a Dependabot PR or a `bun run update` sweep (#653).** Run `bun pm diff <pkg>@<old> <new>` on each changed direct dependency. It prints a file diff, not a summary. Look for new `scripts` entries and new `child_process`, `net` or `vm` use. The root `bunfig.toml` holds every new version for 3 days (`minimumReleaseAge = 259200`). For an urgent security bump, add the exact `pkg@version` to `minimumReleaseAgeExcludes`, with the advisory in a comment. List any new transitive version under 3 days old too. Remove the entry on the next sweep. Exact-version excludes need Bun 1.4.4 or later. `bunx` ignores the age rule, so `bunx` downloads are not held.
   - When adding a workspace package, keep `bun.lock` diffs scoped to that package's graph. Avoid unrelated root devDependency churn from a blind full `bun install`. Surgically merge lockfile entries if needed.
@@ -432,7 +432,7 @@ Inbox only. New workspace facts go into the topical section that owns the subjec
 - `disableLogger` is gone. Use `bundleSizeOptimizations.excludeDebugStatements`.
 - `dataCollection` keeps the version 10 baseline. MCP tool text is off. Each app keeps its own `sentryDataCollection.ts`. `genAI` set to false does not cover MCP tool text. Set `mcp` inputs and outputs to false on each copy. Leave stack-frame values on. Version 10 already collected them.
 - Cypress is `16.2.1` in that tree. `Cypress.env()` is gone. Use `Cypress.expose()` for a public value.
-- `pele` stays `1.8.0` in hocuspocus and `extension-mermaid`. Do not take `1.9.0` until diagram labels are handled.
+- `pele` is `1.13.0` in hocuspocus and `extension-mermaid` since 2026-11-21 (#805). The labels change of `1.9.0` is handled.
 - Pull requests `#534`, `#535`, `#536`, and `#538` are merged. `#539`, `#540`, `#537`, and `#473` wait on this tree. `#364` is set aside.
 - The `supabase` CLI stays on 2.122.1. Version 3.0.0 makes `db push` target the local database unless the command passes `--remote`. Do not take 3.0.0 until the config and the production commands move with it.
 - A failed global sign-out in `@supabase/auth-js` 2.119 keeps the local session. `useSignOut` stays and shows a toast. Keep that path when the call fails and a session remains.

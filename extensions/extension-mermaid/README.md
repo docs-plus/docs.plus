@@ -51,7 +51,7 @@ This package imports no React, Vue, or Next.js code. Use it from a plain page, V
 
 React Native has no DOM. Load the editor in a web view.
 
-Installs one runtime dependency: [`pele`](https://www.npmjs.com/package/pele) (`1.8.0`, pinned exactly), the renderer. The package loads Pele with a dynamic `import()`, so your bundler emits it as separate chunks. Nothing loads from a CDN. For CSP, see [Content Security Policy](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/security.md#content-security-policy).
+Installs one runtime dependency: [`pele`](https://www.npmjs.com/package/pele) (`1.13.0`, pinned exactly), the renderer. The package loads Pele with a dynamic `import()`, so your bundler emits it as separate chunks. Nothing loads from a CDN. For CSP, see [Content Security Policy](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-mermaid/docs/security.md#content-security-policy).
 
 Import the stylesheet `@docs.plus/extension-mermaid/styles.css`. The fold control, the head and the actions need it.
 

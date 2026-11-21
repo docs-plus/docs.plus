@@ -56,6 +56,10 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Changed
 
+- The MCP diagram check keeps Pele's line number in its error message. `pele` `1.13.0` counts
+  the line in the source as written, including front matter and comments. The check dropped the
+  number before, because older Pele counted from the diagram header. `pele` moves from `1.8.0` to
+  `1.13.0` ([#805](https://github.com/docs-plus/docs.plus/issues/805)).
 - Each worker replica runs one store job at a time. `BULLMQ_CONCURRENCY` on the worker now reads
   `WORKER_STORE_CONCURRENCY` (default `1`), not `WORKER_DB_POOL_SIZE`. The worker memory limit rises
   from 1G to 2G ([#737](https://github.com/docs-plus/docs.plus/issues/737)). Roll back with

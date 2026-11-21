@@ -143,7 +143,7 @@ ${BRANCH}`
       })
     })
 
-    // The maintainer accepted that error lines can be off after leading metadata; this pins today's numbers.
+    // Pele 1.10.0 counts the line as written, so frontmatter, a directive and a comment all count.
     it('points a mistake after frontmatter, a directive or a comment at its source line', () => {
       const sources = [
         `---\ntitle: Release plan\n---\n${BROKEN_BODY}`,

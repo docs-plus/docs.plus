@@ -245,13 +245,13 @@ describe('mermaid — complex flowchart', () => {
     expectState('ready')
     // Proves the source reached Pele with its tags, not parsed away as HTML on the way in.
     cy.get('.mermaid-diagram__source pre').should('have.text', src)
-    // Pele strips raw tags from labels; an entity-coded tag stays plain text.
+    // Pele strips raw HTML tags from labels. A tag that is not HTML, and an entity-coded tag, stay plain text.
     expectNodeLabels({
       A: '',
       B: 'alert(1)',
       C: '<img src=x onerror=alert(1)>',
       D: 'bold',
-      E: 'inside'
+      E: '<foreignObject>inside</foreignObject>'
     })
 
     cy.get('.mermaid-diagram').within(() => {

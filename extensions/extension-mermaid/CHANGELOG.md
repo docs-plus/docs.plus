@@ -4,7 +4,17 @@ All notable changes to `@docs.plus/extension-mermaid` are documented here. The f
 
 ## [Unreleased]
 
+### Changed
+
+- `pele` is now pinned at `1.13.0`. It was `1.8.0` ([#805](https://github.com/docs-plus/docs.plus/issues/805)). What you can see change:
+  - Labels draw more HTML tags: `<sub>`, `<sup>`, `<code>`, `<kbd>`, `<samp>`, `<tt>`, `<u>`, `<ins>`, `<var>`, `<cite>` and `<dfn>`. A tag that is not HTML, such as `List<T>` or `<foreignObject>`, now shows as text. Raw HTML such as `<img>` and `<script>` is still stripped.
+  - Labels on a fill set with `style`, `classDef` or a sequence `rect` or `box` use `--pele-fg-on-light` or `--pele-fg-on-dark`, whichever reads better on that fill.
+  - An error's line and column count the source as written, including front matter, directives and comments.
+  - Render time is about the same. A 250-edge flowchart drew in 0.99 ms before and 1.05 ms after (6 % more time). That is the median p50 of 3 rounds of 50 draws in Bun on one laptop. The default `limits` stay.
+
 ### Internal
+
+- The renderer no longer moves Pele's error line down past front matter, directives and comments. Pele `1.10.0` and later count those lines itself ([#805](https://github.com/docs-plus/docs.plus/issues/805)).
 
 - `typecheck` runs `bun check --no-script` on `tsconfig.json` and `tsconfig.test.json`, not
   `tsc` ([#794](https://github.com/docs-plus/docs.plus/issues/794)).

@@ -20,6 +20,10 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ### Changed
 
+- Diagrams draw with Pele 1.13.0, up from 1.8.0. Labels take more HTML tags, such as `<sub>`,
+  `<sup>`, `<code>` and `<kbd>`, and text such as `List<T>` stays whole. Labels on a custom fill
+  stay readable in dark themes. When an agent writes a diagram with a mistake, the MCP now names
+  its line ([#805](https://github.com/docs-plus/docs.plus/issues/805)).
 - Bold, italic, strike, highlight and links can now sit on inline code, as in Notion. Before,
   Markdown import dropped the bold from ``**`x`**`` and the MCP refused the write ([#721](https://github.com/docs-plus/docs.plus/issues/721)).
 - Replace with a file now has a cap per person. The document owner may upload a Word file of up to
