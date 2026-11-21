@@ -56,6 +56,16 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Changed
 
+- A save that adds nothing no longer mints a version row
+  ([#704](https://github.com/docs-plus/docs.plus/issues/704)). An unnamed `websocket` save whose
+  merged bytes equal the head's bytes keeps the head row, and its `contributors` merge into it.
+  The worker skips the change summary, the previews and the content-change fan-out for it, and
+  counts `document_store_outcome_total{outcome="unchanged"}`. Named, forced, `api`, `mcp`,
+  restore and machine saves always insert. Every head + 1 writer now takes a per-document advisory
+  lock first, and `store_job_phase_seconds` gains the `lock_wait` phase. A save whose job id has
+  already finished writes no claim-check key, so it no longer leaves an orphan key in Redis for
+  1 h. Roll back the skip with `DOC_STORE_SKIP_UNCHANGED=0` in the host source `.env`.
+
 - The MCP diagram check keeps Pele's line number in its error message. `pele` `1.13.0` counts
   the line in the source as written, including front matter and comments. The check dropped the
   number before, because older Pele counted from the diagram header. `pele` moves from `1.8.0` to

@@ -20,6 +20,10 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ### Changed
 
+- History no longer gains a second version when one pad state is saved twice, as happens when two
+  servers hold the same pad. The latest version is kept, and it lists every editor of that save
+  ([#704](https://github.com/docs-plus/docs.plus/issues/704)).
+
 - Diagrams draw with Pele 1.13.0, up from 1.8.0. Labels take more HTML tags, such as `<sub>`,
   `<sup>`, `<code>` and `<kbd>`, and text such as `List<T>` stays whole. Labels on a custom fill
   stay readable in dark themes. When an agent writes a diagram with a mistake, the MCP now names

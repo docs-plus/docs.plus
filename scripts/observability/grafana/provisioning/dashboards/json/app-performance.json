@@ -1642,7 +1642,7 @@
       "id": 64,
       "type": "timeseries",
       "title": "Store Job Phase p95 by Phase",
-      "description": "store_job_phase_seconds (#750): p95 of each store-job phase, all size classes. head_read holds the pool wait, BEGIN and the FOR UPDATE lock wait.",
+      "description": "store_job_phase_seconds (#750): p95 of each store-job phase, all size classes. lock_wait is the per-document store lock (#704); revert the deploy if its p95 passes 1 s in the first hour. head_read holds the pool wait, BEGIN and the FOR UPDATE wait.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -1892,7 +1892,7 @@
       "id": 81,
       "type": "timeseries",
       "title": "Document Store Outcomes per Minute",
-      "description": "document_store_outcome_total by outcome, worker and queue-down fallback summed (#703). Only inserted moves today. unchanged, coalesced and head-moved read 0 until #704 and #706 ship.",
+      "description": "document_store_outcome_total by outcome, worker and queue-down fallback summed (#703). unchanged is a save that kept the head row, and head-moved an insert after the head-moved guard missed (#704). coalesced reads 0 until #706 ships.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 183 },
       "targets": [
