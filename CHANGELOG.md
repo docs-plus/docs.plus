@@ -174,7 +174,10 @@ This file is the product changelog. Every app, package and extension keeps its o
   restores TinyDocy's apps after a boot; its boot service had failed since 2026-05-01. The
   `cleanup` stage removed 259 old packages and 3 old kernels
   ([#747](https://github.com/docs-plus/docs.plus/issues/747),
-  [#708](https://github.com/docs-plus/docs.plus/issues/708)).
+  [#708](https://github.com/docs-plus/docs.plus/issues/708)). It also removed `libicu76`, which
+  the GitHub Actions runner loads, so no production deploy ran from 2026-11-18 to 2026-11-21.
+  `cleanup` now keeps that library, and `preflight` and `cleanup` check that a new runner
+  process starts.
 - `scripts/ops/backup-prod.sh` and three systemd units add off-host backups of the production
   stores. Each dump streams through `age` into object storage, daily or weekly, and nothing is
   staged on the host disk. The host fills the `@DEPLOY_USER@` placeholder. The store list and the

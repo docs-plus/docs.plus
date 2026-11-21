@@ -20,6 +20,7 @@ fi
 
 DEPLOY=/opt/projects/prod.docs.plus/.deploy/current
 RUNNER=/opt/actions-runner/prod
+RUNNER_TODAY=/opt/projects/prod.docs.plus # the runner root until #743 moves it to $RUNNER
 APP_HELD=(hocuspocus-worker hocuspocus-server rest-api) # start order, as the deploy job
 APP_ALL=(webapp rest-api hocuspocus-server hocuspocus-worker admin-dashboard)
 STORE_Q=store-documents
@@ -109,6 +110,14 @@ runner_start() {
     pm2) pm2_list | q "^$RUNNER_PM2_APP online$" || pm2c start "$RUNNER_PM2_APP" >/dev/null ;;
   esac
 }
+# The runner is a .NET tarball, not a package. It loads ICU with dlopen, so ldd and apt never see it.
+runner_listener() {
+  local d
+  for d in "$RUNNER" "$RUNNER_TODAY"; do [ -x "$d/bin/Runner.Listener" ] && { echo "$d/bin/Runner.Listener"; return 0; }; done
+  return 0
+}
+# A new job starts a new Runner.Worker, so a lost library breaks deploys while the old Listener stays up.
+runner_starts() { local l; l=$(runner_listener); [ -n "$l" ] && "$l" --version >/dev/null 2>&1; }
 runner_listening() {
   case "$(runner_mode)" in
     unit) sudo journalctl -b -u "$(runner_unit)" --no-pager -o cat 2>/dev/null | q 'Listening for Jobs' ;;
@@ -223,6 +232,7 @@ preflight() {
     *) bad "no runner found (no svc.sh unit, no PM2 app $RUNNER_PM2_APP)" ;;
   esac
   [ "$(pgrep -fc '[/]bin/Runner.Worker' || true)" = 0 ] && ok "no deploy job runs now" || bad "a deploy job runs now: wait until it ends"
+  runner_starts && ok "a new runner process starts (Runner.Listener --version)" || bad "a new runner process does not start: a library it loads is missing"
   if [ -n "$(pm2_daemon)" ]; then
     pm2_boot_ok && ok "PM2 apps come back at boot: $PM2_UNIT runs $(pm2_cmd)" \
       || bad "PM2 apps (TinyDocy) would not come back after a boot: run $0 pm2-boot"
@@ -820,7 +830,8 @@ cmd_reboot() {
 
 # Removes what the release hops left behind: obsolete packages, old kernels, leftover configs and
 # upgrade copies. It keeps the running kernel, one older kernel to boot from, the services below,
-# and every old library that a binary in /usr/local, /opt or bun's global folder still links.
+# every old library that a binary in /usr/local, /opt or bun's global folder still links, and
+# the ICU library the Actions runner loads (#747: on 2026-11-18 autoremove took it, and deploys stopped).
 CLEAN_KEEP=(unattended-upgrades ntpsec usrmerge)
 cmd_cleanup() {
   begin 6
@@ -844,6 +855,11 @@ cmd_cleanup() {
               find /opt "$HOME/.bun/install/global" -xdev -type f \( -name '*.node' -o -name '*.so' -o -name '*.so.*' \) 2>/dev/null || true; } \
     | while read -r f; do { ldd "$f" 2>/dev/null || true; } | awk '{print $1}'; done | sort -u | comm -12 - <(echo "$libs") || true)
   for l in $linked; do p=$(dpkg -S "*/$l" 2>/dev/null | awk -F: 'NR==1{print $1}' || true); [ -z "$p" ] || keep+=("$p"); done
+  if [ -n "$(runner_listener)" ]; then
+    p=$(dpkg -S '*/libicuuc.so.*' 2>/dev/null | awk -F: '$1 !~ /-dev$/ {print $1}' | sort -u | tail -n1 || true)
+    [ -n "$p" ] || die "no ICU library is installed, and the Actions runner needs one" "run 'sudo apt-get install libicu76', then $0 cleanup again"
+    keep+=("$p")
+  fi
   mapfile -t keep < <(printf '%s\n' "${keep[@]}" | sort -u)
   info "keeping: ${keep[*]}"
   [ -z "$linked" ] || info "old libraries still linked by local binaries: $(echo "$linked" | xargs)"
@@ -903,6 +919,7 @@ cmd_cleanup() {
   [ -z "$fallback" ] || { sudo grep -q "vmlinuz-${fallback#linux-image-}" /boot/grub/grub.cfg && ok "fallback kernel ${fallback#linux-image-} in grub" || bad "fallback kernel missing from grub.cfg"; }
   [ "$(systemctl is-enabled unattended-upgrades 2>/dev/null)" = enabled ] && ok "unattended-upgrades enabled" || bad "unattended-upgrades is not enabled"
   systemctl is-active ntpsec >/dev/null 2>&1 && ok "ntpsec active" || bad "no time sync service (ntpsec) active"
+  [ -z "$(runner_listener)" ] || { runner_starts && ok "a new runner process still starts" || bad "a new runner process no longer starts: a library it loads is gone"; }
   [ ! -x /usr/local/bin/python3.13 ] || { /usr/local/bin/python3.13 -c 'import ssl, hashlib, ctypes, readline' 2>/dev/null && ok "/usr/local Python still loads ssl, hashlib, ctypes" || bad "/usr/local Python lost a module"; }
   [ "$(docker ps -q | wc -l)" = "$containers" ] && ok "$containers containers still run" || bad "containers: $(docker ps -q | wc -l), before $containers"
   [ "$(pm2_list | grep -c ' online$' || true)" = "$pm2on" ] && ok "$pm2on PM2 apps still online" || bad "PM2 apps online changed from $pm2on"
