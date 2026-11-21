@@ -12,7 +12,8 @@ import { config } from './env'
 import { isRoomSealed } from '../lib/accessRealtime'
 import { drainContributors } from '../lib/contributors'
 import { buildStoreJobId, enqueueStoreDocument } from '../lib/queue'
-import { stripSnapshotMetadata } from '../lib/snapshotMetadata'
+import { lockDocumentStore } from '../lib/lockDocumentStore'
+import { type PersistSnapshotResult, persistSnapshot } from '../lib/persistSnapshot'
 import { loadedStateBytes } from '../lib/loadedStateBytes'
 import {
   documentHeadBytes,
@@ -50,12 +51,13 @@ const noteLoadedBytes = (document: object, bytes: number) => {
   }
 }
 
-const noteFallbackHead = (bytes: number) => {
+const noteFallbackHead = ({ outcome, versionData }: PersistSnapshotResult) => {
   try {
-    documentStoreOutcomeTotal.inc({ outcome: 'inserted' })
-    documentHeadBytes.observe(bytes)
+    documentStoreOutcomeTotal.inc({ outcome })
+    // A kept head did not change, so it is not a new head sample.
+    if (outcome !== 'unchanged') documentHeadBytes.observe(versionData.byteLength)
   } catch {
-    // The row landed; only its count and size sample are lost.
+    // The save is durable; only its count and size sample are lost.
   }
 }
 
@@ -70,7 +72,7 @@ const generateDefaultState = () => {
 // A rebuilt CRDT has fresh item identities. Serving that CRDT without persisting
 // lets a returning client (IndexedDB cache of a previous rebuild) merge two
 // independent rebuilds and duplicate the document. Exactly one rebuild may
-// ever exist — the FOR UPDATE re-read makes concurrent replicas agree on it.
+// ever exist. The store lock and the FOR UPDATE re-read make replicas agree on it.
 async function persistMigratedSnapshot(
   documentName: string,
   baseVersion: number,
@@ -78,6 +80,7 @@ async function persistMigratedSnapshot(
 ): Promise<Uint8Array> {
   try {
     return await prisma.$transaction(async (tx) => {
+      await lockDocumentStore(tx, documentName)
       const rows = await tx.$queryRaw<{ version: number; data: Uint8Array }[]>`
         SELECT version, data FROM "Documents"
         WHERE "documentId" = ${documentName}
@@ -307,54 +310,27 @@ const configureExtensions = (): { extensions: Extension[]; redisWired: boolean }
             captureDegraded('queue-fallback', err, { extra: { documentName } })
 
             // Multiple Hocuspocus instances may hit this fallback simultaneously
-            // (redlock can lapse mid-store), so merge with the locked head like
-            // the worker does. A plain insert of divergent state would clobber.
+            // (redlock can lapse mid-store), so it merges with the locked head through
+            // the worker's own write. A plain insert of divergent state would clobber.
             const saveMergedVersion = () =>
-              prisma.$transaction(async (tx) => {
-                const existingDocs = await tx.$queryRaw<{ version: number; data: Uint8Array }[]>`
-                  SELECT version, data FROM "Documents"
-                  WHERE "documentId" = ${documentName}
-                  ORDER BY version DESC
-                  LIMIT 1
-                  FOR UPDATE
-                `
-                const existingDoc = existingDocs[0] ?? null
-                // Merge RAW, strip the RESULT: mergeUpdates takes struct content
-                // from the older head and only unions delete sets. Stripping first
-                // therefore leaves text deleted inside a surviving parent in the
-                // row forever. The strip's decode is what garbage-collects it.
-                const versionData = existingDoc
-                  ? stripSnapshotMetadata(
-                      Y.mergeUpdates([
-                        new Uint8Array(existingDoc.data),
-                        new Uint8Array(stateBuffer)
-                      ])
-                    )
-                  : stripSnapshotMetadata(stateBuffer)
-
-                await tx.documents.create({
-                  data: {
-                    documentId: documentName,
-                    commitMessage: commitMessage || '',
-                    version: existingDoc ? existingDoc.version + 1 : 1,
-                    data: versionData,
-                    trigger,
-                    triggeredBy,
-                    contributors
-                  },
-                  select: { version: true }
-                })
-                return versionData.length
+              persistSnapshot(prisma, {
+                documentId: documentName,
+                incoming: new Uint8Array(stateBuffer),
+                commitMessage: commitMessage || '',
+                trigger,
+                triggeredBy,
+                contributors,
+                forced: Boolean(versionContext.versionForceKey),
+                skipUnchanged: config.docStore.skipUnchanged
               })
 
             try {
               noteFallbackHead(await saveMergedVersion())
             } catch (raceErr) {
-              // FOR UPDATE can't stop two concurrent fallbacks computing the
-              // same nextVersion under READ COMMITTED. On the (documentId,
-              // version) collision re-run ONCE, so the now-newer head re-merges
-              // this delta forward. Re-merge, never serve-the-winner — the
-              // latter would drop this instance's edits. Worker retries alike.
+              // The advisory lock serializes every writer on this image, so a P2002
+              // now comes from one that skips it, such as an older image in a rolling
+              // deploy. Re-run ONCE, so the newer head re-merges this delta forward.
+              // Re-merge, never serve-the-winner: that would drop this instance's edits.
               if (
                 raceErr instanceof Prisma.PrismaClientKnownRequestError &&
                 raceErr.code === 'P2002'

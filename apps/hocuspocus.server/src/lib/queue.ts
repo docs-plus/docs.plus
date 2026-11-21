@@ -1,7 +1,7 @@
 import { Job, Queue, Worker } from 'bullmq'
-import * as Y from 'yjs'
 
 import { config } from '../config/env'
+import type { Prisma } from '../generated/prisma/client'
 import { refreshCardData } from '../modules/social-card/infra/cardDataWrite'
 import type {
   DeadLetterJobData,
@@ -27,6 +27,7 @@ import {
 } from './metrics'
 import { ydocToPmJson } from './nested-flat-migration'
 import { firstEditOwner } from './ownerAccess'
+import { type PersistOutcome, persistSnapshot } from './persistSnapshot'
 import { prisma } from './prisma'
 import {
   bullmqConnectionOptions,
@@ -35,16 +36,13 @@ import {
   getRedisPublisher
 } from './redis'
 import { withUniqueSlug } from './slug'
-import { stripSnapshotMetadata } from './snapshotMetadata'
 import { judgeStoreDlqEntry } from './storeDlqDisposition'
-
-type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 
 // Upsert document metadata under a caller-chosen slug. The slug-collision retry
 // belongs to the caller, OUTSIDE the transaction. A P2002 aborts the Postgres
 // transaction, so a retry in here can only ever hit 25P02 and lose the save.
 async function upsertDocumentMetadata(
-  tx: TransactionClient,
+  tx: Prisma.TransactionClient,
   params: {
     documentId: string
     slug: string
@@ -173,6 +171,13 @@ export function buildStoreJobId(documentName: string, state: Uint8Array): string
 }
 
 export async function enqueueStoreDocument(params: EnqueueStoreDocumentParams): Promise<void> {
+  // A finished job with this id makes BullMQ drop the add, and its bytes are already
+  // saved or dead-lettered. The key would only be an orphan for an hour (#704). A live
+  // job keeps the SET: it re-arms an evicted key for a delayed retry. Never delete the
+  // key after a duplicate add instead: add returns a Job then, and it may be live.
+  const existing = await StoreDocumentQueue.getJobState(params.jobId)
+  if (existing === 'completed' || existing === 'failed') return
+
   const stateKey = STATE_KEY_PREFIX + params.jobId
   await stateRedis.set(stateKey, params.state, 'EX', STATE_KEY_TTL_SECONDS)
   try {
@@ -433,11 +438,11 @@ const recordStoreJobWait = (job: Job<StoreDocumentData>) => {
   }
 }
 
-const countInserted = () => {
+const countOutcome = (outcome: PersistOutcome) => {
   try {
-    documentStoreOutcomeTotal.inc({ outcome: 'inserted' })
+    documentStoreOutcomeTotal.inc({ outcome })
   } catch {
-    // The row landed; only its count is lost.
+    // The save is durable; only its count is lost.
   }
 }
 
@@ -500,115 +505,77 @@ export const createDocumentWorker = () => {
         const incoming = new Uint8Array(rawState)
         incomingBytes = incoming.byteLength
 
-        // READ COMMITTED + FOR UPDATE serializes appends but cannot stop two
-        // concurrent jobs computing the same nextVersion. No row exists on first
-        // creation; stale latest after the lock releases. The P2002 is expected
-        // and healed by retries — snapshots are cumulative full state.
         const baseSlug = context.slug || data.documentName
 
         // The slug retry wraps the WHOLE transaction. A P2002 aborts the Postgres
         // transaction, so retrying inside it only ever hit 25P02, and the next
         // debounce re-enqueued into the same dead end.
-        // head_read starts at the $transaction call, so it holds the pool wait, BEGIN and
-        // the FOR UPDATE lock wait too. commit runs from the callback's return to resolve.
-        let callbackDone = 0
-        const { version, versionData, previousBytes, createdSlug, isFirstCreation } =
-          await withUniqueSlug(baseSlug, async (candidateSlug) => {
-            const headReadStarted = performance.now()
-            const result = await prisma.$transaction(
-              async (tx) => {
-                // FOR UPDATE lock on the latest row. ORDER BY version is served
-                // top-1 by the (documentId, version) unique index. ORDER BY id DESC
-                // had no supporting index and scanned every version of the document.
-                const existingDocs = await tx.$queryRaw<
-                  { id: number; version: number; data: Uint8Array }[]
-                >`
-            SELECT id, version, data FROM "Documents"
-            WHERE "documentId" = ${data.documentName}
-            ORDER BY version DESC
-            LIMIT 1
-            FOR UPDATE
-          `
-                const existingDoc = existingDocs[0] ?? null
-                addPhase('head_read', headReadStarted)
-
-                const isFirst = !existingDoc
-                const nextVersion = existingDoc ? existingDoc.version + 1 : 1
-
-                // Merge with the locked head so an out-of-order commit cannot make a
-                // stale snapshot the newest version, and divergent replicas union.
-                // Merge RAW and strip the RESULT: mergeUpdates only unions delete
-                // sets, so the strip's decode is what drops deleted text.
-                const mergeStarted = performance.now()
-                const versionData = existingDoc
-                  ? stripSnapshotMetadata(
-                      Y.mergeUpdates([new Uint8Array(existingDoc.data), incoming])
-                    )
-                  : stripSnapshotMetadata(incoming)
-                addPhase('merge_strip', mergeStarted)
-                // insert also holds the first-save metadata upsert below.
-                const insertStarted = performance.now()
-
-                // Handle first-time document creation; the title stays the BASE
-                // slug, so a collision suffixes the slug without renaming the doc.
-                let slug: string | undefined
-                if (isFirst) {
-                  // Creates only a row the anchor never wrote: it failed, had no slug, or
-                  // ceded the slug to another id (then the slug gets a suffix). The owner is
-                  // the save's last editor, the creator in a one-editor room. A direct
-                  // connection needs a metadata row first, so it always takes update: {}.
-                  slug = await upsertDocumentMetadata(tx, {
-                    documentId: data.documentName,
-                    slug: candidateSlug,
-                    title: baseSlug,
-                    ...firstEditOwner(context.user)
-                  })
-                }
-
-                // Attribution is read top-level only: the serialized context carries a second copy
-                // whose explicit null the store hook has already resolved.
-                const doc = await tx.documents.create({
-                  data: {
-                    documentId: data.documentName,
-                    commitMessage: data.commitMessage || '',
-                    version: nextVersion,
-                    data: versionData,
-                    trigger: data.trigger ?? null,
-                    triggeredBy: data.triggeredBy ?? null,
-                    contributors: data.contributors ?? []
-                  },
-                  // The full row would send the snapshot back inside the lock.
-                  select: { version: true }
-                })
-                addPhase('insert', insertStarted)
-                callbackDone = performance.now()
-
-                return {
-                  version: doc.version,
-                  versionData,
-                  previousBytes: existingDoc ? existingDoc.data.byteLength : 0,
-                  createdSlug: slug,
-                  isFirstCreation: isFirst
-                }
-              },
-              // Under bursts jobs queue on the pool; waiting must degrade into
-              // latency, not P2028 errors that burn the retry budget.
-              { maxWait: 5000, timeout: 15000 }
-            )
-            addPhase('commit', callbackDone)
-            return result
+        const persisted = await withUniqueSlug(baseSlug, (candidateSlug) =>
+          persistSnapshot(prisma, {
+            documentId: data.documentName,
+            incoming,
+            commitMessage: data.commitMessage || '',
+            trigger: data.trigger ?? null,
+            // Attribution is read top-level only: the serialized context carries a second
+            // copy whose explicit null the store hook has already resolved.
+            triggeredBy: data.triggeredBy ?? null,
+            contributors: data.contributors ?? [],
+            forced: Boolean(context.versionForceKey),
+            skipUnchanged: config.docStore.skipUnchanged,
+            addPhase,
+            // Creates only a row the anchor never wrote: it failed, had no slug, or ceded
+            // the slug to another id (then the slug gets a suffix). The owner is the save's
+            // last editor, the creator in a one-editor room. A direct connection needs a
+            // metadata row first, so it always takes update: {}.
+            onFirstSave: (tx) =>
+              upsertDocumentMetadata(tx, {
+                documentId: data.documentName,
+                slug: candidateSlug,
+                title: baseSlug,
+                ...firstEditOwner(context.user)
+              })
           })
+        )
+        const { outcome, version, versionData, previousBytes, createdSlug } = persisted
 
-        countInserted()
+        countOutcome(outcome)
 
         // Claim-check key served its purpose; TTL remains the backstop.
         if (data.stateKey) {
           stateRedis.del(data.stateKey).catch(() => {})
         }
 
+        // Fire-and-forget. The save is already committed and the claim-check key is
+        // deleted. An awaited reject here would therefore re-throw a durable save into a
+        // payload-less DLQ retry plus a false 'failed' metric.
+        const publishSaved = () => {
+          redisPublisher
+            ?.publish(
+              `doc:${data.documentName}:saved`,
+              JSON.stringify({ documentId: data.documentName, version, timestamp: Date.now() })
+            )
+            .catch((err) => {
+              queueLogger.error(
+                { err, documentId: data.documentName },
+                'Failed to publish save confirmation'
+              )
+            })
+        }
+
         const duration = Date.now() - startTime
+        if (outcome === 'unchanged') {
+          // The head already holds these bytes, so nothing changed for a summary,
+          // a preview or a content-change notice.
+          queueLogger.info(
+            { jobId: job.id, duration: `${duration}ms`, headVersion: version },
+            'Document save unchanged, head kept'
+          )
+          publishSaved()
+          return { success: true, version, unchanged: true }
+        }
+
         queueLogger.info(
-          { jobId: job.id, duration: `${duration}ms` },
+          { jobId: job.id, duration: `${duration}ms`, outcome },
           'Document stored successfully'
         )
 
@@ -638,7 +605,7 @@ export const createDocumentWorker = () => {
         })
 
         // Send email notification AFTER transaction commits (fire-and-forget)
-        if (isFirstCreation && createdSlug) {
+        if (persisted.isFirst && createdSlug) {
           const userMeta = context.user?.user_metadata
           setImmediate(() => {
             sendNewDocumentNotification({
@@ -659,27 +626,7 @@ export const createDocumentWorker = () => {
           })
         }
 
-        // Publish save confirmation (fire-and-forget, like the email above).
-        // The save is already committed and the claim-check key is deleted. An
-        // awaited reject here would therefore re-throw a durable save into a
-        // payload-less DLQ retry plus a false 'failed' metric.
-        if (redisPublisher) {
-          redisPublisher
-            .publish(
-              `doc:${data.documentName}:saved`,
-              JSON.stringify({
-                documentId: data.documentName,
-                version,
-                timestamp: Date.now()
-              })
-            )
-            .catch((err) => {
-              queueLogger.error(
-                { err, documentId: data.documentName },
-                'Failed to publish save confirmation'
-              )
-            })
-        }
+        publishSaved()
 
         // Content-change fan-out (fire-and-forget, a sibling of the two blocks
         // above and NOT part of the first-creation one — a content change fires
