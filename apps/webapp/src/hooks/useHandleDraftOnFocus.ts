@@ -17,8 +17,9 @@ const useHandleDraftOnFocus = ({ editor, provider }: UseHandleDraftOnFocusProps)
     // Pre-sync the ymetadata map is empty — a one-shot `isDraft` read would miss the flag forever.
     if (!editor || !provider || providerSyncing) return
 
+    // No early return on a false isDraft: a server restart before the first save
+    // serves its default state again, which can flip isDraft back to true (#799).
     const meta = provider.configuration.document.getMap('metadata')
-    if (!meta.get('isDraft')) return
 
     const handleFocus = () => {
       if (meta.get('isDraft')) {
@@ -26,15 +27,16 @@ const useHandleDraftOnFocus = ({ editor, provider }: UseHandleDraftOnFocusProps)
       }
     }
 
-    // The server discards every save while isDraft is set, and focus alone can
-    // miss edits (programmatic inserts, drop). Any local-origin doc change is
-    // edit intent — except the template seed, which dispatches while
-    // needsInitialization is still true.
+    // The server drops every save while isDraft is set, and focus can miss edits
+    // (programmatic inserts, drop). A local change is edit intent, except the
+    // template seed: it runs on an empty pad while needsInitialization is true.
+    // A restart can set that flag again over the user's text (#799): a focused edit to text wins.
     const handleUpdate = ({ transaction }: EditorEvents['update']) => {
+      const typedOverText = editor.isFocused && transaction.before.textContent.trim().length > 0
       if (
         transaction.docChanged &&
         !transaction.getMeta(ySyncPluginKey) &&
-        !meta.get('needsInitialization') &&
+        (!meta.get('needsInitialization') || typedOverText) &&
         meta.get('isDraft')
       ) {
         meta.set('isDraft', false)

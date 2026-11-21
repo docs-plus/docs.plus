@@ -43,6 +43,10 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ### Fixed
 
+- A new pad keeps saving when the collaboration server restarts in its first seconds. Before,
+  typing after such a restart could stay in the browser only. In a local test, 7 of 10 pads saved
+  nothing before, and none after. Detail: `apps/webapp/CHANGELOG.md`
+  ([#799](https://github.com/docs-plus/docs.plus/issues/799)).
 - Links behave: formatting part of a link keeps the whole link, a link keeps its own address when
   you type next to it, a removed link stays removed while others edit, Enter inside a link gives
   two linked halves that one undo joins again, and a dictated phrase links a URL in its middle.

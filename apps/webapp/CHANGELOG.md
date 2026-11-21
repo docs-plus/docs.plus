@@ -42,6 +42,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- A new pad keeps saving when the collaboration server restarts in its first seconds. A restart
+  before the first save could mark the pad as an unsaved draft again, and typing never cleared
+  the mark, so nothing saved until the editor lost focus and got it back. In a local test that
+  killed the server in that window, 7 of 10 pads saved nothing before, and none after
+  ([#799](https://github.com/docs-plus/docs.plus/issues/799)).
 - Bold, italic, strike, underline or code on part of a link keeps the whole link, in the pad and in
   chat ([#770](https://github.com/docs-plus/docs.plus/issues/770)).
 - A link keeps its own address when you type a space or format next to it, even when its text looks
