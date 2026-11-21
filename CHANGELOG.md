@@ -120,6 +120,10 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ### Internal
 
+- CI runs Bun 1.4.5, up from 1.4.4. The release brings security fixes for TLS, DNS and HTTP/3,
+  through newer BoringSSL, c-ares and llhttp. The production images already ran 1.4.5, so CI
+  now tests the version production runs again
+  ([#806](https://github.com/docs-plus/docs.plus/issues/806)).
 - The `release-product` skill now requires a release note to cover every user-facing changelog
   entry. `.agents/skills/release-product/scripts/note-coverage.ts` lists each entry the note does
   not mention, as whole issue and commit tokens, and checks each sub-bullet. The 2.3.0 note had
