@@ -1,4 +1,4 @@
-import { describe, expect, it, mock } from 'bun:test'
+import { afterAll, describe, expect, it, mock } from 'bun:test'
 
 import type { CardQuery } from '../domain/cardRequest'
 import { attachCard } from '../module'
@@ -7,6 +7,7 @@ import { matchFilter } from '../domain/kinds/filter'
 import { topReaction } from '../domain/kinds/message'
 import type { CardSource } from '../domain/kinds/types'
 import { type CardReads, type CardSourceRow, resolveCard } from '../domain/resolveCard'
+import * as membersReadModule from '../infra/membersRead'
 import type { StoredBlock, StoredOutlineItem } from '../domain/storedData'
 
 const item = (id: string, level: number, parent: number, text = id): StoredOutlineItem => ({
@@ -299,7 +300,13 @@ describe('resolveCard', () => {
 
 describe('attachCard', () => {
   // `tests/setup.ts` sets a service-role key, so the real read would call Supabase.
+  // A module mock lasts for the whole `bun test` process: put the real one back, or
+  // `membersRead.test.ts` gets the stub when it runs after this file.
+  const realMembersRead = { ...membersReadModule }
   mock.module('../infra/membersRead', () => ({ createMembersRead: () => async () => null }))
+  afterAll(() => {
+    mock.module('../infra/membersRead', () => realMembersRead)
+  })
   // Hono's request reads `this`, so a reader passed unbound throws and the card goes missing.
   class Req {
     constructor(private readonly params: Record<string, string>) {}
