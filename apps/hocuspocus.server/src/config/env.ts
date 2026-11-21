@@ -161,6 +161,10 @@ export const config = {
     healthPort: env.WORKER_HEALTH_PORT
   },
 
+  docStore: {
+    skipUnchanged: env.DOC_STORE_SKIP_UNCHANGED
+  },
+
   logging: {
     level: env.LOG_LEVEL
   }

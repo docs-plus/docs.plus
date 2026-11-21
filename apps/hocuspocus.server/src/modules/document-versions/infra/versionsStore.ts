@@ -1,6 +1,7 @@
 import * as Y from 'yjs'
 
 import { Prisma, type PrismaClient } from '../../../generated/prisma/client'
+import { lockDocumentStore } from '../../../lib/lockDocumentStore'
 import type { MachineVersionTrigger, VersionSnapshot } from '../types'
 
 export interface VersionRow {
@@ -160,6 +161,7 @@ export const appendBackupRow = async (
 ): Promise<BackupRowOutcome> => {
   const append = (): Promise<number> =>
     prisma.$transaction(async (tx) => {
+      await lockDocumentStore(tx, params.documentId)
       const rows = await tx.$queryRaw<{ version: number; data: Uint8Array }[]>`
         SELECT version, data FROM "Documents"
         WHERE "documentId" = ${params.documentId}
@@ -199,7 +201,8 @@ export const appendBackupRow = async (
   try {
     return { ok: true, version: await append() }
   } catch (error) {
-    // Re-merge on the (documentId, version) collision, never serve the winner.
+    // The store lock makes this rare: only a writer that skips it, such as an older
+    // image in a rolling deploy, can collide now. Re-merge, never serve the winner.
     // Yielding here would leave the pre-restore state unsaved while the restore
     // still lands. That interleaving is the one that loses a document.
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {

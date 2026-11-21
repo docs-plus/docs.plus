@@ -199,6 +199,13 @@ export const envSchema = z.object({
   // Soft-deleted documents older than this get their footprint reaped. 0
   // disables the reaper entirely.
   DOC_DELETE_RETENTION_DAYS: numericString('30'),
+  // On unless `0` or `false`. Off, a save equal to the head mints a row again, as
+  // before #704. That is the rollback, and it loses no content.
+  DOC_STORE_SKIP_UNCHANGED: z
+    .string()
+    .optional()
+    .default('true')
+    .transform((val) => val !== '0' && val.toLowerCase() !== 'false'),
 
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info')
 })

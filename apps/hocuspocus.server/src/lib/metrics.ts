@@ -219,9 +219,9 @@ export const documentStoreRejectionsTotal = new Counter({
   registers: [register]
 })
 
-// The before for #704 and #706 (#703). Only `inserted` moves today. The other three
-// outcomes arrive with those issues and read 0 until then. The worker and the
-// queue-down fallback both count, so a panel sums both jobs.
+// #703 seeded all four. `unchanged` and `head-moved` move since #704; `coalesced`
+// reads 0 until #706. The worker and the queue-down fallback both count, so a panel
+// sums both jobs.
 export const DOCUMENT_STORE_OUTCOMES = ['inserted', 'unchanged', 'coalesced', 'head-moved'] as const
 export const documentStoreOutcomeTotal = new Counter({
   name: 'document_store_outcome_total',
@@ -581,6 +581,7 @@ export const jobDuration = new Histogram({
 
 export const STORE_JOB_PHASES = [
   'state_fetch',
+  'lock_wait',
   'head_read',
   'merge_strip',
   'insert',
