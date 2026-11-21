@@ -116,6 +116,11 @@ jobs:
         working-directory: apps/hocuspocus.server
         run: bun run test:e2e
 
+      # Needs only Postgres. The skip rule, the store lock and the head-moved guard (#704).
+      - name: 🧪 Run real-infra E2E (persist snapshot)
+        working-directory: apps/hocuspocus.server
+        run: bun scripts/e2e-persist-snapshot.ts
+
       # Needs only Redis. Section [1] spawns two child processes, which is the
       # replica condition the retention lease exists for, and every check here
       # carries a control so a pass proves the mechanism fired.

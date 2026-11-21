@@ -223,8 +223,8 @@ const waitForDrain = async () => {
   throw new Error('the store queue never drained')
 }
 
-// A deduped save still SETs its claim-check key, and no job deletes it, so it lives
-// out its 1 h TTL (#704). Count them, then remove them: the queue is drained, so no
+// Before #704 a deduped save still SET its claim-check key, and no job deleted it, so it
+// lived out its 1 h TTL. Count any left, then remove them: the queue is drained, so no
 // job needs them, and the next run starts on the same Redis.
 const takeOrphanStateKeys = async () => {
   let count = 0
@@ -373,6 +373,13 @@ for (let run = 1; run <= runs; run++) {
   const applyRoute = histogram(before, after, 'http_request_duration_seconds', applyPath)
   const readRoute = histogram(before, after, 'http_request_duration_seconds', readPath)
   const rowsAdded = rowsAfter - rowsBefore
+  // What each save did to the rows (#703, #704), summed over both WS and both workers.
+  const storeOutcomes = Object.fromEntries(
+    ['inserted', 'unchanged', 'head-moved'].map((name) => [
+      name,
+      delta(before, after, (k) => k === `document_store_outcome_total{outcome="${name}"}`)
+    ])
+  )
 
   const result = {
     run,
@@ -417,6 +424,7 @@ for (let run = 1; run <= runs; run++) {
       clashesInLog: clashes,
       fallbackWrites,
       orphanStateKeys,
+      storeOutcomes,
       rowsAdded,
       rowsPerWrite: calls.length ? Math.round((rowsAdded / calls.length) * 100) / 100 : null,
       coldOpens,
@@ -441,7 +449,8 @@ for (let run = 1; run <= runs; run++) {
     `run ${run} (${mode}): ${calls.length} writes, total p50 ${result.writes.totalMs?.p50} ms, p95 ` +
       `${result.writes.totalMs?.p95} ms; rows/write ${result.server.rowsPerWrite}; ` +
       `failed attempts ${failedAttempts}; cold opens ${coldOpens}; fallbacks ${fallbackWrites}; ` +
-      `orphan keys ${orphanStateKeys.count} (${(orphanStateKeys.bytes / 2 ** 20).toFixed(1)} MiB)`
+      `orphan keys ${orphanStateKeys.count} (${(orphanStateKeys.bytes / 2 ** 20).toFixed(1)} MiB); ` +
+      `outcomes ${JSON.stringify(storeOutcomes)}`
   )
   if (fallbackWrites > 0) {
     console.warn(`run ${run}: ${fallbackWrites} saves took the queue-down fallback, not the queue`)

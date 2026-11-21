@@ -9,6 +9,9 @@
  */
 import * as Y from 'yjs'
 
+import { lockDocumentStore } from '../src/lib/lockDocumentStore'
+import { documentStoreOutcomeTotal } from '../src/lib/metrics'
+import { persistSnapshot } from '../src/lib/persistSnapshot'
 import { prisma } from '../src/lib/prisma'
 import {
   buildStoreJobId,
@@ -239,6 +242,246 @@ await Promise.all(entries5.map((job) => job.remove()))
 if (jobState5 === 'failed') await (await StoreDocumentQueue.getJob(jobId5))?.remove()
 await stateRedis.del(stateKey5)
 
+// 7-10 (#704) read the claim-check keys, the rows and the store outcome counter.
+const stateKeyOf = (jobId: string) => `store-doc-state:${jobId}`
+const jobStateIs = (jobId: string, state: string) =>
+  pollFor(
+    () => StoreDocumentQueue.getJobState(jobId),
+    (s) => s === state,
+    15_000
+  )
+const rowCount = (documentId: string) => prisma.documents.count({ where: { documentId } })
+const outcomeCount = async (outcome: string) =>
+  (await documentStoreOutcomeTotal.get()).values.find((v) => v.labels.outcome === outcome)?.value ??
+  0
+// buildStoreJobId reads the clock; a fixed instant picks the 10 s window.
+const jobIdAt = (documentName: string, state: Uint8Array, at: number) => {
+  const now = Date.now
+  Date.now = () => at
+  try {
+    return buildStoreJobId(documentName, state)
+  } finally {
+    Date.now = now
+  }
+}
+const enqueueAt = (
+  documentName: string,
+  state: Buffer,
+  at: number,
+  contributors: string[] = []
+) => {
+  const jobId = jobIdAt(documentName, state, at)
+  return enqueueStoreDocument({
+    jobId,
+    documentName,
+    state,
+    context: { slug: documentName },
+    commitMessage: '',
+    trigger: 'websocket',
+    triggeredBy: null,
+    contributors
+  }).then(() => jobId)
+}
+// Two rows written straight through persistSnapshot, so the head is not the first row.
+const seedRoom = async (documentName: string) => {
+  await prisma.documentMetadata.create({
+    data: { documentId: documentName, slug: documentName, title: 'e2e' }
+  })
+  const doc = new Y.Doc()
+  doc.getText('content').insert(0, 'seed')
+  for (const _ of [1, 2]) {
+    doc.getText('content').insert(0, '>')
+    await persistSnapshot(prisma, {
+      documentId: documentName,
+      incoming: Y.encodeStateAsUpdate(doc),
+      commitMessage: '',
+      trigger: 'websocket',
+      triggeredBy: null,
+      contributors: [],
+      forced: false,
+      skipUnchanged: true
+    })
+  }
+  return doc
+}
+const stateOf = (doc: Y.Doc) => Buffer.from(Y.encodeStateAsUpdate(doc))
+const windowStart = Math.floor(Date.now() / 10_000) * 10_000
+
+// 7. A save whose job already completed writes no claim-check key (#704). BullMQ drops the
+// add as a duplicate, so before the fix nothing ever deleted that key.
+{
+  const doc7 = `${PREFIX}-doc7`
+  const doc = await seedRoom(doc7)
+  doc.getText('content').insert(0, 'seven ')
+  const at = windowStart + 1000
+  const jobId = await enqueueAt(doc7, stateOf(doc), at)
+  check((await jobStateIs(jobId, 'completed')) === 'completed', 'section 7 job completed')
+  const again = await enqueueAt(doc7, stateOf(doc), at + 2000)
+  check(again === jobId, 'section 7 second save lands on the same job id')
+  check((await stateRedis.exists(stateKeyOf(jobId))) === 0, 'a deduped save leaves no orphan key')
+  check((await rowCount(doc7)) === 3, 'the deduped save adds no row')
+}
+
+// 8. A live job keeps the SET: with the queue paused, the second enqueue of the same id
+// must leave its key, or the job would run with no payload.
+{
+  const doc8 = `${PREFIX}-doc8`
+  const doc = await seedRoom(doc8)
+  doc.getText('content').insert(0, 'eight ')
+  await StoreDocumentQueue.pause()
+  let keyPresent = 0
+  let jobId = ''
+  try {
+    jobId = await enqueueAt(doc8, stateOf(doc), windowStart + 1000)
+    await enqueueAt(doc8, stateOf(doc), windowStart + 3000)
+    keyPresent = await stateRedis.exists(stateKeyOf(jobId))
+  } finally {
+    await StoreDocumentQueue.resume()
+  }
+  check(keyPresent === 1, 'a duplicate enqueue of a waiting job keeps its key')
+  check((await jobStateIs(jobId, 'completed')) === 'completed', 'section 8 job completed')
+  check((await rowCount(doc8)) === 3, 'the waiting job wrote its row after resume')
+}
+
+// 9. Twin flushes of one write, 3 s, 8 s and 12 s apart, give one row. The 3 s pair
+// shares a 10 s window and dedupes on the job id. The others become a second job that
+// the skip rule keeps on the head.
+for (const gapMs of [3000, 8000, 12_000]) {
+  const doc9 = `${PREFIX}-doc9-${gapMs}`
+  const doc = await seedRoom(doc9)
+  doc.getText('content').insert(0, 'twin ')
+  const at = windowStart + 5000
+  const first = await enqueueAt(doc9, stateOf(doc), at, ['alice'])
+  await jobStateIs(first, 'completed')
+  const twin = await enqueueAt(doc9, stateOf(doc), at + gapMs, ['bob'])
+  const twinDone = await jobStateIs(twin, 'completed')
+  const head = await prisma.documents.findFirst({
+    where: { documentId: doc9 },
+    orderBy: { version: 'desc' }
+  })
+  check(
+    twinDone === 'completed' && (await rowCount(doc9)) === 3,
+    `twin flushes ${gapMs / 1000} s apart give one row (rows ${await rowCount(doc9)})`
+  )
+  // A pair inside one window is one job, so only the second editor of a two-job pair counts.
+  if (gapMs >= 5000) {
+    check(
+      JSON.stringify(head?.contributors) === '["alice","bob"]',
+      `twin flushes ${gapMs / 1000} s apart keep both contributors (${head?.contributors})`
+    )
+  }
+  check(
+    (await stateRedis.exists(stateKeyOf(first), stateKeyOf(twin))) === 0,
+    `twin flushes ${gapMs / 1000} s apart leave no claim-check key`
+  )
+}
+
+// 10. The two ways concurrent jobs reach one document (#704). A held room's write returns
+// before its job commits, so the next write's job runs beside it. And the second store of
+// one write can fall into the next 10 s window, a second job with the same bytes. A second
+// worker stands in for the second replica. A holder keeps the store busy until both
+// jobs wait, so the overlap does not depend on timing.
+const worker2 = createDocumentWorker()
+await worker2.waitUntilReady()
+let failedAttempts = 0
+const countFailed = () => {
+  failedAttempts += 1
+}
+worker.on('failed', countFailed)
+worker2.on('failed', countFailed)
+
+const overlap = async (documentName: string, enqueue: () => Promise<string[]>) => {
+  await StoreDocumentQueue.pause()
+  let jobIds: string[] = []
+  try {
+    jobIds = await enqueue()
+  } catch (err) {
+    await StoreDocumentQueue.resume()
+    throw err
+  }
+  let release!: () => void
+  const released = new Promise<void>((resolve) => (release = resolve))
+  let held!: () => void
+  const ready = new Promise<void>((resolve) => (held = resolve))
+  const holder = prisma.$transaction(
+    async (tx) => {
+      await lockDocumentStore(tx, documentName)
+      await tx.$queryRaw`
+        SELECT id FROM "Documents" WHERE "documentId" = ${documentName}
+        ORDER BY version DESC LIMIT 1 FOR UPDATE`
+      held()
+      await released
+    },
+    { timeout: 30_000 }
+  )
+  await ready
+  await StoreDocumentQueue.resume()
+  const active = await pollFor(
+    async () => (await StoreDocumentQueue.getJobCounts('active')).active,
+    (n) => n >= 2,
+    10_000
+  )
+  release()
+  await holder
+  const states = await Promise.all(jobIds.map((id) => jobStateIs(id, 'completed')))
+  return { active, done: states.every((state) => state === 'completed') }
+}
+
+{
+  const doc10a = `${PREFIX}-doc10a`
+  const doc = await seedRoom(doc10a)
+  const failedBefore = failedAttempts
+  // Two editors that have not seen each other's write, so neither job can keep the head.
+  const other = new Y.Doc()
+  Y.applyUpdate(other, Y.encodeStateAsUpdate(doc))
+  doc.getText('content').insert(0, 'first ')
+  other.getText('other').insert(0, 'second')
+  const ran = await overlap(doc10a, async () => [
+    await enqueueAt(doc10a, stateOf(doc), windowStart + 1000),
+    await enqueueAt(doc10a, stateOf(other), windowStart + 1000)
+  ])
+  const head = await prisma.documents.findFirst({
+    where: { documentId: doc10a },
+    orderBy: { version: 'desc' }
+  })
+  const text = new Y.Doc()
+  if (head) Y.applyUpdate(text, new Uint8Array(head.data))
+  check((ran.active ?? 0) >= 2, `held-room writes: both jobs ran at once (${ran.active} active)`)
+  check(
+    ran.done && failedAttempts === failedBefore,
+    `held-room writes: no failed attempt (${failedAttempts - failedBefore})`
+  )
+  check((await rowCount(doc10a)) === 4, 'held-room writes: both rows landed')
+  check(
+    text.getText('content').toString() === 'first >>seed' &&
+      text.getText('other').toString() === 'second',
+    'held-room writes: the head holds both writes'
+  )
+}
+
+{
+  const doc10b = `${PREFIX}-doc10b`
+  const doc = await seedRoom(doc10b)
+  doc.getText('content').insert(0, 'one write ')
+  const failedBefore = failedAttempts
+  const unchangedBefore = await outcomeCount('unchanged')
+  const ran = await overlap(doc10b, async () => [
+    await enqueueAt(doc10b, stateOf(doc), windowStart + 9000),
+    await enqueueAt(doc10b, stateOf(doc), windowStart + 11_000)
+  ])
+  check((ran.active ?? 0) >= 2, `next-window twin: both jobs ran at once (${ran.active} active)`)
+  check(
+    ran.done && failedAttempts === failedBefore,
+    `next-window twin: no failed attempt (${failedAttempts - failedBefore})`
+  )
+  check((await rowCount(doc10b)) === 3, `next-window twin: one row (${await rowCount(doc10b)})`)
+  check(
+    (await outcomeCount('unchanged')) === unchangedBefore + 1,
+    'next-window twin: counted as unchanged'
+  )
+}
+
+await worker2.close()
 await worker.close()
 
 // 6. TTL re-arm, with no worker left to take the jobs off `wait`. BullMQ 6.x keeps
