@@ -428,10 +428,10 @@ Inbox only. New workspace facts go into the topical section that owns the subjec
 - TipTap 3.32 inserts a zero-size image inside a link. Linked-image checks must ignore `img.ProseMirror-separator`.
 - That tree pins `prosemirror-model` `1.25.12`, `prosemirror-transform` `1.12.2`, and `prosemirror-view` `1.42.6`. `prosemirror-changeset` stays `2.4.1`.
 - `@tiptap/pm` 3.32.2 asks for `prosemirror-changeset` `^2.4.4`. Do not take `2.4.2` or later. It halves `MAX_DIFF_SIZE`.
-- `@sentry/nextjs` and `@sentry/bun` are `11.10.0` in that tree. Load `withSentryConfig` from `@sentry/nextjs/config`.
+- `@sentry/nextjs` and `@sentry/bun` are `11.14.0` in that tree. Load `withSentryConfig` from `@sentry/nextjs/config`.
 - `disableLogger` is gone. Use `bundleSizeOptimizations.excludeDebugStatements`.
 - `dataCollection` keeps the version 10 baseline. MCP tool text is off. Each app keeps its own `sentryDataCollection.ts`. `genAI` set to false does not cover MCP tool text. Set `mcp` inputs and outputs to false on each copy. Leave stack-frame values on. Version 10 already collected them.
-- Cypress is `16.2.1` in that tree. `Cypress.env()` is gone. Use `Cypress.expose()` for a public value.
+- Cypress is `16.3.0` in that tree. `Cypress.env()` is gone. Use `Cypress.expose()` for a public value.
 - `pele` is `1.13.0` in hocuspocus and `extension-mermaid` since 2026-11-21 (#805). The labels change of `1.9.0` is handled.
 - Pull requests `#534`, `#535`, `#536`, and `#538` are merged. `#539`, `#540`, `#537`, and `#473` wait on this tree. `#364` is set aside.
 - The `supabase` CLI stays on 2.122.1. Version 3.0.0 makes `db push` target the local database unless the command passes `--remote`. Do not take 3.0.0 until the config and the production commands move with it.
