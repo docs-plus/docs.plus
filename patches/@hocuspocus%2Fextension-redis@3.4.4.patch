@@ -1,5 +1,5 @@
 diff --git a/dist/hocuspocus-redis.cjs b/dist/hocuspocus-redis.cjs
-index 4abde02ff9032a561dcbb850f2f0ca9a1b2451b0..016f2bec77476fdf73ead5b80e526a9a7904628c 100644
+index 4abde02ff9032a561dcbb850f2f0ca9a1b2451b0..38480d4bc0cccd4c51b2f8e4ee1f663d7558142b 100644
 --- a/dist/hocuspocus-redis.cjs
 +++ b/dist/hocuspocus-redis.cjs
 @@ -24,6 +24,8 @@ class Redis {
@@ -11,7 +11,21 @@ index 4abde02ff9032a561dcbb850f2f0ca9a1b2451b0..016f2bec77476fdf73ead5b80e526a9a
          /**
           * Handle incoming messages published on subscribed document channels.
           * Note that this will also include messages from ourselves as it is not possible
-@@ -226,9 +228,30 @@ class Redis {
+@@ -198,10 +200,12 @@ class Redis {
+             const delayedPromise = new Promise((resolve) => {
+                 resolveFunction = resolve;
+             });
++            // docs.plus patch (#726): storeDelay sets this wait and defaults to disconnectDelay.
++            // beforeUnloadDocument keeps disconnectDelay, so the unload grace does not move.
+             const timeout = setTimeout(() => {
+                 this.pendingAfterStoreDocumentResolves.delete(documentName);
+                 resolveFunction();
+-            }, this.configuration.disconnectDelay);
++            }, this.configuration.storeDelay ?? this.configuration.disconnectDelay);
+             this.pendingAfterStoreDocumentResolves.set(documentName, {
+                 timeout,
+                 resolve: resolveFunction,
+@@ -226,9 +230,30 @@ class Redis {
       * if the ydoc changed, we'll need to inform other Hocuspocus servers about it.
       */
      async onChange(data) {
@@ -44,7 +58,7 @@ index 4abde02ff9032a561dcbb850f2f0ca9a1b2451b0..016f2bec77476fdf73ead5b80e526a9a
      }
      /**
       * Delay unloading to allow syncs to finish
-@@ -241,6 +264,9 @@ class Redis {
+@@ -241,6 +266,9 @@ class Redis {
          });
      }
      async afterUnloadDocument(data) {
@@ -54,7 +68,7 @@ index 4abde02ff9032a561dcbb850f2f0ca9a1b2451b0..016f2bec77476fdf73ead5b80e526a9a
          if (data.instance.documents.has(data.documentName))
              return; // skip unsubscribe if the document is already loaded again (maybe fast reconnect)
          this.sub.unsubscribe(this.subKey(data.documentName), (error) => {
-@@ -257,6 +283,10 @@ class Redis {
+@@ -257,6 +285,10 @@ class Redis {
       * Kill the Redlock connection immediately.
       */
      async onDestroy() {
@@ -66,7 +80,7 @@ index 4abde02ff9032a561dcbb850f2f0ca9a1b2451b0..016f2bec77476fdf73ead5b80e526a9a
          this.pub.disconnect(false);
          this.sub.disconnect(false);
 diff --git a/dist/hocuspocus-redis.esm.js b/dist/hocuspocus-redis.esm.js
-index 2ed1999cf4befe8d4a1c77160829c025de1dae96..00582ca7cfe3b61d4564578a04e35b44b6936eda 100644
+index 2ed1999cf4befe8d4a1c77160829c025de1dae96..f655746d9cbf4f5feefc68ce67704db1ccb1b61e 100644
 --- a/dist/hocuspocus-redis.esm.js
 +++ b/dist/hocuspocus-redis.esm.js
 @@ -22,6 +22,8 @@ class Redis {
@@ -78,7 +92,21 @@ index 2ed1999cf4befe8d4a1c77160829c025de1dae96..00582ca7cfe3b61d4564578a04e35b44
          /**
           * Handle incoming messages published on subscribed document channels.
           * Note that this will also include messages from ourselves as it is not possible
-@@ -224,9 +226,30 @@ class Redis {
+@@ -196,10 +198,12 @@ class Redis {
+             const delayedPromise = new Promise((resolve) => {
+                 resolveFunction = resolve;
+             });
++            // docs.plus patch (#726): storeDelay sets this wait and defaults to disconnectDelay.
++            // beforeUnloadDocument keeps disconnectDelay, so the unload grace does not move.
+             const timeout = setTimeout(() => {
+                 this.pendingAfterStoreDocumentResolves.delete(documentName);
+                 resolveFunction();
+-            }, this.configuration.disconnectDelay);
++            }, this.configuration.storeDelay ?? this.configuration.disconnectDelay);
+             this.pendingAfterStoreDocumentResolves.set(documentName, {
+                 timeout,
+                 resolve: resolveFunction,
+@@ -224,9 +228,30 @@ class Redis {
       * if the ydoc changed, we'll need to inform other Hocuspocus servers about it.
       */
      async onChange(data) {
@@ -111,7 +139,7 @@ index 2ed1999cf4befe8d4a1c77160829c025de1dae96..00582ca7cfe3b61d4564578a04e35b44
      }
      /**
       * Delay unloading to allow syncs to finish
-@@ -239,6 +262,9 @@ class Redis {
+@@ -239,6 +264,9 @@ class Redis {
          });
      }
      async afterUnloadDocument(data) {
@@ -121,7 +149,7 @@ index 2ed1999cf4befe8d4a1c77160829c025de1dae96..00582ca7cfe3b61d4564578a04e35b44
          if (data.instance.documents.has(data.documentName))
              return; // skip unsubscribe if the document is already loaded again (maybe fast reconnect)
          this.sub.unsubscribe(this.subKey(data.documentName), (error) => {
-@@ -255,6 +281,10 @@ class Redis {
+@@ -255,6 +283,10 @@ class Redis {
       * Kill the Redlock connection immediately.
       */
      async onDestroy() {
@@ -132,3 +160,19 @@ index 2ed1999cf4befe8d4a1c77160829c025de1dae96..00582ca7cfe3b61d4564578a04e35b44
          await this.redlock.quit();
          this.pub.disconnect(false);
          this.sub.disconnect(false);
+diff --git a/dist/packages/extension-redis/src/Redis.d.ts b/dist/packages/extension-redis/src/Redis.d.ts
+index 78dc013a182285c0498e66a6bfac736512163270..9dcaea2b83459ccda111c0e106df7e428a8da1c3 100644
+--- a/dist/packages/extension-redis/src/Redis.d.ts
++++ b/dist/packages/extension-redis/src/Redis.d.ts
+@@ -48,6 +48,11 @@ export interface Configuration {
+      * sync messages to be received by the subscription before it's closed.
+      */
+     disconnectDelay: number;
++    /**
++     * docs.plus patch (#726): the wait after a direct-connection store, in ms.
++     * Defaults to disconnectDelay.
++     */
++    storeDelay?: number;
+ }
+ export declare class Redis implements Extension {
+     /**

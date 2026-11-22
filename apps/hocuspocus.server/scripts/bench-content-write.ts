@@ -13,6 +13,7 @@ import { join } from 'node:path'
 import type { Subprocess } from 'bun'
 import Redis from 'ioredis'
 import pino from 'pino'
+import type * as Y from 'yjs'
 
 import { buildFixture, mulberry32, nextEdit, paragraph } from './lib/benchFixture'
 import { makeOpenProvider, sleep } from './lib/e2eHarness'
@@ -62,6 +63,8 @@ const outPath = option('--out', join(os.tmpdir(), `bench-content-write-${mode}-$
 const logFile = outPath.replace(/\.json$/, '') + '.log'
 
 const SLUG_PREFIX = 'bench-content-write-'
+// Mixed-mode guard (#726, Decision 2): a write through B must reach A's live room this fast.
+const CROSS_REPLICA_MS = 500
 // A fixed stand-in for the MCP caller, so every write mints a `trigger = 'mcp'` row.
 const ACTOR = { sub: '00000000-0000-4000-8000-000000000726' }
 
@@ -250,6 +253,7 @@ const cleanup = () =>
 await cleanup()
 
 const results = []
+let guardFailure: string | null = null
 for (let run = 1; run <= runs; run++) {
   const rand = mulberry32(seed + run)
   const documentId = newDocumentId()
@@ -277,10 +281,27 @@ for (let run = 1; run <= runs; run++) {
   }
 
   let provider: { destroy: () => void } | null = null
+  let heldDoc: Y.Doc | null = null
   if (mode === 'held' || mode === 'mixed') {
     const open = await makeOpenProvider(hop.port)(documentId, slug, '')
     if (!open.synced) throw new Error('the held-room provider never synced')
     provider = open.provider
+    heldDoc = open.ydoc
+  }
+
+  // The provider on A gets an update only after A's room applied it. Yjs v1 writes
+  // inserted text as plain UTF-8, so a write's paragraph text shows in the update bytes.
+  const awaited = new Map<Buffer, (at: number) => void>()
+  heldDoc?.on('update', (update: Uint8Array) => {
+    if (awaited.size === 0) return
+    const bytes = Buffer.from(update.buffer, update.byteOffset, update.byteLength)
+    const at = performance.now()
+    for (const [text, resolve] of awaited) if (bytes.includes(text)) resolve(at)
+  })
+  const arrivalOnA = (text: string) => {
+    const bytes = Buffer.from(text)
+    const arrived = new Promise<number>((resolve) => awaited.set(bytes, resolve))
+    return { arrived, forget: () => awaited.delete(bytes) }
   }
 
   const before = await Promise.all(scraped.map((p) => scrape(p.metricsUrl)))
@@ -294,8 +315,15 @@ for (let run = 1; run <= runs; run++) {
     }
   }, 5000)
 
-  const calls: { hop: string; readMs: number; applyMs: number; totalMs: number; status: string }[] =
-    []
+  const calls: {
+    hop: string
+    readMs: number
+    applyMs: number
+    totalMs: number
+    status: string
+    // Mixed mode, writes through B: ms from B's answer until A's room held the text.
+    reachedAMs?: number | null
+  }[] = []
   for (let i = 0; i < writes; i++) {
     const { label: hopLabel, client: writer } = hopFor(i)
     const started = performance.now()
@@ -309,6 +337,8 @@ for (let run = 1; run <= runs; run++) {
     const section = findSection(read.content, sectionId)
     if (!section) throw new Error(`section ${sectionId} not found`)
     const edit = nextEdit(rand, section.end - section.start)
+    // Armed before the write: the text can reach A before B answers.
+    const onA = mode === 'mixed' && hopLabel !== hop.label ? arrivalOnA(edit.text) : null
     const outcome = await writer.apply({
       documentId,
       mode: 'blocks',
@@ -320,14 +350,23 @@ for (let run = 1; run <= runs; run++) {
       actor: ACTOR
     })
     const done = performance.now()
+    let reachedAMs: number | null | undefined
+    if (onA && outcome.status === 'applied') {
+      const limit = sleep(Math.max(0, done + CROSS_REPLICA_MS - performance.now())).then(() => null)
+      const at = await Promise.race([onA.arrived, limit])
+      reachedAMs = at === null ? null : round1(Math.max(0, at - done))
+    }
+    onA?.forget()
     calls.push({
       hop: hopLabel,
       readMs: round1(readDone - started),
       applyMs: round1(done - readDone),
       totalMs: round1(done - started),
-      status: outcome.status
+      status: outcome.status,
+      ...(reachedAMs === undefined ? {} : { reachedAMs })
     })
-    if (gapMs > 0) await sleep(gapMs)
+    // The guard's wait comes out of the gap, so writes keep the spacing of the before.
+    if (gapMs > 0) await sleep(gapMs - (performance.now() - done))
   }
 
   clearInterval(lagTimer)
@@ -347,15 +386,29 @@ for (let run = 1; run <= runs; run++) {
 
   const outcomes: Record<string, number> = {}
   for (const call of calls) outcomes[call.status] = (outcomes[call.status] ?? 0) + 1
+  const checkedOnA = calls.flatMap((call, i) => (call.reachedAMs === undefined ? [] : [i]))
+  const missedOnA = checkedOnA.filter((i) => calls[i].reachedAMs === null)
+  const crossReplica = {
+    limitMs: CROSS_REPLICA_MS,
+    checked: checkedOnA.length,
+    missedWrites: missedOnA,
+    reachedAMs: stats(
+      checkedOnA.flatMap((i) => (calls[i].reachedAMs == null ? [] : [calls[i].reachedAMs!]))
+    )
+  }
   const storeHooks = histogram(before, after, 'document_persist_duration_seconds')
   const isStoreQueue = (k: string) => k.includes('queue="store-documents"')
   const jobDurations = histogram(before, after, 'job_duration_seconds', isStoreQueue)
   const storeHookCount = storeHooks.at(-1)?.[1] ?? 0
-  const failedAttempts = delta(
-    before,
-    after,
-    (k) => k.startsWith('jobs_total{') && isStoreQueue(k) && k.includes('status="failed"')
-  )
+  const jobsWith = (status: string) =>
+    delta(
+      before,
+      after,
+      (k) => k.startsWith('jobs_total{') && isStoreQueue(k) && k.includes(`status="${status}"`)
+    )
+  // Since #726 an attempt that BullMQ retries counts as `retried`, so W4 is both.
+  const finalFailures = jobsWith('failed')
+  const failedAttempts = finalFailures + jobsWith('retried')
   const completedJobs = delta(
     before,
     after,
@@ -403,6 +456,7 @@ for (let run = 1; run <= runs; run++) {
           stats(calls.filter((c) => c.hop === label).map((c) => c.totalMs))
         ])
       ),
+      ...(mode === 'mixed' ? { crossReplica } : {}),
       calls
     },
     server: {
@@ -417,6 +471,7 @@ for (let run = 1; run <= runs; run++) {
       storeJobs: {
         completed: completedJobs,
         failedAttempts,
+        finalFailures,
         meanSeconds: meanOf(before, after, 'job_duration_seconds', isStoreQueue),
         bucketP50: quantile(jobDurations, 0.5),
         bucketP95: quantile(jobDurations, 0.95)
@@ -450,12 +505,22 @@ for (let run = 1; run <= runs; run++) {
       `${result.writes.totalMs?.p95} ms; rows/write ${result.server.rowsPerWrite}; ` +
       `failed attempts ${failedAttempts}; cold opens ${coldOpens}; fallbacks ${fallbackWrites}; ` +
       `orphan keys ${orphanStateKeys.count} (${(orphanStateKeys.bytes / 2 ** 20).toFixed(1)} MiB); ` +
-      `outcomes ${JSON.stringify(storeOutcomes)}`
+      `outcomes ${JSON.stringify(storeOutcomes)}` +
+      (mode === 'mixed'
+        ? `; B writes in A's room within ${CROSS_REPLICA_MS} ms: ` +
+          `${checkedOnA.length - missedOnA.length}/${checkedOnA.length}`
+        : '')
   )
   if (fallbackWrites > 0) {
     console.warn(`run ${run}: ${fallbackWrites} saves took the queue-down fallback, not the queue`)
   }
   await prisma.documentMetadata.delete({ where: { documentId } })
+  if (missedOnA.length > 0) {
+    guardFailure =
+      `run ${run}: ${missedOnA.length} of ${checkedOnA.length} writes through B were not in ` +
+      `A's live room within ${CROSS_REPLICA_MS} ms of B's answer (writes ${missedOnA.join(', ')})`
+    break
+  }
 }
 
 const git = (cmd: string[]) =>
@@ -494,6 +559,7 @@ const report = {
     seed,
     workerConcurrency
   },
+  guard: guardFailure ?? (mode === 'mixed' ? 'passed' : 'not run'),
   results
 }
 writeFileSync(outPath, JSON.stringify(report, null, 2))
@@ -505,4 +571,6 @@ await redis.quit()
 proxy.close()
 await prisma.$disconnect()
 stopAll()
-process.exit(0)
+if (guardFailure) console.error(`FAILED mixed-mode guard: ${guardFailure}`)
+else if (mode === 'mixed') console.log(`mixed-mode guard passed (${CROSS_REPLICA_MS} ms)`)
+process.exit(guardFailure ? 1 : 0)

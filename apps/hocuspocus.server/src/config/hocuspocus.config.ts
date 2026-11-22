@@ -157,6 +157,9 @@ const configureExtensions = (): { extensions: Extension[]; redisWired: boolean }
     const redisOptions: any = {
       host: config.redis.host || 'localhost',
       port: config.redis.port,
+      // Patched option (#726): no 1 s sleep after each direct-connection store. An MCP
+      // write stores twice. The unload grace stays at disconnectDelay (1000 ms).
+      storeDelay: 0,
       options: {
         db: config.redis.db,
         password: config.redis.password,
