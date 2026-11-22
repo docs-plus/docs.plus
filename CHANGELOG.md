@@ -131,6 +131,9 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ### Internal
 
+- The web app and the admin dashboard keep `@sentry/nextjs` at 11.10.0. From 11.13.0 the package
+  loads a Bun-only file that the Next standalone image does not hold, so the new web app did not
+  start. The deploy rolled back on its own, and the site stayed up ([#807](https://github.com/docs-plus/docs.plus/issues/807)).
 - The critical store-failure alert now pages on one save that failed all its attempts. A retry
   no longer counts as a failure. `/api/mcp` gets its own Traefik router, so the App Performance
   dashboard shows its edge latency on its own panel ([#726](https://github.com/docs-plus/docs.plus/issues/726)).

@@ -89,6 +89,9 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Internal
 
+- `@sentry/nextjs` is pinned at 11.10.0. From 11.13.0 its `bun` export loads
+  `build/cjs/index.bun.js`, which Next standalone does not trace, so the image failed to start on
+  Bun with `Cannot find module` ([#807](https://github.com/docs-plus/docs.plus/issues/807)).
 - The chatroom and editor browser suites pass on `main` again
   ([#730](https://github.com/docs-plus/docs.plus/issues/730)). On the fix commit, 5 back-to-back
   dispatches per suite failed 0 of 5.

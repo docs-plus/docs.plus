@@ -11,7 +11,7 @@
     "typecheck": "bun check --no-script"
   },
   "dependencies": {
-    "@sentry/nextjs": "^11.14.0",
+    "@sentry/nextjs": "11.10.0",
     "@supabase/supabase-js": "catalog:",
     "@tanstack/react-query": "catalog:",
     "clsx": "catalog:",
