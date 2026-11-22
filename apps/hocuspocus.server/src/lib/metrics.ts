@@ -630,7 +630,7 @@ export const pushSubscriptionsDeactivatedTotal = new Counter({
 // BullMQ stamps processedOn/finishedOn in ms; absent only on malformed jobs.
 export function recordJobOutcome(
   queue: string,
-  status: 'completed' | 'failed' | 'stalled',
+  status: 'completed' | 'failed' | 'retried' | 'stalled',
   job?: { processedOn?: number; finishedOn?: number }
 ) {
   jobsTotal.inc({ queue, status })
@@ -703,6 +703,8 @@ export const seedWorkerAlertSeries = (): void => {
   ]) {
     jobsTotal.inc({ queue, status: 'failed' }, 0)
   }
+  // Only the store queue splits a retried attempt from its last one (#726).
+  jobsTotal.inc({ queue: 'store-documents', status: 'retried' }, 0)
   for (const reason of ['gone', 'failed-count']) {
     pushSubscriptionsDeactivatedTotal.inc({ reason }, 0)
   }

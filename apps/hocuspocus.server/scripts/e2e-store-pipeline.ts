@@ -10,7 +10,7 @@
 import * as Y from 'yjs'
 
 import { lockDocumentStore } from '../src/lib/lockDocumentStore'
-import { documentStoreOutcomeTotal } from '../src/lib/metrics'
+import { documentStoreOutcomeTotal, jobsTotal } from '../src/lib/metrics'
 import { persistSnapshot } from '../src/lib/persistSnapshot'
 import { prisma } from '../src/lib/prisma'
 import {
@@ -194,16 +194,22 @@ check(after.entries.length === 0, 'drained entry is removed from the DLQ')
 
 // 5. Worker exhaust: the final attempt dead-letters the inline payload and drops
 // the claim-check key. 0x80 is a cut-off varint, so the strip always throws.
-// Random bytes can decode cleanly and save instead.
+// Random bytes can decode cleanly and save instead. All 5 attempts, as in production.
 const doc5 = `${PREFIX}-doc5`
 const poison = Buffer.from([0x80])
 const jobId5 = buildStoreJobId(doc5, poison)
 const stateKey5 = `store-doc-state:${jobId5}`
+const storeJobs = async (status: string) =>
+  (await jobsTotal.get()).values.find(
+    (v) => v.labels.queue === 'store-documents' && v.labels.status === status
+  )?.value ?? 0
+const failedBefore5 = await storeJobs('failed')
+const retriedBefore5 = await storeJobs('retried')
 await stateRedis.set(stateKey5, poison, 'EX', 3600)
 await StoreDocumentQueue.add(
   'store-document',
   { documentName: doc5, stateKey: stateKey5, context: { slug: doc5 } },
-  { jobId: jobId5, attempts: 2, backoff: { type: 'fixed', delay: 100 } }
+  { jobId: jobId5, attempts: 5, backoff: { type: 'fixed', delay: 100 } }
 )
 const readEntries5 = async () =>
   (await DeadLetterQueue.getJobs(['waiting', 'delayed', 'prioritized'])).filter(
@@ -225,7 +231,17 @@ const jobState5 = await pollFor(
   (state) => state === 'failed',
   15_000
 )
-check(jobState5 === 'failed', 'main-queue job ends failed after its two attempts')
+check(jobState5 === 'failed', 'main-queue job ends failed after its five attempts')
+// #726: only the last attempt is `failed`, so one lost save pages once. The 'failed'
+// event lands after the state change, so poll the counter.
+const failed5 = await pollFor(
+  async () => (await storeJobs('failed')) - failedBefore5,
+  (n) => n >= 1,
+  5000
+)
+check(failed5 === 1, `exhausted job counts one failed attempt (${failed5})`)
+const retried5 = (await storeJobs('retried')) - retriedBefore5
+check(retried5 === 4, `exhausted job counts four retried attempts (${retried5})`)
 // Count only now: a broken guard that dead-letters attempt 1 adds a second,
 // payload-less entry on attempt 2, and every DLQ add lands before 'failed'.
 const entries5 = await readEntries5()

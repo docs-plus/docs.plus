@@ -709,7 +709,10 @@ export const createDocumentWorker = () => {
   })
 
   worker.on('failed', (job, err) => {
-    recordJobOutcome(worker.name, 'failed')
+    // BullMQ emits this after every attempt, with attemptsMade already counted. Only the
+    // last attempt dead-letters, so only it is `failed` and pages (#726). The rest are `retried`.
+    const last = !job || job.attemptsMade >= (job.opts.attempts || 5)
+    recordJobOutcome(worker.name, last ? 'failed' : 'retried')
     if (job) {
       queueLogger.error({ jobId: job.id, err }, 'Worker: Job failed')
     }
