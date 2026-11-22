@@ -147,7 +147,8 @@ groups:
               datasource: { type: prometheus, uid: prometheus }
               # Only the API and webapp, one series each: pooled GlitchTip traffic hid a slow
               # API (#710). The allow-list leaves out hocuspocus, whose WebSocket duration is the
-              # socket's lifetime. Confirm the #726 MCP service name matches .*mcp.* once it ships.
+              # socket's lifetime. MCP has its own service, `rest-api-mcp@docker` (#726); it is left
+              # out here and has its own dashboard panel.
               expr: 'histogram_quantile(0.95, sum by (le, service) (rate(traefik_service_request_duration_seconds_bucket{service=~"rest-api.*|webapp.*",service!~".*mcp.*"}[5m])))'
               instant: true
               intervalMs: 1000
