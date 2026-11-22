@@ -43,8 +43,8 @@ const MARKER = `check-9-marker-${stamp}`
 const USER = { id: '00000000-0000-4000-8000-000000000729', email: 'check-9@docs.plus.test' }
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 
-// The MCP router's middlewares as production declares them. Decision 5 adds a router whose
-// rule names /api/mcp; until it lands, the /api router's chain is the one MCP traffic gets.
+// The MCP router's middlewares as production declares them: `rest-api-mcp`, the Decision 5
+// router whose rule names /api/mcp. An older compose file has none, so it falls back to /api.
 const compose = readFileSync(join(REPO_ROOT, 'docker-compose.prod.yml'), 'utf8')
 const routerChain = (name: string) =>
   compose.match(new RegExp(`routers\\.${name}\\.middlewares=([^'"\\s]+)`))?.[1]

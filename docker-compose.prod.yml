@@ -242,6 +242,13 @@ services:
       - 'traefik.http.routers.rest-api-wellknown.tls.certresolver=letsencrypt'
       - 'traefik.http.routers.rest-api-wellknown.service=rest-api'
       - 'traefik.http.routers.rest-api-wellknown.middlewares=security-headers@file,rate-limit-api@file'
+      # MCP has its own router and service, so Traefik's metrics show it apart (#726). Same
+      # middlewares as /api. The longer rule wins over /api by Traefik's default priority.
+      - 'traefik.http.routers.rest-api-mcp.rule=Host(`prodback.docs.plus`) && PathPrefix(`/api/mcp`)'
+      - 'traefik.http.routers.rest-api-mcp.entrypoints=websecure'
+      - 'traefik.http.routers.rest-api-mcp.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.rest-api-mcp.service=rest-api-mcp'
+      - 'traefik.http.routers.rest-api-mcp.middlewares=security-headers@file,rate-limit-api@file,retry@file'
       - 'traefik.http.services.rest-api.loadbalancer.server.port=4000'
       # Health check - only route to healthy containers. Liveness on purpose, and
       # on a different path from the collaboration block. Both replicas share one
@@ -251,6 +258,11 @@ services:
       - 'traefik.http.services.rest-api.loadbalancer.healthcheck.path=/health/live'
       - 'traefik.http.services.rest-api.loadbalancer.healthcheck.interval=5s'
       - 'traefik.http.services.rest-api.loadbalancer.healthcheck.timeout=3s'
+      # The MCP service is the same port and the same liveness check.
+      - 'traefik.http.services.rest-api-mcp.loadbalancer.server.port=4000'
+      - 'traefik.http.services.rest-api-mcp.loadbalancer.healthcheck.path=/health/live'
+      - 'traefik.http.services.rest-api-mcp.loadbalancer.healthcheck.interval=5s'
+      - 'traefik.http.services.rest-api-mcp.loadbalancer.healthcheck.timeout=3s'
     # This check reads the database, not /health or /health/live (#405). The deploy
     # waits on this status, and REST cannot serve without its database. Redis stays
     # out: both replicas share one Redis, so a stall would drop both from Traefik.
