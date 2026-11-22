@@ -222,7 +222,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: Redis is evicting keys, and here an eviction is a discarded document save. Claim-check document states (~262 kB) are the only keys carrying a TTL — BullMQ job hashes (~1.3 kB) have none — so volatile-lru can only ever pick the document bytes. Raise maxmemory or drain the store queue.
+          summary: 'Redis is evicting keys with a TTL. It may have dropped a claim-check document state, a store lease, a BullMQ job lock, or a cache, limiter, usage, dedupe or occupancy key. First check `queue_jobs{queue="store-documents",state="waiting"}` and `queue_jobs{queue="store-documents-dlq",state="waiting"}`. A save was lost only if one of them moved. Raise maxmemory or drain the store queue. BullMQ job hashes carry no TTL.'
+          runbook_url: 'https://github.com/docs-plus/docs.plus/blob/main/docs/RUNBOOK-backend.md#dead-letter-queue-not-empty'
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }

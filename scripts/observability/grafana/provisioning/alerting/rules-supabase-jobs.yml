@@ -93,7 +93,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'pg_cron job {{ $labels.jobname }} (runs every <=5m) has not succeeded in {{ humanizeDuration $values.B.Value }} — alert threshold is 15m.'
+          summary: 'pg_cron job {{ $labels.jobname }} (runs every 10 min or less) has not succeeded in {{ humanizeDuration $values.B.Value }} — alert threshold is 15m.'
           description: 'An age near 56 years means get_cron_job_health() returned NULL — not that the job stalled for decades. cron.schedule() preserves the jobid, but an unschedule-then-schedule apply mints a new one, and cron.job_run_details has no FK to cron.job, so the old run history is orphaned. NULL also happens when the job has never run. An overrun of minutes to hours past the 15m threshold means the job is genuinely stale. A blank jobname means this fired on NoData (exporter or RPC unreachable), not on this job specifically.'
         data:
           - refId: A
