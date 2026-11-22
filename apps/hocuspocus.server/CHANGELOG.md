@@ -56,6 +56,28 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Changed
 
+- A content write on a direct connection, such as an MCP edit, no longer sleeps 1 s after each
+  of its two saves. The `@hocuspocus/extension-redis` 3.4.4 patch gains a `storeDelay` option for
+  the wait after a direct-connection store. It defaults to `disconnectDelay`, and
+  `hocuspocus.config.ts` sets it to `0`. The 1 s unload grace (`beforeUnloadDocument`) stays at
+  `disconnectDelay`. The #229 commit wait and the #704 skip rule do not change. Estimate, not
+  measured: about 2 s less per write; the local after measures it. Roll back by reverting the
+  patch hunk and the config line, then deploy a `(build): back` tip ([#726](https://github.com/docs-plus/docs.plus/issues/726)).
+- `jobs_total{queue="store-documents"}` counts `status="failed"` only for a job's last attempt,
+  the one that dead-letters. Each earlier attempt counts the new `status="retried"`, seeded at 0.
+  The email, push and change-summary queues still count every attempt as `failed`. The critical
+  rule `worker-job-failures` now fires on one failed job (`> 0`, `for: 0s`), because a lost save
+  must page. Before, it needed more than 5 in 10 min held for 10 min, so one job that failed all
+  5 attempts did not page. Read retries as `failed` plus `retried`. Deploy the `back` change
+  first, then the `observability` change. An older worker still counts each retry as `failed`,
+  so the new rule would page on it ([#726](https://github.com/docs-plus/docs.plus/issues/726)).
+- `/api/mcp` has its own Traefik router and service, `rest-api-mcp`, on the same port 4000 with
+  the same `/health/live` check. It keeps the `/api` middlewares, `retry@file` included. So
+  `traefik_service_*` shows MCP apart. Traefik builds a middleware once per router, so MCP gets
+  its own `rate-limit-api` bucket, at the old 800 a second and burst 900 per address. The Edge p95
+  rule already leaves `.*mcp.*` out. App Performance gains the panel "MCP Edge Latency p50 / p95 /
+  p99 (Traefik)", and no new alert rule: `slo-latency-p95-mcp` covers MCP latency. A self-hoster
+  with the bundled Traefik edits the `Host` in the new `rest-api-mcp` rule too ([#726](https://github.com/docs-plus/docs.plus/issues/726)).
 - A save that adds nothing no longer mints a version row
   ([#704](https://github.com/docs-plus/docs.plus/issues/704)). An unnamed `websocket` save whose
   merged bytes equal the head's bytes keeps the head row, and its `contributors` merge into it.
@@ -181,6 +203,11 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Internal
 
+- `scripts/bench-content-write.ts` mixed mode checks each write through replica B: replica A's
+  live room must hold its text within 500 ms of B's answer, or the run fails. The guard's wait
+  comes out of `--gap-ms`, so the writes keep their spacing. W4 now reads `failed` plus `retried`.
+  Section 5 of `scripts/e2e-store-pipeline.ts` runs a job through all 5 attempts and checks one
+  `failed` and four `retried` ([#726](https://github.com/docs-plus/docs.plus/issues/726)).
 - `seedRestAlertSeries` seeds the `GET /health/database` 503 series at 0, so the database-health
   alert counts the first 503 after a deploy ([#710](https://github.com/docs-plus/docs.plus/issues/710)).
 - `scripts/bench-mcp-session.ts` drives the #726 MCP write benchmark through the public `/api/mcp`

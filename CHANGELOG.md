@@ -20,6 +20,9 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ### Changed
 
+- An AI app's edit returns sooner. The server no longer waits 1 s after each of the two saves in
+  one edit. Estimate, not measured: about 2 s less per edit; the local after will measure it
+  ([#726](https://github.com/docs-plus/docs.plus/issues/726)).
 - History no longer gains a second version when one pad state is saved twice, as happens when two
   servers hold the same pad. The latest version is kept, and it lists every editor of that save
   ([#704](https://github.com/docs-plus/docs.plus/issues/704)).
@@ -104,6 +107,10 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ### Documentation
 
+- Self-hosting: `docker-compose.prod.yml` now has seven `Host(` lines, not six. The new
+  `rest-api-mcp` router serves `/api/mcp`. With the bundled Traefik, edit its `Host` too, as
+  [Install, step 4](docs/self-hosting/install.md#4-point-your-domains-at-the-server) lists
+  ([#726](https://github.com/docs-plus/docs.plus/issues/726)).
 - The demo's 2.3.0 section names more fixes: the link rename, the empty title heading, imported
   links, phone link sheets, the iPhone chat icon, Google sign-in branding, the title-row Delete,
   Documents list rows that open in a new tab, and a link preview that no longer changes the
@@ -124,6 +131,9 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ### Internal
 
+- The critical store-failure alert now pages on one save that failed all its attempts. A retry
+  no longer counts as a failure. `/api/mcp` gets its own Traefik router, so the App Performance
+  dashboard shows its edge latency on its own panel ([#726](https://github.com/docs-plus/docs.plus/issues/726)).
 - CI runs Bun 1.4.5, up from 1.4.4. The release brings security fixes for TLS, DNS and HTTP/3,
   through newer BoringSSL, c-ares and llhttp. The production images already ran 1.4.5, so CI
   now tests the version production runs again
