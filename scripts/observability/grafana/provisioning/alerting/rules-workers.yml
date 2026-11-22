@@ -89,21 +89,24 @@ groups:
               refId: C
 
       - uid: worker-job-failures
-        title: store-documents job failures (>5 in 10m)
+        title: store-documents job failed its last attempt
         condition: C
-        for: 10m
+        for: 0s
         noDataState: OK
         execErrState: Error
         labels:
           severity: critical
         annotations:
-          summary: More than 5 store-documents jobs failed in the last 10m
+          summary: A store-documents job failed all its attempts in the last 10m and went to the dead-letter queue. Above 512 KiB of state the entry has no payload, so that save is lost. See docs/RUNBOOK-backend.md, Dead-letter queue not empty.
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
+              # Since #726 only a job's last attempt counts as `failed`; an attempt BullMQ retries
+              # counts as `retried`. So one lost save pages. `for: 0s`, because one event keeps
+              # the 10m increase above 0 for less than 10m.
               expr: 'sum by (queue) (increase(jobs_total{queue="store-documents",status="failed"}[10m]))'
               instant: true
               intervalMs: 1000
@@ -124,7 +127,7 @@ groups:
               type: threshold
               expression: B
               conditions:
-                - evaluator: { type: gt, params: [5] }
+                - evaluator: { type: gt, params: [0] }
               refId: C
 
       - uid: worker-notification-job-failures
