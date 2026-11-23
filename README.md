@@ -145,7 +145,20 @@ We are a small team, and every pull request helps. A typo fix is as welcome as a
 | [contact@newspeak.house](mailto:contact@newspeak.house)                  | Anything else                                                        |
 | [SECURITY.md](SECURITY.md)                                               | A security problem. Do not report it in a public issue or on Discord |
 
-docs.plus is free to use, and a small team keeps it running. If it helps you, you can support us on [Patreon](https://www.patreon.com/docsplus).
+docs.plus is free to use, and a small team keeps it running. If it helps you, star this repository or support us on [Patreon](https://www.patreon.com/docsplus).
+
+<!-- Star demo: regenerate both files with `bun scripts/render-star-demo.ts --stars <n> --forks <n> --watching <n>`. -->
+<p align="center">
+  <a href="https://github.com/docs-plus/docs.plus">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset=".github/assets/star-demo-dark.webp" />
+      <img
+        width="740"
+        alt="Click Star at the top of the docs-plus/docs.plus repository on GitHub."
+        src=".github/assets/star-demo-light.webp" />
+    </picture>
+  </a>
+</p>
 
 The hosted service at docs.plus has a [Privacy policy](https://docs.plus/privacy) and [Terms](https://docs.plus/terms).
 

@@ -1,0 +1,2325 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>docs.plus — GitHub Star Demo Preview</title>
+    <style>
+      :root {
+        --host-bg: #ffffff;
+        --host-fg: #1f2328;
+        --host-muted: #59636e;
+        --host-border: #d1d9e0;
+        --host-link: #0969da;
+
+        --card-bg: #f1f5fd;
+        --card-ring: rgba(17, 32, 66, 0.07);
+        --wash-a: rgba(255, 255, 255, 0.62);
+        --wash-b: rgba(38, 120, 255, 0.13);
+        --wash-c: rgba(26, 35, 126, 0.06);
+
+        --win-bg: #ffffff;
+        --win-border: rgba(17, 32, 66, 0.09);
+        --win-shadow:
+          0 28px 60px -20px rgba(17, 32, 66, 0.28), 0 8px 20px -8px rgba(17, 32, 66, 0.1);
+        --win-bar-bg: #f6f8fb;
+        --win-bar-border: #dce3ed;
+        --win-pill-bg: #ffffff;
+        --win-pill-border: #d8dee4;
+        --win-pill-fg: #59636e;
+
+        --gh-header-bg: #f6f8fa;
+        --gh-canvas: #ffffff;
+        --gh-subtle: #f6f8fa;
+        --gh-border: #d0d7de;
+        --gh-border-muted: #d8dee4;
+        --gh-fg: #1f2328;
+        --gh-muted: #59636e;
+        --gh-link: #0969da;
+        --gh-tab-bar: #fd8c73;
+
+        --gh-pill-bg: #ddf4ff;
+        --gh-pill-fg: #0969da;
+        --gh-public-border: #d0d7de;
+
+        --gh-btn-bg: #f6f8fa;
+        --gh-btn-border: #d0d7de;
+        --gh-btn-shadow: 0 1px 0 rgba(31, 35, 40, 0.04);
+        --gh-btn-hover-bg: #f3f4f6;
+        --gh-btn-hover-border: #b1bac4;
+        --gh-btn-active-bg: #ebecf0;
+        --gh-btn-count-bg: rgba(175, 184, 193, 0.2);
+        --gh-btn-icon: #59636e;
+
+        --gh-green-bg: #1f883d;
+        --gh-green-border: rgba(31, 35, 40, 0.15);
+        --gh-green-fg: #ffffff;
+
+        --gh-star-gold: #eac54f;
+        --gh-folder-fill: #54aeff;
+
+        --gh-tooltip-bg: #1f2328;
+        --gh-tooltip-fg: #ffffff;
+        --gh-tooltip-border: transparent;
+        --gh-tooltip-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+
+        --logo-tile-bg: #ffffff;
+        --logo-tile-border: #d0d7de;
+
+        --pointer-fill: rgba(255, 255, 255, 0.5);
+        --pointer-ring: rgba(122, 134, 154, 0.85);
+        --pointer-shadow: 0 2px 8px rgba(17, 32, 66, 0.16);
+        --burst-ring: #f2d06b;
+        --burst-gold: #f0cb5c;
+        --burst-coral: #f59d56;
+
+        --toolbar-bg: rgba(255, 255, 255, 0.94);
+        --toolbar-border: rgba(17, 32, 66, 0.14);
+        --toolbar-fg: #101a2c;
+        --toolbar-muted: #59636e;
+        --toolbar-chip: #eef3fb;
+        --toolbar-active-bg: #2678ff;
+        --toolbar-active-fg: #ffffff;
+      }
+
+      html[data-theme='dark'] {
+        --host-bg: #0d1117;
+        --host-fg: #e6edf3;
+        --host-muted: #8b949e;
+        --host-border: #30363d;
+        --host-link: #4493f8;
+
+        --card-bg: #070d18;
+        --card-ring: rgba(110, 168, 255, 0.18);
+        --wash-a: rgba(38, 120, 255, 0.24);
+        --wash-b: rgba(110, 168, 255, 0.13);
+        --wash-c: rgba(17, 32, 66, 0.28);
+
+        --win-bg: #0d1117;
+        --win-border: #30363d;
+        --win-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 30px 64px -18px rgba(0, 0, 0, 0.72),
+          0 10px 24px -8px rgba(0, 0, 0, 0.48);
+        --win-bar-bg: #161b22;
+        --win-bar-border: #30363d;
+        --win-pill-bg: #0d1117;
+        --win-pill-border: #30363d;
+        --win-pill-fg: #8b949e;
+
+        --gh-header-bg: #010409;
+        --gh-canvas: #0d1117;
+        --gh-subtle: #161b22;
+        --gh-border: #30363d;
+        --gh-border-muted: #21262d;
+        --gh-fg: #e6edf3;
+        --gh-muted: #8b949e;
+        --gh-link: #4493f8;
+        --gh-tab-bar: #f78166;
+
+        --gh-pill-bg: rgba(56, 139, 253, 0.15);
+        --gh-pill-fg: #4493f8;
+        --gh-public-border: #30363d;
+
+        --gh-btn-bg: #21262d;
+        --gh-btn-border: #30363d;
+        --gh-btn-shadow: 0 0 transparent;
+        --gh-btn-hover-bg: #30363d;
+        --gh-btn-hover-border: #8b949e;
+        --gh-btn-active-bg: #282e33;
+        --gh-btn-count-bg: rgba(110, 118, 129, 0.4);
+        --gh-btn-icon: #8b949e;
+
+        --gh-green-bg: #238636;
+        --gh-green-border: rgba(240, 246, 252, 0.1);
+        --gh-green-fg: #ffffff;
+
+        --gh-star-gold: #e3b341;
+        --gh-folder-fill: #8b949e;
+
+        --gh-tooltip-bg: #30363d;
+        --gh-tooltip-fg: #f0f6fc;
+        --gh-tooltip-border: rgba(255, 255, 255, 0.12);
+        --gh-tooltip-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+
+        --logo-tile-bg: #0b1220;
+        --logo-tile-border: #2d3f57;
+
+        --pointer-fill: rgba(240, 246, 252, 0.16);
+        --pointer-ring: rgba(160, 178, 204, 0.85);
+        --pointer-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+        --burst-ring: #f3c94c;
+        --burst-gold: #f5d061;
+        --burst-coral: #ff9f5a;
+
+        --toolbar-bg: rgba(22, 27, 34, 0.94);
+        --toolbar-border: rgba(110, 168, 255, 0.22);
+        --toolbar-fg: #e6edf3;
+        --toolbar-muted: #8b949e;
+        --toolbar-chip: #21262d;
+        --toolbar-active-bg: #2678ff;
+        --toolbar-active-fg: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        background: var(--host-bg);
+        color: var(--host-fg);
+      }
+
+      html.is-capture,
+      html.is-capture body {
+        width: 1200px;
+        height: 640px;
+        overflow: hidden;
+        background: transparent;
+      }
+
+      .preview-host {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 36px 24px 140px;
+      }
+
+      html.is-capture .preview-host {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .readme-section {
+        margin-bottom: 24px;
+      }
+
+      .readme-section h2 {
+        margin: 0 0 16px;
+        padding-bottom: 8px;
+        font-size: 24px;
+        font-weight: 600;
+        line-height: 1.25;
+        border-bottom: 1px solid var(--host-border);
+      }
+
+      .readme-section p {
+        margin: 0 0 18px;
+        font-size: 16px;
+        line-height: 1.5;
+      }
+
+      .readme-section a {
+        color: var(--host-link);
+        text-decoration: underline;
+      }
+
+      html.is-capture .readme-section,
+      html.is-capture .review-bar {
+        display: none;
+      }
+
+      .card-shell {
+        margin: 0 auto;
+        width: var(--preview-width, 740px);
+        height: calc(var(--preview-width, 740px) * 640 / 1200);
+        overflow: hidden;
+      }
+
+      html.is-capture .card-shell {
+        width: 1200px;
+        height: 640px;
+        margin: 0;
+      }
+
+      .card-scaler {
+        width: 1200px;
+        height: 640px;
+        transform-origin: top left;
+        transform: scale(var(--preview-scale, 0.616667));
+      }
+
+      html.is-capture .card-scaler {
+        transform: none;
+      }
+
+      .card {
+        position: relative;
+        width: 1200px;
+        height: 640px;
+        border-radius: 16px;
+        overflow: hidden;
+        background:
+          radial-gradient(660px 520px at 8% 22%, var(--wash-a), transparent 68%),
+          radial-gradient(640px 520px at 28% 108%, var(--wash-b), transparent 62%),
+          radial-gradient(680px 440px at 96% 4%, var(--wash-c), transparent 60%), var(--card-bg);
+      }
+
+      html[data-theme='dark'] .card {
+        background:
+          radial-gradient(660px 460px at 86% 12%, var(--wash-a), transparent 64%),
+          radial-gradient(620px 480px at 18% 104%, var(--wash-b), transparent 62%), var(--card-bg);
+      }
+
+      .card-frame-ring {
+        position: absolute;
+        inset: 0;
+        border-radius: 16px;
+        pointer-events: none;
+        z-index: 30;
+        box-shadow: inset 0 0 0 1px var(--card-ring);
+      }
+
+      .stage {
+        position: absolute;
+        inset: 0;
+        will-change: transform;
+      }
+
+      .browser-window {
+        position: absolute;
+        left: 32px;
+        top: 28px;
+        width: 1136px;
+        height: 584px;
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--win-bg);
+        border: 1px solid var(--win-border);
+        box-shadow: var(--win-shadow);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .window-bar {
+        height: 38px;
+        flex: none;
+        padding: 0 14px;
+        background: var(--win-bar-bg);
+        border-bottom: 1px solid var(--win-bar-border);
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+      }
+
+      .traffic-lights {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .traffic-dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+      }
+
+      .traffic-dot.red {
+        background: #ff5f57;
+      }
+
+      .traffic-dot.yellow {
+        background: #febc2e;
+      }
+
+      .traffic-dot.green {
+        background: #28c840;
+      }
+
+      html[data-theme='dark'] .traffic-dot {
+        opacity: 0.9;
+      }
+
+      .url-pill {
+        height: 24px;
+        min-width: 290px;
+        padding: 0 16px;
+        border-radius: 6px;
+        background: var(--win-pill-bg);
+        border: 1px solid var(--win-pill-border);
+        color: var(--win-pill-fg);
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .gh-top-header {
+        background: var(--gh-header-bg);
+        border-bottom: 1px solid var(--gh-border);
+        flex: none;
+      }
+
+      .gh-global-bar {
+        height: 44px;
+        padding: 0 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .gh-global-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+      }
+
+      .gh-crumb-org {
+        color: var(--gh-fg);
+        font-weight: 400;
+      }
+
+      .gh-crumb-sep {
+        color: var(--gh-muted);
+        margin: 0 -4px;
+      }
+
+      .gh-crumb-repo {
+        color: var(--gh-fg);
+        font-weight: 600;
+      }
+
+      .gh-global-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .gh-search-box {
+        height: 28px;
+        width: 224px;
+        padding: 0 10px;
+        border-radius: 6px;
+        border: 1px solid var(--gh-border);
+        background: var(--gh-canvas);
+        color: var(--gh-muted);
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+
+      .gh-search-key {
+        padding: 0 4px;
+        border-radius: 3px;
+        border: 1px solid var(--gh-border);
+        font-size: 11px;
+        line-height: 16px;
+      }
+
+      .gh-user-dot {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #c6d4e6 0%, #9fb2ca 100%);
+        border: 1px solid var(--gh-border);
+      }
+
+      html[data-theme='dark'] .gh-user-dot {
+        background: linear-gradient(135deg, #344156 0%, #242e3d 100%);
+      }
+
+      .gh-tabs {
+        height: 36px;
+        padding: 0 22px;
+        display: flex;
+        align-items: stretch;
+        gap: 6px;
+      }
+
+      .gh-tab {
+        position: relative;
+        padding: 0 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        color: var(--gh-fg);
+      }
+
+      .gh-tab svg {
+        color: var(--gh-muted);
+      }
+
+      .gh-tab.is-active {
+        font-weight: 600;
+      }
+
+      .gh-tab.is-active svg {
+        color: var(--gh-fg);
+      }
+
+      .gh-tab.is-active::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 2px;
+        border-radius: 2px;
+        background: var(--gh-tab-bar);
+      }
+
+      .gh-repo-page {
+        flex: 1;
+        padding: 16px 24px 18px;
+        display: flex;
+        flex-direction: column;
+        background: var(--gh-canvas);
+      }
+
+      .gh-repo-head {
+        height: 44px;
+        padding-bottom: 14px;
+        margin-bottom: 14px;
+        border-bottom: 1px solid var(--gh-border-muted);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .gh-repo-id {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .gh-org-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        background: var(--logo-tile-bg);
+        border: 1px solid var(--logo-tile-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: none;
+      }
+
+      .gh-org-avatar svg {
+        height: 15px;
+        width: auto;
+        display: block;
+      }
+
+      .gh-repo-title {
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--gh-fg);
+      }
+
+      .gh-visibility {
+        padding: 1px 7px;
+        border-radius: 999px;
+        border: 1px solid var(--gh-public-border);
+        color: var(--gh-muted);
+        font-size: 11.5px;
+        font-weight: 500;
+        line-height: 18px;
+      }
+
+      .gh-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .gh-split-btn {
+        position: relative;
+        display: inline-flex;
+        align-items: stretch;
+        height: 28px;
+      }
+
+      .gh-btn {
+        height: 28px;
+        padding: 0 11px;
+        background: var(--gh-btn-bg);
+        border: 1px solid var(--gh-btn-border);
+        box-shadow: var(--gh-btn-shadow);
+        color: var(--gh-fg);
+        font-size: 12.5px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+
+      .gh-btn-left {
+        border-radius: 6px 0 0 6px;
+      }
+
+      .gh-btn-caret {
+        width: 26px;
+        padding: 0;
+        justify-content: center;
+        border-left: 0;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .gh-btn-icon {
+        color: var(--gh-btn-icon);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .gh-count {
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 999px;
+        background: var(--gh-btn-count-bg);
+        font-size: 11.5px;
+        font-weight: 600;
+        line-height: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-variant-numeric: tabular-nums;
+      }
+
+      #star-primary {
+        position: relative;
+        overflow: hidden;
+        transform-origin: center;
+        justify-content: flex-start;
+      }
+
+      #star-primary.is-hovered {
+        background: var(--gh-btn-hover-bg);
+        border-color: var(--gh-btn-hover-border);
+      }
+
+      #star-primary.is-pressed {
+        background: var(--gh-btn-active-bg);
+      }
+
+      .star-layer {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+
+      .star-layer-overlay {
+        position: absolute;
+        inset: 0;
+        padding: 0 11px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 6px;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .star-burst {
+        position: absolute;
+        left: 20px;
+        top: 14px;
+        transform: translate(-50%, -50%);
+        overflow: visible;
+        pointer-events: none;
+        z-index: 15;
+      }
+
+      .star-icon-slot {
+        position: relative;
+        width: 16px;
+        height: 16px;
+        flex: none;
+      }
+
+      .star-icon-svg {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .star-icon-svg.outline {
+        color: var(--gh-btn-icon);
+      }
+
+      .star-icon-svg.filled {
+        color: var(--gh-star-gold);
+        opacity: 0;
+      }
+
+      .rolling-counter {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 18px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .digit-slot {
+        position: relative;
+        height: 15px;
+        line-height: 15px;
+        overflow: hidden;
+        display: inline-block;
+        text-align: center;
+      }
+
+      .digit-track {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        will-change: transform;
+      }
+
+      .digit-cell {
+        height: 15px;
+        line-height: 15px;
+        display: block;
+      }
+
+      .gh-tooltip {
+        position: absolute;
+        top: calc(100% + 9px);
+        left: 0;
+        padding: 5px 10px;
+        border-radius: 6px;
+        background: var(--gh-tooltip-bg);
+        color: var(--gh-tooltip-fg);
+        border: 1px solid var(--gh-tooltip-border);
+        box-shadow: var(--gh-tooltip-shadow);
+        font-size: 11.5px;
+        font-weight: 500;
+        line-height: 1.35;
+        white-space: nowrap;
+        pointer-events: none;
+        z-index: 20;
+        opacity: 0;
+      }
+
+      .gh-tooltip::before {
+        content: '';
+        position: absolute;
+        top: -5px;
+        left: 50%;
+        width: 8px;
+        height: 8px;
+        background: var(--gh-tooltip-bg);
+        border-left: 1px solid var(--gh-tooltip-border);
+        border-top: 1px solid var(--gh-tooltip-border);
+        transform: translateX(-50%) rotate(45deg);
+      }
+
+      .gh-columns {
+        flex: 1;
+        display: flex;
+        gap: 24px;
+        min-height: 0;
+      }
+
+      .gh-main-col {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .gh-toolbar-row {
+        height: 28px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .gh-branch-btn {
+        border-radius: 6px;
+        font-weight: 600;
+      }
+
+      .gh-code-btn {
+        height: 28px;
+        padding: 0 12px;
+        border-radius: 6px;
+        background: var(--gh-green-bg);
+        border: 1px solid var(--gh-green-border);
+        color: var(--gh-green-fg);
+        font-size: 12.5px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .gh-tree-card {
+        border: 1px solid var(--gh-border);
+        border-radius: 6px;
+        overflow: hidden;
+        background: var(--gh-canvas);
+      }
+
+      .gh-tree-head {
+        height: 36px;
+        padding: 0 14px;
+        background: var(--gh-subtle);
+        border-bottom: 1px solid var(--gh-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 12.5px;
+      }
+
+      .gh-commit-author {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .gh-mini-avatar {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        background: var(--logo-tile-bg);
+        border: 1px solid var(--logo-tile-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: none;
+      }
+
+      .gh-mini-avatar svg {
+        height: 12px;
+        width: auto;
+      }
+
+      .gh-author-name {
+        font-weight: 600;
+        color: var(--gh-fg);
+        flex: none;
+      }
+
+      .gh-commit-msg {
+        color: var(--gh-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .gh-commit-meta {
+        color: var(--gh-muted);
+        font-size: 12px;
+        white-space: nowrap;
+        flex: none;
+      }
+
+      .gh-tree-row {
+        height: 33px;
+        padding: 0 14px;
+        border-top: 1px solid var(--gh-border-muted);
+        display: grid;
+        grid-template-columns: 126px 1fr 78px;
+        align-items: center;
+        gap: 12px;
+        font-size: 12.5px;
+      }
+
+      .gh-tree-row:first-of-type {
+        border-top: 0;
+      }
+
+      .gh-entry-name {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: var(--gh-fg);
+        white-space: nowrap;
+      }
+
+      .gh-entry-icon.folder {
+        color: var(--gh-folder-fill);
+      }
+
+      .gh-entry-icon.file {
+        color: var(--gh-muted);
+      }
+
+      .gh-entry-msg {
+        color: var(--gh-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .gh-entry-age {
+        color: var(--gh-muted);
+        font-size: 12px;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .gh-sidebar {
+        width: 312px;
+        flex: none;
+        padding-top: 2px;
+      }
+
+      .gh-sidebar h3 {
+        margin: 0 0 10px;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--gh-fg);
+      }
+
+      .gh-about-desc {
+        margin: 0 0 12px;
+        font-size: 13px;
+        line-height: 1.48;
+        color: var(--gh-fg);
+      }
+
+      .gh-about-link {
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--gh-link);
+      }
+
+      .gh-about-link svg {
+        color: var(--gh-muted);
+      }
+
+      .gh-topics {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-bottom: 14px;
+      }
+
+      .gh-topic {
+        padding: 2px 9px;
+        border-radius: 999px;
+        background: var(--gh-pill-bg);
+        color: var(--gh-pill-fg);
+        font-size: 11.5px;
+        font-weight: 500;
+        line-height: 18px;
+      }
+
+      .gh-meta-list {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        font-size: 12.5px;
+        color: var(--gh-muted);
+      }
+
+      .gh-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .gh-meta-item strong {
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .pointer-overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 25;
+      }
+
+      .demo-pointer {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 26px;
+        height: 26px;
+        margin-left: -13px;
+        margin-top: -13px;
+        border-radius: 50%;
+        background: var(--pointer-fill);
+        border: 2px solid var(--pointer-ring);
+        box-shadow: var(--pointer-shadow);
+        opacity: 0;
+        will-change: transform, opacity;
+      }
+
+      .review-bar {
+        position: fixed;
+        left: 50%;
+        bottom: 16px;
+        transform: translateX(-50%);
+        z-index: 100;
+        width: min(1040px, calc(100vw - 24px));
+        padding: 10px 14px;
+        border-radius: 14px;
+        background: var(--toolbar-bg);
+        border: 1px solid var(--toolbar-border);
+        box-shadow: 0 18px 42px -12px rgba(10, 20, 40, 0.35);
+        backdrop-filter: blur(12px);
+        color: var(--toolbar-fg);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px 14px;
+        font-size: 12.5px;
+      }
+
+      .bar-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .bar-btn {
+        height: 28px;
+        padding: 0 10px;
+        border-radius: 7px;
+        border: 1px solid var(--toolbar-border);
+        background: var(--toolbar-chip);
+        color: var(--toolbar-fg);
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .bar-btn.is-active {
+        background: var(--toolbar-active-bg);
+        border-color: var(--toolbar-active-bg);
+        color: var(--toolbar-active-fg);
+      }
+
+      .bar-scrubber {
+        flex: 1;
+        min-width: 240px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .bar-scrubber-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .bar-scrubber input[type='range'] {
+        flex: 1;
+        margin: 0;
+        accent-color: #2678ff;
+        cursor: pointer;
+      }
+
+      .bar-readout {
+        min-width: 116px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        color: var(--toolbar-muted);
+        font-weight: 600;
+      }
+
+      .phase-marks {
+        display: flex;
+        justify-content: space-between;
+        gap: 4px;
+      }
+
+      .phase-chip {
+        padding: 1px 6px;
+        border: 0;
+        border-radius: 4px;
+        background: transparent;
+        color: var(--toolbar-muted);
+        font: inherit;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .phase-chip:hover {
+        background: var(--toolbar-chip);
+        color: var(--toolbar-fg);
+      }
+
+      .bar-inputs {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .bar-field {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--toolbar-muted);
+        font-weight: 600;
+      }
+
+      .bar-field input {
+        width: 56px;
+        height: 28px;
+        padding: 0 6px;
+        border-radius: 7px;
+        border: 1px solid var(--toolbar-border);
+        background: var(--host-bg);
+        color: var(--toolbar-fg);
+        font: inherit;
+        font-variant-numeric: tabular-nums;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="preview-host">
+      <section class="readme-section">
+        <h2>Community and support</h2>
+        <p>
+          docs.plus is free to use, and a small team keeps it running. If it helps you, star this
+          repository or support us on
+          <a href="https://www.patreon.com/docsplus">Patreon</a>
+          .
+        </p>
+      </section>
+
+      <div class="card-shell" id="card-shell">
+        <div class="card-scaler" id="card-scaler">
+          <div class="card" id="card">
+            <div class="stage" id="stage">
+              <div class="browser-window" id="browser-window">
+                <div class="window-bar">
+                  <div class="traffic-lights">
+                    <span class="traffic-dot red"></span>
+                    <span class="traffic-dot yellow"></span>
+                    <span class="traffic-dot green"></span>
+                  </div>
+                  <div class="url-pill">
+                    <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+                      <path
+                        d="M4 4a4 4 0 0 1 8 0v2h.25c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 12.25 15h-8.5A1.75 1.75 0 0 1 2 13.25v-5.5C2 6.784 2.784 6 3.75 6H4Zm8.25 3.5h-8.5a.25.25 0 0 0-.25.25v5.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25ZM10.5 6V4a2.5 2.5 0 1 0-5 0v2Z" />
+                    </svg>
+                    <span>github.com/docs-plus/docs.plus</span>
+                  </div>
+                  <span></span>
+                </div>
+
+                <header class="gh-top-header">
+                  <div class="gh-global-bar">
+                    <div class="gh-global-left">
+                      <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor">
+                        <path
+                          d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z" />
+                      </svg>
+                      <span class="gh-crumb-org">docs-plus</span>
+                      <span class="gh-crumb-sep">/</span>
+                      <span class="gh-crumb-repo">docs.plus</span>
+                    </div>
+                    <div class="gh-global-right">
+                      <div class="gh-search-box">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                          <path
+                            d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z" />
+                        </svg>
+                        <span>Type</span>
+                        <span class="gh-search-key">/</span>
+                        <span>to search</span>
+                      </div>
+                      <span class="gh-user-dot"></span>
+                    </div>
+                  </div>
+
+                  <nav class="gh-tabs">
+                    <span class="gh-tab is-active">
+                      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                        <path
+                          d="m11.28 3.22 4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L13.94 8l-3.72-3.72a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215Zm-6.56 0a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L2.06 8l3.72 3.72a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L.47 8.53a.75.75 0 0 1 0-1.06Z" />
+                      </svg>
+                      <span>Code</span>
+                    </span>
+                    <span class="gh-tab">
+                      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
+                        <path
+                          d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z" />
+                      </svg>
+                      <span>Issues</span>
+                    </span>
+                    <span class="gh-tab">
+                      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                        <path
+                          d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z" />
+                      </svg>
+                      <span>Pull requests</span>
+                    </span>
+                    <span class="gh-tab">
+                      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                        <path
+                          d="M1.75 1h8.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 10.25 10H7.061l-2.574 2.573A1.458 1.458 0 0 1 2 11.543V10h-.25A1.75 1.75 0 0 1 0 8.25v-5.5C0 1.784.784 1 1.75 1ZM1.5 2.75v5.5c0 .138.112.25.25.25h1a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h3.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25h-8.5a.25.25 0 0 0-.25.25Zm13 2a.25.25 0 0 0-.25-.25h-.5a.75.75 0 0 1 0-1.5h.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 14.25 12H14v1.543a1.458 1.458 0 0 1-2.487 1.03L9.22 12.28a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215l2.22 2.22v-2.19a.75.75 0 0 1 .75-.75h1a.25.25 0 0 0 .25-.25Z" />
+                      </svg>
+                      <span>Discussions</span>
+                    </span>
+                    <span class="gh-tab">
+                      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                        <path
+                          d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z" />
+                      </svg>
+                      <span>Actions</span>
+                    </span>
+                    <span class="gh-tab">
+                      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                        <path
+                          d="M7.467.133a1.748 1.748 0 0 1 1.066 0l5.25 1.68A1.75 1.75 0 0 1 15 3.48V7c0 1.566-.32 3.182-1.303 4.682-.983 1.498-2.585 2.813-5.032 3.855a1.697 1.697 0 0 1-1.33 0c-2.447-1.042-4.049-2.357-5.032-3.855C1.32 10.182 1 8.566 1 7V3.48a1.75 1.75 0 0 1 1.217-1.667Zm.61 1.429a.25.25 0 0 0-.153 0l-5.25 1.68a.25.25 0 0 0-.174.238V7c0 1.358.275 2.666 1.057 3.86.784 1.194 2.121 2.34 4.366 3.297a.196.196 0 0 0 .154 0c2.245-.956 3.582-2.104 4.366-3.298C13.225 9.666 13.5 8.36 13.5 7V3.48a.251.251 0 0 0-.174-.237l-5.25-1.68ZM8.75 4.75v3a.75.75 0 0 1-1.5 0v-3a.75.75 0 0 1 1.5 0ZM9 10.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" />
+                      </svg>
+                      <span>Security</span>
+                    </span>
+                  </nav>
+                </header>
+
+                <div class="gh-repo-page">
+                  <div class="gh-repo-head">
+                    <div class="gh-repo-id">
+                      <div class="gh-org-avatar">
+                        <svg width="1740" height="2406" viewBox="476 141 1740 2406" fill="none">
+                          <path
+                            d="M1563.98 140.891H638.833C550.006 140.891 476 214.897 476 303.724V2379.79C476 2468.62 550.006 2542.63 638.833 2542.63H2052.48C2141.31 2542.63 2215.31 2468.62 2215.31 2379.79V795.903L1834.14 522.061L1563.98 140.891Z"
+                            fill="#2678FF" />
+                          <path
+                            d="M1612.1 747.781L2215.29 1358.4V795.9L1612.1 747.781Z"
+                            fill="url(#docsplusFoldShade)" />
+                          <path
+                            d="M1561.68 142.566V634.745C1561.68 723.572 1635.68 797.578 1724.51 797.578H2212.98L1561.68 142.566Z"
+                            fill="#8AB5FF" />
+                          <rect
+                            x="790.574"
+                            y="1453.14"
+                            width="1095.67"
+                            height="295.67"
+                            rx="124.338"
+                            fill="white" />
+                          <rect
+                            x="1486.24"
+                            y="1053.14"
+                            width="1095.67"
+                            height="295.67"
+                            rx="124.338"
+                            transform="rotate(90 1486.24 1053.14)"
+                            fill="white" />
+                          <defs>
+                            <linearGradient
+                              id="docsplusFoldShade"
+                              x1="1913.7"
+                              y1="800.703"
+                              x2="1913.7"
+                              y2="1356.47"
+                              gradientUnits="userSpaceOnUse">
+                              <stop stop-color="#1A237E" stop-opacity="0.2" />
+                              <stop offset="1" stop-color="#1A237E" stop-opacity="0.02" />
+                            </linearGradient>
+                          </defs>
+                        </svg>
+                      </div>
+                      <span class="gh-repo-title">docs.plus</span>
+                      <span class="gh-visibility">Public</span>
+                    </div>
+
+                    <div class="gh-actions">
+                      <div class="gh-split-btn">
+                        <span class="gh-btn gh-btn-left">
+                          <span class="gh-btn-icon">
+                            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                              <path
+                                d="M8 2c1.981 0 3.671.992 4.933 2.078 1.27 1.091 2.187 2.345 2.637 3.023a1.62 1.62 0 0 1 0 1.798c-.45.678-1.367 1.932-2.637 3.023C11.67 13.008 9.981 14 8 14c-1.981 0-3.671-.992-4.933-2.078C1.797 10.83.88 9.576.43 8.898a1.62 1.62 0 0 1 0-1.798c.45-.677 1.367-1.931 2.637-3.022C4.33 2.992 6.019 2 8 2ZM1.679 7.932a.12.12 0 0 0 0 .136c.411.622 1.241 1.75 2.366 2.717C5.176 11.758 6.527 12.5 8 12.5c1.473 0 2.825-.742 3.955-1.715 1.124-.967 1.954-2.096 2.366-2.717a.12.12 0 0 0 0-.136c-.412-.621-1.242-1.75-2.366-2.717C10.824 4.242 9.473 3.5 8 3.5c-1.473 0-2.825.742-3.955 1.715-1.124.967-1.954 2.096-2.366 2.717ZM8 10a2 2 0 1 1-.001-3.999A2 2 0 0 1 8 10Z" />
+                            </svg>
+                          </span>
+                          <span>Watch</span>
+                          <span class="gh-count" id="watch-btn-count">6</span>
+                        </span>
+                        <span class="gh-btn gh-btn-caret">
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                            <path
+                              d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z" />
+                          </svg>
+                        </span>
+                      </div>
+
+                      <div class="gh-split-btn">
+                        <span class="gh-btn gh-btn-left">
+                          <span class="gh-btn-icon">
+                            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                              <path
+                                d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z" />
+                            </svg>
+                          </span>
+                          <span>Fork</span>
+                          <span class="gh-count" id="fork-btn-count">17</span>
+                        </span>
+                        <span class="gh-btn gh-btn-caret">
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                            <path
+                              d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z" />
+                          </svg>
+                        </span>
+                      </div>
+
+                      <div class="gh-split-btn" id="star-group">
+                        <span class="gh-btn gh-btn-left" id="star-primary">
+                          <span class="star-layer" id="star-live-layer">
+                            <span class="star-icon-slot" id="star-icon-slot">
+                              <span class="star-icon-svg outline" id="star-icon-outline">
+                                <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                                  <path
+                                    d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Zm0 2.445L6.615 5.5a.75.75 0 0 1-.564.41l-3.097.45 2.24 2.184a.75.75 0 0 1 .216.664l-.528 3.084 2.769-1.456a.75.75 0 0 1 .698 0l2.77 1.456-.53-3.084a.75.75 0 0 1 .216-.664l2.24-2.183-3.096-.45a.75.75 0 0 1-.564-.41L8 2.694Z" />
+                                </svg>
+                              </span>
+                              <span class="star-icon-svg filled" id="star-icon-filled">
+                                <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                                  <path
+                                    d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z" />
+                                </svg>
+                              </span>
+                            </span>
+                            <span id="star-label">Star</span>
+                            <span class="gh-count">
+                              <span class="rolling-counter" id="star-rolling-counter"></span>
+                            </span>
+                          </span>
+
+                          <span class="star-layer-overlay" id="star-reset-overlay">
+                            <span class="star-icon-slot">
+                              <span class="star-icon-svg outline" style="opacity: 1">
+                                <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                                  <path
+                                    d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Zm0 2.445L6.615 5.5a.75.75 0 0 1-.564.41l-3.097.45 2.24 2.184a.75.75 0 0 1 .216.664l-.528 3.084 2.769-1.456a.75.75 0 0 1 .698 0l2.77 1.456-.53-3.084a.75.75 0 0 1 .216-.664l2.24-2.183-3.096-.45a.75.75 0 0 1-.564-.41L8 2.694Z" />
+                                </svg>
+                              </span>
+                            </span>
+                            <span>Star</span>
+                            <span class="gh-count" id="star-reset-count">99</span>
+                          </span>
+                        </span>
+                        <span class="gh-btn gh-btn-caret" id="star-caret">
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                            <path
+                              d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z" />
+                          </svg>
+                        </span>
+                        <div class="gh-tooltip" id="star-tooltip">Star docs-plus/docs.plus</div>
+                        <svg
+                          class="star-burst"
+                          id="star-burst"
+                          width="64"
+                          height="64"
+                          viewBox="-32 -32 64 64"
+                          aria-hidden="true">
+                          <circle
+                            id="burst-ring"
+                            cx="0"
+                            cy="0"
+                            r="8"
+                            fill="none"
+                            stroke="var(--burst-ring)"
+                            stroke-width="2.6"
+                            opacity="0" />
+                          <circle
+                            class="burst-dot"
+                            data-angle="-90"
+                            cx="0"
+                            cy="0"
+                            r="0"
+                            fill="var(--burst-gold)"
+                            opacity="0" />
+                          <circle
+                            class="burst-dot"
+                            data-angle="-45"
+                            cx="0"
+                            cy="0"
+                            r="0"
+                            fill="var(--burst-coral)"
+                            opacity="0" />
+                          <circle
+                            class="burst-dot"
+                            data-angle="0"
+                            cx="0"
+                            cy="0"
+                            r="0"
+                            fill="var(--burst-gold)"
+                            opacity="0" />
+                          <circle
+                            class="burst-dot"
+                            data-angle="45"
+                            cx="0"
+                            cy="0"
+                            r="0"
+                            fill="var(--burst-coral)"
+                            opacity="0" />
+                          <circle
+                            class="burst-dot"
+                            data-angle="90"
+                            cx="0"
+                            cy="0"
+                            r="0"
+                            fill="var(--burst-gold)"
+                            opacity="0" />
+                          <circle
+                            class="burst-dot"
+                            data-angle="135"
+                            cx="0"
+                            cy="0"
+                            r="0"
+                            fill="var(--burst-coral)"
+                            opacity="0" />
+                          <circle
+                            class="burst-dot"
+                            data-angle="180"
+                            cx="0"
+                            cy="0"
+                            r="0"
+                            fill="var(--burst-gold)"
+                            opacity="0" />
+                          <circle
+                            class="burst-dot"
+                            data-angle="225"
+                            cx="0"
+                            cy="0"
+                            r="0"
+                            fill="var(--burst-coral)"
+                            opacity="0" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="gh-columns">
+                    <div class="gh-main-col">
+                      <div class="gh-toolbar-row">
+                        <span class="gh-btn gh-branch-btn">
+                          <span class="gh-btn-icon">
+                            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                              <path
+                                d="M9.5 3.25a2.25 2.25 0 1 1 3 2.122V6A2.5 2.5 0 0 1 10 8.5H6a1 1 0 0 0-1 1v1.128a2.251 2.251 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.5 0v1.836A2.493 2.493 0 0 1 6 7h4a1 1 0 0 0 1-1v-.628A2.25 2.25 0 0 1 9.5 3.25Zm-6 0a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Zm8.25-.75a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5ZM4.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z" />
+                            </svg>
+                          </span>
+                          <span>main</span>
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                            <path
+                              d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z" />
+                          </svg>
+                        </span>
+
+                        <span class="gh-code-btn">
+                          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                            <path
+                              d="m11.28 3.22 4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L13.94 8l-3.72-3.72a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215Zm-6.56 0a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L2.06 8l3.72 3.72a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L.47 8.53a.75.75 0 0 1 0-1.06Z" />
+                          </svg>
+                          <span>Code</span>
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                            <path
+                              d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z" />
+                          </svg>
+                        </span>
+                      </div>
+
+                      <div class="gh-tree-card">
+                        <div class="gh-tree-head">
+                          <div class="gh-commit-author">
+                            <span class="gh-mini-avatar">
+                              <svg
+                                width="1740"
+                                height="2406"
+                                viewBox="476 141 1740 2406"
+                                fill="none">
+                                <path
+                                  d="M1563.98 140.891H638.833C550.006 140.891 476 214.897 476 303.724V2379.79C476 2468.62 550.006 2542.63 638.833 2542.63H2052.48C2141.31 2542.63 2215.31 2468.62 2215.31 2379.79V795.903L1834.14 522.061L1563.98 140.891Z"
+                                  fill="#2678FF" />
+                                <path
+                                  d="M1561.68 142.566V634.745C1561.68 723.572 1635.68 797.578 1724.51 797.578H2212.98L1561.68 142.566Z"
+                                  fill="#8AB5FF" />
+                                <rect
+                                  x="790.574"
+                                  y="1453.14"
+                                  width="1095.67"
+                                  height="295.67"
+                                  rx="124.338"
+                                  fill="white" />
+                                <rect
+                                  x="1486.24"
+                                  y="1053.14"
+                                  width="1095.67"
+                                  height="295.67"
+                                  rx="124.338"
+                                  transform="rotate(90 1486.24 1053.14)"
+                                  fill="white" />
+                              </svg>
+                            </span>
+                            <span class="gh-author-name">HMarzban</span>
+                            <span class="gh-commit-msg">
+                              docs: point the README demo link at the TOC section
+                            </span>
+                          </div>
+                          <span class="gh-commit-meta">c0c0273 · 1 day ago</span>
+                        </div>
+
+                        <div class="gh-tree-row">
+                          <span class="gh-entry-name">
+                            <svg
+                              class="gh-entry-icon folder"
+                              width="15"
+                              height="15"
+                              viewBox="0 0 16 16"
+                              fill="currentColor">
+                              <path
+                                d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z" />
+                            </svg>
+                            <span>apps</span>
+                          </span>
+                          <span class="gh-entry-msg">
+                            fix(deps): pin @sentry/nextjs to 11.10.0 for the Bun image
+                          </span>
+                          <span class="gh-entry-age">1 day ago</span>
+                        </div>
+
+                        <div class="gh-tree-row">
+                          <span class="gh-entry-name">
+                            <svg
+                              class="gh-entry-icon folder"
+                              width="15"
+                              height="15"
+                              viewBox="0 0 16 16"
+                              fill="currentColor">
+                              <path
+                                d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z" />
+                            </svg>
+                            <span>docs</span>
+                          </span>
+                          <span class="gh-entry-msg">
+                            feat(docker): give /api/mcp its own Traefik router and service
+                          </span>
+                          <span class="gh-entry-age">2 days ago</span>
+                        </div>
+
+                        <div class="gh-tree-row">
+                          <span class="gh-entry-name">
+                            <svg
+                              class="gh-entry-icon folder"
+                              width="15"
+                              height="15"
+                              viewBox="0 0 16 16"
+                              fill="currentColor">
+                              <path
+                                d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z" />
+                            </svg>
+                            <span>extensions</span>
+                          </span>
+                          <span class="gh-entry-msg">
+                            chore(deps): move pele from 1.8.0 to 1.13.0
+                          </span>
+                          <span class="gh-entry-age">2 days ago</span>
+                        </div>
+
+                        <div class="gh-tree-row">
+                          <span class="gh-entry-name">
+                            <svg
+                              class="gh-entry-icon folder"
+                              width="15"
+                              height="15"
+                              viewBox="0 0 16 16"
+                              fill="currentColor">
+                              <path
+                                d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z" />
+                            </svg>
+                            <span>packages</span>
+                          </span>
+                          <span class="gh-entry-msg">
+                            chore(deps): take patch and minor bumps across the repo
+                          </span>
+                          <span class="gh-entry-age">2 days ago</span>
+                        </div>
+
+                        <div class="gh-tree-row">
+                          <span class="gh-entry-name">
+                            <svg
+                              class="gh-entry-icon folder"
+                              width="15"
+                              height="15"
+                              viewBox="0 0 16 16"
+                              fill="currentColor">
+                              <path
+                                d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z" />
+                            </svg>
+                            <span>patches</span>
+                          </span>
+                          <span class="gh-entry-msg">
+                            feat(hocuspocus): drop the 1 s Redis wait after a direct store
+                          </span>
+                          <span class="gh-entry-age">2 days ago</span>
+                        </div>
+
+                        <div class="gh-tree-row">
+                          <span class="gh-entry-name">
+                            <svg
+                              class="gh-entry-icon folder"
+                              width="15"
+                              height="15"
+                              viewBox="0 0 16 16"
+                              fill="currentColor">
+                              <path
+                                d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z" />
+                            </svg>
+                            <span>scripts</span>
+                          </span>
+                          <span class="gh-entry-msg">
+                            fix(observability): name every evicted key and the right pg_cron cadence
+                          </span>
+                          <span class="gh-entry-age">1 day ago</span>
+                        </div>
+
+                        <div class="gh-tree-row">
+                          <span class="gh-entry-name">
+                            <svg
+                              class="gh-entry-icon file"
+                              width="15"
+                              height="15"
+                              viewBox="0 0 16 16"
+                              fill="currentColor">
+                              <path
+                                d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z" />
+                            </svg>
+                            <span>README.md</span>
+                          </span>
+                          <span class="gh-entry-msg">
+                            docs: point the README demo link at the TOC section
+                          </span>
+                          <span class="gh-entry-age">1 day ago</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <aside class="gh-sidebar">
+                      <h3>About</h3>
+                      <p class="gh-about-desc">
+                        Free and open-source real-time collaborative document editor. Hierarchical
+                        table of contents, per-heading chat, built on Tiptap, ProseMirror and Yjs.
+                      </p>
+                      <div class="gh-about-link">
+                        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                          <path
+                            d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z" />
+                        </svg>
+                        <span>docs.plus</span>
+                      </div>
+                      <div class="gh-topics">
+                        <span class="gh-topic">collaboration</span>
+                        <span class="gh-topic">collaborative-editor</span>
+                        <span class="gh-topic">tiptap</span>
+                        <span class="gh-topic">prosemirror</span>
+                        <span class="gh-topic">yjs</span>
+                        <span class="gh-topic">realtime-collaboration</span>
+                      </div>
+                      <div class="gh-meta-list">
+                        <span class="gh-meta-item">
+                          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                            <path
+                              d="M0 1.75A.75.75 0 0 1 .75 1h4.253c1.227 0 2.317.59 3 1.501A3.743 3.743 0 0 1 11.006 1h4.245a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.507a2.25 2.25 0 0 0-1.591.659l-.622.621a.75.75 0 0 1-1.06 0l-.622-.621A2.25 2.25 0 0 0 5.258 13H.75a.75.75 0 0 1-.75-.75Zm7.251 10.324.004-5.073-.002-2.253A2.25 2.25 0 0 0 5.003 2.5H1.5v9h3.757a3.75 3.75 0 0 1 1.994.574ZM8.755 4.75l-.004 7.322a3.752 3.752 0 0 1 1.992-.572H14.5v-9h-3.495a2.25 2.25 0 0 0-2.25 2.25Z" />
+                          </svg>
+                          <span>Readme</span>
+                        </span>
+                        <span class="gh-meta-item">
+                          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                            <path
+                              d="M8.75.75V2h.985c.304 0 .603.08.867.231l1.29.736c.038.022.08.033.124.033h2.234a.75.75 0 0 1 0 1.5h-.427l2.111 4.692a.75.75 0 0 1-.154.838l-.53-.53.53.53-.001.002-.002.002-.006.006-.006.005-.01.01-.045.04c-.21.176-.441.327-.686.45C14.556 10.78 13.88 11 13 11a4.498 4.498 0 0 1-2.023-.454 3.544 3.544 0 0 1-.686-.45l-.045-.04-.016-.015-.006-.006-.004-.004v-.001a.752.752 0 0 1-.154-.838L12.178 4.5h-.162c-.305 0-.604-.079-.868-.231l-1.29-.736a.245.245 0 0 0-.124-.033H8.75V13h2.5a.75.75 0 0 1 0 1.5h-6.5a.75.75 0 0 1 0-1.5h2.5V3.5h-.984a.245.245 0 0 0-.124.033l-1.29.736c-.264.152-.563.231-.868.231h-.162l2.112 4.692a.75.75 0 0 1-.154.838l-.53-.53.53.53-.001.002-.002.002-.006.006-.016.015-.045.04c-.21.176-.441.327-.686.45C4.556 10.78 3.88 11 3 11a4.498 4.498 0 0 1-2.023-.454 3.544 3.544 0 0 1-.686-.45l-.045-.04-.016-.015-.006-.006-.004-.004v-.001a.752.752 0 0 1-.154-.838L2.178 4.5H1.75a.75.75 0 0 1 0-1.5h2.234a.249.249 0 0 0 .125-.033l1.29-.736c.263-.15.561-.231.865-.231H7.25V.75a.75.75 0 0 1 1.5 0Zm2.945 8.477c.285.135.718.273 1.305.273s1.02-.138 1.305-.273L13 6.327Zm-10 0c.285.135.718.273 1.305.273s1.02-.138 1.305-.273L3 6.327Z" />
+                          </svg>
+                          <span>MIT license</span>
+                        </span>
+                        <span class="gh-meta-item">
+                          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                            <path
+                              d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Zm0 2.445L6.615 5.5a.75.75 0 0 1-.564.41l-3.097.45 2.24 2.184a.75.75 0 0 1 .216.664l-.528 3.084 2.769-1.456a.75.75 0 0 1 .698 0l2.77 1.456-.53-3.084a.75.75 0 0 1 .216-.664l2.24-2.183-3.096-.45a.75.75 0 0 1-.564-.41L8 2.694Z" />
+                          </svg>
+                          <span>
+                            <strong id="sidebar-star-count">99</strong>
+                            stars
+                          </span>
+                        </span>
+                        <span class="gh-meta-item">
+                          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                            <path
+                              d="M8 2c1.981 0 3.671.992 4.933 2.078 1.27 1.091 2.187 2.345 2.637 3.023a1.62 1.62 0 0 1 0 1.798c-.45.678-1.367 1.932-2.637 3.023C11.67 13.008 9.981 14 8 14c-1.981 0-3.671-.992-4.933-2.078C1.797 10.83.88 9.576.43 8.898a1.62 1.62 0 0 1 0-1.798c.45-.677 1.367-1.931 2.637-3.022C4.33 2.992 6.019 2 8 2ZM1.679 7.932a.12.12 0 0 0 0 .136c.411.622 1.241 1.75 2.366 2.717C5.176 11.758 6.527 12.5 8 12.5c1.473 0 2.825-.742 3.955-1.715 1.124-.967 1.954-2.096 2.366-2.717a.12.12 0 0 0 0-.136c-.412-.621-1.242-1.75-2.366-2.717C10.824 4.242 9.473 3.5 8 3.5c-1.473 0-2.825.742-3.955 1.715-1.124.967-1.954 2.096-2.366 2.717ZM8 10a2 2 0 1 1-.001-3.999A2 2 0 0 1 8 10Z" />
+                          </svg>
+                          <span>
+                            <strong id="sidebar-watch-count">6</strong>
+                            watching
+                          </span>
+                        </span>
+                        <span class="gh-meta-item">
+                          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                            <path
+                              d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z" />
+                          </svg>
+                          <span>
+                            <strong id="sidebar-fork-count">17</strong>
+                            forks
+                          </span>
+                        </span>
+                      </div>
+                    </aside>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="pointer-overlay">
+              <div class="demo-pointer" id="demo-pointer"></div>
+            </div>
+            <div class="card-frame-ring"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div class="review-bar" id="review-bar">
+      <div class="bar-group" id="theme-toggle">
+        <button type="button" class="bar-btn is-active" data-theme-btn="light">Light</button>
+        <button type="button" class="bar-btn" data-theme-btn="dark">Dark</button>
+      </div>
+
+      <div class="bar-group" id="width-toggle">
+        <button type="button" class="bar-btn is-active" data-width-btn="740">740px</button>
+        <button type="button" class="bar-btn" data-width-btn="830">830px</button>
+        <button type="button" class="bar-btn" data-width-btn="1200">1200px</button>
+      </div>
+
+      <div class="bar-group">
+        <button type="button" class="bar-btn" id="btn-play">Pause</button>
+        <button type="button" class="bar-btn" id="btn-replay">Replay</button>
+        <button type="button" class="bar-btn" id="btn-prev">-1f</button>
+        <button type="button" class="bar-btn" id="btn-next">+1f</button>
+      </div>
+
+      <div class="bar-scrubber">
+        <div class="bar-scrubber-row">
+          <input type="range" id="scrubber" min="0" max="5000" step="50" value="0" />
+          <span class="bar-readout" id="readout">t = 0.00s · f0/100</span>
+        </div>
+        <div class="phase-marks">
+          <button type="button" class="phase-chip" data-jump="0">Hold</button>
+          <button type="button" class="phase-chip" data-jump="800">Zoom</button>
+          <button type="button" class="phase-chip" data-jump="1650">Hover</button>
+          <button type="button" class="phase-chip" data-jump="1950">Click</button>
+          <button type="button" class="phase-chip" data-jump="2160">Burst</button>
+          <button type="button" class="phase-chip" data-jump="2700">Starred</button>
+          <button type="button" class="phase-chip" data-jump="3200">Out</button>
+          <button type="button" class="phase-chip" data-jump="4850">Reset</button>
+        </div>
+      </div>
+
+      <div class="bar-inputs">
+        <label class="bar-field">
+          Stars
+          <input type="number" id="input-stars" min="0" max="999999" value="99" />
+        </label>
+        <label class="bar-field">
+          Forks
+          <input type="number" id="input-forks" min="0" max="999999" value="17" />
+        </label>
+        <label class="bar-field">
+          Watch
+          <input type="number" id="input-watching" min="0" max="999999" value="6" />
+        </label>
+      </div>
+    </div>
+
+    <script>
+      ;(() => {
+        const DURATION_MS = 5000
+        const FPS = 20
+        const FRAME_MS = 1000 / FPS
+        const WIDTH = 1200
+        const HEIGHT = 640
+        const MAX_SCALE = 1.55
+        const TARGET_X = 948
+        const TARGET_Y = 260
+
+        const params = new URLSearchParams(window.location.search)
+        const isCapture = params.get('capture') === '1'
+
+        const state = {
+          theme: params.get('theme') === 'dark' ? 'dark' : 'light',
+          stars: parseIntParam(params.get('stars'), 99),
+          forks: parseIntParam(params.get('forks'), 17),
+          watching: parseIntParam(params.get('watching'), 6),
+          previewWidth: 740,
+          playing: !isCapture,
+          currentMs: 0,
+          ox: 0,
+          oy: 0,
+          starCx: 0,
+          starCy: 0,
+          unstarredWidth: 108,
+          starredWidth: 132,
+          digitSlots: []
+        }
+
+        const els = {
+          root: document.documentElement,
+          cardShell: document.getElementById('card-shell'),
+          cardScaler: document.getElementById('card-scaler'),
+          stage: document.getElementById('stage'),
+          starGroup: document.getElementById('star-group'),
+          starPrimary: document.getElementById('star-primary'),
+          starLiveLayer: document.getElementById('star-live-layer'),
+          starResetOverlay: document.getElementById('star-reset-overlay'),
+          starResetCount: document.getElementById('star-reset-count'),
+          starIconSlot: document.getElementById('star-icon-slot'),
+          starIconOutline: document.getElementById('star-icon-outline'),
+          starIconFilled: document.getElementById('star-icon-filled'),
+          starLabel: document.getElementById('star-label'),
+          rollingCounter: document.getElementById('star-rolling-counter'),
+          starTooltip: document.getElementById('star-tooltip'),
+          starBurst: document.getElementById('star-burst'),
+          burstRing: document.getElementById('burst-ring'),
+          burstDots: Array.from(document.querySelectorAll('.burst-dot')).map((el) => ({
+            el,
+            rad: (Number(el.dataset.angle) * Math.PI) / 180
+          })),
+          watchBtnCount: document.getElementById('watch-btn-count'),
+          forkBtnCount: document.getElementById('fork-btn-count'),
+          sidebarStarCount: document.getElementById('sidebar-star-count'),
+          sidebarWatchCount: document.getElementById('sidebar-watch-count'),
+          sidebarForkCount: document.getElementById('sidebar-fork-count'),
+          pointer: document.getElementById('demo-pointer'),
+          scrubber: document.getElementById('scrubber'),
+          readout: document.getElementById('readout'),
+          btnPlay: document.getElementById('btn-play'),
+          btnReplay: document.getElementById('btn-replay'),
+          btnPrev: document.getElementById('btn-prev'),
+          btnNext: document.getElementById('btn-next'),
+          inputStars: document.getElementById('input-stars'),
+          inputForks: document.getElementById('input-forks'),
+          inputWatching: document.getElementById('input-watching')
+        }
+
+        function parseIntParam(raw, fallback) {
+          if (raw === null || raw === '') return fallback
+          const parsed = Number.parseInt(raw, 10)
+          return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback
+        }
+
+        function clamp01(value) {
+          return value <= 0 ? 0 : value >= 1 ? 1 : value
+        }
+
+        function lerp(a, b, t) {
+          return a + (b - a) * t
+        }
+
+        function progress(ms, startMs, endMs) {
+          return clamp01((ms - startMs) / (endMs - startMs))
+        }
+
+        // Solve CSS cubic-bezier(x1, y1, x2, y2) with binary search for exact frame scrubbing.
+        function cubicBezier(x1, y1, x2, y2) {
+          const sample = (t, a1, a2) =>
+            (((1 - 3 * a2 + 3 * a1) * t + (3 * a2 - 6 * a1)) * t + 3 * a1) * t
+          return (x) => {
+            if (x <= 0) return 0
+            if (x >= 1) return 1
+            let lo = 0
+            let hi = 1
+            for (let i = 0; i < 16; i += 1) {
+              const mid = (lo + hi) * 0.5
+              if (sample(mid, x1, x2) < x) lo = mid
+              else hi = mid
+            }
+            return sample((lo + hi) * 0.5, y1, y2)
+          }
+        }
+
+        const easeZoomIn = cubicBezier(0.22, 1, 0.36, 1)
+        const easePointer = cubicBezier(0.25, 1, 0.5, 1)
+        const easeZoomOut = cubicBezier(0.4, 0, 0.2, 1)
+        const easePop = cubicBezier(0.34, 1.56, 0.64, 1)
+        const easeOut = cubicBezier(0, 0, 0.2, 1)
+        const easeIn = cubicBezier(0.4, 0, 1, 1)
+        const easeInOut = cubicBezier(0.42, 0, 0.58, 1)
+
+        function buildCounterReels(stars) {
+          const fromText = String(stars)
+          const toText = String(stars + 1)
+          const len = Math.max(fromText.length, toText.length)
+          const paddedFrom = fromText.padStart(len, ' ')
+          const paddedTo = toText.padStart(len, ' ')
+
+          els.rollingCounter.replaceChildren()
+          state.digitSlots = []
+
+          for (let i = 0; i < len; i += 1) {
+            const fromChar = paddedFrom[i]
+            const toChar = paddedTo[i]
+            const slot = document.createElement('span')
+            slot.className = 'digit-slot'
+
+            const track = document.createElement('span')
+            track.className = 'digit-track'
+
+            const sequence = []
+            let startIdx = 0
+            let endIdx = 0
+
+            if (fromChar === toChar) {
+              sequence.push(fromChar)
+            } else if (fromChar === ' ') {
+              sequence.push('', toChar)
+              startIdx = 0
+              endIdx = 1
+            } else {
+              const fromNum = Number(fromChar)
+              const toNum = Number(toChar)
+              const steps = (toNum - fromNum + 10) % 10 || 10
+              for (let step = 0; step <= steps; step += 1) {
+                sequence.push(String((fromNum + step) % 10))
+              }
+              startIdx = 0
+              endIdx = steps
+            }
+
+            for (const ch of sequence) {
+              const cell = document.createElement('span')
+              cell.className = 'digit-cell'
+              cell.textContent = ch
+              track.appendChild(cell)
+            }
+
+            slot.appendChild(track)
+            els.rollingCounter.appendChild(slot)
+
+            state.digitSlots.push({
+              slot,
+              track,
+              startIdx,
+              endIdx,
+              growsWidth: fromChar === ' ',
+              staggerMs: (len - 1 - i) * 25
+            })
+          }
+        }
+
+        function updateCounterReels(ms, isResetPhase) {
+          for (const entry of state.digitSlots) {
+            const localT = isResetPhase
+              ? 0
+              : easeOut(progress(ms, 2000 + entry.staggerMs, 2300 + entry.staggerMs))
+            const idx = lerp(entry.startIdx, entry.endIdx, localT)
+            entry.track.style.transform = `translateY(${(-idx * 15).toFixed(3)}px)`
+
+            if (entry.growsWidth) {
+              const widthT = isResetPhase ? 0 : easeOut(progress(ms, 2000, 2220))
+              entry.slot.style.width = `${(widthT * 0.68).toFixed(4)}em`
+              entry.slot.style.opacity = widthT.toFixed(4)
+            } else {
+              entry.slot.style.width = '0.68em'
+              entry.slot.style.opacity = '1'
+            }
+          }
+        }
+
+        function measureLayoutAndAnchor() {
+          const prevTransform = els.stage.style.transform
+          const prevOrigin = els.stage.style.transformOrigin
+          const prevWidth = els.starPrimary.style.width
+          const prevLabel = els.starLabel.textContent
+
+          els.stage.style.transform = 'none'
+          els.stage.style.transformOrigin = '0 0'
+          els.starPrimary.style.width = ''
+
+          // Measure unstarred button width, star icon center, and button center before click.
+          els.starLabel.textContent = 'Star'
+          updateCounterReels(0, false)
+          const stageRect = els.stage.getBoundingClientRect()
+          const hostScale = stageRect.width / WIDTH || 1
+          const btnRect = els.starPrimary.getBoundingClientRect()
+          const groupRect = els.starGroup.getBoundingClientRect()
+          const iconRect = els.starIconSlot.getBoundingClientRect()
+
+          state.unstarredWidth = Math.ceil(btnRect.width / hostScale)
+          state.starCx = (btnRect.left + btnRect.width * 0.5 - stageRect.left) / hostScale
+          state.starCy = (btnRect.top + btnRect.height * 0.5 - stageRect.top) / hostScale
+
+          const burstLeft = (iconRect.left + iconRect.width * 0.5 - groupRect.left) / hostScale
+          const burstTop = (iconRect.top + iconRect.height * 0.5 - groupRect.top) / hostScale
+          els.starBurst.style.left = `${burstLeft.toFixed(2)}px`
+          els.starBurst.style.top = `${burstTop.toFixed(2)}px`
+
+          // Measure starred button width so click expansion and reset crossfade stay smooth.
+          els.starLabel.textContent = 'Starred'
+          updateCounterReels(2700, false)
+          const starredRect = els.starPrimary.getBoundingClientRect()
+          state.starredWidth = Math.ceil(starredRect.width / hostScale)
+
+          // Center tooltip horizontally beneath the unstarred primary button.
+          const tooltipWidth = els.starTooltip.offsetWidth
+          els.starTooltip.style.left = `${Math.round((state.unstarredWidth - tooltipWidth) * 0.5)}px`
+
+          // Compute scalar zoom origin so starCx/starCy lands at TARGET_X/TARGET_Y at MAX_SCALE.
+          state.ox = (MAX_SCALE * state.starCx - TARGET_X) / (MAX_SCALE - 1)
+          state.oy = (MAX_SCALE * state.starCy - TARGET_Y) / (MAX_SCALE - 1)
+
+          els.starLabel.textContent = prevLabel
+          els.starPrimary.style.width = prevWidth
+          els.stage.style.transformOrigin = prevOrigin
+          els.stage.style.transform = prevTransform
+        }
+
+        function applyStaticData() {
+          els.root.setAttribute('data-theme', state.theme)
+          els.watchBtnCount.textContent = String(state.watching)
+          els.forkBtnCount.textContent = String(state.forks)
+          els.sidebarWatchCount.textContent = String(state.watching)
+          els.sidebarForkCount.textContent = String(state.forks)
+          els.starResetCount.textContent = String(state.stars)
+          els.sidebarStarCount.textContent = String(state.stars)
+
+          buildCounterReels(state.stars)
+          measureLayoutAndAnchor()
+        }
+
+        function applyPreviewSizing() {
+          if (isCapture) {
+            els.root.classList.add('is-capture')
+            return
+          }
+          const scale = state.previewWidth / WIDTH
+          els.cardShell.style.setProperty('--preview-width', `${state.previewWidth}px`)
+          els.cardScaler.style.setProperty('--preview-scale', String(scale))
+        }
+
+        function renderFrame(rawMs) {
+          const ms = Math.max(0, Math.min(DURATION_MS, rawMs))
+          state.currentMs = ms
+
+          // 1. Camera scale across establish, zoom-in, hold, and zoom-out beats.
+          let scale = 1
+          if (ms >= 550 && ms < 1100) {
+            scale = lerp(1, MAX_SCALE, easeZoomIn(progress(ms, 550, 1100)))
+          } else if (ms >= 1100 && ms < 2950) {
+            scale = MAX_SCALE
+          } else if (ms >= 2950 && ms < 3500) {
+            scale = lerp(MAX_SCALE, 1, easeZoomOut(progress(ms, 2950, 3500)))
+          }
+
+          els.stage.style.transformOrigin = `${state.ox.toFixed(2)}px ${state.oy.toFixed(2)}px`
+          els.stage.style.transform = `scale(${scale.toFixed(5)})`
+
+          // 2. Button state, star flip, rolling counter, and seamless reset.
+          const isHover = ms >= 1420 && ms < 2620
+          const isPressed = ms >= 1900 && ms < 2000
+          const isStarred = ms >= 2000 && ms < DURATION_MS
+          const isResetting = ms >= 4750
+
+          els.starPrimary.classList.toggle('is-hovered', isHover && !isPressed)
+          els.starPrimary.classList.toggle('is-pressed', isPressed)
+          els.starPrimary.style.transform = isPressed ? 'scale(0.97)' : 'scale(1)'
+
+          if (!isStarred || ms >= DURATION_MS) {
+            els.starPrimary.style.width = `${state.unstarredWidth}px`
+            els.starLabel.textContent = 'Star'
+            els.starIconOutline.style.opacity = '1'
+            els.starIconFilled.style.opacity = '0'
+            els.starIconFilled.style.transform = 'scale(1)'
+            els.starLiveLayer.style.opacity = '1'
+            els.starResetOverlay.style.opacity = '0'
+            els.sidebarStarCount.textContent = String(state.stars)
+            updateCounterReels(0, false)
+          } else if (!isResetting) {
+            const growT = easeOut(progress(ms, 2000, 2220))
+            const popT = progress(ms, 2000, 2240)
+            const iconScale = popT < 1 ? 0.72 + easePop(popT) * 0.28 : 1
+
+            els.starPrimary.style.width = `${lerp(state.unstarredWidth, state.starredWidth, growT).toFixed(2)}px`
+            els.starLabel.textContent = 'Starred'
+            els.starIconOutline.style.opacity = '0'
+            els.starIconFilled.style.opacity = '1'
+            els.starIconFilled.style.transform = `scale(${iconScale.toFixed(4)})`
+            els.starLiveLayer.style.opacity = '1'
+            els.starResetOverlay.style.opacity = '0'
+            els.sidebarStarCount.textContent = String(state.stars + 1)
+            updateCounterReels(ms, false)
+          } else {
+            const resetT = easeInOut(progress(ms, 4750, DURATION_MS))
+            els.starPrimary.style.width = `${lerp(state.starredWidth, state.unstarredWidth, resetT).toFixed(2)}px`
+            els.starLabel.textContent = 'Starred'
+            els.starIconOutline.style.opacity = '0'
+            els.starIconFilled.style.opacity = '1'
+            els.starIconFilled.style.transform = 'scale(1)'
+            els.starLiveLayer.style.opacity = String((1 - resetT).toFixed(4))
+            els.starResetOverlay.style.opacity = String(resetT.toFixed(4))
+            els.sidebarStarCount.textContent =
+              resetT < 0.5 ? String(state.stars + 1) : String(state.stars)
+            updateCounterReels(2700, false)
+          }
+
+          // 3. Tooltip fade in (120ms ease-out) and fade out (80ms ease-in).
+          let tipOpacity = 0
+          let tipOffsetY = 0
+          if (ms >= 1420 && ms < 1540) {
+            const t = easeOut(progress(ms, 1420, 1540))
+            tipOpacity = t
+            tipOffsetY = lerp(2, 0, t)
+          } else if (ms >= 1540 && ms < 1900) {
+            tipOpacity = 1
+          } else if (ms >= 1900 && ms < 1980) {
+            const t = easeIn(progress(ms, 1900, 1980))
+            tipOpacity = 1 - t
+          }
+          els.starTooltip.style.opacity = tipOpacity.toFixed(4)
+          els.starTooltip.style.transform = `translateY(${tipOffsetY.toFixed(2)}px)`
+
+          // 4. Pointer overlay tracked in unscaled 1200x640 coordinates.
+          const starVx = state.ox + (state.starCx - state.ox) * scale
+          const starVy = state.oy + (state.starCy - state.oy) * scale
+          const destX = starVx - 2
+          const destY = starVy + 4
+
+          let ptrOpacity = 0
+          let ptrScale = 1
+          let ptrX = 560
+          let ptrY = 440
+
+          if (ms >= 850 && ms < 1450) {
+            ptrOpacity = easeOut(progress(ms, 850, 1020))
+            const moveT = easePointer(progress(ms, 850, 1450))
+            const u = 1 - moveT
+            ptrX = u * u * 560 + 2 * u * moveT * 730 + moveT * moveT * destX
+            ptrY = u * u * 440 + 2 * u * moveT * 395 + moveT * moveT * destY
+          } else if (ms >= 1450 && ms < 2320) {
+            ptrOpacity = 1
+            ptrX = destX
+            ptrY = destY
+            if (ms >= 1900 && ms < 2000) {
+              ptrScale = lerp(1, 0.84, easeIn(progress(ms, 1900, 2000)))
+            } else if (ms >= 2000 && ms < 2140) {
+              ptrScale = lerp(0.84, 1, easeOut(progress(ms, 2000, 2140)))
+            }
+          } else if (ms >= 2320 && ms < 2620) {
+            const driftT = easeIn(progress(ms, 2320, 2620))
+            ptrOpacity = 1 - driftT
+            ptrX = destX + 44 * driftT
+            ptrY = destY + 34 * driftT
+          }
+
+          els.pointer.style.opacity = ptrOpacity.toFixed(4)
+          els.pointer.style.transform = `translate3d(${ptrX.toFixed(2)}px, ${ptrY.toFixed(2)}px, 0) scale(${ptrScale.toFixed(4)})`
+
+          // 5. Golden starburst ring and eight alternating dots centered on the star icon.
+          if (ms >= 2000 && ms < 2480) {
+            const ringT = easeOut(progress(ms, 2000, 2400))
+            const ringR = lerp(6.5, 19.5, ringT)
+            const ringStroke = lerp(3.0, 0.5, ringT)
+            let ringOpacity = 0.9
+            if (ms < 2080) {
+              ringOpacity = lerp(0, 0.9, easeOut(progress(ms, 2000, 2080)))
+            } else if (ms >= 2200) {
+              ringOpacity = lerp(0.9, 0, easeIn(progress(ms, 2200, 2400)))
+            }
+            if (ms >= 2400) ringOpacity = 0
+
+            els.burstRing.setAttribute('r', ringR.toFixed(2))
+            els.burstRing.setAttribute('stroke-width', ringStroke.toFixed(2))
+            els.burstRing.setAttribute('opacity', ringOpacity.toFixed(4))
+
+            const dist = lerp(10.5, 24.5, easeOut(progress(ms, 2000, 2460)))
+            let dotR = 2.2
+            if (ms < 2120) {
+              dotR = lerp(0, 2.35, easePop(progress(ms, 2000, 2120)))
+            } else if (ms < 2240) {
+              dotR = lerp(2.35, 2.2, progress(ms, 2120, 2240))
+            } else {
+              dotR = lerp(2.2, 0, easeIn(progress(ms, 2240, 2480)))
+            }
+            const dotOpacity = ms < 2260 ? 1 : lerp(1, 0, easeIn(progress(ms, 2260, 2480)))
+
+            for (const dot of els.burstDots) {
+              const cx = Math.cos(dot.rad) * dist
+              const cy = Math.sin(dot.rad) * dist
+              dot.el.setAttribute('cx', cx.toFixed(2))
+              dot.el.setAttribute('cy', cy.toFixed(2))
+              dot.el.setAttribute('r', Math.max(0, dotR).toFixed(2))
+              dot.el.setAttribute('opacity', dotOpacity.toFixed(4))
+            }
+          } else {
+            els.burstRing.setAttribute('opacity', '0')
+            for (const dot of els.burstDots) {
+              dot.el.setAttribute('opacity', '0')
+            }
+          }
+
+          if (!isCapture) syncReadout(ms)
+        }
+
+        function syncReadout(ms) {
+          const snapped = Math.round(ms / FRAME_MS) * FRAME_MS
+          const totalFrames = Math.round(DURATION_MS / FRAME_MS)
+          const frameNum = Math.min(totalFrames, Math.round(ms / FRAME_MS))
+          els.scrubber.value = String(Math.min(DURATION_MS, snapped))
+          els.readout.textContent = `t = ${(ms / 1000).toFixed(2)}s · f${frameNum}/${totalFrames}`
+        }
+
+        function setTheme(theme) {
+          state.theme = theme === 'dark' ? 'dark' : 'light'
+          els.root.setAttribute('data-theme', state.theme)
+          document.querySelectorAll('[data-theme-btn]').forEach((btn) => {
+            btn.classList.toggle('is-active', btn.dataset.themeBtn === state.theme)
+          })
+          renderFrame(state.currentMs)
+        }
+
+        function setPreviewWidth(width) {
+          state.previewWidth = width
+          applyPreviewSizing()
+          document.querySelectorAll('[data-width-btn]').forEach((btn) => {
+            btn.classList.toggle('is-active', Number(btn.dataset.widthBtn) === width)
+          })
+          measureLayoutAndAnchor()
+          renderFrame(state.currentMs)
+        }
+
+        function bindReviewControls() {
+          if (isCapture) return
+
+          els.inputStars.value = String(state.stars)
+          els.inputForks.value = String(state.forks)
+          els.inputWatching.value = String(state.watching)
+
+          document.querySelectorAll('[data-theme-btn]').forEach((btn) => {
+            btn.addEventListener('click', () => setTheme(btn.dataset.themeBtn))
+          })
+
+          document.querySelectorAll('[data-width-btn]').forEach((btn) => {
+            btn.addEventListener('click', () => setPreviewWidth(Number(btn.dataset.widthBtn)))
+          })
+
+          els.btnPlay.addEventListener('click', () => {
+            state.playing = !state.playing
+            els.btnPlay.textContent = state.playing ? 'Pause' : 'Play'
+            if (state.playing) lastTick = performance.now()
+          })
+
+          els.btnReplay.addEventListener('click', () => {
+            state.currentMs = 0
+            state.playing = true
+            els.btnPlay.textContent = 'Pause'
+            lastTick = performance.now()
+            renderFrame(0)
+          })
+
+          const stepFrame = (delta) => {
+            state.playing = false
+            els.btnPlay.textContent = 'Play'
+            const next = (state.currentMs + delta * FRAME_MS + DURATION_MS) % DURATION_MS
+            renderFrame(next)
+          }
+
+          els.btnPrev.addEventListener('click', () => stepFrame(-1))
+          els.btnNext.addEventListener('click', () => stepFrame(1))
+
+          els.scrubber.addEventListener('input', (event) => {
+            state.playing = false
+            els.btnPlay.textContent = 'Play'
+            renderFrame(Number(event.target.value))
+          })
+
+          document.querySelectorAll('[data-jump]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              state.playing = false
+              els.btnPlay.textContent = 'Play'
+              renderFrame(Number(btn.dataset.jump))
+            })
+          })
+
+          const refreshCounts = () => {
+            state.stars = parseIntParam(els.inputStars.value, 99)
+            state.forks = parseIntParam(els.inputForks.value, 17)
+            state.watching = parseIntParam(els.inputWatching.value, 6)
+            applyStaticData()
+            renderFrame(state.currentMs)
+          }
+
+          els.inputStars.addEventListener('input', refreshCounts)
+          els.inputForks.addEventListener('input', refreshCounts)
+          els.inputWatching.addEventListener('input', refreshCounts)
+
+          window.addEventListener('keydown', (event) => {
+            if (event.target instanceof HTMLInputElement) return
+            if (event.code === 'Space') {
+              event.preventDefault()
+              els.btnPlay.click()
+            } else if (event.key === 'r' || event.key === 'R') {
+              els.btnReplay.click()
+            } else if (event.key === 'ArrowLeft') {
+              event.preventDefault()
+              stepFrame(-1)
+            } else if (event.key === 'ArrowRight') {
+              event.preventDefault()
+              stepFrame(1)
+            }
+          })
+        }
+
+        let lastTick = performance.now()
+        function tick(now) {
+          if (state.playing && !isCapture) {
+            const elapsed = now - lastTick
+            lastTick = now
+            const nextMs = (state.currentMs + elapsed) % DURATION_MS
+            renderFrame(nextMs)
+          } else {
+            lastTick = now
+          }
+          requestAnimationFrame(tick)
+        }
+
+        window.__demoMeta = {
+          durationMs: DURATION_MS,
+          fps: FPS,
+          width: WIDTH,
+          height: HEIGHT,
+          zoomWindows: [
+            [550, 1100],
+            [2950, 3500]
+          ]
+        }
+        window.__renderFrame = renderFrame
+
+        applyPreviewSizing()
+        applyStaticData()
+        setTheme(state.theme)
+        bindReviewControls()
+        renderFrame(0)
+
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(() => {
+            measureLayoutAndAnchor()
+            renderFrame(state.currentMs)
+          })
+        }
+
+        if (!isCapture) {
+          requestAnimationFrame(tick)
+        }
+      })()
+    </script>
+  </body>
+</html>
