@@ -46,6 +46,15 @@ const FACTS_SCHEMA = {
       },
       required: ['days', 'commits', 'issuesClosed', 'migrations']
     },
+    repoStats: {
+      type: 'object',
+      properties: {
+        stars: { type: 'number' },
+        forks: { type: 'number' },
+        watching: { type: 'number' }
+      },
+      required: ['stars', 'forks', 'watching']
+    },
     productPackages: { type: 'array', items: { type: 'string' } },
     extensionsWithSrcChanges: { type: 'array', items: { type: 'string' } },
     headlines: {
@@ -189,6 +198,7 @@ Section: "Facts to gather" and "Rulings to ask every release".
 Gather the facts for the next docs.plus product release. Do not edit any file.
 ${args?.base ? `The maintainer set the base commit: ${args.base}.` : 'Find the base commit: the last product release commit that is an ancestor of HEAD. Say why.'}
 Count only from the base. Read the root CHANGELOG.md, git log, gh issue list and the last check:ci output if one exists.
+Read live docs-plus/docs.plus counts with gh repo view docs-plus/docs.plus --json stargazerCount,forkCount,watchers into repoStats.
 List open issues labelled Security or data loss as openGaps.
 Return the rulings as decisions with exactly these ids, each with 2-4 options and a recommended label:
 - version: the version number;
@@ -224,6 +234,9 @@ if (typeof args.decisions.publishExtensions !== 'boolean') {
   )
 }
 const publishExtensions = args.decisions.publishExtensions
+const starDemoCmd = facts.repoStats
+  ? `bun scripts/render-star-demo.ts --stars ${facts.repoStats.stars} --forks ${facts.repoStats.forks} --watching ${facts.repoStats.watching}`
+  : 'bun scripts/render-star-demo.ts --stars <n> --forks <n> --watching <n>'
 
 const WORKSTREAMS = [
   {
@@ -248,7 +261,7 @@ const WORKSTREAMS = [
   {
     key: 'docs-sync',
     section: '3. Docs sync',
-    task: `Update every page this release makes wrong. Do not touch CHANGELOG files or docs/DEMO.md; other agents own them.`
+    task: `Update every page this release makes wrong. Refresh .github/assets/star-demo-light.webp and .github/assets/star-demo-dark.webp with \`${starDemoCmd}\` if local Playwright and img2webp are available; otherwise note that the main loop must run it. Do not touch CHANGELOG files or docs/DEMO.md; other agents own them.`
   },
   {
     key: 'release-note',
@@ -357,6 +370,7 @@ return {
   mainLoopNext: [
     `Build the banner from ${notesDir}/BANNER-BRIEF.md on the Design canvas (skill §6), render light and dark at 2x into apps/webapp/public/demo-assets/.`,
     `Draw a picture for every section in ${notesDir}/DEMO-PICTURES.md from the house kit (skill §5), and place each one in docs/DEMO.md.`,
+    `If docs-sync could not run headless capture, refresh the README star demo with \`${starDemoCmd}\` and confirm both WebP files stay at or below 500 KB.`,
     'Browser-check every UI fix in this release at phone width and on desktop.',
     'Hand the maintainer the diff for review, then the skill §Ship steps. Commit nothing.'
   ]

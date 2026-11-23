@@ -52,6 +52,7 @@ Never decide these alone. Each one changed the v2.1.0 work.
   - issues closed since the base date: `gh issue list --state closed --search "closed:>=<date>"`, split by the `bug` and `Security` labels;
   - test count from the last green `check:ci` output;
   - Supabase migrations added under `packages/supabase/migrations/`.
+- **Repository counts.** Read live stars, forks and watchers with `gh repo view docs-plus/docs.plus --json stargazerCount,forkCount,watchers` for the README star demo.
 - **Benchmarks.** Every before-and-after number since the base, audited as §Benchmarks says. When a release has one, it goes into the release note, the demo page and the changelog Highlights (maintainer ruling, 2026-11-09).
 - **Changed packages.** Which `package.json` files must move, and which extension `src/` trees changed.
 - **Headline features.** Read the closed issues and the commits. Ask the maintainer which UI items to show; on 2.1.0 the Find bar and the Share card QR code were missed until they sent screenshots.
@@ -137,6 +138,8 @@ Bump the product packages, and the extensions if they publish. Run `bun install`
 ### 3. Docs sync
 
 Check every page the release makes wrong: `README.md` (extension status), `extensions/README.md`, `docs/self-hosting/install.md` (step 1 points at the new tag), `RELEASE_POLICY.md` when a phase changes, and `AGENTS.md` router rows.
+
+Refresh `.github/assets/star-demo-light.webp` and `.github/assets/star-demo-dark.webp` with `bun scripts/render-star-demo.ts --stars <n> --forks <n> --watching <n>`, using the counts from §Facts to gather. Update the recent commit rows in `.github/assets/star-demo.source.html` when needed. The script reuses Playwright from `packages/playground` and local `img2webp` (`brew install webp`). It fails if either file exceeds `500 KB`.
 
 ### 4. Release note
 
