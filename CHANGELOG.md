@@ -107,6 +107,7 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ### Documentation
 
+- `README.md` now shows an animated light and dark star demo under Community and support. The loop zooms onto the Star button, plays a golden starburst, and rolls the count from 99 to 100.
 - Self-hosting: `docker-compose.prod.yml` now has seven `Host(` lines, not six. The new
   `rest-api-mcp` router serves `/api/mcp`. With the bundled Traefik, edit its `Host` too, as
   [Install, step 4](docs/self-hosting/install.md#4-point-your-domains-at-the-server) lists
@@ -131,6 +132,7 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ### Internal
 
+- Added `scripts/render-star-demo.ts` and `.github/assets/star-demo.source.html` to build the light and dark README star WebP demos offline using workspace Playwright and `img2webp`. Wired the refresh command into `.claude/workflows/release-product.js` and `.agents/skills/release-product/SKILL.md` so product releases keep the counts current.
 - The web app and the admin dashboard keep `@sentry/nextjs` at 11.10.0. From 11.13.0 the package
   loads a Bun-only file that the Next standalone image does not hold, so the new web app did not
   start. The deploy rolled back on its own, and the site stayed up ([#807](https://github.com/docs-plus/docs.plus/issues/807)).
