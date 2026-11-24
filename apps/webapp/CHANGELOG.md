@@ -57,10 +57,24 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   Cursor to `"On this computer"` (`local`), and names Invite only defaults clearly on consent
   ([#810](https://github.com/docs-plus/docs.plus/issues/810),
   [#815](https://github.com/docs-plus/docs.plus/issues/815)).
+- `useYdocAndProvider` waits for `IndexeddbPersistence` hydration via `waitForLocalMirror`
+  (`IDB_HYDRATION_CAP_MS = 1_000`, non-blocking if IndexedDB is missing or throws) before
+  constructing `HocuspocusProvider`. In local standalone production benchmarks (`n = 5`, Chromium):
+  reopen upload fell from `3,586,018 B` to `0 B` (`none`; total socket sent `3,586,811 B ->
+746 B`, `99 %` less) and download from `3,586,297 B` to `247 B` (`99 %` less) on a `3.59 MB`
+  pad; on a `12.57 MB` pad, upload fell from `12,571,376 B` to `0 B` (`none`; total sent
+  `12,572,169 B -> 746 B`, `99 %` less) and download from `12,571,655 B` to `247 B` (`99 %`
+  less); first-visit sync held (`779 ms -> 774 ms`, `0 %` less time; `2,362 ms -> 2,300 ms`, `2 %`
+  less time); and `1009` closes on a `17.48 MB` local copy fell from `1` to `none` with
+  `4,909,298 B` offline-diff sent (`82 %` less than `27,329,047 B`)
+  ([#740](https://github.com/docs-plus/docs.plus/issues/740)).
 - The pad editor, Pad title, toolbar, and Block style `Select` control expose complete accessible
   names and ARIA roles (`aria-activedescendant` on the trigger, `tabIndex={-1}` on portaled
   options, and per-view HeadingActions selection/hover lifecycle cleanup)
   ([#819](https://github.com/docs-plus/docs.plus/issues/819)).
+- Removed Google Analytics from `apps/webapp/src/pages/privacy.tsx` (dropped the analytics bullet
+  and narrowed Google to sign-in only) to match turning `NEXT_PUBLIC_GA_ID` off in production
+  ([#741](https://github.com/docs-plus/docs.plus/issues/741)).
 
 ### Fixed
 
@@ -135,6 +149,7 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Internal
 
+- `docker/Dockerfile.bun` copies `apps/github-relay/package.json` so `bun install --frozen-lockfile` resolves the workspace member.
 - `@sentry/nextjs` is pinned at 11.10.0. From 11.13.0 its `bun` export loads
   `build/cjs/index.bun.js`, which Next standalone does not trace, so the image failed to start on
   Bun with `Cannot find module` ([#807](https://github.com/docs-plus/docs.plus/issues/807)).

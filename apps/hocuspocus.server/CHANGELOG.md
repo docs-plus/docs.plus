@@ -256,6 +256,7 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Internal
 
+- `docker/Dockerfile.bun` copies `apps/github-relay/package.json` so `bun install --frozen-lockfile` resolves the workspace member.
 - `scripts/bench-content-write.ts` mixed mode checks each write through replica B: replica A's
   live room must hold its text within 500 ms of B's answer, or the run fails. The guard's wait
   comes out of `--gap-ms`, so the writes keep their spacing. W4 now reads `failed` plus `retried`.

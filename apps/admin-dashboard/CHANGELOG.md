@@ -17,12 +17,10 @@ This app is private and ships inside docs.plus, so each heading names the docs.p
 
 ### Internal
 
+- `docker/Dockerfile.bun` copies `apps/github-relay/package.json` so `bun install --frozen-lockfile` resolves the workspace member.
 - `tsconfig.json` drops `baseUrl` and gives its 8 `paths` a leading `./`, so TS 7 and `bun check`
   accept it. `bun check` now checks 74 files here, not 0. `typecheck` runs `bun check --no-script`,
   not `tsc --noEmit` ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
-
-### Internal
-
 - `@sentry/nextjs` is pinned at 11.10.0, as in the web app. From 11.13.0 its `bun` export
   loads a file that Next standalone does not trace, and the web app image failed to start on Bun
   ([#807](https://github.com/docs-plus/docs.plus/issues/807)).

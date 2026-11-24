@@ -68,6 +68,14 @@ This file is the product changelog. Every app, package and extension keeps its o
   claiming `"Synced"` on local transmit alone. Under a `1,000 ms` one-way WebSocket delay
   (`n = 5`), premature `"synced"` fell from `5 of 5` to `0 of 5` (100 % fewer). Detail:
   `apps/webapp/CHANGELOG.md` ([#835](https://github.com/docs-plus/docs.plus/issues/835)).
+- The pad collaboration client now waits for the local IndexedDB mirror to hydrate
+  (`waitForLocalMirror`, capped at `1,000 ms`, non-blocking when IndexedDB is missing or throws)
+  before constructing `HocuspocusProvider`. On reopen (`n = 5`, local production build): for a
+  `3.59 MB` pad, socket sent bytes fell from `3,586,811 B` to `746 B` (`99 %` less) and received
+  bytes fell from `3,586,297 B` to `247 B` (`99 %` less); for a `12.57 MB` pad, sent bytes fell
+  from `12,572,169 B` to `746 B` (`99 %` less) and received bytes fell from `12,571,655 B` to
+  `247 B` (`99 %` less); `1009` closes on a `17.48 MB` local copy fell from `1` to `none`. Detail:
+  `apps/webapp/CHANGELOG.md` ([#740](https://github.com/docs-plus/docs.plus/issues/740)).
 - MCP live reads and writes now route directly to the collaboration replica holding the open room
   through a Redis room-owner registry, eliminating stale `rev` conflicts across replicas. Detail:
   `apps/hocuspocus.server/CHANGELOG.md` ([#816](https://github.com/docs-plus/docs.plus/issues/816)).
@@ -152,9 +160,22 @@ This file is the product changelog. Every app, package and extension keeps its o
 - The production deploy now writes its env files as owner-only, with `install -m 600`. `cp` kept
   an existing copy's mode, so a `chmod` on the host source never reached the copies. Plain `cp`
   copy sites fall from 4 to none ([#742](https://github.com/docs-plus/docs.plus/issues/742)).
+- Production SSH is now keys-only (`PasswordAuthentication no`, offered auth methods `2` to `1`:
+  `publickey`), with `fail2ban` protecting `sshd` through the `systemd` backend and an out-of-band
+  Recovery Console path proven ([#744](https://github.com/docs-plus/docs.plus/issues/744)).
+- Google Analytics is turned off for production until a cookie notice and opt-out exist. In-app
+  Home-to-pad navigation no longer leaks pad addresses to Google (`5 of 5` to `0 of 5` trials),
+  stored `page_location`, `page_title` and `page_referrer` values are queued for deletion with
+  2-month retention, and the privacy page no longer lists Google Analytics
+  ([#741](https://github.com/docs-plus/docs.plus/issues/741)).
 
 ### Documentation
 
+- Published [`docs/benchmarks/bun-1.4.md`](docs/benchmarks/bun-1.4.md), a consolidated Bun 1.4.x
+  benchmark report covering type checking, formatting, unit tests, sync-byte bounds, lockfile
+  guards and image installs with audited ranges and conditions
+  ([#660](https://github.com/docs-plus/docs.plus/issues/660),
+  [#649](https://github.com/docs-plus/docs.plus/issues/649)).
 - `README.md` now shows an animated light and dark star demo under Community and support. The loop zooms onto the Star button, plays a golden starburst, and rolls the count from 99 to 100.
 - Self-hosting: `docker-compose.prod.yml` now has seven `Host(` lines, not six. The new
   `rest-api-mcp` router serves `/api/mcp`. With the bundled Traefik, edit its `Host` too, as
@@ -180,6 +201,7 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ### Internal
 
+- Added the standalone `@docs.plus/github-relay` Bun and SQLite webhook relay service (`apps/github-relay/`, `docker-compose.github-relay.yml`), its manual deploy workflow (`.github/workflows/github-relay.docs.plus.yml`), the `vars.DISCORD_RELAY_ACTIVE == 'true'` cutover guard on the three legacy Discord workflows (`discord-activity.yml`, `discord-github.yml`, `discord-release.yml`), workspace `Dockerfile.bun` manifest copies, and the `scripts/check-ci.ts` test gate. Detail: [`apps/github-relay/CHANGELOG.md`](apps/github-relay/CHANGELOG.md) and [`.github/WORKFLOWS.md`](.github/WORKFLOWS.md).
 - Added `scripts/render-star-demo.ts` and `.github/assets/star-demo.source.html` to build the light and dark README star WebP demos offline using workspace Playwright and `img2webp`. Wired the refresh command into `.claude/workflows/release-product.js` and `.agents/skills/release-product/SKILL.md` so product releases keep the counts current.
 - The web app and the admin dashboard keep `@sentry/nextjs` at 11.10.0. From 11.13.0 the package
   loads a Bun-only file that the Next standalone image does not hold, so the new web app did not

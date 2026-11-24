@@ -204,7 +204,8 @@ docs.plus/
 │   │   │   ├── middleware/      # Hono middleware
 │   │   │   └── config/          # Configuration & env schemas
 │   │   └── prisma/              # Prisma schema & migrations
-│   └── admin-dashboard/         # 🖥️ Admin interface (Next.js)
+│   ├── admin-dashboard/         # 🖥️ Admin interface (Next.js)
+│   └── github-relay/            # 🔔 GitHub webhook → Discord relay (Bun + SQLite)
 ├── extensions/
 │   └── extension-*/             # 🔌 Publishable @docs.plus Tiptap packages
 ├── packages/
