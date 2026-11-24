@@ -73,7 +73,7 @@ These have no default and fail startup if missing.
 | `PUBLIC_RESTAPI_URL`            | string                                  | — (unset)                 |
 | `APP_HOSTS`                     | list                                    | `APP_URL` host and `www.` |
 
-`APP_HOSTS` lists the hosts that serve pads. The link-metadata cache treats a URL on any of them as a pad link, so a card of that pad is hidden when the pad turns Private, moves to Trash or is erased. An empty list means the `APP_URL` host and its `www.` form. Production should list every webapp host that Traefik routes: `docs.plus,new.docs.plus,www.new.docs.plus`.
+`APP_HOSTS` lists the hosts that serve pads. The link-metadata cache treats a URL on any of them as a pad link, so a card of that pad is hidden when the pad turns Private, moves to Trash or is erased. An empty list means the `APP_URL` host and its `www.` form. Production should list every webapp host that Traefik routes: `docs.plus,new.docs.plus`.
 
 ### Public origin
 
