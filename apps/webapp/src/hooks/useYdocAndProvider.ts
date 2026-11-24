@@ -1,10 +1,11 @@
 import { HocuspocusProvider } from '@hocuspocus/provider'
-import { useStore } from '@stores'
+import { authStore, useStore } from '@stores'
 import { applyAccessStateless } from '@utils/applyAccessStateless'
 import { captureCollabIssueOnce, captureMessageOnce } from '@utils/observability'
+import { isProviderDisconnected } from '@utils/providerCollabStatus'
 import { supabaseClient } from '@utils/supabase'
 import { onDocTitleStateless } from '@utils/titleWrite'
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { IndexeddbPersistence, storeState } from 'y-indexeddb'
 import * as Y from 'yjs'
 
@@ -13,10 +14,15 @@ import {
   authFailureToProviderStatus,
   DISCONNECT_ERROR_GRACE_MS,
   FIRST_SYNC_TIMEOUT_MS,
+  hasUnpushedLocalState,
+  isDocumentAccessReadOnly,
   isSelfHealingCloseCode,
+  parseIncomingSyncStep,
   resolveAuthFailure,
+  resolveUnsyncedChangesAction,
   shouldFireFirstSyncTimeout,
-  shouldRestoreSavedOnReconnect
+  shouldRestoreSavedOnReconnect,
+  SYNCED_SETTLE_DELAY_MS
 } from './collabSession'
 import { guardProviderAwareness } from './guardProviderAwareness'
 
@@ -60,7 +66,11 @@ const useYdocAndProvider = ({
   const ydocRef = useRef(new Y.Doc())
   const ydocDocumentIdRef = useRef<string | null>(null)
   const providerRef = useRef<HocuspocusProvider | null>(null)
+  const persistenceRef = useRef<IndexeddbPersistence | null>(null)
   const isSyncedRef = useRef(false)
+  const hasPendingLocalEditsRef = useRef(false)
+  const lastUnsyncedCountRef = useRef(0)
+  const pendingServerSVRef = useRef<Uint8Array | null>(null)
   const syncedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const authStoppedRef = useRef(false)
   const authRearmTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -73,6 +83,20 @@ const useYdocAndProvider = ({
   const collabReportedRef = useRef(new Set<string>())
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
+
+  const clearSyncedTimeout = useCallback(() => {
+    if (syncedTimeoutRef.current) {
+      clearTimeout(syncedTimeoutRef.current)
+      syncedTimeoutRef.current = null
+    }
+  }, [])
+
+  const isReadOnlyConnection = useCallback(
+    () =>
+      providerRef.current?.authorizedScope === 'readonly' ||
+      isDocumentAccessReadOnly(useStore.getState().settings, authStore.getState().profile?.id),
+    []
+  )
 
   useEffect(() => {
     const providerUrl = process.env.NEXT_PUBLIC_PROVIDER_URL
@@ -93,6 +117,7 @@ const useYdocAndProvider = ({
       typeof window.indexedDB !== 'undefined'
         ? new IndexeddbPersistence(documentId, ydocRef.current)
         : null
+    persistenceRef.current = persistence
 
     // The y-indexeddb patch (#751) reports failed writes as an 'error' event. Only a failed
     // update write means edits stop reaching the mirror. A full disk shows only as a commit
@@ -155,6 +180,8 @@ const useYdocAndProvider = ({
       onAuthenticationFailed: async ({ reason }) => {
         console.warn('WS authentication failed:', reason)
         authStoppedRef.current = true
+        pendingServerSVRef.current = null
+        clearSyncedTimeout()
         providerRef.current?.disconnect()
 
         const { data } = await supabaseClient.auth.getSession()
@@ -185,8 +212,19 @@ const useYdocAndProvider = ({
         authStoppedRef.current = false
         authRearmCountRef.current = 0
         if (errorGraceTimerRef.current) clearTimeout(errorGraceTimerRef.current)
+        clearSyncedTimeout()
 
-        setWorkspaceSetting('providerStatus', 'saved')
+        if (
+          !isReadOnlyConnection() &&
+          hasPendingLocalEditsRef.current &&
+          providerRef.current?.hasUnsyncedChanges
+        ) {
+          setWorkspaceSetting('providerStatus', 'saving')
+        } else {
+          hasPendingLocalEditsRef.current = false
+          setWorkspaceSetting('providerStatus', 'saved')
+        }
+        lastUnsyncedCountRef.current = providerRef.current?.unsyncedChanges ?? 0
 
         if (data?.state) {
           setWorkspaceEditorSetting('providerSyncing', false)
@@ -199,6 +237,9 @@ const useYdocAndProvider = ({
       },
       onDisconnect: (data) => {
         isSyncedRef.current = false
+        lastUnsyncedCountRef.current = 0
+        pendingServerSVRef.current = null
+        clearSyncedTimeout()
 
         // Reconnect from here, not back-to-back with disconnect(): connect()
         // early-returns while the status is still Connected, which would strand
@@ -240,6 +281,11 @@ const useYdocAndProvider = ({
 
           if (data.msg === 'document:saved' && data.documentId === documentId) {
             console.info('📝 Document saved to DB:', data)
+            const current = useStore.getState().settings.providerStatus
+            if (isProviderDisconnected(current) || authStoppedRef.current) return
+            if (!isReadOnlyConnection() && providerRef.current?.hasUnsyncedChanges) return
+            hasPendingLocalEditsRef.current = false
+            clearSyncedTimeout()
             setWorkspaceSetting('providerStatus', 'saved')
             return
           }
@@ -263,12 +309,71 @@ const useYdocAndProvider = ({
                 providerRef.current = null
               }
             })
+            if (data.type === 'readOnly' && isReadOnlyConnection()) {
+              hasPendingLocalEditsRef.current = false
+              const status = useStore.getState().settings.providerStatus
+              if (status === 'saving' || status === 'synced') {
+                clearSyncedTimeout()
+                setWorkspaceSetting('providerStatus', 'saved')
+              }
+            }
           }
         } catch {
           // Ignore malformed payloads
         }
       },
+      onUnsyncedChanges: ({ number }) => {
+        const previousUnsyncedCount = lastUnsyncedCountRef.current
+        lastUnsyncedCountRef.current = number
+        const currentStatus = useStore.getState().settings.providerStatus
+        if (
+          number === 0 &&
+          isSyncedRef.current &&
+          !authStoppedRef.current &&
+          !isProviderDisconnected(currentStatus)
+        ) {
+          hasPendingLocalEditsRef.current = false
+        }
+        const action = resolveUnsyncedChangesAction({
+          unsyncedCount: number,
+          previousUnsyncedCount,
+          isSynced: isSyncedRef.current,
+          authStopped: authStoppedRef.current,
+          isReadOnly: isReadOnlyConnection(),
+          currentStatus
+        })
+
+        if (action.type === 'ignore') {
+          clearSyncedTimeout()
+          return
+        }
+
+        if (action.type === 'saving') {
+          clearSyncedTimeout()
+          setWorkspaceSetting('providerStatus', 'saving')
+          return
+        }
+
+        clearSyncedTimeout()
+        syncedTimeoutRef.current = setTimeout(() => {
+          syncedTimeoutRef.current = null
+          const latest = useStore.getState().settings.providerStatus
+          if (
+            latest === 'saving' &&
+            isSyncedRef.current &&
+            !authStoppedRef.current &&
+            !isReadOnlyConnection() &&
+            !providerRef.current?.hasUnsyncedChanges
+          ) {
+            setWorkspaceSetting('providerStatus', 'synced')
+          }
+        }, SYNCED_SETTLE_DELAY_MS)
+      },
       onDestroy: () => {
+        clearSyncedTimeout()
+        hasPendingLocalEditsRef.current = false
+        lastUnsyncedCountRef.current = 0
+        pendingServerSVRef.current = null
         setWorkspaceSetting('providerStatus', 'saved')
         setWorkspaceEditorSetting('loading', true)
         setWorkspaceEditorSetting('providerSyncing', true)
@@ -276,9 +381,33 @@ const useYdocAndProvider = ({
       },
       ...{ autoConnect: false }
     })
-    guardProviderAwareness(providerRef.current)
+    const provider = providerRef.current
+    guardProviderAwareness(provider)
 
-    setWorkspaceSetting('hocuspocusProvider', providerRef.current)
+    const handleProviderMessage = ({ event }: { event?: { data?: unknown } }) => {
+      try {
+        const parsed = parseIncomingSyncStep(event?.data)
+        if (!parsed) return
+        if (parsed.syncType === 0) {
+          pendingServerSVRef.current = parsed.payload
+        } else if (pendingServerSVRef.current) {
+          const serverSV = pendingServerSVRef.current
+          pendingServerSVRef.current = null
+          if (
+            !isReadOnlyConnection() &&
+            !hasPendingLocalEditsRef.current &&
+            hasUnpushedLocalState(ydocRef.current, serverSV, parsed.payload)
+          ) {
+            hasPendingLocalEditsRef.current = true
+          }
+        }
+      } catch {
+        pendingServerSVRef.current = null
+      }
+    }
+    provider.on('message', handleProviderMessage)
+
+    setWorkspaceSetting('hocuspocusProvider', provider)
 
     const connectTimer = setTimeout(() => providerRef.current?.connect(), 0)
     const collabReported = collabReportedRef.current
@@ -287,7 +416,17 @@ const useYdocAndProvider = ({
       if (authStoppedRef.current) return
       const { providerStatus: current } = useStore.getState().settings
       if (shouldRestoreSavedOnReconnect(isSyncedRef.current, current)) {
-        setWorkspaceSetting('providerStatus', 'saved')
+        if (!isReadOnlyConnection() && hasPendingLocalEditsRef.current) {
+          if (providerRef.current?.hasUnsyncedChanges) {
+            setWorkspaceSetting('providerStatus', 'saving')
+          } else {
+            hasPendingLocalEditsRef.current = false
+            setWorkspaceSetting('providerStatus', 'synced')
+          }
+        } else {
+          hasPendingLocalEditsRef.current = false
+          setWorkspaceSetting('providerStatus', 'saved')
+        }
       }
       providerRef.current?.connect()
     }
@@ -298,7 +437,9 @@ const useYdocAndProvider = ({
     document.addEventListener('visibilitychange', onVisibilityChange)
 
     return () => {
+      clearSyncedTimeout()
       persistence?.destroy()
+      persistenceRef.current = null
       mirrorDisposed = true
       setWorkspaceSetting('mirrorWriteFailed', false)
       clearTimeout(connectTimer)
@@ -306,9 +447,13 @@ const useYdocAndProvider = ({
       document.removeEventListener('visibilitychange', onVisibilityChange)
       if (authRearmTimerRef.current) clearTimeout(authRearmTimerRef.current)
       if (errorGraceTimerRef.current) clearTimeout(errorGraceTimerRef.current)
+      provider.off('message', handleProviderMessage)
       providerRef.current?.destroy()
       providerRef.current = null
       isSyncedRef.current = false
+      hasPendingLocalEditsRef.current = false
+      lastUnsyncedCountRef.current = 0
+      pendingServerSVRef.current = null
       authStoppedRef.current = false
       authRearmCountRef.current = 0
       connectedWithSessionRef.current = false
@@ -355,47 +500,33 @@ const useYdocAndProvider = ({
 
     const handleUpdate = (_update: Uint8Array, origin: unknown) => {
       if (origin === providerRef.current) return
+      const isInitialMirrorReplay =
+        persistenceRef.current !== null && origin === persistenceRef.current && !isSyncedRef.current
+      if (!isInitialMirrorReplay && !isReadOnlyConnection()) {
+        hasPendingLocalEditsRef.current = true
+      }
       // Past first sync, so mirror replay and the mount scaffold never ask, but an
       // offline edit does. providerSyncing stays false through a disconnect.
       if (!useStore.getState().settings.editor.providerSyncing) requestPersistentStorage()
-      if (!isSyncedRef.current) return
-      // The socket's own state, not `navigator.onLine`, which can be stale after sleep.
-      if (useStore.getState().settings.providerStatus === 'offline') return
-      if (authStoppedRef.current) return
-
-      if (syncedTimeoutRef.current) {
-        clearTimeout(syncedTimeoutRef.current)
-      }
-
-      setWorkspaceSetting('providerStatus', 'saving')
-
-      syncedTimeoutRef.current = setTimeout(() => {
-        const { providerStatus: current } = useStore.getState().settings
-        if (current === 'saving') {
-          setWorkspaceSetting('providerStatus', 'synced')
-        }
-      }, 300)
     }
 
     ydoc.on('update', handleUpdate)
 
     return () => {
       ydoc.off('update', handleUpdate)
-      if (syncedTimeoutRef.current) {
-        clearTimeout(syncedTimeoutRef.current)
-      }
     }
-  }, [setWorkspaceSetting, documentId])
+  }, [documentId, isReadOnlyConnection])
 
   useEffect(() => {
     const handleOffline = () => {
       console.info('Browser is offline')
+      clearSyncedTimeout()
       setWorkspaceSetting('providerStatus', 'offline')
     }
 
     window.addEventListener('offline', handleOffline)
     return () => window.removeEventListener('offline', handleOffline)
-  }, [setWorkspaceSetting])
+  }, [clearSyncedTimeout, setWorkspaceSetting])
 }
 
 export default useYdocAndProvider
