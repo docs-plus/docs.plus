@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { OAuthAuthorizationDetails, OAuthRedirect } from '@supabase/supabase-js'
 import type { ReactNode } from 'react'
 
-import { OAuthConsentContent } from '../../../pages/oauth/consent'
+import { OAuthConsentContent } from './OAuthConsentContent'
 
 AbortSignal.timeout ??= () => new AbortController().signal
 

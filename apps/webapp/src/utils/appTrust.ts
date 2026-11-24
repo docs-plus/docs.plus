@@ -30,6 +30,9 @@ const KNOWN_APPS: { app: AiAppId; matches: (url: URL) => boolean }[] = [
 
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
 const ORIGIN_TEXT_MAX = 80
+// Supabase refuses these schemes at registration. Checked again because we call assign().
+// A blocklist, not an allowlist: native and MCP clients register custom-scheme redirects.
+const BLOCKED_PROTOCOLS = new Set(['javascript:', 'data:', 'vbscript:', 'file:', 'blob:', 'about:'])
 
 export type AppTrust =
   | { kind: 'known'; app: AiAppId; name: string; host: string }
@@ -48,6 +51,18 @@ function parse(uri: string): URL | null {
 function originText(uri: string, url: URL | null): string {
   if (!url) return uri.slice(0, ORIGIN_TEXT_MAX)
   return url.origin !== 'null' ? url.origin : `${url.protocol}//${url.host}`
+}
+
+export function originOf(uri: string): string {
+  return originText(uri, parse(uri))
+}
+
+/** Returns null for a scheme that could run script in this origin. */
+export function parseSafeRedirectUrl(url: string): URL | null {
+  const parsed = parse(url)
+  // The parser strips tabs and newlines as the browser does, so `java\tscript:` is caught.
+  if (!parsed || BLOCKED_PROTOCOLS.has(parsed.protocol)) return null
+  return parsed
 }
 
 export function appTrust(redirectUri: string): AppTrust {
@@ -76,7 +91,37 @@ export function clientTrust(redirectUris: string[]): AppTrust {
   ) {
     return first
   }
-  return { kind: 'unknown', origin: '' }
+  return { kind: 'unknown', origin: redirectUris[0] ? originOf(redirectUris[0]) : '' }
+}
+
+export type AutoRedirectDecision =
+  | { kind: 'invalid' }
+  | { kind: 'redirect'; url: string }
+  | { kind: 'confirm'; url: string; origin: string }
+
+export function resolveAutoRedirect(url: string): AutoRedirectDecision {
+  const parsed = parseSafeRedirectUrl(url)
+  if (!parsed) return { kind: 'invalid' }
+  const trust = appTrust(parsed.href)
+  if (trust.kind === 'known' || trust.kind === 'local') {
+    return { kind: 'redirect', url: parsed.href }
+  }
+  return { kind: 'confirm', url: parsed.href, origin: trust.origin }
+}
+
+export function resolveConsentTrust(
+  redirectUri: string,
+  registeredRedirects: string[]
+): { trust: AppTrust; activeOrigin: string; extraOrigins: string[] } {
+  const activeOrigin = originOf(redirectUri)
+  if (registeredRedirects.length === 0) {
+    return { trust: { kind: 'unknown', origin: activeOrigin }, activeOrigin, extraOrigins: [] }
+  }
+  const trust = clientTrust(Array.from(new Set([redirectUri, ...registeredRedirects])))
+  const extraOrigins = Array.from(
+    new Set(registeredRedirects.map(originOf).filter((origin) => origin && origin !== activeOrigin))
+  )
+  return { trust, activeOrigin, extraOrigins }
 }
 
 export type Redirects = Record<string, string[]>

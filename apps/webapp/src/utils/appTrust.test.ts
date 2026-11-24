@@ -1,9 +1,18 @@
 import type { OAuthGrant } from '@supabase/supabase-js'
 
-import { appTrust, clientTrust, groupApps } from './appTrust'
+import {
+  appTrust,
+  clientTrust,
+  groupApps,
+  originOf,
+  parseSafeRedirectUrl,
+  resolveAutoRedirect,
+  resolveConsentTrust
+} from './appTrust'
 
 const CLAUDE = 'https://claude.ai/api/mcp/auth_callback'
 const CHATGPT = 'https://chatgpt.com/connector/oauth/abc-123'
+const CURSOR = 'https://www.cursor.com/agents/mcp/oauth/callback'
 const LOCAL = 'http://localhost:6274/oauth/callback'
 const EVIL = 'https://evil.com/callback'
 
@@ -130,11 +139,63 @@ describe('clientTrust', () => {
 
   it('gives unknown for no URIs or for two known apps', () => {
     expect(clientTrust([])).toEqual({ kind: 'unknown', origin: '' })
-    expect(clientTrust([CLAUDE, CHATGPT])).toEqual({ kind: 'unknown', origin: '' })
+    expect(clientTrust([CLAUDE, CHATGPT])).toEqual({
+      kind: 'unknown',
+      origin: 'https://claude.ai'
+    })
+  })
+
+  it('downgrades Cursor + loopback redirect to local (#810)', () => {
+    expect(clientTrust([CURSOR, LOCAL])).toEqual({
+      kind: 'local',
+      origin: 'http://localhost:6274'
+    })
   })
 
   it('keeps one known app across its hosts', () => {
     expect(clientTrust([CLAUDE, 'https://claude.com/api/mcp/auth_callback'])).toEqual(claude)
+  })
+})
+
+describe('redirect and consent trust helpers', () => {
+  it('blocks script-bearing redirect schemes and parses safe URLs', () => {
+    expect(parseSafeRedirectUrl('javascript:alert(1)')).toBeNull()
+    expect(parseSafeRedirectUrl('java\tscript:alert(1)')).toBeNull()
+    expect(parseSafeRedirectUrl('not a url')).toBeNull()
+    expect(parseSafeRedirectUrl(`${CLAUDE}?code=1`)?.href).toBe(`${CLAUDE}?code=1`)
+  })
+
+  it('resolves auto-redirect decisions by URL safety and trust', () => {
+    expect(resolveAutoRedirect('javascript:alert(1)')).toEqual({ kind: 'invalid' })
+    expect(resolveAutoRedirect(`${CLAUDE}?code=1`)).toEqual({
+      kind: 'redirect',
+      url: `${CLAUDE}?code=1`
+    })
+    expect(resolveAutoRedirect(`${LOCAL}?code=2`)).toEqual({
+      kind: 'redirect',
+      url: `${LOCAL}?code=2`
+    })
+    expect(resolveAutoRedirect(`${EVIL}?code=3`)).toEqual({
+      kind: 'confirm',
+      url: `${EVIL}?code=3`,
+      origin: 'https://evil.com'
+    })
+  })
+
+  it('fails closed when registeredRedirects is empty and preserves activeOrigin + extraOrigins', () => {
+    expect(resolveConsentTrust(CLAUDE, [])).toEqual({
+      trust: { kind: 'unknown', origin: 'https://claude.ai' },
+      activeOrigin: 'https://claude.ai',
+      extraOrigins: []
+    })
+    expect(resolveConsentTrust(CLAUDE, [CLAUDE, CHATGPT])).toEqual({
+      trust: { kind: 'unknown', origin: 'https://claude.ai' },
+      activeOrigin: 'https://claude.ai',
+      extraOrigins: ['https://chatgpt.com']
+    })
+    expect(originOf('cursor://anysphere.cursor-retrieval/oauth/callback')).toBe(
+      'cursor://anysphere.cursor-retrieval'
+    )
   })
 })
 
