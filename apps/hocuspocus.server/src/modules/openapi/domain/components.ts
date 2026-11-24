@@ -282,9 +282,8 @@ export const envelopeOrLegacyResponse = (description: string): OpenApiResponse =
   }
 })
 
-const rateLimited: OpenApiResponse = {
-  description:
-    'Global limiter tripped: `RATE_LIMIT_MAX` requests (default 100) per 15-minute window, keyed on client IP.',
+export const rateLimitedResponse = (description: string): OpenApiResponse => ({
+  description,
   headers: {
     'Retry-After': { description: 'Seconds until retry.', schema: { type: 'integer' } },
     'X-RateLimit-Limit': { schema: { type: 'integer' } },
@@ -292,7 +291,11 @@ const rateLimited: OpenApiResponse = {
     'X-RateLimit-Reset': { schema: { type: 'string', format: 'date-time' } }
   },
   content: { 'application/json': { schema: { $ref: '#/components/schemas/RateLimitError' } } }
-}
+})
+
+const rateLimited: OpenApiResponse = rateLimitedResponse(
+  'Global limiter tripped: `RATE_LIMIT_MAX` requests (default 100) per 15-minute window, keyed on client IP.'
+)
 
 export const components: OpenApiComponents = {
   securitySchemes,

@@ -1,8 +1,8 @@
 import { zValidator } from '@hono/zod-validator'
-import { Hono, type MiddlewareHandler } from 'hono'
+import { Hono } from 'hono'
 import type { Logger } from 'pino'
 
-import { optionalPadReader, requireServiceRoleOrUser } from '../../../api/middleware/auth'
+import { requireServiceRoleOrUser } from '../../../api/middleware/auth'
 import type { PrismaClient } from '../../../generated/prisma/client'
 import { houseEnvelopeHook } from '../../../http/envelope'
 import { documentIdParamSchema } from '../../document-content/http/schema'
@@ -25,22 +25,18 @@ export interface RouterDeps {
   logger: Logger
   mediaPublicBaseUrl: string | null
   mediaCookieFor: (uid: string) => string | null
-  /** optionalUser with the #596 Auth deadline, for `GET /:slug/markdown`. */
-  optionalPadReader?: MiddlewareHandler
 }
 
 /**
  * All paths are two-segment, so none can shadow the legacy `/:docName` read.
- * The auth check is per-route rather than a `use` pattern: a pattern that fails
- * to match leaves the route open, and nothing would say so. It only proves who
- * the caller is — the handlers gate access off the document row they load.
+ * `GET /:slug/markdown` is public and ignores tokens; export/import require
+ * credentials and gate access off the document row they load.
  */
 export const createRouter = (deps: RouterDeps): Hono => {
   const router = new Hono()
 
   router.get(
     MARKDOWN_READ_ROUTE,
-    deps.optionalPadReader ?? optionalPadReader,
     createGetMarkdownHandler({
       prisma: deps.prisma,
       logger: deps.logger

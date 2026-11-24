@@ -13,7 +13,7 @@ import {
   MAX_OWNER_IMPORT_BYTES
 } from '../../../document-conversion/types'
 import type { JsonSchema, OpenApiPaths, SecurityRequirement } from '../../types'
-import { envelopeResponse, rateLimitedRef } from '../components'
+import { envelopeResponse, rateLimitedRef, rateLimitedResponse } from '../components'
 import { dataEnvelope, DOCUMENT_ID_NOTE, toParameters } from '../jsonSchema'
 
 const tags = ['Document content']
@@ -75,7 +75,7 @@ export const documentConversionPaths: OpenApiPaths = {
       summary: 'Read a public document as Markdown by slug',
       description: `Public read used by content-negotiated \`Accept: text/markdown\` pad requests. Never drafts a row. Fails closed with 404 for missing, soft-deleted, Private, or unpersisted-version documents so Private existence never leaks. Refuses heads larger than ${MAX_MARKDOWN_READ_HEAD_BYTES} bytes with 413 without decoding them. Concurrent reads of the same document share one head query and decode via single-flight coalescing. Guarded by a dedicated per-IP rate limit (60 requests per 60 seconds).`,
       tags,
-      security: [{}, { supabaseUserToken: [] }],
+      security: [{}],
       parameters: [
         {
           name: 'slug',
@@ -96,7 +96,7 @@ export const documentConversionPaths: OpenApiPaths = {
         '413': envelopeResponse(
           `The stored head snapshot exceeds ${MAX_MARKDOWN_READ_HEAD_BYTES} bytes.`
         ),
-        '429': rateLimitedRef,
+        '429': rateLimitedResponse('Dedicated per-IP limiter tripped: 60 requests per 60 seconds.'),
         '500': { $ref: '#/components/responses/InternalError' }
       }
     }

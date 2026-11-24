@@ -235,19 +235,11 @@ export const createGetMarkdownHandler = (deps: MarkdownReadControllerDeps) => {
       select: {
         documentId: true,
         isPrivate: true,
-        readOnly: true,
-        ownerId: true,
         deletedAt: true
       }
     })
 
-    const caller = { userId: c.get('userId'), isAnonymous: c.get('user')?.is_anonymous }
-    if (
-      !meta ||
-      meta.isPrivate ||
-      meta.deletedAt ||
-      decideDocumentAccess(meta, caller, 'read') !== 'allow'
-    ) {
+    if (!meta || meta.isPrivate || meta.deletedAt) {
       return fail(c, 404, 'NOT_FOUND', 'Document not found')
     }
 
