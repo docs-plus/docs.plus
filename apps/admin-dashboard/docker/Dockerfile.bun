@@ -33,6 +33,7 @@ COPY packages/floating-tooltip/package.json ./packages/floating-tooltip/
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/webapp/package.json ./apps/webapp/
 COPY apps/hocuspocus.server/package.json ./apps/hocuspocus.server/
+COPY apps/github-relay/package.json ./apps/github-relay/
 COPY extensions/extension-hyperlink/package.json ./extensions/extension-hyperlink/
 COPY extensions/extension-hypermultimedia/package.json ./extensions/extension-hypermultimedia/
 COPY extensions/extension-indent/package.json ./extensions/extension-indent/

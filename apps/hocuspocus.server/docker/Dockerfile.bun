@@ -30,6 +30,7 @@ COPY packages/floating-popover ./packages/floating-popover
 COPY packages/floating-tooltip ./packages/floating-tooltip
 COPY apps/hocuspocus.server ./apps/hocuspocus.server
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
+COPY apps/github-relay/package.json ./apps/github-relay/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY packages/release-tooling/package.json ./packages/release-tooling/
 # Dev/test-only playground harness (workspace:* devDep of the extensions);

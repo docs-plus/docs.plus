@@ -1,0 +1,4 @@
+{
+  "_comment": "Opt-in map from GitHub login to Discord numeric user ID (17-22 digits). Only IDs listed here receive accountability pings.",
+  "users": {}
+}

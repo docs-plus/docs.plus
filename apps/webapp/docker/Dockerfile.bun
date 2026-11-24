@@ -54,6 +54,7 @@ COPY packages/document-swarm/package.json ./packages/document-swarm/
 COPY apps/webapp/package.json ./apps/webapp/
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/hocuspocus.server/package.json ./apps/hocuspocus.server/
+COPY apps/github-relay/package.json ./apps/github-relay/
 COPY packages/supabase/package.json ./packages/supabase/
 COPY packages/email-templates ./packages/email-templates
 COPY packages/pad-url ./packages/pad-url

@@ -1,0 +1,57 @@
+name: docsplus-github-relay
+
+services:
+  github-relay:
+    # Image name intentionally avoids `docsplus-*` so prod app image pruning never removes it.
+    image: github-relay:latest
+    container_name: docsplus-github-relay
+    build:
+      context: .
+      dockerfile: apps/github-relay/Dockerfile
+    env_file: ${GITHUB_RELAY_ENV_FILE:-.env.github-relay}
+    restart: unless-stopped
+    stop_grace_period: 20s
+    stop_signal: SIGTERM
+    volumes:
+      - github-relay-data:/data
+    networks:
+      - docsplus-network
+    labels:
+      - 'traefik.enable=true'
+      # Expose only /webhook/github publicly; /health and /internal/digest stay internal.
+      - 'traefik.http.routers.github-relay.rule=Host(`${GITHUB_RELAY_HOST:-webhooks.docs.plus}`) && Path(`/webhook/github`)'
+      - 'traefik.http.routers.github-relay.entrypoints=websecure'
+      - 'traefik.http.routers.github-relay.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.github-relay.service=github-relay'
+      - 'traefik.http.routers.github-relay.middlewares=security-headers@file,rate-limit-api@file'
+      - 'traefik.http.services.github-relay.loadbalancer.server.port=4050'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'bun',
+          '-e',
+          "fetch('http://127.0.0.1:'+(process.env.PORT||'4050')+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '20m'
+        max-file: '3'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 192M
+
+volumes:
+  github-relay-data:
+
+networks:
+  docsplus-network:
+    external: true
+    name: docsplus-network

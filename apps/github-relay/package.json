@@ -1,0 +1,17 @@
+{
+  "name": "@docs.plus/github-relay",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone Bun and SQLite GitHub webhook relay for ordered, live-updating Discord notifications.",
+  "type": "module",
+  "scripts": {
+    "start": "bun src/index.ts",
+    "dev": "bun --watch src/index.ts",
+    "test": "bun test",
+    "typecheck": "bun check --no-script"
+  },
+  "devDependencies": {
+    "bun-types": "catalog:",
+    "typescript": "catalog:"
+  }
+}

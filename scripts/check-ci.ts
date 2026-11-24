@@ -268,6 +268,12 @@ if (!(await runGate('pad url', ['bun', 'run', '--filter', '@docs.plus/pad-url', 
 }
 
 if (
+  !(await runGate('github relay', ['bun', 'run', '--filter', '@docs.plus/github-relay', 'test']))
+) {
+  failed = true
+}
+
+if (
   !(await runGate('webapp Jest', ['bun', 'run', '--filter', '@docs.plus/webapp', 'test'], {
     env: SUPABASE_STUB
   }))
