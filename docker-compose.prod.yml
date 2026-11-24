@@ -53,7 +53,7 @@ services:
   # Dynamic config: ${TRAEFIK_CONFIG_DIR:-./scripts/traefik}/dynamic/
   # ===========================================================================
   traefik:
-    image: traefik:v3.6
+    image: traefik:v3.7.18@sha256:9c437ac4f09ce6f4980a8544902d3475fdf70a1a7c578729581d2535dfa7d635
     container_name: traefik
     restart: unless-stopped
     extra_hosts:
@@ -90,9 +90,9 @@ services:
       resources:
         limits:
           # Every WS frame crosses Traefik, and cursor traffic grows with the square
-          # of one document's viewers. At 30 viewers the worst minute used 0.31 CPU,
-          # 40% throttled, and memory peaked at 203 MB (2026-09-26).
-          cpus: '1.0'
+          # of one document's viewers. Raising CPU limit to 2.0 keeps upload and
+          # scan bursts from throttling normal traffic (#802).
+          cpus: '2.0'
           memory: 512M
         reservations:
           cpus: '0.1'
@@ -560,7 +560,7 @@ services:
     labels:
       - 'traefik.enable=true'
       # Main frontend (docs.plus)
-      - 'traefik.http.routers.webapp.rule=Host(`docs.plus`) || Host(`new.docs.plus`) || Host(`www.new.docs.plus`)'
+      - 'traefik.http.routers.webapp.rule=Host(`docs.plus`) || Host(`new.docs.plus`)'
       - 'traefik.http.routers.webapp.entrypoints=websecure'
       - 'traefik.http.routers.webapp.tls.certresolver=letsencrypt'
       - 'traefik.http.routers.webapp.service=webapp'

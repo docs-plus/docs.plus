@@ -1,0 +1,19 @@
+# www.docs.plus has no app. One canonical host keeps cookies, analytics and pad links on docs.plus.
+http:
+  routers:
+    www-redirect:
+      rule: 'Host(`www.docs.plus`)'
+      entryPoints:
+        - websecure
+      middlewares:
+        - security-headers@file
+        - www-to-apex
+      service: noop@internal
+      tls:
+        certResolver: letsencrypt
+  middlewares:
+    www-to-apex:
+      redirectRegex:
+        regex: '^https?://www\.docs\.plus(:[0-9]+)?/(.*)'
+        replacement: 'https://docs.plus/${2}'
+        permanent: true

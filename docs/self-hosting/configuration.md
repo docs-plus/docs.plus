@@ -109,7 +109,7 @@ A CDN in front of the bucket keeps its cached copies until they expire, so set a
 
 To change a Traefik file, copy `scripts/traefik/` to a folder of your own. Then set `TRAEFIK_CONFIG_DIR` to that folder in `.env.production`.
 
-The bundled `traefik.yml` drops query strings from the access log. That setting needs Traefik v3.6.18 or later, so run `docker pull traefik:v3.6` before you deploy. If you use your own copy, add the `accessLog.fields` block from `scripts/traefik/traefik.yml`.
+The bundled `traefik.yml` uses `aliasHeadersStrategy: delete` and a `300s` read timeout on HTTPS, and drops query strings from access logs. Pull `traefik:v3.7.18` before you deploy. Traefik v3.6 refuses `aliasHeadersStrategy`, so roll back the tag and `scripts/traefik/traefik.yml` together. If you use your own copy, add `aliasHeadersStrategy`, `transport.respondingTimeouts.readTimeout`, and `accessLog.fields` from `scripts/traefik/traefik.yml`.
 
 **The Let's Encrypt email.** Traefik reads it only from `traefik.yml`. In your copy, add `email: <YOUR_EMAIL>` under `certificatesResolvers.letsencrypt.acme`:
 

@@ -118,21 +118,21 @@ Then edit the hard-coded hostname lines in `docker-compose.prod.yml`. Search for
 | 240  | `prodback.docs.plus` and `/.well-known/oauth-protected-resource` | MCP sign-in metadata     | `<API_HOST>`   |
 | 247  | `prodback.docs.plus` and `/api/mcp`                              | The MCP server           | `<API_HOST>`   |
 | 356  | `prodback.docs.plus` and `/websocket`                            | The collaboration socket | `<API_HOST>`   |
-| 563  | `docs.plus` and two aliases                                      | The editor               | `<APP_HOST>`   |
+| 563  | `docs.plus` and one alias                                        | The editor               | `<APP_HOST>`   |
 | 639  | `admin.docs.plus`                                                | The admin dashboard      | `<ADMIN_HOST>` |
 
-On line 563, replace the whole rule with one ``Host(`<APP_HOST>`)``, and delete the `new.docs.plus` and `www.new.docs.plus` aliases. Traefik asks for one certificate that covers every host in a rule, so a host you do not own makes that request fail.
+On line 563, replace the whole rule with one ``Host(`<APP_HOST>`)``, and delete the `new.docs.plus` alias. Traefik asks for one certificate that covers every host in a rule, so a host you do not own makes that request fail.
 
 No environment variable covers these, so skipping this step means nothing routes.
 
-The Traefik folder also names docs.plus hosts. `scripts/traefik/dynamic/tiny.yml` routes two docs.plus test hosts, `tiny.docs.plus` and `ws.tiny.docs.plus`. With the default folder, your Traefik asks Let's Encrypt for certificates on hosts you do not own. No other file in `scripts/traefik/` names a docs.plus host.
+The Traefik folder also names docs.plus hosts. `scripts/traefik/dynamic/tiny.yml` routes `tiny.docs.plus` and `ws.tiny.docs.plus`, and `scripts/traefik/dynamic/redirects.yml` redirects `www.docs.plus` to `docs.plus`. With the default folder, your Traefik asks Let's Encrypt for certificates on hosts you do not own. No other file in `scripts/traefik/` names a docs.plus host.
 
-So copy the folder to a place of your own, and delete `tiny.yml` there. Keep `dynamic/middlewares.yml`, because the routers use it. At the repository root:
+So copy the folder to a place of your own, and delete `tiny.yml` and `redirects.yml` there. Keep `dynamic/middlewares.yml`, because the routers use it. At the repository root:
 
 ```bash
 mkdir -p <TRAEFIK_DIR>
 cp -R scripts/traefik/. <TRAEFIK_DIR>/
-rm -f <TRAEFIK_DIR>/dynamic/tiny.yml
+rm -f <TRAEFIK_DIR>/dynamic/tiny.yml <TRAEFIK_DIR>/dynamic/redirects.yml
 ```
 
 `<TRAEFIK_DIR>` is an absolute path outside the clone, for example `/opt/docsplus/traefik`. Then set `TRAEFIK_CONFIG_DIR` to that path in `.env.production`. See [Choose where Traefik reads its config](configuration.md#choose-where-traefik-reads-its-config).
@@ -336,21 +336,21 @@ Release tags look like `v2.1.0`. `<OLD_TAG>` is the tag you run now, from step 1
 
 5. Refresh your Traefik copy. The new tag can change `scripts/traefik/`, and your copy in `<TRAEFIK_DIR>` does not follow it.
 
-   First pull the Traefik image. The compose file names the moving tag `traefik:v3.6`, and a recreate reuses the image you already have. At the repository root:
+   First pull the pinned Traefik image (`traefik:v3.7.18` by digest). Always pull before copying `traefik.yml`, because older Traefik versions refuse `aliasHeadersStrategy` and fail to start. At the repository root:
 
    ```bash
    docker compose -f docker-compose.prod.yml --env-file .env.production pull traefik
-   docker run --rm traefik:v3.6 version
+   docker compose -f docker-compose.prod.yml --env-file .env.production run --rm traefik version
    ```
 
-   The bundled `traefik.yml` needs 3.6.18 or later. An older Traefik refuses it and does not start. Pull before the copy, so a restart never meets the new file on an old image.
+   If you ever roll back to `traefik:v3.6`, revert the image tag and `scripts/traefik/traefik.yml` together. Pull before the copy, so a restart never meets the new file on an old image.
 
    Then, at the repository root, run the step 4 commands again:
 
    ```bash
    mkdir -p <TRAEFIK_DIR>
    cp -R scripts/traefik/. <TRAEFIK_DIR>/
-   rm -f <TRAEFIK_DIR>/dynamic/tiny.yml
+   rm -f <TRAEFIK_DIR>/dynamic/tiny.yml <TRAEFIK_DIR>/dynamic/redirects.yml
    ```
 
    The copy overwrites each file in `<TRAEFIK_DIR>` that has the same name, `traefik.yml` too. Add your own edits back, such as the Let's Encrypt email in [Choose where Traefik reads its config](configuration.md#choose-where-traefik-reads-its-config). If `.env.production` does not set `TRAEFIK_CONFIG_DIR` yet, set it now, as in step 4.

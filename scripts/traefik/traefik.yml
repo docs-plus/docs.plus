@@ -8,6 +8,9 @@
 global:
   checkNewVersion: false
   sendAnonymousUsage: false
+  # Needs Traefik v3.7.12 or later. v3.6 refuses aliasHeadersStrategy,
+  # so roll back the image tag and this file together.
+  aliasHeadersStrategy: delete
 
 # -----------------------------------------------------------------------------
 # API & Dashboard
@@ -53,6 +56,9 @@ entryPoints:
 
   websecure:
     address: ':443'
+    transport:
+      respondingTimeouts:
+        readTimeout: 300s
 
   metrics:
     address: ':8082'
