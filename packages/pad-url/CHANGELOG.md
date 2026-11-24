@@ -10,6 +10,11 @@ This package is private and ships inside docs.plus, so each heading names the do
 
 ## [Unreleased]
 
+### Added
+
+- `'llms.txt'` is added to `RESERVED_SLUGS` so new pads cannot claim `/llms.txt`
+  ([#821](https://github.com/docs-plus/docs.plus/issues/821)).
+
 ### Internal
 
 - `typecheck` runs `bun check --no-script`, not `tsc --noEmit`

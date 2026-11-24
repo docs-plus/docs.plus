@@ -12,6 +12,21 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Added
 
+- `GET /api/documents/:slug/markdown` serves raw `text/markdown; charset=utf-8` for readable
+  public documents (`Vary: Accept`, `X-Robots-Tag: noindex, nofollow`, `Cache-Control: no-store`).
+  It never creates drafts, fails closed with `404` on missing, trashed, Private, or unpersisted
+  documents, rejects heads over `1 MiB` (`413`) before decode, coalesces hot reads with
+  `createSingleFlight`, and applies a dedicated per-IP `doc-markdown` limit (`60 / 60 s`)
+  ([#822](https://github.com/docs-plus/docs.plus/issues/822)).
+- `create_document` accepts `private: true` to create an **Invite only** document atomically
+  through `createDocumentWithContent` (`writeDocumentAccessMirror` fail-closed before commit)
+  ([#815](https://github.com/docs-plus/docs.plus/issues/815)).
+- Redis room-owner registry (`modules/document-content/infra/roomRegistry.ts`,
+  `ws:room-owners:<documentId>`) tracks live Hocuspocus room owners with periodic TTL heartbeat,
+  SSRF-validated bare `http(s)` internal origins, and read-only `zrevrangebyscore` lookup so
+  `contentClient.read()` and `contentClient.apply()` route directly to the replica holding the
+  open room without a `SyncStep2` sleep barrier or changes to `liveWrite`'s per-process lock
+  ([#816](https://github.com/docs-plus/docs.plus/issues/816)).
 - MCP `move_block` and `rewrite_section`, with their own hop modes `move` and `rewrite`. Both check
   ownership and the section `rev`. `rewrite_section` clones every kept media node into place and
   never re-creates media from Markdown ([#719](https://github.com/docs-plus/docs.plus/issues/719)), ([#720](https://github.com/docs-plus/docs.plus/issues/720)).
@@ -162,6 +177,19 @@ This file is the operator and API changelog. The pad product lives in the [root 
   pages, the miss flood and images did not change. In production, 7 of 2043 `/api/metadata`
   requests took longer than 2.5 s from start to end, so at most 0.34 % can lose a real preview
   ([#790](https://github.com/docs-plus/docs.plus/issues/790)).
+- `POST /api/documents/:documentId/duplicate` (`documentDuplicate.service.ts`) now lets any
+  signed-in, non-anonymous user duplicate any readable public, public Read-only, or Open document
+  (`ownerId: null`), while keeping `404` fail-closed access on unreadable Private or trashed
+  sources and `403` via `requireNonAnonymousUser` for anonymous sessions
+  ([#820](https://github.com/docs-plus/docs.plus/issues/820)).
+- `GET /api/connected-apps/redirects` caps lookups at 100 unique clients (concurrency 8),
+  `GET /api/connected-apps/clients/:clientId/redirects` uses `userRateLimiter` (`mcp-client-redirects`,
+  `30 / 60 s`), and `create_document` returns `private` in `structuredContent`
+  ([#810](https://github.com/docs-plus/docs.plus/issues/810),
+  [#815](https://github.com/docs-plus/docs.plus/issues/815)).
+- `documentSearch.service.ts` and `documentDuplicate.service.ts` are extracted out of
+  `documents.service.ts` (`1,098 -> 557` lines)
+  ([#820](https://github.com/docs-plus/docs.plus/issues/820)).
 - `document:saved`, `readOnly`, `private` and `deleted` frames go only to each replica's own
   connections (`sendToLocalConnections` in `src/lib/accessRealtime.ts`). Every replica already
   gets the Redis event. `broadcastStateless` also published each frame on the room channel, so
@@ -177,6 +205,12 @@ This file is the operator and API changelog. The pad product lives in the [root 
   GlitchTip error event. Both multipart `formData()` reads and chunked `bodyLimit` reads handle the
   abort, while upstream storage aborts still return `500` and capture
   ([#803](https://github.com/docs-plus/docs.plus/issues/803)).
+- Fixed MCP read media markers (`[image]`, `[file]`), fail-closed access error accuracy, and
+  protocol metadata (`icons`, `websiteUrl`, `description`, tool annotations), and fixed
+  `replace_text`, `append_to_document`, `rewrite_section`, and heading-guard bugs in
+  `applyContentToDoc.ts` and `sections.ts`
+  ([#813](https://github.com/docs-plus/docs.plus/issues/813),
+  [#814](https://github.com/docs-plus/docs.plus/issues/814)).
 
 ### Security
 
@@ -198,6 +232,17 @@ This file is the operator and API changelog. The pad product lives in the [root 
   - An 8192-image file uploaded 128 images before the refusal, against 8192 (98 % fewer).
   - The memory of one large parse did not change. The worst file the walk admits still adds
     845.6 MiB (median). A per-part text cap waits on a ruling.
+- Hardened `/api/mcp` HTTP transport against batch amplification, bounded open SSE streams, and
+  enforced `mcpRateLimit` + per-caller budgets (`mcp-req` 300/min, `mcp-sub` 60/min)
+  ([#811](https://github.com/docs-plus/docs.plus/issues/811)).
+- Added O(n) single-pass fence-aware Markdown nesting scanner (`MAX_MARKDOWN_NESTING = 32` +
+  `RangeError` fallback -> `MarkdownTooDeepError` / `413 TOO_DEEP`), iterative AST walks in
+  `wrapStrayInlineNodes`, `promoteImportedMedia`, and `hasMedia`, and pre-hop `exceedsTreeCaps`
+  checks in `parseFragment` ([#812](https://github.com/docs-plus/docs.plus/issues/812)).
+- `roomRegistry.ts` (`httpOrigin.ts`) validates peer origins against `HOCUSPOCUS_INTERNAL_URL` DNS
+  multi-A or `HOCUSPOCUS_INTERNAL_PEERS`, decoding WHATWG IPv4-mapped IPv6 addresses to block
+  loopback, link-local (`169.254.169.254`), and multicast peer SSRF
+  ([#816](https://github.com/docs-plus/docs.plus/issues/816)).
 
 ### Removed
 
@@ -250,6 +295,16 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - `typecheck` runs `bun check --no-script`, not `tsc --noEmit`. `markdownExport.ts` names its
   `flatMap` type, so TS 7 no longer infers `unknown`
   ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
+
+### Migration
+
+- Deploy `apps/hocuspocus.server` before `apps/webapp` so `GET /api/documents/:slug/markdown` is
+  available before Next.js content negotiation forwards `Accept: text/markdown` requests
+  ([#822](https://github.com/docs-plus/docs.plus/issues/822)).
+- Optional `HOCUSPOCUS_INTERNAL_ADVERTISE_URL` and `HOCUSPOCUS_INTERNAL_PEERS` (with validated
+  `HOCUSPOCUS_INTERNAL_URL`) configure multi-replica Redis room-owner routing; single-replica and
+  Compose multi-A setups work with defaults
+  ([#816](https://github.com/docs-plus/docs.plus/issues/816)).
 
 ## [2.3.6] — 2026-11-16
 

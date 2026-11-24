@@ -12,6 +12,16 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ### Added
 
+- Anyone signed in can now duplicate any readable public or Open document into their own copy
+  ([#820](https://github.com/docs-plus/docs.plus/issues/820)).
+- AI coding agents and crawlers get `/llms.txt` (`200 text/plain; charset=utf-8`), and Command
+  jump (`⌘⇧K` / `Ctrl+Shift+K`) adds a **Connect AI app (MCP)** link to `/mcp`
+  ([#821](https://github.com/docs-plus/docs.plus/issues/821)).
+- Public pad URLs now answer with raw Markdown when a client asks for `Accept: text/markdown`
+  (without creating drafts or leaking Private documents)
+  ([#822](https://github.com/docs-plus/docs.plus/issues/822)).
+- Connected AI apps can now create **Invite only** documents directly through `create_document`
+  with `private: true` ([#815](https://github.com/docs-plus/docs.plus/issues/815)).
 - Two new MCP tools for AI apps. `move_block` moves one block inside a section, so a picture can
   change places with its caption and settings intact ([#720](https://github.com/docs-plus/docs.plus/issues/720)). `rewrite_section` writes a whole
   section body again from Markdown and keeps every picture, video and file in it. The Markdown
@@ -51,6 +61,16 @@ This file is the product changelog. Every app, package and extension keeps its o
   collaboration replica. With 2 replicas in a local test, each client got 2 save notices per save
   before and 1 after (50 % fewer). Detail: `apps/hocuspocus.server/CHANGELOG.md`
   ([#758](https://github.com/docs-plus/docs.plus/issues/758)).
+- The OAuth consent page now evaluates every registered redirect URI (weakest trust wins), marks
+  Cursor as `"On this computer"` (`local`), and limits client redirect lookups
+  ([#810](https://github.com/docs-plus/docs.plus/issues/810)).
+- The pad sync status chip now waits for server confirmation via `unsyncedChanges` instead of
+  claiming `"Synced"` on local transmit alone. Under a `1,000 ms` one-way WebSocket delay
+  (`n = 5`), premature `"synced"` fell from `5 of 5` to `0 of 5` (100 % fewer). Detail:
+  `apps/webapp/CHANGELOG.md` ([#835](https://github.com/docs-plus/docs.plus/issues/835)).
+- MCP live reads and writes now route directly to the collaboration replica holding the open room
+  through a Redis room-owner registry, eliminating stale `rev` conflicts across replicas. Detail:
+  `apps/hocuspocus.server/CHANGELOG.md` ([#816](https://github.com/docs-plus/docs.plus/issues/816)).
 
 ### Fixed
 
@@ -58,6 +78,18 @@ This file is the product changelog. Every app, package and extension keeps its o
   typing after such a restart could stay in the browser only. In a local test, 7 of 10 pads saved
   nothing before, and none after. Detail: `apps/webapp/CHANGELOG.md`
   ([#799](https://github.com/docs-plus/docs.plus/issues/799)).
+- Markdown paste no longer freezes a live pad on deep input, keeps pasted links on `hyperlink`,
+  and reliably detects tables, task lists, and multi-heading pastes
+  ([#817](https://github.com/docs-plus/docs.plus/issues/817)).
+- Typing a closing ` ``` ` or `~~~` fence and pressing `Enter` exits code blocks cleanly,
+  opening fences accept tags like `c++` and `c#`, and WebDriver browser sessions suppress the
+  new-pad pro-tip toast ([#818](https://github.com/docs-plus/docs.plus/issues/818)).
+- The pad editor, Pad title, toolbar, and Block style control now expose complete accessible
+  names and ARIA roles ([#819](https://github.com/docs-plus/docs.plus/issues/819)).
+- MCP read media markers (`[image]`, `[file]`), access error accuracy, protocol metadata, and
+  edit-tool guards in `replace_text`, `append_to_document`, and `rewrite_section` are fixed
+  ([#813](https://github.com/docs-plus/docs.plus/issues/813),
+  [#814](https://github.com/docs-plus/docs.plus/issues/814)).
 - Links behave: formatting part of a link keeps the whole link, a link keeps its own address when
   you type next to it, a removed link stays removed while others edit, Enter inside a link gives
   two linked halves that one undo joins again, and a dictated phrase links a URL in its middle.
@@ -112,6 +144,11 @@ This file is the product changelog. Every app, package and extension keeps its o
   OpenSSL from 1.1.1w to 3.5.7 and OpenSSH from 8.4p1 to 10.0p1. In the 24 h after the move, no
   alert fired and no save job failed ([#747](https://github.com/docs-plus/docs.plus/issues/747),
   [#708](https://github.com/docs-plus/docs.plus/issues/708)).
+- The MCP HTTP transport now limits JSON-RPC batch amplification, bounds open SSE streams,
+  closes rate-limit bypasses, and bounds Markdown nesting depth (`MAX_MARKDOWN_NESTING = 32`)
+  and AST size before recursive walks
+  ([#811](https://github.com/docs-plus/docs.plus/issues/811),
+  [#812](https://github.com/docs-plus/docs.plus/issues/812)).
 - The production deploy now writes its env files as owner-only, with `install -m 600`. `cp` kept
   an existing copy's mode, so a `chmod` on the host source never reached the copies. Plain `cp`
   copy sites fall from 4 to none ([#742](https://github.com/docs-plus/docs.plus/issues/742)).
@@ -245,6 +282,16 @@ This file is the product changelog. Every app, package and extension keeps its o
   included. On one laptop, median of 5, the format check took 0.15 s against 10.82 s (98 % less
   time). `check:ci` took 85.54 s against 97.24 s (12 % less time). Prettier stays installed until
   the CI step is read ([#795](https://github.com/docs-plus/docs.plus/issues/795)).
+- Added `scripts/bench-sync-chip.ts`, `scripts/check-sync-chip.ts`, and `scripts/proxy-ws-delay.ts`
+  to benchmark pad sync-chip timing over a delayed WebSocket proxy and verify content safety
+  checks ([#835](https://github.com/docs-plus/docs.plus/issues/835)).
+
+### Migration
+
+- Deploy `apps/hocuspocus.server` before `apps/webapp` so `GET /api/documents/:slug/markdown` is
+  live before Next.js content negotiation serves `Accept: text/markdown`
+  ([#822](https://github.com/docs-plus/docs.plus/issues/822)). See
+  [`apps/hocuspocus.server/CHANGELOG.md`](apps/hocuspocus.server/CHANGELOG.md#migration).
 
 ## [2.3.6] — 2026-11-16
 

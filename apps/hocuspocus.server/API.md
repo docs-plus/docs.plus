@@ -969,7 +969,7 @@ The privacy rule runs first, so a document that is both private and locked answe
 
 ### GET /api/documents/:slug/markdown
 
-Public Markdown read by slug, backing `Accept: text/markdown` content negotiation on public pad URLs. Uses `optionalPadReader` and never drafts a row. Fails closed with `404` for missing, soft-deleted, Private, or unpersisted-version documents so Private existence never leaks. Heads larger than 1 MiB (`MAX_MARKDOWN_READ_HEAD_BYTES`) return `413` without transferring or decoding the snapshot. Concurrent reads of a hot document share one head query and decode through single-flight coalescing.
+Public Markdown read by slug, backing `Accept: text/markdown` content negotiation on public pad URLs. Never synthesizes or drafts a row. Fails closed with `404` for missing, soft-deleted, Private, or unpersisted-version documents so Private existence never leaks. Heads larger than 1 MiB (`MAX_MARKDOWN_READ_HEAD_BYTES`) return `413` without transferring or decoding the snapshot. Concurrent reads of a hot document share one head query and decode through single-flight coalescing.
 
 `200` returns raw UTF-8 Markdown (`Content-Type: text/markdown; charset=utf-8`) with `Vary: Accept`, `X-Robots-Tag: noindex, nofollow`, and `Cache-Control: no-store`. Guarded by a dedicated per-IP rate limit (`doc-markdown`, 60 requests per 60 seconds).
 

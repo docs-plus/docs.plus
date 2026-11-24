@@ -16,6 +16,20 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ## [Unreleased]
 
+### Added
+
+- `GET /llms.txt` serves `200 text/plain; charset=utf-8`, Command jump (`⌘⇧K` / `Ctrl+Shift+K`)
+  adds **Connect AI app (MCP)** pointing to `/mcp`, and `'llms.txt'` is reserved in
+  `@docs.plus/pad-url` ([#821](https://github.com/docs-plus/docs.plus/issues/821)).
+- Signed-in users can duplicate any readable public or Open document from `DocumentRowMenu` (⋮) and
+  `ImportExportSection` / `DocumentSettingsPanel` (`Open in new tab` toast action; visitor click
+  opens the inline sign-in dialog) ([#820](https://github.com/docs-plus/docs.plus/issues/820)).
+- Public pad pages (`/[...slugs]`) negotiate `Accept: text/markdown` in SSR
+  (`documentServerSideProps.ts` -> `GET /api/documents/:slug/markdown`) with `Vary: Accept`,
+  `X-Robots-Tag: noindex, nofollow`, `Cache-Control: no-store`, and Workbox `NetworkOnly` cache
+  isolation (never matching `*/*` or creating drafts)
+  ([#822](https://github.com/docs-plus/docs.plus/issues/822)).
+
 ### Changed
 
 - The app now says TOC, not "outline", for the heading list. An empty TOC reads "Add headings to
@@ -39,6 +53,14 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - The import card names two new refusals. `TOO_MANY_IMAGES` says an import holds at most 128
   pictures, and `IMPORT_BUSY` says the server is busy with another import. Both showed in
   Chromium and WebKit in a local check ([#577](https://github.com/docs-plus/docs.plus/issues/577)).
+- `/oauth/consent` evaluates every registered redirect URI through `appTrust.ts`, downgrades
+  Cursor to `"On this computer"` (`local`), and names Invite only defaults clearly on consent
+  ([#810](https://github.com/docs-plus/docs.plus/issues/810),
+  [#815](https://github.com/docs-plus/docs.plus/issues/815)).
+- The pad editor, Pad title, toolbar, and Block style `Select` control expose complete accessible
+  names and ARIA roles (`aria-activedescendant` on the trigger, `tabIndex={-1}` on portaled
+  options, and per-view HeadingActions selection/hover lifecycle cleanup)
+  ([#819](https://github.com/docs-plus/docs.plus/issues/819)).
 
 ### Fixed
 
@@ -83,6 +105,21 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   taller failed row. A reader who scrolled up stays where they were. In a local Linux test, the
   list stopped 16 px short before, with 8 of 24 px of Retry showing. After, the gap is 0 px and all
   24 px show ([#730](https://github.com/docs-plus/docs.plus/issues/730)).
+- The pad sync status chip (`CollabSession` + `useYdocAndProvider`) is driven by provider
+  `unsyncedChanges` with a `300 ms` settle hold, read-only and clean-IDB reload drain guards, and
+  `offline`/`error`/`unauthenticated` precedence. Under a `1,000 ms` one-way WebSocket delay
+  (`n = 5`, standalone local production build): premature `"synced"` before `SyncStatus(true)`
+  fell from `5 of 5` to `0 of 5` (`100 %` fewer), `keystroke-to-synced` minus
+  `keystroke-to-SyncStatus(true)` moved from `-1,702 ms` to `+302 ms`, `Sync/Update` (`100`) and
+  total WebSocket frames (`500`) stayed unchanged, and clean-IDB reload settles directly on
+  `"All changes saved"` ([#835](https://github.com/docs-plus/docs.plus/issues/835)).
+- Fixed Markdown paste live-pad freeze, dead pasted links, and table/task/multi-heading
+  detection (`markdownPastePlugin.ts` + shared `sanitizeJsonContent` in `sanitizeContent.ts`)
+  ([#817](https://github.com/docs-plus/docs.plus/issues/817)).
+- Typing a closing ` ``` ` or `~~~` fence at the end of a code block and pressing `Enter`
+  exits into a new paragraph (`code-block-lowlight.ts`), opening fences accept tags such as `c++`
+  and `c#`, and `useNewDocumentTip` skips scheduling when `navigator.webdriver` is true
+  ([#818](https://github.com/docs-plus/docs.plus/issues/818)).
 
 ### Security
 
