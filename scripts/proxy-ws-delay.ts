@@ -15,6 +15,9 @@ interface QueuedChunk {
   isWsPayload: boolean
 }
 
+type DirName = 'c2s' | 's2c'
+const DIR_NAMES: readonly DirName[] = ['c2s', 's2c']
+
 interface DirectionState {
   upgraded: boolean
   handshakeBuf: Uint8Array
@@ -22,6 +25,9 @@ interface DirectionState {
   pendingOffset: number
   waitingForDrain: boolean
   timer: ReturnType<typeof setTimeout> | null
+  timerDeliverAt: number | null
+  sourceEnded: boolean
+  targetEnded: boolean
   chunks: number
   bytes: number
 }
@@ -38,10 +44,7 @@ interface ConnState {
   client: ProxySocket | null
   upstream: ProxySocket | null
   closed: boolean
-  clientEnded: boolean
-  upstreamEnded: boolean
-  c2s: DirectionState
-  s2c: DirectionState
+  dirs: Record<DirName, DirectionState>
 }
 
 const EMPTY_BYTES = new Uint8Array(0)
@@ -113,9 +116,24 @@ function createDirectionState(): DirectionState {
     pendingOffset: 0,
     waitingForDrain: false,
     timer: null,
+    timerDeliverAt: null,
+    sourceEnded: false,
+    targetEnded: false,
     chunks: 0,
     bytes: 0
   }
+}
+
+function clearDirTimer(dir: DirectionState): void {
+  if (dir.timer !== null) {
+    clearTimeout(dir.timer)
+    dir.timer = null
+    dir.timerDeliverAt = null
+  }
+}
+
+function getTargetSocket(state: ConnState, dirName: DirName): ProxySocket | null {
+  return dirName === 'c2s' ? state.upstream : state.client
 }
 
 function concatBytes(a: Uint8Array, b: Uint8Array): Uint8Array {
@@ -141,68 +159,64 @@ async function main(): Promise<void> {
   const connections = new Map<number, ConnState>()
   let nextConnId = 1
   let totalConnections = 0
-  let totalC2sChunks = 0
-  let totalS2cChunks = 0
-  let totalC2sBytes = 0
-  let totalS2cBytes = 0
+  const totalStats: Record<DirName, { chunks: number; bytes: number }> = {
+    c2s: { chunks: 0, bytes: 0 },
+    s2c: { chunks: 0, bytes: 0 }
+  }
   let shuttingDown = false
 
   const closeConnection = (state: ConnState, reason: string): void => {
     if (state.closed) return
     state.closed = true
-    if (state.c2s.timer) {
-      clearTimeout(state.c2s.timer)
-      state.c2s.timer = null
+    for (const dirName of DIR_NAMES) {
+      clearDirTimer(state.dirs[dirName])
+      state.dirs[dirName].queue.length = 0
     }
-    if (state.s2c.timer) {
-      clearTimeout(state.s2c.timer)
-      state.s2c.timer = null
-    }
-    state.c2s.queue.length = 0
-    state.s2c.queue.length = 0
-    try {
-      state.client?.end()
-    } catch {
-      // Ignore already-closed client socket.
-    }
-    try {
-      state.upstream?.end()
-    } catch {
-      // Ignore already-closed upstream socket.
+    for (const sock of [state.client, state.upstream]) {
+      try {
+        sock?.end()
+      } catch {
+        // Ignore already-closed socket.
+      }
     }
     connections.delete(state.id)
     if (config.verbose) {
+      const { c2s, s2c } = state.dirs
       console.log(
-        `[proxy #${state.id}] closed (${reason}) c2s=${state.c2s.chunks} chunks (${state.c2s.bytes} B) s2c=${state.s2c.chunks} chunks (${state.s2c.bytes} B)`
+        `[proxy #${state.id}] closed (${reason}) c2s=${c2s.chunks} chunks (${c2s.bytes} B) s2c=${s2c.chunks} chunks (${s2c.bytes} B)`
       )
     }
   }
 
-  const flushDir = (state: ConnState, dirName: 'c2s' | 's2c'): void => {
+  const flushDir = (state: ConnState, dirName: DirName): void => {
     if (state.closed) return
-    const dir = dirName === 'c2s' ? state.c2s : state.s2c
-    const target = dirName === 'c2s' ? state.upstream : state.client
+    const dir = state.dirs[dirName]
+    const target = getTargetSocket(state, dirName)
     if (!target || dir.waitingForDrain) return
-
-    if (dir.timer) {
-      clearTimeout(dir.timer)
-      dir.timer = null
-    }
 
     while (dir.queue.length > 0) {
       const head = dir.queue[0]
-      if (!head) break
 
       const now = Date.now()
       if (head.deliverAt > now) {
-        const waitMs = head.deliverAt - now
+        if (
+          dir.timer !== null &&
+          dir.timerDeliverAt !== null &&
+          dir.timerDeliverAt <= head.deliverAt
+        ) {
+          return
+        }
+        clearDirTimer(dir)
+        dir.timerDeliverAt = head.deliverAt
         dir.timer = setTimeout(() => {
           dir.timer = null
+          dir.timerDeliverAt = null
           flushDir(state, dirName)
-        }, waitMs)
+        }, head.deliverAt - now)
         return
       }
 
+      clearDirTimer(dir)
       const slice = dir.pendingOffset > 0 ? head.data.subarray(dir.pendingOffset) : head.data
       let written = 0
       try {
@@ -224,13 +238,8 @@ async function main(): Promise<void> {
       if (head.isWsPayload) {
         dir.chunks += 1
         dir.bytes += head.data.length
-        if (dirName === 'c2s') {
-          totalC2sChunks += 1
-          totalC2sBytes += head.data.length
-        } else {
-          totalS2cChunks += 1
-          totalS2cBytes += head.data.length
-        }
+        totalStats[dirName].chunks += 1
+        totalStats[dirName].bytes += head.data.length
         if (config.verbose) {
           console.log(
             `[proxy #${state.id}] ${dirName} forwarded ${head.data.length} B (delay target=${config.delayMs} ms, lag=${now - head.deliverAt} ms)`
@@ -239,68 +248,95 @@ async function main(): Promise<void> {
       }
     }
 
-    if (dirName === 'c2s' && state.clientEnded) {
+    if (dir.sourceEnded && !dir.targetEnded) {
+      dir.targetEnded = true
       try {
-        state.upstream?.end()
+        target.end()
       } catch {
-        // Ignore
+        // Ignore already-closed target socket.
       }
-      if (state.s2c.queue.length === 0 && state.upstreamEnded) {
-        closeConnection(state, 'eof')
-      }
-    } else if (dirName === 's2c' && state.upstreamEnded) {
-      try {
-        state.client?.end()
-      } catch {
-        // Ignore
-      }
-      closeConnection(state, 'upstream eof')
+    }
+
+    const otherName: DirName = dirName === 'c2s' ? 's2c' : 'c2s'
+    const other = state.dirs[otherName]
+    const otherDone =
+      other.queue.length === 0 && (other.sourceEnded || !getTargetSocket(state, otherName))
+    if (dir.sourceEnded && dir.queue.length === 0 && otherDone) {
+      closeConnection(state, 'eof')
     }
   }
 
-  const handleIncoming = (state: ConnState, dirName: 'c2s' | 's2c', rawData: Uint8Array): void => {
+  const handleIncoming = (state: ConnState, dirName: DirName, rawData: Uint8Array): void => {
     if (state.closed) return
     const copy = new Uint8Array(rawData)
-    const dir = dirName === 'c2s' ? state.c2s : state.s2c
+    const dir = state.dirs[dirName]
 
-    if (!dir.upgraded) {
-      dir.handshakeBuf = concatBytes(dir.handshakeBuf, copy)
-      if (dir.handshakeBuf.length > MAX_HANDSHAKE_BYTES) {
-        closeConnection(state, `${dirName} handshake exceeded ${MAX_HANDSHAKE_BYTES} bytes`)
-        return
-      }
-      const headerEnd = findHeaderEnd(dir.handshakeBuf)
-      if (headerEnd === -1) return
-
-      const splitAt = headerEnd + 4
-      const handshakeBytes = dir.handshakeBuf.subarray(0, splitAt)
-      const trailingBytes = dir.handshakeBuf.subarray(splitAt)
-      dir.handshakeBuf = EMPTY_BYTES
-      dir.upgraded = true
-
-      if (config.verbose) {
-        const preview = new TextDecoder().decode(handshakeBytes).split('\r\n')[0] ?? ''
-        console.log(`[proxy #${state.id}] ${dirName} upgraded: ${preview}`)
-      }
-
-      dir.queue.push({ data: handshakeBytes, deliverAt: 0, isWsPayload: false })
-      if (trailingBytes.length > 0) {
-        dir.queue.push({
-          data: new Uint8Array(trailingBytes),
-          deliverAt: Date.now() + config.delayMs,
-          isWsPayload: true
-        })
-      }
+    if (dir.upgraded) {
+      dir.queue.push({
+        data: copy,
+        deliverAt: Date.now() + config.delayMs,
+        isWsPayload: true
+      })
       flushDir(state, dirName)
       return
     }
 
-    dir.queue.push({
-      data: copy,
-      deliverAt: Date.now() + config.delayMs,
-      isWsPayload: true
-    })
+    dir.handshakeBuf = concatBytes(dir.handshakeBuf, copy)
+    if (dir.handshakeBuf.length > MAX_HANDSHAKE_BYTES) {
+      closeConnection(state, `${dirName} handshake exceeded ${MAX_HANDSHAKE_BYTES} bytes`)
+      return
+    }
+    const headerEnd = findHeaderEnd(dir.handshakeBuf)
+    if (headerEnd === -1) return
+
+    const splitAt = headerEnd + 4
+    const handshakeBytes = dir.handshakeBuf.subarray(0, splitAt)
+    const trailingBytes = dir.handshakeBuf.subarray(splitAt)
+    dir.handshakeBuf = EMPTY_BYTES
+    dir.upgraded = true
+
+    if (config.verbose) {
+      const preview = new TextDecoder().decode(handshakeBytes).split('\r\n')[0] ?? ''
+      console.log(`[proxy #${state.id}] ${dirName} upgraded: ${preview}`)
+    }
+
+    dir.queue.push({ data: handshakeBytes, deliverAt: 0, isWsPayload: false })
+    if (trailingBytes.length > 0) {
+      dir.queue.push({
+        data: new Uint8Array(trailingBytes),
+        deliverAt: Date.now() + config.delayMs,
+        isWsPayload: true
+      })
+    }
     flushDir(state, dirName)
+  }
+
+  const handleDrain = (state: ConnState, dirName: DirName): void => {
+    state.dirs[dirName].waitingForDrain = false
+    flushDir(state, dirName)
+  }
+
+  const handleEnd = (state: ConnState, role: 'client' | 'upstream'): void => {
+    if (state.closed) return
+    const inbound: DirName = role === 'client' ? 'c2s' : 's2c'
+    state.dirs[inbound].sourceEnded = true
+    flushDir(state, inbound)
+  }
+
+  const handleClose = (state: ConnState, role: 'client' | 'upstream'): void => {
+    if (state.closed) return
+    const inbound: DirName = role === 'client' ? 'c2s' : 's2c'
+    const outbound: DirName = inbound === 'c2s' ? 's2c' : 'c2s'
+    if (role === 'client') state.client = null
+    else state.upstream = null
+    state.dirs[inbound].sourceEnded = true
+    clearDirTimer(state.dirs[outbound])
+    state.dirs[outbound].queue.length = 0
+    if (!getTargetSocket(state, inbound) || state.dirs[inbound].queue.length === 0) {
+      closeConnection(state, `${role} close`)
+      return
+    }
+    flushDir(state, inbound)
   }
 
   const server = Bun.listen<SocketData>({
@@ -320,10 +356,7 @@ async function main(): Promise<void> {
           client: clientSocket,
           upstream: null,
           closed: false,
-          clientEnded: false,
-          upstreamEnded: false,
-          c2s: createDirectionState(),
-          s2c: createDirectionState()
+          dirs: { c2s: createDirectionState(), s2c: createDirectionState() }
         }
         connections.set(connId, state)
 
@@ -344,32 +377,11 @@ async function main(): Promise<void> {
               state.upstream = upstreamSocket
               flushDir(state, 'c2s')
             },
-            data(_socket, data) {
-              handleIncoming(state, 's2c', data)
-            },
-            drain() {
-              state.c2s.waitingForDrain = false
-              flushDir(state, 'c2s')
-            },
-            end() {
-              state.upstreamEnded = true
-              if (state.s2c.queue.length === 0) {
-                closeConnection(state, 'upstream end')
-              } else {
-                flushDir(state, 's2c')
-              }
-            },
-            close() {
-              state.upstreamEnded = true
-              if (state.s2c.queue.length === 0) {
-                closeConnection(state, 'upstream close')
-              } else {
-                flushDir(state, 's2c')
-              }
-            },
-            error(_socket, err) {
-              closeConnection(state, `upstream error: ${err.message}`)
-            }
+            data: (_socket, data) => handleIncoming(state, 's2c', data),
+            drain: () => handleDrain(state, 'c2s'),
+            end: () => handleEnd(state, 'upstream'),
+            close: () => handleClose(state, 'upstream'),
+            error: (_socket, err) => closeConnection(state, `upstream error: ${err.message}`)
           }
         }).catch((err: unknown) => {
           const message = err instanceof Error ? err.message : String(err)
@@ -378,34 +390,23 @@ async function main(): Promise<void> {
       },
       data(socket, data) {
         const state = connections.get(socket.data.connId)
-        if (!state) return
-        handleIncoming(state, 'c2s', data)
+        if (state) handleIncoming(state, 'c2s', data)
       },
       drain(socket) {
         const state = connections.get(socket.data.connId)
-        if (!state) return
-        state.s2c.waitingForDrain = false
-        flushDir(state, 's2c')
+        if (state) handleDrain(state, 's2c')
       },
       end(socket) {
         const state = connections.get(socket.data.connId)
-        if (!state) return
-        state.clientEnded = true
-        if (state.c2s.queue.length === 0) {
-          closeConnection(state, 'client end')
-        } else {
-          flushDir(state, 'c2s')
-        }
+        if (state) handleEnd(state, 'client')
       },
       close(socket) {
         const state = connections.get(socket.data.connId)
-        if (!state) return
-        closeConnection(state, 'client close')
+        if (state) handleClose(state, 'client')
       },
       error(socket, err) {
         const state = connections.get(socket.data.connId)
-        if (!state) return
-        closeConnection(state, `client error: ${err.message}`)
+        if (state) closeConnection(state, `client error: ${err.message}`)
       }
     }
   })
@@ -418,7 +419,7 @@ async function main(): Promise<void> {
     if (shuttingDown) return
     shuttingDown = true
     console.log(
-      `[ws-delay-proxy] ${signal} received; stopping (connections=${totalConnections}, c2s=${totalC2sChunks} chunks / ${totalC2sBytes} B, s2c=${totalS2cChunks} chunks / ${totalS2cBytes} B)`
+      `[ws-delay-proxy] ${signal} received; stopping (connections=${totalConnections}, c2s=${totalStats.c2s.chunks} chunks / ${totalStats.c2s.bytes} B, s2c=${totalStats.s2c.chunks} chunks / ${totalStats.s2c.bytes} B)`
     )
     server.stop(true)
     for (const state of Array.from(connections.values())) {

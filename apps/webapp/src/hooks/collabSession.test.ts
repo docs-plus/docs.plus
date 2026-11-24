@@ -4,188 +4,19 @@ import type { ProviderStatus } from '@types'
 import * as Y from 'yjs'
 
 import {
+  AUTH_REARM_DELAY_MS,
+  CollabSession,
+  DISCONNECT_ERROR_GRACE_MS,
+  FIRST_SYNC_TIMEOUT_MS,
   hasUnpushedLocalState,
   isDocumentAccessReadOnly,
+  isSelfHealingCloseCode,
+  MAX_AUTH_REARM,
   parseIncomingSyncStep,
-  resolveUnsyncedChangesAction,
-  shouldRestoreSavedOnReconnect
+  resolveAuthFailure,
+  resolveSettledStatus,
+  SYNCED_SETTLE_DELAY_MS
 } from './collabSession'
-
-jest.mock('@stores', () => ({
-  useAuthStore: { getState: () => ({ profile: null }) }
-}))
-
-describe('resolveUnsyncedChangesAction', () => {
-  const disconnectedStatuses: ProviderStatus[] = ['offline', 'error', 'unauthenticated']
-  const healthyStatuses: ProviderStatus[] = ['saved', 'synced', 'saving']
-
-  it('ignores all counts before first sync or while disconnected/auth-stopped/read-only', () => {
-    for (const unsyncedCount of [0, 1, 5]) {
-      expect(
-        resolveUnsyncedChangesAction({
-          unsyncedCount,
-          previousUnsyncedCount: 0,
-          isSynced: false,
-          authStopped: false,
-          isReadOnly: false,
-          currentStatus: 'saved'
-        })
-      ).toEqual({ type: 'ignore' })
-
-      expect(
-        resolveUnsyncedChangesAction({
-          unsyncedCount,
-          previousUnsyncedCount: 0,
-          isSynced: true,
-          authStopped: true,
-          isReadOnly: false,
-          currentStatus: 'saved'
-        })
-      ).toEqual({ type: 'ignore' })
-
-      expect(
-        resolveUnsyncedChangesAction({
-          unsyncedCount,
-          previousUnsyncedCount: 0,
-          isSynced: true,
-          authStopped: false,
-          isReadOnly: true,
-          currentStatus: 'saved'
-        })
-      ).toEqual({ type: 'ignore' })
-
-      for (const status of disconnectedStatuses) {
-        expect(
-          resolveUnsyncedChangesAction({
-            unsyncedCount,
-            previousUnsyncedCount: 0,
-            isSynced: true,
-            authStopped: false,
-            isReadOnly: false,
-            currentStatus: status
-          })
-        ).toEqual({ type: 'ignore' })
-      }
-    }
-  })
-
-  it('returns saving immediately when unsyncedCount rises above previousUnsyncedCount or while already saving', () => {
-    for (const currentStatus of healthyStatuses) {
-      expect(
-        resolveUnsyncedChangesAction({
-          unsyncedCount: 1,
-          previousUnsyncedCount: 0,
-          isSynced: true,
-          authStopped: false,
-          isReadOnly: false,
-          currentStatus
-        })
-      ).toEqual({ type: 'saving' })
-    }
-
-    expect(
-      resolveUnsyncedChangesAction({
-        unsyncedCount: 3,
-        previousUnsyncedCount: 2,
-        isSynced: true,
-        authStopped: false,
-        isReadOnly: false,
-        currentStatus: 'saved'
-      })
-    ).toEqual({ type: 'saving' })
-
-    expect(
-      resolveUnsyncedChangesAction({
-        unsyncedCount: 3,
-        previousUnsyncedCount: 2,
-        isSynced: true,
-        authStopped: false,
-        isReadOnly: false,
-        currentStatus: 'synced'
-      })
-    ).toEqual({ type: 'saving' })
-
-    expect(
-      resolveUnsyncedChangesAction({
-        unsyncedCount: 1,
-        previousUnsyncedCount: 2,
-        isSynced: true,
-        authStopped: false,
-        isReadOnly: false,
-        currentStatus: 'saving'
-      })
-    ).toEqual({ type: 'saving' })
-  })
-
-  it('ignores non-increasing pre-sync drains (2 -> 1) from saved or synced', () => {
-    expect(
-      resolveUnsyncedChangesAction({
-        unsyncedCount: 1,
-        previousUnsyncedCount: 2,
-        isSynced: true,
-        authStopped: false,
-        isReadOnly: false,
-        currentStatus: 'saved'
-      })
-    ).toEqual({ type: 'ignore' })
-
-    expect(
-      resolveUnsyncedChangesAction({
-        unsyncedCount: 1,
-        previousUnsyncedCount: 2,
-        isSynced: true,
-        authStopped: false,
-        isReadOnly: false,
-        currentStatus: 'synced'
-      })
-    ).toEqual({ type: 'ignore' })
-  })
-
-  it('schedules synced when unsyncedCount drops to 0 from saving, and ignores 0 from saved or synced', () => {
-    expect(
-      resolveUnsyncedChangesAction({
-        unsyncedCount: 0,
-        previousUnsyncedCount: 1,
-        isSynced: true,
-        authStopped: false,
-        isReadOnly: false,
-        currentStatus: 'saving'
-      })
-    ).toEqual({ type: 'schedule-synced' })
-
-    expect(
-      resolveUnsyncedChangesAction({
-        unsyncedCount: 0,
-        previousUnsyncedCount: 1,
-        isSynced: true,
-        authStopped: false,
-        isReadOnly: false,
-        currentStatus: 'saved'
-      })
-    ).toEqual({ type: 'ignore' })
-
-    expect(
-      resolveUnsyncedChangesAction({
-        unsyncedCount: 0,
-        previousUnsyncedCount: 1,
-        isSynced: true,
-        authStopped: false,
-        isReadOnly: false,
-        currentStatus: 'synced'
-      })
-    ).toEqual({ type: 'ignore' })
-  })
-})
-
-describe('shouldRestoreSavedOnReconnect', () => {
-  it('restores only when already synced and recovering from offline or error', () => {
-    expect(shouldRestoreSavedOnReconnect(true, 'offline')).toBe(true)
-    expect(shouldRestoreSavedOnReconnect(true, 'error')).toBe(true)
-    expect(shouldRestoreSavedOnReconnect(false, 'offline')).toBe(false)
-    expect(shouldRestoreSavedOnReconnect(true, 'unauthenticated')).toBe(false)
-    expect(shouldRestoreSavedOnReconnect(true, 'saving')).toBe(false)
-  })
-})
 
 function writeVarUint(out: number[], value: number): void {
   let num = value
@@ -212,6 +43,106 @@ function encodeSyncFrame(
   out.push(...payload)
   return new Uint8Array(out)
 }
+
+describe('collabSession pure helpers', () => {
+  it('unifies settled status resolution for onSynced and reconnect', () => {
+    expect(
+      resolveSettledStatus({
+        isReadOnly: false,
+        hasPendingLocalEdits: true,
+        hasUnsyncedChanges: true,
+        fallbackIfPendingFlushed: 'saved'
+      })
+    ).toEqual({ status: 'saving', keepPendingLocalEdits: true })
+
+    expect(
+      resolveSettledStatus({
+        isReadOnly: false,
+        hasPendingLocalEdits: true,
+        hasUnsyncedChanges: false,
+        fallbackIfPendingFlushed: 'saved'
+      })
+    ).toEqual({ status: 'saved', keepPendingLocalEdits: false })
+
+    expect(
+      resolveSettledStatus({
+        isReadOnly: false,
+        hasPendingLocalEdits: true,
+        hasUnsyncedChanges: false,
+        fallbackIfPendingFlushed: 'synced'
+      })
+    ).toEqual({ status: 'synced', keepPendingLocalEdits: false })
+
+    expect(
+      resolveSettledStatus({
+        isReadOnly: true,
+        hasPendingLocalEdits: true,
+        hasUnsyncedChanges: true,
+        fallbackIfPendingFlushed: 'synced'
+      })
+    ).toEqual({ status: 'saved', keepPendingLocalEdits: false })
+  })
+
+  it('classifies self-healing close codes and bounded auth failure recovery', () => {
+    expect(isSelfHealingCloseCode(1006)).toBe(true)
+    expect(isSelfHealingCloseCode(4408)).toBe(true)
+    expect(isSelfHealingCloseCode(4403)).toBe(false)
+
+    expect(resolveAuthFailure({ hasSession: true, rearmCount: 0 })).toBe('rearm')
+    expect(resolveAuthFailure({ hasSession: true, rearmCount: MAX_AUTH_REARM })).toBe('error')
+    expect(resolveAuthFailure({ hasSession: false, rearmCount: 0 })).toBe('unauthenticated')
+  })
+
+  it('detects readonly scope and non-owner metadata readOnly without locking on unrelated fields', () => {
+    expect(
+      isDocumentAccessReadOnly({
+        authorizedScope: 'readonly',
+        metadata: { documentId: 'doc-1', readOnly: false, ownerId: 'owner-1' }
+      })
+    ).toBe(true)
+
+    expect(
+      isDocumentAccessReadOnly(
+        {
+          authorizedScope: 'read-write',
+          metadata: { documentId: 'doc-1', readOnly: true, ownerId: 'owner-1' }
+        },
+        'user-1'
+      )
+    ).toBe(true)
+
+    expect(
+      isDocumentAccessReadOnly(
+        {
+          authorizedScope: 'read-write',
+          metadata: { documentId: 'doc-1', readOnly: true, ownerId: 'owner-1' }
+        },
+        'owner-1'
+      )
+    ).toBe(false)
+
+    expect(
+      isDocumentAccessReadOnly(
+        {
+          authorizedScope: 'read-write',
+          metadata: { documentId: 'doc-1', readOnly: true, ownerId: null }
+        },
+        'user-1'
+      )
+    ).toBe(false)
+
+    const withErrorStatus: {
+      authorizedScope: string
+      metadata: { documentId: string; readOnly: boolean; ownerId: string }
+      providerStatus: ProviderStatus
+    } = {
+      authorizedScope: 'read-write',
+      metadata: { documentId: 'doc-1', readOnly: false, ownerId: 'owner-1' },
+      providerStatus: 'error'
+    }
+    expect(isDocumentAccessReadOnly(withErrorStatus, 'user-1')).toBe(false)
+  })
+})
 
 describe('parseIncomingSyncStep', () => {
   it('parses SyncStep1 and SyncStep2 payloads from Uint8Array, ArrayBuffer, and ArrayBufferView', () => {
@@ -282,58 +213,6 @@ describe('parseIncomingSyncStep', () => {
   })
 })
 
-describe('isDocumentAccessReadOnly', () => {
-  it('detects readonly scope and non-owner metadata readOnly without locking on providerStatus error', () => {
-    expect(
-      isDocumentAccessReadOnly({
-        authorizedScope: 'readonly',
-        metadata: { documentId: 'doc-1', readOnly: false, ownerId: 'owner-1' }
-      })
-    ).toBe(true)
-
-    expect(
-      isDocumentAccessReadOnly(
-        {
-          authorizedScope: 'read-write',
-          metadata: { documentId: 'doc-1', readOnly: true, ownerId: 'owner-1' }
-        },
-        'user-1'
-      )
-    ).toBe(true)
-
-    expect(
-      isDocumentAccessReadOnly(
-        {
-          authorizedScope: 'read-write',
-          metadata: { documentId: 'doc-1', readOnly: true, ownerId: 'owner-1' }
-        },
-        'owner-1'
-      )
-    ).toBe(false)
-
-    expect(
-      isDocumentAccessReadOnly(
-        {
-          authorizedScope: 'read-write',
-          metadata: { documentId: 'doc-1', readOnly: true, ownerId: null }
-        },
-        'user-1'
-      )
-    ).toBe(false)
-
-    expect(
-      isDocumentAccessReadOnly(
-        {
-          authorizedScope: 'read-write',
-          metadata: { documentId: 'doc-1', readOnly: false, ownerId: 'owner-1' },
-          providerStatus: 'error'
-        } as Parameters<typeof isDocumentAccessReadOnly>[0],
-        'user-1'
-      )
-    ).toBe(false)
-  })
-})
-
 describe('hasUnpushedLocalState', () => {
   it('returns false for an empty doc against empty or non-empty server state', () => {
     const localDoc = new Y.Doc()
@@ -357,7 +236,7 @@ describe('hasUnpushedLocalState', () => {
     ).toBe(false)
   })
 
-  it('returns false when local IDB state matches server state including deletes', () => {
+  it('returns false when local IDB state matches or is stale behind server inserts and deletes', () => {
     const serverDoc = new Y.Doc()
     serverDoc.getText('t').insert(0, 'hello world')
     serverDoc.getText('t').delete(5, 6)
@@ -365,50 +244,469 @@ describe('hasUnpushedLocalState', () => {
     const localDoc = new Y.Doc()
     Y.applyUpdate(localDoc, Y.encodeStateAsUpdate(serverDoc))
 
-    const serverSV = Y.encodeStateVector(serverDoc)
-    const serverUpdate = Y.encodeStateAsUpdate(serverDoc, Y.encodeStateVector(localDoc))
-    expect(hasUnpushedLocalState(localDoc, serverSV, serverUpdate)).toBe(false)
-  })
+    expect(
+      hasUnpushedLocalState(
+        localDoc,
+        Y.encodeStateVector(serverDoc),
+        Y.encodeStateAsUpdate(serverDoc, Y.encodeStateVector(localDoc))
+      )
+    ).toBe(false)
 
-  it('returns false when local IDB state is stale behind server inserts and deletes', () => {
-    const serverDoc = new Y.Doc()
-    serverDoc.getText('t').insert(0, 'initial')
-
-    const localDoc = new Y.Doc()
-    Y.applyUpdate(localDoc, Y.encodeStateAsUpdate(serverDoc))
-
-    serverDoc.getText('t').insert(7, ' server-tail')
+    serverDoc.getText('t').insert(5, ' server-tail')
     serverDoc.getText('t').delete(0, 3)
 
-    const serverSV = Y.encodeStateVector(serverDoc)
-    const serverUpdate = Y.encodeStateAsUpdate(serverDoc, Y.encodeStateVector(localDoc))
-    expect(hasUnpushedLocalState(localDoc, serverSV, serverUpdate)).toBe(false)
+    expect(
+      hasUnpushedLocalState(
+        localDoc,
+        Y.encodeStateVector(serverDoc),
+        Y.encodeStateAsUpdate(serverDoc, Y.encodeStateVector(localDoc))
+      )
+    ).toBe(false)
   })
 
-  it('returns true when local IDB state contains unpushed inserts', () => {
-    const serverDoc = new Y.Doc()
-    serverDoc.getText('t').insert(0, 'shared')
-
-    const localDoc = new Y.Doc()
-    Y.applyUpdate(localDoc, Y.encodeStateAsUpdate(serverDoc))
-    localDoc.getText('t').insert(6, ' offline-insert')
-    serverDoc.getText('t').insert(0, 'concurrent ')
-
-    const serverSV = Y.encodeStateVector(serverDoc)
-    const serverUpdate = Y.encodeStateAsUpdate(serverDoc, Y.encodeStateVector(localDoc))
-    expect(hasUnpushedLocalState(localDoc, serverSV, serverUpdate)).toBe(true)
-  })
-
-  it('returns true when local IDB state contains an unpushed delete-only mutation', () => {
+  it('returns true when local IDB state contains unpushed inserts or delete-only mutations', () => {
     const serverDoc = new Y.Doc()
     serverDoc.getText('t').insert(0, 'keep delete-me')
 
-    const localDoc = new Y.Doc()
-    Y.applyUpdate(localDoc, Y.encodeStateAsUpdate(serverDoc))
-    localDoc.getText('t').delete(4, 10)
+    const insertDoc = new Y.Doc()
+    Y.applyUpdate(insertDoc, Y.encodeStateAsUpdate(serverDoc))
+    insertDoc.getText('t').insert(14, ' offline-insert')
+    serverDoc.getText('t').insert(0, 'concurrent ')
 
-    const serverSV = Y.encodeStateVector(serverDoc)
-    const serverUpdate = Y.encodeStateAsUpdate(serverDoc, Y.encodeStateVector(localDoc))
-    expect(hasUnpushedLocalState(localDoc, serverSV, serverUpdate)).toBe(true)
+    expect(
+      hasUnpushedLocalState(
+        insertDoc,
+        Y.encodeStateVector(serverDoc),
+        Y.encodeStateAsUpdate(serverDoc, Y.encodeStateVector(insertDoc))
+      )
+    ).toBe(true)
+
+    const deleteDoc = new Y.Doc()
+    Y.applyUpdate(deleteDoc, Y.encodeStateAsUpdate(serverDoc))
+    deleteDoc.getText('t').delete(4, 10)
+
+    expect(
+      hasUnpushedLocalState(
+        deleteDoc,
+        Y.encodeStateVector(serverDoc),
+        Y.encodeStateAsUpdate(serverDoc, Y.encodeStateVector(deleteDoc))
+      )
+    ).toBe(true)
+  })
+})
+
+function createTestSession(opts?: {
+  doc?: Y.Doc
+  readOnly?: boolean
+  online?: boolean
+  onConnect?: jest.Mock
+  onDisconnect?: jest.Mock
+  onReportIssue?: jest.Mock
+}) {
+  const doc = opts?.doc ?? new Y.Doc()
+  let unsyncedCount = 0
+  let readOnly = opts?.readOnly ?? false
+  let online = opts?.online ?? true
+  const onConnect = opts?.onConnect ?? jest.fn()
+  const onDisconnect = opts?.onDisconnect ?? jest.fn()
+  const onReportIssue = opts?.onReportIssue ?? jest.fn()
+
+  const session = new CollabSession({
+    isReadOnly: () => readOnly,
+    hasUnsyncedChanges: () => unsyncedCount > 0,
+    isOnline: () => online,
+    onConnect,
+    onDisconnect,
+    hasUnpushedLocalState: (sv, update) => hasUnpushedLocalState(doc, sv, update),
+    onReportIssue
+  })
+
+  return {
+    doc,
+    session,
+    onConnect,
+    onDisconnect,
+    onReportIssue,
+    setReadOnly: (next: boolean) => {
+      readOnly = next
+    },
+    setOnline: (next: boolean) => {
+      online = next
+    },
+    startSync: () => {
+      unsyncedCount = 1
+      session.onUnsyncedChanges(unsyncedCount)
+    },
+    emitUnsynced: (count: number) => {
+      unsyncedCount = count
+      session.onUnsyncedChanges(count)
+    },
+    emitSynced: () => {
+      session.onSynced(unsyncedCount, unsyncedCount > 0)
+    },
+    emitSyncAck: () => {
+      if (unsyncedCount > 0) unsyncedCount -= 1
+      session.onUnsyncedChanges(unsyncedCount)
+    }
+  }
+}
+
+describe('CollabSession state machine', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it('sets saving immediately when unsyncedChanges > 0 and settles to synced after 300ms at 0', () => {
+    const h = createTestSession()
+    h.startSync()
+    h.emitSynced()
+    expect(h.session.status).toBe('saved')
+
+    h.emitSyncAck()
+    jest.advanceTimersByTime(SYNCED_SETTLE_DELAY_MS)
+    expect(h.session.status).toBe('saved')
+
+    h.session.onLocalUpdate()
+    h.emitUnsynced(1)
+    expect(h.session.status).toBe('saving')
+
+    h.emitUnsynced(0)
+    jest.advanceTimersByTime(SYNCED_SETTLE_DELAY_MS - 1)
+    expect(h.session.status).toBe('saving')
+
+    jest.advanceTimersByTime(1)
+    expect(h.session.status).toBe('synced')
+
+    // Rising again mid-settle cancels the pending synced transition.
+    h.emitUnsynced(1)
+    h.emitUnsynced(0)
+    jest.advanceTimersByTime(150)
+    h.emitUnsynced(1)
+    jest.advanceTimersByTime(SYNCED_SETTLE_DELAY_MS)
+    expect(h.session.status).toBe('saving')
+
+    h.emitUnsynced(0)
+    jest.advanceTimersByTime(SYNCED_SETTLE_DELAY_MS)
+    expect(h.session.status).toBe('synced')
+    h.session.dispose()
+  })
+
+  it('ignores startSync and clean pre-sync 2 -> 1 -> 0 drains while capturing real post-sync edits', () => {
+    const serverDoc = new Y.Doc()
+    serverDoc.getText('t').insert(0, 'saved content')
+    const h = createTestSession()
+
+    h.startSync()
+    Y.applyUpdate(h.doc, Y.encodeStateAsUpdate(serverDoc))
+    h.emitUnsynced(2)
+    h.session.onSyncStep(encodeSyncFrame('doc-1', 0, 0, Y.encodeStateVector(serverDoc)))
+    h.session.onSyncStep(
+      encodeSyncFrame('doc-1', 0, 1, Y.encodeStateAsUpdate(serverDoc, Y.encodeStateVector(h.doc)))
+    )
+    h.emitSynced()
+    expect(h.session.status).toBe('saved')
+
+    h.emitSyncAck()
+    jest.advanceTimersByTime(SYNCED_SETTLE_DELAY_MS)
+    expect(h.session.status).toBe('saved')
+
+    h.emitSyncAck()
+    jest.advanceTimersByTime(SYNCED_SETTLE_DELAY_MS)
+    expect(h.session.status).toBe('saved')
+
+    // Case A: Real local edit arrives while unsyncedChanges === 2 (2 -> 3).
+    h.session.onDisconnect(1006)
+    h.startSync()
+    h.emitUnsynced(2)
+    h.emitSynced()
+    expect(h.session.status).toBe('saved')
+
+    h.session.onLocalUpdate()
+    h.emitUnsynced(3)
+    expect(h.session.status).toBe('saving')
+
+    h.emitSyncAck()
+    h.emitSyncAck()
+    jest.advanceTimersByTime(SYNCED_SETTLE_DELAY_MS)
+    expect(h.session.status).toBe('saving')
+
+    h.emitSyncAck()
+    jest.advanceTimersByTime(SYNCED_SETTLE_DELAY_MS)
+    expect(h.session.status).toBe('synced')
+
+    // Case B: First ack drains 2 -> 1 (stays saved), then real edit rises 1 -> 2.
+    h.session.onDisconnect(1006)
+    h.startSync()
+    h.emitUnsynced(2)
+    h.emitSynced()
+    h.emitSyncAck()
+    jest.advanceTimersByTime(SYNCED_SETTLE_DELAY_MS)
+    expect(h.session.status).toBe('saved')
+
+    h.session.onLocalUpdate()
+    h.emitUnsynced(2)
+    expect(h.session.status).toBe('saving')
+    h.emitSyncAck()
+    h.emitSyncAck()
+    jest.advanceTimersByTime(SYNCED_SETTLE_DELAY_MS)
+    expect(h.session.status).toBe('synced')
+    h.session.dispose()
+  })
+
+  it('holds saving on offline-to-online reconnect until SyncStatus drops unsyncedChanges to 0', () => {
+    const h = createTestSession()
+    h.startSync()
+    h.emitSynced()
+    h.emitSyncAck()
+
+    h.setOnline(false)
+    h.session.onOffline()
+    h.session.onLocalUpdate()
+    h.emitUnsynced(3)
+    expect(h.session.status).toBe('offline')
+
+    // Online before socket closed must hold saving, not jump to saved.
+    h.setOnline(true)
+    h.session.onReconnect()
+    expect(h.session.status).toBe('saving')
+
+    // Full disconnect + reconnect cycle holds saving until acks drain.
+    h.session.onDisconnect(1006)
+    h.setOnline(false)
+    h.session.onOffline()
+    h.session.onLocalUpdate()
+    expect(h.session.status).toBe('offline')
+
+    h.setOnline(true)
+    h.startSync()
+    h.emitSynced()
+    expect(h.session.status).toBe('saving')
+
+    h.emitSyncAck()
+    h.emitSyncAck()
+    h.emitSyncAck()
+    jest.advanceTimersByTime(SYNCED_SETTLE_DELAY_MS - 1)
+    expect(h.session.status).toBe('saving')
+    jest.advanceTimersByTime(1)
+    expect(h.session.status).toBe('synced')
+    h.session.dispose()
+  })
+
+  it('holds saving across 1-RTT edits, brief disconnects, 1006 grace expiry, and first-sync timeout with dirty IDB state', () => {
+    // 1-RTT window: local edit before initial SyncStatus(true) arrives.
+    const h1 = createTestSession()
+    h1.startSync()
+    h1.emitSynced()
+    h1.session.onLocalUpdate()
+    h1.emitUnsynced(2)
+    expect(h1.session.status).toBe('saving')
+    h1.emitSyncAck()
+    jest.advanceTimersByTime(SYNCED_SETTLE_DELAY_MS)
+    expect(h1.session.status).toBe('saving')
+    h1.emitSyncAck()
+    jest.advanceTimersByTime(SYNCED_SETTLE_DELAY_MS)
+    expect(h1.session.status).toBe('synced')
+
+    // Brief disconnect during 300ms settle window (0 unsynced) restores saved.
+    h1.session.onLocalUpdate()
+    h1.emitUnsynced(1)
+    h1.emitSyncAck()
+    expect(h1.session.status).toBe('saving')
+    h1.session.onDisconnect(1006)
+    h1.startSync()
+    h1.emitSynced()
+    expect(h1.session.status).toBe('saved')
+
+    // 1006 grace expiry to error with pending local edits holds saving on reconnect.
+    h1.session.onDisconnect(1006)
+    jest.advanceTimersByTime(1000)
+    h1.session.onLocalUpdate()
+    h1.emitUnsynced(1)
+    expect(h1.session.status).toBe('saved')
+    jest.advanceTimersByTime(DISCONNECT_ERROR_GRACE_MS - 1000)
+    expect(h1.session.status).toBe('error')
+
+    h1.startSync()
+    h1.emitSynced()
+    expect(h1.session.status).toBe('saving')
+    h1.emitSyncAck()
+    h1.emitSyncAck()
+    jest.advanceTimersByTime(SYNCED_SETTLE_DELAY_MS)
+    expect(h1.session.status).toBe('synced')
+    h1.session.dispose()
+
+    // First-sync timeout sets error before slow SyncStep1/SyncStep2 detects dirty IDB state.
+    const serverDoc = new Y.Doc()
+    serverDoc.getText('t').insert(0, 'server')
+    const dirtyDoc = new Y.Doc()
+    Y.applyUpdate(dirtyDoc, Y.encodeStateAsUpdate(serverDoc))
+    dirtyDoc.getText('t').insert(6, ' offline-idb')
+
+    const h2 = createTestSession()
+    Y.applyUpdate(h2.doc, Y.encodeStateAsUpdate(dirtyDoc))
+    h2.session.onFirstSyncTimeout()
+    expect(h2.session.status).toBe('error')
+    expect(h2.onReportIssue).toHaveBeenCalledWith('first-sync-timeout', {
+      timeoutMs: FIRST_SYNC_TIMEOUT_MS
+    })
+
+    h2.startSync()
+    h2.session.onSyncStep(encodeSyncFrame('doc-1', 0, 0, Y.encodeStateVector(serverDoc)))
+    h2.session.onSyncStep(
+      encodeSyncFrame('doc-1', 0, 1, Y.encodeStateAsUpdate(serverDoc, Y.encodeStateVector(h2.doc)))
+    )
+    h2.emitSynced()
+    expect(h2.session.status).toBe('saving')
+    h2.emitSyncAck()
+    jest.advanceTimersByTime(SYNCED_SETTLE_DELAY_MS)
+    expect(h2.session.status).toBe('synced')
+    h2.session.dispose()
+  })
+
+  it('ignores readonly updates/IDB deltas and resets non-owner saving or synced on live readOnly lock', () => {
+    const serverDoc = new Y.Doc()
+    serverDoc.getText('t').insert(0, 'server')
+    const dirtyDoc = new Y.Doc()
+    Y.applyUpdate(dirtyDoc, Y.encodeStateAsUpdate(serverDoc))
+    dirtyDoc.getText('t').insert(6, ' dirty')
+
+    const h = createTestSession({ readOnly: true })
+    Y.applyUpdate(h.doc, Y.encodeStateAsUpdate(dirtyDoc))
+    h.startSync()
+    h.session.onSyncStep(encodeSyncFrame('doc-1', 0, 0, Y.encodeStateVector(serverDoc)))
+    h.session.onSyncStep(
+      encodeSyncFrame('doc-1', 0, 1, Y.encodeStateAsUpdate(serverDoc, Y.encodeStateVector(h.doc)))
+    )
+    h.emitSynced()
+    expect(h.session.status).toBe('saved')
+
+    // Unlock as writer, edit to saving, then lock readOnly.
+    h.setReadOnly(false)
+    h.emitSyncAck()
+    h.session.onLocalUpdate()
+    h.emitUnsynced(1)
+    expect(h.session.status).toBe('saving')
+
+    h.setReadOnly(true)
+    h.session.onReadOnlyLock()
+    expect(h.session.status).toBe('saved')
+
+    // Unlock, settle to synced, then lock readOnly.
+    h.setReadOnly(false)
+    h.emitSyncAck()
+    h.session.onLocalUpdate()
+    h.emitUnsynced(1)
+    h.emitSyncAck()
+    jest.advanceTimersByTime(SYNCED_SETTLE_DELAY_MS)
+    expect(h.session.status).toBe('synced')
+
+    h.setReadOnly(true)
+    h.session.onReadOnlyLock()
+    expect(h.session.status).toBe('saved')
+
+    // Disconnected status is preserved when readOnly arrives.
+    h.session.onOffline()
+    h.session.onReadOnlyLock()
+    expect(h.session.status).toBe('offline')
+    h.session.dispose()
+  })
+
+  it('enforces offline/error/unauthenticated precedence, document:saved, and auth recovery', async () => {
+    const h = createTestSession()
+    h.startSync()
+    h.emitSynced()
+    h.emitSyncAck()
+    h.emitUnsynced(1)
+    h.emitUnsynced(0)
+    expect(h.session.status).toBe('saving')
+
+    // document:saved cancels the 300ms settle window.
+    h.session.onDocumentSaved()
+    expect(h.session.status).toBe('saved')
+    jest.advanceTimersByTime(SYNCED_SETTLE_DELAY_MS)
+    expect(h.session.status).toBe('saved')
+
+    // document:saved while unacked does not clear saving.
+    h.emitUnsynced(2)
+    h.session.onDocumentSaved()
+    expect(h.session.status).toBe('saving')
+
+    // Offline cancels pending grace/settle timers and blocks document:saved / unsyncedChanges.
+    h.session.onDisconnect(1006)
+    h.session.onOffline()
+    expect(h.session.status).toBe('offline')
+    jest.advanceTimersByTime(DISCONNECT_ERROR_GRACE_MS)
+    expect(h.session.status).toBe('offline')
+    h.session.onDocumentSaved()
+    h.emitUnsynced(1)
+    expect(h.session.status).toBe('offline')
+
+    // Auth failure with session re-arms up to MAX_AUTH_REARM, and auth event cancels rearm & resets authStopped.
+    h.setOnline(true)
+    h.emitUnsynced(0)
+    h.emitSynced()
+    await h.session.onAuthFailed('expired', async () => true)
+    expect(h.onDisconnect).toHaveBeenCalledTimes(1)
+    expect(h.session.isAuthStopped).toBe(true)
+
+    h.session.onAuthEvent('SIGNED_IN')
+    expect(h.session.isAuthStopped).toBe(false)
+    expect(h.onConnect).toHaveBeenCalledTimes(1)
+
+    // Advancing past AUTH_REARM_DELAY_MS does not trigger the cancelled rearm timer.
+    jest.advanceTimersByTime(AUTH_REARM_DELAY_MS)
+    expect(h.onConnect).toHaveBeenCalledTimes(1)
+
+    // Anonymous socket rescopes on SIGNED_IN.
+    h.session.onTokenResolved(false)
+    h.session.onAuthEvent('SIGNED_IN')
+    expect(h.onDisconnect).toHaveBeenCalledTimes(2)
+    h.session.onDisconnect(1000)
+    expect(h.onConnect).toHaveBeenCalledTimes(2)
+
+    // Terminal unauthenticated when no session remains.
+    await h.session.onAuthFailed('invalid-token', async () => false)
+    h.emitUnsynced(1)
+    expect(h.session.status).toBe('unauthenticated')
+    h.session.dispose()
+  })
+
+  it('ignores stale getSession resolution after dispose or auth recovery', async () => {
+    const h = createTestSession()
+    let resolveSession!: (hasSession: boolean) => void
+    const pending = h.session.onAuthFailed(
+      'race',
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveSession = resolve
+        })
+    )
+
+    h.session.onAuthEvent('TOKEN_REFRESHED')
+    resolveSession(false)
+    await pending
+
+    expect(h.session.status).toBe('saved')
+    expect(h.session.isAuthStopped).toBe(false)
+    expect(h.onReportIssue).not.toHaveBeenCalled()
+
+    const h2 = createTestSession()
+    let resolveDisposed!: (hasSession: boolean) => void
+    const pendingDisposed = h2.session.onAuthFailed(
+      'unmount-race',
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveDisposed = resolve
+        })
+    )
+    h2.session.dispose()
+    resolveDisposed(false)
+    await pendingDisposed
+    expect(h2.session.status).toBe('saved')
+    expect(h2.onReportIssue).not.toHaveBeenCalled()
   })
 })

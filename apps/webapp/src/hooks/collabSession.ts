@@ -17,34 +17,22 @@ const SELF_HEALING_CLOSE_CODES = new Set([1000, 1001, 1005, 1006, 4408])
 
 export type AuthFailureResolution = 'rearm' | 'error' | 'unauthenticated'
 
-export type UnsyncedChangesAction =
-  { type: 'ignore' } | { type: 'saving' } | { type: 'schedule-synced' }
+export type CollabIssueKind = 'auth-failed' | 'disconnect' | 'first-sync-timeout'
 
-export function resolveUnsyncedChangesAction({
-  unsyncedCount,
-  previousUnsyncedCount,
-  isSynced,
-  authStopped,
-  isReadOnly,
-  currentStatus
-}: {
-  unsyncedCount: number
-  previousUnsyncedCount: number
-  isSynced: boolean
-  authStopped: boolean
-  isReadOnly: boolean
-  currentStatus: ProviderStatus
-}): UnsyncedChangesAction {
-  if (!isSynced || authStopped || isReadOnly || isProviderDisconnected(currentStatus)) {
-    return { type: 'ignore' }
-  }
-  if (unsyncedCount > 0) {
-    if (currentStatus === 'saving' || unsyncedCount > previousUnsyncedCount) {
-      return { type: 'saving' }
-    }
-    return { type: 'ignore' }
-  }
-  return currentStatus === 'saving' ? { type: 'schedule-synced' } : { type: 'ignore' }
+export interface CollabSessionPorts {
+  getStatus?: () => ProviderStatus
+  onStatusChange?: (status: ProviderStatus) => void
+  isReadOnly?: () => boolean
+  hasUnsyncedChanges?: () => boolean
+  isOnline?: () => boolean
+  onConnect?: () => void
+  onDisconnect?: () => void
+  hasUnpushedLocalState?: (serverSV: Uint8Array, serverUpdate: Uint8Array) => boolean
+  onReportIssue?: (
+    kind: CollabIssueKind,
+    extra: Record<string, unknown>,
+    level?: 'warning' | 'error'
+  ) => void
 }
 
 export function isSelfHealingCloseCode(code: number): boolean {
@@ -64,18 +52,24 @@ export function resolveAuthFailure({
   return hasSession ? 'error' : 'unauthenticated'
 }
 
-export function authFailureToProviderStatus(
-  resolution: Exclude<AuthFailureResolution, 'rearm'>
-): ProviderStatus {
-  return resolution === 'unauthenticated' ? 'unauthenticated' : 'error'
-}
-
-export function shouldRestoreSavedOnReconnect(isSynced: boolean, current: ProviderStatus): boolean {
-  return isSynced && (current === 'offline' || current === 'error')
-}
-
-export function shouldFireFirstSyncTimeout(isSynced: boolean, current: ProviderStatus): boolean {
-  return !isSynced && current !== 'offline' && current !== 'unauthenticated'
+export function resolveSettledStatus({
+  isReadOnly,
+  hasPendingLocalEdits,
+  hasUnsyncedChanges,
+  fallbackIfPendingFlushed
+}: {
+  isReadOnly: boolean
+  hasPendingLocalEdits: boolean
+  hasUnsyncedChanges: boolean
+  fallbackIfPendingFlushed: 'saved' | 'synced'
+}): { status: 'saved' | 'saving' | 'synced'; keepPendingLocalEdits: boolean } {
+  if (!isReadOnly && hasPendingLocalEdits) {
+    if (hasUnsyncedChanges) {
+      return { status: 'saving', keepPendingLocalEdits: true }
+    }
+    return { status: fallbackIfPendingFlushed, keepPendingLocalEdits: false }
+  }
+  return { status: 'saved', keepPendingLocalEdits: false }
 }
 
 export function isDocumentAccessReadOnly(
@@ -152,4 +146,347 @@ export function hasUnpushedLocalState(
   if (snap.ds.clients.size === 0) return false
   const { ds: serverDS } = Y.decodeUpdate(serverUpdateBytes)
   return !Y.equalDeleteSets(Y.mergeDeleteSets([snap.ds, serverDS]), serverDS)
+}
+
+/**
+ * Framework-free collaboration session state machine coordinating provider status,
+ * pending local edits, reconnect recovery, auth re-arming, and SyncStep inspection.
+ */
+export class CollabSession {
+  private _status: ProviderStatus = 'saved'
+  private isSynced = false
+  private hasPendingLocalEdits = false
+  private lastUnsyncedCount = 0
+  private pendingServerSV: Uint8Array | null = null
+  private authStopped = false
+  private authRearmCount = 0
+  private authFailedSeq = 0
+  private connectedWithSession = false
+  private rescopePending = false
+  private disposed = false
+  private syncedTimer: ReturnType<typeof setTimeout> | null = null
+  private authRearmTimer: ReturnType<typeof setTimeout> | null = null
+  private errorGraceTimer: ReturnType<typeof setTimeout> | null = null
+
+  constructor(private readonly ports: CollabSessionPorts = {}) {}
+
+  get status(): ProviderStatus {
+    return this.ports.getStatus ? this.ports.getStatus() : this._status
+  }
+
+  get isAuthStopped(): boolean {
+    return this.authStopped
+  }
+
+  private setStatus(next: ProviderStatus): void {
+    this._status = next
+    this.ports.onStatusChange?.(next)
+  }
+
+  private isReadOnly(): boolean {
+    return this.ports.isReadOnly?.() ?? false
+  }
+
+  private hasUnsyncedChanges(): boolean {
+    return this.ports.hasUnsyncedChanges?.() ?? false
+  }
+
+  private isOnline(): boolean {
+    if (this.ports.isOnline) return this.ports.isOnline()
+    return typeof navigator === 'undefined' ? true : navigator.onLine
+  }
+
+  private clearSyncedTimer(): void {
+    if (this.syncedTimer) {
+      clearTimeout(this.syncedTimer)
+      this.syncedTimer = null
+    }
+  }
+
+  private clearAuthRearmTimer(): void {
+    if (this.authRearmTimer) {
+      clearTimeout(this.authRearmTimer)
+      this.authRearmTimer = null
+    }
+  }
+
+  private clearErrorGraceTimer(): void {
+    if (this.errorGraceTimer) {
+      clearTimeout(this.errorGraceTimer)
+      this.errorGraceTimer = null
+    }
+  }
+
+  onTokenResolved(hasSession: boolean): void {
+    if (this.disposed) return
+    this.connectedWithSession = hasSession
+  }
+
+  onSynced(unsyncedCount: number, hasUnsyncedChanges: boolean): void {
+    if (this.disposed) return
+    this.isSynced = true
+    this.authStopped = false
+    this.authRearmCount = 0
+    this.authFailedSeq += 1
+    this.clearErrorGraceTimer()
+    this.clearSyncedTimer()
+
+    const settled = resolveSettledStatus({
+      isReadOnly: this.isReadOnly(),
+      hasPendingLocalEdits: this.hasPendingLocalEdits,
+      hasUnsyncedChanges,
+      fallbackIfPendingFlushed: 'saved'
+    })
+    this.hasPendingLocalEdits = settled.keepPendingLocalEdits
+    this.setStatus(settled.status)
+    this.lastUnsyncedCount = unsyncedCount
+  }
+
+  onDisconnect(closeCode?: number): void {
+    if (this.disposed) return
+    this.isSynced = false
+    this.lastUnsyncedCount = 0
+    this.pendingServerSV = null
+    this.clearSyncedTimer()
+
+    // Reconnect from here, not back-to-back with disconnect(): connect()
+    // early-returns while the status is still Connected, which would strand
+    // the editor offline. Returning skips the status writes, so this
+    // deliberate close cannot arm a false 'error' timer.
+    if (this.rescopePending) {
+      this.rescopePending = false
+      this.ports.onConnect?.()
+      return
+    }
+
+    if (this.authStopped) return
+
+    if (!this.isOnline()) {
+      this.clearErrorGraceTimer()
+      this.setStatus('offline')
+      return
+    }
+
+    if (!closeCode || closeCode === 1000) return
+
+    this.clearErrorGraceTimer()
+    if (isSelfHealingCloseCode(closeCode)) {
+      this.errorGraceTimer = setTimeout(() => {
+        this.errorGraceTimer = null
+        if (!this.disposed) this.setStatus('error')
+      }, DISCONNECT_ERROR_GRACE_MS)
+      return
+    }
+
+    this.setStatus('error')
+    this.ports.onReportIssue?.('disconnect', { closeCode }, 'warning')
+  }
+
+  onUnsyncedChanges(unsyncedCount: number): void {
+    if (this.disposed) return
+    const previousUnsyncedCount = this.lastUnsyncedCount
+    this.lastUnsyncedCount = unsyncedCount
+    const currentStatus = this.status
+
+    if (
+      unsyncedCount === 0 &&
+      this.isSynced &&
+      !this.authStopped &&
+      !isProviderDisconnected(currentStatus)
+    ) {
+      this.hasPendingLocalEdits = false
+    }
+
+    if (
+      !this.isSynced ||
+      this.authStopped ||
+      this.isReadOnly() ||
+      isProviderDisconnected(currentStatus)
+    ) {
+      this.clearSyncedTimer()
+      return
+    }
+
+    this.clearSyncedTimer()
+    if (unsyncedCount > 0) {
+      if (currentStatus === 'saving' || unsyncedCount > previousUnsyncedCount) {
+        if (unsyncedCount > previousUnsyncedCount) {
+          this.hasPendingLocalEdits = true
+        }
+        this.setStatus('saving')
+      }
+      return
+    }
+
+    if (currentStatus === 'saving') {
+      this.syncedTimer = setTimeout(() => {
+        this.syncedTimer = null
+        if (this.disposed) return
+        if (
+          this.status === 'saving' &&
+          this.isSynced &&
+          !this.authStopped &&
+          !this.isReadOnly() &&
+          !this.hasUnsyncedChanges()
+        ) {
+          this.setStatus('synced')
+        }
+      }, SYNCED_SETTLE_DELAY_MS)
+    }
+  }
+
+  onSyncStep(rawData: unknown): void {
+    if (this.disposed) return
+    try {
+      const parsed = parseIncomingSyncStep(rawData)
+      if (!parsed) return
+      if (parsed.syncType === SYNC_STEP_1) {
+        this.pendingServerSV = parsed.payload
+      } else if (this.pendingServerSV) {
+        const serverSV = this.pendingServerSV
+        this.pendingServerSV = null
+        if (
+          !this.isReadOnly() &&
+          !this.hasPendingLocalEdits &&
+          this.ports.hasUnpushedLocalState?.(serverSV, parsed.payload)
+        ) {
+          this.hasPendingLocalEdits = true
+        }
+      }
+    } catch {
+      this.pendingServerSV = null
+    }
+  }
+
+  onLocalUpdate(): void {
+    if (this.disposed) return
+    if (!this.isReadOnly()) {
+      this.hasPendingLocalEdits = true
+    }
+  }
+
+  onDocumentSaved(): void {
+    if (this.disposed) return
+    const current = this.status
+    if (isProviderDisconnected(current) || this.authStopped) return
+    if (!this.isReadOnly() && this.hasUnsyncedChanges()) return
+    this.hasPendingLocalEdits = false
+    this.clearSyncedTimer()
+    this.setStatus('saved')
+  }
+
+  onReadOnlyLock(): void {
+    if (this.disposed || !this.isReadOnly()) return
+    this.hasPendingLocalEdits = false
+    const current = this.status
+    if (current === 'saving' || current === 'synced') {
+      this.clearSyncedTimer()
+      this.setStatus('saved')
+    }
+  }
+
+  onOffline(): void {
+    if (this.disposed) return
+    this.clearSyncedTimer()
+    this.clearErrorGraceTimer()
+    this.setStatus('offline')
+  }
+
+  onReconnect(): void {
+    if (this.disposed || this.authStopped) return
+    const current = this.status
+    if (this.isSynced && (current === 'offline' || current === 'error')) {
+      const settled = resolveSettledStatus({
+        isReadOnly: this.isReadOnly(),
+        hasPendingLocalEdits: this.hasPendingLocalEdits,
+        hasUnsyncedChanges: this.hasUnsyncedChanges(),
+        fallbackIfPendingFlushed: 'synced'
+      })
+      this.hasPendingLocalEdits = settled.keepPendingLocalEdits
+      this.setStatus(settled.status)
+    }
+    this.ports.onConnect?.()
+  }
+
+  async onAuthFailed(reason: string, getHasSession: () => Promise<boolean>): Promise<void> {
+    if (this.disposed) return
+    const seq = ++this.authFailedSeq
+    this.authStopped = true
+    this.pendingServerSV = null
+    this.clearSyncedTimer()
+    this.clearErrorGraceTimer()
+    this.ports.onDisconnect?.()
+
+    const hasSession = await getHasSession()
+    if (this.disposed || seq !== this.authFailedSeq) return
+
+    const resolution = resolveAuthFailure({
+      hasSession,
+      rearmCount: this.authRearmCount
+    })
+
+    if (resolution === 'rearm') {
+      this.authRearmCount += 1
+      this.clearAuthRearmTimer()
+      this.authRearmTimer = setTimeout(() => {
+        this.authRearmTimer = null
+        if (!this.disposed) this.ports.onConnect?.()
+      }, AUTH_REARM_DELAY_MS)
+      return
+    }
+
+    this.setStatus(resolution === 'unauthenticated' ? 'unauthenticated' : 'error')
+    this.ports.onReportIssue?.('auth-failed', { reason })
+  }
+
+  onAuthEvent(event: string): void {
+    if (this.disposed) return
+    if (event !== 'TOKEN_REFRESHED' && event !== 'SIGNED_IN') return
+
+    if (this.authStopped) {
+      this.authFailedSeq += 1
+      this.authStopped = false
+      this.authRearmCount = 0
+      this.clearAuthRearmTimer()
+      this.ports.onConnect?.()
+      return
+    }
+
+    // A healthy socket opened anonymously must reopen to pick up the new scope.
+    if (event === 'SIGNED_IN' && !this.connectedWithSession) {
+      this.rescopePending = true
+      this.ports.onDisconnect?.()
+    }
+  }
+
+  onFirstSyncTimeout(): void {
+    if (this.disposed) return
+    const current = this.status
+    if (!this.isSynced && current !== 'offline' && current !== 'unauthenticated') {
+      this.clearErrorGraceTimer()
+      this.setStatus('error')
+      this.ports.onReportIssue?.('first-sync-timeout', { timeoutMs: FIRST_SYNC_TIMEOUT_MS })
+    }
+  }
+
+  stopReconnect(): void {
+    this.authStopped = true
+    this.clearAuthRearmTimer()
+  }
+
+  dispose(): void {
+    this.disposed = true
+    this.authFailedSeq += 1
+    this.clearSyncedTimer()
+    this.clearAuthRearmTimer()
+    this.clearErrorGraceTimer()
+    this.isSynced = false
+    this.hasPendingLocalEdits = false
+    this.lastUnsyncedCount = 0
+    this.pendingServerSV = null
+    this.authStopped = false
+    this.authRearmCount = 0
+    this.connectedWithSession = false
+    this.rescopePending = false
+  }
 }
