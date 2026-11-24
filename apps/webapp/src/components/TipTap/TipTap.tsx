@@ -314,6 +314,11 @@ const Editor = ({
     enableContentCheck: true,
     onContentError({ editor, error, disableCollaboration }) {
       console.error('onContentError', error)
+      // The #701 24 h stop rule reads GlitchTip; console.error alone never reaches it.
+      captureMessageOnce('onContentError', 'onContentError', {
+        level: 'error',
+        extra: { message: error instanceof Error ? error.message : String(error) }
+      })
       // Invalid content blocks further remote transactions while local edits
       // keep syncing — freeze this client instead of diverging silently. The
       // freeze is terminal in-session; contentForkError drives the reload copy.
