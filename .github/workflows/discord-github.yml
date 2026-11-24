@@ -88,7 +88,7 @@ jobs:
     # on `closed` it names the maintainer, not the bot that opened the item.
     # The build step therefore also tests the AUTHOR. Dependabot opens up to
     # ten pull requests a month against this repository.
-    if: github.actor != 'dependabot[bot]'
+    if: github.actor != 'dependabot[bot]' && vars.DISCORD_RELAY_ACTIVE != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # This job reads the event payload and calls curl. It touches no GitHub

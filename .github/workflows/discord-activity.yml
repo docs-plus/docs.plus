@@ -16,7 +16,7 @@ on:
 
 jobs:
   notify:
-    if: github.actor != 'dependabot[bot]'
+    if: github.actor != 'dependabot[bot]' && vars.DISCORD_RELAY_ACTIVE != 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read

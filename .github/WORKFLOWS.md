@@ -15,15 +15,19 @@ This file is intentionally not named `README.md` so the repository root `README.
   - Disk guard: before the build, it removes old `docsplus-*` tags. It keeps this run's tag, the last-good tag and every image a container uses. Then it prunes the build cache toward 45 GB free and keeps at least 15 GB of cache. It aborts below 20 GB free and exposes `free_gb_before`, `free_gb` and `load1` as `images` job outputs
   - A manual dispatch with `force_deploy` deploys only from `main`. From any other branch, the deploy job skips ([#437](https://github.com/docs-plus/docs.plus/issues/437))
   - The deploy copies `scripts/traefik/` to `/opt/projects/prod.docs.plus/.deploy/traefik/` before `up -d traefik redis`. It rewrites only a changed dynamic file, by rename. Traefik reads that copy through `TRAEFIK_CONFIG_DIR` in the host `.env`, so a checkout on the runner does not change live routing
-  - Two GitHub settings are manual, not code ([#437](https://github.com/docs-plus/docs.plus/issues/437)). The `production` environment should allow only `main`. A `prod.docs.plus` runner group should accept only `prod.docs.plus.yml` and `observability.docs.plus.yml` from `main`
+  - Two GitHub settings are manual, not code ([#437](https://github.com/docs-plus/docs.plus/issues/437)). The `production` environment should allow only `main`. A `prod.docs.plus` runner group should accept only `prod.docs.plus.yml`, `observability.docs.plus.yml`, and `github-relay.docs.plus.yml` from `main`
   - On success, posts a `deploy <sha>` annotation to Grafana. On failure, it notifies Telegram (credentials from the host's `.env.observability`). The rollback runs only after `🚀 Deploy Services` has started (`ROLL_STARTED`). The notice has five texts: aborted before touching prod (env guard or missing images; production unchanged), stopped in Ensure Infrastructure (app unchanged), migration failed (app unchanged), rolled back to the previous tag, or rollback failed (manual intervention). The `images` job sends its own notice when it fails (env guard, disk guard or image build). `🧹 Remove Unshipped Images` removes the images of a run whose deploy never started.
   - Every run, the weekly cron included, ends with `📊 Run Report`. It writes job times, deploy steps and the benchmark metrics (M1, M2g, M2i, M3, M4, M5, W, M6) to the run summary. It reads the API only and never fails the run
+- `workflows/github-relay.docs.plus.yml`
+  - Server-only deploy for `apps/github-relay` (`docker-compose.github-relay.yml`), decoupled from app deploys
+  - Triggers: `workflow_dispatch` (`setup|update|restart|down`) on `prod.docs.plus` from `main`; alerts Telegram on deploy failure
+  - Replaces the three legacy Discord workflows once repository variable `DISCORD_RELAY_ACTIVE` equals `true`
 - `workflows/discord-activity.yml`
-  - Push activity notifications to the `#github` Discord channel via `DISCORD_GITHUB_WEBHOOK`
+  - Legacy push activity notifications to `#github` via `DISCORD_GITHUB_WEBHOOK` (skipped when `vars.DISCORD_RELAY_ACTIVE == 'true'`)
   - Omits `(build):` deploy-trigger commits from the list; a push that is only those commits does not post
   - `workflow_dispatch` can post an older `before...after` SHA range (catch-up)
 - `workflows/discord-github.yml`
-  - Issue and pull-request cards to the `#github` Discord channel, beside the push summaries
+  - Legacy issue and pull-request cards to `#github`, beside push summaries (skipped when `vars.DISCORD_RELAY_ACTIVE == 'true'`)
   - Posts on `issues` (opened, reopened, labeled, closed) and `pull_request_target` (opened, ready_for_review, closed)
   - `labeled` posts for `good first issue` and `help wanted` only; a closed-unmerged PR posts nothing
   - Uses `pull_request_target` on purpose, so a fork pull request can read the webhook secret. It never checks out code, holds `permissions: {}`, and that is what keeps the trigger safe
@@ -53,7 +57,7 @@ This file is intentionally not named `README.md` so the repository root `README.
   - Triggers: a PR to `main` that touches `packages/supabase/**` or this workflow, the weekly cron (Sunday 00:00 UTC), and `workflow_dispatch`
   - Uses no secrets, so fork pull requests run it. Realtime stays on, because the seed writes policies on `realtime.messages`. It is not a deploy gate
 - `workflows/discord-release.yml`
-  - Posts a published release or prerelease to Discord
+  - Legacy published release announcements to `#releases` (skipped when `vars.DISCORD_RELAY_ACTIVE == 'true'`)
 
 `backend-ci.yml` and `quality-lint.yml` are reusable workflows (`workflow_call`). The prod workflow calls both.
 

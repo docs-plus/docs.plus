@@ -1,0 +1,106 @@
+# Server-only GitHub-to-Discord relay stack deploy, decoupled from the app pipeline.
+name: CI/CD GitHub Relay
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to run on the GitHub relay stack'
+        required: true
+        default: setup
+        type: choice
+        options: [setup, update, restart, down]
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+env:
+  COMPOSE_FILE: docker-compose.github-relay.yml
+  ENV_SOURCE: /opt/projects/prod.docs.plus/.env.github-relay
+  ENV_FILE: .env.github-relay
+  OBS_ENV_SOURCE: /opt/projects/prod.docs.plus/.env.observability
+
+jobs:
+  deploy:
+    name: 📣 Deploy GitHub Relay
+    runs-on: prod.docs.plus
+    timeout-minutes: 10
+    concurrency:
+      group: github-relay-deploy
+      cancel-in-progress: false
+    if: github.ref == 'refs/heads/main' && inputs.action != 'down'
+    permissions:
+      contents: read
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - name: 🔐 Prepare environment
+        run: |
+          install -m 600 "${ENV_SOURCE}" "${ENV_FILE}"
+          for k in GITHUB_WEBHOOK_SECRET DISCORD_BOT_TOKEN DISCORD_GITHUB_CHANNEL_ID DISCORD_RELEASES_CHANNEL_ID; do
+            if ! grep -Eq "^${k}=[\"']?[^\"'[:space:]]" "${ENV_FILE}"; then
+              echo "::error::${k} missing or empty in ${ENV_SOURCE}"; exit 1
+            fi
+          done
+          echo "✅ Environment ready"
+
+      - name: 🔧 Ensure network
+        run: docker network create docsplus-network 2>/dev/null || true
+
+      - name: 🚀 Deploy stack
+        env:
+          ACTION_IN: ${{ inputs.action }}
+        run: |
+          ACTION="${ACTION_IN:-setup}"
+          case "${ACTION}" in
+            setup|update|restart) ;;
+            *) echo "::error::unknown relay action '${ACTION}'"; exit 1 ;;
+          esac
+          if [ "${ACTION}" = "restart" ]; then
+            docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" restart
+          else
+            docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d --build --remove-orphans
+          fi
+
+      - name: 🩺 Verify health
+        run: |
+          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" ps
+          ok=0
+          for _i in $(seq 1 15); do
+            if docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T github-relay \
+                 bun -e "fetch('http://127.0.0.1:'+(process.env.PORT||'4050')+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" 2>/dev/null; then
+              ok=1
+              echo "✅ github-relay healthy"
+              break
+            fi
+            sleep 3
+          done
+          [ "${ok}" = 1 ] || { echo "::error::github-relay not healthy after 45s"; exit 1; }
+
+      - name: 📣 Notify failure
+        if: failure()
+        run: bash scripts/ci/notify-telegram.sh "${OBS_ENV_SOURCE}" "📣 GitHub Relay deploy FAILED (${GITHUB_SHA}, run ${GITHUB_RUN_ID})"
+
+  teardown:
+    name: 🧹 Down GitHub Relay
+    runs-on: prod.docs.plus
+    timeout-minutes: 10
+    if: github.ref == 'refs/heads/main' && inputs.action == 'down'
+    permissions:
+      contents: read
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+      - name: 🔐 Prepare environment
+        run: install -m 600 "${ENV_SOURCE}" "${ENV_FILE}"
+      - name: 🧹 Down (keep volume)
+        run: docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" down

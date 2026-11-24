@@ -39,6 +39,7 @@ concurrency:
 
 jobs:
   announce:
+    if: vars.DISCORD_RELAY_ACTIVE != 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
