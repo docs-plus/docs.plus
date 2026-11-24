@@ -49,6 +49,7 @@ export interface SelectProps {
   maxHeight?: number
   id?: string
   'aria-label'?: string
+  'aria-labelledby'?: string
   wrapperClassName?: string
   className?: string
 }
@@ -60,22 +61,6 @@ export const selectSizeClassName: Record<SelectSize, string> = {
   md: 'select-md',
   lg: 'select-lg',
   xl: 'select-xl'
-}
-
-const buildTriggerClasses = (
-  size?: SelectSize,
-  ghost?: boolean,
-  error?: boolean,
-  success?: boolean
-): string => {
-  const classes: string[] = ['select', 'w-full', 'text-left']
-
-  if (size) classes.push(selectSizeClassName[size])
-  if (error) classes.push('select-error')
-  else if (success) classes.push('select-success')
-  if (ghost) classes.push('select-ghost')
-
-  return classes.join(' ')
 }
 
 /**
@@ -99,11 +84,14 @@ const Select = ({
   maxHeight = 240,
   id: _id,
   'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
   wrapperClassName,
   className
 }: SelectProps) => {
   const generatedId = useId()
   const id = _id || generatedId
+  const labelId = label ? `${id}-label` : undefined
+  const listboxId = `${id}-listbox`
 
   const [internalValue, setInternalValue] = useState('')
   const value = controlledValue ?? internalValue
@@ -112,6 +100,8 @@ const Select = ({
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
 
   const listRef = useRef<HTMLDivElement>(null)
+  const optionsRef = useRef(options)
+  optionsRef.current = options
 
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,
@@ -151,18 +141,26 @@ const Select = ({
   useSelectExclusion(id, isOpen, closeDropdown)
 
   useEffect(() => {
-    if (isOpen) {
-      const selectedIdx = options.findIndex((o) => o.value === value)
-      setHighlightedIndex(selectedIdx >= 0 ? selectedIdx : 0)
+    if (!isOpen) return
 
-      requestAnimationFrame(() => {
-        if (listRef.current && selectedIdx >= 0) {
-          const el = listRef.current.children[selectedIdx] as HTMLElement
-          el?.scrollIntoView({ block: 'nearest' })
-        }
-      })
+    const currentOptions = optionsRef.current
+    if (currentOptions.length === 0) {
+      setHighlightedIndex(-1)
+      return
     }
-  }, [isOpen, options, value])
+
+    const selectedIdx = currentOptions.findIndex((o) => o.value === value && !o.disabled)
+    const initialIdx = selectedIdx >= 0 ? selectedIdx : currentOptions.findIndex((o) => !o.disabled)
+    setHighlightedIndex(initialIdx)
+
+    if (selectedIdx < 0) return
+
+    const rafId = requestAnimationFrame(() => {
+      const el = listRef.current?.children[selectedIdx] as HTMLElement | undefined
+      el?.scrollIntoView({ block: 'nearest' })
+    })
+    return () => cancelAnimationFrame(rafId)
+  }, [isOpen, value])
 
   const handleSelect = useCallback(
     (optionValue: string) => {
@@ -176,7 +174,7 @@ const Select = ({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (!isOpen) {
-        if (['Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+        if (options.length > 0 && ['Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
           e.preventDefault()
           setIsOpen(true)
         }
@@ -186,6 +184,7 @@ const Select = ({
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault()
+          if (options.length === 0) return
           setHighlightedIndex((prev) => {
             let next = prev + 1
             while (next < options.length && options[next].disabled) next++
@@ -194,8 +193,9 @@ const Select = ({
           break
         case 'ArrowUp':
           e.preventDefault()
+          if (options.length === 0) return
           setHighlightedIndex((prev) => {
-            let next = prev - 1
+            let next = prev < 0 ? options.length - 1 : prev - 1
             while (next >= 0 && options[next].disabled) next--
             return next >= 0 ? next : prev
           })
@@ -203,7 +203,11 @@ const Select = ({
         case 'Enter':
         case ' ':
           e.preventDefault()
-          if (highlightedIndex >= 0 && !options[highlightedIndex]?.disabled) {
+          if (
+            highlightedIndex >= 0 &&
+            highlightedIndex < options.length &&
+            !options[highlightedIndex]?.disabled
+          ) {
             handleSelect(options[highlightedIndex].value)
           }
           break
@@ -214,14 +218,19 @@ const Select = ({
         case 'Tab':
           setIsOpen(false)
           break
-        case 'Home':
+        case 'Home': {
           e.preventDefault()
-          setHighlightedIndex(0)
+          const firstEnabled = options.findIndex((o) => !o.disabled)
+          if (firstEnabled >= 0) setHighlightedIndex(firstEnabled)
           break
-        case 'End':
+        }
+        case 'End': {
           e.preventDefault()
-          setHighlightedIndex(options.length - 1)
+          let lastEnabled = options.length - 1
+          while (lastEnabled >= 0 && options[lastEnabled].disabled) lastEnabled--
+          if (lastEnabled >= 0) setHighlightedIndex(lastEnabled)
           break
+        }
       }
     },
     [isOpen, options, highlightedIndex, handleSelect]
@@ -229,11 +238,14 @@ const Select = ({
 
   useEffect(() => {
     if (!isOpen || !listRef.current || highlightedIndex < 0) return
-    const el = listRef.current.children[highlightedIndex] as HTMLElement
+    const el = listRef.current.children[highlightedIndex] as HTMLElement | undefined
     el?.scrollIntoView({ block: 'nearest' })
   }, [highlightedIndex, isOpen])
 
-  const triggerClasses = buildTriggerClasses(size, ghost, error, success)
+  const activeOptionId =
+    isOpen && highlightedIndex >= 0 && highlightedIndex < options.length
+      ? `${id}-option-${highlightedIndex}`
+      : undefined
 
   const helperId = helperText ? `${id}-help` : undefined
 
@@ -250,15 +262,20 @@ const Select = ({
       id={id}
       disabled={disabled}
       className={twMerge(
-        triggerClasses,
-        'flex items-center justify-between bg-none pr-3',
+        'select flex w-full items-center justify-between bg-none pr-3 text-left',
+        size && selectSizeClassName[size],
+        error ? 'select-error' : success && 'select-success',
+        ghost && 'select-ghost',
         disabled && 'select-disabled cursor-not-allowed',
         isOpen && 'select-primary',
         className
       )}
       aria-haspopup="listbox"
       aria-expanded={isOpen}
+      aria-controls={isOpen ? listboxId : undefined}
+      aria-activedescendant={activeOptionId}
       aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
       aria-invalid={error || undefined}
       aria-describedby={helperId}
       {...getReferenceProps({ onKeyDown: handleKeyDown })}>
@@ -280,14 +297,13 @@ const Select = ({
     <FloatingPortal>
       <div
         ref={refs.setFloating}
+        id={listboxId}
         style={{ ...floatingStyles, ...transitionStyles }}
         className={twMerge(popoverPanelClassName, 'flex min-h-0 w-auto flex-col')}
         onKeyDown={handleKeyDown}
         role="listbox"
-        aria-labelledby={id}
-        aria-activedescendant={
-          highlightedIndex >= 0 ? `${id}-option-${highlightedIndex}` : undefined
-        }
+        aria-labelledby={labelId ?? ariaLabelledBy ?? (!ariaLabel ? id : undefined)}
+        aria-label={!labelId && !ariaLabelledBy ? ariaLabel : undefined}
         {...getFloatingProps()}>
         <ScrollArea scrollbarSize="thin" preserveWidth={false} className="min-h-0 min-w-0 flex-1">
           <div ref={listRef} className="p-1.5">
@@ -299,6 +315,7 @@ const Select = ({
                   key={option.value}
                   id={`${id}-option-${index}`}
                   type="button"
+                  tabIndex={-1}
                   disabled={option.disabled}
                   onClick={() => !option.disabled && handleSelect(option.value)}
                   onMouseEnter={() => !option.disabled && setHighlightedIndex(index)}
@@ -331,27 +348,23 @@ const Select = ({
     </FloatingPortal>
   )
 
-  if (labelPosition === 'floating') {
-    return (
-      <div className={twMerge('flex w-full flex-col gap-1.5', wrapperClassName)}>
-        <label className="floating-label w-full">
-          {label && <span>{label}</span>}
-          {triggerButton}
-        </label>
-        {dropdown}
-        {helperTextEl}
-      </div>
-    )
-  }
-
   return (
     <div className={twMerge('flex w-full flex-col gap-1.5', wrapperClassName)}>
-      {label && (
-        <label htmlFor={id} className={fieldLabelClassName}>
-          {label}
+      {labelPosition === 'floating' ? (
+        <label className="floating-label w-full">
+          {label && <span id={labelId}>{label}</span>}
+          {triggerButton}
         </label>
+      ) : (
+        <>
+          {label && (
+            <label id={labelId} htmlFor={id} className={fieldLabelClassName}>
+              {label}
+            </label>
+          )}
+          {triggerButton}
+        </>
       )}
-      {triggerButton}
       {dropdown}
       {helperTextEl}
     </div>

@@ -4,7 +4,7 @@
 import { findChildren, textblockTypeInputRule } from '@tiptap/core'
 import { CodeBlockLowlight as BaseCodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
-import { Plugin, PluginKey } from '@tiptap/pm/state'
+import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import highlight from 'highlight.js/lib/core'
 import type { createLowlight } from 'lowlight'
@@ -133,35 +133,51 @@ export const CodeBlockLowlight = BaseCodeBlockLowlight.extend({
         }
 
         const text = $from.parent.textContent
-        const offset = $from.parentOffset
-        const lineStart = offset === 0 ? 0 : text.lastIndexOf('\n', offset - 1) + 1
-        const nextNl = text.indexOf('\n', offset)
-        const lineEnd = nextNl === -1 ? text.length : nextNl
+        if ($from.parentOffset !== text.length) {
+          return parentEnter?.({ editor }) ?? false
+        }
 
-        if (lineEnd === text.length && text.slice(lineStart, lineEnd) === '```') {
-          const blockStart = $from.start()
-          const deleteFrom = lineStart > 0 ? blockStart + lineStart - 1 : blockStart
-          const deleteTo = blockStart + lineEnd
+        const lastNl = text.lastIndexOf('\n')
+        const lineStart = lastNl === -1 ? 0 : lastNl + 1
+        const lastLine = text.slice(lineStart)
+
+        if (lastLine !== '```' && lastLine !== '~~~') {
+          return parentEnter?.({ editor }) ?? false
+        }
+
+        if (lineStart === 0) {
+          const paragraph = state.schema.nodes.paragraph?.create()
+          if (!paragraph) return false
 
           return editor
             .chain()
             .command(({ tr }) => {
-              tr.delete(deleteFrom, deleteTo)
+              const pos = $from.before()
+              tr.replaceWith(pos, $from.after(), paragraph)
+              tr.setSelection(TextSelection.create(tr.doc, pos + 1))
               return true
             })
-            .exitCode()
             .run()
         }
 
-        return parentEnter?.({ editor }) ?? false
+        const blockStart = $from.start()
+        return editor
+          .chain()
+          .command(({ tr }) => {
+            tr.delete(blockStart + lineStart - 1, blockStart + text.length)
+            return true
+          })
+          .exitCode()
+          .run()
       }
     }
   },
 
   addProseMirrorPlugins() {
-    const base = (this.parent?.() ?? []).filter(
-      (p) => !(p as unknown as { key: string }).key.startsWith('lowlight$')
-    )
+    const base = (this.parent?.() ?? []).filter((p) => {
+      const pluginKey = p.spec.key as (PluginKey & { key?: string }) | undefined
+      return !pluginKey?.key?.startsWith('lowlight$')
+    })
     return [
       ...base,
       LowlightPlugin(

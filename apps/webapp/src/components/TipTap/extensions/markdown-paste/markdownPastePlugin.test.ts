@@ -1,19 +1,20 @@
-import { HyperlinkBase, isSafeHref } from '@docs.plus/extension-hyperlink'
+import { HyperlinkBase } from '@docs.plus/extension-hyperlink'
 import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
-import { Editor, Mark, mergeAttributes } from '@tiptap/core'
+import { Editor } from '@tiptap/core'
 import { TaskItem, TaskList } from '@tiptap/extension-list'
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
 import { Markdown } from '@tiptap/markdown'
 import StarterKit from '@tiptap/starter-kit'
+import { sanitizeJsonContent } from '@utils/sanitizeContent'
 import { Marked } from 'marked'
 
+import { LegacyLink } from '../../legacyLink'
 import { TitleDocument } from '../title-document'
 import { MarkdownPaste } from './index'
 import {
   looksLikeMarkdown,
   normalizeForTitleDocument,
-  normalizeMarkdownJson,
-  sanitizeJsonContent
+  normalizeMarkdownJson
 } from './markdownPastePlugin'
 
 jest.mock('marked', () => {
@@ -26,44 +27,6 @@ jest.mock('marked', () => {
   )
 })
 
-const TestLegacyLink = Mark.create({
-  name: 'link',
-  keepOnSplit: false,
-  inclusive: false,
-  addAttributes() {
-    return {
-      href: { default: null },
-      target: { default: null, rendered: false },
-      rel: { default: 'noopener noreferrer nofollow' },
-      class: { default: null, parseHTML: () => null, rendered: false },
-      title: { default: null }
-    }
-  },
-  parseHTML() {
-    return [
-      {
-        tag: 'a[href]',
-        getAttrs: (dom: HTMLElement | string) => {
-          if (typeof dom === 'string') return false
-          return isSafeHref(dom.getAttribute('href') ?? '') ? null : false
-        }
-      }
-    ]
-  },
-  renderHTML({ HTMLAttributes }) {
-    const safe = isSafeHref(HTMLAttributes.href as string | null | undefined)
-      ? HTMLAttributes
-      : { ...HTMLAttributes, href: '' }
-    return ['a', mergeAttributes({ rel: 'noopener noreferrer nofollow' }, safe), 0]
-  },
-  renderMarkdown(node, helpers) {
-    const content = helpers.renderChildren(node)
-    const raw = typeof node.attrs?.href === 'string' ? node.attrs.href : ''
-    const href = (isSafeHref(raw) ? raw : '').replace(/\)/g, '%29').replace(/\s/g, '%20')
-    return `[${content}](${href})`
-  }
-})
-
 const createTestEditor = (options?: { content?: string | object; onContentError?: jest.Mock }) => {
   return new Editor({
     enableContentCheck: true,
@@ -71,7 +34,7 @@ const createTestEditor = (options?: { content?: string | object; onContentError?
     content: options?.content ?? '<h1>Title</h1><p>Body</p>',
     extensions: [
       StarterKit.configure({ document: false, link: false }),
-      TestLegacyLink,
+      LegacyLink,
       HyperlinkBase.configure({ linkOnPaste: false, autolink: false }),
       HyperMultimediaKit.configure({ Image: { inline: true } }),
       Table,
@@ -282,18 +245,34 @@ describe('normalizeMarkdownJson and normalizeForTitleDocument', () => {
     expect(empty.content).toEqual([{ type: 'heading', attrs: { level: 1 } }])
   })
 
-  it('preserves sanitizeJsonContent href/src scrubbing', () => {
+  it('strips unsafe hyperlink marks and preserves safe data:image media src', () => {
     const cleaned = sanitizeJsonContent({
-      type: 'paragraph',
+      type: 'doc',
       content: [
         {
-          type: 'text',
-          text: 'xss',
-          marks: [{ type: 'hyperlink', attrs: { href: 'javascript:alert(1)' } }]
+          type: 'paragraph',
+          content: [
+            {
+              type: 'text',
+              text: 'xss',
+              marks: [{ type: 'hyperlink', attrs: { href: 'javascript:alert(1)' } }]
+            },
+            {
+              type: 'image',
+              attrs: { src: 'data:image/png;base64,abc123' }
+            },
+            {
+              type: 'image',
+              attrs: { src: 'data:image/svg+xml;base64,PHN2Zy8+' }
+            }
+          ]
         }
       ]
     })
-    expect(cleaned.content?.[0].marks?.[0].attrs?.href).toBe('')
+    const paragraphContent = cleaned.content?.[0].content
+    expect(paragraphContent?.[0].marks).toBeUndefined()
+    expect(paragraphContent?.[1].attrs?.src).toBe('data:image/png;base64,abc123')
+    expect(paragraphContent?.[2].attrs?.src).toBeUndefined()
   })
 })
 

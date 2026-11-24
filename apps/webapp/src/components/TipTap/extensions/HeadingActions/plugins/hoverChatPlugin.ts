@@ -11,7 +11,11 @@ import {
   createDecorationPluginState
 } from '../../plugins/decorationHelpers'
 import { HEADING_ACTIONS_CLASSES, type HeadingNodeData } from '../types'
-import { syncHeadingWrapperA11y } from './headingWidgetA11y'
+import {
+  isElementHovered,
+  isMobileShellEnvironment,
+  syncHeadingWrapperA11y
+} from './headingWidgetA11y'
 
 type WidgetFactory = (view: EditorView, getPos: () => number | undefined) => HTMLElement
 
@@ -37,7 +41,7 @@ const createChatButton = (headingId: string, editor: Editor): HTMLButtonElement 
     msUserSelect: 'none'
   })
 
-  const isMobile = Boolean(document.querySelector('.mobileLayoutRoot.m_mobile'))
+  const isMobile = isMobileShellEnvironment()
   button.innerHTML = isMobile
     ? ChatOutlineSVG({ size: 20, className: 'chatLeft' })
     : ChatLeftSVG({
@@ -209,41 +213,81 @@ export function createHoverChatPlugin(editor: Editor): Plugin {
       let sheet: HTMLElement | null = null
       let activeWrapper: HTMLElement | null = null
       let lastSelectionHeadingId: string | null = null
+      let lastActiveWrapperHovered = false
+
+      const isWrapperOrHeadingHovered = (haWrap: HTMLElement): boolean => {
+        if (!haWrap.isConnected) return false
+        const headingEl = haWrap.closest<HTMLElement>('h1, h2, h3, h4, h5, h6')
+        return isElementHovered(haWrap) || isElementHovered(headingEl)
+      }
+
+      const syncActiveWrapperOnHoverChange = (alreadySynced: boolean): void => {
+        if (!activeWrapper) return
+        if (!activeWrapper.isConnected) {
+          activeWrapper = null
+          lastActiveWrapperHovered = false
+          return
+        }
+
+        const isHovered = isWrapperOrHeadingHovered(activeWrapper)
+        if (!alreadySynced && isHovered !== lastActiveWrapperHovered) {
+          syncHeadingWrapperA11y(activeWrapper)
+        }
+        lastActiveWrapperHovered = isHovered
+      }
 
       const updateSelectionState = (view: EditorView): void => {
-        const headingId = findSelectionHeadingId(view)
+        if (wrapper && !wrapper.isConnected) {
+          wrapper = null
+        }
+        if (activeWrapper && !activeWrapper.isConnected) {
+          activeWrapper = null
+          lastActiveWrapperHovered = false
+        }
 
-        if (headingId === lastSelectionHeadingId) return
+        const headingId = findSelectionHeadingId(view)
+        const escapedId =
+          headingId && typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+            ? CSS.escape(headingId)
+            : headingId
+        const nextWrapper = escapedId
+          ? view.dom.querySelector<HTMLElement>(
+              `.${HEADING_ACTIONS_CLASSES.wrap}[data-heading-id="${escapedId}"]`
+            )
+          : null
+
+        if (headingId === lastSelectionHeadingId && nextWrapper === activeWrapper) return
         lastSelectionHeadingId = headingId
 
         if (activeWrapper) {
           const prev = activeWrapper
           prev.classList.remove(HEADING_ACTIONS_CLASSES.hasSelection)
           activeWrapper = null
-          syncHeadingWrapperA11y(prev)
+          lastActiveWrapperHovered = false
+          if (prev.isConnected) syncHeadingWrapperA11y(prev)
         }
 
-        if (!headingId) return
-
-        const nextWrapper = view.dom.querySelector<HTMLElement>(
-          `.${HEADING_ACTIONS_CLASSES.wrap}[data-heading-id="${headingId}"]`
-        )
         if (nextWrapper) {
           nextWrapper.classList.add(HEADING_ACTIONS_CLASSES.hasSelection)
           activeWrapper = nextWrapper
+          lastActiveWrapperHovered = isWrapperOrHeadingHovered(nextWrapper)
           syncHeadingWrapperA11y(nextWrapper)
         }
       }
 
       // The class sits on widget DOM, which DOMObserver ignores, so it costs no re-render.
-      const setWrapper = (next: HTMLElement | null): void => {
-        if (next === wrapper) return
+      const setWrapper = (next: HTMLElement | null): boolean => {
+        if (wrapper && !wrapper.isConnected) {
+          wrapper = null
+        }
+        if (next === wrapper) return false
         const prev = wrapper
         prev?.classList.remove(HEADING_ACTIONS_CLASSES.sectionHover)
         next?.classList.add(HEADING_ACTIONS_CLASSES.sectionHover)
         wrapper = next
-        if (prev) syncHeadingWrapperA11y(prev)
-        if (next) syncHeadingWrapperA11y(next)
+        if (prev?.isConnected) syncHeadingWrapperA11y(prev)
+        if (next?.isConnected) syncHeadingWrapperA11y(next)
+        return activeWrapper !== null && (prev === activeWrapper || next === activeWrapper)
       }
 
       const syncSectionHover = (): void => {
@@ -254,16 +298,16 @@ export function createHoverChatPlugin(editor: Editor): Plugin {
 
         let el: Element = target
         while (el.parentElement && el.parentElement !== dom) el = el.parentElement
-        setWrapper(findSectionWrapper(editorView, el))
-        if (activeWrapper) syncHeadingWrapperA11y(activeWrapper)
+        const syncedActive = setWrapper(findSectionWrapper(editorView, el))
+        syncActiveWrapperOnHoverChange(syncedActive)
       }
 
       const clearSectionHover = (): void => {
         cancelAnimationFrame(frame)
         frame = 0
         target = null
-        setWrapper(null)
-        if (activeWrapper) syncHeadingWrapperA11y(activeWrapper)
+        const syncedActive = setWrapper(null)
+        syncActiveWrapperOnHoverChange(syncedActive)
       }
 
       const onFocusChange = (event: FocusEvent): void => {
@@ -271,7 +315,9 @@ export function createHoverChatPlugin(editor: Editor): Plugin {
         const haWrap = event.target.closest<HTMLElement>(`.${HEADING_ACTIONS_CLASSES.wrap}`)
         if (!haWrap) return
         if (event.type === 'focusout') {
-          queueMicrotask(() => syncHeadingWrapperA11y(haWrap))
+          queueMicrotask(() => {
+            if (haWrap.isConnected) syncHeadingWrapperA11y(haWrap)
+          })
         } else {
           syncHeadingWrapperA11y(haWrap)
         }
@@ -314,6 +360,7 @@ export function createHoverChatPlugin(editor: Editor): Plugin {
           editorView.dom.removeEventListener('focusout', onFocusChange)
           sheet?.removeEventListener('pointerleave', clearSectionHover)
           activeWrapper = null
+          lastActiveWrapperHovered = false
           clearSectionHover()
         }
       }

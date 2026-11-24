@@ -202,6 +202,25 @@ describe('Markdown Round-Trip Fidelity', () => {
       })
     })
 
+    it('exits a code block on Enter after a closing tilde fence', () => {
+      focusEndOfFirstParagraph()
+
+      cy.get(EDITOR_SEL).should('have.focus')
+      cy.realType('~~~js ')
+      cy.realType('const y = 2')
+      cy.realPress('Enter')
+      cy.realType('~~~')
+      cy.realPress('Enter')
+
+      cy.get('.docy_editor pre code').should('contain.text', 'const y = 2')
+      cy.get('.docy_editor pre code').should('not.contain.text', '~~~')
+
+      cy.window().then((win) => {
+        expect(win._editor.isActive('codeBlock')).to.eq(false)
+        expect(win._editor.isActive('paragraph')).to.eq(true)
+      })
+    })
+
     it('exits a mermaid block on Enter after a closing fence and preserves triple-Enter exit', () => {
       focusEndOfFirstParagraph()
 

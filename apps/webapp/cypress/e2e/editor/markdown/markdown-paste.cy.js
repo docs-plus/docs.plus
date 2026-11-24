@@ -241,12 +241,16 @@ describe('Markdown Paste Detection', () => {
         '',
         '[xss](data:text/html,<script>alert(1)</script>)',
         '',
+        '![svg](data:image/svg+xml;base64,PHN2Zy8+)',
+        '',
         '![img](data:image/png;base64,abc123)'
       ].join('\n')
       cy.pasteAsPlainText(markdown)
       cy.wait(300)
 
       cy.get('.docy_editor a[href*="data:text"]').should('not.exist')
+      cy.get('.docy_editor img[src*="data:image/svg+xml"]').should('not.exist')
+      cy.get('.docy_editor img[src^="data:image/png"]').should('exist')
     })
 
     it('handles oversized clipboard gracefully (no parse attempt)', () => {
@@ -257,6 +261,7 @@ describe('Markdown Paste Detection', () => {
       cy.wait(500)
 
       cy.get('.docy_editor').should('exist')
+      cy.get('.docy_editor h2').should('not.exist')
     })
   })
 

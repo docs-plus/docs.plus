@@ -17,35 +17,41 @@ export const formatHeadingChatAriaLabel = (count: number): string =>
 export function syncHeadingWidgetUnread(): void {
   const source = useChatStore.getState()
   const wrappersToSync = new Set<HTMLElement>()
-
-  const updateElement = (el: HTMLElement, count: number) => {
-    const oldCount = parseInt(el.dataset.unreadCount || '0', 10)
-    el.setAttribute('aria-label', formatHeadingChatAriaLabel(count))
-
-    if (count > 0) {
-      if (count !== oldCount) {
-        el.dataset.countDir = count > oldCount ? 'up' : 'down'
-        el.style.animation = 'none'
-        void el.offsetHeight
-        el.style.animation = ''
-      }
-      el.dataset.unreadCount = formatCappedCount(count)
-    } else {
-      delete el.dataset.unreadCount
-      delete el.dataset.countDir
-    }
-
-    const wrapper = el.closest<HTMLElement>(`.${HEADING_ACTIONS_CLASSES.wrap}`)
-    if (wrapper) wrappersToSync.add(wrapper)
-  }
+  const elementsToRestart: HTMLElement[] = []
 
   document
     .querySelectorAll<HTMLElement>(`${headingChatBtnSelector}[data-heading-id]`)
     .forEach((el) => {
       const headingId = el.dataset.headingId
       if (!headingId) return
-      updateElement(el, resolveHeadingUnreadCount(headingId, source))
+
+      const count = resolveHeadingUnreadCount(headingId, source)
+      const oldCount = parseInt(el.dataset.unreadCount || '0', 10)
+      el.setAttribute('aria-label', formatHeadingChatAriaLabel(count))
+
+      if (count > 0) {
+        if (count !== oldCount) {
+          el.dataset.countDir = count > oldCount ? 'up' : 'down'
+          el.style.animation = 'none'
+          elementsToRestart.push(el)
+        }
+        el.dataset.unreadCount = formatCappedCount(count)
+      } else {
+        delete el.dataset.unreadCount
+        delete el.dataset.countDir
+      }
+
+      const wrapper = el.closest<HTMLElement>(`.${HEADING_ACTIONS_CLASSES.wrap}`)
+      if (wrapper) wrappersToSync.add(wrapper)
     })
+
+  if (elementsToRestart.length > 0) {
+    // Single layout flush for all updated badges before clearing inline animation.
+    void elementsToRestart[0].offsetHeight
+    for (const el of elementsToRestart) {
+      el.style.animation = ''
+    }
+  }
 
   wrappersToSync.forEach(syncHeadingWrapperA11y)
 }

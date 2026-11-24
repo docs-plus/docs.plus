@@ -3,50 +3,9 @@ import type { Schema } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import type { EditorView } from '@tiptap/pm/view'
 import { logger } from '@utils/logger'
+import { sanitizeJsonContent } from '@utils/sanitizeContent'
 
 const MAX_CLIPBOARD_SIZE = 500_000
-
-const SAFE_PROTOCOLS = /^(?:https?|ftp|mailto|tel|sms):/i
-
-function sanitizeHref(href: string): string | null {
-  // eslint-disable-next-line no-control-regex
-  const cleaned = href.replace(/[\x00-\x1f\x7f\u200b-\u200f\u2028-\u202f\ufeff]/g, '').trim()
-  if (!cleaned) return null
-
-  const colonIdx = cleaned.indexOf(':')
-  if (colonIdx === -1) return cleaned
-
-  const slashIdx = cleaned.indexOf('/')
-  if (slashIdx !== -1 && slashIdx < colonIdx) return cleaned
-
-  if (SAFE_PROTOCOLS.test(cleaned)) return cleaned
-  if (/^data:image\/(?!svg\+xml)/i.test(cleaned)) return cleaned
-  return null
-}
-
-export function sanitizeJsonContent(node: JSONContent): JSONContent {
-  const result = { ...node }
-
-  if (result.attrs) {
-    const attrs = { ...result.attrs }
-    if (typeof attrs.href === 'string') attrs.href = sanitizeHref(attrs.href) ?? ''
-    if (typeof attrs.src === 'string') attrs.src = sanitizeHref(attrs.src) ?? ''
-    result.attrs = attrs
-  }
-
-  if (result.marks) {
-    result.marks = result.marks.map((mark) => {
-      if (!mark.attrs?.href) return mark
-      return { ...mark, attrs: { ...mark.attrs, href: sanitizeHref(mark.attrs.href) ?? '' } }
-    })
-  }
-
-  if (result.content) {
-    result.content = result.content.map(sanitizeJsonContent)
-  }
-
-  return result
-}
 
 interface MarkdownSignal {
   pattern: RegExp
@@ -132,40 +91,6 @@ function isTrulyEmptyParagraph(node: JSONContent): boolean {
   return node.type === 'paragraph' && !hasNonEmptyText(node) && !hasNonTextInline(node)
 }
 
-function splitParagraphWithBlocks(paragraph: JSONContent, schema: Schema): JSONContent[] {
-  if (!Array.isArray(paragraph.content)) return [paragraph]
-
-  const hasBlockChild = paragraph.content.some((child) => {
-    const childType = child.type ? schema.nodes[child.type] : undefined
-    return Boolean(childType && !childType.isInline)
-  })
-  if (!hasBlockChild) return [paragraph]
-
-  const output: JSONContent[] = []
-  let inlineRun: JSONContent[] = []
-
-  const flushInlineRun = () => {
-    if (inlineRun.length === 0) return
-    if (inlineRun.some(isMeaningfulInline)) {
-      output.push({ ...paragraph, content: inlineRun })
-    }
-    inlineRun = []
-  }
-
-  for (const child of paragraph.content) {
-    const childType = child.type ? schema.nodes[child.type] : undefined
-    if (childType && !childType.isInline) {
-      flushInlineRun()
-      output.push(child)
-    } else {
-      inlineRun.push(child)
-    }
-  }
-  flushInlineRun()
-
-  return output.length > 0 ? output : [{ ...paragraph, content: [] }]
-}
-
 function normalizeBlockAndInlineNodes(node: JSONContent, schema: Schema): JSONContent {
   if (!Array.isArray(node.content)) return node
 
@@ -176,27 +101,45 @@ function normalizeBlockAndInlineNodes(node: JSONContent, schema: Schema): JSONCo
     return { ...node, content: walkedChildren }
   }
 
-  const expanded: JSONContent[] = []
-  for (const child of walkedChildren) {
-    if (child.type === 'paragraph') {
-      expanded.push(...splitParagraphWithBlocks(child, schema))
-    } else {
-      expanded.push(child)
-    }
+  const isBlockNode = (child: JSONContent): boolean => {
+    const childType = child.type ? schema.nodes[child.type] : undefined
+    return Boolean(childType && !childType.isInline)
   }
 
   const grouped: JSONContent[] = []
   let strayInlineRun: JSONContent[] = []
 
-  const flushStrayInlineRun = () => {
+  const flushStrayInlineRun = (template?: JSONContent) => {
     if (strayInlineRun.length === 0) return
     if (strayInlineRun.some(isMeaningfulInline)) {
-      grouped.push({ type: 'paragraph', content: strayInlineRun })
+      grouped.push(
+        template
+          ? { ...template, content: strayInlineRun }
+          : { type: 'paragraph', content: strayInlineRun }
+      )
     }
     strayInlineRun = []
   }
 
-  for (const child of expanded) {
+  for (const child of walkedChildren) {
+    if (
+      child.type === 'paragraph' &&
+      Array.isArray(child.content) &&
+      child.content.some(isBlockNode)
+    ) {
+      flushStrayInlineRun()
+      for (const grandChild of child.content) {
+        if (isBlockNode(grandChild)) {
+          flushStrayInlineRun(child)
+          grouped.push(grandChild)
+        } else {
+          strayInlineRun.push(grandChild)
+        }
+      }
+      flushStrayInlineRun(child)
+      continue
+    }
+
     const childType = child.type ? schema.nodes[child.type] : undefined
     if (childType?.isInline) {
       strayInlineRun.push(child)
@@ -328,14 +271,10 @@ export function createMarkdownPastePlugin(editor: Editor): Plugin {
         if (score < THRESHOLD) return false
 
         logger.debug('markdown-paste: heuristic match', { score, patterns: matches })
-        event.preventDefault()
 
         try {
           const json = editor.markdown?.parse(text)
-          if (!json) {
-            insertContentSafely(editor, view, { type: 'text', text })
-            return true
-          }
+          if (!json) return false
 
           const sanitized = sanitizeJsonContent(json)
           const fullDoc = selectionSpansDocument(view)
@@ -343,26 +282,31 @@ export function createMarkdownPastePlugin(editor: Editor): Plugin {
 
           if (normalized.type === 'doc' && Array.isArray(normalized.content) && fullDoc) {
             editor.schema.nodeFromJSON(normalized).check()
+            event.preventDefault()
             editor.commands.setContent(normalized, { errorOnInvalidContent: false })
-          } else if (normalized.type === 'doc' && Array.isArray(normalized.content)) {
-            if (normalized.content.length === 0) {
-              insertContentSafely(editor, view, { type: 'text', text })
-              return true
-            }
+            return true
+          }
+
+          if (normalized.type === 'doc' && Array.isArray(normalized.content)) {
+            if (normalized.content.length === 0) return false
             for (const block of normalized.content) {
               editor.schema.nodeFromJSON(block).check()
             }
+            event.preventDefault()
             insertContentSafely(editor, view, normalized.content)
-          } else {
-            editor.schema.nodeFromJSON(normalized).check()
-            insertContentSafely(editor, view, normalized)
+            return true
           }
-        } catch (error) {
-          logger.warn('markdown-paste: parse/insert failed, falling back to plain text', { error })
-          insertContentSafely(editor, view, { type: 'text', text })
-        }
 
-        return true
+          editor.schema.nodeFromJSON(normalized).check()
+          event.preventDefault()
+          insertContentSafely(editor, view, normalized)
+          return true
+        } catch (error) {
+          logger.warn('markdown-paste: parse/insert failed, falling back to default paste', {
+            error
+          })
+          return false
+        }
       }
     }
   })

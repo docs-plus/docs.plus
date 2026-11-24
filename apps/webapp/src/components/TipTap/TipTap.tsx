@@ -1,5 +1,5 @@
 import Config from '@config'
-import { HyperlinkBase, isSafeHref } from '@docs.plus/extension-hyperlink'
+import { HyperlinkBase } from '@docs.plus/extension-hyperlink'
 import { HyperMultimediaKit, isMediaUrl } from '@docs.plus/extension-hypermultimedia'
 import { Indent } from '@docs.plus/extension-indent'
 import { InlineCode } from '@docs.plus/extension-inline-code'
@@ -8,7 +8,6 @@ import { Placeholder } from '@docs.plus/extension-placeholder'
 import type { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
 import { authStore } from '@stores'
-import { Mark, mergeAttributes } from '@tiptap/core'
 import { Collaboration, isChangeOrigin } from '@tiptap/extension-collaboration'
 import { CollaborationCaret } from '@tiptap/extension-collaboration-caret'
 import { TaskItem, TaskList } from '@tiptap/extension-list'
@@ -57,6 +56,7 @@ import { getHyperlinkPopoverConfig } from './hyperlinkPopovers/getHyperlinkPopov
 import { padNavigate } from './hyperlinkPopovers/hrefEventHandler'
 import { padHovercard } from './hyperlinkPopovers/padHovercard'
 import { padPasteTitle } from './hyperlinkPopovers/padPasteTitle'
+import { LegacyLink } from './legacyLink'
 import { ListGapJoin } from './listGapJoin'
 import { ListKeymapWithoutTab } from './listKeymapWithoutTab'
 import { getMediaToolbarFactory } from './mediaPopovers/getMediaToolbarFactory'
@@ -106,51 +106,6 @@ const reportDiagramState = (event: MermaidStateEvent): void => {
     })
   }
 }
-
-// Schema-compat mark for stored legacy `link` marks under enableContentCheck.
-// HyperlinkBase owns UI, commands, and Markdown link parsing.
-const LegacyLink = Mark.create({
-  name: 'link',
-  keepOnSplit: false,
-  inclusive: false,
-
-  addAttributes() {
-    return {
-      href: { default: null },
-      target: { default: null, rendered: false },
-      rel: { default: 'noopener noreferrer nofollow' },
-      class: { default: null, parseHTML: () => null, rendered: false },
-      title: { default: null }
-    }
-  },
-
-  parseHTML() {
-    return [
-      {
-        tag: 'a[href]',
-        getAttrs: (dom: HTMLElement | string) => {
-          if (typeof dom === 'string') return false
-          const href = dom.getAttribute('href') ?? ''
-          return isSafeHref(href) ? null : false
-        }
-      }
-    ]
-  },
-
-  renderHTML({ HTMLAttributes }) {
-    const safe = isSafeHref(HTMLAttributes.href as string | null | undefined)
-      ? HTMLAttributes
-      : { ...HTMLAttributes, href: '' }
-    return ['a', mergeAttributes({ rel: 'noopener noreferrer nofollow' }, safe), 0]
-  },
-
-  renderMarkdown(node, helpers) {
-    const content = helpers.renderChildren(node)
-    const raw = typeof node.attrs?.href === 'string' ? node.attrs.href : ''
-    const href = (isSafeHref(raw) ? raw : '').replace(/\)/g, '%29').replace(/\s/g, '%20')
-    return `[${content}](${href})`
-  }
-})
 
 const Editor = ({
   provider,
@@ -315,6 +270,22 @@ const Editor = ({
     IOSCaretFix
   ]
 
+  const sharedEditorOptions: Partial<UseEditorOptions> = {
+    editorProps: {
+      attributes: {
+        role: 'textbox',
+        'aria-label': 'Document editor',
+        'aria-multiline': 'true',
+        spellcheck: spellcheck.toString()
+      }
+    },
+    immediatelyRender: false,
+    // Keep false: true re-renders the whole `useEditor` host (e.g. document layout) every keystroke.
+    // Toolbars use `useReRenderOnEditorTransaction` for `isActive` / marks.
+    shouldRerenderOnTransaction: false,
+    editable
+  }
+
   if (!provider) {
     const extensions = [...baseExtensions]
 
@@ -331,24 +302,15 @@ const Editor = ({
     }
 
     return {
-      editorProps: {
-        attributes: {
-          role: 'textbox',
-          'aria-label': 'Document editor',
-          'aria-multiline': 'true',
-          spellcheck: spellcheck.toString()
-        }
-      },
-      immediatelyRender: false,
-      shouldRerenderOnTransaction: false,
-      editable,
+      ...sharedEditorOptions,
       extensions
     }
   }
 
-  const CollaborationCaretConfig = getCollaborationCaretConfig(provider)
+  const collaborationCaretConfig = getCollaborationCaretConfig(provider)
 
   return {
+    ...sharedEditorOptions,
     enableContentCheck: true,
     onContentError({ editor, error, disableCollaboration }) {
       console.error('onContentError', error)
@@ -359,26 +321,13 @@ const Editor = ({
       editor.setEditable(false, false)
       useStore.getState().setWorkspaceSettings({ contentForkError: true, providerStatus: 'error' })
     },
-    editorProps: {
-      attributes: {
-        role: 'textbox',
-        'aria-label': 'Document editor',
-        'aria-multiline': 'true',
-        spellcheck: spellcheck.toString()
-      }
-    },
-    immediatelyRender: false,
-    // Keep false: true re-renders the whole `useEditor` host (e.g. document layout) every keystroke.
-    // Toolbars use `useReRenderOnEditorTransaction` for `isActive` / marks.
-    shouldRerenderOnTransaction: false,
-    editable,
     extensions: [
       ...baseExtensions,
 
       Collaboration.configure({
         document: provider.document
       }),
-      CollaborationCaret.configure(CollaborationCaretConfig),
+      CollaborationCaret.configure(collaborationCaretConfig),
       HeadingIdRepair.configure({ documentId: docName })
     ]
   }

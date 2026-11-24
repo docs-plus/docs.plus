@@ -1,3 +1,5 @@
+import { isSafeHref } from '@docs.plus/extension-hyperlink'
+import type { JSONContent } from '@tiptap/core'
 import DOMPurify from 'dompurify'
 
 import { escapeHtml } from './escapeHtml'
@@ -68,3 +70,68 @@ export const sanitizeDiagramSvg = (svg: string): Node =>
     FORBID_ATTR: ['href', 'xlink:href'],
     RETURN_DOM_FRAGMENT: true
   })
+
+const SAFE_DATA_IMAGE_RE = /^data:image\/(?!svg\+xml)/i
+// eslint-disable-next-line no-control-regex
+const INVISIBLE_OR_CONTROL_RE = /[\x00-\x1f\x7f\u200b-\u200f\u2028-\u202f\ufeff]/g
+
+const cleanUrl = (value: string): string => value.replace(INVISIBLE_OR_CONTROL_RE, '').trim()
+
+const sanitizeLinkHref = (href: string): string | null => {
+  const cleaned = cleanUrl(href)
+  return isSafeHref(cleaned) ? cleaned : null
+}
+
+const sanitizeMediaSrc = (src: string): string | null => {
+  const cleaned = cleanUrl(src)
+  if (!cleaned) return null
+  if (isSafeHref(cleaned) || SAFE_DATA_IMAGE_RE.test(cleaned)) return cleaned
+  return null
+}
+
+/**
+ * Scrubs dangerous `href` / `src` values and strips unsafe link marks from TipTap JSONContent.
+ * Used by Markdown paste and imported document replacement.
+ */
+export function sanitizeJsonContent(node: JSONContent): JSONContent {
+  const result: JSONContent = { ...node }
+
+  if (result.attrs) {
+    const attrs = { ...result.attrs }
+    if (typeof attrs.href === 'string') {
+      const safeHref = sanitizeLinkHref(attrs.href)
+      if (safeHref) attrs.href = safeHref
+      else delete attrs.href
+    }
+    if (typeof attrs.src === 'string') {
+      const safeSrc = sanitizeMediaSrc(attrs.src)
+      if (safeSrc) attrs.src = safeSrc
+      else delete attrs.src
+    }
+    result.attrs = attrs
+  }
+
+  if (Array.isArray(result.marks)) {
+    const sanitizedMarks = result.marks.flatMap((mark) => {
+      const isLinkMark = mark.type === 'hyperlink' || mark.type === 'link'
+      const rawHref = typeof mark.attrs?.href === 'string' ? mark.attrs.href : null
+      if (!isLinkMark && rawHref === null) return [mark]
+
+      const safeHref = rawHref ? sanitizeLinkHref(rawHref) : null
+      if (!safeHref) return []
+
+      return [{ ...mark, attrs: { ...mark.attrs, href: safeHref } }]
+    })
+    if (sanitizedMarks.length > 0) {
+      result.marks = sanitizedMarks
+    } else {
+      delete result.marks
+    }
+  }
+
+  if (result.content) {
+    result.content = result.content.map(sanitizeJsonContent)
+  }
+
+  return result
+}

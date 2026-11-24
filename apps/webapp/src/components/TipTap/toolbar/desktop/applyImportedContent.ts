@@ -1,8 +1,8 @@
 import type { ImportedDocument } from '@api'
 import type { Editor } from '@tiptap/core'
 import { yUndoPluginKey } from '@tiptap/y-tiptap'
+import { sanitizeJsonContent } from '@utils/sanitizeContent'
 
-import { sanitizeJsonContent } from '../../extensions/markdown-paste/markdownPastePlugin'
 import { padIdOf } from '../../extensions/pad-unique-id/pad-unique-id'
 import { carryHeadingIds, headingIdPlan } from './carryHeadingIds'
 import { commitImportedImageSizes } from './commitImportedImageSizes'

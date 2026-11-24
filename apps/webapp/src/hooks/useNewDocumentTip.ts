@@ -4,6 +4,22 @@ import { useEffect, useRef } from 'react'
 
 const TIP_SHOWN_KEY = 'docsy_new_doc_tip_shown'
 
+const readTipShown = (): boolean => {
+  try {
+    return localStorage.getItem(TIP_SHOWN_KEY) !== null
+  } catch {
+    return false
+  }
+}
+
+const markTipShown = (): void => {
+  try {
+    localStorage.setItem(TIP_SHOWN_KEY, 'true')
+  } catch {
+    // Storage may be unavailable in private browsing or sandboxed iframes.
+  }
+}
+
 interface UseNewDocumentTipProps {
   provider: HocuspocusProvider | null
 }
@@ -15,35 +31,39 @@ const useNewDocumentTip = ({ provider }: UseNewDocumentTipProps): void => {
     if (typeof navigator !== 'undefined' && navigator.webdriver === true) return
     if (!provider || hasShownRef.current) return
 
-    const hasSeenTip = localStorage.getItem(TIP_SHOWN_KEY)
-    if (hasSeenTip) return
+    if (readTipShown()) return
 
     let timerId: ReturnType<typeof setTimeout> | undefined
 
-    const checkAndShowTip = () => {
+    const checkAndShowTip = (): boolean => {
       const ymetadata = provider.configuration.document.getMap('metadata')
       const isNewDocument = ymetadata.get('needsInitialization')
+      if (!isNewDocument || hasShownRef.current || timerId !== undefined) return false
 
-      if (isNewDocument && !hasShownRef.current && timerId === undefined) {
-        // Show tip after a short delay (let document load first)
-        timerId = setTimeout(() => {
-          hasShownRef.current = true
-          Info('💡 Pro tip: Visit new.docs.plus to instantly create a new document!', {
-            duration: 8000,
-            position: 'bottom-center'
-          })
+      timerId = setTimeout(() => {
+        hasShownRef.current = true
+        Info('💡 Pro tip: Visit new.docs.plus to instantly create a new document!', {
+          duration: 8000,
+          position: 'bottom-center'
+        })
 
-          localStorage.setItem(TIP_SHOWN_KEY, 'true')
-        }, 2000)
-      }
+        markTipShown()
+      }, 2000)
+      return true
     }
 
-    checkAndShowTip()
-    // ymetadata may arrive after first paint.
-    provider.on('synced', checkAndShowTip)
+    const onSynced = () => {
+      provider.off('synced', onSynced)
+      checkAndShowTip()
+    }
+
+    if (!checkAndShowTip()) {
+      // ymetadata may arrive after first paint.
+      provider.on('synced', onSynced)
+    }
 
     return () => {
-      provider.off('synced', checkAndShowTip)
+      provider.off('synced', onSynced)
       if (timerId !== undefined) {
         clearTimeout(timerId)
         timerId = undefined
