@@ -28,7 +28,7 @@ export interface DocumentRowMenuProps {
   doc: OwnedDocument
   /** The open list. The menu writes every list of `scope.userId`. */
   scope: DocumentsListScope
-  /** A non-owned row (joined or ownerless) offers only Open in new tab and Copy link. */
+  /** A non-owned non-private row (joined or ownerless) offers Open in new tab, Copy link, and Duplicate. */
   isOwner: boolean
   /** Menu delegates to the row/section (inline rename mode / rename dialog). */
   onRename?: () => void
@@ -157,6 +157,7 @@ function RowMenuItems({ doc, scope, isOwner, onRename, onDelete, rows, close }: 
   const { Action, Check, Divider } = rows
   const { documentId, slug, isPrivate, readOnly, isFavorite } = doc
   const docName = documentDisplayName(doc)
+  const canDuplicate = isOwner || !isPrivate
   const { duplicate, isPending: isDuplicating } = useDuplicateDocument(scope.userId)
   const { toggleFavorite, isPending: isFavoriting } = useToggleDocumentFavorite(scope.userId)
   const { setPrivate, setReadOnly, isControlDisabled } = useDocumentAccessMutation({
@@ -218,24 +219,28 @@ function RowMenuItems({ doc, scope, isOwner, onRename, onDelete, rows, close }: 
         </Action>
       )}
 
+      {canDuplicate && <Divider />}
+
+      {isOwner && (
+        <Action icon={<Icons.pencilLine size={16} />} onClick={startRename}>
+          Rename
+        </Action>
+      )}
+
+      {canDuplicate && (
+        <Action
+          icon={<Icons.copy size={16} />}
+          disabled={isDuplicating}
+          onClick={() => {
+            cancel()
+            duplicate({ documentId, name: docName })
+          }}>
+          Duplicate
+        </Action>
+      )}
+
       {isOwner && (
         <>
-          <Divider />
-
-          <Action icon={<Icons.pencilLine size={16} />} onClick={startRename}>
-            Rename
-          </Action>
-
-          <Action
-            icon={<Icons.copy size={16} />}
-            disabled={isDuplicating}
-            onClick={() => {
-              cancel()
-              duplicate({ documentId, name: docName })
-            }}>
-            Duplicate
-          </Action>
-
           <Action
             icon={
               <Icons.star

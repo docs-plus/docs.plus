@@ -9,6 +9,7 @@ const RESERVED_SLUGS = new Set([
   'privacy',
   'terms',
   'mcp',
+  'llms.txt',
   'oauth',
   'c',
   'unsubscribe',
@@ -19,5 +20,10 @@ const RESERVED_SLUGS = new Set([
 
 export const isReservedSlug = (slug: string | undefined | null): boolean => {
   if (!slug) return false
-  return RESERVED_SLUGS.has(slug) || slug.startsWith('_') || slug.startsWith('.well-known')
+  const normalized = slug.toLowerCase()
+  return (
+    RESERVED_SLUGS.has(normalized) ||
+    normalized.startsWith('_') ||
+    normalized.startsWith('.well-known')
+  )
 }

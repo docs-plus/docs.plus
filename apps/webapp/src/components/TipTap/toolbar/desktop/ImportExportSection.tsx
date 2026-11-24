@@ -9,6 +9,7 @@ import {
   pickExportTarget
 } from '@api'
 import { isVisitor } from '@components/auth/isVisitor'
+import useDuplicateDocument from '@components/settings/hooks/useDuplicateDocument'
 import { headingLabel } from '@components/TipTap/placeholders'
 import * as toast from '@components/toast'
 import { Banner } from '@components/ui/Banner'
@@ -25,11 +26,14 @@ import { applyImportedContent, planImportedHeadingIds } from './applyImportedCon
 interface ImportExportSectionProps {
   editor: Editor | null | undefined
   documentId: string
+  documentSlug?: string
   documentTitle: string
   /** The read-only lock and the owner gate, already resolved by the panel. */
   editingLocked: boolean
   /** Picks the cap copy only. The server decides who owns the document. */
   isOwner: boolean
+  isPrivate: boolean
+  userId?: string
   isSheet: boolean
   onPrint: () => void
 }
@@ -132,9 +136,12 @@ const WarningList = ({
 const ImportExportSection = ({
   editor,
   documentId,
+  documentSlug,
   documentTitle,
   editingLocked,
   isOwner,
+  isPrivate,
+  userId,
   isSheet,
   onPrint
 }: ImportExportSectionProps) => {
@@ -142,9 +149,21 @@ const ImportExportSection = ({
   const [savedFormat, setSavedFormat] = useState<ExportFormat | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
   const [stage, setStage] = useState<ImportStage>({ step: 'idle' })
+  const { duplicate, isPending: isDuplicating } = useDuplicateDocument(userId)
 
+  const canDuplicate = Boolean(documentId) && (isOwner || !isPrivate)
+  const duplicateName = documentTitle.trim() || documentSlug || 'Untitled'
   const canExport = Boolean(editor) && Boolean(documentTitle || !editor?.isEmpty)
   const touchHeight = isSheet ? 'min-h-11' : ''
+
+  const handleDuplicate = () => {
+    if (isVisitor()) {
+      openInlineSignInDialog()
+      return
+    }
+    if (!canDuplicate) return
+    duplicate({ documentId, name: duplicateName })
+  }
 
   const runExport = async (format: ExportFormat) => {
     if (isVisitor()) {
@@ -244,7 +263,34 @@ const ImportExportSection = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
+      {canDuplicate ? (
+        <div>
+          <div className="rounded-field border-base-300 overflow-hidden border">
+            <button
+              type="button"
+              disabled={isDuplicating}
+              onClick={handleDuplicate}
+              className="hover:bg-base-200 focus-visible:ring-primary flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset disabled:opacity-40 disabled:hover:bg-transparent">
+              <span className="bg-base-300/40 text-base-content/70 rounded-field flex size-8 shrink-0 items-center justify-center">
+                <Icons.copy size={16} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="text-base-content block text-sm font-medium">Duplicate</span>
+                <span className="text-base-content/60 text-meta block truncate">
+                  Save an editable copy to your documents
+                </span>
+              </span>
+              {isDuplicating ? (
+                <span className="loading loading-spinner loading-xs" aria-hidden />
+              ) : (
+                <Icons.copy size={14} className="text-base-content/40 shrink-0" />
+              )}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <div className={canDuplicate ? 'border-base-300 border-t pt-4' : undefined}>
         <p className="text-base-content/70 text-meta font-semibold">Export a copy</p>
         <div className="rounded-field border-base-300 divide-base-300 mt-2 divide-y overflow-hidden border">
           {EXPORT_ROWS.map((row) => (

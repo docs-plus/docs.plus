@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'bun:test'
 
-import type { PadLinkContext, PadPlace, PadUrlContext } from './types'
 import { padUrlCore } from './padUrlCore'
+import { isReservedSlug } from './reservedSlugs'
+import type { PadLinkContext, PadPlace, PadUrlContext } from './types'
 
 const ORIGIN = 'https://app.test'
 const TRAILS: Record<string, string> = { 'h-setup': 'methods>setup' }
@@ -167,5 +168,30 @@ describe('padUrlCore.place', () => {
   ])('%s opens one place', (href, place) => {
     const pad = padUrlCore.parse(href, ORIGIN)
     expect(pad && padUrlCore.place(pad)).toEqual(place)
+  })
+})
+
+describe('isReservedSlug', () => {
+  it('reserves llms.txt and concrete/system routes case-insensitively', () => {
+    expect(isReservedSlug('llms.txt')).toBe(true)
+    expect(isReservedSlug('LLMS.TXT')).toBe(true)
+    expect(isReservedSlug('Llms.Txt')).toBe(true)
+    expect(isReservedSlug('mcp')).toBe(true)
+    expect(isReservedSlug('MCP')).toBe(true)
+    expect(isReservedSlug('new')).toBe(true)
+    expect(isReservedSlug('editor')).toBe(true)
+    expect(isReservedSlug('api')).toBe(true)
+    expect(isReservedSlug('_next')).toBe(true)
+    expect(isReservedSlug('.well-known/oauth-protected-resource')).toBe(true)
+    expect(isReservedSlug('.WELL-KNOWN/test')).toBe(true)
+  })
+
+  it('allows normal document slugs and ignores empty inputs', () => {
+    expect(isReservedSlug('llms')).toBe(false)
+    expect(isReservedSlug('llmstxt')).toBe(false)
+    expect(isReservedSlug('my-doc')).toBe(false)
+    expect(isReservedSlug('')).toBe(false)
+    expect(isReservedSlug(null)).toBe(false)
+    expect(isReservedSlug(undefined)).toBe(false)
   })
 })

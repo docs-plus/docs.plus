@@ -1,5 +1,6 @@
 import { isReservedSlug, padUrlCore } from '@docs.plus/pad-url'
 import { type Session } from '@supabase/supabase-js'
+import { fetchDocumentMarkdown, prefersMarkdownAccept } from '@utils/acceptMarkdown'
 import { DocumentFetchError, fetchDocument } from '@utils/fetchDocument'
 import { logger } from '@utils/logger'
 import { captureGsspDocumentError } from '@utils/observability'
@@ -10,6 +11,49 @@ import { type GetServerSidePropsContext } from 'next'
 import { getDeviceInfo } from './getDeviceInfo'
 
 const AUTH_TIMEOUT_MS = 5000
+
+const appendVaryHeader = (res: GetServerSidePropsContext['res'], token: string) => {
+  const existing = res.getHeader?.('Vary')
+  if (!existing) {
+    res.setHeader('Vary', token)
+    return
+  }
+  const values = Array.isArray(existing) ? existing : [String(existing)]
+  const tokens = values
+    .flatMap((v) => v.split(','))
+    .map((v) => v.trim().toLowerCase())
+    .filter(Boolean)
+  if (tokens.includes(token.toLowerCase())) return
+  res.setHeader('Vary', Array.isArray(existing) ? [...existing, token] : `${existing}, ${token}`)
+}
+
+const headerValue = (value: string | string[] | undefined): string | undefined => {
+  if (typeof value === 'string') return value.trim() || undefined
+  if (Array.isArray(value)) return value.join(', ').trim() || undefined
+  return undefined
+}
+
+const sendMarkdownTextResponse = (
+  context: GetServerSidePropsContext,
+  {
+    status,
+    contentType,
+    body,
+    retryAfter
+  }: { status: number; contentType: string; body: string; retryAfter?: string }
+) => {
+  const { req, res } = context
+  res.statusCode = status
+  res.setHeader('Content-Type', contentType)
+  appendVaryHeader(res, 'Accept')
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow')
+  res.setHeader('Cache-Control', 'no-store')
+  if (retryAfter) res.setHeader('Retry-After', retryAfter)
+  if (status === 200) res.setHeader('Content-Length', String(Buffer.byteLength(body, 'utf8')))
+  if (req.method === 'HEAD') res.end()
+  else res.end(body)
+  return { props: {} }
+}
 
 /**
  * Asks REST for the social card (`card=1`) with the sub-ids of the one place the link opens
@@ -52,6 +96,68 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
   if (isReservedSlug(documentSlug)) {
     return {
       notFound: true
+    }
+  }
+
+  const isNextData = Boolean(context.req.headers['x-nextjs-data'])
+  if (!isNextData) {
+    appendVaryHeader(context.res, 'Accept')
+  }
+
+  if (
+    !isNextData &&
+    Array.isArray(query.slugs) &&
+    query.slugs.length === 1 &&
+    documentSlug?.trim() &&
+    prefersMarkdownAccept(context.req.headers.accept)
+  ) {
+    try {
+      const result = await fetchDocumentMarkdown(documentSlug, {
+        realIp: headerValue(context.req.headers['x-real-ip']),
+        forwardedFor: headerValue(context.req.headers['x-forwarded-for'])
+      })
+
+      if (result.status === 200) {
+        return sendMarkdownTextResponse(context, {
+          status: 200,
+          contentType: 'text/markdown; charset=utf-8',
+          body: result.body
+        })
+      }
+      if (result.status === 404) {
+        return sendMarkdownTextResponse(context, {
+          status: 404,
+          contentType: 'text/plain; charset=utf-8',
+          body: 'Document not found'
+        })
+      }
+      if (result.status === 413) {
+        return sendMarkdownTextResponse(context, {
+          status: 413,
+          contentType: 'text/plain; charset=utf-8',
+          body: 'Document too large to export as Markdown'
+        })
+      }
+      if (result.status === 429) {
+        return sendMarkdownTextResponse(context, {
+          status: 429,
+          contentType: 'text/plain; charset=utf-8',
+          body: 'Too many requests',
+          retryAfter: result.retryAfter
+        })
+      }
+    } catch (error: unknown) {
+      logger.error('[getServerSideProps markdown error]', error, { documentSlug })
+      captureGsspDocumentError(error, {
+        tags: { surface: 'gssp-document-markdown' },
+        extra: { documentSlug }
+      })
+      const status = error instanceof DocumentFetchError && error.status === 503 ? 503 : 502
+      return sendMarkdownTextResponse(context, {
+        status,
+        contentType: 'text/plain; charset=utf-8',
+        body: 'Markdown service unavailable'
+      })
     }
   }
 

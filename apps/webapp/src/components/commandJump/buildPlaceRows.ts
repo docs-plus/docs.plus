@@ -11,7 +11,13 @@ import type { IconType } from 'react-icons'
 
 export type CommandJumpSurface = 'home' | 'pad'
 
-export type PlaceRow = { id: string; label: string; icon: IconType; run: () => void }
+export type PlaceRow = {
+  id: string
+  label: string
+  icon: IconType
+  keywords?: readonly string[]
+  run: () => void
+}
 
 type PlaceContext = {
   surface: CommandJumpSurface
@@ -97,7 +103,14 @@ export function buildPlaceRows(ctx: PlaceContext): PlaceRow[] {
       icon: NEW_PAD_LINK.icon,
       run: () => ctx.navigate('/new')
     },
-    { id: 'demo', label: 'Demo', icon: Icons.fileOpen, run: () => ctx.navigate('/demo') }
+    { id: 'demo', label: 'Demo', icon: Icons.fileOpen, run: () => ctx.navigate('/demo') },
+    {
+      id: 'mcp',
+      label: 'Connect AI app (MCP)',
+      icon: Icons.plug,
+      keywords: ['claude', 'chatgpt', 'cursor', 'codex', 'agent', 'llm'],
+      run: () => ctx.navigate('/mcp')
+    }
   )
 
   return rows

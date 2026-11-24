@@ -111,4 +111,20 @@ const padHovercardRule = {
   handler: 'NetworkOnly'
 }
 
-module.exports = [credentialedRequestRule, mcpStatusProbeRule, padHovercardRule, ...cache]
+// Accept: text/markdown requests bypass Cache Storage so Markdown and HTML
+// representations of the same pad URL never cross-populate `others` or `apis`.
+const markdownNegotiationRule = {
+  urlPattern: ({ request }) => {
+    const accept = request?.headers?.get?.('accept')
+    return typeof accept === 'string' && /(?:^|[,\s])text\/markdown(?=$|[\s;,])/i.test(accept)
+  },
+  handler: 'NetworkOnly'
+}
+
+module.exports = [
+  credentialedRequestRule,
+  mcpStatusProbeRule,
+  padHovercardRule,
+  markdownNegotiationRule,
+  ...cache
+]

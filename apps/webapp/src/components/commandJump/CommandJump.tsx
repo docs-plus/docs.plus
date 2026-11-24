@@ -67,7 +67,10 @@ function CommandJumpPanel({ places, userId, onPick, navigate }: PanelProps) {
 
   const term = query.trim().toLowerCase()
   const placeItems: JumpItem[] = places
-    .filter((place) => matches(place.label, term))
+    .filter(
+      (place) =>
+        matches(place.label, term) || Boolean(place.keywords?.some((kw) => matches(kw, term)))
+    )
     .map((place) => ({
       key: `place:${place.id}`,
       label: place.label,

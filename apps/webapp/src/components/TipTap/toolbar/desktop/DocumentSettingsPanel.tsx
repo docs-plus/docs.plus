@@ -170,9 +170,12 @@ const DocumentSettingsPanel = ({ variant = 'popover' }: DocumentSettingsPanelPro
             <ImportExportSection
               editor={editor}
               documentId={docMetadata.documentId}
+              documentSlug={docMetadata.slug}
               documentTitle={docMetadata.title || ''}
               editingLocked={editingLocked}
               isOwner={isOwner}
+              isPrivate={Boolean(docMetadata.isPrivate)}
+              userId={profileId}
               isSheet={isSheet}
               onPrint={handlePrint}
             />
