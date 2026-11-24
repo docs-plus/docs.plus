@@ -160,6 +160,9 @@ if (!(await runGate('supabase parity', ['bun', 'packages/supabase/check-function
 if (!(await runGate('supabase grants', ['bun', 'packages/supabase/check-grant-allowlists.ts']))) {
   failed = true
 }
+if (!(await runGate('supabase seed', ['bun', 'packages/supabase/generate-seed.ts', '--check']))) {
+  failed = true
+}
 if (!(await runGate('lint', ['bun', 'run', 'lint']))) failed = true
 if (!(await runGate('lint:styles', ['bun', 'run', 'lint:styles']))) failed = true
 

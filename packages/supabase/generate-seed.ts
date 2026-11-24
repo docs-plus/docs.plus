@@ -69,35 +69,58 @@ export async function seedScriptFiles(): Promise<string[]> {
     .sort(sortScripts)
 }
 
-async function generateSeed() {
+/** Concatenates the ordered scripts/ files into the generated seed.sql text. */
+async function buildSeedContent(scriptFiles: string[]): Promise<string> {
+  const parts: string[] = []
+  parts.push('-- ============================================================================')
+  parts.push('-- AUTO-GENERATED SEED FILE')
+  parts.push('-- DO NOT EDIT MANUALLY - This file is generated from scripts/*.sql')
+  parts.push('-- Run: bun generate-seed.ts')
+  parts.push('-- ============================================================================\n')
+
+  for (const file of scriptFiles) {
+    const filePath = join(scriptsDir, file)
+    const content = await readFile(filePath, 'utf-8')
+
+    parts.push(`-- ============================================================================`)
+    parts.push(`-- File: ${file}`)
+    parts.push(`-- ============================================================================\n`)
+    parts.push(content.trim())
+    parts.push('\n')
+  }
+
+  return parts.join('\n')
+}
+
+async function generateSeed(checkOnly = process.argv.includes('--check')) {
   try {
-    console.log('📦 Reading scripts directory...')
     const scriptFiles = await seedScriptFiles()
 
-    console.log(`✅ Found ${scriptFiles.length} script files to include:`)
-    scriptFiles.forEach((file) => console.log(`   - ${file}`))
-
-    const parts: string[] = []
-    parts.push('-- ============================================================================')
-    parts.push('-- AUTO-GENERATED SEED FILE')
-    parts.push('-- DO NOT EDIT MANUALLY - This file is generated from scripts/*.sql')
-    parts.push('-- Run: bun generate-seed.ts')
-    parts.push('-- ============================================================================\n')
-
-    for (const file of scriptFiles) {
-      const filePath = join(scriptsDir, file)
-      const content = await readFile(filePath, 'utf-8')
-
-      parts.push(`-- ============================================================================`)
-      parts.push(`-- File: ${file}`)
-      parts.push(
-        `-- ============================================================================\n`
-      )
-      parts.push(content.trim())
-      parts.push('\n')
+    if (!checkOnly) {
+      console.log('📦 Reading scripts directory...')
+      console.log(`✅ Found ${scriptFiles.length} script files to include:`)
+      scriptFiles.forEach((file) => console.log(`   - ${file}`))
     }
 
-    const seedContent = parts.join('\n')
+    const seedContent = await buildSeedContent(scriptFiles)
+
+    if (checkOnly) {
+      let current: string | null = null
+      try {
+        current = await readFile(seedFile, 'utf-8')
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
+      }
+      if (current !== seedContent) {
+        console.error(
+          '❌ seed.sql is out of sync with packages/supabase/scripts/*.sql. Run: bun run --filter @docs.plus/supabase_back seed'
+        )
+        process.exit(1)
+      }
+      console.log(`✅ seed.sql matches scripts/ (${scriptFiles.length} files)`)
+      return
+    }
+
     await writeFile(seedFile, seedContent, 'utf-8')
 
     console.log(`\n✅ Successfully generated seed.sql`)

@@ -10,6 +10,12 @@ This package is private and ships inside docs.plus, so each heading names the do
 
 ## [Unreleased]
 
+### Fixed
+
+- Rebuilt `seed.sql` so fresh local resets and pgTAP runs pick up the `#755` function revokes, and
+  added `generate-seed.ts --check` to `@docs.plus/supabase_back check` and `check:ci` to catch seed
+  drift before `main` ([#808](https://github.com/docs-plus/docs.plus/issues/808)).
+
 ## [2.3.6] — 2026-11-16
 
 ### Security
