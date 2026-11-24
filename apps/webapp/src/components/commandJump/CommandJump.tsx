@@ -13,7 +13,6 @@ import debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { IconType } from 'react-icons'
-import { LuStar } from 'react-icons/lu'
 
 import { buildPlaceRows, type CommandJumpSurface, type PlaceRow } from './buildPlaceRows'
 
@@ -150,7 +149,7 @@ function CommandJumpPanel({ places, userId, onPick, navigate }: PanelProps) {
                 <span className="flex min-w-0 items-center gap-2.5">
                   <span className="truncate">{item.label}</span>
                   {item.favorite && (
-                    <LuStar
+                    <Icons.star
                       size={13}
                       className="text-accent fill-accent shrink-0"
                       aria-label="Favorite"

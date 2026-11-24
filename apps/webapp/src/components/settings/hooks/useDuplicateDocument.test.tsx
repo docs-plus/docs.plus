@@ -126,7 +126,7 @@ describe('useDuplicateDocument', () => {
     ).toEqual(['d1'])
     expect(toast.Success).toHaveBeenCalledWith(
       'Copy of “Doc” created',
-      expect.objectContaining({ id: 'toast-1', actionLabel: 'Open' })
+      expect.objectContaining({ id: 'toast-1', actionLabel: 'Open in new tab' })
     )
 
     const anon = mount(undefined)

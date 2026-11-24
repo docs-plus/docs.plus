@@ -1,3 +1,5 @@
+import { MCP_GUIDE_URL, mcpServerUrl } from '@utils/mcpServerUrl'
+
 const SITE_ORIGIN = (process.env.NEXT_PUBLIC_APP_URL || 'https://docs.plus').replace(/\/$/, '')
 
 /** Only the landing route emits GA (`getRoutePolicy().analytics`). */
@@ -50,4 +52,36 @@ export function buildSitemapXml(): string {
 ${entries.join('\n')}
 </urlset>
 `
+}
+
+export function buildLlmsTxt(restMcpUrl: string = mcpServerUrl()): string {
+  const hasAbsoluteMcp = /^https?:\/\//i.test(restMcpUrl)
+  const mcpLines = [
+    `- [Connect AI app](${HOME_SITE_URL}/mcp): Setup instructions for Claude, ChatGPT, Claude Code, Codex, Cursor, and other MCP clients.`,
+    ...(hasAbsoluteMcp
+      ? [
+          `- MCP server URL: ${restMcpUrl} (Streamable HTTP, OAuth 2.1 with dynamic client registration)`
+        ]
+      : []),
+    `- [MCP setup guide](${MCP_GUIDE_URL}): Detailed host setup and troubleshooting.`
+  ]
+
+  return [
+    '# docs.plus',
+    '',
+    `> ${HOME_DESCRIPTION}`,
+    '',
+    '## Connect via MCP',
+    ...mcpLines,
+    '',
+    '## Create & Read Documents',
+    `- [New blank document](${HOME_SITE_URL}/new): Opens a fresh collaborative document in the browser with no signup required.`,
+    `- Markdown negotiation: Send \`Accept: text/markdown\` to \`${HOME_SITE_URL}/<slug>\` to fetch any readable public or Open document as raw Markdown (returns 404 for Private or missing documents, 413 above 1 MiB).`,
+    '',
+    '## Site & Policies',
+    `- [Home](${HOME_SITE_URL}/)`,
+    `- [Privacy Policy](${HOME_SITE_URL}/privacy)`,
+    `- [Terms of Service](${HOME_SITE_URL}/terms)`,
+    ''
+  ].join('\n')
 }

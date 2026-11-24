@@ -20,6 +20,7 @@ import { useChatStore } from '@stores'
 import type { Editor } from '@tiptap/core'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import React, { useState } from 'react'
+import type { IconType } from 'react-icons'
 
 import { applyImportedContent, planImportedHeadingIds } from './applyImportedContent'
 
@@ -103,6 +104,37 @@ const roomHeadingIds = () => {
   }
   return ids
 }
+
+const ActionRow = ({
+  icon: Icon,
+  title,
+  hint,
+  trailing,
+  disabled,
+  onClick
+}: {
+  icon: IconType
+  title: string
+  hint: string
+  trailing: React.ReactNode
+  disabled?: boolean
+  onClick: () => void
+}) => (
+  <button
+    type="button"
+    disabled={disabled}
+    onClick={onClick}
+    className="hover:bg-base-200 focus-visible:ring-primary flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset disabled:opacity-40 disabled:hover:bg-transparent">
+    <span className="bg-base-300/40 text-base-content/70 rounded-field flex size-8 shrink-0 items-center justify-center">
+      <Icon size={16} />
+    </span>
+    <span className="min-w-0 flex-1">
+      <span className="text-base-content block text-sm font-medium">{title}</span>
+      <span className="text-base-content/60 text-meta block truncate">{hint}</span>
+    </span>
+    {trailing}
+  </button>
+)
 
 const WarningList = ({
   heading,
@@ -264,29 +296,21 @@ const ImportExportSection = ({
   return (
     <div className="flex flex-col gap-4">
       {canDuplicate ? (
-        <div>
-          <div className="rounded-field border-base-300 overflow-hidden border">
-            <button
-              type="button"
-              disabled={isDuplicating}
-              onClick={handleDuplicate}
-              className="hover:bg-base-200 focus-visible:ring-primary flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset disabled:opacity-40 disabled:hover:bg-transparent">
-              <span className="bg-base-300/40 text-base-content/70 rounded-field flex size-8 shrink-0 items-center justify-center">
-                <Icons.copy size={16} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="text-base-content block text-sm font-medium">Duplicate</span>
-                <span className="text-base-content/60 text-meta block truncate">
-                  Save an editable copy to your documents
-                </span>
-              </span>
-              {isDuplicating ? (
+        <div className="rounded-field border-base-300 overflow-hidden border">
+          <ActionRow
+            icon={Icons.copy}
+            title="Duplicate"
+            hint="Save an editable copy to your documents"
+            disabled={isDuplicating}
+            onClick={handleDuplicate}
+            trailing={
+              isDuplicating ? (
                 <span className="loading loading-spinner loading-xs" aria-hidden />
               ) : (
                 <Icons.copy size={14} className="text-base-content/40 shrink-0" />
-              )}
-            </button>
-          </div>
+              )
+            }
+          />
         </div>
       ) : null}
 
@@ -294,21 +318,15 @@ const ImportExportSection = ({
         <p className="text-base-content/70 text-meta font-semibold">Export a copy</p>
         <div className="rounded-field border-base-300 divide-base-300 mt-2 divide-y overflow-hidden border">
           {EXPORT_ROWS.map((row) => (
-            <button
+            <ActionRow
               key={row.id}
-              type="button"
+              icon={row.icon}
+              title={row.name}
+              hint={row.hint}
               disabled={row.id === 'print' ? !editor : !canExport || busyFormat !== null}
               onClick={() => (row.id === 'print' ? onPrint() : void runExport(row.id))}
-              className="hover:bg-base-200 focus-visible:ring-primary flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset disabled:opacity-40 disabled:hover:bg-transparent">
-              <span className="bg-base-300/40 text-base-content/70 rounded-field flex size-8 shrink-0 items-center justify-center">
-                <row.icon size={16} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="text-base-content block text-sm font-medium">{row.name}</span>
-                <span className="text-base-content/60 text-meta block truncate">{row.hint}</span>
-              </span>
-              {rowTrailing(row.id)}
-            </button>
+              trailing={rowTrailing(row.id)}
+            />
           ))}
         </div>
         <p className="text-base-content/60 text-meta mt-2">

@@ -27,14 +27,14 @@ export function duplicateErrorMessage(
   const retryAfter = parseRetryAfterSeconds(retryAfterHeader)
 
   if (status === 429 || code === 'RATE_LIMIT_EXCEEDED') {
-    if (retryAfter !== null) {
-      if (retryAfter >= 60) {
-        const mins = Math.ceil(retryAfter / 60)
-        return `You’ve duplicated too many documents. Try again in ${mins} ${mins === 1 ? 'minute' : 'minutes'}.`
-      }
-      return `You’ve duplicated too many documents. Try again in ${retryAfter} ${retryAfter === 1 ? 'second' : 'seconds'}.`
+    if (retryAfter === null) {
+      return 'You’ve duplicated too many documents. Try again in a few minutes.'
     }
-    return 'You’ve duplicated too many documents. Try again in a few minutes.'
+    if (retryAfter >= 60) {
+      const mins = Math.ceil(retryAfter / 60)
+      return `You’ve duplicated too many documents. Try again in ${mins} ${mins === 1 ? 'minute' : 'minutes'}.`
+    }
+    return `You’ve duplicated too many documents. Try again in ${retryAfter} ${retryAfter === 1 ? 'second' : 'seconds'}.`
   }
 
   if (status === 503 || code === 'SERVICE_UNAVAILABLE') {
@@ -112,7 +112,7 @@ const useDuplicateDocument = (userId?: string) => {
       if (userId) cache.addDuplicate()
       toast.Success(`Copy of “${name}” created`, {
         id: toastId,
-        actionLabel: 'Open',
+        actionLabel: 'Open in new tab',
         onAction: () =>
           window.open(padUrl.link({ kind: 'document', slug: copy.slug }, 'path'), '_blank')
       })
