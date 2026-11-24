@@ -21,8 +21,8 @@ const KNOWN_APPS: { app: AiAppId; matches: (url: URL) => boolean }[] = [
   },
   {
     app: 'cursor',
-    // Read from production clients on 2026-10-20. Cursor also registers a loopback URI, so
-    // its Settings row stays "On this computer"; only the consent page shows the brand.
+    // Read from production clients on 2026-10-20. Cursor DCR clients also register a loopback
+    // URI, so both /oauth/consent and Settings downgrade them to "On this computer" (local).
     matches: (url) =>
       url.origin === 'https://www.cursor.com' && url.pathname === '/agents/mcp/oauth/callback'
   }

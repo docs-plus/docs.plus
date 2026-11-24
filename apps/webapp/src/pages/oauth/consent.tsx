@@ -8,7 +8,7 @@ import { Loading } from '@components/ui/Loading'
 import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
 import type { AuthError, OAuthAuthorizationDetails, OAuthRedirect } from '@supabase/supabase-js'
-import { type AppTrust, appTrust } from '@utils/appTrust'
+import { type AppTrust, appTrust, clientTrust } from '@utils/appTrust'
 import { displayClientName } from '@utils/displayClientName'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { supabaseClient } from '@utils/supabase'
@@ -34,9 +34,19 @@ const SILENT_SCOPES = ['openid', 'offline_access', 'phone']
 const HANDLED_SCOPES = new Set([...SILENT_SCOPES, ...IDENTITY_WORDS.map(([scope]) => scope)])
 const listFormat = new Intl.ListFormat('en', { type: 'conjunction' })
 
+const CLIENT_REDIRECTS_TIMEOUT_MS = 8_000
+
 type View =
   | { kind: 'loading' }
-  | { kind: 'details'; details: OAuthAuthorizationDetails }
+  | {
+      kind: 'details'
+      details: OAuthAuthorizationDetails
+      trust: AppTrust
+      activeOrigin: string
+      extraOrigins: string[]
+    }
+  | { kind: 'confirm-redirect'; redirectUrl: string; origin: string }
+  | { kind: 'cancelled'; origin: string }
   | { kind: 'redirecting' }
   | { kind: 'invalid' }
   | { kind: 'unavailable' }
@@ -54,29 +64,102 @@ function errorView(error: AuthError | null): View {
   return error?.status && error.status < 500 ? { kind: 'invalid' } : { kind: 'unavailable' }
 }
 
-/** Returns false for a scheme that could run script in this origin. */
-function assignRedirect(url: string): boolean {
+function originOf(uri: string): string {
+  try {
+    const parsed = new URL(uri)
+    return parsed.origin !== 'null' ? parsed.origin : `${parsed.protocol}//${parsed.host}`
+  } catch {
+    return uri.slice(0, 80)
+  }
+}
+
+/** Returns null for a scheme that could run script in this origin. */
+function parseSafeRedirectUrl(url: string): URL | null {
   let parsed: URL
   try {
     parsed = new URL(url)
   } catch {
-    return false
+    return null
   }
   // The parser strips tabs and newlines as the browser does, so `java\tscript:` is caught.
-  if (BLOCKED_PROTOCOLS.has(parsed.protocol)) return false
-  window.location.assign(parsed.href)
-  return true
+  if (BLOCKED_PROTOCOLS.has(parsed.protocol)) return null
+  return parsed
 }
 
-function followRedirect(url: string): View {
-  return assignRedirect(url) ? { kind: 'redirecting' } : { kind: 'invalid' }
+function followRedirect(url: string, navigate: (href: string) => void): View {
+  const parsed = parseSafeRedirectUrl(url)
+  if (!parsed) return { kind: 'invalid' }
+  navigate(parsed.href)
+  return { kind: 'redirecting' }
+}
+
+function resolveAutoRedirect(url: string, navigate: (href: string) => void): View {
+  const parsed = parseSafeRedirectUrl(url)
+  if (!parsed) return { kind: 'invalid' }
+  const trust = appTrust(parsed.href)
+  if (trust.kind === 'known' || trust.kind === 'local') {
+    navigate(parsed.href)
+    return { kind: 'redirecting' }
+  }
+  return { kind: 'confirm-redirect', redirectUrl: parsed.href, origin: trust.origin }
+}
+
+function resolveConsentTrust(
+  redirectUri: string,
+  registeredRedirects: string[]
+): { trust: AppTrust; activeOrigin: string; extraOrigins: string[] } {
+  const activeOrigin = originOf(redirectUri)
+  if (registeredRedirects.length === 0) {
+    return { trust: { kind: 'unknown', origin: activeOrigin }, activeOrigin, extraOrigins: [] }
+  }
+  const allUris = Array.from(new Set([redirectUri, ...registeredRedirects]))
+  const evaluated = clientTrust(allUris)
+  const trust: AppTrust =
+    evaluated.kind === 'unknown' && !evaluated.origin
+      ? { kind: 'unknown', origin: activeOrigin }
+      : evaluated
+  const extraOrigins = Array.from(
+    new Set(registeredRedirects.map(originOf).filter((origin) => origin && origin !== activeOrigin))
+  )
+  return { trust, activeOrigin, extraOrigins }
+}
+
+async function fetchClientRedirects(clientId: string): Promise<string[]> {
+  const apiUrl = process.env.NEXT_PUBLIC_RESTAPI_URL
+  if (!apiUrl) return []
+  try {
+    const {
+      data: { session }
+    } = await supabaseClient.auth.getSession()
+    if (!session) return []
+    const response = await fetch(
+      `${apiUrl}/connected-apps/clients/${encodeURIComponent(clientId)}/redirects`,
+      {
+        headers: { token: session.access_token },
+        signal: AbortSignal.timeout(CLIENT_REDIRECTS_TIMEOUT_MS)
+      }
+    )
+    if (!response.ok) return []
+    const json = (await response.json()) as { data?: { redirects?: unknown } }
+    const redirects = json.data?.redirects
+    if (!Array.isArray(redirects)) return []
+    return redirects.filter((uri): uri is string => typeof uri === 'string')
+  } catch {
+    return []
+  }
 }
 
 function isRedirect(data: OAuthAuthorizationDetails | OAuthRedirect): data is OAuthRedirect {
   return !('authorization_id' in data)
 }
 
-const OAuthConsentPage = () => {
+const defaultNavigate = (url: string) => window.location.assign(url)
+
+export const OAuthConsentContent = ({
+  navigate = defaultNavigate
+}: {
+  navigate?: (url: string) => void
+}) => {
   const router = useRouter()
   const authLoading = useAuthStore((state) => state.loading)
   const session = useAuthStore((state) => state.session)
@@ -84,6 +167,8 @@ const OAuthConsentPage = () => {
   const [busy, setBusy] = useState<Decision | null>(null)
   // A second details call answers 400, so StrictMode's replayed effect must not send one.
   const requestedRef = useRef(false)
+  const navigateRef = useRef(navigate)
+  navigateRef.current = navigate
 
   const rawId = router.query.authorization_id
   const authorizationId = typeof rawId === 'string' && AUTHORIZATION_ID.test(rawId) ? rawId : null
@@ -98,17 +183,25 @@ const OAuthConsentPage = () => {
     if (authLoading || !session || requestedRef.current) return
     requestedRef.current = true
 
-    supabaseClient.auth.oauth.getAuthorizationDetails(authorizationId).then(({ data, error }) => {
-      if (error || !data) {
-        setView(errorView(error))
-        return
-      }
-      if (isRedirect(data)) {
-        setView(followRedirect(data.redirect_url))
-        return
-      }
-      setView({ kind: 'details', details: data })
-    })
+    supabaseClient.auth.oauth
+      .getAuthorizationDetails(authorizationId)
+      .then(async ({ data, error }) => {
+        if (error || !data) {
+          setView(errorView(error))
+          return
+        }
+        if (isRedirect(data)) {
+          setView(resolveAutoRedirect(data.redirect_url, navigateRef.current))
+          return
+        }
+        const redirects = await fetchClientRedirects(data.client.id)
+        setView({
+          kind: 'details',
+          details: data,
+          ...resolveConsentTrust(data.redirect_uri, redirects)
+        })
+      })
+      .catch(() => setView({ kind: 'unavailable' }))
   }, [router.isReady, authorizationId, authLoading, session])
 
   const decide = async (action: Decision) => {
@@ -124,7 +217,7 @@ const OAuthConsentPage = () => {
       setView(errorView(error))
       return
     }
-    setView(followRedirect(data.redirect_url))
+    setView(followRedirect(data.redirect_url, navigateRef.current))
   }
 
   let content: ReactNode
@@ -144,7 +237,62 @@ const OAuthConsentPage = () => {
       </PageCard>
     )
   } else if (view.kind === 'details') {
-    content = <ConsentCard details={view.details} busy={busy} onDecide={decide} />
+    content = (
+      <ConsentCard
+        details={view.details}
+        trust={view.trust}
+        activeOrigin={view.activeOrigin}
+        extraOrigins={view.extraOrigins}
+        busy={busy}
+        onDecide={decide}
+      />
+    )
+  } else if (view.kind === 'confirm-redirect') {
+    content = (
+      <PageCard
+        title="Return to this app?"
+        description="You already allowed this app to use your docs.plus account."
+        actions={<HomepageLink />}>
+        <div role="note" className="alert alert-soft alert-warning items-start px-3 py-2 text-sm">
+          <Icons.alert size={16} className="text-warning mt-0.5 shrink-0" aria-hidden />
+          <span className="text-base-content min-w-0">
+            <b className="font-semibold">Unverified app.</b> It returns you to{' '}
+            <b className="font-semibold [overflow-wrap:anywhere]">{view.origin}</b>. Continue only
+            if you trust this address.
+          </span>
+        </div>
+        <DialogActions>
+          <Button
+            type="button"
+            variant="cancel"
+            onClick={() => setView({ kind: 'cancelled', origin: view.origin })}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() => setView(followRedirect(view.redirectUrl, navigateRef.current))}>
+            Continue
+          </Button>
+        </DialogActions>
+      </PageCard>
+    )
+  } else if (view.kind === 'cancelled') {
+    content = (
+      <PageCard
+        title="Sign-in cancelled"
+        description={
+          <>
+            You were not returned to{' '}
+            <b className="text-base-content font-semibold [overflow-wrap:anywhere]">
+              {view.origin}
+            </b>
+            . You can close this tab.
+          </>
+        }
+        actions={<HomepageLink />}
+      />
+    )
   } else if (view.kind === 'redirecting') {
     content = (
       <PageCard
@@ -212,12 +360,29 @@ function TrustTile({ trust }: { trust: AppTrust }) {
 }
 
 // Trust follows the redirect URI. The name is the app's own claim, so it stays in quotes.
-function TrustMeta({ trust }: { trust: AppTrust }) {
+function TrustMeta({
+  trust,
+  activeOrigin,
+  extraOrigins
+}: {
+  trust: AppTrust
+  activeOrigin: string
+  extraOrigins: string[]
+}) {
   if (trust.kind === 'known') {
     return (
       <>
         <Icons.lock size={13} className="mr-1 inline align-[-2px]" aria-hidden />
         Returns you to <b className="text-base-content font-semibold">{trust.host}</b>
+        {extraOrigins.length > 0 && (
+          <>
+            . This app can also send your sign-in to{' '}
+            <b className="text-base-content font-semibold [overflow-wrap:anywhere]">
+              {listFormat.format(extraOrigins)}
+            </b>
+            .
+          </>
+        )}
       </>
     )
   }
@@ -225,8 +390,38 @@ function TrustMeta({ trust }: { trust: AppTrust }) {
     return (
       <>
         <Icons.monitor size={13} className="text-warning mr-1 inline align-[-2px]" aria-hidden />
-        Returns you to <b className="text-base-content font-semibold">{trust.origin}</b>, an app on
-        this computer. Allow it only if you just started it.
+        {activeOrigin === trust.origin ? (
+          <>
+            Returns you to{' '}
+            <b className="text-base-content font-semibold [overflow-wrap:anywhere]">
+              {activeOrigin}
+            </b>
+            , an app on this computer.
+            {extraOrigins.length > 0 && (
+              <>
+                {' '}
+                This app can also send your sign-in to{' '}
+                <b className="text-base-content font-semibold [overflow-wrap:anywhere]">
+                  {listFormat.format(extraOrigins)}
+                </b>
+                .
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            Returns you to{' '}
+            <b className="text-base-content font-semibold [overflow-wrap:anywhere]">
+              {activeOrigin}
+            </b>
+            . This app can also send your sign-in to{' '}
+            <b className="text-base-content font-semibold [overflow-wrap:anywhere]">
+              {listFormat.format(extraOrigins)}
+            </b>
+            , on this computer.
+          </>
+        )}{' '}
+        Allow it only if you just started it.
       </>
     )
   }
@@ -235,16 +430,21 @@ function TrustMeta({ trust }: { trust: AppTrust }) {
 
 function ConsentCard({
   details,
+  trust,
+  activeOrigin,
+  extraOrigins,
   busy,
   onDecide
 }: {
   details: OAuthAuthorizationDetails
+  trust: AppTrust
+  activeOrigin: string
+  extraOrigins: string[]
   busy: Decision | null
   onDecide: (action: Decision) => void
 }) {
   const profile = useAuthStore((state) => state.profile)
   const scopes = details.scope.split(/\s+/).filter(Boolean)
-  const trust = appTrust(details.redirect_uri)
   const identity = identityLine(scopes)
   const otherScopes = scopes.filter((scope) => !HANDLED_SCOPES.has(scope))
   const appName =
@@ -282,7 +482,11 @@ function ConsentCard({
         <PageCardIdentityRow
           leading={<TrustTile trust={trust} />}
           name={appName}
-          meta={trust.kind === 'unknown' ? undefined : <TrustMeta trust={trust} />}
+          meta={
+            trust.kind === 'unknown' ? undefined : (
+              <TrustMeta trust={trust} activeOrigin={activeOrigin} extraOrigins={extraOrigins} />
+            )
+          }
         />
         <PageCardIdentityRow
           leading={<Avatar face={profile} size="md" clickable={false} edge="none" />}
@@ -295,7 +499,17 @@ function ConsentCard({
           <Icons.alert size={16} className="text-warning mt-0.5 shrink-0" aria-hidden />
           <span className="text-base-content min-w-0">
             <b className="font-semibold">Unverified app.</b> docs.plus has not checked this app. It
-            returns you to <b className="font-semibold [overflow-wrap:anywhere]">{trust.origin}</b>.
+            returns you to <b className="font-semibold [overflow-wrap:anywhere]">{activeOrigin}</b>.
+            {extraOrigins.length > 0 && (
+              <>
+                {' '}
+                This app can also send your sign-in to{' '}
+                <b className="font-semibold [overflow-wrap:anywhere]">
+                  {listFormat.format(extraOrigins)}
+                </b>
+                .
+              </>
+            )}{' '}
             Allow it only if you trust it.
           </span>
         </div>
@@ -308,7 +522,7 @@ function ConsentCard({
             Read the documents you can open, and their chat.
           </ScopeRow>
           <ScopeRow icon={<LuFilePlus size={16} />}>
-            Create documents. A new document is public, like any docs.plus document.
+            Create documents. A new document is public unless the app makes it Invite only.
           </ScopeRow>
           <ScopeRow icon={<Icons.pencil size={16} />}>
             Edit and post in chat only in documents you own.
@@ -354,5 +568,7 @@ function ScopeRow({ icon, children }: { icon: ReactNode; children: ReactNode }) 
     </li>
   )
 }
+
+const OAuthConsentPage = () => <OAuthConsentContent />
 
 export default OAuthConsentPage
