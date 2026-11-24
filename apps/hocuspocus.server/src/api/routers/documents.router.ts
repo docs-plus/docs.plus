@@ -21,6 +21,7 @@ import {
 import {
   optionalPadReader,
   optionalUser,
+  requireNonAnonymousUser,
   requireServiceRoleOrUser,
   requireUser
 } from '../middleware/auth'
@@ -106,6 +107,7 @@ export const createDocumentsRouter = (deps: DocumentsRouterDeps): Hono => {
   documents.post(
     '/:documentId/duplicate',
     deps.requireUser,
+    requireNonAnonymousUser('Sign in to duplicate this document'),
     duplicateRateLimit,
     controller.duplicateDocument
   )

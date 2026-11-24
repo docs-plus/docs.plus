@@ -31,7 +31,9 @@ import type {
 import type { SearchDocumentsParams } from '../../types'
 import type { AppContext } from '../../types/hono.types'
 import { authUnavailableResponse } from '../middleware/auth'
+import { duplicateDocument as duplicateDocumentService } from '../services/documentDuplicate.service'
 import * as documentsService from '../services/documents.service'
+import { searchDocuments } from '../services/documentSearch.service'
 import * as mediaService from '../services/media.service'
 
 type DocumentHandler = (c: AppContext) => Promise<Response>
@@ -187,7 +189,7 @@ export const listDocuments = async (c: AppContext): Promise<Response> => {
   const offset = parseInt(query.offset || '0', 10)
 
   try {
-    const result = await documentsService.searchDocuments(prisma, {
+    const result = await searchDocuments(prisma, {
       title: query.title,
       keywords: query.keywords,
       description: query.description,
@@ -422,23 +424,11 @@ export const duplicateDocument = async (c: AppContext): Promise<Response> => {
   const documentId = c.req.param('documentId')
   if (documentId === undefined) return c.json({ error: 'Missing document id' }, 400)
   const user = c.get('user')
-  const requesterId = c.get('userId') as string | undefined
-
-  if (!requesterId || user?.is_anonymous === true) {
-    return fail(c, 403, 'FORBIDDEN', 'Sign in to duplicate this document')
-  }
+  // Guaranteed by requireUser + requireNonAnonymousUser in documents.router.ts.
+  const requesterId = c.get('userId') as string
 
   try {
-    const result = await documentsService.duplicateDocument(
-      prisma,
-      documentId,
-      requesterId,
-      user?.email,
-      user?.is_anonymous
-    )
-    if (result.status === 'forbidden') {
-      return fail(c, 403, 'FORBIDDEN', 'Sign in to duplicate this document')
-    }
+    const result = await duplicateDocumentService(prisma, documentId, requesterId, user?.email)
     if (result.status === 'not-found') {
       return fail(c, 404, 'NOT_FOUND', 'Document not found')
     }
@@ -504,10 +494,8 @@ const mediaCookieOptions = {
 export const createMediaSession = async (c: AppContext): Promise<Response> => {
   const secret = config.storage.mediaCookieSecret
   if (!secret) return fail(c, 503, 'SERVICE_UNAVAILABLE', 'Private media is not configured')
-  const userId = c.get('userId')
-  if (!userId || c.get('user')?.is_anonymous) {
-    return fail(c, 403, 'FORBIDDEN', 'An anonymous user cannot load private media')
-  }
+  // Guaranteed by requireUser + requireNonAnonymousUser in hypermultimedia.router.ts.
+  const userId = c.get('userId') as string
 
   setCookie(c, MEDIA_SESSION_COOKIE, signMediaSession({ uid: userId, secret }), {
     ...mediaCookieOptions,

@@ -28,7 +28,7 @@ import path from 'path'
 import { Hono } from 'hono'
 import pino from 'pino'
 import * as Y from 'yjs'
-import { searchDocuments } from '../../src/api/services/documents.service'
+import { searchDocuments } from '../../src/api/services/documentSearch.service'
 import documentsRouter from '../../src/api/routers/documents.router'
 import { config } from '../../src/config/env'
 import { acquireLargeDecode, LARGE_DECODE_BYTES } from '../../src/lib/largeDecodeGate'
@@ -1357,9 +1357,9 @@ describe('Documents API', () => {
         mockPrisma.documentMetadata.findUnique = async () => variant.source
         mockPrisma.documents.findFirst = async () => ({ data: sourceBytes })
 
-        let metaCreate: any
+        let metaCreate: { data: Record<string, unknown> } | undefined
         let metaUpdated = false
-        mockPrisma.documentMetadata.create = async (args: any) => {
+        mockPrisma.documentMetadata.create = async (args: { data: Record<string, unknown> }) => {
           metaCreate = args
           return { id: 2, ...args.data }
         }
@@ -1377,11 +1377,11 @@ describe('Documents API', () => {
 
         expect(response.status).toBe(200)
         expect(data.success).toBe(true)
-        expect(metaCreate.data.ownerId).toBe('user-123')
-        expect(metaCreate.data.isPrivate).toBe(false)
-        expect(metaCreate.data.readOnly).toBe(false)
-        expect(metaCreate.data.deletedAt).toBeNull()
-        expect(metaCreate.data.title).toBe(`${variant.source.title} (copy)`)
+        expect(metaCreate?.data.ownerId).toBe('user-123')
+        expect(metaCreate?.data.isPrivate).toBe(false)
+        expect(metaCreate?.data.readOnly).toBe(false)
+        expect(metaCreate?.data.deletedAt).toBeNull()
+        expect(metaCreate?.data.title).toBe(`${variant.source.title} (copy)`)
         // Source row is never mutated or claimed (CONTEXT.md:81).
         expect(metaUpdated).toBe(false)
       })

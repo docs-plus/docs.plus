@@ -6,7 +6,7 @@ import { houseEnvelopeHook } from '../../http/envelope'
 import { MEDIA_SESSION_PATH } from '../../lib/mediaSession'
 import { documentIdParamSchema, mediaIdParamSchema } from '../../schemas/hypermultimedia.schema'
 import * as documentsController from '../controllers/documents.controller'
-import { requireUser } from '../middleware/auth'
+import { requireNonAnonymousUser, requireUser } from '../middleware/auth'
 import { MEDIA_MAX_FILE_SIZE } from '../services/media.service'
 
 /**
@@ -50,7 +50,12 @@ const uploadBodyLimitGuard: MiddlewareHandler = async (c, next) => {
 
 // Before `POST /:documentId`: `session` passes `documentIdField`, so that route
 // would claim it as a document id.
-hypermultimedia.post('/session', requireUser, documentsController.createMediaSession)
+hypermultimedia.post(
+  '/session',
+  requireUser,
+  requireNonAnonymousUser('An anonymous user cannot load private media'),
+  documentsController.createMediaSession
+)
 hypermultimedia.delete('/session', documentsController.clearMediaSession)
 
 // Public read for a public document. A Private one needs the media cookie.

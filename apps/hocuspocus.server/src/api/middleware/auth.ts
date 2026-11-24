@@ -92,3 +92,14 @@ const optionalUserWithin =
  *  mixed public/privileged actions that gate per-field downstream. */
 export const optionalUser = optionalUserWithin()
 export const optionalPadReader = optionalUserWithin(OPTIONAL_USER_AUTH_DEADLINE_MS)
+
+/** Refuse anonymous Supabase sessions after `requireUser` (or a stubbed auth seam). */
+export const requireNonAnonymousUser =
+  (message: string): MiddlewareHandler =>
+  async (c, next) => {
+    const userId = c.get('userId') as string | undefined
+    if (!userId || c.get('user')?.is_anonymous === true) {
+      return fail(c, 403, 'FORBIDDEN', message)
+    }
+    await next()
+  }
