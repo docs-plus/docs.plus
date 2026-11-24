@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { parseBareHttpOrigin } from '../lib/httpOrigin'
 import { CARD_KINDS } from '../modules/social-card/domain/cardRequest'
 
 const booleanString = z
@@ -45,36 +46,16 @@ const validateBareHttpOrigin = (
   ctx: z.RefinementCtx,
   name: string,
   example: string
-): void => {
-  let parsed: URL
-  try {
-    parsed = new URL(val)
-  } catch {
+): string | undefined => {
+  const parsed = parseBareHttpOrigin(val)
+  if (!parsed) {
     ctx.addIssue({
       code: 'custom',
-      message: `${name} must be a valid http(s) origin URL (e.g. ${example})`
+      message: `${name} must be a bare http(s) origin with no path suffix, query, fragment, or credentials (e.g. ${example}, not .../api)`
     })
-    return
+    return undefined
   }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    ctx.addIssue({
-      code: 'custom',
-      message: `${name} must use http or https scheme`
-    })
-    return
-  }
-  if (
-    parsed.pathname !== '/' ||
-    parsed.search !== '' ||
-    parsed.hash !== '' ||
-    parsed.username !== '' ||
-    parsed.password !== ''
-  ) {
-    ctx.addIssue({
-      code: 'custom',
-      message: `${name} must be a bare origin with no path suffix, query, fragment, or credentials (e.g. ${example}, not .../api)`
-    })
-  }
+  return parsed.origin
 }
 
 const optionalBareHttpOrigin = (name: string, example: string) =>
@@ -82,18 +63,14 @@ const optionalBareHttpOrigin = (name: string, example: string) =>
     .string()
     .optional()
     .transform((val) => val?.trim() || undefined)
-    .superRefine((val, ctx) => {
-      if (val) validateBareHttpOrigin(val, ctx, name, example)
-    })
-    .transform((val) => (val ? new URL(val).origin : undefined))
+    .transform((val, ctx) =>
+      val ? (validateBareHttpOrigin(val, ctx, name, example) ?? z.NEVER) : undefined
+    )
 
 const bareHttpOriginList = (name: string, example: string) =>
   commaSeparatedList.pipe(
     z.array(
-      z
-        .string()
-        .superRefine((val, ctx) => validateBareHttpOrigin(val, ctx, name, example))
-        .transform((val) => new URL(val).origin)
+      z.string().transform((val, ctx) => validateBareHttpOrigin(val, ctx, name, example) ?? z.NEVER)
     )
   )
 
@@ -109,7 +86,10 @@ export const envSchema = z.object({
   HOCUSPOCUS_INTERNAL_HTTP_PORT: numericString('4003'),
   HOCUSPOCUS_INTERNAL_HTTP_HOST: z.string().default('0.0.0.0'),
   // Where REST forwards content applies; compose sets http://hocuspocus-server:4003.
-  HOCUSPOCUS_INTERNAL_URL: z.string().default('http://localhost:4003'),
+  HOCUSPOCUS_INTERNAL_URL: optionalBareHttpOrigin(
+    'HOCUSPOCUS_INTERNAL_URL',
+    'http://hocuspocus-server:4003'
+  ).transform((val) => val ?? 'http://localhost:4003'),
   // Optional bare http(s) origin this collab replica advertises in the Redis room-owner registry.
   // When unset, derived from HOCUSPOCUS_INTERNAL_HTTP_HOST/PORT (or the container's non-loopback IPv4 on 0.0.0.0).
   HOCUSPOCUS_INTERNAL_ADVERTISE_URL: optionalBareHttpOrigin(

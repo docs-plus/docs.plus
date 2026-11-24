@@ -158,7 +158,6 @@ interface ApplyRequestBase {
   documentId: string
   actor?: ApplyActor
   requestId?: string
-  payloadBytes?: number
 }
 
 export type ApplyRequest = ContentEdit & ApplyRequestBase & { commitMessage?: string }
@@ -179,7 +178,8 @@ export interface VersionStamp {
 export type NamedVersionStamp = VersionStamp & Required<Pick<VersionStamp, 'name' | 'forceKey'>>
 
 /** The applier's view: the wire name has already been resolved into a stamp. */
-export type ApplyContentRequest = ContentEdit & ApplyRequestBase & { version?: VersionStamp }
+export type ApplyContentRequest = ContentEdit &
+  ApplyRequestBase & { version?: VersionStamp; payloadBytes?: number }
 
 export interface ContentApplyResponseData {
   documentId: string
@@ -220,6 +220,8 @@ export interface InitDeps {
   redis?: RedisClient | null
   /** Optional explicit peer allowlist for non-DNS multi-replica topologies. */
   allowedPeerUrls?: readonly string[]
+  /** Optional shared room-owner reader (shares DNS cache across clients). */
+  roomRegistry?: RoomRegistryReader
 }
 
 export interface InitWsApplyDeps {

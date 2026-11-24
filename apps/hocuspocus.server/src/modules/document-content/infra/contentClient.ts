@@ -2,6 +2,7 @@ import type { JSONContent } from '@tiptap/core'
 import type { Logger } from 'pino'
 
 import type { PrismaClient } from '../../../generated/prisma/client'
+import { parseBareHttpOrigin } from '../../../lib/httpOrigin'
 import { internalHop } from '../../../lib/internalHop'
 import { isRecord } from '../../../lib/isRecord'
 import type { RedisClient } from '../../../types'
@@ -15,7 +16,7 @@ import {
   WS_APPLY_TIMEOUT_MS
 } from '../types'
 import { findHeadRow } from './contentStore'
-import { createRoomRegistryReader, parseBareHttpOrigin } from './roomRegistry'
+import { createRoomRegistryReader } from './roomRegistry'
 
 export interface ContentClient {
   apply: (request: ApplyRequest) => Promise<WsApplyOutcome>
@@ -65,12 +66,19 @@ export const isPreConnectError = (error: unknown): boolean => {
   return false
 }
 
-const canonicalOrigin = (url: string): string =>
-  parseBareHttpOrigin(url)?.origin ?? url.replace(/\/+$/, '')
+const originKey = (url: string): string => {
+  const parsed = parseBareHttpOrigin(url)
+  return parsed ? `${parsed.protocol}//${parsed.host}:${parsed.port}` : url.replace(/\/+$/, '')
+}
+
+type PeerStep<T> =
+  | { kind: 'done'; outcome: T }
+  | { kind: 'evict'; outcome: T; dead: boolean }
+  | { kind: 'preserve'; outcome: T }
 
 /** REST → WS hop. Transport and envelope failures both collapse to `unreachable` (503). */
 export const createContentClient = (deps: ContentClientDeps): ContentClient => {
-  const baseOrigin = canonicalOrigin(deps.baseUrl)
+  const baseKey = originKey(deps.baseUrl)
   const roomRegistry: RoomRegistryReader | null =
     deps.roomRegistry ??
     (deps.redis
@@ -85,6 +93,41 @@ export const createContentClient = (deps: ContentClientDeps): ContentClient => {
   const forgetStaleOwner = (documentId: string, peerUrl: string): void => {
     if (!roomRegistry) return
     void roomRegistry.removeOwner(documentId, peerUrl).catch(() => {})
+  }
+
+  const routeToOwner = async <T>(
+    documentId: string,
+    tryTarget: (targetUrl: string, isRegisteredPeer: boolean) => Promise<PeerStep<T>>,
+    options: {
+      skipFallbackIf: (state: { deadOrigins: Set<string>; triedOrigins: Set<string> }) => boolean
+      finalize: (fallback: T | null, preserved: T | null, last: T | null) => T
+    }
+  ): Promise<T> => {
+    const owners = roomRegistry ? await roomRegistry.lookupOwners(documentId) : []
+    const deadOrigins = new Set<string>()
+    const triedOrigins = new Set<string>()
+    let preserved: T | null = null
+    let lastOutcome: T | null = null
+
+    for (const peerUrl of owners) {
+      const key = originKey(peerUrl)
+      triedOrigins.add(key)
+      const step = await tryTarget(peerUrl, true)
+      if (step.kind === 'done') return step.outcome
+      if (step.kind === 'evict') {
+        forgetStaleOwner(documentId, peerUrl)
+        if (step.dead) deadOrigins.add(key)
+      } else {
+        preserved ??= step.outcome
+      }
+      lastOutcome = step.outcome
+    }
+
+    if (options.skipFallbackIf({ deadOrigins, triedOrigins })) {
+      return options.finalize(null, preserved, lastOutcome)
+    }
+    const fallback = await tryTarget(deps.baseUrl, false)
+    return options.finalize(fallback.outcome, preserved, lastOutcome)
   }
 
   const applyToTarget = async (
@@ -183,43 +226,33 @@ export const createContentClient = (deps: ContentClientDeps): ContentClient => {
   }
 
   // JSON drops the undefined fields, so the body carries only what the mode set.
-  const apply: ContentClient['apply'] = async ({
-    documentId,
-    requestId,
-    payloadBytes,
-    ...body
-  }) => {
-    const owners = roomRegistry ? await roomRegistry.lookupOwners(documentId) : []
-    const deadOrigins = new Set<string>()
-
-    for (const peerUrl of owners) {
-      const result = await applyToTarget(peerUrl, documentId, body, requestId, true)
-      if (result.status === 'peer-not-loaded') {
-        forgetStaleOwner(documentId, peerUrl)
-        continue
+  const apply: ContentClient['apply'] = ({ documentId, requestId, ...body }) =>
+    routeToOwner<WsApplyOutcome>(
+      documentId,
+      async (targetUrl, isPeer) => {
+        const result = await applyToTarget(targetUrl, documentId, body, requestId, isPeer)
+        if (result.status === 'peer-not-loaded') {
+          return { kind: 'evict', outcome: { status: 'unreachable' }, dead: false }
+        }
+        if (result.status === 'peer-pre-connect-failed') {
+          return { kind: 'evict', outcome: { status: 'unreachable' }, dead: true }
+        }
+        return { kind: 'done', outcome: result }
+      },
+      {
+        skipFallbackIf: ({ deadOrigins }) => deadOrigins.has(baseKey),
+        finalize: (fallback) => fallback ?? { status: 'unreachable' }
       }
-      if (result.status === 'peer-pre-connect-failed') {
-        forgetStaleOwner(documentId, peerUrl)
-        deadOrigins.add(canonicalOrigin(peerUrl))
-        continue
-      }
-      return result
-    }
-
-    // All registered owners were stale/dead or none were registered — cold fallback to baseUrl.
-    if (deadOrigins.has(baseOrigin)) return { status: 'unreachable' }
-    const fallback = await applyToTarget(deps.baseUrl, documentId, body, requestId, false)
-    if (fallback.status === 'peer-not-loaded' || fallback.status === 'peer-pre-connect-failed') {
-      return { status: 'unreachable' }
-    }
-    return fallback
-  }
+    )
 
   // The read shares the apply's hop budget. No read has been timed, so it has no number of its own.
   const readLiveFrom = async (
     targetUrl: string,
-    documentId: string
-  ): Promise<ContentReadOutcome | { status: 'not-loaded' }> => {
+    documentId: string,
+    isRegisteredPeer: boolean
+  ): Promise<
+    ContentReadOutcome | { status: 'not-loaded' } | { status: 'peer-pre-connect-failed' }
+  > => {
     const hop = await internalHop({
       baseUrl: targetUrl,
       path: ['internal', 'documents', documentId, 'content', 'live'],
@@ -227,6 +260,14 @@ export const createContentClient = (deps: ContentClientDeps): ContentClient => {
       serviceRoleKey: deps.serviceRoleKey,
       timeoutMs: WS_APPLY_TIMEOUT_MS
     })
+
+    if (!hop.ok && isRegisteredPeer && isPreConnectError(hop.error)) {
+      deps.logger.warn(
+        { err: hop.error, documentId, url: hop.url },
+        'Registered room owner unreachable before connect; cleaning stale entry'
+      )
+      return { status: 'peer-pre-connect-failed' }
+    }
 
     if (hop.ok && hop.status === 404) return { status: 'not-found' }
     const data = hop.ok && hop.status === 200 ? dataField(hop.body) : undefined
@@ -243,24 +284,33 @@ export const createContentClient = (deps: ContentClientDeps): ContentClient => {
     return { status: 'unavailable' }
   }
 
-  const readLive = async (
-    documentId: string
-  ): Promise<ContentReadOutcome | { status: 'not-loaded' }> => {
-    const owners = roomRegistry ? await roomRegistry.lookupOwners(documentId) : []
-    const tried = new Set<string>()
-    let lastOutcome: ContentReadOutcome | { status: 'not-loaded' } | null = null
-
-    for (const peerUrl of owners) {
-      tried.add(canonicalOrigin(peerUrl))
-      const outcome = await readLiveFrom(peerUrl, documentId)
-      if (outcome.status === 'ok' || outcome.status === 'not-found') return outcome
-      forgetStaleOwner(documentId, peerUrl)
-      lastOutcome = outcome
-    }
-
-    if (tried.has(baseOrigin) && lastOutcome) return lastOutcome
-    return readLiveFrom(deps.baseUrl, documentId)
-  }
+  const readLive = (documentId: string): Promise<ContentReadOutcome | { status: 'not-loaded' }> =>
+    routeToOwner<ContentReadOutcome | { status: 'not-loaded' }>(
+      documentId,
+      async (targetUrl, isPeer) => {
+        const outcome = await readLiveFrom(targetUrl, documentId, isPeer)
+        if (outcome.status === 'ok' || outcome.status === 'not-found') {
+          return { kind: 'done', outcome }
+        }
+        if (outcome.status === 'not-loaded') {
+          return { kind: 'evict', outcome, dead: false }
+        }
+        if (outcome.status === 'peer-pre-connect-failed') {
+          return { kind: 'evict', outcome: { status: 'unavailable' }, dead: true }
+        }
+        return { kind: 'preserve', outcome }
+      },
+      {
+        skipFallbackIf: ({ triedOrigins }) => triedOrigins.has(baseKey),
+        finalize: (fallback, preserved, last) => {
+          if (fallback) {
+            if (fallback.status === 'ok' || fallback.status === 'not-found') return fallback
+            return preserved ?? fallback
+          }
+          return preserved ?? last ?? { status: 'unavailable' }
+        }
+      }
+    )
 
   // A loaded room answers from the collab process. A cold one is decoded here,
   // so a read never blocks the collab event loop.

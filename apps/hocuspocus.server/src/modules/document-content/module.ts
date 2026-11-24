@@ -21,7 +21,8 @@ export const init = (deps: InitDeps): InitResult => {
     prisma: deps.prisma,
     logger: deps.logger,
     redis: deps.redis,
-    allowedPeerUrls: deps.allowedPeerUrls
+    allowedPeerUrls: deps.allowedPeerUrls,
+    roomRegistry: deps.roomRegistry
   })
 
   return {

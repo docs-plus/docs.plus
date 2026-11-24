@@ -111,4 +111,38 @@ describe('envSchema', () => {
       }
     })
   })
+
+  describe('HOCUSPOCUS_INTERNAL_URL', () => {
+    test('defaults to http://localhost:4003 when unset or blank and normalizes trailing slashes', () => {
+      for (const empty of [undefined, '', '   ']) {
+        const parsed = envSchema.safeParse({ ...REQUIRED_ENV, HOCUSPOCUS_INTERNAL_URL: empty })
+        expect(parsed.success).toBe(true)
+        if (parsed.success) {
+          expect(parsed.data.HOCUSPOCUS_INTERNAL_URL).toBe('http://localhost:4003')
+        }
+      }
+
+      const normalized = envSchema.safeParse({
+        ...REQUIRED_ENV,
+        HOCUSPOCUS_INTERNAL_URL: ' http://hocuspocus-server:4003/ '
+      })
+      expect(normalized.success).toBe(true)
+      if (normalized.success) {
+        expect(normalized.data.HOCUSPOCUS_INTERNAL_URL).toBe('http://hocuspocus-server:4003')
+      }
+    })
+
+    test('rejects invalid URLs, non-http schemes, paths, queries, and credentials', () => {
+      for (const bad of [
+        'not-a-url',
+        'ftp://hocuspocus-server:4003',
+        'http://hocuspocus-server:4003/internal',
+        'http://user:pass@hocuspocus-server:4003'
+      ]) {
+        expect(envSchema.safeParse({ ...REQUIRED_ENV, HOCUSPOCUS_INTERNAL_URL: bad }).success).toBe(
+          false
+        )
+      }
+    })
+  })
 })

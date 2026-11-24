@@ -47,25 +47,21 @@ const createFakeRedis = (opts?: { failNext?: Error; hangMs?: number }) => {
     zsets.get(key)?.delete(member)
   }
 
-  const zremrangebyscore = (key: string, _min: string, max: string) => {
-    const map = zsets.get(key)
-    if (!map) return 0
-    const exclusive = max.startsWith('(')
-    const bound = Number(exclusive ? max.slice(1) : max)
-    let removed = 0
-    for (const [member, score] of map) {
-      if (exclusive ? score < bound : score <= bound) {
-        map.delete(member)
-        removed += 1
-      }
-    }
-    return removed
-  }
-
-  const zrevrange = (key: string) => {
+  const zrevrangebyscore = (key: string, max: string, min: string) => {
     const map = zsets.get(key)
     if (!map) return []
-    return [...map.entries()].sort((a, b) => b[1] - a[1]).map(([member]) => member)
+    const minExclusive = min.startsWith('(')
+    const minVal = min === '-inf' ? -Infinity : Number(minExclusive ? min.slice(1) : min)
+    const maxExclusive = max.startsWith('(')
+    const maxVal = max === '+inf' ? Infinity : Number(maxExclusive ? max.slice(1) : max)
+    return [...map.entries()]
+      .filter(([, score]) => {
+        const aboveMin = minExclusive ? score > minVal : score >= minVal
+        const belowMax = maxExclusive ? score < maxVal : score <= maxVal
+        return aboveMin && belowMax
+      })
+      .sort((a, b) => b[1] - a[1])
+      .map(([member]) => member)
   }
 
   const makeChain = (isPipeline: boolean) => {
@@ -92,14 +88,6 @@ const createFakeRedis = (opts?: { failNext?: Error; hangMs?: number }) => {
         })
         return chain
       },
-      zremrangebyscore(key: string, min: string, max: string) {
-        ops.push(() => zremrangebyscore(key, min, max))
-        return chain
-      },
-      zrevrange(key: string) {
-        ops.push(() => zrevrange(key))
-        return chain
-      },
       async exec() {
         if (isPipeline) pipelineExecCount += 1
         if (opts?.hangMs) await new Promise((r) => setTimeout(r, opts.hangMs))
@@ -113,6 +101,11 @@ const createFakeRedis = (opts?: { failNext?: Error; hangMs?: number }) => {
   const client = {
     multi: () => makeChain(false),
     pipeline: () => makeChain(true),
+    zrevrangebyscore: async (key: string, max: string, min: string) => {
+      if (opts?.hangMs) await new Promise((r) => setTimeout(r, opts.hangMs))
+      if (opts?.failNext) throw opts.failNext
+      return zrevrangebyscore(key, max, min)
+    },
     zrem: async (key: string, member: string) => {
       if (opts?.hangMs) await new Promise((r) => setTimeout(r, opts.hangMs))
       if (opts?.failNext) throw opts.failNext
@@ -158,19 +151,29 @@ describe('roomRegistry — pure URL, IP, and advertise resolution', () => {
 
   test('normalizeHost, isLoopbackHost, and isBlockedPeerIp classify addresses defensively', () => {
     expect(normalizeHost('[::ffff:172.18.0.5]')).toBe('172.18.0.5')
+    expect(normalizeHost('::ffff:a9fe:a9fe')).toBe('169.254.169.254')
+    expect(normalizeHost('::ffff:7f00:1')).toBe('127.0.0.1')
+    expect(normalizeHost('[0::0]')).toBe('::')
+    expect(normalizeHost('[0:0:0:0:0:0:0:1]')).toBe('::1')
     expect(normalizeHost('[FE80::1]')).toBe('fe80::1')
     expect(isLoopbackHost('localhost')).toBe(true)
     expect(isLoopbackHost('127.0.0.1')).toBe(true)
     expect(isLoopbackHost('[::1]')).toBe(true)
+    expect(isLoopbackHost('[::ffff:127.0.0.1]')).toBe(true)
+    expect(isLoopbackHost('::ffff:7f00:1')).toBe(true)
     expect(isLoopbackHost('172.18.0.5')).toBe(false)
 
     expect(isBlockedPeerIp('169.254.169.254')).toBe(true)
+    expect(isBlockedPeerIp('[::ffff:169.254.169.254]')).toBe(true)
+    expect(isBlockedPeerIp('::ffff:a9fe:a9fe')).toBe(true)
     expect(isBlockedPeerIp('0.0.0.0')).toBe(true)
     expect(isBlockedPeerIp('224.0.0.1')).toBe(true)
     expect(isBlockedPeerIp('255.255.255.255')).toBe(true)
     expect(isBlockedPeerIp('fe80::1')).toBe(true)
+    expect(isBlockedPeerIp('fe80::1%eth0')).toBe(true)
     expect(isBlockedPeerIp('ff02::1')).toBe(true)
     expect(isBlockedPeerIp('::')).toBe(true)
+    expect(isBlockedPeerIp('0::0')).toBe(true)
     expect(isBlockedPeerIp('172.18.0.5')).toBe(false)
     expect(isBlockedPeerIp('10.244.1.7')).toBe(false)
   })
@@ -191,6 +194,13 @@ describe('roomRegistry — pure URL, IP, and advertise resolution', () => {
       })
     ).toBe('http://127.0.0.1:41234')
 
+    expect(() =>
+      resolveAdvertiseUrl({
+        bindHost: 'bad host/path',
+        bindPort: 4003
+      })
+    ).toThrow('Invalid bindHost/bindPort')
+
     const mockIfaces = (): NodeJS.Dict<os.NetworkInterfaceInfo[]> => ({
       lo: [{ address: '127.0.0.1', family: 'IPv4', internal: true } as os.NetworkInterfaceInfo],
       linklocal: [
@@ -201,6 +211,13 @@ describe('roomRegistry — pure URL, IP, and advertise resolution', () => {
     expect(
       resolveAdvertiseUrl({
         bindHost: '0.0.0.0',
+        bindPort: 4003,
+        networkInterfaces: mockIfaces
+      })
+    ).toBe('http://172.18.0.5:4003')
+    expect(
+      resolveAdvertiseUrl({
+        bindHost: '[0::0]',
         bindPort: 4003,
         networkInterfaces: mockIfaces
       })
@@ -259,6 +276,9 @@ describe('createPeerUrlValidator — SSRF allowlist & zero-overhead single-repli
     // Rejects every SSRF vector without ever resolving an attacker hostname.
     for (const attack of [
       'http://169.254.169.254:4003',
+      'http://[::ffff:169.254.169.254]:4003', // IPv4-mapped metadata (WHATWG hex-grouped)
+      'http://[::ffff:127.0.0.1]:4003', // IPv4-mapped loopback
+      'http://[0::0]:4003', // non-canonical unspecified IPv6
       'http://172.18.0.2:4003', // different container on same Docker subnet
       'http://172.18.0.5:6379', // wrong port
       'https://172.18.0.5:4003', // wrong scheme
@@ -280,6 +300,27 @@ describe('createPeerUrlValidator — SSRF allowlist & zero-overhead single-repli
     // After TTL expires, retired replica IP is dropped on cache refresh.
     clock += DNS_CACHE_TTL_MS + 100
     expect(await validator.validate('http://172.18.0.6:4003')).toBeNull()
+  })
+
+  test('coalesces concurrent DNS lookups via single-flight', async () => {
+    let dnsCalls = 0
+    const validator = createPeerUrlValidator({
+      baseUrl: 'http://hocuspocus-server:4003',
+      dnsLookup: async () => {
+        dnsCalls += 1
+        await new Promise((r) => setTimeout(r, 15))
+        return ['172.18.0.5', '172.18.0.6']
+      },
+      logger: silentLogger
+    })
+
+    const results = await Promise.all([
+      validator.validate('http://172.18.0.5:4003'),
+      validator.validate('http://172.18.0.6:4003'),
+      validator.isRoutingActive()
+    ])
+    expect(results).toEqual(['http://172.18.0.5:4003', 'http://172.18.0.6:4003', true])
+    expect(dnsCalls).toBe(1)
   })
 
   test('explicit allowedPeerUrls mode permits only listed origins and rejects all others', async () => {
@@ -335,13 +376,113 @@ describe('roomRegistry writer & reader — ZSET lifecycle, staleness, chunking, 
       'http://172.18.0.5:4003'
     ])
 
-    // Advance past stale window for A while B heartbeats.
+    // Advance past stale window for A while B heartbeats (read path does not mutate Redis).
     clock += ROOM_OWNER_STALE_MS - 5_000
     await writerB.refreshMany([docId])
     expect(await reader.lookupOwners(docId)).toEqual(['http://172.18.0.6:4003'])
+    expect(fake.zsets.get(roomOwnersKey(docId))?.has('http://172.18.0.5:4003')).toBe(true)
 
     await writerB.unregister(docId)
     expect(await reader.lookupOwners(docId)).toEqual([])
+  })
+
+  test('unregister during in-flight refreshMany or register does not leave stale owner in Redis', async () => {
+    const zsets = new Map<string, Map<string, number>>()
+    let releaseSlowFlush!: () => void
+    let delayNextExec = false
+
+    const client = {
+      multi: () => {
+        const ops: Array<() => void> = []
+        return {
+          zadd(key: string, score: number, member: string) {
+            ops.push(() => {
+              let m = zsets.get(key)
+              if (!m) {
+                m = new Map()
+                zsets.set(key, m)
+              }
+              m.set(member, score)
+            })
+            return this
+          },
+          expire() {
+            return this
+          },
+          async exec() {
+            if (delayNextExec) {
+              delayNextExec = false
+              await new Promise<void>((resolve) => {
+                releaseSlowFlush = resolve
+              })
+            }
+            for (const op of ops) op()
+            return ops.map(() => [null, 1])
+          }
+        }
+      },
+      pipeline: () => {
+        const ops: Array<() => void> = []
+        return {
+          zadd(key: string, score: number, member: string) {
+            ops.push(() => {
+              let m = zsets.get(key)
+              if (!m) {
+                m = new Map()
+                zsets.set(key, m)
+              }
+              m.set(member, score)
+            })
+            return this
+          },
+          expire() {
+            return this
+          },
+          zrem(key: string, member: string) {
+            ops.push(() => {
+              zsets.get(key)?.delete(member)
+            })
+            return this
+          },
+          async exec() {
+            if (delayNextExec) {
+              delayNextExec = false
+              await new Promise<void>((resolve) => {
+                releaseSlowFlush = resolve
+              })
+            }
+            for (const op of ops) op()
+            return ops.map(() => [null, 1])
+          }
+        }
+      },
+      zrem: async (key: string, member: string) => {
+        zsets.get(key)?.delete(member)
+        return 1
+      }
+    } as unknown as RedisClient
+
+    const writer = createRoomRegistryWriter({
+      redis: client,
+      advertiseUrl: 'http://172.18.0.5:4003',
+      logger: silentLogger
+    })
+
+    // Case 1: in-flight refreshMany races with unregister.
+    delayNextExec = true
+    const flushing = writer.refreshMany(['doc-race-1'])
+    await writer.unregister('doc-race-1')
+    releaseSlowFlush()
+    await flushing
+    expect(zsets.get(roomOwnersKey('doc-race-1'))?.size ?? 0).toBe(0)
+
+    // Case 2: in-flight register races with unregister.
+    delayNextExec = true
+    const registering = writer.register('doc-race-2')
+    await writer.unregister('doc-race-2')
+    releaseSlowFlush()
+    await registering
+    expect(zsets.get(roomOwnersKey('doc-race-2'))?.size ?? 0).toBe(0)
   })
 
   test('refreshMany and unregisterMany chunk large room sets and skip empty lists', async () => {

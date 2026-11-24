@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import type { Logger } from 'pino'
 
 import { createMockPrisma } from '../../../../../tests/helpers/test-server'
+import type { PrismaClient } from '../../../../generated/prisma/client'
 import { createContentClient, isPreConnectError } from '../../infra/contentClient'
 import { REQUIRE_LOADED_HEADER, ROOM_NOT_LOADED_CODE } from '../../types'
 
@@ -39,7 +40,7 @@ describe('contentClient.apply — 413 mapping', () => {
       const client = createContentClient({
         baseUrl: `http://127.0.0.1:${server.port}`,
         serviceRoleKey: 'test-service-key',
-        prisma: createMockPrisma() as any,
+        prisma: createMockPrisma() as unknown as PrismaClient,
         logger: silentLogger
       })
 
@@ -91,7 +92,7 @@ describe('contentClient.apply — 413 mapping', () => {
       const client = createContentClient({
         baseUrl: `http://127.0.0.1:${redirector.port}`,
         serviceRoleKey: 'secret-bearer',
-        prisma: createMockPrisma() as any,
+        prisma: createMockPrisma() as unknown as PrismaClient,
         logger: silentLogger
       })
 
@@ -134,7 +135,7 @@ describe('contentClient — multi-replica room-owner routing (#816)', () => {
       const client = createContentClient({
         baseUrl: `http://127.0.0.1:${replicaB.port}`,
         serviceRoleKey: 'test-key',
-        prisma: createMockPrisma() as any,
+        prisma: createMockPrisma() as unknown as PrismaClient,
         logger: silentLogger,
         roomRegistry: {
           lookupOwners: async () => [`http://127.0.0.1:${replicaA.port}`],
@@ -177,7 +178,7 @@ describe('contentClient — multi-replica room-owner routing (#816)', () => {
       const client = createContentClient({
         baseUrl: staleUrl,
         serviceRoleKey: 'test-key',
-        prisma: createMockPrisma() as any,
+        prisma: createMockPrisma() as unknown as PrismaClient,
         logger: silentLogger,
         roomRegistry: {
           lookupOwners: async () => [deadUrl, staleUrl, liveUrl],
@@ -235,7 +236,7 @@ describe('contentClient — multi-replica room-owner routing (#816)', () => {
       const client = createContentClient({
         baseUrl: fallbackUrl,
         serviceRoleKey: 'test-key',
-        prisma: createMockPrisma() as any,
+        prisma: createMockPrisma() as unknown as PrismaClient,
         logger: silentLogger,
         roomRegistry: {
           lookupOwners: async () => [deadUrl, staleUrl],
@@ -288,7 +289,7 @@ describe('contentClient — multi-replica room-owner routing (#816)', () => {
       const client = createContentClient({
         baseUrl: `http://127.0.0.1:${fallback.port}`,
         serviceRoleKey: 'test-key',
-        prisma: createMockPrisma() as any,
+        prisma: createMockPrisma() as unknown as PrismaClient,
         logger: silentLogger,
         roomRegistry: {
           lookupOwners: async () => [`http://127.0.0.1:${owner.port}`],
@@ -306,6 +307,46 @@ describe('contentClient — multi-replica room-owner routing (#816)', () => {
     } finally {
       owner.stop(true)
       fallback.stop(true)
+    }
+  })
+
+  test('read() does not evict owner on transient 500 and preserves unavailable over subsequent not-loaded', async () => {
+    const removed: Array<[string, string]> = []
+    const transientPeer = Bun.serve({
+      port: 0,
+      fetch: () =>
+        Response.json(
+          { success: false, error: { code: 'INTERNAL_SERVER_ERROR', message: 'boom' } },
+          { status: 500 }
+        )
+    })
+    const coldPeer = Bun.serve({
+      port: 0,
+      fetch: () => Response.json({ success: true, data: { content: null } })
+    })
+
+    try {
+      const transientUrl = `http://127.0.0.1:${transientPeer.port}`
+      const coldUrl = `http://127.0.0.1:${coldPeer.port}`
+      const client = createContentClient({
+        baseUrl: coldUrl,
+        serviceRoleKey: 'test-key',
+        prisma: createMockPrisma() as unknown as PrismaClient,
+        logger: silentLogger,
+        roomRegistry: {
+          lookupOwners: async () => [transientUrl, coldUrl],
+          removeOwner: async (docId, peer) => {
+            removed.push([docId, peer])
+          }
+        }
+      })
+
+      const outcome = await client.read('doc-transient-err')
+      expect(outcome).toEqual({ status: 'unavailable' })
+      expect(removed).toEqual([['doc-transient-err', coldUrl]])
+    } finally {
+      transientPeer.stop(true)
+      coldPeer.stop(true)
     }
   })
 

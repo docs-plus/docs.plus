@@ -17,8 +17,17 @@ import os from 'node:os'
 
 import type { Logger } from 'pino'
 
+import {
+  expandIpv6,
+  normalizeHost,
+  parseBareHttpOrigin,
+  type ParsedOrigin
+} from '../../../lib/httpOrigin'
+import { createSingleFlight } from '../../../lib/singleFlight'
 import type { RedisClient } from '../../../types'
 import type { RoomRegistryReader, RoomRegistryWriter } from '../types'
+
+export { normalizeHost, parseBareHttpOrigin, type ParsedOrigin }
 
 /** Key prefix; takes the raw case-sensitive `documentId`. */
 export const ROOM_OWNER_KEY_PREFIX = 'ws:room-owners:'
@@ -49,28 +58,10 @@ export const DNS_MISS_REFRESH_COOLDOWN_MS = 2_000
 
 const TIMED_OUT = Symbol('room-registry-timed-out')
 
-export interface ParsedOrigin {
-  origin: string
-  protocol: 'http:' | 'https:'
-  host: string
-  port: number
-}
-
 export type DnsIpLookup = (hostname: string) => Promise<string[]>
 
 /** Raw case-sensitive room-owner ZSET key. */
 export const roomOwnersKey = (documentId: string): string => `${ROOM_OWNER_KEY_PREFIX}${documentId}`
-
-/** Strips IPv6 brackets and IPv4-mapped `::ffff:` prefix so IPs compare uniformly. */
-export const normalizeHost = (host: string): string => {
-  const unbracketed = host.startsWith('[') && host.endsWith(']') ? host.slice(1, -1) : host
-  const lower = unbracketed.toLowerCase()
-  if (lower.startsWith('::ffff:')) {
-    const tail = lower.slice('::ffff:'.length)
-    if (isIP(tail) === 4) return tail
-  }
-  return lower
-}
 
 export const isLoopbackHost = (host: string): boolean => {
   const normalized = normalizeHost(host)
@@ -96,43 +87,14 @@ export const isBlockedPeerIp = (host: string): boolean => {
     return false
   }
   if (family === 6) {
-    if (ip === '::' || ip === '0:0:0:0:0:0:0:0') return true
-    if (/^fe[89ab][0-9a-f]:/.test(ip)) return true // fe80::/10 link-local
-    if (ip.startsWith('ff')) return true // ff00::/8 multicast
+    const groups = expandIpv6(ip)
+    if (!groups) return true
+    if (groups.every((g) => g === 0)) return true // :: / 0::0 unspecified
+    if ((groups[0]! & 0xffc0) === 0xfe80) return true // fe80::/10 link-local
+    if ((groups[0]! & 0xff00) === 0xff00) return true // ff00::/8 multicast
     return false
   }
   return false
-}
-
-/**
- * Parses a bare `http(s)` origin with no path, query, fragment, or credentials.
- * Returns `null` for anything else.
- */
-export const parseBareHttpOrigin = (raw: string): ParsedOrigin | null => {
-  let parsed: URL
-  try {
-    parsed = new URL(raw)
-  } catch {
-    return null
-  }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null
-  if (
-    parsed.username !== '' ||
-    parsed.password !== '' ||
-    parsed.pathname !== '/' ||
-    parsed.search !== '' ||
-    parsed.hash !== ''
-  ) {
-    return null
-  }
-  const port = parsed.port ? Number(parsed.port) : parsed.protocol === 'https:' ? 443 : 80
-  if (!Number.isInteger(port) || port < 1 || port > 65535) return null
-  return {
-    origin: parsed.origin,
-    protocol: parsed.protocol,
-    host: normalizeHost(parsed.hostname),
-    port
-  }
 }
 
 const formatHostForUrl = (host: string): string => {
@@ -168,12 +130,12 @@ export const resolveAdvertiseUrl = ({
 
   const trimmedBind = bindHost.trim()
   const isWildcard =
-    trimmedBind === '' ||
-    trimmedBind === '0.0.0.0' ||
-    trimmedBind === '::' ||
-    trimmedBind === '[::]'
+    trimmedBind === '' || trimmedBind === '0.0.0.0' || normalizeHost(trimmedBind) === '::'
   if (!isWildcard) {
-    return `http://${formatHostForUrl(trimmedBind)}:${bindPort}`
+    const candidate = `http://${formatHostForUrl(trimmedBind)}:${bindPort}`
+    const parsed = parseBareHttpOrigin(candidate)
+    if (!parsed) throw new Error(`Invalid bindHost/bindPort for advertise URL: ${candidate}`)
+    return parsed.origin
   }
 
   const interfaces = networkInterfaces()
@@ -246,62 +208,126 @@ export interface RoomRegistryWriterDeps {
 export const createRoomRegistryWriter = (deps: RoomRegistryWriterDeps): RoomRegistryWriter => {
   const { redis, advertiseUrl, logger } = deps
   const now = deps.now ?? Date.now
+  const inactiveDocs = new Set<string>()
+  const inFlight = new Map<string, number>()
 
-  const register: RoomRegistryWriter['register'] = async (documentId) => {
-    if (!redis) return
-    const key = roomOwnersKey(documentId)
-    await withinBudget('register', ROOM_REGISTRY_OP_TIMEOUT_MS, logger, async () => {
-      const replies = await redis
-        .multi()
-        .zadd(key, now(), advertiseUrl)
-        .expire(key, ROOM_OWNER_KEY_TTL_S)
-        .exec()
+  const enterFlight = (documentId: string): void => {
+    inFlight.set(documentId, (inFlight.get(documentId) ?? 0) + 1)
+  }
+
+  const leaveFlight = (documentId: string): void => {
+    const remaining = (inFlight.get(documentId) ?? 1) - 1
+    if (remaining <= 0) {
+      inFlight.delete(documentId)
+      inactiveDocs.delete(documentId)
+    } else {
+      inFlight.set(documentId, remaining)
+    }
+  }
+
+  const removeCompensating = async (documentIds: string[]): Promise<void> => {
+    if (!redis || documentIds.length === 0) return
+    await withinBudget('unregister-stale', ROOM_REGISTRY_OP_TIMEOUT_MS, logger, async () => {
+      if (documentIds.length === 1) {
+        await redis.zrem(roomOwnersKey(documentIds[0]!), advertiseUrl)
+        return
+      }
+      const pipe = redis.pipeline()
+      for (const id of documentIds) pipe.zrem(roomOwnersKey(id), advertiseUrl)
+      const replies = await pipe.exec()
       throwOnReplyError(replies)
     })
   }
 
+  const register: RoomRegistryWriter['register'] = async (documentId) => {
+    if (!redis) return
+    inactiveDocs.delete(documentId)
+    enterFlight(documentId)
+    const key = roomOwnersKey(documentId)
+    try {
+      await withinBudget('register', ROOM_REGISTRY_OP_TIMEOUT_MS, logger, async () => {
+        const replies = await redis
+          .multi()
+          .zadd(key, now(), advertiseUrl)
+          .expire(key, ROOM_OWNER_KEY_TTL_S)
+          .exec()
+        throwOnReplyError(replies)
+      })
+      if (inactiveDocs.has(documentId)) {
+        await removeCompensating([documentId])
+      }
+    } finally {
+      leaveFlight(documentId)
+    }
+  }
+
   const unregister: RoomRegistryWriter['unregister'] = async (documentId) => {
     if (!redis) return
+    inactiveDocs.add(documentId)
+    enterFlight(documentId)
     const key = roomOwnersKey(documentId)
-    await withinBudget('unregister', ROOM_REGISTRY_OP_TIMEOUT_MS, logger, async () => {
-      await redis.zrem(key, advertiseUrl)
-    })
+    try {
+      await withinBudget('unregister', ROOM_REGISTRY_OP_TIMEOUT_MS, logger, async () => {
+        await redis.zrem(key, advertiseUrl)
+      })
+    } finally {
+      leaveFlight(documentId)
+    }
   }
 
   const refreshMany: RoomRegistryWriter['refreshMany'] = async (documentIds) => {
     if (!redis || documentIds.length === 0) return
+    const eligible = documentIds.filter((id) => !inactiveDocs.has(id))
+    if (eligible.length === 0) return
+    for (const id of eligible) enterFlight(id)
     const ts = now()
-    for (let i = 0; i < documentIds.length; i += ROOM_REGISTRY_BATCH_CHUNK) {
-      const chunk = documentIds.slice(i, i + ROOM_REGISTRY_BATCH_CHUNK)
-      await withinBudget('heartbeat', ROOM_REGISTRY_BATCH_TIMEOUT_MS, logger, async () => {
-        const pipe = redis.pipeline()
-        for (const documentId of chunk) {
-          const key = roomOwnersKey(documentId)
-          pipe.zadd(key, ts, advertiseUrl).expire(key, ROOM_OWNER_KEY_TTL_S)
+    try {
+      for (let i = 0; i < eligible.length; i += ROOM_REGISTRY_BATCH_CHUNK) {
+        const chunk = eligible.slice(i, i + ROOM_REGISTRY_BATCH_CHUNK)
+        await withinBudget('heartbeat', ROOM_REGISTRY_BATCH_TIMEOUT_MS, logger, async () => {
+          const pipe = redis.pipeline()
+          for (const documentId of chunk) {
+            const key = roomOwnersKey(documentId)
+            pipe.zadd(key, ts, advertiseUrl).expire(key, ROOM_OWNER_KEY_TTL_S)
+          }
+          const replies = await pipe.exec()
+          throwOnReplyError(replies)
+        })
+        const unloadedDuringFlush = chunk.filter((id) => inactiveDocs.has(id))
+        if (unloadedDuringFlush.length > 0) {
+          await removeCompensating(unloadedDuringFlush)
         }
-        const replies = await pipe.exec()
-        throwOnReplyError(replies)
-      })
+      }
+    } finally {
+      for (const id of eligible) leaveFlight(id)
     }
   }
 
   const unregisterMany: RoomRegistryWriter['unregisterMany'] = async (documentIds) => {
     if (!redis || documentIds.length === 0) return
-    for (let i = 0; i < documentIds.length; i += ROOM_REGISTRY_BATCH_CHUNK) {
-      const chunk = documentIds.slice(i, i + ROOM_REGISTRY_BATCH_CHUNK)
-      await withinBudget(
-        'shutdown-unregister',
-        ROOM_REGISTRY_BATCH_TIMEOUT_MS,
-        logger,
-        async () => {
-          const pipe = redis.pipeline()
-          for (const documentId of chunk) {
-            pipe.zrem(roomOwnersKey(documentId), advertiseUrl)
+    for (const id of documentIds) {
+      inactiveDocs.add(id)
+      enterFlight(id)
+    }
+    try {
+      for (let i = 0; i < documentIds.length; i += ROOM_REGISTRY_BATCH_CHUNK) {
+        const chunk = documentIds.slice(i, i + ROOM_REGISTRY_BATCH_CHUNK)
+        await withinBudget(
+          'shutdown-unregister',
+          ROOM_REGISTRY_BATCH_TIMEOUT_MS,
+          logger,
+          async () => {
+            const pipe = redis.pipeline()
+            for (const documentId of chunk) {
+              pipe.zrem(roomOwnersKey(documentId), advertiseUrl)
+            }
+            const replies = await pipe.exec()
+            throwOnReplyError(replies)
           }
-          const replies = await pipe.exec()
-          throwOnReplyError(replies)
-        }
-      )
+        )
+      }
+    } finally {
+      for (const id of documentIds) leaveFlight(id)
     }
   }
 
@@ -364,6 +390,7 @@ export const createPeerUrlValidator = (deps: PeerUrlValidatorDeps): PeerUrlValid
   }
 
   // Mode C: Service hostname (e.g. `http://hocuspocus-server:4003`) → DNS multi-A allowlist.
+  const dnsFlight = createSingleFlight<Set<string>>()
   let cachedIps: Set<string> | null = null
   let fetchedAt = 0
   let lastMissRefreshAt = 0
@@ -378,22 +405,28 @@ export const createPeerUrlValidator = (deps: PeerUrlValidatorDeps): PeerUrlValid
     }
     if (forceOnMiss) lastMissRefreshAt = current
 
-    try {
-      const ips = await dnsLookup(base.host)
-      const next = new Set<string>()
-      for (const ip of ips) {
-        const normalized = normalizeHost(ip)
-        if (isIP(normalized) !== 0 && !isBlockedPeerIp(normalized)) {
-          next.add(normalized)
+    return dnsFlight(base.host, async () => {
+      try {
+        const ips = await dnsLookup(base.host)
+        const next = new Set<string>()
+        for (const ip of ips) {
+          const normalized = normalizeHost(ip)
+          if (
+            isIP(normalized) !== 0 &&
+            !isLoopbackHost(normalized) &&
+            !isBlockedPeerIp(normalized)
+          ) {
+            next.add(normalized)
+          }
         }
+        cachedIps = next
+        fetchedAt = now()
+        return next
+      } catch (err) {
+        logger.warn({ err, host: base.host }, 'DNS lookup for collab peer allowlist failed')
+        return cachedIps ?? new Set()
       }
-      cachedIps = next
-      fetchedAt = now()
-      return next
-    } catch (err) {
-      logger.warn({ err, host: base.host }, 'DNS lookup for collab peer allowlist failed')
-      return cachedIps ?? new Set()
-    }
+    })
   }
 
   return {
@@ -416,7 +449,7 @@ export const createPeerUrlValidator = (deps: PeerUrlValidatorDeps): PeerUrlValid
         return null
       }
       // Never dial arbitrary hostnames from Redis — prevents DNS rebinding & exfiltration.
-      if (isIP(parsed.host) === 0 || isBlockedPeerIp(parsed.host)) {
+      if (isIP(parsed.host) === 0 || isLoopbackHost(parsed.host) || isBlockedPeerIp(parsed.host)) {
         logger.warn({ peerUrl: rawUrl }, 'Rejected non-IP or blocked peer host from room registry')
         return null
       }
@@ -464,13 +497,7 @@ export const createRoomRegistryReader = (deps: RoomRegistryReaderDeps): RoomRegi
     const key = roomOwnersKey(documentId)
     const cutoff = now() - ROOM_OWNER_STALE_MS
     const read = await withinBudget('lookup', ROOM_REGISTRY_OP_TIMEOUT_MS, logger, async () => {
-      const replies = await redis
-        .multi()
-        .zremrangebyscore(key, '-inf', `(${cutoff}`)
-        .zrevrange(key, 0, -1)
-        .exec()
-      throwOnReplyError(replies)
-      const members = replies?.at(-1)?.[1]
+      const members = await redis.zrevrangebyscore(key, '+inf', `(${cutoff}`)
       return Array.isArray(members) ? (members as string[]) : []
     })
 

@@ -71,7 +71,18 @@ const openapiModule = openapi.init({
 app.use(openapi.DOCS_PATH, openapi.swaggerUiCsp)
 
 // Built before the middleware, whose rate-limit skip shares this module's bearer check.
-// Its own content client, so hop and decode logs carry the `mcp` module.
+// Its own content client, so hop and decode logs carry the `mcp` module, while
+// sharing one room-registry reader and DNS cache with `documentContent`.
+const redisClient = getRedisClient()
+const sharedRoomRegistry = redisClient
+  ? documentContent.createRoomRegistryReader({
+      redis: redisClient,
+      baseUrl: config.hocuspocus.internalUrl,
+      allowedPeerUrls: config.hocuspocus.internalPeers,
+      logger: logger.child({ module: 'room-registry' })
+    })
+  : undefined
+
 const mcpLogger = logger.child({ module: 'mcp' })
 const mcpModule = mcp.init({
   prisma,
@@ -81,15 +92,16 @@ const mcpModule = mcp.init({
     serviceRoleKey: config.supabase.serviceRoleKey ?? null,
     prisma,
     logger: mcpLogger,
-    redis: getRedisClient(),
-    allowedPeerUrls: config.hocuspocus.internalPeers
+    redis: redisClient,
+    allowedPeerUrls: config.hocuspocus.internalPeers,
+    roomRegistry: sharedRoomRegistry
   }),
   verifyToken: verifySupabaseTokenOutcome,
   publicBaseUrl: config.app.publicUrl,
   appUrl: config.email.appUrl,
   authIssuer: config.mcp.authIssuer,
   allowedOrigins: config.security.originAllowlist,
-  redis: getRedisClient(),
+  redis: redisClient,
   supabase: getServiceRoleClient(),
   supabaseUrl: config.supabase.url,
   supabaseAnonKey: config.supabase.anonKey,
@@ -124,8 +136,9 @@ const documentContentModule = documentContent.init({
   verifyServiceRole,
   serviceRoleKey: config.supabase.serviceRoleKey ?? null,
   wsApplyBaseUrl: config.hocuspocus.internalUrl,
-  redis: getRedisClient(),
-  allowedPeerUrls: config.hocuspocus.internalPeers
+  redis: redisClient,
+  allowedPeerUrls: config.hocuspocus.internalPeers,
+  roomRegistry: sharedRoomRegistry
 })
 app.route('/api/documents', documentContentModule.router)
 // Reads are served straight from Prisma here; checkpoints and restores are
@@ -153,8 +166,7 @@ const documentConversionModule = documentConversion.init({
   // content, and `X-Forwarded-Host` is client-settable. Unset drops imported
   // images with a warning rather than storing an origin nobody can resolve.
   mediaPublicBaseUrl: config.app.publicUrl,
-  mediaCookieFor: (uid) => mediaCookieHeader(uid, config.storage.mediaCookieSecret),
-  optionalPadReader
+  mediaCookieFor: (uid) => mediaCookieHeader(uid, config.storage.mediaCookieSecret)
 })
 app.route('/api/documents', documentConversionModule.router)
 // The card PNG and the pad hovercard. Both paths have two segments, so the legacy

@@ -477,9 +477,12 @@ const roomRegistry = roomRegistryAdvertiseUrl
     })
   : null
 
+let shuttingDown = false
+
 const roomRegistryExtension = roomRegistry
   ? {
       async afterLoadDocument({ documentName }: { documentName: string }) {
+        if (shuttingDown) return
         await roomRegistry.register(documentName)
       },
       async afterUnloadDocument({ documentName }: { documentName: string }) {
@@ -803,18 +806,15 @@ const SERVER_DESTROY_TIMEOUT_MS = 25_000
 // `concurrently --kill-others-on-fail` in local development.
 const shutdown = async (exitCode = 0) => {
   wsLogger.info('Shutting down WebSocket server gracefully...')
+  shuttingDown = true
 
   try {
     clearInterval(stateKeyTtlRefresh)
     if (roomRegistryHeartbeat) clearInterval(roomRegistryHeartbeat)
-    if (roomRegistry) {
-      // Unregister before closing the internal listener so REST stops routing
-      // live reads/writes to this draining replica immediately.
-      await roomRegistry.unregisterMany([...server.hocuspocus.documents.keys()])
-    }
-    internalServer.stop()
 
     let destroyTimer: ReturnType<typeof setTimeout> | undefined
+    // Close WS and unload rooms cleanly before unregisterMany/internalServer.stop()
+    // so no new room can load and re-register after unregister begins.
     // A rejection is caught here, not rethrown. The outer catch flushes Sentry
     // but skips the queue, DB and Redis close below — the tail this bound exists
     // to reach. A hang and a throw have to end the same way.
@@ -828,6 +828,11 @@ const shutdown = async (exitCode = 0) => {
       })
     ])
     clearTimeout(destroyTimer)
+
+    if (roomRegistry) {
+      await roomRegistry.unregisterMany([...server.hocuspocus.documents.keys()])
+    }
+    internalServer.stop()
 
     if (destroyFailed === 'timeout') {
       // A count only, never pad ids: it tells a room that never unloaded from a slow socket (#760).
