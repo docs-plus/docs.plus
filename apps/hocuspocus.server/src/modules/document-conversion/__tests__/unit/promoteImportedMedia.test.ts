@@ -192,12 +192,18 @@ describe('promoteImportedMedia via importMarkdown', () => {
       node = { type: 'blockquote', content: [node] }
     }
 
-    const result = promoteImportedMedia({ type: 'doc', content: [node] })
-    let cur = result.content[0] as Record<string, any>
-    for (let i = 0; i < 5000; i += 1) {
-      cur = cur.content[0]
+    interface WalkNode {
+      type?: string
+      attrs?: Record<string, unknown>
+      content?: WalkNode[]
     }
-    expect(cur.content[0]).toEqual({ type: 'youtube', attrs: { src: href } })
-    expect(cur.content[1].content[0].content[0].type).toBe('paragraph')
+
+    const result = promoteImportedMedia({ type: 'doc', content: [node] })
+    let cur = result.content[0] as WalkNode
+    for (let i = 0; i < 5000; i += 1) {
+      cur = cur.content![0]!
+    }
+    expect(cur.content![0]).toEqual({ type: 'youtube', attrs: { src: href } })
+    expect(cur.content![1]!.content![0]!.content![0]!.type).toBe('paragraph')
   })
 })
