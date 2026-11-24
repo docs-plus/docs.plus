@@ -63,12 +63,21 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   editor; it is now rebuilt when the editor changes. After 20 pad switches, live documents fall
   from 2 to 1 (50 % fewer), in dev and in a local production build (2 runs each)
   ([#782](https://github.com/docs-plus/docs.plus/issues/782)).
+- Closed offline copies no longer break `Y.Doc` updates, and offline compaction commits
+  atomically. The `y-indexeddb` `9.0.12` patch wraps every write so an aborted or closing store
+  emits an `'error'` event instead of breaking the update listener, and runs `storeState` inside
+  a fresh `readwrite` transaction so add and delete roll back together. Over 7 days in production
+  on GlitchTip (`28037ba77` onward, `2026-11-17` to `2026-11-24`), `idb:compact` dropped to `2`
+  traces (below the `< 7` bar, `71 %` fewer) with `0` uncaught `197`, `200`, or `192` errors
+  ([#751](https://github.com/docs-plus/docs.plus/issues/751)).
 - Dictation, an IME phrase or a text replacement that inserts a URL in the middle of a phrase now
   links it, as typed words do ([#780](https://github.com/docs-plus/docs.plus/issues/780)).
-- GlitchTip browser counts are usable again. The Safari IndexedDB flood now sends one warning per
-  page load, in a local console check. In production it had sent 252 events per trace (GlitchTip
-  197 and 200, 30 days to 2026-11-11). next-pwa's service-worker register errors (AbortError and
-  Cache.add) are dropped. Network failures and closed-database errors still report ([#752](https://github.com/docs-plus/docs.plus/issues/752)).
+- GlitchTip browser counts are usable again. `next-pwa` service-worker register errors (`AbortError`,
+  `Cache.add`, and `Error: Rejected` with a `register` frame) are filtered (`0` in the 7-day
+  production read on `28037ba77` to `e4d36ae0f`). Network failures and closed-database errors
+  still report. The temporary Safari IndexedDB flood throttle added during rollout (`252 -> 1` per
+  trace in local checks) was removed after `#751` passed 7 days in production
+  ([#752](https://github.com/docs-plus/docs.plus/issues/752)).
 - A failed chat send no longer hides its Retry button. The three status flips that follow a
   network reply pass `'smooth'` to Virtuoso's `data.map`, so a list at the bottom follows the
   taller failed row. A reader who scrolled up stays where they were. In a local Linux test, the

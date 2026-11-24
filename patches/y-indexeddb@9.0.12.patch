@@ -23,8 +23,8 @@ index f613233258d7be3d3d8fb08506aa7ca09e50a457..a55628487c9d8d23691050a84db741dc
 -          .then(() => idb.del(updatesStore, idb.createIDBKeyRangeUpperBound(idbPersistence._dbref, true)))
 -          .then(() => idb.count(updatesStore).then(cnt => { idbPersistence._dbsize = cnt; }));
 -      }
-+  // WebKit ends the fetch transaction before the add, so use a fresh one. The add and the
-+  // delete share it: a failed add aborts it, and the delete rolls back.
++  // Use a fresh readwrite transaction for the add and delete: a failed add
++  // aborts it, and the delete rolls back.
 +  Promise.resolve()
 +    .then(() => fetchUpdates(idbPersistence))
 +    .then(() => {
@@ -114,8 +114,8 @@ index 07f4fbb6da0b0b0621b5696370aabf230f7293a8..2a889a899fa6d71e3af54b470001b4b8
 -          .then(() => idb.del(updatesStore, idb.createIDBKeyRangeUpperBound(idbPersistence._dbref, true)))
 -          .then(() => idb.count(updatesStore).then(cnt => { idbPersistence._dbsize = cnt }))
 -      }
-+  // WebKit ends the fetch transaction before the add, so use a fresh one. The add and the
-+  // delete share it: a failed add aborts it, and the delete rolls back.
++  // Use a fresh readwrite transaction for the add and delete: a failed add
++  // aborts it, and the delete rolls back.
 +  Promise.resolve()
 +    .then(() => fetchUpdates(idbPersistence))
 +    .then(() => {

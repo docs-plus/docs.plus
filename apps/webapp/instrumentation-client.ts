@@ -19,15 +19,6 @@ const SW_LIFECYCLE_PATTERNS: readonly RegExp[] = [
   /Failed to execute 'add' on 'Cache'/i
 ]
 
-// One Safari IndexedDB fault (#751, GlitchTip 197 and 200) sent hundreds of events per
-// trace. Keep the first per page load as a warning, so counts stay usable. No fingerprint,
-// so it stays in 197 and 200. Remove once #751 has 7 clean days.
-const IDB_INACTIVE_PATTERNS: readonly RegExp[] = [
-  /Attempt to generate key in database without an in-progress transaction/,
-  /Attempt to get records from database without an in-progress transaction/
-]
-let idbInactiveReported = false
-
 // Sentry lists linked causes first and the thrown error last, so test every value.
 const exceptionValues = (event: Sentry.Event): string[] =>
   (event.exception?.values ?? []).map((ex) => ex.value ?? '').filter(Boolean)
@@ -51,14 +42,6 @@ const isNonActionable = (event: Sentry.Event, values: string[]): boolean => {
   return false
 }
 
-const throttleIdbInactive = (event: Sentry.Event, values: string[]): boolean => {
-  if (!matchesAny(values, IDB_INACTIVE_PATTERNS)) return false
-  if (idbInactiveReported) return true
-  idbInactiveReported = true
-  event.level = 'warning'
-  return false
-}
-
 const dsn = process.env.NEXT_PUBLIC_GLITCHTIP_DSN
 if (dsn) {
   Sentry.init({
@@ -69,7 +52,7 @@ if (dsn) {
     dataCollection: sentryDataCollection,
     beforeSend(event) {
       const values = exceptionValues(event)
-      if (throttleIdbInactive(event, values) || isNonActionable(event, values)) return null
+      if (isNonActionable(event, values)) return null
       return event
     }
   })
