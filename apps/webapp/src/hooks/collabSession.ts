@@ -12,6 +12,48 @@ export const MAX_AUTH_REARM = 5
 export const AUTH_REARM_DELAY_MS = 3_000
 export const DISCONNECT_ERROR_GRACE_MS = 3_000
 export const SYNCED_SETTLE_DELAY_MS = 300
+export const IDB_HYDRATION_CAP_MS = 1_000
+
+export interface LocalMirrorHandle {
+  whenSynced: Promise<unknown>
+  _db: Promise<unknown>
+}
+
+/**
+ * Waits for the local IndexedDB mirror to hydrate the Y.Doc before the collab
+ * provider connects, capped at `capMs` and never blocking when IndexedDB fails.
+ */
+export function waitForLocalMirror(
+  persistence: LocalMirrorHandle | null,
+  capMs = IDB_HYDRATION_CAP_MS
+): { promise: Promise<void>; cancel: () => void } {
+  if (!persistence) {
+    return { promise: Promise.resolve(), cancel: () => {} }
+  }
+
+  let settled = false
+  let timer: ReturnType<typeof setTimeout> | null = null
+  let resolvePromise: (() => void) | null = null
+
+  const finish = () => {
+    if (settled) return
+    settled = true
+    if (timer !== null) {
+      clearTimeout(timer)
+      timer = null
+    }
+    resolvePromise?.()
+  }
+
+  const promise = new Promise<void>((resolve) => {
+    resolvePromise = resolve
+    timer = setTimeout(finish, Math.max(0, capMs))
+    void Promise.resolve(persistence.whenSynced).then(finish, finish)
+    void Promise.resolve(persistence._db).then(undefined, finish)
+  })
+
+  return { promise, cancel: finish }
+}
 
 const SELF_HEALING_CLOSE_CODES = new Set([1000, 1001, 1005, 1006, 4408])
 

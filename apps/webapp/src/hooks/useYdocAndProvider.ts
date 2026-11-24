@@ -16,7 +16,8 @@ import {
   CollabSession,
   FIRST_SYNC_TIMEOUT_MS,
   hasUnpushedLocalState,
-  isDocumentAccessReadOnly
+  isDocumentAccessReadOnly,
+  waitForLocalMirror
 } from './collabSession'
 import { guardProviderAwareness } from './guardProviderAwareness'
 
@@ -75,8 +76,15 @@ const useYdocAndProvider = ({
     // Local mirror of every Y update: content typed just before a reload survives
     // a wedged persistence worker and re-syncs on reconnect. Cached doc bytes are
     // readable by later users of this browser profile — accepted trade-off.
-    const persistence =
-      typeof window.indexedDB !== 'undefined' ? new IndexeddbPersistence(documentId, ydoc) : null
+    let persistence: IndexeddbPersistence | null = null
+    let mirrorConstructorFailed = false
+    try {
+      if (typeof window.indexedDB !== 'undefined') {
+        persistence = new IndexeddbPersistence(documentId, ydoc)
+      }
+    } catch {
+      mirrorConstructorFailed = true
+    }
 
     // The y-indexeddb patch (#751) reports failed writes as an 'error' event. Only a failed
     // update write means edits stop reaching the mirror. A full disk shows only as a commit
@@ -84,6 +92,7 @@ const useYdocAndProvider = ({
     const flagMirrorFailed = () => {
       if (!disposed) setWorkspaceSetting('mirrorWriteFailed', true)
     }
+    if (mirrorConstructorFailed) flagMirrorFailed()
     persistence?._db
       .then((db) => {
         if (disposed) return
@@ -237,17 +246,18 @@ const useYdocAndProvider = ({
       }
     }
 
-    provider = new HocuspocusProvider(providerConfig)
-    guardProviderAwareness(provider)
-
     const handleProviderMessage = ({ event }: { event?: { data?: unknown } }) => {
       session.onSyncStep(event?.data)
     }
-    provider.on('message', handleProviderMessage)
 
     const handleUpdate = (_update: Uint8Array, origin: unknown) => {
       // origin === persistence covers both initial and late IDB replay as well as compaction.
-      if (origin === provider || (persistence !== null && origin === persistence)) return
+      if (
+        (provider !== null && origin === provider) ||
+        (persistence !== null && origin === persistence)
+      ) {
+        return
+      }
       session.onLocalUpdate()
       // Past first sync, so mirror replay and the mount scaffold never ask, but an
       // offline edit does. providerSyncing stays false through a disconnect.
@@ -255,10 +265,27 @@ const useYdocAndProvider = ({
     }
     ydoc.on('update', handleUpdate)
 
-    setWorkspaceSetting('hocuspocusProvider', provider)
+    let connectTimer: ReturnType<typeof setTimeout> | null = null
+    let firstSyncTimer: ReturnType<typeof setTimeout> | null = null
+    const startProvider = () => {
+      if (disposed || provider) return
+      provider = new HocuspocusProvider(providerConfig)
+      guardProviderAwareness(provider)
+      provider.on('message', handleProviderMessage)
+      setWorkspaceSetting('hocuspocusProvider', provider)
+      connectTimer = setTimeout(() => {
+        if (!disposed) provider?.connect()
+      }, 0)
+      firstSyncTimer = setTimeout(() => session.onFirstSyncTimeout(), FIRST_SYNC_TIMEOUT_MS)
+    }
 
-    const connectTimer = setTimeout(() => provider?.connect(), 0)
-    const firstSyncTimer = setTimeout(() => session.onFirstSyncTimeout(), FIRST_SYNC_TIMEOUT_MS)
+    const hydrationWait = waitForLocalMirror(persistence)
+    if (!persistence) {
+      hydrationWait.cancel()
+      startProvider()
+    } else {
+      void hydrationWait.promise.then(startProvider)
+    }
 
     const { data: authSubscription } = supabaseClient.auth.onAuthStateChange((event) => {
       session.onAuthEvent(event)
@@ -279,8 +306,9 @@ const useYdocAndProvider = ({
 
     return () => {
       disposed = true
-      clearTimeout(connectTimer)
-      clearTimeout(firstSyncTimer)
+      hydrationWait.cancel()
+      if (connectTimer) clearTimeout(connectTimer)
+      if (firstSyncTimer) clearTimeout(firstSyncTimer)
       if (mirrorCompactTimer) {
         clearTimeout(mirrorCompactTimer)
         mirrorCompactTimer = null

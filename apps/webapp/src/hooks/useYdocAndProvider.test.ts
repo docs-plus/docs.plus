@@ -6,13 +6,14 @@ import type { DocumentMetadata } from '@utils/fetchDocument'
 import { captureMessageOnce } from '@utils/observability'
 import { supabaseClient } from '@utils/supabase'
 import { onDocTitleStateless } from '@utils/titleWrite'
-import { storeState } from 'y-indexeddb'
+import { IndexeddbPersistence, storeState } from 'y-indexeddb'
 import * as Y from 'yjs'
 
 import {
   AUTH_REARM_DELAY_MS,
   DISCONNECT_ERROR_GRACE_MS,
   FIRST_SYNC_TIMEOUT_MS,
+  IDB_HYDRATION_CAP_MS,
   SYNCED_SETTLE_DELAY_MS
 } from './collabSession'
 import useYdocAndProvider from './useYdocAndProvider'
@@ -95,9 +96,11 @@ class FakeIndexeddbPersistence {
   _destroyed = false
   _dbsize = 1
   synced = false
-  whenSynced = Promise.resolve()
+  whenSynced: Promise<void>
   private errorListeners = new Set<Listener>()
   resolveDb!: (db: { addEventListener: jest.Mock }) => void
+  rejectDb!: (err: unknown) => void
+  resolveSynced!: () => void
   destroy = jest.fn(() => {
     this._destroyed = true
   })
@@ -106,9 +109,19 @@ class FakeIndexeddbPersistence {
     public name: string,
     public doc: Y.Doc
   ) {
-    this._db = new Promise<{ addEventListener: jest.Mock }>((resolve) => {
+    this._db = new Promise<{ addEventListener: jest.Mock }>((resolve, reject) => {
       this.resolveDb = resolve
+      this.rejectDb = reject
     })
+    if (holdNextIdbSync) {
+      holdNextIdbSync = false
+      this.whenSynced = new Promise<void>((resolve) => {
+        this.resolveSynced = resolve
+      })
+    } else {
+      this.whenSynced = Promise.resolve()
+      this.resolveSynced = () => {}
+    }
   }
 
   on(event: string, fn: Listener): void {
@@ -124,6 +137,7 @@ class FakeIndexeddbPersistence {
 let latestProvider: FakeHocuspocusProvider | null = null
 let latestPersistence: FakeIndexeddbPersistence | null = null
 let authStateCallback: ((event: string) => void) | null = null
+let holdNextIdbSync = false
 const authUnsubscribe = jest.fn()
 
 jest.mock('y-indexeddb', () => ({
@@ -261,6 +275,7 @@ beforeEach(() => {
   latestProvider = null
   latestPersistence = null
   authStateCallback = null
+  holdNextIdbSync = false
   process.env.NEXT_PUBLIC_PROVIDER_URL = 'wss://ws.example.com'
   authStore.setState({ profile: makeProfile('user-1') })
   useStore.setState({
@@ -319,7 +334,7 @@ describe('useYdocAndProvider lifecycle and wiring', () => {
     expect(useStore.getState().settings.hocuspocusProvider).toBeNull()
   })
 
-  it('destroys old persistence, provider, and Y.Doc on documentId switch', () => {
+  it('destroys old persistence, provider, and Y.Doc on documentId switch', async () => {
     Object.defineProperty(window, 'indexedDB', { configurable: true, value: {} })
 
     const { rerender, unmount } = renderHook(
@@ -327,11 +342,13 @@ describe('useYdocAndProvider lifecycle and wiring', () => {
         useYdocAndProvider({ documentId, slug: documentId }),
       { initialProps: { documentId: 'doc-a' } }
     )
+    await act(async () => {})
     const providerA = latestProvider!
     const persistenceA = latestPersistence!
     const destroyYdocA = jest.spyOn(providerA.configuration.document, 'destroy')
 
     rerender({ documentId: 'doc-b' })
+    await act(async () => {})
     const providerB = latestProvider!
 
     expect(providerB).not.toBe(providerA)
@@ -346,6 +363,7 @@ describe('useYdocAndProvider lifecycle and wiring', () => {
   it('cancels settle, error-grace, first-sync, and mirror-compaction timers on unmount', async () => {
     Object.defineProperty(window, 'indexedDB', { configurable: true, value: {} })
     const { unmount } = renderHook(() => useYdocAndProvider({ documentId: 'doc-1', slug: 'pad' }))
+    await act(async () => {})
     const provider = latestProvider!
     const persistence = latestPersistence!
     persistence._dbsize = 4
@@ -380,6 +398,7 @@ describe('useYdocAndProvider lifecycle and wiring', () => {
     )
 
     const { unmount } = renderHook(() => useYdocAndProvider({ documentId: 'doc-1', slug: 'pad' }))
+    await act(async () => {})
     const provider = latestProvider!
     const persistence = latestPersistence!
     const addEventListener = jest.fn()
@@ -461,6 +480,7 @@ describe('useYdocAndProvider lifecycle and wiring', () => {
     serverDoc.getText('t').insert(0, 'server-text')
 
     const { unmount } = renderHook(() => useYdocAndProvider({ documentId: 'doc-1', slug: 'pad' }))
+    await act(async () => {})
     const provider = latestProvider!
     const persistence = latestPersistence!
 
@@ -498,6 +518,7 @@ describe('useYdocAndProvider lifecycle and wiring', () => {
   it('wires stateless handlers, mirror error reporting, and delayed compaction', async () => {
     Object.defineProperty(window, 'indexedDB', { configurable: true, value: {} })
     const { unmount } = renderHook(() => useYdocAndProvider({ documentId: 'doc-1', slug: 'pad' }))
+    await act(async () => {})
     const provider = latestProvider!
     const persistence = latestPersistence!
     persistence._dbsize = 3
@@ -528,5 +549,57 @@ describe('useYdocAndProvider lifecycle and wiring', () => {
     act(() => jest.advanceTimersByTime(2000))
     expect(storeState).toHaveBeenCalledWith(persistence)
     unmount()
+  })
+
+  it('waits for local IDB hydration before creating HocuspocusProvider, honors cap/errors, and skips on unmount', async () => {
+    Object.defineProperty(window, 'indexedDB', { configurable: true, value: {} })
+
+    // 1. Waits while whenSynced is pending, then builds provider once whenSynced settles.
+    holdNextIdbSync = true
+    const r1 = renderHook(() => useYdocAndProvider({ documentId: 'doc-wait', slug: 'pad' }))
+    expect(latestProvider).toBeNull()
+    expect(useStore.getState().settings.hocuspocusProvider).toBeUndefined()
+
+    await act(async () => {
+      latestPersistence!.resolveSynced()
+      await Promise.resolve()
+    })
+    expect(latestProvider).not.toBeNull()
+    expect(useStore.getState().settings.hocuspocusProvider).toBe(latestProvider)
+    r1.unmount()
+
+    // 2. Builds provider after IDB_HYDRATION_CAP_MS when IndexedDB stalls.
+    latestProvider = null
+    holdNextIdbSync = true
+    const r2 = renderHook(() => useYdocAndProvider({ documentId: 'doc-cap', slug: 'pad' }))
+    expect(latestProvider).toBeNull()
+    await act(async () => {
+      jest.advanceTimersByTime(IDB_HYDRATION_CAP_MS)
+      await Promise.resolve()
+    })
+    expect(latestProvider).not.toBeNull()
+    r2.unmount()
+
+    // 3. Does not construct provider if unmounted before hydration completes.
+    latestProvider = null
+    holdNextIdbSync = true
+    const r3 = renderHook(() => useYdocAndProvider({ documentId: 'doc-unmount', slug: 'pad' }))
+    const pendingPersistence = latestPersistence!
+    r3.unmount()
+    await act(async () => {
+      pendingPersistence.resolveSynced()
+      await Promise.resolve()
+    })
+    expect(latestProvider).toBeNull()
+
+    // 4. Starts immediately when opening IndexeddbPersistence throws synchronously (blocked storage).
+    latestProvider = null
+    jest.mocked(IndexeddbPersistence).mockImplementationOnce(() => {
+      throw new Error('SecurityError')
+    })
+    const r4 = renderHook(() => useYdocAndProvider({ documentId: 'doc-blocked', slug: 'pad' }))
+    expect(latestProvider).not.toBeNull()
+    expect(useStore.getState().settings.mirrorWriteFailed).toBe(true)
+    r4.unmount()
   })
 })

@@ -9,13 +9,15 @@ import {
   DISCONNECT_ERROR_GRACE_MS,
   FIRST_SYNC_TIMEOUT_MS,
   hasUnpushedLocalState,
+  IDB_HYDRATION_CAP_MS,
   isDocumentAccessReadOnly,
   isSelfHealingCloseCode,
   MAX_AUTH_REARM,
   parseIncomingSyncStep,
   resolveAuthFailure,
   resolveSettledStatus,
-  SYNCED_SETTLE_DELAY_MS
+  SYNCED_SETTLE_DELAY_MS,
+  waitForLocalMirror
 } from './collabSession'
 
 function writeVarUint(out: number[], value: number): void {
@@ -708,5 +710,79 @@ describe('CollabSession state machine', () => {
     await pendingDisposed
     expect(h2.session.status).toBe('saved')
     expect(h2.onReportIssue).not.toHaveBeenCalled()
+  })
+})
+
+describe('waitForLocalMirror', () => {
+  it('resolves immediately when persistence is null without arming a timer', async () => {
+    jest.useFakeTimers()
+    try {
+      const wait = waitForLocalMirror(null, IDB_HYDRATION_CAP_MS)
+      expect(jest.getTimerCount()).toBe(0)
+      await wait.promise
+      wait.cancel()
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
+  it('settles when whenSynced resolves or _db open rejects before cap, or on cap/cancel', async () => {
+    jest.useFakeTimers()
+    try {
+      let resolveSynced!: () => void
+      const whenSynced = new Promise<void>((resolve) => {
+        resolveSynced = resolve
+      })
+      const w1 = waitForLocalMirror({ whenSynced, _db: new Promise(() => {}) }, 1_000)
+      expect(jest.getTimerCount()).toBe(1)
+      let done1 = false
+      const p1 = w1.promise.then(() => {
+        done1 = true
+      })
+      resolveSynced()
+      await p1
+      expect(done1).toBe(true)
+      expect(jest.getTimerCount()).toBe(0)
+
+      let rejectDb!: (err: Error) => void
+      const dbErr = new Promise<void>((_, reject) => {
+        rejectDb = reject
+      })
+      const w2 = waitForLocalMirror({ whenSynced: new Promise(() => {}), _db: dbErr }, 1_000)
+      let done2 = false
+      const p2 = w2.promise.then(() => {
+        done2 = true
+      })
+      rejectDb(new Error('blocked'))
+      await p2
+      expect(done2).toBe(true)
+      expect(jest.getTimerCount()).toBe(0)
+
+      const w3 = waitForLocalMirror(
+        { whenSynced: new Promise(() => {}), _db: new Promise(() => {}) },
+        1_000
+      )
+      let done3 = false
+      const p3 = w3.promise.then(() => {
+        done3 = true
+      })
+      jest.advanceTimersByTime(999)
+      await Promise.resolve()
+      expect(done3).toBe(false)
+      jest.advanceTimersByTime(1)
+      await p3
+      expect(done3).toBe(true)
+      expect(jest.getTimerCount()).toBe(0)
+
+      const w4 = waitForLocalMirror(
+        { whenSynced: new Promise(() => {}), _db: new Promise(() => {}) },
+        1_000
+      )
+      w4.cancel()
+      await w4.promise
+      expect(jest.getTimerCount()).toBe(0)
+    } finally {
+      jest.useRealTimers()
+    }
   })
 })
