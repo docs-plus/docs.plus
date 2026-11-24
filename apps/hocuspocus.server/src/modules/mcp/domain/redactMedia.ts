@@ -13,13 +13,18 @@ const MAX_IMAGE_ALT_CHARS = 120
 // eslint-disable-next-line no-control-regex
 const CONTROL_CHARS = /[\u0000-\u001f\u007f-\u009f]/g
 
-const isMediaLink = (mark: unknown): boolean =>
+const isMediaLink = (mark: unknown): mark is { attrs: { href: string } } =>
   isRecord(mark) && isRecord(mark.attrs) && isMediaHref(mark.attrs.href)
+
+const isSpecialMediaNode = (node: JsonNode): boolean =>
+  node.type === 'image' ||
+  node.type === MEDIA_UPLOAD_PLACEHOLDER ||
+  (typeof node.type === 'string' && EMBED_NODE_TYPES.has(node.type))
 
 const getMediaLinkHref = (node: JsonNode): string | null => {
   if (!Array.isArray(node.marks)) return null
   for (const mark of node.marks) {
-    if (isMediaLink(mark)) return (mark.attrs as { href: string }).href
+    if (isMediaLink(mark)) return mark.attrs.href
   }
   return null
 }
@@ -84,11 +89,7 @@ export const redactMedia = (doc: JSONContent): JSONContent => {
 
     for (const child of source) {
       if (!isRecord(child)) continue
-      const isSpecialMedia =
-        child.type === 'image' ||
-        child.type === MEDIA_UPLOAD_PLACEHOLDER ||
-        (typeof child.type === 'string' && EMBED_NODE_TYPES.has(child.type))
-      const fileLinkHref = isSpecialMedia ? null : getMediaLinkHref(child)
+      const fileLinkHref = isSpecialMediaNode(child) ? null : getMediaLinkHref(child)
 
       if (fileLinkHref !== activeMediaHref) {
         flushMediaLinkRun()
@@ -121,10 +122,7 @@ export const redactMedia = (doc: JSONContent): JSONContent => {
 }
 
 const isMediaNode = (node: JSONContent): boolean =>
-  node.type === 'image' ||
-  node.type === MEDIA_UPLOAD_PLACEHOLDER ||
-  (typeof node.type === 'string' && EMBED_NODE_TYPES.has(node.type)) ||
-  getMediaLinkHref(node as JsonNode) !== null
+  isSpecialMediaNode(node as JsonNode) || getMediaLinkHref(node as JsonNode) !== null
 
 /** Media at any depth, so a block edit can refuse to delete a picture it only saw as a placeholder. */
 export const hasMedia = (nodes: readonly JSONContent[]): boolean => {

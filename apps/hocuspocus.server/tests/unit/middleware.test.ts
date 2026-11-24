@@ -203,5 +203,21 @@ describe('Middleware - Complete Coverage', () => {
       })
       expect(globalRes.status).toBe(200)
     })
+
+    test('passes parsed pathname into mcpRateLimit', async () => {
+      const seenPaths: (string | undefined)[] = []
+      const mcpApp = new Hono()
+      setupMiddleware(mcpApp, {
+        mcpRateLimit: async (_c, _hasBudget, path) => {
+          seenPaths.push(path)
+          return { kind: 'fallthrough' }
+        }
+      })
+      mcpApp.post('/api/mcp', (c) => c.text('ok'))
+
+      const res = await mcpApp.request('http://localhost/api/mcp?foo=bar', { method: 'POST' })
+      expect(res.status).toBe(200)
+      expect(seenPaths).toEqual(['/api/mcp'])
+    })
   })
 })

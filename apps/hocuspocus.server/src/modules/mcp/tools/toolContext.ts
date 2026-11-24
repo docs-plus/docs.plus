@@ -2,6 +2,7 @@ import type { CallToolResult } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 
 import { decideDocumentAccess } from '../../../lib/documentAccess'
+import { isDocumentOwner, isOpenDocument } from '../../../lib/ownerAccess'
 import { findDocumentBySlug } from '../infra/documentStore'
 import type { Caller, ServerFactoryDeps, ToolContext, ToolOutcome } from '../types'
 
@@ -96,8 +97,8 @@ export const createToolContext = (deps: ServerFactoryDeps, caller: Caller): Tool
       'read'
     )
     if (access !== 'allow') return refuse(notFoundText(slug))
-    if (need === 'own' && doc.ownerId !== caller.sub) {
-      return refuse(doc.ownerId === null ? openDocumentText(slug) : notOwnerText(slug))
+    if (need === 'own' && !isDocumentOwner(doc, caller.sub)) {
+      return refuse(isOpenDocument(doc) ? openDocumentText(slug) : notOwnerText(slug))
     }
     return doc
   },

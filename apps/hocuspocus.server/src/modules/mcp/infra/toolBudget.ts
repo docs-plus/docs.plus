@@ -9,8 +9,7 @@ import type { CallerBudget } from '../types'
 const MCP_CALLS_PER_MINUTE = 60
 // Well above the tool budget: a host may send `initialize` or `tools/list` around each tool
 // call. It bounds abuse far below the edge limit, not normal use.
-const MCP_REQUESTS_PER_MINUTE = 300
-const CLIENT_REDIRECTS_PER_MINUTE = 30
+export const MCP_REQUESTS_PER_MINUTE = 300
 
 /**
  * Keyed on the subject, never the address: every hosted Claude call arrives
@@ -29,7 +28,12 @@ const createCallerBudget = (
   return async (sub) => {
     const outcome = await consumeWithin(limiter, sub)
     if (outcome.kind === 'limited') {
-      return { ok: false, retryAfter: Math.ceil(outcome.res.msBeforeNext / 1000) || 60 }
+      return {
+        ok: false,
+        retryAfter: Math.ceil(outcome.res.msBeforeNext / 1000) || 60,
+        limit: points,
+        msBeforeNext: outcome.res.msBeforeNext
+      }
     }
     if (outcome.kind === 'unavailable') {
       rateLimitFailOpenTotal.inc({ reason: outcome.reason, bucket: keyPrefix })
@@ -49,10 +53,3 @@ export const createToolBudget = (redis: RedisClient | null, logger: Logger): Cal
 /** Spent by every authenticated transport request, `initialize` and `tools/list` included (#551). */
 export const createRequestBudget = (redis: RedisClient | null, logger: Logger): CallerBudget =>
   createCallerBudget(redis, logger, MCP_REQUESTS_PER_MINUTE, 'mcp-req')
-
-/** Per-user cap on single-client redirect lookups to bound Supabase Admin API calls. */
-export const createClientRedirectsBudget = (
-  redis: RedisClient | null,
-  logger: Logger
-): CallerBudget =>
-  createCallerBudget(redis, logger, CLIENT_REDIRECTS_PER_MINUTE, 'mcp-client-redirects')

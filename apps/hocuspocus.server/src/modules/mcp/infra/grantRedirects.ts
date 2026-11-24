@@ -68,6 +68,7 @@ export const createGrantRedirects =
           'Capping connected app redirect lookups'
         )
       }
+      const readClientRedirects = createClientRedirects({ supabase, logger })
       const cappedIds = uniqueIds.slice(0, MAX_GRANT_CLIENT_LOOKUPS)
       let nextIndex = 0
       const workerCount = Math.min(GRANT_LOOKUP_CONCURRENCY, cappedIds.length)
@@ -76,19 +77,9 @@ export const createGrantRedirects =
           while (nextIndex < cappedIds.length) {
             const clientId = cappedIds[nextIndex++]
             if (!clientId) continue
-            try {
-              const { data, error } = await supabase.auth.admin.oauth.getClient(clientId)
-              if (error) {
-                logger.warn({ err: error, clientId }, 'Failed to read OAuth client redirects')
-                continue
-              }
-              if (data && typeof data.client_id === 'string' && Array.isArray(data.redirect_uris)) {
-                redirects[data.client_id] = data.redirect_uris.filter(
-                  (u): u is string => typeof u === 'string'
-                )
-              }
-            } catch (err) {
-              logger.warn({ err, clientId }, 'Failed to read OAuth client redirects')
+            const uris = await readClientRedirects(clientId)
+            if (uris.length > 0) {
+              redirects[clientId] = uris
             }
           }
         })
@@ -111,10 +102,11 @@ export const createClientRedirects =
     if (!supabase) return []
     try {
       const { data, error } = await supabase.auth.admin.oauth.getClient(clientId)
-      if (error || !data || !Array.isArray(data.redirect_uris)) {
-        if (error) {
-          logger.warn({ err: error, clientId }, 'Failed to read OAuth client redirects')
-        }
+      if (error) {
+        logger.warn({ err: error, clientId }, 'Failed to read OAuth client redirects')
+        return []
+      }
+      if (!data || !Array.isArray(data.redirect_uris)) {
         return []
       }
       return data.redirect_uris.filter((u): u is string => typeof u === 'string')

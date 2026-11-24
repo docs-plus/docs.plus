@@ -82,10 +82,8 @@ export const registerChatTools = (
     run('list_chat_rooms', async ({ slug }) => {
       const doc = await openDocument(slug, 'read')
       const chat = openChat()
-      const content = await loadContent(doc)
-      const found = new Map(
-        (await chat.listRooms(doc.documentId)).map((room) => [room.sectionId, room])
-      )
+      const [content, rooms] = await Promise.all([loadContent(doc), chat.listRooms(doc.documentId)])
+      const found = new Map(rooms.map((room) => [room.sectionId, room]))
       // Outline order; a room with no live heading is left out.
       const lines = flattenOutline(buildOutline(content)).flatMap((heading) => {
         const room = heading.id ? found.get(heading.id) : undefined

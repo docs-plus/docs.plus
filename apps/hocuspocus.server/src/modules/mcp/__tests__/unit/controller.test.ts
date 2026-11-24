@@ -116,11 +116,13 @@ describe('createMcpRateLimit', () => {
     expect(getCalls()).toBe(1)
   })
 
-  test('returns 429 RATE_LIMIT_EXCEEDED with Retry-After when requestBudget is spent', async () => {
+  test('returns 429 RATE_LIMIT_EXCEEDED with Retry-After and X-RateLimit-* when requestBudget is spent', async () => {
     const { verify } = makeVerify()
     const rateLimit = createMcpRateLimit(createBearerCheck(verify), async () => ({
       ok: false,
-      retryAfter: 7
+      retryAfter: 7,
+      limit: 300,
+      msBeforeNext: 6500
     }))
     const app = new Hono()
     let reachedRoute = 0
@@ -140,11 +142,33 @@ describe('createMcpRateLimit', () => {
     })
     expect(res.status).toBe(429)
     expect(res.headers.get('Retry-After')).toBe('7')
+    expect(res.headers.get('X-RateLimit-Limit')).toBe('300')
+    expect(res.headers.get('X-RateLimit-Remaining')).toBe('0')
+    expect(Number.isNaN(Date.parse(res.headers.get('X-RateLimit-Reset') ?? ''))).toBe(false)
     expect(await res.json()).toEqual({
       success: false,
       error: { message: 'Too many requests, please try again later', code: 'RATE_LIMIT_EXCEEDED' }
     })
     expect(reachedRoute).toBe(0)
+  })
+
+  test('propagates unexpected checkBearer errors instead of falling through', async () => {
+    const rateLimit = createMcpRateLimit(
+      createBearerCheck(async () => {
+        throw new Error('verify blew up')
+      }),
+      okBudget
+    )
+    const app = new Hono()
+    app.onError((err, c) => c.json({ err: err.message }, 500))
+    app.post('/api/mcp', async (c) => c.json(await rateLimit(c, async () => true, '/api/mcp')))
+
+    const res = await app.request('/api/mcp', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${GOOD}` }
+    })
+    expect(res.status).toBe(500)
+    expect(await res.json()).toEqual({ err: 'verify blew up' })
   })
 })
 

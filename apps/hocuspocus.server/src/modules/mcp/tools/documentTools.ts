@@ -303,7 +303,7 @@ export const registerDocumentTools = (
         outcome = await createOwnedDocument(deps.prisma, {
           title: name,
           content: { type: 'doc', content: [titleHeading(name), ...(fragment?.content ?? [])] },
-          actor: { sub: caller.sub, email: caller.email },
+          actor,
           isPrivate,
           writeAccessMirror: options?.writeAccessMirror
         })
@@ -409,7 +409,7 @@ export const registerDocumentTools = (
         documentId: doc.documentId,
         mode: 'append',
         content: fragment,
-        actor: { sub: caller.sub, email: caller.email }
+        actor
       })
       return writeResult(outcome, doc, 'Appended to')
     })

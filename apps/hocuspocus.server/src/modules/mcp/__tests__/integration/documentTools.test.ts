@@ -46,7 +46,9 @@ const createToolHarness = (
 ) => {
   const doc = makeDoc(docOverrides)
   const prisma = createMockPrisma() as any
-  const createdMetadata: any[] = []
+  const createdMetadata: Array<
+    { documentId: string; isPrivate?: boolean } & Record<string, unknown>
+  > = []
   prisma.documentMetadata.findUnique = async () => doc
   prisma.documentMetadata.findMany = async () => [
     {
@@ -58,7 +60,9 @@ const createToolHarness = (
       ownerId: doc.ownerId
     }
   ]
-  prisma.documentMetadata.create = async (arg: any) => {
+  prisma.documentMetadata.create = async (arg: {
+    data: { documentId: string; isPrivate?: boolean } & Record<string, unknown>
+  }) => {
     createdMetadata.push(arg.data)
     return {
       documentId: arg.data.documentId ?? 'created-1',

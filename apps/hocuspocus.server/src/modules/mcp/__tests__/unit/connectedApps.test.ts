@@ -2,9 +2,24 @@ import { describe, expect, test } from 'bun:test'
 import type { MiddlewareHandler } from 'hono'
 
 import { fail } from '../../../../http/envelope'
+import { userRateLimiter } from '../../../../middleware'
+import type { RedisClient } from '../../../../types/redis.types'
 import { createConnectedAppsRouter } from '../../http/connectedApps'
 
 const VALID_CLIENT_ID = '550e8400-e29b-41d4-a716-446655440000'
+
+const makeMemoryRateLimitRedis = (): RedisClient => {
+  const counts = new Map<string, number>()
+  return {
+    defineCommand: () => {},
+    rlflxIncr: async (args: [string, string, string, string, string]) => {
+      const [key, pointsToConsume, secDuration] = args
+      const next = (counts.get(key) ?? 0) + Number(pointsToConsume)
+      counts.set(key, next)
+      return [next, Number(secDuration) * 1000]
+    }
+  } as unknown as RedisClient
+}
 
 const makeFakeRequireUser = (): MiddlewareHandler => async (c, next) => {
   const mode = c.req.header('X-Test-Auth') ?? 'user'
@@ -29,8 +44,7 @@ describe('connectedAppsRouter GET /clients/:clientId/redirects', () => {
   test('default requireUser rejects missing token with 401 UNAUTHORIZED', async () => {
     const router = createConnectedAppsRouter({
       grantRedirects: async () => ({}),
-      clientRedirects: async () => ['https://claude.ai/api/mcp/auth_callback'],
-      clientRedirectsBudget: async () => ({ ok: true })
+      clientRedirects: async () => ['https://claude.ai/api/mcp/auth_callback']
     })
 
     const res = await router.request(`/clients/${VALID_CLIENT_ID}/redirects`)
@@ -42,7 +56,7 @@ describe('connectedAppsRouter GET /clients/:clientId/redirects', () => {
   })
 
   test('rejects anonymous users with 403 without spending budget or reading client', async () => {
-    let budgetCalls = 0
+    let rateLimitCalls = 0
     let lookupCalls = 0
     const router = createConnectedAppsRouter({
       grantRedirects: async () => ({}),
@@ -50,9 +64,9 @@ describe('connectedAppsRouter GET /clients/:clientId/redirects', () => {
         lookupCalls++
         return []
       },
-      clientRedirectsBudget: async () => {
-        budgetCalls++
-        return { ok: true }
+      clientRedirectsRateLimit: async (_c, next) => {
+        rateLimitCalls++
+        await next()
       },
       requireUser: makeFakeRequireUser()
     })
@@ -68,12 +82,12 @@ describe('connectedAppsRouter GET /clients/:clientId/redirects', () => {
         code: 'FORBIDDEN'
       }
     })
-    expect(budgetCalls).toBe(0)
+    expect(rateLimitCalls).toBe(0)
     expect(lookupCalls).toBe(0)
   })
 
   test('rejects connected-app tokens with 403 without spending budget or reading client', async () => {
-    let budgetCalls = 0
+    let rateLimitCalls = 0
     let lookupCalls = 0
     const router = createConnectedAppsRouter({
       grantRedirects: async () => ({}),
@@ -81,9 +95,9 @@ describe('connectedAppsRouter GET /clients/:clientId/redirects', () => {
         lookupCalls++
         return []
       },
-      clientRedirectsBudget: async () => {
-        budgetCalls++
-        return { ok: true }
+      clientRedirectsRateLimit: async (_c, next) => {
+        rateLimitCalls++
+        await next()
       },
       requireUser: makeFakeRequireUser()
     })
@@ -92,12 +106,12 @@ describe('connectedAppsRouter GET /clients/:clientId/redirects', () => {
       headers: { 'X-Test-Auth': 'connected-app' }
     })
     expect(res.status).toBe(403)
-    expect(budgetCalls).toBe(0)
+    expect(rateLimitCalls).toBe(0)
     expect(lookupCalls).toBe(0)
   })
 
   test('rejects non-UUID clientId with 400 VALIDATION_ERROR without spending budget', async () => {
-    let budgetCalls = 0
+    let rateLimitCalls = 0
     let lookupCalls = 0
     const router = createConnectedAppsRouter({
       grantRedirects: async () => ({}),
@@ -105,9 +119,9 @@ describe('connectedAppsRouter GET /clients/:clientId/redirects', () => {
         lookupCalls++
         return []
       },
-      clientRedirectsBudget: async () => {
-        budgetCalls++
-        return { ok: true }
+      clientRedirectsRateLimit: async (_c, next) => {
+        rateLimitCalls++
+        await next()
       },
       requireUser: makeFakeRequireUser()
     })
@@ -121,35 +135,40 @@ describe('connectedAppsRouter GET /clients/:clientId/redirects', () => {
     expect(body.success).toBe(false)
     expect(body.error.code).toBe('VALIDATION_ERROR')
     expect(body.error.fields.map((f) => f.path)).toContain('clientId')
-    expect(budgetCalls).toBe(0)
+    expect(rateLimitCalls).toBe(0)
     expect(lookupCalls).toBe(0)
   })
 
-  test('returns 429 RATE_LIMIT_EXCEEDED with Retry-After when budget is spent', async () => {
+  test('returns 429 RATE_LIMIT_EXCEEDED with Retry-After and X-RateLimit-* when user rate limit is spent', async () => {
     let lookupCalls = 0
-    let seenSub = ''
     const router = createConnectedAppsRouter({
       grantRedirects: async () => ({}),
       clientRedirects: async () => {
         lookupCalls++
-        return []
+        return ['https://claude.ai/api/mcp/auth_callback']
       },
-      clientRedirectsBudget: async (sub) => {
-        seenSub = sub
-        return { ok: false, retryAfter: 42 }
-      },
+      clientRedirectsRateLimit: userRateLimiter({
+        points: 1,
+        duration: 60,
+        keyPrefix: 'mcp-client-redirects',
+        storeClient: makeMemoryRateLimitRedis()
+      }),
       requireUser: makeFakeRequireUser()
     })
 
+    const first = await router.request(`/clients/${VALID_CLIENT_ID}/redirects`)
+    expect(first.status).toBe(200)
+
     const res = await router.request(`/clients/${VALID_CLIENT_ID}/redirects`)
-    expect(seenSub).toBe('user-1')
     expect(res.status).toBe(429)
-    expect(res.headers.get('Retry-After')).toBe('42')
+    expect(res.headers.get('Retry-After')).toBe('60')
+    expect(res.headers.get('X-RateLimit-Limit')).toBe('1')
+    expect(res.headers.get('X-RateLimit-Remaining')).toBe('0')
     expect(await res.json()).toEqual({
       success: false,
       error: { message: 'Too many requests, please try again later', code: 'RATE_LIMIT_EXCEEDED' }
     })
-    expect(lookupCalls).toBe(0)
+    expect(lookupCalls).toBe(1)
   })
 
   test('returns redirects in house envelope for valid user and UUID', async () => {
@@ -160,7 +179,6 @@ describe('connectedAppsRouter GET /clients/:clientId/redirects', () => {
         seenClientId = clientId
         return ['https://claude.ai/api/mcp/auth_callback']
       },
-      clientRedirectsBudget: async () => ({ ok: true }),
       requireUser: makeFakeRequireUser()
     })
 

@@ -1,16 +1,13 @@
 import type { Hono } from 'hono'
 
+import { userRateLimiter } from '../../middleware'
 import { createConnectedAppsRouter } from './http/connectedApps'
 import { createBearerCheck, createMcpRateLimit, type McpRateLimit } from './http/controller'
 import { createRouter, createWellKnownRouter } from './http/router'
 import { createServerFactory } from './http/serverFactory'
 import { createChatStore } from './infra/chatStore'
 import { createClientRedirects, createGrantRedirects } from './infra/grantRedirects'
-import {
-  createClientRedirectsBudget,
-  createRequestBudget,
-  createToolBudget
-} from './infra/toolBudget'
+import { createRequestBudget, createToolBudget } from './infra/toolBudget'
 import { createUsageRecorder } from './infra/usageStore'
 import type { InitDeps } from './types'
 
@@ -59,7 +56,12 @@ export const init = (deps: InitDeps): InitResult => {
         supabase: deps.supabase,
         logger: deps.logger
       }),
-      clientRedirectsBudget: createClientRedirectsBudget(deps.redis, deps.logger)
+      clientRedirectsRateLimit: userRateLimiter({
+        points: 30,
+        duration: 60,
+        keyPrefix: 'mcp-client-redirects',
+        storeClient: deps.redis
+      })
     }),
     mcpRateLimit: createMcpRateLimit(checkBearer, createRequestBudget(deps.redis, deps.logger)),
     close

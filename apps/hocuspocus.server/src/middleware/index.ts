@@ -67,6 +67,23 @@ const clientAddress = (c: Context): string | null => {
   return realIp || forwardedFor!.split(',')[0]!.trim() || 'unknown'
 }
 
+export const setRateLimitHeaders = (
+  c: Context,
+  {
+    limit,
+    remaining,
+    resetMs,
+    retryAfter
+  }: { limit: number; remaining: number; resetMs: number; retryAfter?: number }
+) => {
+  c.header('X-RateLimit-Limit', limit.toString())
+  c.header('X-RateLimit-Remaining', remaining.toString())
+  c.header('X-RateLimit-Reset', new Date(Date.now() + resetMs).toISOString())
+  if (retryAfter !== undefined) {
+    c.header('Retry-After', retryAfter.toString())
+  }
+}
+
 const applyRateLimit = async (
   c: Context,
   next: Next,
@@ -105,10 +122,12 @@ const applyRateLimit = async (
   if (outcome.kind === 'limited') {
     const retryAfter = Math.ceil(outcome.res.msBeforeNext / 1000) || duration
 
-    c.header('X-RateLimit-Limit', points.toString())
-    c.header('X-RateLimit-Remaining', '0')
-    c.header('X-RateLimit-Reset', new Date(Date.now() + outcome.res.msBeforeNext).toISOString())
-    c.header('Retry-After', retryAfter.toString())
+    setRateLimitHeaders(c, {
+      limit: points,
+      remaining: 0,
+      resetMs: outcome.res.msBeforeNext,
+      retryAfter
+    })
 
     // House envelope. The retry seconds live in `Retry-After` only: `error.details`
     // is stripped outside development, so a body field would vanish in production.
@@ -124,28 +143,36 @@ const applyRateLimit = async (
     )
   }
 
-  c.header('X-RateLimit-Limit', points.toString())
-  c.header('X-RateLimit-Remaining', outcome.res.remainingPoints.toString())
-  c.header('X-RateLimit-Reset', new Date(Date.now() + outcome.res.msBeforeNext).toISOString())
+  setRateLimitHeaders(c, {
+    limit: points,
+    remaining: outcome.res.remainingPoints,
+    resetMs: outcome.res.msBeforeNext
+  })
 
   return next()
 }
 
-export const rateLimiter = (options: {
+interface RateLimiterOptions {
   points: number
   duration: number // seconds
   keyPrefix?: string
   blockDuration?: number // seconds
   storeClient?: RedisClient | null
-}) => {
-  const { points, duration, keyPrefix = 'rl', blockDuration } = options
+}
+
+const createRedisRateLimiter = (
+  options: RateLimiterOptions & { keyPrefix: string },
+  keyOf: (c: Context) => string | null | undefined
+) => {
+  const { points, duration, keyPrefix, blockDuration } = options
   const storeClient = options.storeClient === undefined ? redisClient : options.storeClient
 
   if (!storeClient) {
-    httpLogger.warn('Redis not available, rate limiting disabled')
-    return Object.assign(async (c: Context, next: Next) => next(), {
-      hasBudget: async (_c: Context) => true
-    })
+    httpLogger.warn({ keyPrefix }, 'Redis not available, rate limiting disabled')
+    return {
+      limiter: null,
+      middleware: async (_c: Context, next: Next) => next()
+    }
   }
 
   const limiter = new RateLimiterRedis({
@@ -158,9 +185,23 @@ export const rateLimiter = (options: {
     insuranceLimiter: undefined
   })
 
+  const middleware = async (c: Context, next: Next) => {
+    const key = keyOf(c)
+    if (!key) return next()
+    return applyRateLimit(c, next, limiter, key, { points, duration, keyPrefix })
+  }
+
+  return { limiter, middleware }
+}
+
+export const rateLimiter = (options: RateLimiterOptions) => {
+  const keyPrefix = options.keyPrefix ?? 'rl'
+  const { limiter, middleware } = createRedisRateLimiter({ ...options, keyPrefix }, clientAddress)
+
   // Reads the bucket without spending it. A slow or failing Redis reads as budget
   // left, the same fail-open answer the consume below gives, and counts the same way.
   const hasBudget = async (c: Context): Promise<boolean> => {
+    if (!limiter) return true
     const ip = clientAddress(c)
     if (ip === null) return true
     const outcome = await readWithin(limiter, ip)
@@ -171,49 +212,15 @@ export const rateLimiter = (options: {
     return outcome.res === null || outcome.res.remainingPoints > 0
   }
 
-  const middleware = async (c: Context, next: Next) => {
-    const ip = clientAddress(c)
-    if (ip === null) {
-      return next()
-    }
-    return applyRateLimit(c, next, limiter, ip, { points, duration, keyPrefix })
-  }
-
   return Object.assign(middleware, { hasBudget })
 }
 
 /** Per-user Redis rate limiter; runs after `requireUser` so `c.get('userId')` is verified. */
-export const userRateLimiter = (options: {
-  points: number
-  duration: number // seconds
-  keyPrefix?: string
-  blockDuration?: number // seconds
-  storeClient?: RedisClient | null
-}) => {
-  const { points, duration, keyPrefix = 'rl-user', blockDuration } = options
-  const storeClient = options.storeClient === undefined ? redisClient : options.storeClient
-
-  if (!storeClient) {
-    httpLogger.warn({ keyPrefix }, 'Redis not available, per-user rate limiting disabled')
-    return async (_c: Context, next: Next) => next()
-  }
-
-  const limiter = new RateLimiterRedis({
-    storeClient,
-    points,
-    duration,
-    keyPrefix,
-    blockDuration,
-    execEvenly: false,
-    insuranceLimiter: undefined
-  })
-
-  return async (c: Context, next: Next) => {
-    const userId = c.get('userId') as string | undefined
-    if (!userId) return next()
-    return applyRateLimit(c, next, limiter, userId, { points, duration, keyPrefix })
-  }
-}
+export const userRateLimiter = (options: RateLimiterOptions) =>
+  createRedisRateLimiter(
+    { ...options, keyPrefix: options.keyPrefix ?? 'rl-user' },
+    (c) => c.get('userId') as string | undefined
+  ).middleware
 
 export const createDuplicateRateLimiter = (storeClient?: RedisClient | null) =>
   userRateLimiter({
@@ -287,7 +294,11 @@ export interface MiddlewareOptions {
    * Evaluates `/api/mcp` transport calls: verified OAuth callers spend `mcp-req` once
    * and skip the global limiter; Auth 503s charge `mcp-auth-503`.
    */
-  mcpRateLimit: (c: Context, hasBudget: () => Promise<boolean>) => Promise<McpRateLimitDecision>
+  mcpRateLimit: (
+    c: Context,
+    hasBudget: () => Promise<boolean>,
+    path?: string
+  ) => Promise<McpRateLimitDecision>
   /** Optional Redis client override for tests; defaults to the shared Redis client. */
   storeClient?: RedisClient | null
 }
@@ -433,7 +444,7 @@ export const setupMiddleware = (app: Hono, opts: MiddlewareOptions) => {
 
     // Verified MCP calls skip the global limiter while the address has budget left (#551, #811).
     // Auth outages charge `mcp-auth-503` (100/60 s per IP) instead of the global 15-min bucket.
-    const mcpDecision = await opts.mcpRateLimit(c, () => globalRateLimiter.hasBudget(c))
+    const mcpDecision = await opts.mcpRateLimit(c, () => globalRateLimiter.hasBudget(c), path)
     if (mcpDecision.kind === 'limited') {
       return mcpDecision.response
     }

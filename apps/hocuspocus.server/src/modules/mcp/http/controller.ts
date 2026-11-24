@@ -3,6 +3,8 @@ import type { Context, Next } from 'hono'
 
 import { fail } from '../../../http/envelope'
 import { decodeJwtClaims } from '../../../lib/jwtClaims'
+import { type McpRateLimitDecision, setRateLimitHeaders } from '../../../middleware'
+import { MCP_REQUESTS_PER_MINUTE } from '../infra/toolBudget'
 import type { Caller, CallerBudget, VerifyToken } from '../types'
 
 export const MCP_MOUNT_PATH = '/api/mcp'
@@ -170,16 +172,11 @@ export const createAuthenticate =
     return challenge(c, publicBaseUrl, result.message, result.errorDescription)
   }
 
-export type McpRateLimitResult =
-  | { kind: 'verified' }
-  | { kind: 'limited'; response: Response }
-  | { kind: 'auth-unavailable' }
-  | { kind: 'fallthrough' }
-
 export type McpRateLimit = (
   c: Context,
-  hasGlobalBudget: () => Promise<boolean>
-) => Promise<McpRateLimitResult>
+  hasGlobalBudget: () => Promise<boolean>,
+  path?: string
+) => Promise<McpRateLimitDecision>
 
 /**
  * Evaluates `/api/mcp` transport calls ahead of the Origin gate and body limit.
@@ -188,23 +185,24 @@ export type McpRateLimit = (
  */
 export const createMcpRateLimit =
   (checkBearer: BearerCheck, requestBudget: CallerBudget): McpRateLimit =>
-  async (c, hasGlobalBudget) => {
+  async (c, hasGlobalBudget, path) => {
     if (!MCP_METHODS.includes(c.req.method)) return { kind: 'fallthrough' }
-    if (new URL(c.req.url).pathname !== MCP_MOUNT_PATH) return { kind: 'fallthrough' }
+    const pathname = path ?? new URL(c.req.url).pathname
+    if (pathname !== MCP_MOUNT_PATH) return { kind: 'fallthrough' }
     if (!extractBearerToken(c.req.header('Authorization'))) return { kind: 'fallthrough' }
     if (!(await hasGlobalBudget())) return { kind: 'fallthrough' }
-    let result: AuthInfo | BearerRefusal
-    try {
-      result = await checkBearer(c)
-    } catch {
-      return { kind: 'fallthrough' }
-    }
+    const result = await checkBearer(c)
     if ('status' in result) {
       return result.status === 503 ? { kind: 'auth-unavailable' } : { kind: 'fallthrough' }
     }
     const budget = await requestBudget(callerFrom(result).sub)
     if (!budget.ok) {
-      c.header('Retry-After', budget.retryAfter.toString())
+      setRateLimitHeaders(c, {
+        limit: budget.limit ?? MCP_REQUESTS_PER_MINUTE,
+        remaining: 0,
+        resetMs: budget.msBeforeNext ?? budget.retryAfter * 1000,
+        retryAfter: budget.retryAfter
+      })
       return {
         kind: 'limited',
         response: fail(c, 429, 'RATE_LIMIT_EXCEEDED', 'Too many requests, please try again later')

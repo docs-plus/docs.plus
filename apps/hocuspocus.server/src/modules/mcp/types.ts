@@ -102,7 +102,9 @@ export interface OutlineNode {
 
 export type CallerBudget = (
   sub: string
-) => Promise<{ ok: true } | { ok: false; retryAfter: number }>
+) => Promise<
+  { ok: true } | { ok: false; retryAfter: number; limit?: number; msBeforeNext?: number }
+>
 
 export type ToolOutcome = 'ok' | 'rate-limited' | 'tool-error' | 'error'
 
