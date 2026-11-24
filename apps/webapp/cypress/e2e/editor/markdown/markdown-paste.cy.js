@@ -43,6 +43,51 @@ describe('Markdown Paste Detection', () => {
       cy.get('.docy_editor strong').should('contain.text', 'bold text')
       cy.get('.docy_editor a[href="https://example.com"]').should('contain.text', 'link')
       cy.get('.docy_editor ul li').should('have.length.at.least', 2)
+
+      cy.window().then((win) => {
+        const marks = []
+        win._editor.state.doc.descendants((node) => {
+          node.marks.forEach((m) => marks.push(m.type.name))
+        })
+        expect(marks).to.include('hyperlink')
+        expect(marks).to.not.include('link')
+      })
+    })
+
+    it('detects standalone GFM tables', () => {
+      focusEndOfFirstParagraph()
+
+      const markdown = ['| Col A | Col B |', '| --- | --- |', '| One | Two |'].join('\n')
+      cy.pasteAsPlainText(markdown)
+      cy.wait(300)
+
+      cy.get('.docy_editor table th').should('have.length', 2)
+      cy.get('.docy_editor table td').should('have.length', 2)
+    })
+
+    it('detects standalone task lists', () => {
+      focusEndOfFirstParagraph()
+
+      const markdown = ['- [ ] Todo item', '- [x] Done item'].join('\n')
+      cy.pasteAsPlainText(markdown)
+      cy.wait(300)
+
+      cy.get('.docy_editor ul[data-type="taskList"] li').should('have.length', 2)
+      cy.get('.docy_editor ul[data-type="taskList"] li[data-checked="true"]').should(
+        'have.length',
+        1
+      )
+    })
+
+    it('detects multi-heading Markdown pastes', () => {
+      focusEndOfFirstParagraph()
+
+      const markdown = '# Section One\n\n## Section Two'
+      cy.pasteAsPlainText(markdown)
+      cy.wait(300)
+
+      cy.get('.docy_editor h1').should('contain.text', 'Section One')
+      cy.get('.docy_editor h2').should('contain.text', 'Section Two')
     })
 
     it('does not trigger for plain text below heuristic threshold', () => {
@@ -212,6 +257,67 @@ describe('Markdown Paste Detection', () => {
       cy.wait(500)
 
       cy.get('.docy_editor').should('exist')
+    })
+  })
+
+  describe('full-document Markdown paste', () => {
+    const cases = [
+      {
+        name: 'paragraph-first Markdown',
+        md: 'Document Title\n\n## Sub Heading\n\n**Bold body**',
+        assertBody: () => {
+          cy.get(`${EDITOR_SEL} > h1`).should('contain.text', 'Document Title')
+          cy.get('.docy_editor h2').should('contain.text', 'Sub Heading')
+        }
+      },
+      {
+        name: 'fenced-code-first Markdown',
+        md: '```js\nconst n = 1\n```',
+        assertBody: () => {
+          cy.get(`${EDITOR_SEL} > :first-child`).should('match', 'h1')
+          cy.get('.docy_editor pre code').should('contain.text', 'const n = 1')
+        }
+      },
+      {
+        name: 'table-first Markdown',
+        md: '| A | B |\n| --- | --- |\n| 1 | 2 |',
+        assertBody: () => {
+          cy.get(`${EDITOR_SEL} > :first-child`).should('match', 'h1')
+          cy.get('.docy_editor table td').should('have.length', 2)
+        }
+      },
+      {
+        name: 'task-list-first Markdown',
+        md: '- [ ] First\n- [x] Second',
+        assertBody: () => {
+          cy.get(`${EDITOR_SEL} > :first-child`).should('match', 'h1')
+          cy.get('.docy_editor ul[data-type="taskList"] li').should('have.length', 2)
+        }
+      },
+      {
+        name: 'lone-image with bold Markdown',
+        md: '![Alt](https://example.com/a.png)\n\n**Caption**',
+        assertBody: () => {
+          cy.get(`${EDITOR_SEL} > :first-child`).should('match', 'h1')
+          cy.get('.docy_editor img[src="https://example.com/a.png"]').should('exist')
+        }
+      }
+    ]
+
+    cases.forEach(({ name, md, assertBody }) => {
+      it(`keeps TitleDocument valid when pasting ${name} over select-all`, () => {
+        cy.get(EDITOR_SEL).click()
+        cy.window().then((win) => {
+          win._editor.commands.selectAll()
+        })
+        cy.pasteAsPlainText(md)
+        cy.wait(300)
+
+        assertBody()
+        cy.window().then((win) => {
+          expect(() => win._editor.state.doc.check()).to.not.throw()
+        })
+      })
     })
   })
 })

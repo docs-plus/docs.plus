@@ -9,6 +9,8 @@ interface StringIconProps {
 /** Outline chat bubble — mobile heading tab. Matches Lucide `Icons.chatroom`. */
 export const ChatOutlineSVG = ({ size = 20, className = '' }: Omit<StringIconProps, 'fill'>) => `
     <svg
+      aria-hidden="true"
+      focusable="false"
       class="${className}"
       fill="none"
       stroke="currentColor"
@@ -32,6 +34,8 @@ export const ChatLeftSVG = ({
   className = ''
 }: StringIconProps) => `
     <svg
+      aria-hidden="true"
+      focusable="false"
       class="${className}"
       fill="${fill}"
       stroke-width="0"
@@ -49,6 +53,8 @@ export const AddCommentSVG = ({
   className = ''
 }: StringIconProps) => `
     <svg
+        aria-hidden="true"
+        focusable="false"
         class="${className}"
         fill="${fill}"
         width="${size}"

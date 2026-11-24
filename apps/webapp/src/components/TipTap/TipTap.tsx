@@ -1,5 +1,5 @@
 import Config from '@config'
-import { HyperlinkBase } from '@docs.plus/extension-hyperlink'
+import { HyperlinkBase, isSafeHref } from '@docs.plus/extension-hyperlink'
 import { HyperMultimediaKit, isMediaUrl } from '@docs.plus/extension-hypermultimedia'
 import { Indent } from '@docs.plus/extension-indent'
 import { InlineCode } from '@docs.plus/extension-inline-code'
@@ -8,6 +8,7 @@ import { Placeholder } from '@docs.plus/extension-placeholder'
 import type { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
 import { authStore } from '@stores'
+import { Mark, mergeAttributes } from '@tiptap/core'
 import { Collaboration, isChangeOrigin } from '@tiptap/extension-collaboration'
 import { CollaborationCaret } from '@tiptap/extension-collaboration-caret'
 import { TaskItem, TaskList } from '@tiptap/extension-list'
@@ -106,6 +107,51 @@ const reportDiagramState = (event: MermaidStateEvent): void => {
   }
 }
 
+// Schema-compat mark for stored legacy `link` marks under enableContentCheck.
+// HyperlinkBase owns UI, commands, and Markdown link parsing.
+const LegacyLink = Mark.create({
+  name: 'link',
+  keepOnSplit: false,
+  inclusive: false,
+
+  addAttributes() {
+    return {
+      href: { default: null },
+      target: { default: null, rendered: false },
+      rel: { default: 'noopener noreferrer nofollow' },
+      class: { default: null, parseHTML: () => null, rendered: false },
+      title: { default: null }
+    }
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: 'a[href]',
+        getAttrs: (dom: HTMLElement | string) => {
+          if (typeof dom === 'string') return false
+          const href = dom.getAttribute('href') ?? ''
+          return isSafeHref(href) ? null : false
+        }
+      }
+    ]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    const safe = isSafeHref(HTMLAttributes.href as string | null | undefined)
+      ? HTMLAttributes
+      : { ...HTMLAttributes, href: '' }
+    return ['a', mergeAttributes({ rel: 'noopener noreferrer nofollow' }, safe), 0]
+  },
+
+  renderMarkdown(node, helpers) {
+    const content = helpers.renderChildren(node)
+    const raw = typeof node.attrs?.href === 'string' ? node.attrs.href : ''
+    const href = (isSafeHref(raw) ? raw : '').replace(/\)/g, '%29').replace(/\s/g, '%20')
+    return `[${content}](${href})`
+  }
+})
+
 const Editor = ({
   provider,
   spellcheck = false,
@@ -134,16 +180,9 @@ const Editor = ({
         levels: [1, 2, 3, 4, 5, 6]
       },
       codeBlock: false,
-      // Not `link: false` (the composer's choice): stored pad docs contain
-      // `link` marks that must stay schema-valid under enableContentCheck.
-      // Hyperlink owns all <a> behavior, so Link stays registered but inert:
-      // shouldAutoLink:false neuters its paste rule (autolink/linkOnPaste don't).
-      link: {
-        autolink: false,
-        linkOnPaste: false,
-        openOnClick: false,
-        shouldAutoLink: () => false
-      },
+      // Disable StarterKit's Link so HyperlinkBase owns Markdown `[text](url)` parsing.
+      // LegacyLink below keeps stored `link` marks valid under enableContentCheck.
+      link: false,
       // 3.30+ ListKeymap Tab sinks a following paragraph into the previous list.
       // Indent owns Tab. StarterKit's copy is replaced below.
       listKeymap: false,
@@ -154,6 +193,7 @@ const Editor = ({
     ListKeymapWithoutTab,
     ListGapJoin,
     ClearFormatting,
+    LegacyLink,
 
     ParagraphStyle,
 
@@ -293,6 +333,9 @@ const Editor = ({
     return {
       editorProps: {
         attributes: {
+          role: 'textbox',
+          'aria-label': 'Document editor',
+          'aria-multiline': 'true',
           spellcheck: spellcheck.toString()
         }
       },
@@ -318,6 +361,9 @@ const Editor = ({
     },
     editorProps: {
       attributes: {
+        role: 'textbox',
+        'aria-label': 'Document editor',
+        'aria-multiline': 'true',
         spellcheck: spellcheck.toString()
       }
     },

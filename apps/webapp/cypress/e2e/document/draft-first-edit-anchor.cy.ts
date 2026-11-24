@@ -100,7 +100,9 @@ describe('draft first-edit anchor (full stack)', () => {
 
     // Open the workspace chatroom from the TOC header — no body edit, no message sent.
     // Chat rows key on the documentId (=channel_id), so opening chat must anchor it.
-    cy.get('[aria-label="Open chat"]', { timeout: 40000 }).first().click({ force: true })
+    cy.get('.tableOfContents [aria-label="Open chat"]', { timeout: 40000 })
+      .first()
+      .click({ force: true })
 
     cy.task('waitForDocBySlug', slug).then((row: DocRow) => {
       expect(row, 'chatroom-open anchored the draft').to.not.be.null

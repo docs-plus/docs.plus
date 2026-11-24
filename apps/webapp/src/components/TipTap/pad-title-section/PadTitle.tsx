@@ -77,7 +77,7 @@ const PadTitle = () => {
           <div className="flex min-w-0 items-center gap-2">
             <DocTitle />
             <ProviderSyncStatus />
-            <FilterBar displayRestButton={true} />
+            <FilterBar displayResetButton={true} />
           </div>
 
           <PrivateIndicator />

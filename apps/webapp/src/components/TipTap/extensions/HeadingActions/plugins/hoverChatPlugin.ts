@@ -11,6 +11,7 @@ import {
   createDecorationPluginState
 } from '../../plugins/decorationHelpers'
 import { HEADING_ACTIONS_CLASSES, type HeadingNodeData } from '../types'
+import { syncHeadingWrapperA11y } from './headingWidgetA11y'
 
 type WidgetFactory = (view: EditorView, getPos: () => number | undefined) => HTMLElement
 
@@ -27,6 +28,7 @@ const createChatButton = (headingId: string, editor: Editor): HTMLButtonElement 
   )
   button.setAttribute('type', 'button')
   button.setAttribute('title', 'Open chat')
+  button.setAttribute('aria-label', 'Open chat')
   button.dataset.headingId = headingId
 
   Object.assign(button.style, {
@@ -71,6 +73,7 @@ const createCommentButton = (headingId: string, editor: Editor): HTMLButtonEleme
   )
   button.setAttribute('type', 'button')
   button.setAttribute('title', 'Add comment')
+  button.setAttribute('aria-label', 'Add comment')
 
   button.innerHTML = AddCommentSVG({ size: 22, fill: 'currentColor' })
 
@@ -110,6 +113,7 @@ const createHoverChatWidget = (editor: Editor, headingId: string): WidgetFactory
 
     wrapper.appendChild(singleBtn)
     wrapper.appendChild(group)
+    syncHeadingWrapperA11y(wrapper)
 
     return wrapper
   }
@@ -148,9 +152,6 @@ const createHoverChatDecorations = (doc: ProseMirrorNode, editor: Editor): Decor
   return DecorationSet.create(doc, decos)
 }
 
-let activeWrapper: HTMLElement | null = null
-let lastSelectionHeadingId: string | null = null
-
 const findSelectionHeadingId = (view: EditorView): string | null => {
   const { selection } = view.state
   if (selection.empty) return null
@@ -161,28 +162,6 @@ const findSelectionHeadingId = (view: EditorView): string | null => {
   }
 
   return null
-}
-
-const updateSelectionState = (view: EditorView): void => {
-  const headingId = findSelectionHeadingId(view)
-
-  if (headingId === lastSelectionHeadingId) return
-  lastSelectionHeadingId = headingId
-
-  if (activeWrapper) {
-    activeWrapper.classList.remove(HEADING_ACTIONS_CLASSES.hasSelection)
-    activeWrapper = null
-  }
-
-  if (!headingId) return
-
-  const wrapper = view.dom.querySelector<HTMLElement>(
-    `.${HEADING_ACTIONS_CLASSES.wrap}[data-heading-id="${headingId}"]`
-  )
-  if (wrapper) {
-    wrapper.classList.add(HEADING_ACTIONS_CLASSES.hasSelection)
-    activeWrapper = wrapper
-  }
 }
 
 /**
@@ -228,13 +207,43 @@ export function createHoverChatPlugin(editor: Editor): Plugin {
       let target: EventTarget | null = null
       let wrapper: HTMLElement | null = null
       let sheet: HTMLElement | null = null
+      let activeWrapper: HTMLElement | null = null
+      let lastSelectionHeadingId: string | null = null
+
+      const updateSelectionState = (view: EditorView): void => {
+        const headingId = findSelectionHeadingId(view)
+
+        if (headingId === lastSelectionHeadingId) return
+        lastSelectionHeadingId = headingId
+
+        if (activeWrapper) {
+          const prev = activeWrapper
+          prev.classList.remove(HEADING_ACTIONS_CLASSES.hasSelection)
+          activeWrapper = null
+          syncHeadingWrapperA11y(prev)
+        }
+
+        if (!headingId) return
+
+        const nextWrapper = view.dom.querySelector<HTMLElement>(
+          `.${HEADING_ACTIONS_CLASSES.wrap}[data-heading-id="${headingId}"]`
+        )
+        if (nextWrapper) {
+          nextWrapper.classList.add(HEADING_ACTIONS_CLASSES.hasSelection)
+          activeWrapper = nextWrapper
+          syncHeadingWrapperA11y(nextWrapper)
+        }
+      }
 
       // The class sits on widget DOM, which DOMObserver ignores, so it costs no re-render.
       const setWrapper = (next: HTMLElement | null): void => {
         if (next === wrapper) return
-        wrapper?.classList.remove(HEADING_ACTIONS_CLASSES.sectionHover)
+        const prev = wrapper
+        prev?.classList.remove(HEADING_ACTIONS_CLASSES.sectionHover)
         next?.classList.add(HEADING_ACTIONS_CLASSES.sectionHover)
         wrapper = next
+        if (prev) syncHeadingWrapperA11y(prev)
+        if (next) syncHeadingWrapperA11y(next)
       }
 
       const syncSectionHover = (): void => {
@@ -246,6 +255,7 @@ export function createHoverChatPlugin(editor: Editor): Plugin {
         let el: Element = target
         while (el.parentElement && el.parentElement !== dom) el = el.parentElement
         setWrapper(findSectionWrapper(editorView, el))
+        if (activeWrapper) syncHeadingWrapperA11y(activeWrapper)
       }
 
       const clearSectionHover = (): void => {
@@ -253,6 +263,18 @@ export function createHoverChatPlugin(editor: Editor): Plugin {
         frame = 0
         target = null
         setWrapper(null)
+        if (activeWrapper) syncHeadingWrapperA11y(activeWrapper)
+      }
+
+      const onFocusChange = (event: FocusEvent): void => {
+        if (!(event.target instanceof Element)) return
+        const haWrap = event.target.closest<HTMLElement>(`.${HEADING_ACTIONS_CLASSES.wrap}`)
+        if (!haWrap) return
+        if (event.type === 'focusout') {
+          queueMicrotask(() => syncHeadingWrapperA11y(haWrap))
+        } else {
+          syncHeadingWrapperA11y(haWrap)
+        }
       }
 
       // The class clears when the pointer leaves the sheet, not view.dom, so it holds
@@ -279,6 +301,8 @@ export function createHoverChatPlugin(editor: Editor): Plugin {
       }
 
       editorView.dom.addEventListener('pointermove', onPointerMove)
+      editorView.dom.addEventListener('focusin', onFocusChange)
+      editorView.dom.addEventListener('focusout', onFocusChange)
 
       return {
         update: (view: EditorView) => {
@@ -286,7 +310,10 @@ export function createHoverChatPlugin(editor: Editor): Plugin {
         },
         destroy: () => {
           editorView.dom.removeEventListener('pointermove', onPointerMove)
+          editorView.dom.removeEventListener('focusin', onFocusChange)
+          editorView.dom.removeEventListener('focusout', onFocusChange)
           sheet?.removeEventListener('pointerleave', clearSectionHover)
+          activeWrapper = null
           clearSectionHover()
         }
       }

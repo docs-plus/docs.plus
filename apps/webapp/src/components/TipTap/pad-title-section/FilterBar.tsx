@@ -20,10 +20,10 @@ const Chip = ({ text }: { text: string }) => (
 
 const FilterBar = ({
   className,
-  displayRestButton = false
+  displayResetButton = false
 }: {
   className?: string
-  displayRestButton?: boolean
+  displayResetButton?: boolean
 }) => {
   const isMobile = useStore((state) => state.settings.editor.isMobile)
   const sortedSlugs = useStore((state) => state.settings.editor.filterResult.sortedSlugs)
@@ -40,7 +40,7 @@ const FilterBar = ({
         <Chip key={slug.text} text={slug.text} />
       ))}
 
-      {displayRestButton && (
+      {displayResetButton && (
         <Button
           variant="ghost"
           size="xs"

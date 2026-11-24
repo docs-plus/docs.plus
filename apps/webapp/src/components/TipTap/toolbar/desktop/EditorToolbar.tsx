@@ -103,7 +103,10 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
   return (
     <>
       {/* Pad shell borders: PadTitle `border-b` (header↔toolbar); this row `border-b` only (toolbar↔workspace); sheet top edge is `.tiptap__editor` in _blocks.scss — do not add `border-t` here or you double the header seam. */}
-      <div className="tiptap__toolbar border-base-300 bg-base-100 flex min-w-0 flex-row items-center justify-between gap-0.5 border-b px-3 py-1.5 sm:justify-start">
+      <div
+        role="toolbar"
+        aria-label="Formatting"
+        className="tiptap__toolbar border-base-300 bg-base-100 flex min-w-0 flex-row items-center justify-between gap-0.5 border-b px-3 py-1.5 sm:justify-start">
         <StyleSelect editor={editor} />
 
         <ToolbarDivider />

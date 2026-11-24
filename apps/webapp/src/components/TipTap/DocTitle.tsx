@@ -134,6 +134,9 @@ const DocTitle = ({ className }: { className?: string }) => {
         <div
           contentEditable={canEdit}
           suppressContentEditableWarning
+          role={canEdit ? 'textbox' : undefined}
+          aria-label={canEdit ? 'Pad title' : undefined}
+          aria-multiline={canEdit ? 'false' : undefined}
           className={twMerge(
             'rounded-field truncate border border-transparent px-1 py-0 text-lg font-medium',
             canEdit && 'hover:border-base-300 cursor-text'

@@ -48,6 +48,7 @@ export interface SelectProps {
   disabled?: boolean
   maxHeight?: number
   id?: string
+  'aria-label'?: string
   wrapperClassName?: string
   className?: string
 }
@@ -97,6 +98,7 @@ const Select = ({
   disabled = false,
   maxHeight = 240,
   id: _id,
+  'aria-label': ariaLabel,
   wrapperClassName,
   className
 }: SelectProps) => {
@@ -256,6 +258,7 @@ const Select = ({
       )}
       aria-haspopup="listbox"
       aria-expanded={isOpen}
+      aria-label={ariaLabel}
       aria-invalid={error || undefined}
       aria-describedby={helperId}
       {...getReferenceProps({ onKeyDown: handleKeyDown })}>
@@ -264,6 +267,7 @@ const Select = ({
       </span>
       <Icons.chevronDown
         size={16}
+        aria-hidden
         className={twMerge(
           'text-base-content/50 shrink-0 transition-transform duration-200',
           isOpen && 'rotate-180'

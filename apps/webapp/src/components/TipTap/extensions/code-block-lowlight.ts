@@ -1,7 +1,7 @@
 // A copy of the lowlight plugin of @tiptap/extension-code-block-lowlight 3.32.0 (src/lowlight-plugin.ts).
 // The one change: mermaid blocks are drawn as diagrams, not highlighted, so a caret in one no longer
 // highlights every code block in the pad again (#631). Diff it against upstream on each Tiptap upgrade.
-import { findChildren } from '@tiptap/core'
+import { findChildren, textblockTypeInputRule } from '@tiptap/core'
 import { CodeBlockLowlight as BaseCodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
@@ -94,8 +94,70 @@ function LowlightPlugin(
   return plugin
 }
 
-/** Upstream CodeBlockLowlight with the copied plugin in place of its own. Same node, options and keymap. */
+export const backtickInputRegex = /^```([a-zA-Z0-9_+#.-]+)?[\s\n]$/
+export const tildeInputRegex = /^~~~([a-zA-Z0-9_+#.-]+)?[\s\n]$/
+
+/** Upstream CodeBlockLowlight with the copied plugin, widened language tags, and closing-fence exit. */
 export const CodeBlockLowlight = BaseCodeBlockLowlight.extend({
+  addInputRules() {
+    return [
+      textblockTypeInputRule({
+        find: backtickInputRegex,
+        type: this.type,
+        getAttributes: (match) => ({
+          language: match[1] ? match[1].toLowerCase() : null
+        })
+      }),
+      textblockTypeInputRule({
+        find: tildeInputRegex,
+        type: this.type,
+        getAttributes: (match) => ({
+          language: match[1] ? match[1].toLowerCase() : null
+        })
+      })
+    ]
+  },
+
+  addKeyboardShortcuts() {
+    const parentShortcuts = this.parent?.() ?? {}
+    const parentEnter = parentShortcuts.Enter
+
+    return {
+      ...parentShortcuts,
+      Enter: ({ editor }) => {
+        const { state } = editor
+        const { $from, empty } = state.selection
+
+        if (!empty || $from.parent.type !== this.type) {
+          return parentEnter?.({ editor }) ?? false
+        }
+
+        const text = $from.parent.textContent
+        const offset = $from.parentOffset
+        const lineStart = offset === 0 ? 0 : text.lastIndexOf('\n', offset - 1) + 1
+        const nextNl = text.indexOf('\n', offset)
+        const lineEnd = nextNl === -1 ? text.length : nextNl
+
+        if (lineEnd === text.length && text.slice(lineStart, lineEnd) === '```') {
+          const blockStart = $from.start()
+          const deleteFrom = lineStart > 0 ? blockStart + lineStart - 1 : blockStart
+          const deleteTo = blockStart + lineEnd
+
+          return editor
+            .chain()
+            .command(({ tr }) => {
+              tr.delete(deleteFrom, deleteTo)
+              return true
+            })
+            .exitCode()
+            .run()
+        }
+
+        return parentEnter?.({ editor }) ?? false
+      }
+    }
+  },
+
   addProseMirrorPlugins() {
     const base = (this.parent?.() ?? []).filter(
       (p) => !(p as unknown as { key: string }).key.startsWith('lowlight$')

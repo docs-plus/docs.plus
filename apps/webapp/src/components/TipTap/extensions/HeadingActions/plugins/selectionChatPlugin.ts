@@ -37,6 +37,7 @@ const getOrCreateButton = (): HTMLButtonElement => {
     'justify-center'
   )
   cachedButton.setAttribute('title', 'Add comment')
+  cachedButton.setAttribute('aria-label', 'Add comment')
 
   return cachedButton
 }

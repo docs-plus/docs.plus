@@ -80,6 +80,7 @@ const StyleSelect = ({ editor }: StyleSelectProps) => {
             disabled={isTitle}
             ghost
             size="sm"
+            aria-label="Block style"
             wrapperClassName={twMerge(
               'w-full min-w-0 max-w-full',
               isTitle && 'pointer-events-none'

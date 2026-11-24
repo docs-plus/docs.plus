@@ -321,7 +321,7 @@ const MobilePadTitle = () => {
           </div>
 
           <div className="w-full">
-            <FilterBar displayRestButton />
+            <FilterBar displayResetButton />
           </div>
         </div>
       </header>

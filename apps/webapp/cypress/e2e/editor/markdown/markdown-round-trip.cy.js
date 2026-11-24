@@ -162,6 +162,77 @@ describe('Markdown Round-Trip Fidelity', () => {
         expect(md).to.include('```')
       })
     })
+
+    it('accepts c++, c#, and mixed-case TypeScript fence language tags', () => {
+      ;['c++', 'c#', 'TypeScript'].forEach((tag) => {
+        cy.window().then((win) => {
+          win._editor.commands.setContent('<h1>Title</h1><p></p>')
+          win._editor.commands.focus('end')
+        })
+        cy.get(EDITOR_SEL).should('have.focus')
+        cy.realType(`\`\`\`${tag} `)
+        cy.get('.docy_editor pre code').should('exist')
+
+        cy.window().then((win) => {
+          let lang = null
+          win._editor.state.doc.descendants((node) => {
+            if (node.type.name === 'codeBlock') lang = node.attrs.language
+          })
+          expect(lang).to.eq(tag.toLowerCase())
+        })
+      })
+    })
+
+    it('exits a code block on Enter after a closing backtick fence', () => {
+      focusEndOfFirstParagraph()
+
+      cy.get(EDITOR_SEL).should('have.focus')
+      cy.realType('```js ')
+      cy.realType('const x = 1')
+      cy.realPress('Enter')
+      cy.realType('```')
+      cy.realPress('Enter')
+
+      cy.get('.docy_editor pre code').should('contain.text', 'const x = 1')
+      cy.get('.docy_editor pre code').should('not.contain.text', '```')
+
+      cy.window().then((win) => {
+        expect(win._editor.isActive('codeBlock')).to.eq(false)
+        expect(win._editor.isActive('paragraph')).to.eq(true)
+      })
+    })
+
+    it('exits a mermaid block on Enter after a closing fence and preserves triple-Enter exit', () => {
+      focusEndOfFirstParagraph()
+
+      cy.get(EDITOR_SEL).should('have.focus')
+      cy.realType('```mermaid ')
+      cy.realType('graph TD')
+      cy.realPress('Enter')
+      cy.realType('```')
+      cy.realPress('Enter')
+
+      cy.window().then((win) => {
+        expect(win._editor.isActive('codeBlock')).to.eq(false)
+        expect(win._editor.isActive('paragraph')).to.eq(true)
+      })
+
+      cy.window().then((win) => {
+        win._editor.commands.setContent('<h1>Title</h1><p></p>')
+        win._editor.commands.focus('end')
+      })
+      cy.get(EDITOR_SEL).should('have.focus')
+      cy.realType('```js ')
+      cy.realType('line1')
+      cy.realPress('Enter')
+      cy.realPress('Enter')
+      cy.realPress('Enter')
+
+      cy.window().then((win) => {
+        expect(win._editor.isActive('codeBlock')).to.eq(false)
+        expect(win._editor.isActive('paragraph')).to.eq(true)
+      })
+    })
   })
 
   describe('headings and structure', () => {

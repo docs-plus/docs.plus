@@ -12,20 +12,22 @@ const useNewDocumentTip = ({ provider }: UseNewDocumentTipProps): void => {
   const hasShownRef = useRef(false)
 
   useEffect(() => {
+    if (typeof navigator !== 'undefined' && navigator.webdriver === true) return
     if (!provider || hasShownRef.current) return
 
     const hasSeenTip = localStorage.getItem(TIP_SHOWN_KEY)
     if (hasSeenTip) return
 
+    let timerId: ReturnType<typeof setTimeout> | undefined
+
     const checkAndShowTip = () => {
       const ymetadata = provider.configuration.document.getMap('metadata')
       const isNewDocument = ymetadata.get('needsInitialization')
 
-      if (isNewDocument && !hasShownRef.current) {
-        hasShownRef.current = true
-
+      if (isNewDocument && !hasShownRef.current && timerId === undefined) {
         // Show tip after a short delay (let document load first)
-        setTimeout(() => {
+        timerId = setTimeout(() => {
+          hasShownRef.current = true
           Info('💡 Pro tip: Visit new.docs.plus to instantly create a new document!', {
             duration: 8000,
             position: 'bottom-center'
@@ -42,6 +44,10 @@ const useNewDocumentTip = ({ provider }: UseNewDocumentTipProps): void => {
 
     return () => {
       provider.off('synced', checkAndShowTip)
+      if (timerId !== undefined) {
+        clearTimeout(timerId)
+        timerId = undefined
+      }
     }
   }, [provider])
 }
