@@ -74,9 +74,20 @@ This file is the product changelog. Every app, package and extension keeps its o
 - When a chat message fails to send, the list now scrolls with the taller failed message, so its
   Retry button shows in full. In a local Linux test, the list stopped 16 px short before, and only
   8 of 24 px of Retry showed ([#730](https://github.com/docs-plus/docs.plus/issues/730)).
+- When a client closes a media upload before the body finishes, the server now logs
+  `499 CLIENT_CLOSED_REQUEST` instead of `500` and sends no error alert
+  ([#803](https://github.com/docs-plus/docs.plus/issues/803)).
 
 ### Security
 
+- Traefik moves to pinned `v3.7.18` with `aliasHeadersStrategy: delete`, `cpus: '2.0'`, and a
+  `300s` HTTPS `readTimeout`, drops `www.new.docs.plus`, and redirects `www.docs.plus` to `docs.plus`
+  ([#746](https://github.com/docs-plus/docs.plus/issues/746),
+  [#802](https://github.com/docs-plus/docs.plus/issues/802),
+  [#803](https://github.com/docs-plus/docs.plus/issues/803)). **Self-hosters:** pull
+  `traefik:v3.7.18` before you deploy, remove `dynamic/redirects.yml` beside `dynamic/tiny.yml`,
+  and roll back the image tag and `scripts/traefik/traefik.yml` together because `v3.6` refuses
+  `aliasHeadersStrategy`.
 - Every import is now refused when it holds more than 50,000 nodes, nests deeper than 100
   levels, or when its saved state would pass 12 MiB. A larger document could not open in a browser
   ([#722](https://github.com/docs-plus/docs.plus/issues/722)).
@@ -185,9 +196,10 @@ This file is the product changelog. Every app, package and extension keeps its o
   memory limit for 10 minutes ([#712](https://github.com/docs-plus/docs.plus/issues/712)).
 - Three new alert rules watch the shared collab Postgres cluster. Two fire when the size of its
   databases plus WAL room passes 60 % of the disk (warning) and 80 % (critical). The third warns
-  when they grow more than 128 MiB in 24 hours. Over 15 days of history it would have fired once,
-  on the 2026-11-07 growth. A new App Performance panel shows the size of each database and of the
-  `Documents` table, without WAL ([#727](https://github.com/docs-plus/docs.plus/issues/727)).
+  when they grow more than 256 MiB in 24 hours. Over 15 days of history it would not have fired;
+  the 2026-11-07 event (199.1 MB) sits under that bar. A new App Performance panel shows the size
+  of each database and of the `Documents` table, without WAL
+  ([#727](https://github.com/docs-plus/docs.plus/issues/727)).
 - A new App Performance panel shows document store outcomes per minute, from the new
   `document_store_outcome_total` counter ([#703](https://github.com/docs-plus/docs.plus/issues/703)).
 - Alloy keeps its log positions on its volume again (`--storage.path`). The compose command had
