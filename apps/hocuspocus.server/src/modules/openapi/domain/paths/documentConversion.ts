@@ -9,6 +9,7 @@ import {
   MAX_IMPORT_YJS_BYTES,
   MAX_INFLATED_IMPORT_BYTES,
   MAX_MARKDOWN_CHARS,
+  MAX_MARKDOWN_READ_HEAD_BYTES,
   MAX_OWNER_IMPORT_BYTES
 } from '../../../document-conversion/types'
 import type { JsonSchema, OpenApiPaths, SecurityRequirement } from '../../types'
@@ -68,6 +69,38 @@ const importResult: JsonSchema = {
 }
 
 export const documentConversionPaths: OpenApiPaths = {
+  '/api/documents/{slug}/markdown': {
+    get: {
+      operationId: 'getPublicDocumentMarkdown',
+      summary: 'Read a public document as Markdown by slug',
+      description: `Public read used by content-negotiated \`Accept: text/markdown\` pad requests. Never drafts a row. Fails closed with 404 for missing, soft-deleted, Private, or unpersisted-version documents so Private existence never leaks. Refuses heads larger than ${MAX_MARKDOWN_READ_HEAD_BYTES} bytes with 413 without decoding them. Concurrent reads of the same document share one head query and decode via single-flight coalescing. Guarded by a dedicated per-IP rate limit (60 requests per 60 seconds).`,
+      tags,
+      security: [{}, { supabaseUserToken: [] }],
+      parameters: [
+        {
+          name: 'slug',
+          in: 'path',
+          required: true,
+          description: 'Document slug (normalized before lookup).',
+          schema: { type: 'string', minLength: 1 }
+        }
+      ],
+      responses: {
+        '200': {
+          description: 'The document rendered as UTF-8 Markdown.',
+          content: {
+            'text/markdown': { schema: { type: 'string' } }
+          }
+        },
+        '404': { $ref: '#/components/responses/NotFound' },
+        '413': envelopeResponse(
+          `The stored head snapshot exceeds ${MAX_MARKDOWN_READ_HEAD_BYTES} bytes.`
+        ),
+        '429': rateLimitedRef,
+        '500': { $ref: '#/components/responses/InternalError' }
+      }
+    }
+  },
   '/api/documents/{documentId}/export': {
     get: {
       operationId: 'exportDocument',

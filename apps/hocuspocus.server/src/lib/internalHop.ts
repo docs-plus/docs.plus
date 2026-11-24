@@ -5,6 +5,8 @@ export interface InternalHopRequest {
   body: unknown
   serviceRoleKey: string | null
   requestId?: string
+  /** Extra internal control headers (e.g. `x-require-loaded`). Cannot override auth or content-type. */
+  headers?: Record<string, string>
   timeoutMs: number
 }
 
@@ -29,7 +31,10 @@ export const internalHop = async (request: InternalHopRequest): Promise<Internal
   try {
     response = await fetch(url, {
       method: 'POST',
+      // Never follow redirects on internal hops so the service-role bearer cannot leave the target origin.
+      redirect: 'manual',
       headers: {
+        ...request.headers,
         'Content-Type': 'application/json',
         Authorization: `Bearer ${request.serviceRoleKey ?? ''}`,
         ...(request.requestId ? { 'x-request-id': request.requestId } : {})

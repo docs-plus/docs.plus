@@ -4,7 +4,7 @@ import { setupMiddleware } from '../../src/middleware'
 import { TestServer } from '../helpers/test-server'
 
 // These tests cover CORS and logging, not the MCP rate-limit skip.
-const NO_MCP_SKIP = { isVerifiedMcpCall: async () => false }
+const NO_MCP_SKIP = { mcpRateLimit: async () => ({ kind: 'fallthrough' as const }) }
 
 describe('CORS Middleware', () => {
   let testServer: TestServer
@@ -51,7 +51,11 @@ describe('CORS Middleware', () => {
       expect(response.status).toBe(204)
       expect(response.headers.get('Access-Control-Allow-Origin')).toBeTruthy()
       expect(response.headers.get('Access-Control-Allow-Methods')).toBeTruthy()
-      expect(response.headers.get('Access-Control-Allow-Headers')).toBeTruthy()
+      const allowHeaders = response.headers.get('Access-Control-Allow-Headers') ?? ''
+      expect(allowHeaders).toContain('MCP-Method')
+      expect(allowHeaders).toContain('MCP-Name')
+      expect(allowHeaders).toContain('Mcp-Session-Id')
+      expect(allowHeaders).toContain('Last-Event-ID')
     })
 
     test('should allow credentials', async () => {
@@ -152,6 +156,7 @@ describe('CORS Middleware', () => {
       const exposedHeaders = response.headers.get('Access-Control-Expose-Headers')
       expect(exposedHeaders).toBeTruthy()
       expect(exposedHeaders).toContain('X-RateLimit')
+      expect(exposedHeaders).toContain('Retry-After')
     })
   })
 

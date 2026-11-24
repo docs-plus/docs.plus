@@ -4,7 +4,10 @@ import type { PrismaClient } from '../../../generated/prisma/client'
 import { sendNewDocumentNotification } from '../../../lib/email/document-notification'
 import { emailLogger } from '../../../lib/logger'
 import { normalizeSlug } from '../../../lib/slug'
-import { createDocumentWithContent } from '../../document-content/infra/contentStore'
+import {
+  createDocumentWithContent,
+  type WriteAccessMirror
+} from '../../document-content/infra/contentStore'
 import type { ApplyActor, CreateOutcome, TiptapDocJson } from '../../document-content/types'
 import type { DocumentListing, DocumentRecord } from '../types'
 
@@ -64,7 +67,19 @@ const baseSlug = (title: string): string => {
 /** Not `documentsService.createDocument`: slugs are global, so its 409 would fail a common title. */
 export const createOwnedDocument = async (
   prisma: PrismaClient,
-  { title, content, actor }: { title: string; content: TiptapDocJson; actor: ApplyActor }
+  {
+    title,
+    content,
+    actor,
+    isPrivate = false,
+    writeAccessMirror
+  }: {
+    title: string
+    content: TiptapDocJson
+    actor: ApplyActor
+    isPrivate?: boolean
+    writeAccessMirror?: WriteAccessMirror
+  }
 ): Promise<CreateOutcome> => {
   const outcome = await createDocumentWithContent(prisma, {
     slug: baseSlug(title),
@@ -72,8 +87,10 @@ export const createOwnedDocument = async (
     content,
     ownerId: actor.sub,
     email: actor.email ?? null,
+    isPrivate,
     actor,
-    uniqueSlug: true
+    uniqueSlug: true,
+    writeAccessMirror
   })
   if (outcome.status === 'created') {
     const { documentId, slug, createdAt } = outcome.document

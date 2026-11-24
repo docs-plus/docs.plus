@@ -3,10 +3,13 @@ import slugify from 'slugify'
 import * as Y from 'yjs'
 
 import type { PrismaClient } from '../../../generated/prisma/client'
-import { handlePrismaError } from '../../../lib/errors'
+import { writeDocumentAccessMirror } from '../../../lib/documentAccessMirror'
+import { AppError, handlePrismaError, ValidationError } from '../../../lib/errors'
 import { withUniqueSlug } from '../../../lib/slug'
 import { encodeContent } from '../domain/encodeContent'
 import type { ApplyActor, CreateOutcome, TiptapDocJson } from '../types'
+
+export type WriteAccessMirror = typeof writeDocumentAccessMirror
 
 export interface DocumentContentMeta {
   documentId: string
@@ -72,21 +75,29 @@ export interface CreateWithContentParams {
   content: TiptapDocJson
   ownerId?: string | null
   email?: string | null
+  /** Only an owned document may start Invite only. */
+  isPrivate?: boolean
   /** The person an MCP create acts for. Absent on REST, which names nobody. */
   actor?: ApplyActor
   /** Retry a taken slug with a suffix instead of failing with 409. */
   uniqueSlug?: boolean
+  /** Injectable access-mirror writer (defaults to `writeDocumentAccessMirror`). */
+  writeAccessMirror?: WriteAccessMirror
 }
 
 /**
  * Create a document and its version 1 in one transaction. Encoding runs first so
- * an invalid payload writes zero rows. A taken slug conflicts (P2002 → 409)
- * unless the caller asks for `uniqueSlug`; it is never swallowed.
+ * an invalid payload writes zero rows. Invite only writes the access mirror first.
  */
 export const createDocumentWithContent = async (
   prisma: PrismaClient,
   params: CreateWithContentParams
 ): Promise<CreateOutcome> => {
+  const writeAccessMirror = params.writeAccessMirror ?? writeDocumentAccessMirror
+  if (params.isPrivate && !params.ownerId) {
+    throw new ValidationError('Private documents require an owner')
+  }
+
   // Minted before the encode, so the encode can refuse it as a heading id.
   const documentId = new ShortUniqueId().stamp(19)
   const encoded = encodeContent(params.content, { requireTitleHeading: true, documentId })
@@ -94,6 +105,7 @@ export const createDocumentWithContent = async (
 
   const data = Buffer.from(Y.encodeStateAsUpdate(encoded.scratch))
   const newSlug = slugify(params.slug.toLowerCase(), { lower: true, strict: true })
+  const isPrivate = Boolean(params.isPrivate)
 
   const write = (slug: string) =>
     prisma.$transaction(async (tx) => {
@@ -105,7 +117,8 @@ export const createDocumentWithContent = async (
           description: params.description || slug,
           keywords: params.keywords?.length ? params.keywords.join(', ') : '',
           ownerId: params.ownerId ?? null,
-          email: params.email ?? null
+          email: params.email ?? null,
+          isPrivate
         }
       })
       // Same attribution rule as the apply route in http/controller.ts.
@@ -123,10 +136,20 @@ export const createDocumentWithContent = async (
     })
 
   try {
+    // Fail closed: write the access mirror before Postgres, so a 503 leaves no document.
+    if (isPrivate) {
+      await writeAccessMirror({
+        documentId,
+        isPrivate: true,
+        ownerId: params.ownerId ?? null
+      })
+    }
+
     const document = params.uniqueSlug ? await withUniqueSlug(newSlug, write) : await write(newSlug)
 
     return { status: 'created', document }
   } catch (error) {
+    if (error instanceof AppError) throw error
     throw handlePrismaError(error)
   }
 }

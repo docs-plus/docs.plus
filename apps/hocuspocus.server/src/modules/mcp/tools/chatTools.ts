@@ -171,6 +171,12 @@ export const registerChatTools = (
           .max(MAX_CHAT_POST_CHARS)
           .describe('Plain text, no Markdown or HTML. @ is removed.')
       }),
+      outputSchema: z.object({
+        slug: z.string(),
+        section_id: z.string(),
+        message_id: z.string(),
+        seq: z.number().int()
+      }),
       // A post only adds, so it is not destructive. It reaches other people, so it is open world.
       annotations: {
         readOnlyHint: false,

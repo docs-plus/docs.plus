@@ -15,9 +15,30 @@ export const headingLevel = (node: JSONContent | undefined): number | null => {
   return Number.isInteger(level) ? level : null
 }
 
-/** Top-level only: the flat schema keeps every heading a root child. */
-export const containsTitleHeading = (nodes: JSONContent[]): boolean =>
-  nodes.some((node) => headingLevel(node) === 1)
+/** Checks nodes and descendants iteratively; blockquotes, lists, and tables can nest headings. */
+export const containsTitleHeading = (nodes: readonly JSONContent[]): boolean => {
+  const stack: JSONContent[] = []
+  for (let i = nodes.length - 1; i >= 0; i -= 1) {
+    stack.push(nodes[i])
+  }
+  while (stack.length > 0) {
+    const node = stack.pop()
+    if (!node || typeof node !== 'object') continue
+    if (headingLevel(node) === 1) return true
+    if (Array.isArray(node.content)) {
+      for (let i = node.content.length - 1; i >= 0; i -= 1) {
+        stack.push(node.content[i])
+      }
+    }
+  }
+  return false
+}
+
+/** Refusal text when a new heading is too shallow, or the section is already at level 6. */
+export const shallowHeadingDetail = (minHeadingLevel: number): string =>
+  minHeadingLevel > 6
+    ? 'level 6 is the deepest heading level, so no subheading can be added here'
+    : `a new heading must be at level ${minHeadingLevel} or deeper`
 
 export interface Section {
   headingIndex: number

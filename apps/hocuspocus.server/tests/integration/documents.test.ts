@@ -31,6 +31,7 @@ import * as Y from 'yjs'
 import { searchDocuments } from '../../src/api/services/documents.service'
 import documentsRouter from '../../src/api/routers/documents.router'
 import { config } from '../../src/config/env'
+import { acquireLargeDecode, LARGE_DECODE_BYTES } from '../../src/lib/largeDecodeGate'
 import { setPadCardForgetter } from '../../src/lib/padLinkCards'
 import { padSlugOfUrl } from '../../src/lib/slug'
 import * as linkMetadata from '../../src/modules/link-metadata'
@@ -1259,30 +1260,139 @@ describe('Documents API', () => {
       expect(data.error).toHaveProperty('code', 'UNAUTHORIZED')
     })
 
-    test('non-owner duplicate is forbidden and never writes', async () => {
-      mockPrisma.documentMetadata.findUnique = async () => ({ ownerId: 'someone-else' })
+    test('non-owner on Private, trashed, or missing source returns identical 404 with zero writes', async () => {
+      const cases = [
+        {
+          label: 'private non-owner',
+          row: {
+            ownerId: 'someone-else',
+            title: 'Secret',
+            isPrivate: true,
+            readOnly: false,
+            deletedAt: null
+          }
+        },
+        {
+          label: 'trashed public',
+          row: {
+            ownerId: 'someone-else',
+            title: 'Old',
+            isPrivate: false,
+            readOnly: false,
+            deletedAt: new Date()
+          }
+        },
+        {
+          label: 'missing',
+          row: null
+        }
+      ]
+
       let created = false
       mockPrisma.documentMetadata.create = async () => {
         created = true
         return {}
       }
 
-      const response = await testServer.post(
-        '/api/documents/abc123/duplicate',
-        {},
-        { token: 'valid-test-token' }
-      )
-      const data = await response.json()
+      const bodies: unknown[] = []
+      for (const { row } of cases) {
+        mockPrisma.documentMetadata.findUnique = async () => row
+        const response = await testServer.post(
+          '/api/documents/abc123/duplicate',
+          {},
+          { token: 'valid-test-token' }
+        )
+        const data = await response.json()
+        expect(response.status).toBe(404)
+        expect(data.error).toHaveProperty('code', 'NOT_FOUND')
+        bodies.push(data)
+      }
 
-      expect(response.status).toBe(403)
-      expect(data.error).toHaveProperty('code', 'FORBIDDEN')
+      // Indistinguishable responses: no Private-document existence oracle.
+      expect(bodies[0]).toEqual(bodies[1])
+      expect(bodies[1]).toEqual(bodies[2])
       expect(created).toBe(false)
     })
+
+    for (const variant of [
+      {
+        label: 'public document owned by someone else',
+        source: {
+          ownerId: 'someone-else',
+          title: 'Public Notes',
+          description: 'desc',
+          keywords: 'k',
+          isPrivate: false,
+          readOnly: false,
+          deletedAt: null
+        }
+      },
+      {
+        label: 'public Read-only document owned by someone else',
+        source: {
+          ownerId: 'someone-else',
+          title: 'Locked Notes',
+          description: 'desc',
+          keywords: 'k',
+          isPrivate: false,
+          readOnly: true,
+          deletedAt: null
+        }
+      },
+      {
+        label: 'Open document with no owner',
+        source: {
+          ownerId: null,
+          title: 'Open Pad',
+          description: 'desc',
+          keywords: 'k',
+          isPrivate: false,
+          readOnly: false,
+          deletedAt: null
+        }
+      }
+    ]) {
+      test(`non-owner can duplicate a ${variant.label} into an owned copy`, async () => {
+        const sourceBytes = Buffer.from([1, 2, 3, 4])
+        mockPrisma.documentMetadata.findUnique = async () => variant.source
+        mockPrisma.documents.findFirst = async () => ({ data: sourceBytes })
+
+        let metaCreate: any
+        let metaUpdated = false
+        mockPrisma.documentMetadata.create = async (args: any) => {
+          metaCreate = args
+          return { id: 2, ...args.data }
+        }
+        mockPrisma.documentMetadata.update = async () => {
+          metaUpdated = true
+          return {}
+        }
+
+        const response = await testServer.post(
+          '/api/documents/abc123/duplicate',
+          {},
+          { token: 'valid-test-token' }
+        )
+        const data = await response.json()
+
+        expect(response.status).toBe(200)
+        expect(data.success).toBe(true)
+        expect(metaCreate.data.ownerId).toBe('user-123')
+        expect(metaCreate.data.isPrivate).toBe(false)
+        expect(metaCreate.data.readOnly).toBe(false)
+        expect(metaCreate.data.deletedAt).toBeNull()
+        expect(metaCreate.data.title).toBe(`${variant.source.title} (copy)`)
+        // Source row is never mutated or claimed (CONTEXT.md:81).
+        expect(metaUpdated).toBe(false)
+      })
+    }
 
     test('soft-deleted source is rejected as not found', async () => {
       mockPrisma.documentMetadata.findUnique = async () => ({
         ownerId: 'user-123',
         title: 'Doc',
+        isPrivate: false,
+        readOnly: false,
         deletedAt: new Date()
       })
       let created = false
@@ -1310,6 +1420,8 @@ describe('Documents API', () => {
         title: 'My Notes',
         description: 'desc',
         keywords: 'a,b',
+        isPrivate: true,
+        readOnly: true,
         deletedAt: null
       })
       mockPrisma.documents.findFirst = async () => ({ data: sourceBytes })
@@ -1356,7 +1468,7 @@ describe('Documents API', () => {
     })
 
     // A copy is public, so copying an object it may not read would serve that media again.
-    test("copies only live media the owner may read, never another user's Private or a trashed one", async () => {
+    test("copies only live media the caller may read, never another user's Private or a trashed one", async () => {
       const { dir: storageDir, restore } = await useTempLocalStore('dup-media-')
       const media = [
         ['private-doc', 'secret.png'],
@@ -1381,9 +1493,12 @@ describe('Documents API', () => {
             return image
           })
         )
+        // Non-owner duplicating a public pad owned by someone else.
         mockPrisma.documentMetadata.findUnique = async () => ({
-          ownerId: 'user-123',
+          ownerId: 'user-456',
           title: 'Media',
+          isPrivate: false,
+          readOnly: false,
           deletedAt: null
         })
         mockPrisma.documents.findFirst = async () => ({
@@ -1397,7 +1512,7 @@ describe('Documents API', () => {
             isPrivate: false,
             ownerId: 'user-456'
           },
-          { documentId: 'abc123', deletedAt: null, isPrivate: false, ownerId: 'user-123' }
+          { documentId: 'abc123', deletedAt: null, isPrivate: false, ownerId: 'user-456' }
         ]
         let docsCreate: any
         mockPrisma.documents.create = async (args: any) => {
@@ -1424,6 +1539,42 @@ describe('Documents API', () => {
         expect(stored).not.toContain('/trashed-doc/')
       } finally {
         await restore()
+      }
+    })
+
+    test('returns 503 with Retry-After when a >= 4 MiB snapshot hits a busy large-decode gate', async () => {
+      mockPrisma.documentMetadata.findUnique = async () => ({
+        ownerId: 'user-123',
+        title: 'Large Pad',
+        isPrivate: false,
+        readOnly: false,
+        deletedAt: null
+      })
+      mockPrisma.documents.findFirst = async () => ({
+        data: Buffer.alloc(LARGE_DECODE_BYTES)
+      })
+      let created = false
+      mockPrisma.documentMetadata.create = async () => {
+        created = true
+        return {}
+      }
+
+      const release = await acquireLargeDecode(LARGE_DECODE_BYTES, 0)
+      expect(release).not.toBeNull()
+      try {
+        const response = await testServer.post(
+          '/api/documents/abc123/duplicate',
+          {},
+          { token: 'valid-test-token' }
+        )
+        const data = await response.json()
+
+        expect(response.status).toBe(503)
+        expect(response.headers.get('retry-after')).toBe('10')
+        expect(data.error).toHaveProperty('code', 'SERVICE_UNAVAILABLE')
+        expect(created).toBe(false)
+      } finally {
+        release?.()
       }
     })
   })

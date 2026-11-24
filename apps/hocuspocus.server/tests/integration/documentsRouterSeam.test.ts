@@ -27,10 +27,10 @@ const TITLE_CONTENT = {
 
 /** Every route here is owner-scoped, so the stub only ever names one subject. */
 const stubAuth =
-  (userId: string, serviceRole = false): MiddlewareHandler =>
+  (userId: string, serviceRole = false, isAnonymous = false): MiddlewareHandler =>
   async (c, next) => {
     if (serviceRole) c.set('serviceRole', true)
-    c.set('user', { sub: userId, email: `${userId}@example.test` })
+    c.set('user', { sub: userId, email: `${userId}@example.test`, is_anonymous: isAnonymous })
     c.set('userId', userId)
     await next()
   }
@@ -38,6 +38,8 @@ const stubAuth =
 interface HarnessOptions {
   userId?: string
   serviceRole?: boolean
+  isAnonymous?: boolean
+  duplicateRateLimit?: MiddlewareHandler
   notify?: (params: NewDocumentParams) => Promise<boolean>
 }
 
@@ -51,7 +53,11 @@ const harness = (options: HarnessOptions = {}) => {
     return 1
   }
 
-  const auth = stubAuth(options.userId ?? OWNER, options.serviceRole ?? false)
+  const auth = stubAuth(
+    options.userId ?? OWNER,
+    options.serviceRole ?? false,
+    options.isAnonymous ?? false
+  )
   const controller = createDocumentsController({
     notifyNewDocument:
       options.notify ??
@@ -83,7 +89,8 @@ const harness = (options: HarnessOptions = {}) => {
       optionalUser: auth,
       optionalPadReader: auth,
       requireUser: auth,
-      requireServiceRoleOrUser: auth
+      requireServiceRoleOrUser: auth,
+      duplicateRateLimit: options.duplicateRateLimit
     })
   )
 
@@ -187,5 +194,23 @@ describe('POST /api/documents with service-role content', () => {
 
     expect(response.status).toBe(200)
     expect(body.data.documentId).toMatch(/^[0-9A-Za-z]{19}$/)
+  })
+})
+
+describe('POST /api/documents/:documentId/duplicate (#820 gates)', () => {
+  test('anonymous user is refused with 403 before touching the database', async () => {
+    const { server, prisma } = harness({ userId: STRANGER, isAnonymous: true })
+    let readCalled = false
+    prisma.documentMetadata.findUnique = async () => {
+      readCalled = true
+      return { ownerId: null, title: 'Open', isPrivate: false, readOnly: false, deletedAt: null }
+    }
+
+    const response = await server.post(`/api/documents/${DOCUMENT_ID}/duplicate`, {})
+    const body = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(body.error).toHaveProperty('code', 'FORBIDDEN')
+    expect(readCalled).toBe(false)
   })
 })

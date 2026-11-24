@@ -5,7 +5,7 @@ import type * as Y from 'yjs'
 
 import type { DocumentMetadata, PrismaClient } from '../../generated/prisma/client'
 import type { VerifyServiceRole } from '../../http/serviceRole'
-import type { StoreDocumentContext } from '../../types'
+import type { RedisClient, StoreDocumentContext } from '../../types'
 
 export type { VerifyServiceRole }
 
@@ -94,6 +94,14 @@ export type EncodeOutcome =
 /** The hop client maps 503s by these codes: `busy` and `not-confirmed` state different facts. */
 export const DOCUMENT_BUSY_CODE = 'DOCUMENT_BUSY'
 export const NOT_CONFIRMED_CODE = 'SAVE_NOT_CONFIRMED'
+
+/**
+ * Sent by `contentClient.apply` when routing to a registered room owner. A replica
+ * that no longer holds the room refuses with 412 `ROOM_NOT_LOADED` before calling
+ * `openDirectConnection`, avoiding a cold duplicate `Y.Doc` load.
+ */
+export const REQUIRE_LOADED_HEADER = 'x-require-loaded'
+export const ROOM_NOT_LOADED_CODE = 'ROOM_NOT_LOADED'
 
 /**
  * `busy`: the per-document lock was still held at the deadline, so nothing was
@@ -189,6 +197,18 @@ export interface ContentReadResponseData {
   content: TiptapDocJson | string
 }
 
+export interface RoomRegistryWriter {
+  register: (documentId: string) => Promise<void>
+  unregister: (documentId: string) => Promise<void>
+  refreshMany: (documentIds: readonly string[]) => Promise<void>
+  unregisterMany: (documentIds: readonly string[]) => Promise<void>
+}
+
+export interface RoomRegistryReader {
+  lookupOwners: (documentId: string) => Promise<string[]>
+  removeOwner: (documentId: string, peerUrl: string) => Promise<void>
+}
+
 export interface InitDeps {
   prisma: PrismaClient
   logger: Logger
@@ -196,6 +216,10 @@ export interface InitDeps {
   /** Outbound bearer for the internal hop; the inbound check reads the key itself. */
   serviceRoleKey: string | null
   wsApplyBaseUrl: string
+  /** Optional shared Redis client for multi-replica room-owner routing. */
+  redis?: RedisClient | null
+  /** Optional explicit peer allowlist for non-DNS multi-replica topologies. */
+  allowedPeerUrls?: readonly string[]
 }
 
 export interface InitWsApplyDeps {

@@ -1,4 +1,4 @@
-import type { AuthInfo, McpHttpHandler } from '@modelcontextprotocol/server'
+import { type AuthInfo, isJsonContentType, type McpHttpHandler } from '@modelcontextprotocol/server'
 import type { Context, Next } from 'hono'
 
 import { fail } from '../../../http/envelope'
@@ -71,6 +71,11 @@ const INVALID_TOKEN: BearerRefusal = {
   errorDescription: 'The access token is invalid or expired'
 }
 
+const extractBearerToken = (header: string | undefined): string => {
+  const match = header?.trim().match(/^bearer\s+(\S.*)$/i)
+  return match?.[1]?.trim() ?? ''
+}
+
 /**
  * Only `Authorization: Bearer`, never the house `token` header. Only a token
  * with `client_id` passes: an OAuth grant mints one, a browser session never does.
@@ -80,7 +85,7 @@ const readBearer = async (
   header: string | undefined,
   verifyToken: VerifyToken
 ): Promise<AuthInfo | BearerRefusal> => {
-  const token = header?.startsWith('Bearer ') ? header.slice(7).trim() : ''
+  const token = extractBearerToken(header)
   if (!token) return { status: 401, message: 'Authentication required' }
 
   const claims = decodeJwtClaims(token)
@@ -165,45 +170,123 @@ export const createAuthenticate =
     return challenge(c, publicBaseUrl, result.message, result.errorDescription)
   }
 
-export type VerifiedMcpCall = (c: Context, hasBudget: () => Promise<boolean>) => Promise<boolean>
+export type McpRateLimitResult =
+  | { kind: 'verified' }
+  | { kind: 'limited'; response: Response }
+  | { kind: 'auth-unavailable' }
+  | { kind: 'fallthrough' }
+
+export type McpRateLimit = (
+  c: Context,
+  hasGlobalBudget: () => Promise<boolean>
+) => Promise<McpRateLimitResult>
 
 /**
- * True only for a transport call whose token `createAuthenticate` accepts, so a
- * fake header or a browser session never skips the per-address limit (#551).
- * It verifies only while the address has budget left, so a spent address costs no
- * Supabase call. It never calls `createAuthenticate`, whose header would leak onto a 429.
+ * Evaluates `/api/mcp` transport calls ahead of the Origin gate and body limit.
+ * Reads `hasGlobalBudget` first so a spent address never calls Supabase Auth.
+ * Charges `requestBudget(sub)` once; Auth `503` returns `auth-unavailable`.
  */
-export const createVerifiedMcpCall =
-  (checkBearer: BearerCheck): VerifiedMcpCall =>
-  async (c, hasBudget) => {
-    if (!MCP_METHODS.includes(c.req.method)) return false
-    if (new URL(c.req.url).pathname !== MCP_MOUNT_PATH) return false
-    if (!c.req.header('Authorization')?.startsWith('Bearer ')) return false
-    if (!(await hasBudget())) return false
+export const createMcpRateLimit =
+  (checkBearer: BearerCheck, requestBudget: CallerBudget): McpRateLimit =>
+  async (c, hasGlobalBudget) => {
+    if (!MCP_METHODS.includes(c.req.method)) return { kind: 'fallthrough' }
+    if (new URL(c.req.url).pathname !== MCP_MOUNT_PATH) return { kind: 'fallthrough' }
+    if (!extractBearerToken(c.req.header('Authorization'))) return { kind: 'fallthrough' }
+    if (!(await hasGlobalBudget())) return { kind: 'fallthrough' }
+    let result: AuthInfo | BearerRefusal
     try {
-      return !('status' in (await checkBearer(c)))
+      result = await checkBearer(c)
     } catch {
-      return false
+      return { kind: 'fallthrough' }
     }
+    if ('status' in result) {
+      return result.status === 503 ? { kind: 'auth-unavailable' } : { kind: 'fallthrough' }
+    }
+    const budget = await requestBudget(callerFrom(result).sub)
+    if (!budget.ok) {
+      c.header('Retry-After', budget.retryAfter.toString())
+      return {
+        kind: 'limited',
+        response: fail(c, 429, 'RATE_LIMIT_EXCEEDED', 'Too many requests, please try again later')
+      }
+    }
+    return { kind: 'verified' }
   }
 
 /**
- * A verified call skips the per-address limit, so every transport request also spends
- * a per-person bucket. Without it, `initialize` and `tools/list` had no app bound (#551).
+ * Authenticates `/api/mcp` requests and validates JSON-RPC `POST` bodies before SDK dispatch.
+ * `GET` and `DELETE` bypass body checks so the SDK returns `405`.
  */
 export const createTransportHandler =
   (
     authenticate: (c: Context) => Promise<AuthInfo | Response>,
-    requestBudget: CallerBudget,
     handler: Pick<McpHttpHandler, 'fetch'>
   ) =>
   async (c: Context): Promise<Response> => {
     const authInfo = await authenticate(c)
     if (authInfo instanceof Response) return authInfo
-    const budget = await requestBudget(callerFrom(authInfo).sub)
-    if (!budget.ok) {
-      c.header('Retry-After', budget.retryAfter.toString())
-      return fail(c, 429, 'RATE_LIMIT_EXCEEDED', 'Too many requests, please try again later')
+
+    if (c.req.method !== 'POST') {
+      return handler.fetch(c.req.raw, { authInfo })
     }
-    return handler.fetch(c.req.raw, { authInfo })
+
+    if (!isJsonContentType(c.req.header('content-type'))) {
+      return c.json(
+        {
+          jsonrpc: '2.0',
+          error: {
+            code: -32000,
+            message: 'Unsupported Media Type: Content-Type must be application/json'
+          },
+          id: null
+        },
+        415
+      )
+    }
+
+    let parsed: unknown
+    try {
+      const text = await c.req.text()
+      parsed = JSON.parse(text)
+    } catch {
+      return c.json(
+        {
+          jsonrpc: '2.0',
+          error: { code: -32700, message: 'Parse error: Invalid JSON' },
+          id: null
+        },
+        400
+      )
+    }
+
+    if (Array.isArray(parsed)) {
+      return c.json(
+        {
+          jsonrpc: '2.0',
+          error: { code: -32600, message: 'JSON-RPC batch requests are not supported' },
+          id: null
+        },
+        400
+      )
+    }
+
+    if (
+      parsed !== null &&
+      typeof parsed === 'object' &&
+      'method' in parsed &&
+      parsed.method === 'subscriptions/listen'
+    ) {
+      const rawId = 'id' in parsed ? parsed.id : null
+      const id = typeof rawId === 'string' || typeof rawId === 'number' ? rawId : null
+      return c.json(
+        {
+          jsonrpc: '2.0',
+          error: { code: -32601, message: 'Method not found' },
+          id
+        },
+        404
+      )
+    }
+
+    return handler.fetch(c.req.raw, { authInfo, parsedBody: parsed })
   }

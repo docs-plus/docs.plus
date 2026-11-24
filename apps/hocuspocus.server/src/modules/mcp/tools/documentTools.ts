@@ -2,17 +2,31 @@ import type { CallToolResult, McpServer } from '@modelcontextprotocol/server'
 import type { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
 
+import { AppError } from '../../../lib/errors'
 import { padLink } from '../../../lib/padLink'
 import {
   findSection,
   headingLevel,
   REV_PATTERN,
-  type Section
+  type Section,
+  shallowHeadingDetail
 } from '../../document-content/domain/sections'
 import { findUniqueText, jsonTextRuns } from '../../document-content/domain/textRuns'
-import type { TiptapDocJson, WsApplyOutcome } from '../../document-content/types'
+import type { WriteAccessMirror } from '../../document-content/infra/contentStore'
+import {
+  type CreateOutcome,
+  MAX_CONTENT_DEPTH,
+  MAX_CONTENT_NODES,
+  type TiptapDocJson,
+  type WsApplyOutcome
+} from '../../document-content/types'
+import { exceedsTreeCaps } from '../../document-conversion/domain/importGuards'
 import { exportMarkdown } from '../../document-conversion/domain/markdownExport'
-import { parseMarkdown } from '../../document-conversion/domain/markdownImport'
+import {
+  MarkdownTooDeepError,
+  MAX_MARKDOWN_NESTING,
+  parseMarkdown
+} from '../../document-conversion/domain/markdownImport'
 import { MAX_MARKDOWN_CHARS } from '../../document-conversion/types'
 import { checkDiagrams, checkReplacedDiagram, DIAGRAM_KEYWORDS } from '../domain/checkDiagrams'
 import { checkFragment } from '../domain/checkFragment'
@@ -82,6 +96,24 @@ const markdownField = z
 // The internal hop 400s any other shape, which would read as "unreachable".
 const revField = z.string().trim().regex(REV_PATTERN).describe('From get_outline or read_document')
 
+const createOutputSchema = z.object({
+  slug: z.string(),
+  title: z.string(),
+  url: z.string(),
+  version: z.number().int(),
+  private: z.boolean()
+})
+
+const writeOutputSchema = z.object({
+  slug: z.string(),
+  version: z.number().int().nullable(),
+  rev: z.string().nullable()
+})
+
+export interface DocumentToolOptions {
+  writeAccessMirror?: WriteAccessMirror
+}
+
 const unescapeMarkdown = (text: string): string =>
   text.replace(/\\([\\`*_{}[\]()#+\-.!|~<>])/g, '$1')
 
@@ -104,7 +136,22 @@ const renderOutline = (nodes: OutlineNode[], depth = 0): string[] =>
   ])
 
 const parseFragment = async (markdown: string, intoEmpty = false): Promise<TiptapDocJson> => {
-  const parsed = parseMarkdown(markdown)
+  let parsed: TiptapDocJson
+  try {
+    parsed = parseMarkdown(markdown)
+  } catch (error) {
+    if (error instanceof MarkdownTooDeepError) {
+      return refuse(refusedText(`it nests deeper than ${MAX_MARKDOWN_NESTING} levels`))
+    }
+    throw error
+  }
+  const cap = exceedsTreeCaps(parsed)
+  if (cap === 'TOO_MANY_NODES') {
+    return refuse(refusedText(`it holds more than ${MAX_CONTENT_NODES} nodes`))
+  }
+  if (cap === 'TOO_DEEP') {
+    return refuse(refusedText(`it nests deeper than ${MAX_CONTENT_DEPTH} levels`))
+  }
   const problem = checkFragment(parsed.content, intoEmpty)
   if (problem) return refuse(FRAGMENT_TEXT[problem])
   const diagram = await checkDiagrams(parsed.content)
@@ -117,8 +164,13 @@ const REREAD_TEXT =
   ' Block numbers after the edit changed. Call read_document with section_id before the next edit.'
 
 const refuseShallowHeading = (nodes: readonly JSONContent[], section: Section): void => {
-  if (nodes.some((node) => (headingLevel(node) ?? Infinity) < section.minHeadingLevel)) {
-    refuse(refusedText(`a new heading must be at level ${section.minHeadingLevel} or deeper`))
+  if (
+    nodes.some((node) => {
+      const level = headingLevel(node)
+      return level !== null && (section.minHeadingLevel > 6 || level < section.minHeadingLevel)
+    })
+  ) {
+    refuse(refusedText(shallowHeadingDetail(section.minHeadingLevel)))
   }
 }
 
@@ -166,7 +218,8 @@ const writeResult = (
 export const registerDocumentTools = (
   server: McpServer,
   deps: ServerFactoryDeps,
-  { caller, run, openDocument, loadContent }: ToolContext
+  { caller, run, openDocument, loadContent }: ToolContext,
+  options?: DocumentToolOptions
 ): void => {
   // Checked before the write too: a refusal inside the applier has already
   // loaded a cold collab room, and its unload stores an unnamed version row.
@@ -220,11 +273,18 @@ export const registerDocumentTools = (
     {
       title: 'Create document',
       description:
-        'Create a new docs.plus document that you own. Returns its slug for the other tools, and its link. The title becomes its # heading, and markdown, if given, follows it. In markdown, a line holding only a video, audio or embed URL (for example a YouTube link) becomes a player, and Markdown image syntax becomes a picture. It is public, like any new docs.plus document: other people can find it by title, open it and edit it. Each call makes a new document, so after an unclear failure call find_documents before you retry.',
+        'Create a new docs.plus document that you own. Returns its slug for the other tools, and its link. The title becomes its # heading, and markdown, if given, follows it. In markdown, a line with only a video, audio or embed URL becomes a player. Markdown image syntax becomes a picture. A new document is public by default: other people can find it, open it and edit it. Set private to true to make it Invite only, so only you can open it. Each call makes a new document, so after an unclear failure call find_documents before you retry.',
       inputSchema: z.object({
         title: z.string().trim().min(1).max(200).describe('The document title'),
-        markdown: markdownField.optional()
+        markdown: markdownField.optional(),
+        private: z
+          .boolean()
+          .default(false)
+          .describe(
+            'When true, the document starts Invite only so only you can open it. Default false makes it public.'
+          )
       }),
+      outputSchema: createOutputSchema,
       // Documents are public by default, so a write publishes: openWorldHint in OpenAI's sense.
       annotations: {
         readOnlyHint: false,
@@ -233,20 +293,38 @@ export const registerDocumentTools = (
         openWorldHint: true
       }
     },
-    run('create_document', async ({ title, markdown }) => {
+    run('create_document', async ({ title, markdown, private: isPrivate }) => {
       if (caller.isAnonymous)
         return toolError('Sign in with a docs.plus account to create a document.')
       const name = replaceLineBreaks(title, ' ')
       const fragment = markdown ? await parseFragment(markdown) : null
-      const outcome = await createOwnedDocument(deps.prisma, {
-        title: name,
-        content: { type: 'doc', content: [titleHeading(name), ...(fragment?.content ?? [])] },
-        actor: { sub: caller.sub, email: caller.email }
-      })
+      let outcome: CreateOutcome
+      try {
+        outcome = await createOwnedDocument(deps.prisma, {
+          title: name,
+          content: { type: 'doc', content: [titleHeading(name), ...(fragment?.content ?? [])] },
+          actor: { sub: caller.sub, email: caller.email },
+          isPrivate,
+          writeAccessMirror: options?.writeAccessMirror
+        })
+      } catch (error) {
+        if (isPrivate && error instanceof AppError && error.statusCode === 503) {
+          return toolError(
+            'docs.plus could not save Invite only access, so no document was created. Retry in a moment.'
+          )
+        }
+        throw error
+      }
       if (outcome.status === 'invalid-content') return toolError(refusedText(outcome.detail))
       const { slug } = outcome.document
       const url = padLink(slug, { kind: 'document' }, deps.appUrl)
-      return reply(`Created "${slug}": ${url}`, { slug, title: name, url, version: 1 })
+      return reply(`Created "${slug}" (${isPrivate ? 'Invite only' : 'public'}): ${url}`, {
+        slug,
+        title: name,
+        url,
+        version: 1,
+        private: isPrivate
+      })
     })
   )
 
@@ -273,7 +351,7 @@ export const registerDocumentTools = (
     {
       title: 'Read document',
       description:
-        'A document as Markdown, or one section: its heading and the blocks up to the next heading, with its rev. In a section read, each block is numbered [1], [2] and so on, for edit_blocks, move_block and rewrite_section. Media shows as a placeholder such as [image] or [youtube]; a file link keeps only its name.',
+        'A document as Markdown, or one section: its heading and blocks up to the next heading, with its rev. In a section read, each block is numbered [1], [2] and so on, for edit_blocks, move_block and rewrite_section. Images show as [image] or [image: <alt>], uploads as [upload in progress], and embeds as [<type>]. A file link keeps its name followed by [file]. That [file] marker is only in read output, not in the stored text for replace_text.',
       inputSchema: z.object({
         slug: slugField,
         section_id: sectionIdField.optional().describe('From get_outline'),
@@ -314,6 +392,7 @@ export const registerDocumentTools = (
       description:
         'Add Markdown at the end of a document you own. An empty document must start with its title as one # heading. A retry after an unclear failure can add it twice, so read the document first.',
       inputSchema: z.object({ slug: slugField, markdown: markdownField }),
+      outputSchema: writeOutputSchema,
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -367,6 +446,7 @@ export const registerDocumentTools = (
             `Markdown to insert at the caret; empty only removes. A heading in it must be deeper than the section heading, no shallower than the next heading, and can go only at the end of the section. ${DIAGRAM_HINT}`
           )
       }),
+      outputSchema: writeOutputSchema,
       annotations: {
         readOnlyHint: false,
         destructiveHint: true,
@@ -452,6 +532,7 @@ export const registerDocumentTools = (
           .max(MAX_MARKDOWN_CHARS)
           .describe('The text to put in its place; empty deletes it')
       }),
+      outputSchema: writeOutputSchema,
       annotations: {
         readOnlyHint: false,
         destructiveHint: true,
@@ -463,14 +544,13 @@ export const registerDocumentTools = (
       'replace_text',
       async ({ slug, section_id: sectionId, rev, old_text: quotedOld, new_text: quotedNew }) => {
         let oldText = quotedOld
-        let newText = quotedNew
+        const newText = quotedNew
         const { doc, body } = await openOwnSection(slug, sectionId, rev)
         const runs = jsonTextRuns(body)
         let match = findUniqueText(runs, oldText)
         // read_document is Markdown, so copied text can carry escapes such as \_ or \[.
         if (!match.ok && match.count === 0 && unescapeMarkdown(oldText) !== oldText) {
           oldText = unescapeMarkdown(oldText)
-          newText = unescapeMarkdown(newText)
           match = findUniqueText(runs, oldText)
         }
         if (!match.ok) {
@@ -523,9 +603,10 @@ export const registerDocumentTools = (
             'The block number to put it after, from the same read; 0 is right after the heading'
           )
       }),
+      outputSchema: writeOutputSchema,
       annotations: {
         readOnlyHint: false,
-        destructiveHint: true,
+        destructiveHint: false,
         idempotentHint: false,
         openWorldHint: true
       }
@@ -567,6 +648,7 @@ export const registerDocumentTools = (
           `The new section body. Name each media block by its number alone on a line, such as [3], with a blank line before and after. A heading in it must be deeper than the section heading, no shallower than the next heading, and come after every media block. ${DIAGRAM_HINT}`
         )
       }),
+      outputSchema: writeOutputSchema,
       annotations: {
         readOnlyHint: false,
         destructiveHint: true,

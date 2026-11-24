@@ -60,18 +60,20 @@ These have no default and fail startup if missing.
 
 ## Core application
 
-| Variable                        | Type                                    | Default                   |
-| ------------------------------- | --------------------------------------- | ------------------------- |
-| `NODE_ENV`                      | `development` \| `production` \| `test` | `development`             |
-| `APP_NAME`                      | string                                  | `hocuspocus`              |
-| `APP_PORT`                      | number                                  | `4000` (REST API)         |
-| `HOCUSPOCUS_PORT`               | number                                  | `4001` (WebSocket)        |
-| `WORKER_HEALTH_PORT`            | number                                  | `4002` (worker health)    |
-| `HOCUSPOCUS_INTERNAL_HTTP_PORT` | number                                  | `4003` (internal HTTP)    |
-| `HOCUSPOCUS_INTERNAL_HTTP_HOST` | string                                  | `0.0.0.0`                 |
-| `HOCUSPOCUS_INTERNAL_URL`       | string                                  | `http://localhost:4003`   |
-| `PUBLIC_RESTAPI_URL`            | string                                  | — (unset)                 |
-| `APP_HOSTS`                     | list                                    | `APP_URL` host and `www.` |
+| Variable                            | Type                                    | Default                   |
+| ----------------------------------- | --------------------------------------- | ------------------------- |
+| `NODE_ENV`                          | `development` \| `production` \| `test` | `development`             |
+| `APP_NAME`                          | string                                  | `hocuspocus`              |
+| `APP_PORT`                          | number                                  | `4000` (REST API)         |
+| `HOCUSPOCUS_PORT`                   | number                                  | `4001` (WebSocket)        |
+| `WORKER_HEALTH_PORT`                | number                                  | `4002` (worker health)    |
+| `HOCUSPOCUS_INTERNAL_HTTP_PORT`     | number                                  | `4003` (internal HTTP)    |
+| `HOCUSPOCUS_INTERNAL_HTTP_HOST`     | string                                  | `0.0.0.0`                 |
+| `HOCUSPOCUS_INTERNAL_URL`           | string                                  | `http://localhost:4003`   |
+| `HOCUSPOCUS_INTERNAL_ADVERTISE_URL` | string                                  | — (auto-derived)          |
+| `HOCUSPOCUS_INTERNAL_PEERS`         | list                                    | `[]` (DNS multi-A)        |
+| `PUBLIC_RESTAPI_URL`                | string                                  | — (unset)                 |
+| `APP_HOSTS`                         | list                                    | `APP_URL` host and `www.` |
 
 `APP_HOSTS` lists the hosts that serve pads. The link-metadata cache treats a URL on any of them as a pad link, so a card of that pad is hidden when the pad turns Private, moves to Trash or is erased. An empty list means the `APP_URL` host and its `www.` form. Production should list every webapp host that Traefik routes: `docs.plus,new.docs.plus`.
 
@@ -98,6 +100,8 @@ The collaboration process serves one internal listener carrying both `/metrics` 
 - **`HOCUSPOCUS_INTERNAL_HTTP_PORT`** — moving it off `4003` also requires editing `scripts/observability/prometheus/prometheus.yml` (the scrape target port). The observability job restarts Prometheus after `up -d`. A plain `compose up -d` still ignores mounted-config content.
 - **`HOCUSPOCUS_INTERNAL_HTTP_HOST`** — `0.0.0.0` matches the bind this listener has always used. **Do not tighten the default.** Prometheus scrapes the port cross-container by DNS discovery. `infra-target-down` pages when the `hocuspocus-server` scrape target is `up==0`. A loopback default would still kill every collaboration-process metric the moment the Compose env went missing. On a host-run dev machine set `127.0.0.1` yourself. The endpoint mutates documents, and the service-role key shipped in `.env.example` is the world-known Supabase demo JWT, not a secret.
 - **`HOCUSPOCUS_INTERNAL_URL`** — where the REST process forwards content applies. Compose sets `http://hocuspocus-server:4003`.
+- **`HOCUSPOCUS_INTERNAL_ADVERTISE_URL`** — optional bare `http(s)` origin this collaboration replica registers in the Redis room-owner registry (`ws:room-owners:<documentId>`). Unset auto-derives from `HOCUSPOCUS_INTERNAL_HTTP_HOST` and `HOCUSPOCUS_INTERNAL_HTTP_PORT`, selecting the container's first non-loopback IPv4 when bound to `0.0.0.0` (so Docker Compose multi-replica deployments need no extra config).
+- **`HOCUSPOCUS_INTERNAL_PEERS`** — optional comma-separated list of bare `http(s)` origins allowlisted for multi-replica room-owner routing on the REST process (for local multi-port probes or static peer lists). When empty, REST validates Redis-registered peer IPs against the multi-A DNS records of `HOCUSPOCUS_INTERNAL_URL` and bypasses Redis entirely for loopback dev or single-IP VIPs.
 
 ## Security
 

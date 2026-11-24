@@ -1,4 +1,4 @@
-import type { Hono } from 'hono'
+import type { Hono, MiddlewareHandler } from 'hono'
 import type { Logger } from 'pino'
 
 import type { PrismaClient } from '../../generated/prisma/client'
@@ -14,6 +14,8 @@ export interface InitDeps {
   mediaPublicBaseUrl: string | null
   /** A `Cookie` header that lets DOCX export load a Private document's media as `uid`. */
   mediaCookieFor: (uid: string) => string | null
+  /** optionalUser with the #596 Auth deadline, for `GET /:slug/markdown`. */
+  optionalPadReader?: MiddlewareHandler
 }
 
 export interface InitResult {

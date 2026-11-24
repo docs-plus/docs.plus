@@ -1,12 +1,16 @@
 import type { Hono } from 'hono'
 
 import { createConnectedAppsRouter } from './http/connectedApps'
-import { createBearerCheck, createVerifiedMcpCall, type VerifiedMcpCall } from './http/controller'
+import { createBearerCheck, createMcpRateLimit, type McpRateLimit } from './http/controller'
 import { createRouter, createWellKnownRouter } from './http/router'
 import { createServerFactory } from './http/serverFactory'
 import { createChatStore } from './infra/chatStore'
-import { createGrantRedirects } from './infra/grantRedirects'
-import { createRequestBudget, createToolBudget } from './infra/toolBudget'
+import { createClientRedirects, createGrantRedirects } from './infra/grantRedirects'
+import {
+  createClientRedirectsBudget,
+  createRequestBudget,
+  createToolBudget
+} from './infra/toolBudget'
 import { createUsageRecorder } from './infra/usageStore'
 import type { InitDeps } from './types'
 
@@ -15,8 +19,9 @@ export interface InitResult {
   /** Serves the resource metadata at the root `.well-known` URLs too. */
   wellKnownRouter: Hono
   connectedAppsRouter: Hono
-  /** For `setupMiddleware`: it shares the transport's bearer check, so a request verifies once. */
-  isVerifiedMcpCall: VerifiedMcpCall
+  /** For `setupMiddleware`: shares the transport's bearer check and charges `mcp-req`. */
+  mcpRateLimit: McpRateLimit
+  close: () => Promise<void>
 }
 
 export const init = (deps: InitDeps): InitResult => {
@@ -26,31 +31,37 @@ export const init = (deps: InitDeps): InitResult => {
     allowedOrigins: deps.allowedOrigins
   }
   const checkBearer = createBearerCheck(deps.verifyToken)
+  const { router, close } = createRouter({
+    ...endpoint,
+    checkBearer,
+    factory: createServerFactory({
+      prisma: deps.prisma,
+      logger: deps.logger,
+      content: deps.content,
+      budget: createToolBudget(deps.redis, deps.logger),
+      usage: createUsageRecorder(deps.redis, deps.logger),
+      chat: deps.supabase ? createChatStore(deps.supabase) : null,
+      appUrl: deps.appUrl,
+      version: deps.version
+    })
+  })
   return {
-    router: createRouter({
-      ...endpoint,
-      checkBearer,
-      requestBudget: createRequestBudget(deps.redis, deps.logger),
-      factory: createServerFactory({
-        prisma: deps.prisma,
-        logger: deps.logger,
-        content: deps.content,
-        budget: createToolBudget(deps.redis, deps.logger),
-        usage: createUsageRecorder(deps.redis, deps.logger),
-        chat: deps.supabase ? createChatStore(deps.supabase) : null,
-        appUrl: deps.appUrl,
-        version: deps.version
-      })
-    }),
+    router,
     wellKnownRouter: createWellKnownRouter(endpoint),
-    connectedAppsRouter: createConnectedAppsRouter(
-      createGrantRedirects({
+    connectedAppsRouter: createConnectedAppsRouter({
+      grantRedirects: createGrantRedirects({
         supabase: deps.supabase,
         supabaseUrl: deps.supabaseUrl,
-        supabaseKey: deps.supabaseKey,
+        supabaseAnonKey: deps.supabaseAnonKey,
         logger: deps.logger
-      })
-    ),
-    isVerifiedMcpCall: createVerifiedMcpCall(checkBearer)
+      }),
+      clientRedirects: createClientRedirects({
+        supabase: deps.supabase,
+        logger: deps.logger
+      }),
+      clientRedirectsBudget: createClientRedirectsBudget(deps.redis, deps.logger)
+    }),
+    mcpRateLimit: createMcpRateLimit(checkBearer, createRequestBudget(deps.redis, deps.logger)),
+    close
   }
 }

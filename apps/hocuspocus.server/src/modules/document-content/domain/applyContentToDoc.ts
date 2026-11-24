@@ -5,7 +5,7 @@ import type { DocEdit } from '../types'
 import { CONTENT_APPLY_ORIGIN } from '../types'
 import { isMediaHref } from './media'
 import { liveDocJson } from './readContent'
-import { findSection, type Section } from './sections'
+import { findSection, type Section, shallowHeadingDetail } from './sections'
 import { findUniqueText, INLINE_NODE_CHAR } from './textRuns'
 
 type EditOf<Mode extends DocEdit['mode']> = Extract<DocEdit, { mode: Mode }>
@@ -59,8 +59,9 @@ const locateSection = (
  */
 const headingRefusal = (section: Section, source: BodyNode[]): DocApplyRefusal | null => {
   const levels = source.map(sourceHeadingLevel).filter((level) => level !== null)
-  return levels.some((level) => level < section.minHeadingLevel)
-    ? invalid(`a new heading must be at level ${section.minHeadingLevel} or deeper`)
+  return levels.length > 0 &&
+    (section.minHeadingLevel > 6 || levels.some((level) => level < section.minHeadingLevel))
+    ? invalid(shallowHeadingDetail(section.minHeadingLevel))
     : null
 }
 
@@ -84,8 +85,37 @@ const blockSpan = (
   return { start: section.start + from, end: section.start + to }
 }
 
-const textRunsOf = (nodes: BodyNode[]): Y.XmlText[] =>
-  nodes.flatMap((node) => (isXmlText(node) ? [node] : textRunsOf(node.toArray() as BodyNode[])))
+interface TextRunEntry {
+  run: Y.XmlText
+  inCodeBlock: boolean
+}
+
+const textRunsOf = (nodes: BodyNode[]): TextRunEntry[] => {
+  const entries: TextRunEntry[] = []
+  const stack: { node: BodyNode; inCodeBlock: boolean }[] = []
+  for (let i = nodes.length - 1; i >= 0; i -= 1) {
+    stack.push({ node: nodes[i], inCodeBlock: false })
+  }
+  while (stack.length > 0) {
+    const frame = stack.pop()!
+    if (isXmlText(frame.node)) {
+      entries.push({ run: frame.node, inCodeBlock: frame.inCodeBlock })
+      continue
+    }
+    const inCodeBlock =
+      frame.inCodeBlock || ('nodeName' in frame.node && frame.node.nodeName === 'codeBlock')
+    const children = frame.node.toArray() as BodyNode[]
+    for (let i = children.length - 1; i >= 0; i -= 1) {
+      stack.push({ node: children[i], inCodeBlock })
+    }
+  }
+  return entries
+}
+
+// XML 1.0 forbids these C0 characters everywhere (allows \t 0x09, \n 0x0a, \r 0x0d).
+// eslint-disable-next-line no-control-regex -- matching them is the whole point
+const XML_ILLEGAL_C0_RE = /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/
+const LINE_BREAK_RE = /[\r\n]/
 
 const plainText = (run: Y.XmlText): string =>
   deltaOf(run)
@@ -225,18 +255,29 @@ const applyText = (doc: Y.Doc, section: Section, edit: EditOf<'text'>): DocApply
   if (oldText === newText) return invalid('new_text is the same')
   const body = doc.getXmlFragment('default').slice(section.start, section.end) as BodyNode[]
   const runs = textRunsOf(body)
-  const match = findUniqueText(runs.map(plainText), oldText)
+  const match = findUniqueText(
+    runs.map((entry) => plainText(entry.run)),
+    oldText
+  )
   if (!match.ok) {
     return invalid(
       match.count === 0 ? 'it is not in this section' : `it is in this section ${match.count} times`
     )
   }
 
-  const run = runs[match.run]
+  const { run, inCodeBlock } = runs[match.run]
   const { head, tail } = trimShared(oldText, newText)
   const at = match.offset + head
   const removed = oldText.length - head - tail
   const inserted = newText.slice(head, newText.length - tail)
+  if (XML_ILLEGAL_C0_RE.test(inserted)) {
+    return invalid('control characters are not allowed')
+  }
+  if (!inCodeBlock && LINE_BREAK_RE.test(inserted)) {
+    return invalid(
+      'line breaks are only allowed inside code blocks; use edit_blocks to add or split paragraphs'
+    )
+  }
   if (removed > 0 && removesMediaLink(run, at, removed)) {
     return invalid('it covers a file link, and docs.plus never deletes media for an AI app')
   }

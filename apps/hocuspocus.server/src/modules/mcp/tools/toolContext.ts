@@ -1,7 +1,7 @@
 import type { CallToolResult } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 
-import { decideDocumentAccess, type DocumentAccess } from '../../../lib/documentAccess'
+import { decideDocumentAccess } from '../../../lib/documentAccess'
 import { findDocumentBySlug } from '../infra/documentStore'
 import type { Caller, ServerFactoryDeps, ToolContext, ToolOutcome } from '../types'
 
@@ -30,20 +30,13 @@ export const refuse = (text: string): never => {
 export const notFoundText = (slug: string): string =>
   `slug: no document "${slug}" is open to you. Call find_documents to list your documents.`
 
-const privateText = (slug: string): string =>
-  `slug: "${slug}" is private. Only its owner can open it.`
-
-const ACCESS_TEXT: Record<Exclude<DocumentAccess, 'allow'>, (slug: string) => string> = {
-  'not-found': notFoundText,
-  'sign-in-required': privateText,
-  denied: privateText,
-  'read-only': (slug) => `slug: "${slug}" is read-only. Only its owner can edit it.`
-}
-
 // Maintainer ruling 2026-09-23. Text an agent reads could steer it to leak data.
 // So a connected app writes and posts only in the caller's own documents.
 const notOwnerText = (slug: string) =>
   `slug: "${slug}" belongs to another person. A connected app can write and post only in documents you own. Make this change in docs.plus yourself.`
+
+const openDocumentText = (slug: string) =>
+  `slug: "${slug}" has no owner. A connected app can write and post only in documents you own. Make a copy in docs.plus, or make this change there.`
 
 export const slugField = z
   .string()
@@ -102,8 +95,10 @@ export const createToolContext = (deps: ServerFactoryDeps, caller: Caller): Tool
       { userId: caller.sub, isAnonymous: caller.isAnonymous },
       'read'
     )
-    if (access !== 'allow') return refuse(ACCESS_TEXT[access](slug))
-    if (need === 'own' && doc.ownerId !== caller.sub) return refuse(notOwnerText(slug))
+    if (access !== 'allow') return refuse(notFoundText(slug))
+    if (need === 'own' && doc.ownerId !== caller.sub) {
+      return refuse(doc.ownerId === null ? openDocumentText(slug) : notOwnerText(slug))
+    }
     return doc
   },
 

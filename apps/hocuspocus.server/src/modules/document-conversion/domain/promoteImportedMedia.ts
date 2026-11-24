@@ -73,21 +73,58 @@ const rewriteParagraph = (paragraph: JsonNode): JsonNode => {
   return mediaNode(kind, href)
 }
 
-const rewriteChildren = (parentType: unknown, children: unknown[]): unknown[] =>
-  children.map((child) => {
-    if (!isRecord(child)) return child
+const finalizeChild = (parentType: unknown, walked: JsonNode): JsonNode => {
+  if (walked.type !== 'paragraph') return walked
+  const replacement = rewriteParagraph(walked)
+  return canReplaceParagraph(parentType, replacement) ? replacement : walked
+}
 
-    const walked = rewriteNode(child)
-    if (walked.type !== 'paragraph') return walked
+interface WalkFrame {
+  parentType: unknown
+  source: unknown[]
+  target: unknown[]
+  index: number
+  owner?: { draft: JsonNode; grandparentType: unknown; parentTarget: unknown[] }
+}
 
-    const replacement = rewriteParagraph(walked)
-    return canReplaceParagraph(parentType, replacement) ? replacement : walked
-  })
+const rewriteChildren = (rootType: unknown, rootChildren: unknown[]): unknown[] => {
+  const rootTarget: unknown[] = []
+  const stack: WalkFrame[] = [
+    { parentType: rootType, source: rootChildren, target: rootTarget, index: 0 }
+  ]
 
-const rewriteNode = (node: JsonNode): JsonNode =>
-  Array.isArray(node.content)
-    ? { ...node, content: rewriteChildren(node.type, node.content) }
-    : node
+  while (stack.length > 0) {
+    const frame = stack[stack.length - 1]
+    if (frame.index < frame.source.length) {
+      const child = frame.source[frame.index++]
+      if (!isRecord(child)) {
+        frame.target.push(child)
+        continue
+      }
+      if (Array.isArray(child.content)) {
+        const childTarget: unknown[] = []
+        const draft: JsonNode = { ...child, content: childTarget }
+        stack.push({
+          parentType: child.type,
+          source: child.content,
+          target: childTarget,
+          index: 0,
+          owner: { draft, grandparentType: frame.parentType, parentTarget: frame.target }
+        })
+      } else {
+        frame.target.push(finalizeChild(frame.parentType, child))
+      }
+      continue
+    }
+
+    stack.pop()
+    if (frame.owner) {
+      frame.owner.parentTarget.push(finalizeChild(frame.owner.grandparentType, frame.owner.draft))
+    }
+  }
+
+  return rootTarget
+}
 
 /**
  * Lifts a block embed out of its paragraph, and promotes a paragraph whose sole

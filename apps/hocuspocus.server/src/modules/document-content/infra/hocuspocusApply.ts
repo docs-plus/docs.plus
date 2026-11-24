@@ -7,6 +7,7 @@ import {
   startsWithTitleHeading,
   TITLE_HEADING_DETAIL
 } from '../domain/encodeContent'
+import { containsTitleHeading } from '../domain/sections'
 import type { ApplyContentRequest, ApplyOutcome, InitWsApplyDeps } from '../types'
 import { createLiveWrite } from './liveWrite'
 
@@ -20,6 +21,8 @@ const METRIC_OUTCOME: Record<ApplyOutcome['status'], string> = {
   busy: 'busy',
   'not-confirmed': 'not_confirmed'
 }
+
+const EXTRA_TITLE_DETAIL = 'only the start of an empty document may hold a level-1 heading'
 
 type InvalidContent = Extract<ApplyOutcome, { status: 'invalid-content' }>
 
@@ -56,13 +59,23 @@ export const createApplyContent = (
         return undefined
       },
       // Appending into an empty fragment IS the document's first node, so the
-      // title-first contract applies there too.
-      check: (room): InvalidContent | undefined =>
-        mode === 'append' &&
-        room.getXmlFragment('default').length === 0 &&
-        !startsWithTitleHeading(content?.content ?? [])
-          ? { status: 'invalid-content', detail: TITLE_HEADING_DETAIL }
-          : undefined,
+      // title-first contract applies there too; non-empty appends cannot add a second title.
+      check: (room): InvalidContent | undefined => {
+        if (mode !== 'append') return undefined
+        const nodes = content?.content ?? []
+        if (room.getXmlFragment('default').length === 0) {
+          if (!startsWithTitleHeading(nodes)) {
+            return { status: 'invalid-content', detail: TITLE_HEADING_DETAIL }
+          }
+          if (containsTitleHeading(nodes.slice(1))) {
+            return { status: 'invalid-content', detail: EXTRA_TITLE_DETAIL }
+          }
+          return undefined
+        }
+        return containsTitleHeading(nodes)
+          ? { status: 'invalid-content', detail: EXTRA_TITLE_DETAIL }
+          : undefined
+      },
       mutate: (doc) => applyContentToDoc(doc, scratch, request)
     })
 

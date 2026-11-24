@@ -80,7 +80,9 @@ const mcpModule = mcp.init({
     baseUrl: config.hocuspocus.internalUrl,
     serviceRoleKey: config.supabase.serviceRoleKey ?? null,
     prisma,
-    logger: mcpLogger
+    logger: mcpLogger,
+    redis: getRedisClient(),
+    allowedPeerUrls: config.hocuspocus.internalPeers
   }),
   verifyToken: verifySupabaseTokenOutcome,
   publicBaseUrl: config.app.publicUrl,
@@ -90,10 +92,10 @@ const mcpModule = mcp.init({
   redis: getRedisClient(),
   supabase: getServiceRoleClient(),
   supabaseUrl: config.supabase.url,
-  supabaseKey: config.supabase.serviceRoleKey ?? null,
+  supabaseAnonKey: config.supabase.anonKey,
   version: pkg.version
 })
-setupMiddleware(app, { isVerifiedMcpCall: mcpModule.isVerifiedMcpCall })
+setupMiddleware(app, { mcpRateLimit: mcpModule.mcpRateLimit })
 
 app.use('*', async (c, next) => {
   c.set('prisma', prisma)
@@ -121,7 +123,9 @@ const documentContentModule = documentContent.init({
   logger: logger.child({ module: 'document-content' }),
   verifyServiceRole,
   serviceRoleKey: config.supabase.serviceRoleKey ?? null,
-  wsApplyBaseUrl: config.hocuspocus.internalUrl
+  wsApplyBaseUrl: config.hocuspocus.internalUrl,
+  redis: getRedisClient(),
+  allowedPeerUrls: config.hocuspocus.internalPeers
 })
 app.route('/api/documents', documentContentModule.router)
 // Reads are served straight from Prisma here; checkpoints and restores are
@@ -149,7 +153,8 @@ const documentConversionModule = documentConversion.init({
   // content, and `X-Forwarded-Host` is client-settable. Unset drops imported
   // images with a warning rather than storing an origin nobody can resolve.
   mediaPublicBaseUrl: config.app.publicUrl,
-  mediaCookieFor: (uid) => mediaCookieHeader(uid, config.storage.mediaCookieSecret)
+  mediaCookieFor: (uid) => mediaCookieHeader(uid, config.storage.mediaCookieSecret),
+  optionalPadReader
 })
 app.route('/api/documents', documentConversionModule.router)
 // The card PNG and the pad hovercard. Both paths have two segments, so the legacy
@@ -284,6 +289,7 @@ const shutdown = async (exitCode = 0) => {
   restApiLogger.info('Shutting down REST API gracefully...')
 
   try {
+    await mcpModule.close()
     // Stop accepting new requests, then wait for the in-flight ones. A bare
     // stop() drops that promise. An export or import was therefore cut on every
     // rolling deploy — work that holds no pooled Prisma client to delay the tail.

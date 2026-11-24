@@ -1,6 +1,6 @@
 import type { JSONContent } from '@tiptap/core'
 
-import { containsTitleHeading } from '../../document-content/domain/sections'
+import { containsTitleHeading, headingLevel } from '../../document-content/domain/sections'
 import type { FragmentProblem } from '../types'
 
 /**
@@ -11,8 +11,10 @@ export const checkFragment = (nodes: JSONContent[], intoEmpty: boolean): Fragmen
   if (nodes.length === 0) return 'empty'
   const [first, ...rest] = nodes
   if (intoEmpty) {
-    if (!containsTitleHeading([first])) return 'missing-title'
-    if (containsTitleHeading(rest)) return 'extra-title'
+    if (headingLevel(first) !== 1) return 'missing-title'
+    if (containsTitleHeading(first.content ?? []) || containsTitleHeading(rest)) {
+      return 'extra-title'
+    }
   } else if (containsTitleHeading(nodes)) {
     return 'title-not-allowed'
   }

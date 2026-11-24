@@ -692,6 +692,11 @@ export const seedRestAlertSeries = (): void => {
   for (const pass of LINK_PARSE_PASSES) {
     linkMetadataParseSeconds.zero({ pass })
   }
+  for (const bucket of ['mcp-sub', 'mcp-req', 'mcp-auth-503'] as const) {
+    for (const reason of ['timeout', 'store-error'] as const) {
+      rateLimitFailOpenTotal.inc({ reason, bucket }, 0)
+    }
+  }
 }
 
 export const seedWorkerAlertSeries = (): void => {

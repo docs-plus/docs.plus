@@ -32,6 +32,9 @@ export const planRewrite = (
   body: readonly JSONContent[],
   parsed: Readonly<DocNodes>
 ): RewritePlan => {
+  if (!hasMedia(body)) {
+    return { ok: true, content: [...parsed], keep: [] }
+  }
   const refuse = (problem: string): RewritePlan => ({ ok: false, problem: `markdown: ${problem}` })
   const content: DocNodes = []
   const keep: KeptBlock[] = []

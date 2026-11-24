@@ -48,7 +48,7 @@ export const createInternalApp = (deps: InternalAppDeps): Hono => {
     contentBodyLimit(MAX_CONTENT_BYTES + INTERNAL_BODY_HEADROOM_BYTES),
     zValidator('param', documentIdParamSchema, houseEnvelopeHook),
     zValidator('json', internalApplyBodySchema, houseEnvelopeHook),
-    createInternalApplyHandler(deps.applyContent)
+    createInternalApplyHandler(deps.applyContent, deps.hocuspocus)
   )
 
   // POST because the hop client only posts. It reads; it never writes.

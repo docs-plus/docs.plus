@@ -2,6 +2,7 @@ import ShortUniqueId from 'short-unique-id'
 
 import type { Prisma, PrismaClient } from '../../generated/prisma/client'
 import { publishDocumentAccessEvent } from '../../lib/accessRealtime'
+import { decideDocumentAccess } from '../../lib/documentAccess'
 import { writeDocumentAccessMirror } from '../../lib/documentAccessMirror'
 import {
   fillMissingDocumentPreviews,
@@ -16,6 +17,7 @@ import {
   PayloadTooLargeError,
   ValidationError
 } from '../../lib/errors'
+import { acquireLargeDecode } from '../../lib/largeDecodeGate'
 import { documentsServiceLogger } from '../../lib/logger'
 import { isDocumentOwner, isOpenDocument } from '../../lib/ownerAccess'
 import { forgetPadCards } from '../../lib/padLinkCards'
@@ -832,9 +834,14 @@ export const touchDocumentOpened = async (
 export type DuplicateDocumentResult =
   | { status: 'forbidden' }
   | { status: 'not-found' }
+  | { status: 'busy' }
   | { status: 'ok'; document: { documentId: string; slug: string; title: string } }
 
-// Strict-owner duplicate of the source's latest Yjs bytes — no history rebuild.
+// Duplicate of the source's latest Yjs bytes into a fresh copy owned by the requester —
+// no history rebuild, and the source row is never mutated or claimed (CONTEXT.md:81).
+// Any non-anonymous signed-in user may duplicate a readable public, public Read-only,
+// or Open document; Private, trashed, and missing sources collapse to `not-found` so
+// Private existence never leaks.
 // Media is RE-HOSTED, not shared. The snapshot is scanned first, then exactly the
 // objects it names are cloned under the copy's own prefix and its URLs repointed
 // there. FORWARD-ONLY — copies made before this still share their source's objects.
@@ -842,21 +849,34 @@ export const duplicateDocument = async (
   prisma: PrismaClient,
   sourceDocumentId: string,
   requesterId?: string,
-  email?: string | null
+  email?: string | null,
+  isAnonymous?: boolean
 ): Promise<DuplicateDocumentResult> => {
   if (!sourceDocumentId || sourceDocumentId.trim().length === 0) {
     throw new ValidationError('Document ID is required and cannot be empty')
   }
 
+  // Anonymous or unauthenticated callers are refused before any DB read so they
+  // cannot probe document existence either.
+  if (!requesterId || isAnonymous === true) return { status: 'forbidden' }
+
   const source = await prisma.documentMetadata.findUnique({
     where: { documentId: sourceDocumentId },
-    select: { ownerId: true, title: true, description: true, keywords: true, deletedAt: true }
+    select: {
+      ownerId: true,
+      title: true,
+      description: true,
+      keywords: true,
+      deletedAt: true,
+      isPrivate: true,
+      readOnly: true
+    }
   })
 
-  // Owner-gate first (a missing source is also non-owner → 403, mirroring
-  // delete/restore), then the soft-delete seal (404, consistent with reads).
-  if (!isDocumentOwner(source, requesterId)) return { status: 'forbidden' }
-  if (source?.deletedAt) return { status: 'not-found' }
+  // Collapse missing, trashed, and unreadable Private docs to `not-found` so no
+  // non-owner can distinguish a Private document from an absent or trashed one.
+  const access = decideDocumentAccess(source, { userId: requesterId, isAnonymous }, 'read')
+  if (!source || access !== 'allow') return { status: 'not-found' }
 
   const uid = new ShortUniqueId()
   const documentId = uid.stamp(19)
@@ -876,7 +896,18 @@ export const duplicateDocument = async (
     // a copy of a copy still names the original. `data` is null when it names none, so the
     // no-media path writes the source bytes untouched. Objects before rows: a throw here
     // leaves only orphans, which the catch removes.
-    const rehosted = bytes ? rehostMediaUrls(bytes, documentId) : null
+    // Gate snapshots at or above LARGE_DECODE_BYTES behind the process-wide decode slot
+    // (zero cost below 4 MiB) so concurrent large duplicates cannot OOM rest-api's 512M cgroup.
+    let rehosted: ReturnType<typeof rehostMediaUrls> | null = null
+    if (bytes) {
+      const release = await acquireLargeDecode(bytes.byteLength, 0)
+      if (!release) return { status: 'busy' }
+      try {
+        rehosted = rehostMediaUrls(bytes, documentId)
+      } finally {
+        release()
+      }
+    }
     if (rehosted?.data) {
       // A URL may name a trashed document's prefix, or a Private one the requester
       // cannot read. Copying it would serve that media again under the copy's public
@@ -894,7 +925,8 @@ export const duplicateDocument = async (
               resolvePrivateAccess({
                 isPrivate: row.isPrivate,
                 ownerId: row.ownerId,
-                userId: requesterId
+                userId: requesterId,
+                isAnonymous
               }) !== 'allow'
           )
           .map((row) => row.documentId)

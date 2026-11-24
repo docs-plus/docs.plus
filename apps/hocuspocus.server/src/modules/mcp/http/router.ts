@@ -3,7 +3,6 @@ import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 
 import { fail } from '../../../http/envelope'
-import type { CallerBudget } from '../types'
 import {
   type BearerCheck,
   createAuthenticate,
@@ -23,14 +22,16 @@ const MAX_MCP_BODY_BYTES = 1024 * 1024
 export interface RouterDeps extends EndpointDeps {
   factory: McpServerFactory
   checkBearer: BearerCheck
-  requestBudget: CallerBudget
 }
 
-export const createRouter = (deps: RouterDeps): Hono => {
+export const createRouter = (deps: RouterDeps): { router: Hono; close: () => Promise<void> } => {
   const router = new Hono()
   // Built per init, not per module: the handler holds no transport, and the
   // factory builds a fresh server and transport for every request.
-  const handler = createMcpHandler(deps.factory)
+  const handler = createMcpHandler(deps.factory, {
+    maxSubscriptions: 0,
+    maxRequestBodySize: MAX_MCP_BODY_BYTES
+  })
 
   router.get(RESOURCE_METADATA_PATH, createMetadataHandler(deps))
   router.on(
@@ -41,13 +42,9 @@ export const createRouter = (deps: RouterDeps): Hono => {
       maxSize: MAX_MCP_BODY_BYTES,
       onError: (c) => fail(c, 413, 'PAYLOAD_TOO_LARGE', 'Request body is too large')
     }),
-    createTransportHandler(
-      createAuthenticate(deps.publicBaseUrl, deps.checkBearer),
-      deps.requestBudget,
-      handler
-    )
+    createTransportHandler(createAuthenticate(deps.publicBaseUrl, deps.checkBearer), handler)
   )
-  return router
+  return { router, close: () => handler.close() }
 }
 
 /** Mounted at `RESOURCE_METADATA_PATH`: the two RFC 9728 URLs a client may probe instead of the 401 header. */

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { encodeContent } from '../../../document-content/domain/encodeContent'
 import { importMarkdown } from '../../domain/markdownImport'
+import { promoteImportedMedia } from '../../domain/promoteImportedMedia'
 import type { TiptapDocJson } from '../../types'
 
 const types = (content: Record<string, unknown>[]) => content.map((node) => node.type)
@@ -160,5 +161,43 @@ describe('promoteImportedMedia via importMarkdown', () => {
     expect(types(content.content)).toEqual(['heading', 'youtube'])
     expect(warnings.some((warning) => warning.code === 'title-synthesized')).toBe(true)
     expect(encode(content).ok).toBe(true)
+  })
+
+  test('walks a 5000-level deep tree iteratively without stack overflow', () => {
+    const href = 'https://www.youtube.com/watch?v=aqz-KE-bpKQ'
+    const linkPara = {
+      type: 'paragraph',
+      content: [{ type: 'text', text: href, marks: [{ type: 'hyperlink', attrs: { href } }] }]
+    }
+    const listItem = {
+      type: 'listItem',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            {
+              type: 'text',
+              text: '/demo-assets/demo-video.mp4',
+              marks: [{ type: 'hyperlink', attrs: { href: '/demo-assets/demo-video.mp4' } }]
+            }
+          ]
+        }
+      ]
+    }
+    let node: Record<string, unknown> = {
+      type: 'blockquote',
+      content: [linkPara, { type: 'bulletList', content: [listItem] }]
+    }
+    for (let i = 0; i < 5000; i += 1) {
+      node = { type: 'blockquote', content: [node] }
+    }
+
+    const result = promoteImportedMedia({ type: 'doc', content: [node] })
+    let cur = result.content[0] as Record<string, any>
+    for (let i = 0; i < 5000; i += 1) {
+      cur = cur.content[0]
+    }
+    expect(cur.content[0]).toEqual({ type: 'youtube', attrs: { src: href } })
+    expect(cur.content[1].content[0].content[0].type).toBe('paragraph')
   })
 })

@@ -38,9 +38,9 @@ export interface InitDeps {
   redis: RedisClient | null
   /** The service-role client for the chat tools and the redirect lookup. Null refuses chat and answers no redirects. */
   supabase: SupabaseClient | null
-  /** `SUPABASE_URL` and the service-role key, for the caller's own grant list. */
+  /** `SUPABASE_URL` and `SUPABASE_ANON_KEY`, for the caller's own grant list. */
   supabaseUrl: string | null
-  supabaseKey: string | null
+  supabaseAnonKey: string | null
   version: string
 }
 

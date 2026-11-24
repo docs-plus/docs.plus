@@ -9,6 +9,8 @@ import { decideDocumentAccess } from '../../../lib/documentAccess'
 import { acquireLargeDecode, LARGE_DECODE_BYTES } from '../../../lib/largeDecodeGate'
 import { ydocToPmJson } from '../../../lib/nested-flat-migration'
 import { isDocumentOwner } from '../../../lib/ownerAccess'
+import { createSingleFlight } from '../../../lib/singleFlight'
+import { normalizeSlug } from '../../../lib/slug'
 import { findHeadRow } from '../../document-content/infra/contentStore'
 import { MAX_CONTENT_DEPTH, MAX_CONTENT_NODES } from '../../document-content/types'
 import { exportDocx } from '../domain/docxExport'
@@ -16,7 +18,11 @@ import { importDocx, TooManyImagesError } from '../domain/docxImport'
 import { titleHeadingText } from '../domain/ensureTitleHeading'
 import { checkImportSize, type ImportSizeRefusal } from '../domain/importGuards'
 import { exportMarkdown } from '../domain/markdownExport'
-import { importMarkdown } from '../domain/markdownImport'
+import {
+  importMarkdown,
+  MarkdownTooDeepError,
+  MAX_MARKDOWN_NESTING
+} from '../domain/markdownImport'
 import { exportOdt } from '../domain/odtExport'
 import {
   ENTRY_COUNT_MISMATCH,
@@ -35,6 +41,7 @@ import {
   MAX_IMPORT_YJS_BYTES,
   MAX_INFLATED_IMPORT_BYTES,
   MAX_MARKDOWN_CHARS,
+  MAX_MARKDOWN_READ_HEAD_BYTES,
   MAX_OWNER_IMPORT_BYTES,
   startsWith
 } from '../types'
@@ -178,6 +185,133 @@ export const createGetExportHandler =
       }
     })
   }
+
+export interface MarkdownReadControllerDeps {
+  prisma: PrismaClient
+  logger: Logger
+}
+
+type PublicMarkdownOutcome =
+  | { kind: 'ok'; markdown: string }
+  | { kind: 'not-found' }
+  | { kind: 'too-large' }
+  | { kind: 'decode-error' }
+
+/**
+ * Reads a public document's head snapshot only when `octet_length(data) <= maxBytes`,
+ * so oversized blobs never leave Postgres or decode in `rest-api`'s 512M cgroup.
+ */
+const readPublicHeadWithin = async (
+  prisma: PrismaClient,
+  documentId: string,
+  maxBytes: number
+): Promise<{ version: number; data: Uint8Array | null } | null> => {
+  const rows = await prisma.$queryRaw<{ version: number; data: Uint8Array | null }[]>`
+    SELECT version, CASE WHEN octet_length(data) <= ${maxBytes} THEN data END AS data
+    FROM "Documents"
+    WHERE "documentId" = ${documentId}
+    ORDER BY version DESC
+    LIMIT 1
+  `
+  return rows[0] ?? null
+}
+
+/**
+ * Public Markdown read by slug (`GET /api/documents/:slug/markdown`, #822).
+ * Never drafts a row. Fails closed with 404 on missing, trashed, Private, or
+ * unpersisted-version documents so Private existence never leaks. Coalesces
+ * concurrent reads of a hot document through `createSingleFlight`.
+ */
+export const createGetMarkdownHandler = (deps: MarkdownReadControllerDeps) => {
+  const renderOnce = createSingleFlight<PublicMarkdownOutcome>()
+
+  return async (c: Context): Promise<Response> => {
+    const rawSlug = c.req.param('slug')
+    const slug = rawSlug?.trim() ? normalizeSlug(rawSlug) : ''
+    if (!slug) return fail(c, 404, 'NOT_FOUND', 'Document not found')
+
+    const meta = await deps.prisma.documentMetadata.findUnique({
+      where: { slug },
+      select: {
+        documentId: true,
+        isPrivate: true,
+        readOnly: true,
+        ownerId: true,
+        deletedAt: true
+      }
+    })
+
+    const caller = { userId: c.get('userId'), isAnonymous: c.get('user')?.is_anonymous }
+    if (
+      !meta ||
+      meta.isPrivate ||
+      meta.deletedAt ||
+      decideDocumentAccess(meta, caller, 'read') !== 'allow'
+    ) {
+      return fail(c, 404, 'NOT_FOUND', 'Document not found')
+    }
+
+    let outcome: PublicMarkdownOutcome
+    try {
+      outcome = await renderOnce(meta.documentId, async () => {
+        const head = await readPublicHeadWithin(
+          deps.prisma,
+          meta.documentId,
+          MAX_MARKDOWN_READ_HEAD_BYTES
+        )
+        if (!head) return { kind: 'not-found' }
+        if (!head.data) return { kind: 'too-large' }
+
+        const decoded = ydocToPmJson(head.data)
+        if (!decoded.ok) {
+          deps.logger.error(
+            { err: decoded.error, documentId: meta.documentId, version: head.version },
+            'Public markdown snapshot decode failed'
+          )
+          return { kind: 'decode-error' }
+        }
+
+        return {
+          kind: 'ok',
+          markdown: exportMarkdown(decoded.json as unknown as TiptapDocJson)
+        }
+      })
+    } catch (error) {
+      deps.logger.error(
+        { err: error, documentId: meta.documentId },
+        'Public markdown conversion failed'
+      )
+      return fail(c, 500, 'INTERNAL_SERVER_ERROR', 'The document could not be converted to md')
+    }
+
+    if (outcome.kind === 'not-found') {
+      return fail(c, 404, 'NOT_FOUND', 'Document not found')
+    }
+    if (outcome.kind === 'too-large') {
+      return fail(
+        c,
+        413,
+        'PAYLOAD_TOO_LARGE',
+        `Document exceeds the ${MAX_MARKDOWN_READ_HEAD_BYTES}-byte Markdown read limit`
+      )
+    }
+    if (outcome.kind === 'decode-error') {
+      return fail(c, 500, 'INTERNAL_SERVER_ERROR', 'Stored document content could not be decoded')
+    }
+
+    const body = Buffer.from(outcome.markdown, 'utf8')
+    return new Response(body, {
+      status: 200,
+      headers: {
+        'Content-Type': EXPORT_MEDIA_TYPES.md,
+        'Content-Length': String(body.byteLength),
+        Vary: 'Accept',
+        'X-Robots-Tag': 'noindex, nofollow',
+        'Cache-Control': 'no-store'
+      }
+    })
+  }
+}
 
 const UPLOAD_FIELD = 'documentFile'
 
@@ -412,6 +546,18 @@ const convertUpload = async (
     if (refusal) return fail(c, 413, refusal, SIZE_REFUSALS[refusal])
     return ok(c, result)
   } catch (error) {
+    if (error instanceof MarkdownTooDeepError) {
+      deps.logger.warn(
+        { code: 'TOO_DEEP', uploadBytes: buffer.length, depth: error.depth },
+        'Import refused'
+      )
+      return fail(
+        c,
+        413,
+        'TOO_DEEP',
+        `Markdown nests deeper than ${MAX_MARKDOWN_NESTING} levels, the most one import may nest`
+      )
+    }
     if (error instanceof TooManyImagesError) {
       deps.logger.warn(
         { code: 'TOO_MANY_IMAGES', uploadBytes: buffer.length, images: error.images },

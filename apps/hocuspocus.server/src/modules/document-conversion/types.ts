@@ -105,3 +105,8 @@ export const EXPORT_IMAGE_TIMEOUT_MS = 5_000
 // the handler runs on. Read before each fetch rather than during one, so the true
 // ceiling is this plus one in-flight image: 35s.
 export const EXPORT_IMAGE_TOTAL_TIMEOUT_MS = 30_000
+
+// Public Markdown read cap (#822): a Yjs decode costs ~16x stored bytes in heap,
+// so heads larger than 1 MiB return 413 without leaving Postgres or decoding in
+// rest-api's 512M cgroup. Matches hovercard's filter-head cap.
+export const MAX_MARKDOWN_READ_HEAD_BYTES = 1024 * 1024

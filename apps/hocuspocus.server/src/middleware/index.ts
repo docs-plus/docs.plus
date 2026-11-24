@@ -11,6 +11,7 @@ import { CONSUME_TIMEOUT_MS, consumeWithin, readWithin } from '../lib/consumeWit
 import { httpLogger } from '../lib/logger'
 import { rateLimitFailOpenTotal } from '../lib/metrics'
 import { getRedisClient } from '../lib/redis'
+import { isMarkdownReadPath } from '../modules/document-conversion'
 import {
   LINK_ARCHIVE_PATH,
   LINK_ICON_PATH,
@@ -18,8 +19,19 @@ import {
   LINK_METADATA_MOUNT_PATH
 } from '../modules/link-metadata'
 import { isSocialCardPath } from '../modules/social-card'
+import type { RedisClient } from '../types/redis.types'
 
 const redisClient = getRedisClient()
+
+// Per-user duplicate budget (#820): bounds S3 copy amplification (32 objects x 10 MiB)
+// once any non-anonymous signed-in user can duplicate public or Open documents.
+export const DUPLICATE_RATE_LIMIT_POINTS = 10
+export const DUPLICATE_RATE_LIMIT_DURATION_S = 15 * 60
+
+// Dedicated IP budget for public Markdown reads (#822), separate from the global
+// pool so coding-agent traffic cannot exhaust a shared office NAT's pad budget.
+export const MARKDOWN_READ_RATE_LIMIT_POINTS = 60
+export const MARKDOWN_READ_RATE_LIMIT_DURATION_S = 60
 
 // Media reads get their own budget rather than an exemption. The route is public
 // and every GET is an S3 round trip, so an unbounded one is an amplifier.
@@ -55,15 +67,81 @@ const clientAddress = (c: Context): string | null => {
   return realIp || forwardedFor!.split(',')[0]!.trim() || 'unknown'
 }
 
+const applyRateLimit = async (
+  c: Context,
+  next: Next,
+  limiter: RateLimiterRedis,
+  key: string,
+  { points, duration, keyPrefix }: { points: number; duration: number; keyPrefix: string }
+) => {
+  // The key holds nothing the caller writes. Keying it on User-Agent too gave a
+  // client that increments that header a fresh budget on every request. That
+  // keying also minted one Redis key per distinct value, in the same volatile
+  // keyspace the claim-check payloads live in.
+  const outcome = await consumeWithin(limiter, key)
+
+  if (outcome.kind === 'unavailable') {
+    // The limiter is failing open, which is deliberate for a public REST route.
+    // `lib/revertCooldown.ts` answers the same outcome the opposite way, on purpose.
+    // No latency alert fires at this speed and no rule matches a level-40 warn,
+    // so the counter is the only aggregate trace.
+    rateLimitFailOpenTotal.inc({ reason: outcome.reason, bucket: keyPrefix })
+
+    if (outcome.reason === 'store-error') {
+      // Read as a rejection it made every rate-limited route fail for as long as
+      // Redis was down, while /health — exempt from this middleware — stayed
+      // green. Let the request through.
+      httpLogger.error({ err: outcome.error }, 'Rate limiter store failed, allowing the request')
+    } else {
+      httpLogger.warn(
+        { key, timeoutMs: CONSUME_TIMEOUT_MS },
+        'Rate limiter timed out, allowing the request'
+      )
+    }
+
+    return next()
+  }
+
+  if (outcome.kind === 'limited') {
+    const retryAfter = Math.ceil(outcome.res.msBeforeNext / 1000) || duration
+
+    c.header('X-RateLimit-Limit', points.toString())
+    c.header('X-RateLimit-Remaining', '0')
+    c.header('X-RateLimit-Reset', new Date(Date.now() + outcome.res.msBeforeNext).toISOString())
+    c.header('Retry-After', retryAfter.toString())
+
+    // House envelope. The retry seconds live in `Retry-After` only: `error.details`
+    // is stripped outside development, so a body field would vanish in production.
+    return c.json(
+      {
+        success: false,
+        error: {
+          message: 'Too many requests, please try again later',
+          code: 'RATE_LIMIT_EXCEEDED'
+        }
+      },
+      429
+    )
+  }
+
+  c.header('X-RateLimit-Limit', points.toString())
+  c.header('X-RateLimit-Remaining', outcome.res.remainingPoints.toString())
+  c.header('X-RateLimit-Reset', new Date(Date.now() + outcome.res.msBeforeNext).toISOString())
+
+  return next()
+}
+
 export const rateLimiter = (options: {
   points: number
   duration: number // seconds
   keyPrefix?: string
   blockDuration?: number // seconds
+  storeClient?: RedisClient | null
 }) => {
   const { points, duration, keyPrefix = 'rl', blockDuration } = options
+  const storeClient = options.storeClient === undefined ? redisClient : options.storeClient
 
-  if (!redisClient) {
+  if (!storeClient) {
     httpLogger.warn('Redis not available, rate limiting disabled')
     return Object.assign(async (c: Context, next: Next) => next(), {
       hasBudget: async (_c: Context) => true
@@ -71,7 +149,7 @@ export const rateLimiter = (options: {
   }
 
   const limiter = new RateLimiterRedis({
-    storeClient: redisClient,
+    storeClient,
     points,
     duration,
     keyPrefix,
@@ -98,66 +176,52 @@ export const rateLimiter = (options: {
     if (ip === null) {
       return next()
     }
-
-    // The key holds nothing the caller writes. Keying it on User-Agent too gave a
-    // client that increments that header a fresh budget on every request. That
-    // keying also minted one Redis key per distinct value, in the same volatile
-    // keyspace the claim-check payloads live in.
-    const outcome = await consumeWithin(limiter, ip)
-
-    if (outcome.kind === 'unavailable') {
-      // The limiter is failing open, which is deliberate for a public REST route.
-      // `lib/revertCooldown.ts` answers the same outcome the opposite way, on purpose.
-      // No latency alert fires at this speed and no rule matches a level-40 warn,
-      // so the counter is the only aggregate trace.
-      rateLimitFailOpenTotal.inc({ reason: outcome.reason, bucket: keyPrefix })
-
-      if (outcome.reason === 'store-error') {
-        // Read as a rejection it made every rate-limited route fail for as long as
-        // Redis was down, while /health — exempt from this middleware — stayed
-        // green. Let the request through.
-        httpLogger.error({ err: outcome.error }, 'Rate limiter store failed, allowing the request')
-      } else {
-        httpLogger.warn(
-          { ip, timeoutMs: CONSUME_TIMEOUT_MS },
-          'Rate limiter timed out, allowing the request'
-        )
-      }
-
-      return next()
-    }
-
-    if (outcome.kind === 'limited') {
-      const retryAfter = Math.ceil(outcome.res.msBeforeNext / 1000) || duration
-
-      c.header('X-RateLimit-Limit', points.toString())
-      c.header('X-RateLimit-Remaining', '0')
-      c.header('X-RateLimit-Reset', new Date(Date.now() + outcome.res.msBeforeNext).toISOString())
-      c.header('Retry-After', retryAfter.toString())
-
-      // House envelope. The retry seconds live in `Retry-After` only: `error.details`
-      // is stripped outside development, so a body field would vanish in production.
-      return c.json(
-        {
-          success: false,
-          error: {
-            message: 'Too many requests, please try again later',
-            code: 'RATE_LIMIT_EXCEEDED'
-          }
-        },
-        429
-      )
-    }
-
-    c.header('X-RateLimit-Limit', points.toString())
-    c.header('X-RateLimit-Remaining', outcome.res.remainingPoints.toString())
-    c.header('X-RateLimit-Reset', new Date(Date.now() + outcome.res.msBeforeNext).toISOString())
-
-    return next()
+    return applyRateLimit(c, next, limiter, ip, { points, duration, keyPrefix })
   }
 
   return Object.assign(middleware, { hasBudget })
 }
+
+/** Per-user Redis rate limiter; runs after `requireUser` so `c.get('userId')` is verified. */
+export const userRateLimiter = (options: {
+  points: number
+  duration: number // seconds
+  keyPrefix?: string
+  blockDuration?: number // seconds
+  storeClient?: RedisClient | null
+}) => {
+  const { points, duration, keyPrefix = 'rl-user', blockDuration } = options
+  const storeClient = options.storeClient === undefined ? redisClient : options.storeClient
+
+  if (!storeClient) {
+    httpLogger.warn({ keyPrefix }, 'Redis not available, per-user rate limiting disabled')
+    return async (_c: Context, next: Next) => next()
+  }
+
+  const limiter = new RateLimiterRedis({
+    storeClient,
+    points,
+    duration,
+    keyPrefix,
+    blockDuration,
+    execEvenly: false,
+    insuranceLimiter: undefined
+  })
+
+  return async (c: Context, next: Next) => {
+    const userId = c.get('userId') as string | undefined
+    if (!userId) return next()
+    return applyRateLimit(c, next, limiter, userId, { points, duration, keyPrefix })
+  }
+}
+
+export const createDuplicateRateLimiter = (storeClient?: RedisClient | null) =>
+  userRateLimiter({
+    points: DUPLICATE_RATE_LIMIT_POINTS,
+    duration: DUPLICATE_RATE_LIMIT_DURATION_S,
+    keyPrefix: 'doc-duplicate',
+    storeClient
+  })
 
 export const pinoLogger = () => {
   return async (c: Context, next: Next) => {
@@ -212,9 +276,20 @@ export const pinoLogger = () => {
   }
 }
 
+export type McpRateLimitDecision =
+  | { kind: 'verified' }
+  | { kind: 'limited'; response: Response }
+  | { kind: 'auth-unavailable' }
+  | { kind: 'fallthrough' }
+
 export interface MiddlewareOptions {
-  /** True for an `/api/mcp` call whose OAuth token verified; it skips the global limiter. */
-  isVerifiedMcpCall: (c: Context, hasBudget: () => Promise<boolean>) => Promise<boolean>
+  /**
+   * Evaluates `/api/mcp` transport calls: verified OAuth callers spend `mcp-req` once
+   * and skip the global limiter; Auth 503s charge `mcp-auth-503`.
+   */
+  mcpRateLimit: (c: Context, hasBudget: () => Promise<boolean>) => Promise<McpRateLimitDecision>
+  /** Optional Redis client override for tests; defaults to the shared Redis client. */
+  storeClient?: RedisClient | null
 }
 
 export const setupMiddleware = (app: Hono, opts: MiddlewareOptions) => {
@@ -237,7 +312,11 @@ export const setupMiddleware = (app: Hono, opts: MiddlewareOptions) => {
         'Authorization',
         'token',
         'X-Requested-With',
-        'Mcp-Protocol-Version'
+        'Mcp-Protocol-Version',
+        'MCP-Method',
+        'MCP-Name',
+        'Mcp-Session-Id',
+        'Last-Event-ID'
       ],
       // Content-Disposition carries the export filename. Without it here the browser
       // hides the header cross-origin and every download lands under a guessed name.
@@ -247,7 +326,8 @@ export const setupMiddleware = (app: Hono, opts: MiddlewareOptions) => {
         'X-RateLimit-Remaining',
         'X-RateLimit-Reset',
         'Content-Disposition',
-        'WWW-Authenticate'
+        'WWW-Authenticate',
+        'Retry-After'
       ],
       maxAge: 86400
     })
@@ -273,7 +353,8 @@ export const setupMiddleware = (app: Hono, opts: MiddlewareOptions) => {
   const globalRateLimiter = rateLimiter({
     points: config.security.rateLimitMax,
     duration: 15 * 60,
-    keyPrefix: 'global'
+    keyPrefix: 'global',
+    storeClient: opts.storeClient
   })
 
   // One pad load fetches every picture through the media proxy, so a document
@@ -282,22 +363,38 @@ export const setupMiddleware = (app: Hono, opts: MiddlewareOptions) => {
   const mediaReadRateLimiter = rateLimiter({
     points: config.security.rateLimitMax * MEDIA_READ_BUDGET_FACTOR,
     duration: 15 * 60,
-    keyPrefix: 'media-read'
+    keyPrefix: 'media-read',
+    storeClient: opts.storeClient
   })
   const linkIconRateLimiter = rateLimiter({
     points: config.security.rateLimitMax * LINK_ICON_BUDGET_FACTOR,
     duration: 15 * 60,
-    keyPrefix: 'metadata-icon'
+    keyPrefix: 'metadata-icon',
+    storeClient: opts.storeClient
   })
   const linkMetadataRateLimiter = rateLimiter({
     points: config.security.rateLimitMax * LINK_METADATA_BUDGET_FACTOR,
     duration: 15 * 60,
-    keyPrefix: 'link-metadata'
+    keyPrefix: 'link-metadata',
+    storeClient: opts.storeClient
   })
   const socialCardRateLimiter = rateLimiter({
     points: config.security.rateLimitMax * SOCIAL_CARD_BUDGET_FACTOR,
     duration: 15 * 60,
-    keyPrefix: 'social-card'
+    keyPrefix: 'social-card',
+    storeClient: opts.storeClient
+  })
+  const markdownReadRateLimiter = rateLimiter({
+    points: MARKDOWN_READ_RATE_LIMIT_POINTS,
+    duration: MARKDOWN_READ_RATE_LIMIT_DURATION_S,
+    keyPrefix: 'doc-markdown',
+    storeClient: opts.storeClient
+  })
+  const mcpAuth503RateLimiter = rateLimiter({
+    points: 100,
+    duration: 60,
+    keyPrefix: 'mcp-auth-503',
+    storeClient: opts.storeClient
   })
   app.use('*', async (c, next) => {
     if (c.req.method === 'OPTIONS') {
@@ -324,6 +421,9 @@ export const setupMiddleware = (app: Hono, opts: MiddlewareOptions) => {
     if (isSocialCardPath(path)) {
       return socialCardRateLimiter(c, next)
     }
+    if (isMarkdownReadPath(path)) {
+      return markdownReadRateLimiter(c, next)
+    }
 
     // The public read only. The POST on this same prefix is an upload, and it
     // stays on the global budget, where its cost belongs.
@@ -331,12 +431,17 @@ export const setupMiddleware = (app: Hono, opts: MiddlewareOptions) => {
       return mediaReadRateLimiter(c, next)
     }
 
-    // A hosted AI app sends many people from one address, so a verified MCP call skips the
-    // global limiter while the address has budget left; the MCP router then spends per-person
-    // buckets (#551). Decided here, not in that router, because its origin gate and body limit
-    // answer before auth.
-    if (await opts.isVerifiedMcpCall(c, () => globalRateLimiter.hasBudget(c))) {
+    // Verified MCP calls skip the global limiter while the address has budget left (#551, #811).
+    // Auth outages charge `mcp-auth-503` (100/60 s per IP) instead of the global 15-min bucket.
+    const mcpDecision = await opts.mcpRateLimit(c, () => globalRateLimiter.hasBudget(c))
+    if (mcpDecision.kind === 'limited') {
+      return mcpDecision.response
+    }
+    if (mcpDecision.kind === 'verified') {
       return next()
+    }
+    if (mcpDecision.kind === 'auth-unavailable') {
+      return mcpAuth503RateLimiter(c, next)
     }
 
     return globalRateLimiter(c, next)

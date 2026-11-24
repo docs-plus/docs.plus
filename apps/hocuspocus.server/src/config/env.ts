@@ -26,6 +26,8 @@ export const config = {
     internalHttpPort: env.HOCUSPOCUS_INTERNAL_HTTP_PORT,
     internalHttpHost: env.HOCUSPOCUS_INTERNAL_HTTP_HOST,
     internalUrl: env.HOCUSPOCUS_INTERNAL_URL,
+    internalAdvertiseUrl: env.HOCUSPOCUS_INTERNAL_ADVERTISE_URL ?? null,
+    internalPeers: env.HOCUSPOCUS_INTERNAL_PEERS,
     logger: {
       enabled: env.HOCUSPOCUS_LOGGER,
       onConnect: env.HOCUSPOCUS_LOGGER_ON_CONNECT,
@@ -101,7 +103,10 @@ export const config = {
   },
 
   mcp: {
-    authIssuer: env.MCP_AUTH_ISSUER || `${env.SUPABASE_URL.replace(/\/+$/, '')}/auth/v1`
+    authIssuer: (env.MCP_AUTH_ISSUER ?? `${env.SUPABASE_URL.replace(/\/+$/, '')}/auth/v1`).replace(
+      /\/+$/,
+      ''
+    )
   },
 
   security: {

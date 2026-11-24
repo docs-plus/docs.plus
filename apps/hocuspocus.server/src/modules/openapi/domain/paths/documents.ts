@@ -294,10 +294,10 @@ export const documentsPaths: OpenApiPaths = {
     post: ownedLifecycle(
       'duplicateDocument',
       'Duplicate a document',
-      `Owner-only. Copies the source's latest Yjs bytes into a fresh owner-owned document; the slug is \`<title> (copy)\`, uniquified. Media is cloned, not shared: the source's objects are copied under the copy's own prefix and the snapshot's URLs repointed there, so purging either document leaves the other intact. Capped at ${MAX_DUPLICATE_MEDIA_OBJECTS} media objects. Media under a document in Trash is not copied and does not count. A soft-deleted source is a 404.`,
+      `Requires a non-anonymous signed-in user (anonymous sessions get 403). Any signed-in user may duplicate a readable public, public Read-only, or Open document; the owner may also duplicate their own Private document. Missing, soft-deleted, and unreadable Private sources all return 404 so Private existence never leaks. Copies the source's latest Yjs bytes into a fresh caller-owned document (\`isPrivate: false\`, \`readOnly: false\`, \`deletedAt: null\`) without modifying or claiming the source row; the slug is \`<title> (copy)\`, uniquified. Media is cloned, not shared: the source's objects are copied under the copy's own prefix and the snapshot's URLs repointed there, so purging either document leaves the other intact. Capped at ${MAX_DUPLICATE_MEDIA_OBJECTS} media objects. Media under a document in Trash or a Private document the caller cannot read is not copied and does not count. Enforces a per-user 10 / 15 min rate limit and gates snapshots of 4 MiB or more behind the process-wide large-decode slot (503 with \`Retry-After: 10\` when busy).`,
       {
         '413': envelopeResponse(
-          `The source's snapshot names more than ${MAX_DUPLICATE_MEDIA_OBJECTS} media objects outside Trash. Each one is copied inside the request, so the count is refused up front rather than left to time out.`
+          `The source's snapshot names more than ${MAX_DUPLICATE_MEDIA_OBJECTS} readable media objects outside Trash. Each one is copied inside the request, so the count is refused up front rather than left to time out.`
         )
       }
     )

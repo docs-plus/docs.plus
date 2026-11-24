@@ -347,6 +347,87 @@ describe('applyContentToDoc — blocks mode', () => {
     })
     expect(insert(4)).toMatchObject({ ok: true })
   })
+
+  test('an H6 section refuses any heading with the level-6 limit message', () => {
+    const live = liveDocWith(
+      doc(section('Title', 1, 'title'), section('Six', 6, 'six'), para('body'))
+    )
+    const rev = revOf(live, 'six')
+
+    for (const level of [2, 5, 6]) {
+      expect(
+        applyContentToDoc(live, scratchFrom(doc(section('Sub', level, `s${level}`))), {
+          mode: 'blocks',
+          sectionId: 'six',
+          rev,
+          from: 1,
+          to: 1
+        })
+      ).toEqual({
+        ok: false,
+        status: 'invalid-content',
+        detail: 'level 6 is the deepest heading level, so no subheading can be added here'
+      })
+    }
+
+    expect(
+      applyContentToDoc(live, scratchFrom(doc(para('rewritten'), section('Sub', 6, 'sub'))), {
+        mode: 'rewrite',
+        sectionId: 'six',
+        rev,
+        keep: []
+      })
+    ).toEqual({
+      ok: false,
+      status: 'invalid-content',
+      detail: 'level 6 is the deepest heading level, so no subheading can be added here'
+    })
+
+    expect(
+      applyContentToDoc(live, scratchFrom(doc(para('more'))), {
+        mode: 'blocks',
+        sectionId: 'six',
+        rev,
+        from: 1,
+        to: 1
+      })
+    ).toMatchObject({ ok: true })
+  })
+
+  test('an H5 section before an H6 section still allows an H6 heading', () => {
+    const live = liveDocWith(
+      doc(
+        section('Title', 1, 'title'),
+        section('Five', 5, 'five'),
+        para('body'),
+        section('Six', 6, 'six')
+      )
+    )
+    const rev = revOf(live, 'five')
+
+    expect(
+      applyContentToDoc(live, scratchFrom(doc(section('FiveSub', 5, 'f5'))), {
+        mode: 'blocks',
+        sectionId: 'five',
+        rev,
+        from: 1,
+        to: 1
+      })
+    ).toEqual({
+      ok: false,
+      status: 'invalid-content',
+      detail: 'a new heading must be at level 6 or deeper'
+    })
+    expect(
+      applyContentToDoc(live, scratchFrom(doc(section('SixSub', 6, 'f6'))), {
+        mode: 'blocks',
+        sectionId: 'five',
+        rev,
+        from: 1,
+        to: 1
+      })
+    ).toMatchObject({ ok: true })
+  })
 })
 
 describe('applyContentToDoc — text mode', () => {
@@ -488,6 +569,117 @@ describe('applyContentToDoc — text mode', () => {
     expect(findUniqueText(runs, 'high')).toMatchObject({ ok: true })
     expect(findUniqueText(runs, 'e')).toMatchObject({ ok: false })
     expect(findUniqueText(runs, 'leftright')).toEqual({ ok: false, count: 0 })
+  })
+
+  test('rejects raw line breaks in non-codeBlock runs without mutating the doc', () => {
+    const tableDoc = doc(
+      section('Title', 1, 'title'),
+      section('Budget', 2, 'budget'),
+      para('para target'),
+      {
+        type: 'bulletList',
+        content: [{ type: 'listItem', content: [para('list target')] }]
+      },
+      {
+        type: 'blockquote',
+        content: [para('quote target')]
+      },
+      {
+        type: 'table',
+        content: [
+          {
+            type: 'tableRow',
+            content: [{ type: 'tableCell', content: [para('cell target')] }]
+          }
+        ]
+      }
+    )
+
+    for (const oldText of ['para target', 'list target', 'quote target', 'cell target']) {
+      for (const bad of ['line1\nline2', 'line1\rline2', 'line1\r\nline2']) {
+        const live = liveDocWith(tableDoc)
+        let updates = 0
+        live.on('update', () => {
+          updates += 1
+        })
+        const res = edit(live, oldText, bad)
+        expect(res).toMatchObject({ ok: false, status: 'invalid-content' })
+        expect(updates).toBe(0)
+      }
+    }
+  })
+
+  test('allows multi-line edits inside top-level, nested, and mermaid codeBlocks', () => {
+    const codeDoc = doc(
+      section('Title', 1, 'title'),
+      section('Budget', 2, 'budget'),
+      {
+        type: 'codeBlock',
+        attrs: { language: 'ts' },
+        content: [{ type: 'text', text: 'const a = 1' }]
+      },
+      {
+        type: 'bulletList',
+        content: [
+          {
+            type: 'listItem',
+            content: [
+              {
+                type: 'codeBlock',
+                attrs: { language: 'bash' },
+                content: [{ type: 'text', text: 'echo nested' }]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        type: 'codeBlock',
+        attrs: { language: 'mermaid' },
+        content: [{ type: 'text', text: 'flowchart TD\nA-->B' }]
+      }
+    )
+    const live = liveDocWith(codeDoc)
+
+    expect(edit(live, 'const a = 1', 'const a = 1\nconst b = 2')).toMatchObject({ ok: true })
+    expect(edit(live, 'echo nested', 'echo nested\necho two')).toMatchObject({ ok: true })
+    expect(edit(live, 'A-->B', 'A-->B\nB-->C')).toMatchObject({ ok: true })
+  })
+
+  test('rejects XML-illegal C0 control chars everywhere while allowing tab and missing-oldText priority', () => {
+    const codeDoc = doc(
+      section('Title', 1, 'title'),
+      section('Budget', 2, 'budget'),
+      para('hello'),
+      {
+        type: 'codeBlock',
+        attrs: { language: 'ts' },
+        content: [{ type: 'text', text: 'code line' }]
+      }
+    )
+
+    for (const bad of ['\u0000', '\u0007', '\u000b', '\u000c', '\u001f']) {
+      const live = liveDocWith(codeDoc)
+      expect(edit(live, 'hello', `he${bad}llo`)).toEqual({
+        ok: false,
+        status: 'invalid-content',
+        detail: 'control characters are not allowed'
+      })
+      expect(edit(live, 'code line', `code${bad} line`)).toEqual({
+        ok: false,
+        status: 'invalid-content',
+        detail: 'control characters are not allowed'
+      })
+    }
+
+    const live = liveDocWith(codeDoc)
+    expect(edit(live, 'hello', 'he\tllo')).toMatchObject({ ok: true })
+    expect(edit(live, 'code line', 'code\tline')).toMatchObject({ ok: true })
+    expect(edit(live, 'not-present', 'a\nb')).toEqual({
+      ok: false,
+      status: 'invalid-content',
+      detail: 'it is not in this section'
+    })
   })
 })
 

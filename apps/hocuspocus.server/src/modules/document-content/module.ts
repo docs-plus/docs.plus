@@ -19,7 +19,9 @@ export const init = (deps: InitDeps): InitResult => {
     baseUrl: deps.wsApplyBaseUrl,
     serviceRoleKey: deps.serviceRoleKey,
     prisma: deps.prisma,
-    logger: deps.logger
+    logger: deps.logger,
+    redis: deps.redis,
+    allowedPeerUrls: deps.allowedPeerUrls
   })
 
   return {

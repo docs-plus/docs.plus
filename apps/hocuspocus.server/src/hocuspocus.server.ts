@@ -454,6 +454,40 @@ const firstEditMetadataExtension = {
   }
 }
 
+// Multi-replica room-owner registry (#816): lets REST route live reads/writes
+// straight to the collab replica holding a room. Disabled in single-replica dev
+// unless an explicit advertise URL is configured.
+const roomRegistryRedis = getRedisClient()
+const roomRegistryEnabled =
+  roomRegistryRedis !== null &&
+  ((config.app.env === 'production' && config.redis.enabled) ||
+    Boolean(config.hocuspocus.internalAdvertiseUrl))
+const roomRegistryAdvertiseUrl = roomRegistryEnabled
+  ? documentContent.resolveAdvertiseUrl({
+      explicitUrl: config.hocuspocus.internalAdvertiseUrl,
+      bindHost: config.hocuspocus.internalHttpHost,
+      bindPort: config.hocuspocus.internalHttpPort
+    })
+  : null
+const roomRegistry = roomRegistryAdvertiseUrl
+  ? documentContent.createRoomRegistryWriter({
+      redis: roomRegistryRedis,
+      advertiseUrl: roomRegistryAdvertiseUrl,
+      logger: wsLogger.child({ module: 'room-registry' })
+    })
+  : null
+
+const roomRegistryExtension = roomRegistry
+  ? {
+      async afterLoadDocument({ documentName }: { documentName: string }) {
+        await roomRegistry.register(documentName)
+      },
+      async afterUnloadDocument({ documentName }: { documentName: string }) {
+        await roomRegistry.unregister(documentName)
+      }
+    }
+  : null
+
 const baseConfig = HocuspocusConfig()
 const serverConfig = {
   ...baseConfig,
@@ -466,7 +500,8 @@ const serverConfig = {
     // Must follow firstEditMetadataExtension: both act on the update that clears
     // isDraft, and the awaited chain anchors the metadata row the binding needs.
     firstEditMetadataExtension,
-    clientAuthorsExtension
+    clientAuthorsExtension,
+    ...(roomRegistryExtension ? [roomRegistryExtension] : [])
   ],
 
   async onConnect() {
@@ -733,8 +768,17 @@ try {
 wsLogger.info({
   msg: '📊 Internal HTTP server started (metrics, content apply, version ops)',
   port: internalServer.port,
-  url: `http://localhost:${internalServer.port}/metrics`
+  url: `http://localhost:${internalServer.port}/metrics`,
+  ...(roomRegistryAdvertiseUrl ? { roomRegistryAdvertiseUrl } : {})
 })
+
+const roomRegistryHeartbeat = roomRegistry
+  ? setInterval(() => {
+      const loaded = [...server.hocuspocus.documents.keys()]
+      if (loaded.length === 0) return
+      void roomRegistry.refreshMany(loaded)
+    }, documentContent.ROOM_OWNER_HEARTBEAT_MS)
+  : null
 
 // Producer-side because enqueue lives here. The refresh keeps stranded
 // claim-check payloads alive while their jobs wait out a worker outage (queue.ts
@@ -762,6 +806,12 @@ const shutdown = async (exitCode = 0) => {
 
   try {
     clearInterval(stateKeyTtlRefresh)
+    if (roomRegistryHeartbeat) clearInterval(roomRegistryHeartbeat)
+    if (roomRegistry) {
+      // Unregister before closing the internal listener so REST stops routing
+      // live reads/writes to this draining replica immediately.
+      await roomRegistry.unregisterMany([...server.hocuspocus.documents.keys()])
+    }
     internalServer.stop()
 
     let destroyTimer: ReturnType<typeof setTimeout> | undefined

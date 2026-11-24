@@ -34,4 +34,16 @@ describe('hasMedia', () => {
     }
     expect(hasMedia([nested, paragraph(text('after'))])).toBe(true)
   })
+
+  test('walks a 5000-level deep tree iteratively without stack overflow', () => {
+    let withMedia: JSONContent = paragraph({ type: 'image', attrs: { src: 'deep.png' } })
+    let plain: JSONContent = paragraph(text('deep plain'))
+    for (let i = 0; i < 5000; i += 1) {
+      withMedia = { type: 'blockquote', content: [withMedia] }
+      plain = { type: 'blockquote', content: [plain] }
+    }
+
+    expect(hasMedia([withMedia])).toBe(true)
+    expect(hasMedia([plain])).toBe(false)
+  })
 })

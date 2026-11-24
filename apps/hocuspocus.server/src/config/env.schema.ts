@@ -40,6 +40,63 @@ const commaSeparatedList = z
       .filter(Boolean)
   )
 
+const validateBareHttpOrigin = (
+  val: string,
+  ctx: z.RefinementCtx,
+  name: string,
+  example: string
+): void => {
+  let parsed: URL
+  try {
+    parsed = new URL(val)
+  } catch {
+    ctx.addIssue({
+      code: 'custom',
+      message: `${name} must be a valid http(s) origin URL (e.g. ${example})`
+    })
+    return
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    ctx.addIssue({
+      code: 'custom',
+      message: `${name} must use http or https scheme`
+    })
+    return
+  }
+  if (
+    parsed.pathname !== '/' ||
+    parsed.search !== '' ||
+    parsed.hash !== '' ||
+    parsed.username !== '' ||
+    parsed.password !== ''
+  ) {
+    ctx.addIssue({
+      code: 'custom',
+      message: `${name} must be a bare origin with no path suffix, query, fragment, or credentials (e.g. ${example}, not .../api)`
+    })
+  }
+}
+
+const optionalBareHttpOrigin = (name: string, example: string) =>
+  z
+    .string()
+    .optional()
+    .transform((val) => val?.trim() || undefined)
+    .superRefine((val, ctx) => {
+      if (val) validateBareHttpOrigin(val, ctx, name, example)
+    })
+    .transform((val) => (val ? new URL(val).origin : undefined))
+
+const bareHttpOriginList = (name: string, example: string) =>
+  commaSeparatedList.pipe(
+    z.array(
+      z
+        .string()
+        .superRefine((val, ctx) => validateBareHttpOrigin(val, ctx, name, example))
+        .transform((val) => new URL(val).origin)
+    )
+  )
+
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   APP_NAME: z.string().default('hocuspocus'),
@@ -53,11 +110,23 @@ export const envSchema = z.object({
   HOCUSPOCUS_INTERNAL_HTTP_HOST: z.string().default('0.0.0.0'),
   // Where REST forwards content applies; compose sets http://hocuspocus-server:4003.
   HOCUSPOCUS_INTERNAL_URL: z.string().default('http://localhost:4003'),
+  // Optional bare http(s) origin this collab replica advertises in the Redis room-owner registry.
+  // When unset, derived from HOCUSPOCUS_INTERNAL_HTTP_HOST/PORT (or the container's non-loopback IPv4 on 0.0.0.0).
+  HOCUSPOCUS_INTERNAL_ADVERTISE_URL: optionalBareHttpOrigin(
+    'HOCUSPOCUS_INTERNAL_ADVERTISE_URL',
+    'http://172.18.0.5:4003'
+  ),
+  // Optional explicit allowlist of collab peer origins for non-DNS multi-replica topologies
+  // (e.g. local multi-port probes or static peer lists). Empty uses DNS multi-A on HOCUSPOCUS_INTERNAL_URL.
+  HOCUSPOCUS_INTERNAL_PEERS: bareHttpOriginList(
+    'HOCUSPOCUS_INTERNAL_PEERS',
+    'http://127.0.0.1:4003'
+  ),
   // This server's own public origin, e.g. https://prodback.docs.plus — ORIGIN ONLY,
   // no `/api` (unlike NEXT_PUBLIC_RESTAPI_URL), because route paths are appended and
   // the result is persisted into document content. No default: an unset value must
   // drop imported images, never guess an origin nobody can resolve.
-  PUBLIC_RESTAPI_URL: z.string().optional(),
+  PUBLIC_RESTAPI_URL: optionalBareHttpOrigin('PUBLIC_RESTAPI_URL', 'https://api.example.com'),
   // The hosts that serve pads. Empty means the APP_URL host and its `www.` form. A scheme or a
   // port would never equal `URL.hostname`, so a Private pad's cached card would never go.
   APP_HOSTS: commaSeparatedList.pipe(
@@ -95,7 +164,10 @@ export const envSchema = z.object({
   // The OAuth issuer the MCP metadata names, exactly as Supabase's
   // openid-configuration reports it. Unset means `${SUPABASE_URL}/auth/v1`, which
   // is wrong wherever SUPABASE_URL is a container-internal address.
-  MCP_AUTH_ISSUER: z.string().optional(),
+  MCP_AUTH_ISSUER: z
+    .string()
+    .optional()
+    .transform((val) => val?.trim().replace(/\/+$/, '') || undefined),
 
   ALLOWED_ORIGINS: commaSeparatedList,
   RATE_LIMIT_MAX: numericString('100'),

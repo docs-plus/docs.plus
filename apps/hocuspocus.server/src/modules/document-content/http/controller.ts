@@ -19,7 +19,13 @@ import type {
   VersionStamp,
   WsApplyOutcome
 } from '../types'
-import { DOCUMENT_BUSY_CODE, MAX_CONTENT_BYTES, NOT_CONFIRMED_CODE } from '../types'
+import {
+  DOCUMENT_BUSY_CODE,
+  MAX_CONTENT_BYTES,
+  NOT_CONFIRMED_CODE,
+  REQUIRE_LOADED_HEADER,
+  ROOM_NOT_LOADED_CODE
+} from '../types'
 import type { InternalApplyBody, PatchQuery } from './schema'
 
 // A repeat of this 500 for the same document means the per-doc debouncer is
@@ -178,9 +184,20 @@ export const createPatchContentHandler =
   }
 
 export const createInternalApplyHandler =
-  (applyContent: ApplyContent) =>
+  (applyContent: ApplyContent, hocuspocus?: Hocuspocus) =>
   async (c: Context): Promise<Response> => {
     const documentId = c.req.param('documentId') as string
+    // Pre-mutation check for routed writes (#816): if the caller targeted this
+    // replica because Redis listed it as room owner, refuse before opening a cold
+    // duplicate Y.Doc so the caller can clean the stale entry and retry safely.
+    if (
+      hocuspocus &&
+      c.req.header(REQUIRE_LOADED_HEADER) === '1' &&
+      !hocuspocus.documents.has(documentId)
+    ) {
+      return fail(c, 412, ROOM_NOT_LOADED_CODE, 'Document room is not loaded on this replica')
+    }
+
     const { commitMessage, ...edit } = c.req.valid('json' as never) as InternalApplyBody
     const requestId = c.get('requestId') as string | undefined
 

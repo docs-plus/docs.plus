@@ -1,9 +1,30 @@
-import { describe, test, expect, mock, beforeEach, afterEach } from 'bun:test'
+import { describe, test, expect, beforeEach } from 'bun:test'
 import { Hono } from 'hono'
-import { pinoLogger, setupMiddleware } from '../../src/middleware'
+import {
+  createDuplicateRateLimiter,
+  DUPLICATE_RATE_LIMIT_POINTS,
+  MARKDOWN_READ_RATE_LIMIT_POINTS,
+  pinoLogger,
+  setupMiddleware
+} from '../../src/middleware'
+import type { RedisClient } from '../../src/types/redis.types'
+
+// Minimal in-memory rlflxIncr stub exercising real RateLimiterRedis + consumeWithin.
+const makeMemoryRateLimitRedis = (): RedisClient => {
+  const counts = new Map<string, number>()
+  return {
+    defineCommand: () => {},
+    rlflxIncr: async (args: [string, string, string, string, string]) => {
+      const [key, pointsToConsume, secDuration] = args
+      const next = (counts.get(key) ?? 0) + Number(pointsToConsume)
+      counts.set(key, next)
+      return [next, Number(secDuration) * 1000]
+    }
+  } as unknown as RedisClient
+}
 
 // These tests cover CORS and logging, not the MCP rate-limit skip.
-const NO_MCP_SKIP = { isVerifiedMcpCall: async () => false }
+const NO_MCP_SKIP = { mcpRateLimit: async () => ({ kind: 'fallthrough' as const }) }
 
 describe('Middleware - Complete Coverage', () => {
   let app: Hono
@@ -109,6 +130,78 @@ describe('Middleware - Complete Coverage', () => {
       expect(() => setupMiddleware(prodApp, NO_MCP_SKIP)).not.toThrow()
 
       process.env.ALLOWED_ORIGINS = originalOrigins
+    })
+  })
+
+  describe('per-user duplicate rate limiter (#820)', () => {
+    test('allows 10 duplicates per userId, then returns 429 + Retry-After without affecting another user', async () => {
+      const redis = makeMemoryRateLimitRedis()
+      const duplicateApp = new Hono()
+      duplicateApp.use('*', async (c, next) => {
+        c.set('userId', c.req.header('x-test-user') ?? '')
+        await next()
+      })
+      duplicateApp.post('/api/documents/:id/duplicate', createDuplicateRateLimiter(redis), (c) =>
+        c.json({ ok: true }, 200)
+      )
+
+      for (let i = 0; i < DUPLICATE_RATE_LIMIT_POINTS; i++) {
+        const okRes = await duplicateApp.request('http://localhost/api/documents/doc1/duplicate', {
+          method: 'POST',
+          headers: { 'x-test-user': 'user-a' }
+        })
+        expect(okRes.status).toBe(200)
+      }
+
+      const blocked = await duplicateApp.request('http://localhost/api/documents/doc1/duplicate', {
+        method: 'POST',
+        headers: { 'x-test-user': 'user-a' }
+      })
+      const blockedBody = (await blocked.json()) as { error: { code: string } }
+      expect(blocked.status).toBe(429)
+      expect(blockedBody.error.code).toBe('RATE_LIMIT_EXCEEDED')
+      expect(Number(blocked.headers.get('retry-after'))).toBeGreaterThan(0)
+
+      // Different userId still has full budget.
+      const otherUser = await duplicateApp.request(
+        'http://localhost/api/documents/doc1/duplicate',
+        {
+          method: 'POST',
+          headers: { 'x-test-user': 'user-b' }
+        }
+      )
+      expect(otherUser.status).toBe(200)
+    })
+  })
+
+  describe('dedicated public Markdown read IP rate limiter (#822)', () => {
+    test('routes GET /api/documents/:slug/markdown to doc-markdown bucket ahead of globalRateLimiter', async () => {
+      const redis = makeMemoryRateLimitRedis()
+      const mdApp = new Hono()
+      setupMiddleware(mdApp, { ...NO_MCP_SKIP, storeClient: redis })
+      mdApp.get('/api/documents/:slug/markdown', (c) => c.text('# Hello', 200))
+      mdApp.get('/api/documents/:slug', (c) => c.json({ ok: true }, 200))
+
+      const ipHeaders = { 'x-real-ip': '203.0.113.10' }
+      for (let i = 0; i < MARKDOWN_READ_RATE_LIMIT_POINTS; i++) {
+        const res = await mdApp.request('http://localhost/api/documents/my-pad/markdown', {
+          headers: ipHeaders
+        })
+        expect(res.status).toBe(200)
+        expect(res.headers.get('x-ratelimit-limit')).toBe(String(MARKDOWN_READ_RATE_LIMIT_POINTS))
+      }
+
+      const limited = await mdApp.request('http://localhost/api/documents/my-pad/markdown', {
+        headers: ipHeaders
+      })
+      expect(limited.status).toBe(429)
+      expect(Number(limited.headers.get('retry-after'))).toBeGreaterThan(0)
+
+      // Global bucket for the same IP was never spent by the markdown reads.
+      const globalRes = await mdApp.request('http://localhost/api/documents/my-pad', {
+        headers: ipHeaders
+      })
+      expect(globalRes.status).toBe(200)
     })
   })
 })

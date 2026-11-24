@@ -415,6 +415,8 @@ export const touchDocumentOpened = async (c: AppContext): Promise<Response> => {
   }
 }
 
+const DUPLICATE_BUSY_RETRY_SECONDS = '10'
+
 export const duplicateDocument = async (c: AppContext): Promise<Response> => {
   const prisma = c.get('prisma')
   const documentId = c.req.param('documentId')
@@ -422,16 +424,32 @@ export const duplicateDocument = async (c: AppContext): Promise<Response> => {
   const user = c.get('user')
   const requesterId = c.get('userId') as string | undefined
 
+  if (!requesterId || user?.is_anonymous === true) {
+    return fail(c, 403, 'FORBIDDEN', 'Sign in to duplicate this document')
+  }
+
   try {
     const result = await documentsService.duplicateDocument(
       prisma,
       documentId,
       requesterId,
-      user?.email
+      user?.email,
+      user?.is_anonymous
     )
-    if (result.status === 'forbidden') return forbiddenResponse(c)
+    if (result.status === 'forbidden') {
+      return fail(c, 403, 'FORBIDDEN', 'Sign in to duplicate this document')
+    }
     if (result.status === 'not-found') {
       return fail(c, 404, 'NOT_FOUND', 'Document not found')
+    }
+    if (result.status === 'busy') {
+      c.header('Retry-After', DUPLICATE_BUSY_RETRY_SECONDS)
+      return fail(
+        c,
+        503,
+        'SERVICE_UNAVAILABLE',
+        'Another large document is being processed on this server. Try again in a few seconds.'
+      )
     }
     return ok(c, result.document)
   } catch (error) {

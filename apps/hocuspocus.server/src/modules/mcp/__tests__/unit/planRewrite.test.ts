@@ -78,5 +78,18 @@ describe('planRewrite', () => {
       ok: true,
       keep: []
     })
+    for (const markdown of ['[1]', '\\[1\\]', '[1]\n\n[2]', '[99]']) {
+      const parsed = parseMarkdown(markdown).content ?? []
+      expect(planRewrite([paragraph('old')], parsed)).toEqual({
+        ok: true,
+        content: parsed,
+        keep: []
+      })
+      expect(planRewrite([], parsed)).toEqual({
+        ok: true,
+        content: parsed,
+        keep: []
+      })
+    }
   })
 })

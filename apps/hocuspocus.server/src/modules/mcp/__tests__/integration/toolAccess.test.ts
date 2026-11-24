@@ -4,6 +4,7 @@ import type { Logger } from 'pino'
 
 import { createMockPrisma } from '../../../../../tests/helpers/test-server'
 import { createServerFactory } from '../../http/serverFactory'
+import { notFoundText } from '../../tools/toolContext'
 import type { ChatStore, DocumentRecord } from '../../types'
 
 const OWNER = 'owner-1'
@@ -54,7 +55,7 @@ interface Harness {
   writes: number
 }
 
-const harness = (doc: DocumentRecord): Harness => {
+const harness = (doc: DocumentRecord | null): Harness => {
   const prisma = createMockPrisma() as any
   prisma.documentMetadata.findUnique = async () => doc
   const state = { reads: [] as string[], writes: 0 }
@@ -102,7 +103,7 @@ const harness = (doc: DocumentRecord): Harness => {
           jsonrpc: '2.0',
           id: ++id,
           method: 'tools/call',
-          params: { name, arguments: { slug: doc.slug, ...args } }
+          params: { name, arguments: { slug: doc?.slug ?? 'garden', ...args } }
         })
       }),
       {
@@ -136,14 +137,56 @@ describe('MCP tool access', () => {
     })
 
     for (const [name, args] of Object.entries({ ...READ_TOOLS, ...OWN_TOOLS })) {
-      test(`${name} refuses it`, async () => {
+      test(`${name} refuses it with the same not-found message`, async () => {
         const result = await h.call(name, args)
         expect(result.isError).toBe(true)
-        expect(result.text).toBe('slug: "garden" is private. Only its owner can open it.')
+        expect(result.text).toBe(notFoundText('garden'))
         expect(h.reads).toHaveLength(0)
         expect(h.writes).toBe(0)
       })
     }
+  })
+
+  describe('missing and soft-deleted documents match Private refusal text', () => {
+    for (const [label, doc] of [
+      ['missing', null],
+      ['soft-deleted', row({ deletedAt: new Date() })]
+    ] as const) {
+      test(`${label} document returns notFoundText across read and write tools`, async () => {
+        const h = harness(doc)
+        for (const [name, args] of Object.entries({ ...READ_TOOLS, ...OWN_TOOLS })) {
+          const result = await h.call(name, args)
+          expect(result.isError).toBe(true)
+          expect(result.text).toBe(notFoundText('garden'))
+        }
+        expect(h.reads).toHaveLength(0)
+        expect(h.writes).toBe(0)
+      })
+    }
+  })
+
+  describe('an Open document with no owner', () => {
+    let h: Harness
+    beforeEach(() => {
+      h = harness(row({ ownerId: null }))
+    })
+
+    for (const [name, args] of Object.entries(OWN_TOOLS)) {
+      test(`${name} refuses to write and explains it has no owner`, async () => {
+        const result = await h.call(name, args)
+        expect(result.isError).toBe(true)
+        expect(result.text).toContain('slug: "garden" has no owner.')
+        expect(result.text).not.toContain('belongs to another person')
+        expect(h.reads).toHaveLength(0)
+        expect(h.writes).toBe(0)
+      })
+    }
+
+    test('get_outline still reads it', async () => {
+      const result = await h.call('get_outline', READ_TOOLS.get_outline)
+      expect(result.isError).toBeUndefined()
+      expect(h.reads).toEqual(['doc-1'])
+    })
   })
 
   describe('a public document someone else owns', () => {

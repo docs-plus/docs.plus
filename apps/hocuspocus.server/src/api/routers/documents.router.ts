@@ -2,6 +2,7 @@ import { zValidator } from '@hono/zod-validator'
 import { Hono, type MiddlewareHandler } from 'hono'
 
 import { houseEnvelopeHook } from '../../http/envelope'
+import { createDuplicateRateLimiter } from '../../middleware'
 import { contentBodyLimit } from '../../modules/document-content'
 import {
   createDocumentSchema,
@@ -32,6 +33,8 @@ export interface DocumentsRouterDeps {
   optionalPadReader: MiddlewareHandler
   requireUser: MiddlewareHandler
   requireServiceRoleOrUser: MiddlewareHandler
+  /** Per-user duplicate limiter (10 / 15 min). Optional so seam tests can omit or override it. */
+  duplicateRateLimit?: MiddlewareHandler
 }
 
 export const createDocumentsRouter = (deps: DocumentsRouterDeps): Hono => {
@@ -97,7 +100,15 @@ export const createDocumentsRouter = (deps: DocumentsRouterDeps): Hono => {
 
   documents.post('/:documentId/restore', deps.requireUser, controller.restoreDocument)
 
-  documents.post('/:documentId/duplicate', deps.requireUser, controller.duplicateDocument)
+  const duplicateRateLimit: MiddlewareHandler =
+    deps.duplicateRateLimit ?? (async (_c, next) => next())
+
+  documents.post(
+    '/:documentId/duplicate',
+    deps.requireUser,
+    duplicateRateLimit,
+    controller.duplicateDocument
+  )
 
   documents.post('/:documentId/opened', deps.requireUser, controller.touchDocumentOpened)
 
@@ -116,5 +127,6 @@ export default createDocumentsRouter({
   optionalUser,
   optionalPadReader,
   requireUser,
-  requireServiceRoleOrUser
+  requireServiceRoleOrUser,
+  duplicateRateLimit: createDuplicateRateLimiter()
 })

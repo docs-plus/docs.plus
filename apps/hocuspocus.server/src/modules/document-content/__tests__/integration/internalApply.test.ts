@@ -11,6 +11,7 @@ import { findSection } from '../../domain/sections'
 import { createInternalApp } from '../../http/internalApp'
 import { createApplyContent } from '../../infra/hocuspocusApply'
 import type { TiptapDocJson } from '../../types'
+import { REQUIRE_LOADED_HEADER, ROOM_NOT_LOADED_CODE } from '../../types'
 
 const SERVICE_KEY = 'internal-service-role-key'
 const AUTH = { Authorization: `Bearer ${SERVICE_KEY}` }
@@ -298,6 +299,66 @@ describe('Internal content apply — live document', () => {
     const { json } = decodeState(persisted.get(LIVE_DOC) as Uint8Array)
     expect(json.content.map((node) => node.type)).toEqual(['heading', 'paragraph'])
     expect(json.content[1].content[0].text).toBe('extra')
+  })
+
+  test('x-require-loaded: 1 refuses a cold room with 412 without loading Y.Doc, and applies on a loaded room', async () => {
+    const ROUTED_DOC = 'routedDoc12345678AB'
+    metaRows.set(ROUTED_DOC, liveMeta(ROUTED_DOC, 'routed-doc'))
+
+    const coldRes = await server.post(
+      applyPath(ROUTED_DOC),
+      { mode: 'replace', content: titleDoc('Should not load') },
+      { ...AUTH, [REQUIRE_LOADED_HEADER]: '1' }
+    )
+    const coldBody = await coldRes.json()
+    expect(coldRes.status).toBe(412)
+    expect(coldBody.error.code).toBe(ROOM_NOT_LOADED_CODE)
+    expect(hocuspocus.documents.has(ROUTED_DOC)).toBe(false)
+    expect(storeCalls).toHaveLength(0)
+
+    const held = await hocuspocus.openDirectConnection(ROUTED_DOC, { slug: 'routed-doc' })
+    try {
+      const warmRes = await server.post(
+        applyPath(ROUTED_DOC),
+        { mode: 'replace', content: titleDoc('Applied to warm room') },
+        { ...AUTH, [REQUIRE_LOADED_HEADER]: '1' }
+      )
+      expect(warmRes.status).toBe(200)
+      expect(held.document?.getXmlFragment('default').toArray()[0].toString()).toContain(
+        'Applied to warm room'
+      )
+    } finally {
+      await held.disconnect()
+    }
+  })
+
+  test('rejects concurrent empty-doc appends with a second # title and non-empty H1 appends', async () => {
+    const CONCURRENT_DOC = 'concurrentDoc1234AB'
+    persisted.clear()
+    metaRows.set(CONCURRENT_DOC, liveMeta(CONCURRENT_DOC, 'concurrent-doc'))
+
+    const [first, second] = await Promise.all([
+      server.post(applyPath(CONCURRENT_DOC), { mode: 'append', content: titleDoc('First') }, AUTH),
+      server.post(applyPath(CONCURRENT_DOC), { mode: 'append', content: titleDoc('Second') }, AUTH)
+    ])
+
+    const statuses = [first.status, second.status].sort((a, b) => a - b)
+    expect(statuses).toEqual([200, 422])
+
+    const nestedH1: TiptapDocJson = {
+      type: 'doc',
+      content: [{ type: 'blockquote', content: [titleDoc('Secret').content[0]] }]
+    }
+    const nonEmptyNested = await server.post(
+      applyPath(CONCURRENT_DOC),
+      { mode: 'append', content: nestedH1 },
+      AUTH
+    )
+    expect(nonEmptyNested.status).toBe(422)
+
+    const { json } = decodeState(persisted.get(CONCURRENT_DOC) as Uint8Array)
+    const titles = json.content.filter((node) => node.type === 'heading' && node.attrs?.level === 1)
+    expect(titles).toHaveLength(1)
   })
 })
 

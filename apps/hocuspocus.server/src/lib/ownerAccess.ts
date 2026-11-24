@@ -1,6 +1,6 @@
 import type { StoreDocumentContext } from '../types'
 
-/** Strict owner check for lifecycle actions (delete/restore/duplicate), for metadata
+/** Strict owner check for lifecycle actions (delete/restore), for metadata
  *  writes, and for the Private/Read-only locks. Distinct from resolvePrivateAccess,
  *  which allows any signed-in caller on a non-private doc — here an ownerless or
  *  mismatched doc is never the caller's. */

@@ -15,7 +15,7 @@ interface Frame {
 }
 
 // Iterative and stops at either cap, so a hostile tree costs at most the cap in steps.
-const exceedsTreeCaps = (root: TiptapDocJson): 'TOO_MANY_NODES' | 'TOO_DEEP' | null => {
+export const exceedsTreeCaps = (root: TiptapDocJson): 'TOO_MANY_NODES' | 'TOO_DEEP' | null => {
   const stack: Frame[] = [{ node: root, depth: 0 }]
   let nodes = 0
   for (let frame = stack.pop(); frame; frame = stack.pop()) {
