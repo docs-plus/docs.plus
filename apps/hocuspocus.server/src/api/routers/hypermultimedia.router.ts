@@ -1,5 +1,5 @@
 import { zValidator } from '@hono/zod-validator'
-import { Hono } from 'hono'
+import { Hono, type MiddlewareHandler } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 
 import { houseEnvelopeHook } from '../../http/envelope'
@@ -28,6 +28,26 @@ const uploadBodyLimit = bodyLimit({
     c.json({ success: false, error: { message: 'File too large', code: 'PAYLOAD_TOO_LARGE' } }, 413)
 })
 
+// A chunked request without Content-Length streams through bodyLimit before the
+// controller runs; convert client disconnects here to 499 instead of a 500 alert (#803).
+const uploadBodyLimitGuard: MiddlewareHandler = async (c, next) => {
+  let reachedNext = false
+  try {
+    return await uploadBodyLimit(c, async () => {
+      reachedNext = true
+      await next()
+    })
+  } catch (error) {
+    if (!reachedNext && documentsController.isRequestBodyAbort(error, c.req.raw.signal)) {
+      return documentsController.clientClosedResponse(c, {
+        documentId: c.req.param('documentId'),
+        userId: c.get('userId')
+      })
+    }
+    throw error
+  }
+}
+
 // Before `POST /:documentId`: `session` passes `documentIdField`, so that route
 // would claim it as a document id.
 hypermultimedia.post('/session', requireUser, documentsController.createMediaSession)
@@ -44,7 +64,7 @@ hypermultimedia.get(
 hypermultimedia.post(
   '/:documentId',
   requireUser,
-  uploadBodyLimit,
+  uploadBodyLimitGuard,
   zValidator('param', documentIdParamSchema, houseEnvelopeHook),
   documentsController.uploadMedia
 )

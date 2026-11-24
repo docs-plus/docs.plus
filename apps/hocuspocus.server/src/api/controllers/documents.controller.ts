@@ -1,10 +1,12 @@
+import type { Context } from 'hono'
 import { getCookie, setCookie } from 'hono/cookie'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
 
 import { config } from '../../config/env'
 import { fail, ok } from '../../http/envelope'
 import { sendNewDocumentNotification } from '../../lib/email/document-notification'
 import { AppError, getErrorResponse } from '../../lib/errors'
-import { captureHttpError } from '../../lib/instrument'
+import * as instrument from '../../lib/instrument'
 import { getJoinedDocumentIds } from '../../lib/joinedDocuments'
 import { documentsControllerLogger } from '../../lib/logger'
 import {
@@ -58,10 +60,25 @@ export interface DocumentsHandlers {
 const getValidJson = <T>(c: AppContext): T => (c.req as any).valid('json') as T
 const getValidQuery = <T>(c: AppContext): T => (c.req as any).valid('query') as T
 
+export const isRequestBodyAbort = (error: unknown, signal?: AbortSignal): boolean => {
+  if (signal?.aborted) return true
+  if (!error || typeof error !== 'object') return false
+  const err = error as { name?: unknown; code?: unknown }
+  return err.name === 'AbortError' || err.code === 'ABORT_ERR'
+}
+
+export const clientClosedResponse = (
+  c: Context,
+  context: Record<string, unknown> = {}
+): Response => {
+  documentsControllerLogger.info(context, 'Client closed request during media upload')
+  return fail(c, 499 as ContentfulStatusCode, 'CLIENT_CLOSED_REQUEST', 'Client closed request')
+}
+
 const handleError = (c: AppContext, error: unknown, context: Record<string, unknown> = {}) => {
   documentsControllerLogger.error({ err: error, ...context }, 'Document operation failed')
   const statusCode = (error instanceof AppError ? error.statusCode : 500) as 400 | 404 | 500
-  captureHttpError(error, { extra: context })
+  instrument.captureHttpError(error, { extra: context })
   return c.json(
     getErrorResponse(error instanceof Error ? error : new Error(String(error))),
     statusCode
@@ -518,7 +535,17 @@ export const uploadMedia = async (c: AppContext): Promise<Response> => {
       return fail(c, 403, 'FORBIDDEN', 'This document is read-only')
     }
 
-    const formData = await c.req.formData()
+    // Only multipart request reads can fail from a client disconnect; storage
+    // calls below stay in the outer catch so upstream aborts still alert (#803).
+    let formData: FormData
+    try {
+      formData = await c.req.formData()
+    } catch (error) {
+      if (isRequestBodyAbort(error, c.req.raw.signal)) {
+        return clientClosedResponse(c, { documentId, userId })
+      }
+      throw error
+    }
     const mediaFile = formData.get('mediaFile')
 
     if (!mediaFile || typeof mediaFile === 'string') {

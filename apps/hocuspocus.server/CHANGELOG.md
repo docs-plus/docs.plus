@@ -170,6 +170,14 @@ This file is the operator and API changelog. The pad product lives in the [root 
   replica whose subscriber is down now leaves its own clients without these frames until it
   reconnects ([#758](https://github.com/docs-plus/docs.plus/issues/758)).
 
+### Fixed
+
+- When a client disconnects while streaming a media upload (`POST /api/plugins/hypermultimedia/:documentId`),
+  the route now logs at `info` and returns `499 CLIENT_CLOSED_REQUEST` instead of `500` with a
+  GlitchTip error event. Both multipart `formData()` reads and chunked `bodyLimit` reads handle the
+  abort, while upstream storage aborts still return `500` and capture
+  ([#803](https://github.com/docs-plus/docs.plus/issues/803)).
+
 ### Security
 
 - The oEmbed stage reads its answer through `readApiJson`, capped at 64 KiB. It read a body of any

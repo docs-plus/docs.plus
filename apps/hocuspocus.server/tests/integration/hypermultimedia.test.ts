@@ -22,6 +22,7 @@ mock.module('../../src/lib/supabase', () => ({
 import { Hono } from 'hono'
 import hypermultimediaRouter from '../../src/api/routers/hypermultimedia.router'
 import * as mediaService from '../../src/api/services/media.service'
+import * as instrument from '../../src/lib/instrument'
 import { config } from '../../src/config/env'
 import {
   MEDIA_SESSION_COOKIE,
@@ -171,6 +172,89 @@ describe('Hypermultimedia API (Direct Route)', () => {
           415,
           'UNSUPPORTED_MEDIA_TYPE'
         )
+      })
+
+      describe('client disconnect during upload', () => {
+        let captureSpy: ReturnType<typeof spyOn> | undefined
+        let uploadSpy: ReturnType<typeof spyOn> | undefined
+
+        const createAbortingBodyStream = (): ReadableStream<Uint8Array> =>
+          new ReadableStream({
+            start(controller) {
+              controller.error(new DOMException('The operation was aborted.', 'AbortError'))
+            }
+          })
+
+        beforeEach(() => {
+          row()
+          captureSpy = spyOn(instrument, 'captureHttpError').mockImplementation(() => undefined)
+        })
+
+        afterEach(() => {
+          captureSpy?.mockRestore()
+          uploadSpy?.mockRestore()
+        })
+
+        test('returns 499 CLIENT_CLOSED_REQUEST without capturing when c.req.formData() aborts', async () => {
+          uploadSpy = spyOn(mediaService, 'uploadMedia')
+          const req = new Request('http://localhost:3001/api/plugins/hypermultimedia/doc-1', {
+            method: 'POST',
+            headers: {
+              token: 'valid-test-token',
+              'content-type': 'multipart/form-data; boundary=---docsy-abort-boundary',
+              'content-length': '128'
+            },
+            body: createAbortingBodyStream()
+          })
+
+          const res = await testServer.app.fetch(req)
+          expect(res.status).toBe(499)
+          expect(await res.json()).toEqual({
+            success: false,
+            error: { message: 'Client closed request', code: 'CLIENT_CLOSED_REQUEST' }
+          })
+          expect(captureSpy).toHaveBeenCalledTimes(0)
+          expect(uploadSpy).toHaveBeenCalledTimes(0)
+        })
+
+        test('returns 499 CLIENT_CLOSED_REQUEST when a chunked body aborts inside bodyLimit', async () => {
+          uploadSpy = spyOn(mediaService, 'uploadMedia')
+          const req = new Request('http://localhost:3001/api/plugins/hypermultimedia/doc-1', {
+            method: 'POST',
+            headers: {
+              token: 'valid-test-token',
+              'content-type': 'multipart/form-data; boundary=---docsy-abort-boundary'
+            },
+            body: createAbortingBodyStream()
+          })
+
+          const res = await testServer.app.fetch(req)
+          expect(res.status).toBe(499)
+          expect(await res.json()).toEqual({
+            success: false,
+            error: { message: 'Client closed request', code: 'CLIENT_CLOSED_REQUEST' }
+          })
+          expect(captureSpy).toHaveBeenCalledTimes(0)
+          expect(uploadSpy).toHaveBeenCalledTimes(0)
+        })
+
+        test('keeps 500 and captures when mediaService.uploadMedia rejects with AbortError', async () => {
+          uploadSpy = spyOn(mediaService, 'uploadMedia').mockRejectedValueOnce(
+            new DOMException('Upstream storage aborted', 'AbortError')
+          )
+          const form = new FormData()
+          form.set('mediaFile', createTestFile('photo.png', 'image/png', 512))
+
+          const req = new Request('http://localhost:3001/api/plugins/hypermultimedia/doc-1', {
+            method: 'POST',
+            headers: { token: 'valid-test-token' },
+            body: form
+          })
+
+          const res = await testServer.app.fetch(req)
+          expect(res.status).toBe(500)
+          expect(captureSpy).toHaveBeenCalledTimes(1)
+        })
       })
     })
   })
