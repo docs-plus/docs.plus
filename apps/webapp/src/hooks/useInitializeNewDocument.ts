@@ -31,12 +31,13 @@ const useInitializeNewDocument = ({ editor, provider }: UseInitializeNewDocument
       // That state's needsInitialization=true can win the Y.Map merge over the
       // IndexedDB mirror's false. Never setContent (it REPLACES) over user text.
       // Text, not node count: the editor pre-writes an empty heading scaffold.
-      const fragmentText = provider.configuration.document
-        .getXmlFragment('default')
-        .toString()
-        .replace(/<[^>]+>/g, '')
-        .trim()
-      if (fragmentText.length > 0) return
+      let fragmentText = provider.configuration.document.getXmlFragment('default').toString()
+      let prevText: string
+      do {
+        prevText = fragmentText
+        fragmentText = fragmentText.replace(/<[^>]+>/g, '')
+      } while (fragmentText !== prevText)
+      if (fragmentText.trim().length > 0) return
 
       const heading = Array.isArray(slugs) ? (slugs.at(0) ?? 'Title') : 'Title'
       const defaultContent = Config.editor.getDefaultContent(heading)

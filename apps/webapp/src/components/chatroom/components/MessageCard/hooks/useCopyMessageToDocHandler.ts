@@ -19,15 +19,13 @@ const createParagraphNodeJson = (message: TMsgRow) => {
 
   const messageOwner = message.user_details?.username || message.user_details?.full_name
   const messageContent = message.content?.trim() || ''
-  const messageCreatedAt = new Date(message.created_at)
-    .toLocaleString('sv-SE', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-    .replace(' ', ' ')
+  const messageCreatedAt = new Date(message.created_at).toLocaleString('sv-SE', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 
   const newContent: Record<string, unknown>[] = [
     {

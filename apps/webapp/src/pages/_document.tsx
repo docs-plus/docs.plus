@@ -5,7 +5,8 @@ import { PREFERENCE_TO_THEME } from '../stores/themeConfig'
 // Runs before hydration to prevent FOUC: read the persisted preference and apply the resolved
 // `data-theme`. The map is interpolated from themeConfig (SSR), so this vanilla-JS copy never
 // drifts from the store's `resolveTheme`. daisyUI's per-theme `color-scheme` handles dark styling.
-const THEME_BOOT_SCRIPT = `(function(){try{var s=JSON.parse(localStorage.getItem('docsplus-theme')||'{}');var p=(s.state&&s.state.preference)||'light';var m=${JSON.stringify(PREFERENCE_TO_THEME)};var t=m[p]||(window.matchMedia('(prefers-color-scheme:dark)').matches?'docsplus-dark':'docsplus');document.documentElement.setAttribute('data-theme',t)}catch(e){}})()`
+const SAFE_THEME_MAP_JSON = JSON.stringify(PREFERENCE_TO_THEME).replace(/</g, '\\u003c')
+const THEME_BOOT_SCRIPT = `(function(){try{var s=JSON.parse(localStorage.getItem('docsplus-theme')||'{}');var p=(s.state&&s.state.preference)||'light';var m=${SAFE_THEME_MAP_JSON};var t=m[p]||(window.matchMedia('(prefers-color-scheme:dark)').matches?'docsplus-dark':'docsplus');document.documentElement.setAttribute('data-theme',t)}catch(e){}})()`
 
 /**
  * This file owns only global PWA meta, icons, and fallback OG tags. Per-page

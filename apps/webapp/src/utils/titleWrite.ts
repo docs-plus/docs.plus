@@ -2,7 +2,15 @@ import { useStore } from '@stores'
 import { fetchDocument } from '@utils/fetchDocument'
 import { supabaseClient } from '@utils/supabase'
 
-export const plainTitle = (value: string): string => value.replace(/<[^>]*>/g, '')
+export const plainTitle = (value: string): string => {
+  let out = value
+  let prev: string
+  do {
+    prev = out
+    out = out.replace(/<[^>]*>/g, '')
+  } while (out !== prev)
+  return out
+}
 
 export const REFETCH_GAP_MS = 2000
 

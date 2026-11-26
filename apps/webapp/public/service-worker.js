@@ -18,6 +18,7 @@ self.addEventListener("activate", (event) => {
 
 // Message handler for cross-tab communication and SW updates
 self.addEventListener("message", (event) => {
+  if (event.origin !== self.location.origin) return;
   const data = event.data;
 
   // Handle SKIP_WAITING from update hook (Workbox also handles this)
