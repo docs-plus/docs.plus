@@ -343,7 +343,7 @@ groups:
               refId: C
 
       - uid: realtime-ws-loaded-bytes
-        title: WS replica holds over 30 MB of loaded room state
+        title: WS replica holds over 50 MB of loaded room state
         condition: C
         for: 5m
         noDataState: OK
@@ -351,7 +351,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'One WebSocket replica holds more than 30e6 B of loaded room state. RSS costs about 23.1x stored bytes, so that is about 82 % of the 1 GiB limit. Check ws_loaded_state_max_bytes for one large room before you restart anything.'
+          summary: 'One WebSocket replica holds more than 50e6 B of loaded room state. Steady resident RSS grows ~5x stored bytes at median (~11x p95, ~14x load-spike tail, vs 23.1x cold load peak), so 50e6 B warns ahead of the 1 GiB limit. Check ws_loaded_state_max_bytes for one large room before you restart anything.'
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }
@@ -380,5 +380,5 @@ groups:
               type: threshold
               expression: B
               conditions:
-                - evaluator: { type: gt, params: [30000000] }
+                - evaluator: { type: gt, params: [50000000] }
               refId: C
