@@ -185,7 +185,10 @@ This file is the product changelog. Every app, package and extension keeps its o
 - Added automated CodeQL (`javascript-typescript` and GitHub `actions`, `security-extended`) and
   OpenSSF Scorecard (`publish_results: true`) workflows on GitHub-hosted runners, hardened all
   three legacy Discord workflows with top-level `permissions: {}` and safe env-var shell reads,
-  and enabled GitHub Secret Protection, Push Protection, and Dependabot malware alerts.
+  enabled GitHub Secret Protection, Push Protection, and Dependabot malware alerts, and resolved
+  all CodeQL production findings (linear URL/image checks, service-worker `message` origin guard,
+  inline boot-script `<` escaping, fixed-point HTML stripping, and backslash-safe Markdown alt
+  escaping).
 
 ### Documentation
 

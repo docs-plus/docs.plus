@@ -8,6 +8,12 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
+### Security
+
+- Replaced the backtracking image-URL regex in `isImageUrl` with WHATWG `URL` parsing and an
+  anchored extension check, and escaped backslashes alongside brackets when serializing image alt
+  text to Markdown.
+
 ### Internal
 
 - `typecheck` runs `bun check --no-script`, not `tsc --noEmit`

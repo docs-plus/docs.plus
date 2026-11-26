@@ -27,6 +27,10 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 - With `autolink: true`, a URL in the middle of one typed insert is now linked. Dictation, an IME phrase or a text replacement can insert many words at once, and autolink checked only the last word. It now checks every finished word that the insert touches. A word with no whitespace after it waits, as before. An app transaction that inserts text and calls `scrollIntoView()` counts as typed input too, so its mid URLs link the same way. Paste and drop still link through the paste rule. Undo, redo, y-undo and formatting keep the last-word rule. A peer's change is still not linked ([#780](https://github.com/docs-plus/docs.plus/issues/780)).
 - Autolink no longer rewrites a link that is already there. When a link's label looked like a URL but the link pointed elsewhere, a space or a bold after it made the label the new target. The link now keeps its own target, as in `@tiptap/extension-link` ([#772](https://github.com/docs-plus/docs.plus/issues/772)).
 
+### Security
+
+- Replaced the trailing-punctuation regex in `validateURL` with a linear character check, removing a polynomial ReDoS pattern on long punctuation suffixes.
+
 ### Internal
 
 - The special-URL catalog is now typed rows instead of seven objects joined by a spread. Results and their order are unchanged, and the public `SpecialUrlType` union is the same. A StarterKit app ships 1,303 B less minified ([#776](https://github.com/docs-plus/docs.plus/issues/776)).
