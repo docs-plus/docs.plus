@@ -57,9 +57,8 @@ awk '/^## /{ if (found) exit; if (/^## \[<ver>\]/) found=1 } found' extensions/<
 
 - Announcement happens after npm publish:
   - The product GitHub Release is the announcement gate. It names each extension version.
-  - Discord `#github`: `secrets.DISCORD_GITHUB_WEBHOOK` via `.github/workflows/discord-activity.yml` (pushes) and `.github/workflows/discord-github.yml` (issues and pull requests).
-  - Discord `#releases`: `secrets.DISCORD_RELEASES_WEBHOOK` via `.github/workflows/discord-release.yml`. The convention is one secret per channel, `DISCORD_<CHANNEL>_WEBHOOK`.
-  - Release embeds: install hint is `npm install <pkg>@<version>`, the same command the READMEs lead with. The workflow's pre-release branch (orange embeds, `@next` hints) is dormant, because releases are stable-only. Leave it in place, and do not exercise it. Do not hard-code per-package paths in the workflow.
+  - Discord `#github` and `#releases`: delivered by `apps/github-relay` via the GitHub repository webhook (`DISCORD_GITHUB_CHANNEL_ID` and `DISCORD_RELEASES_CHANNEL_ID` in `/opt/projects/prod.docs.plus/.env.github-relay`).
+  - Release cards: extension releases show a pinned `npm install <pkg>@<version>` hint; `v*` product releases omit npm install. Pre-release formatting stays dormant because releases are stable-only.
 
 ### Extension Version Doctrine
 

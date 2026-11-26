@@ -41,10 +41,10 @@ In GitHub Settings → Webhooks → Add webhook:
 - **Secret:** Same value as `GITHUB_WEBHOOK_SECRET`
 - **Events:** Select `Pushes`, `Pull requests`, `Pull request reviews`, `Issues`, `Issue comments`, `Discussions`, `Discussion comments`, `Releases`, `Stars`, and `Workflow runs`.
 
-## Cutover and Rollback
+## Pause or Disable
 
-- **Cutover:** Watch `https://webhooks.docs.plus/webhook/github` deliver clean cards, then set repository variable `DISCORD_RELAY_ACTIVE=true`. That disables the three legacy Discord workflows without deleting them.
-- **Rollback:** Set `DISCORD_RELAY_ACTIVE=false` and disable the GitHub repository webhook. The legacy Discord workflows resume on the next event.
+- **Pause delivery:** Disable the GitHub repository webhook in Settings → Webhooks.
+- **Stop the service:** Run `CI/CD GitHub Relay` with `action=down`.
 
 ## Local Test and Manual Digest
 

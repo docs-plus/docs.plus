@@ -173,7 +173,7 @@ On `bun publish` failure: halt immediately, do not retry (would burn an OTP), pr
 1. `git push origin <tag> <tag> …` — one call with the explicit tag list. Never `git push --tags` (AGENTS.md §Release Safety).
 2. Print summary: target version, published count, skipped count, and one npm URL per package.
 
-The script creates no per-package GitHub Release. The product Release announces the family and names each extension version, so `discord-release.yml` posts once. See [Per-package Releases](#product) and [Decision: per-package releases over umbrella](#decision-per-package-releases-over-umbrella).
+The script creates no per-package GitHub Release. The product Release announces the family and names each extension version, so `apps/github-relay` posts once. See [Per-package Releases](#product) and [Decision: per-package releases over umbrella](#decision-per-package-releases-over-umbrella).
 
 ### Coordinated semver during Phase 2
 
@@ -245,7 +245,7 @@ Published entries use the shorthand `### Breaking` (same meaning as `Breaking Ch
 
 **If third-party consumption at scale ever demands staged rollouts,** revisit this section then — that would be the moment a pre-release channel justifies its cost.
 
-**Discord announcements.** `discord-release.yml` fires once, for the product Release. The family has no per-package GitHub Releases (ruled 2026-08-26, applied to the release script on 2026-10-13).
+**Discord announcements.** `apps/github-relay` posts once to `#releases`, for the product Release. The family has no per-package GitHub Releases (ruled 2026-08-26, applied to the release script on 2026-10-13).
 
 ## CI Guard
 
