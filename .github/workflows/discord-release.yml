@@ -30,6 +30,8 @@ on:
     # visual differentiation (orange border + @next install hint).
     types: [published, prereleased]
 
+permissions: {}
+
 # If a release is edited and re-published quickly, only the latest event
 # wins. Prevents duplicate announcements when a maintainer fixes a typo
 # in the release notes seconds after publishing.
@@ -80,10 +82,10 @@ jobs:
             PKG="${BASH_REMATCH[1]}"
             VERSION="${BASH_REMATCH[3]}"
           elif [[ "$TAG" =~ ^v(.+)$ ]]; then
-            PKG="${{ github.repository }}"
+            PKG="$GITHUB_REPOSITORY"
             VERSION="${BASH_REMATCH[1]}"
           else
-            PKG="${{ github.repository }}"
+            PKG="$GITHUB_REPOSITORY"
             VERSION="$TAG"
           fi
 

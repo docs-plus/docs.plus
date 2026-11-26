@@ -81,6 +81,8 @@ on:
   pull_request_target:
     types: [opened, ready_for_review, closed]
 
+permissions: {}
+
 jobs:
   notify:
     # House precedent from .github/workflows/discord-activity.yml:19. It is

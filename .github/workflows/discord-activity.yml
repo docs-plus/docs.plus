@@ -14,6 +14,8 @@ on:
         required: true
         type: string
 
+permissions: {}
+
 jobs:
   notify:
     if: github.actor != 'dependabot[bot]' && vars.DISCORD_RELAY_ACTIVE != 'true'
@@ -61,7 +63,7 @@ jobs:
           DISPATCH_AFTER: ${{ inputs.after }}
           REF_NAME: ${{ github.ref_name }}
         run: |
-          REPO="${{ github.repository }}"
+          REPO="$GITHUB_REPOSITORY"
           ZERO_SHA="0000000000000000000000000000000000000000"
           is_sha() { [[ "$1" =~ ^[0-9a-f]{7,40}$ ]]; }
 
@@ -77,8 +79,8 @@ jobs:
           else
             REF=$(jq -r '.ref' <<< "$EVENT_JSON" | sed 's|refs/heads/||')
             COMPARE=$(jq -r '.compare' <<< "$EVENT_JSON")
-            BEFORE="${{ github.event.before }}"
-            AFTER="${{ github.event.after }}"
+            BEFORE=$(jq -r '.before' <<< "$EVENT_JSON")
+            AFTER=$(jq -r '.after' <<< "$EVENT_JSON")
           fi
 
           normalize_webhook() {
@@ -201,8 +203,8 @@ jobs:
             exit 0
           fi
 
-          HEADER="🚀 **Push** to \`${{ env.REF }}\` by \`${{ github.actor }}\`
-          📦 \`${{ github.repository }}\` · 📝 ${{ env.COUNT }} commits · 🔗 [View Diff](${{ env.COMPARE }})
+          HEADER="🚀 **Push** to \`${REF}\` by \`${GITHUB_ACTOR}\`
+          📦 \`${GITHUB_REPOSITORY}\` · 📝 ${COUNT} commits · 🔗 [View Diff](${COMPARE})
 
           **Commits**
           "
