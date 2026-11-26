@@ -88,6 +88,11 @@ This file is the product changelog. Every app, package and extension keeps its o
   shrink: a synthetic `12.55 MB` seed drops to `297,365 B` (`97 %` less). Detail:
   `apps/hocuspocus.server/CHANGELOG.md`
   ([#738](https://github.com/docs-plus/docs.plus/issues/738)).
+- Upgraded Uptime Kuma to `louislam/uptime-kuma:2.5.12-slim-rootless` (pinned by digest) in a
+  dedicated `docker-compose.uptime-kuma.yml` stack behind Traefik (`status.docs.plus`), with a
+  dedicated `/socket.io` router, case-insensitive `/metrics` block, `cap_drop: [ALL]`,
+  `512M` memory cap, fail-fast `/app/extra/healthcheck` CI gate, and WAL-safe online SQLite
+  backups in `scripts/ops/backup-prod.sh` ([#748](https://github.com/docs-plus/docs.plus/issues/748)).
 
 ### Fixed
 
@@ -177,8 +182,16 @@ This file is the product changelog. Every app, package and extension keeps its o
   stored `page_location`, `page_title` and `page_referrer` values are queued for deletion with
   2-month retention, and the privacy page no longer lists Google Analytics
   ([#741](https://github.com/docs-plus/docs.plus/issues/741)).
+- Added automated CodeQL (`javascript-typescript` and GitHub `actions`, `security-extended`) and
+  OpenSSF Scorecard (`publish_results: true`) workflows on GitHub-hosted runners, hardened all
+  three legacy Discord workflows with top-level `permissions: {}` and safe env-var shell reads,
+  and enabled GitHub Secret Protection, Push Protection, and Dependabot malware alerts.
 
 ### Documentation
+
+- `README.md` now includes a top-bar `Status` link to `https://status.docs.plus` and live
+  `Uptime (30d)`, `OpenSSF Scorecard`, and `CodeQL` badges, and `.github/WORKFLOWS.md` documents
+  the new Compose deploy and security workflows.
 
 - Published [`docs/benchmarks/bun-1.4.md`](docs/benchmarks/bun-1.4.md), a consolidated Bun 1.4.x
   benchmark report covering type checking, formatting, unit tests, sync-byte bounds, lockfile
