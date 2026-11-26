@@ -56,6 +56,12 @@ This file is intentionally not named `README.md` so the repository root `README.
   - Runs the pgTAP files in `packages/supabase/tests/` against a fresh local Supabase stack ([#583](https://github.com/docs-plus/docs.plus/issues/583))
   - Triggers: a PR to `main` that touches `packages/supabase/**` or this workflow, the weekly cron (Sunday 00:00 UTC), and `workflow_dispatch`
   - Uses no secrets, so fork pull requests run it. Realtime stays on, because the seed writes policies on `realtime.messages`. It is not a deploy gate
+- `workflows/codeql.yml`
+  - Semantic static security analysis (CodeQL `security-extended`, excluding test and playground paths) for `javascript-typescript` and GitHub `actions` workflows on GitHub-hosted `ubuntu-latest`
+  - Triggers: push to `main` (skipping `(build):` empty triggers), PR to `main`, weekly cron (Monday 04:17 UTC), and `workflow_dispatch`. Publishes findings to GitHub Code Scanning; never uses the production runner. It is not a deploy gate
+- `workflows/scorecard.yml`
+  - OpenSSF Scorecard supply-chain security audit on GitHub-hosted `ubuntu-latest` (`publish_results: true` publishes results publicly to `api.scorecard.dev`, uploads a 5-day `SARIF file` artifact, and reports to GitHub Code Scanning)
+  - Triggers: push to `main`, `branch_protection_rule`, weekly cron (Monday 03:31 UTC), and `workflow_dispatch` (default branch only). It is not a deploy gate
 - `workflows/discord-release.yml`
   - Legacy published release announcements to `#releases` (skipped when `vars.DISCORD_RELAY_ACTIVE == 'true'`)
 

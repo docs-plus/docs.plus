@@ -1,0 +1,65 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+# Strict default: grant permissions per job only (OpenSSF Scorecard Token-Permissions).
+permissions: {}
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Skip empty `(build):` deploy-trigger pushes without touching PR checks (keeps Scorecard SAST 10/10).
+    if: github.event_name != 'push' || !startsWith(github.event.head_commit.message, '(build):')
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: javascript-typescript
+            build-mode: none
+          - language: actions
+            build-mode: none
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@915412ff23e8b7659517e607487dbeae018f2934 # v4.39.5
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          queries: security-extended
+          config: |
+            paths-ignore:
+              - '**/cypress/**'
+              - 'packages/playground/**'
+              - '**/__tests__/**'
+              - 'apps/hocuspocus.server/tests/**'
+              - '**/*.test.ts'
+              - '**/*.spec.ts'
+              - '**/*.cy.ts'
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@915412ff23e8b7659517e607487dbeae018f2934 # v4.39.5
+        with:
+          category: '/language:${{ matrix.language }}'
