@@ -1394,7 +1394,7 @@ jobs:
     steps:
       - name: 🚀 Deploy
         run: |
-          UPTIME_KUMA_IMAGE='louislam/uptime-kuma:1@sha256:bb1bcecbc3e3ffb1cb0f8fc5f9c3cdaa78c1dfb56d98d64e06da13ebfc6dba0d'
+          UPTIME_KUMA_IMAGE='louislam/uptime-kuma:1@sha256:70233f4acb5163fd2a59a49909cf01e44415cecff13dba69e3a86647a2919f83'
           docker network create docsplus-network 2>/dev/null || true
           docker stop uptime-kuma 2>/dev/null || true
           docker rm uptime-kuma 2>/dev/null || true
