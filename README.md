@@ -24,6 +24,8 @@
 <p align="center">
   <a href="https://github.com/docs-plus/docs.plus/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/docs-plus/docs.plus" /></a>
   <a href="https://status.docs.plus"><img alt="Uptime (30d)" src="https://status.docs.plus/api/badge/5/uptime/30d?label=uptime%2030d" /></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/docs-plus/docs.plus"><img alt="OpenSSF Scorecard" src="https://api.scorecard.dev/projects/github.com/docs-plus/docs.plus/badge" /></a>
+  <a href="https://github.com/docs-plus/docs.plus/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://img.shields.io/github/actions/workflow/status/docs-plus/docs.plus/codeql.yml?branch=main&label=CodeQL" /></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" /></a>
 </p>
 
