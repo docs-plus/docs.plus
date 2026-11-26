@@ -17,11 +17,13 @@
   <a href="docs/README.md">Docs</a> ·
   <a href="docs/self-hosting/README.md">Host it yourself</a> ·
   <a href="extensions/README.md">Tiptap extensions</a> ·
+  <a href="https://status.docs.plus">Status</a> ·
   <a href="https://discord.gg/25JPG38J59">Discord</a>
 </p>
 
 <p align="center">
   <a href="https://github.com/docs-plus/docs.plus/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/docs-plus/docs.plus" /></a>
+  <a href="https://status.docs.plus"><img alt="Uptime (30d)" src="https://status.docs.plus/api/badge/5/uptime/30d?label=uptime%2030d" /></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" /></a>
 </p>
 
