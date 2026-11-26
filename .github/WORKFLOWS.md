@@ -80,7 +80,7 @@ Parsed by `.github/scripts/parse-build-trigger.sh` from the **first line** of th
 | 1   | `back`          | `backend-ci` — unit tests + real-infra E2E (Postgres/Redis), typecheck, security                | Part of the single app stack                                   |
 | 2   | `front`         | lint, webapp unit tests, change-aware per-extension matrix (only changed extensions build/test) | Part of the single app stack                                   |
 | 3   | `observability` | —                                                                                               | Grafana + GlitchTip stack (`docker-compose.observability.yml`) |
-| 4   | `uptime-kuma`   | —                                                                                               | Uptime-Kuma container (standalone `docker run`)                |
+| 4   | `uptime-kuma`   | —                                                                                               | Uptime Kuma stack (`docker-compose.uptime-kuma.yml`)           |
 
 `back` and `front` are not independently deployable. Any app domain (`back` and/or `front`) triggers **one** full-stack blue-green rollout of all five services (`webapp`, `rest-api`, `hocuspocus-server`, `hocuspocus-worker`, `admin-dashboard`). `back` vs `front` vs `back front` differ only in which validation stages run before that single deploy.
 

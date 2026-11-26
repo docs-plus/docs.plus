@@ -1,0 +1,76 @@
+name: docsplus-uptime-kuma
+
+services:
+  uptime-kuma:
+    # Pinned semver + digest (2.5.12-slim-rootless drops Chromium + embedded MariaDB, saving
+    # ~413 MB compressed, and runs unprivileged as UID/GID 1000).
+    image: louislam/uptime-kuma:2.5.12-slim-rootless@sha256:212d2131952eded9b2508620455f15f5c2c85c262aafd23b97a7447c53e1d1bc
+    container_name: docsplus-uptime-kuma
+    restart: unless-stopped
+    # Uptime Kuma's graceful HTTP shutdown window is 30s and runs PRAGMA wal_checkpoint(TRUNCATE)
+    # in Database.close(); 35s guarantees SQLite checkpoints cleanly before SIGKILL.
+    stop_grace_period: 35s
+    stop_signal: SIGTERM
+    environment:
+      TZ: UTC
+      UPTIME_KUMA_HOST: '0.0.0.0'
+      UPTIME_KUMA_PORT: '3001'
+      # Public DNS publishes A + AAAA while Traefik listens on IPv4 only; match blackbox-exporter.
+      NODE_OPTIONS: '--dns-result-order=ipv4first'
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    volumes:
+      # Compose-owned named volume inherits node:node (1000:1000) from the image on fresh init.
+      - uptime-kuma-data:/app/data
+    # RAM-backed scratch for online WAL-safe `sqlite3 .backup` in scripts/ops/backup-prod.sh.
+    tmpfs:
+      - /tmp:size=64M,uid=1000,gid=1000
+    networks:
+      - docsplus-network
+    labels:
+      - 'traefik.enable=true'
+      # Main HTTP router: public status page, assets, SVG badges.
+      # Defense-in-depth /metrics block (matches Grafana #745); case-insensitive for Express routing.
+      - 'traefik.http.routers.uptime.rule=Host(`status.docs.plus`) && !PathRegexp(`(?i)^/metrics(/|$)`) && !PathPrefix(`/socket.io`)'
+      - 'traefik.http.routers.uptime.entrypoints=websecure'
+      - 'traefik.http.routers.uptime.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.uptime.service=uptime'
+      - 'traefik.http.routers.uptime.middlewares=security-headers@file,compress@file,rate-limit-web@file'
+      # Dedicated Socket.IO router: omit compress@file and retry@file (matches hocuspocus).
+      - 'traefik.http.routers.uptime-ws.rule=Host(`status.docs.plus`) && PathPrefix(`/socket.io`)'
+      - 'traefik.http.routers.uptime-ws.entrypoints=websecure'
+      - 'traefik.http.routers.uptime-ws.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.uptime-ws.service=uptime'
+      - 'traefik.http.routers.uptime-ws.middlewares=security-headers@file,rate-limit-web@file'
+      - 'traefik.http.services.uptime.loadbalancer.server.port=3001'
+    healthcheck:
+      # Compiled Go probe baked into the v2 image (v2 drops wget).
+      test: ['CMD', '/app/extra/healthcheck']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '20m'
+        max-file: '3'
+        compress: 'true'
+    deploy:
+      resources:
+        limits:
+          # Steady Node 22 + SQLite is ~120-200 MiB; 512M stays below the 90% OOM-risk alert.
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          memory: 128M
+
+volumes:
+  uptime-kuma-data:
+
+networks:
+  docsplus-network:
+    external: true
+    name: docsplus-network

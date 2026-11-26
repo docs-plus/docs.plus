@@ -1392,25 +1392,69 @@ jobs:
       (needs.triage.outputs.has_observability != 'true' || needs.observability-deploy.result == 'success')
     permissions: { contents: read }
     steps:
-      - name: 🚀 Deploy
+      - name: 📦 Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - name: 🚀 Deploy Uptime Kuma
         run: |
-          UPTIME_KUMA_IMAGE='louislam/uptime-kuma:1@sha256:70233f4acb5163fd2a59a49909cf01e44415cecff13dba69e3a86647a2919f83'
+          set -euo pipefail
+          COMPOSE_FILE="docker-compose.uptime-kuma.yml"
           docker network create docsplus-network 2>/dev/null || true
-          docker stop uptime-kuma 2>/dev/null || true
-          docker rm uptime-kuma 2>/dev/null || true
-          docker run -d --name uptime-kuma --network docsplus-network --restart unless-stopped \
-            -v uptime-kuma-data:/app/data \
-            --label "traefik.enable=true" \
-            --label "traefik.http.routers.uptime.rule=Host(\`status.docs.plus\`)" \
-            --label "traefik.http.routers.uptime.entrypoints=websecure" \
-            --label "traefik.http.routers.uptime.tls.certresolver=letsencrypt" \
-            --label "traefik.http.services.uptime.loadbalancer.server.port=3001" \
-            "${UPTIME_KUMA_IMAGE}"
-          # Health poll replaces blind sleep 15 (D6 cheap win).
-          for i in $(seq 1 20); do
-            if docker exec uptime-kuma wget -qO- http://localhost:3001 >/dev/null 2>&1; then echo "✅ uptime-kuma healthy"; break; fi
-            [ "$i" -eq 20 ] && echo "⚠️ uptime-kuma health timeout (continuing)"; sleep 2
+
+          # Pull before touching any running container so a registry error never causes downtime.
+          docker compose -f "${COMPOSE_FILE}" pull
+
+          # One-time cutover guard: remove any legacy standalone `docker run` container
+          # (lacks compose project label) so it cannot collide on the status.docs.plus router.
+          if docker inspect uptime-kuma >/dev/null 2>&1 && \
+             [ -z "$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' uptime-kuma 2>/dev/null || true)" ]; then
+            docker stop uptime-kuma
+            docker rm uptime-kuma
+          fi
+
+          docker compose -f "${COMPOSE_FILE}" up -d --remove-orphans
+
+      - name: 🩺 Verify health
+        run: |
+          set -euo pipefail
+          COMPOSE_FILE="docker-compose.uptime-kuma.yml"
+          CONTAINER="docsplus-uptime-kuma"
+
+          for i in $(seq 1 30); do
+            state="$(docker inspect --format '{{.State.Status}}:{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "${CONTAINER}" 2>/dev/null || echo 'missing:none')"
+            case "${state}" in
+              running:healthy)
+                echo "✅ ${CONTAINER} healthy"
+                exit 0
+                ;;
+              running:starting)
+                # Fast-path readiness check via baked Go probe so healthy deploys do not wait a full 30s interval.
+                if docker compose -f "${COMPOSE_FILE}" exec -T uptime-kuma /app/extra/healthcheck >/dev/null 2>&1; then
+                  echo "✅ ${CONTAINER} healthy (probe passed)"
+                  exit 0
+                fi
+                ;;
+              exited:*|dead:*|restarting:*|running:unhealthy|missing:*)
+                echo "::error::${CONTAINER} failed health gate (state=${state})"
+                docker compose -f "${COMPOSE_FILE}" ps || true
+                docker logs --tail=80 "${CONTAINER}" 2>&1 || true
+                exit 1
+                ;;
+            esac
+            if [ "${i}" -eq 30 ]; then
+              echo "::error::${CONTAINER} timed out waiting for healthy state (last=${state})"
+              docker compose -f "${COMPOSE_FILE}" ps || true
+              docker logs --tail=80 "${CONTAINER}" 2>&1 || true
+              exit 1
+            fi
+            sleep 3
           done
+
+      - name: 📣 Notify failure
+        if: failure()
+        run: bash scripts/ci/notify-telegram.sh "/opt/projects/prod.docs.plus/.env.observability" "🔔 Uptime Kuma deploy FAILED (${GITHUB_SHA}, run ${GITHUB_RUN_ID})"
 
   # Every run ends here and writes its timing table to the run summary. It reads
   # the API only, so it never touches the prod host and starts after M1 ends.
