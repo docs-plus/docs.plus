@@ -55,6 +55,8 @@ jobs:
               - 'packages/playground/**'
               - '**/__tests__/**'
               - 'apps/hocuspocus.server/tests/**'
+              - 'apps/hocuspocus.server/scripts/**'
+              - 'scripts/**'
               - '**/*.test.ts'
               - '**/*.spec.ts'
               - '**/*.cy.ts'
