@@ -1408,8 +1408,9 @@ jobs:
 
           # One-time cutover guard: remove any legacy standalone `docker run` container
           # (lacks compose project label) so it cannot collide on the status.docs.plus router.
-          if docker inspect uptime-kuma >/dev/null 2>&1 && \
-             [ -z "$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' uptime-kuma 2>/dev/null || true)" ]; then
+          # Use `docker container inspect` so an unrelated volume named `uptime-kuma` never matches.
+          if docker container inspect uptime-kuma >/dev/null 2>&1 && \
+             [ -z "$(docker container inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' uptime-kuma 2>/dev/null || true)" ]; then
             docker stop uptime-kuma
             docker rm uptime-kuma
           fi
