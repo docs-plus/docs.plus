@@ -21,17 +21,7 @@ This file is intentionally not named `README.md` so the repository root `README.
 - `workflows/github-relay.docs.plus.yml`
   - Server-only deploy for `apps/github-relay` (`docker-compose.github-relay.yml`), decoupled from app deploys
   - Triggers: `workflow_dispatch` (`setup|update|restart|down`) on `prod.docs.plus` from `main`; alerts Telegram on deploy failure
-  - Replaces the three legacy Discord workflows once repository variable `DISCORD_RELAY_ACTIVE` equals `true`
-- `workflows/discord-activity.yml`
-  - Legacy push activity notifications to `#github` via `DISCORD_GITHUB_WEBHOOK` (skipped when `vars.DISCORD_RELAY_ACTIVE == 'true'`)
-  - Omits `(build):` deploy-trigger commits from the list; a push that is only those commits does not post
-  - `workflow_dispatch` can post an older `before...after` SHA range (catch-up)
-- `workflows/discord-github.yml`
-  - Legacy issue and pull-request cards to `#github`, beside push summaries (skipped when `vars.DISCORD_RELAY_ACTIVE == 'true'`)
-  - Posts on `issues` (opened, reopened, labeled, closed) and `pull_request_target` (opened, ready_for_review, closed)
-  - `labeled` posts for `good first issue` and `help wanted` only; a closed-unmerged PR posts nothing
-  - Uses `pull_request_target` on purpose, so a fork pull request can read the webhook secret. It never checks out code, holds `permissions: {}`, and that is what keeps the trigger safe
-  - Shares `DISCORD_GITHUB_WEBHOOK` with `discord-activity.yml`; an empty secret warns and exits 0, a Discord rejection fails loudly
+  - Receives GitHub repository webhooks and posts Discord Components V2 cards to `#github`, `#triage`, and `#releases`
 - `workflows/observability.docs.plus.yml`
   - Server-only observability stack (Grafana + Loki + Alloy + Prometheus + GlitchTip)
   - Triggers: `workflow_call` (invoked by the prod orchestrator for deploy commits) and `workflow_dispatch` (`setup|update|restart|down` for manual ops)
@@ -62,8 +52,6 @@ This file is intentionally not named `README.md` so the repository root `README.
 - `workflows/scorecard.yml`
   - OpenSSF Scorecard supply-chain security audit on GitHub-hosted `ubuntu-latest` (`publish_results: true` publishes results publicly to `api.scorecard.dev`, uploads a 5-day `SARIF file` artifact, and reports to GitHub Code Scanning)
   - Triggers: push to `main`, `branch_protection_rule`, weekly cron (Monday 03:31 UTC), and `workflow_dispatch` (default branch only). It is not a deploy gate
-- `workflows/discord-release.yml`
-  - Legacy published release announcements to `#releases` (skipped when `vars.DISCORD_RELAY_ACTIVE == 'true'`)
 
 `backend-ci.yml` and `quality-lint.yml` are reusable workflows (`workflow_call`). The prod workflow calls both.
 
