@@ -43,10 +43,6 @@ export default function PrivacyPage() {
             Your first name, email address and profile photo, saved in your browser as
             docsplus:last-signed-in-account. The sign-in form uses it to suggest your last account.
           </li>
-          <li>
-            Page views on the home page and on documents, through Google Analytics. Google Analytics
-            sets its own _ga cookies to count visits.
-          </li>
         </ul>
       </LegalSection>
 
@@ -96,7 +92,7 @@ export default function PrivacyPage() {
         <ul className="list-disc space-y-2 pl-5">
           <li>Supabase runs sign-in and stores accounts.</li>
           <li>DigitalOcean hosts our servers and the document database.</li>
-          <li>Google runs sign-in and Analytics.</li>
+          <li>Google runs sign-in.</li>
           <li>Resend sends sign-in, notification and digest mail.</li>
           <li>AI apps that you connect, as Connected AI apps explains.</li>
         </ul>
