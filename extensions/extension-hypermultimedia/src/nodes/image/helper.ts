@@ -3,16 +3,20 @@
 export const inputRegex =
   /(?:^|\s)(!\[([^\]]*)\]\(((?:https?:\/\/|\/\/).*\.(jpe?g|png|gif|webp|svg|bmp|ico|tiff|avif|heic|heif|jxl)(?:\?.*)?(?:#.*)?)\))$/i
 
-const httpImageUrlRegex =
-  /^(?:https?:\/\/|\/\/).*\.(jpe?g|png|gif|webp|svg|bmp|ico|tiff|avif|heic|heif|jxl)(?:\?.*)?(?:#.*)?$/i
+const absoluteHttpRegex = /^(?:https?:)?\/\//i
+const imageExtensionRegex = /\.(?:jpe?g|png|gif|webp|svg|bmp|ico|tiff|avif|heic|heif|jxl)$/i
 
 export const isImageUrl = (url: string): boolean => {
   if (url.startsWith('data:image/')) return true
   if (url.startsWith('blob:')) return true
-  return httpImageUrlRegex.test(url)
+  if (!absoluteHttpRegex.test(url)) return false
+  try {
+    const parsed = new URL(url, 'https://invalid.local')
+    return imageExtensionRegex.test(parsed.pathname)
+  } catch {
+    return false
+  }
 }
-
-const absoluteHttpRegex = /^(?:https?:)?\/\//i
 
 /** The host of an absolute http(s) src, or undefined for inline, local and malformed ones. */
 export const imageSourceHost = (src: string | null | undefined): string | undefined => {

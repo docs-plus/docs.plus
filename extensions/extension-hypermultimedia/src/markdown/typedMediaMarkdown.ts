@@ -355,7 +355,7 @@ export function createImageMarkdownHooks(keys: readonly MarkdownOptionKey[]): Me
 
     renderMarkdown(this: MarkdownHookThis, node: JSONContent): string {
       const attrs = node.attrs ?? {}
-      const alt = String(attrs.alt ?? '').replace(/[[\]]/g, '\\$&')
+      const alt = String(attrs.alt ?? '').replace(/[\\[\]]/g, '\\$&')
       return `![${alt}]${writeMediaTail(attrs, keys, pickDefaults(this.options, keys))}`
     }
   }
