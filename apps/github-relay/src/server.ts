@@ -57,16 +57,16 @@ export function createRelayHandler(deps: {
         return Response.json({ ok: true, pong: true })
       }
 
-      const deliveryId = req.headers.get('x-github-delivery') || ''
-      if (deliveryId && !store.recordDeliveryIfNew(deliveryId, eventName)) {
-        return Response.json({ ok: true, duplicate: true }, { status: 202 })
-      }
-
       let payload: unknown
       try {
         payload = JSON.parse(new TextDecoder().decode(rawBytes))
       } catch {
         return Response.json({ ok: false, error: 'Invalid JSON' }, { status: 400 })
+      }
+
+      const deliveryId = req.headers.get('x-github-delivery') || ''
+      if (deliveryId && !store.recordDeliveryIfNew(deliveryId, eventName)) {
+        return Response.json({ ok: true, duplicate: true }, { status: 202 })
       }
 
       router.route(eventName, payload)
@@ -90,8 +90,11 @@ export function createRelayHandler(deps: {
         return Response.json({ ok: false, error: 'Invalid JSON' }, { status: 400 })
       }
 
-      if (body.kind !== 'daily' && body.kind !== 'weekly') {
-        return Response.json({ ok: false, error: 'kind must be daily or weekly' }, { status: 400 })
+      if (body.kind !== 'daily' && body.kind !== 'biweekly' && body.kind !== 'monthly') {
+        return Response.json(
+          { ok: false, error: 'kind must be daily, biweekly, or monthly' },
+          { status: 400 }
+        )
       }
 
       const posted = await queue.runDigest(body.kind, { force: Boolean(body.force) })

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { createHmac } from 'crypto'
 
-import type { GitHubApiClient } from '../github/client.ts'
+import { type GitHubApiClient, GitHubHttpClient } from '../github/client.ts'
 import { WebhookRouter } from '../projection/router.ts'
 import { ChannelQueue } from '../queue/channelQueue.ts'
 import { createRelayHandler } from '../server.ts'
@@ -55,8 +55,30 @@ const FAKE_GITHUB: GitHubApiClient = {
       unansweredExternalIssues: [],
       staleClaimedIssues: [],
       dependabotOpenPrs: [],
-      weeklyMergedPrs: [],
-      weeklyClosedIssuesCount: 0,
+      featuredClaimableIssues: []
+    }
+  },
+  async fetchPeriodReport(repo, kind, sinceMs, untilMs, periodLabel) {
+    return {
+      kind,
+      repo,
+      periodLabel,
+      sinceMs,
+      untilMs,
+      starsCount: 100,
+      commitsCount: 14,
+      commitsCapped: false,
+      releases: [
+        {
+          tagName: 'v2.4.0',
+          name: 'v2.4.0',
+          url: `https://github.com/${repo}/releases/tag/v2.4.0`,
+          prerelease: false
+        }
+      ],
+      mergedPrsCount: 6,
+      closedIssuesCount: 9,
+      contributors: ['HMarzban', 'sara'],
       featuredClaimableIssues: []
     }
   }
@@ -84,8 +106,10 @@ function makeConfig(): RelayConfig {
     starBurstWindowMs: 30000,
     digestEnabled: true,
     dailyDigestHourUtc: 9,
-    weeklyPulseDayUtc: 5,
-    weeklyPulseHourUtc: 16,
+    biweeklyReportDayUtc: 5,
+    biweeklyReportHourUtc: 16,
+    monthlyReportDayUtc: 1,
+    monthlyReportHourUtc: 16,
     appUrl: 'https://docs.plus',
     selfHostDocsUrl: 'https://github.com/docs-plus/docs.plus/blob/main/docs/self-hosting/README.md'
   }
@@ -365,6 +389,154 @@ describe('ChannelQueue ordering, correlation, and living cards', () => {
 
     await queue.drainAll(Date.now() + 60_000)
     expect(discord.calls.length).toBe(1)
+    store.close()
+  })
+
+  it('does not burn X-GitHub-Delivery on invalid JSON before retry', async () => {
+    const config = makeConfig()
+    const store = new SqliteStore(':memory:')
+    const discord = new FakeDiscord()
+    const queue = new ChannelQueue(config, store, discord, FAKE_GITHUB)
+    const handler = createRelayHandler({ config, store, queue })
+
+    const badBody = 'payload=not-json'
+    const badSig = `sha256=${createHmac('sha256', config.githubWebhookSecret).update(badBody).digest('hex')}`
+    const badRes = await handler(
+      new Request('http://localhost/webhook/github', {
+        method: 'POST',
+        headers: {
+          'x-hub-signature-256': badSig,
+          'x-github-event': 'star',
+          'x-github-delivery': 'deliv-retry'
+        },
+        body: badBody
+      })
+    )
+    expect(badRes.status).toBe(400)
+
+    const validBody = JSON.stringify({
+      action: 'created',
+      sender: { login: 'maya', type: 'User' },
+      repository: { full_name: 'docs-plus/docs.plus', stargazers_count: 99 }
+    })
+    const validSig = `sha256=${createHmac('sha256', config.githubWebhookSecret).update(validBody).digest('hex')}`
+    const retryRes = await handler(
+      new Request('http://localhost/webhook/github', {
+        method: 'POST',
+        headers: {
+          'x-hub-signature-256': validSig,
+          'x-github-event': 'star',
+          'x-github-delivery': 'deliv-retry'
+        },
+        body: validBody
+      })
+    )
+    expect(retryRes.status).toBe(202)
+    expect(await retryRes.json()).toEqual({ ok: true, queued: true })
+
+    await queue.drainAll(Date.now() + 60_000)
+    expect(discord.calls.length).toBe(1)
+    store.close()
+  })
+
+  it('falls back to unauthenticated fetch when GitHubHttpClient gets 403', async () => {
+    const origFetch = globalThis.fetch
+    const authHeaders: Array<string | undefined> = []
+
+    globalThis.fetch = (async (_url: string | URL | Request, init?: RequestInit) => {
+      const headers = (init?.headers ?? {}) as Record<string, string>
+      authHeaders.push(headers.Authorization)
+      if (headers.Authorization) {
+        return new Response('forbidden', { status: 403 })
+      }
+      return new Response(
+        JSON.stringify({
+          commits: [
+            {
+              sha: 'abc1234',
+              commit: { message: 'fix: retry unauth', author: { name: 'Maya' } },
+              author: { login: 'maya' }
+            }
+          ]
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } }
+      )
+    }) as unknown as typeof fetch
+
+    try {
+      const client = new GitHubHttpClient('bad-token')
+      const commits = await client.compareCommits('docs-plus/docs.plus', '000', '111')
+      expect(authHeaders).toEqual(['Bearer bad-token', undefined])
+      expect(commits).toEqual([{ id: 'abc1234', message: 'fix: retry unauth', author: 'maya' }])
+    } finally {
+      globalThis.fetch = origFetch
+    }
+  })
+
+  it('serves biweekly and monthly reports via POST /internal/digest with runKey dedup', async () => {
+    const config = makeConfig()
+    const store = new SqliteStore(':memory:')
+    const discord = new FakeDiscord()
+    const queue = new ChannelQueue(config, store, discord, FAKE_GITHUB)
+    const handler = createRelayHandler({ config, store, queue })
+    const headers = {
+      Authorization: 'Bearer admin-token',
+      'Content-Type': 'application/json'
+    }
+
+    const rejected = await handler(
+      new Request('http://localhost/internal/digest', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ kind: 'weekly' })
+      })
+    )
+    expect(rejected.status).toBe(400)
+
+    const biweekly = await handler(
+      new Request('http://localhost/internal/digest', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ kind: 'biweekly' })
+      })
+    )
+    expect(biweekly.status).toBe(200)
+    expect(await biweekly.json()).toEqual({ ok: true, posted: true })
+
+    const dupBiweekly = await handler(
+      new Request('http://localhost/internal/digest', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ kind: 'biweekly' })
+      })
+    )
+    expect(dupBiweekly.status).toBe(200)
+    expect(await dupBiweekly.json()).toEqual({ ok: true, posted: false })
+
+    const forcedBiweekly = await handler(
+      new Request('http://localhost/internal/digest', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ kind: 'biweekly', force: true })
+      })
+    )
+    expect(forcedBiweekly.status).toBe(200)
+    expect(await forcedBiweekly.json()).toEqual({ ok: true, posted: true })
+
+    const monthly = await handler(
+      new Request('http://localhost/internal/digest', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ kind: 'monthly' })
+      })
+    )
+    expect(monthly.status).toBe(200)
+    expect(await monthly.json()).toEqual({ ok: true, posted: true })
+
+    expect(discord.calls.length).toBe(3)
+    expect(discord.calls.every((c) => c.channelId === config.channels.github)).toBe(true)
+    expect(extractText(discord.calls[0].payload)).toContain('2-Week Report')
+    expect(extractText(discord.calls[2].payload)).toContain('Monthly Report')
     store.close()
   })
 })

@@ -1,6 +1,10 @@
 import { renderCard } from '../discord/renderer.ts'
 import type { GitHubApiClient } from '../github/client.ts'
-import { buildDailyTriageDigest, buildWeeklyPulse } from '../projection/digest.ts'
+import {
+  buildDailyTriageDigest,
+  buildPeriodReportCard,
+  computeReportWindow
+} from '../projection/digest.ts'
 import { hasCriticalLabel } from '../projection/helpers.ts'
 import { buildIssueCard, buildTriageBatchCard, isSpecialIssue } from '../projection/issue.ts'
 import { buildPushCard } from '../projection/push.ts'
@@ -9,6 +13,7 @@ import { cleanText } from '../security.ts'
 import type { SqliteStore } from '../store/sqliteStore.ts'
 import type {
   ChannelKey,
+  DigestKind,
   DiscordTransport,
   GitHubIssue,
   IssueBatchItem,
@@ -542,24 +547,41 @@ export class ChannelQueue {
     }
   }
 
-  async runDigest(kind: 'daily' | 'weekly', opts?: { force?: boolean }): Promise<boolean> {
-    const now = new Date()
-    const dateKey = now.toISOString().slice(0, 10)
-    const runKey = `${kind}:${dateKey}`
-    if (!opts?.force && this.store.hasRunKey(runKey)) return false
+  async runDigest(kind: DigestKind, opts?: { force?: boolean; now?: Date }): Promise<boolean> {
+    const now = opts?.now ?? new Date()
 
-    const snapshot = await this.github.fetchDigestSnapshot(this.config.githubRepository)
-    const card =
-      kind === 'daily'
-        ? buildDailyTriageDigest(snapshot, this.config)
-        : buildWeeklyPulse(snapshot, this.config)
+    if (kind === 'daily') {
+      const runKey = `daily:${now.toISOString().slice(0, 10)}`
+      if (!opts?.force && this.store.hasRunKey(runKey)) return false
 
-    this.store.markRunKey(runKey, now.getTime())
+      const snapshot = await this.github.fetchDigestSnapshot(this.config.githubRepository)
+      const card = buildDailyTriageDigest(snapshot, this.config)
+
+      this.store.markRunKey(runKey, now.getTime())
+      if (!card) return false
+
+      this.store.enqueueJob('triage', 'digest.daily', { op: 'post', card })
+      await this.drainChannel('triage', Date.now())
+      return true
+    }
+
+    const window = computeReportWindow(kind, now)
+    if (!opts?.force && this.store.hasRunKey(window.runKey)) return false
+
+    const report = await this.github.fetchPeriodReport(
+      this.config.githubRepository,
+      kind,
+      window.sinceMs,
+      window.untilMs,
+      window.periodLabel
+    )
+    const card = buildPeriodReportCard(report, this.config)
+
+    this.store.markRunKey(window.runKey, now.getTime())
     if (!card) return false
 
-    const channelKey: ChannelKey = kind === 'daily' ? 'triage' : 'github'
-    this.store.enqueueJob(channelKey, `digest.${kind}`, { op: 'post', card })
-    await this.drainChannel(channelKey, Date.now())
+    this.store.enqueueJob('github', `digest.${kind}`, { op: 'post', card })
+    await this.drainChannel('github', Date.now())
     return true
   }
 }

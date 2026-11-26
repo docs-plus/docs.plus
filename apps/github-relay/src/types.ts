@@ -434,6 +434,8 @@ export interface GitHubWorkflowRunEvent {
   repository: { full_name: string }
 }
 
+export type DigestKind = 'daily' | 'biweekly' | 'monthly'
+
 export interface DigestSnapshot {
   repo: string
   nowMs: number
@@ -462,8 +464,32 @@ export interface DigestSnapshot {
     ageDays: number
   }>
   dependabotOpenPrs: number[]
-  weeklyMergedPrs: Array<{ number: number; title: string; author: string }>
-  weeklyClosedIssuesCount: number
+  featuredClaimableIssues: Array<{
+    number: number
+    title: string
+    url: string
+    labels: string[]
+  }>
+}
+
+export interface PeriodReportSnapshot {
+  kind: 'biweekly' | 'monthly'
+  repo: string
+  periodLabel: string
+  sinceMs: number
+  untilMs: number
+  starsCount: number
+  commitsCount: number
+  commitsCapped: boolean
+  releases: Array<{
+    tagName: string
+    name: string
+    url: string
+    prerelease: boolean
+  }>
+  mergedPrsCount: number
+  closedIssuesCount: number
+  contributors: string[]
   featuredClaimableIssues: Array<{
     number: number
     title: string
@@ -489,8 +515,10 @@ export interface RelayConfig {
   starBurstWindowMs: number
   digestEnabled: boolean
   dailyDigestHourUtc: number
-  weeklyPulseDayUtc: number
-  weeklyPulseHourUtc: number
+  biweeklyReportDayUtc: number
+  biweeklyReportHourUtc: number
+  monthlyReportDayUtc: number
+  monthlyReportHourUtc: number
   appUrl: string
   selfHostDocsUrl: string
 }

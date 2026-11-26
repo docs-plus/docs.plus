@@ -89,8 +89,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): RelayConfig {
     starBurstWindowMs: parseIntBounded(env.STAR_BURST_WINDOW_MS, 30000, 0, 300000),
     digestEnabled: env.DIGEST_ENABLED !== 'false',
     dailyDigestHourUtc: parseIntBounded(env.DAILY_DIGEST_HOUR_UTC, 9, 0, 23),
-    weeklyPulseDayUtc: parseIntBounded(env.WEEKLY_PULSE_DAY_UTC, 5, 0, 6),
-    weeklyPulseHourUtc: parseIntBounded(env.WEEKLY_PULSE_HOUR_UTC, 16, 0, 23),
+    biweeklyReportDayUtc: parseIntBounded(env.BIWEEKLY_REPORT_DAY_UTC, 5, 0, 6),
+    biweeklyReportHourUtc: parseIntBounded(env.BIWEEKLY_REPORT_HOUR_UTC, 16, 0, 23),
+    monthlyReportDayUtc: parseIntBounded(env.MONTHLY_REPORT_DAY_UTC, 1, 1, 28),
+    monthlyReportHourUtc: parseIntBounded(env.MONTHLY_REPORT_HOUR_UTC, 16, 0, 23),
     appUrl: env.APP_URL?.trim() || 'https://docs.plus',
     selfHostDocsUrl:
       env.SELF_HOST_DOCS_URL?.trim() ||

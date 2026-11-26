@@ -1,6 +1,7 @@
 import { loadConfig } from './config.ts'
 import { DiscordHttpClient } from './discord/client.ts'
 import { GitHubHttpClient } from './github/client.ts'
+import { isBiweeklyReportDue, isMonthlyReportDue } from './projection/digest.ts'
 import { ChannelQueue } from './queue/channelQueue.ts'
 import { createRelayHandler } from './server.ts'
 import { SqliteStore } from './store/sqliteStore.ts'
@@ -34,9 +35,14 @@ async function main(): Promise<void> {
           console.error('[github-relay] Daily digest failed:', err)
         })
       }
-      if (utcDay === config.weeklyPulseDayUtc && utcHour === config.weeklyPulseHourUtc) {
-        void queue.runDigest('weekly').catch((err) => {
-          console.error('[github-relay] Weekly pulse failed:', err)
+      if (isBiweeklyReportDue(now, config)) {
+        void queue.runDigest('biweekly').catch((err) => {
+          console.error('[github-relay] 2-week report failed:', err)
+        })
+      }
+      if (isMonthlyReportDue(now, config)) {
+        void queue.runDigest('monthly').catch((err) => {
+          console.error('[github-relay] Monthly report failed:', err)
         })
       }
     }

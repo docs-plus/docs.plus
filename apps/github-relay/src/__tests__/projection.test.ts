@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'bun:test'
 
 import { DISCORD_COLORS } from '../discord/renderer.ts'
+import {
+  buildPeriodReportCard,
+  computeReportWindow,
+  isBiweeklyReportDue,
+  isMonthlyReportDue
+} from '../projection/digest.ts'
 import { projectDiscussionCommentEvent, projectDiscussionEvent } from '../projection/discussion.ts'
 import {
   buildIssueCard,
@@ -16,7 +22,7 @@ import {
 import { buildPushCard } from '../projection/push.ts'
 import { buildReleaseProjection } from '../projection/release.ts'
 import { buildStarCard } from '../projection/star.ts'
-import type { IssueBatchItem, RelayConfig } from '../types.ts'
+import type { IssueBatchItem, PeriodReportSnapshot, RelayConfig } from '../types.ts'
 
 const TEST_CONFIG: RelayConfig = {
   port: 4050,
@@ -39,8 +45,10 @@ const TEST_CONFIG: RelayConfig = {
   starBurstWindowMs: 30000,
   digestEnabled: true,
   dailyDigestHourUtc: 9,
-  weeklyPulseDayUtc: 5,
-  weeklyPulseHourUtc: 16,
+  biweeklyReportDayUtc: 5,
+  biweeklyReportHourUtc: 16,
+  monthlyReportDayUtc: 1,
+  monthlyReportHourUtc: 16,
   appUrl: 'https://docs.plus',
   selfHostDocsUrl: 'https://github.com/docs-plus/docs.plus/blob/main/docs/self-hosting/README.md'
 }
@@ -442,5 +450,106 @@ describe('issue, discussion, and star projections', () => {
     expect(milestone.accentColor).toBe(DISCORD_COLORS.GOLD)
     expect(milestone.silent).toBe(false)
     expect(milestone.stateBadge).toContain('100 Stars')
+  })
+})
+
+describe('biweekly and monthly period reports', () => {
+  it('alternates biweekly schedule every 2 weeks and checks monthly schedule', () => {
+    const fridayA = new Date('2026-11-20T16:00:00Z')
+    const fridayB = new Date('2026-11-27T16:00:00Z')
+    const fridayC = new Date('2026-12-04T16:00:00Z')
+
+    const dueA = isBiweeklyReportDue(fridayA, TEST_CONFIG)
+    const dueB = isBiweeklyReportDue(fridayB, TEST_CONFIG)
+    const dueC = isBiweeklyReportDue(fridayC, TEST_CONFIG)
+
+    expect(dueA !== dueB).toBe(true)
+    expect(dueC).toBe(dueA)
+    expect(isBiweeklyReportDue(new Date('2026-11-20T15:00:00Z'), TEST_CONFIG)).toBe(false)
+    expect(isBiweeklyReportDue(new Date('2026-11-21T16:00:00Z'), TEST_CONFIG)).toBe(false)
+
+    expect(isMonthlyReportDue(new Date('2026-12-01T16:00:00Z'), TEST_CONFIG)).toBe(true)
+    expect(isMonthlyReportDue(new Date('2026-12-01T15:00:00Z'), TEST_CONFIG)).toBe(false)
+    expect(isMonthlyReportDue(new Date('2026-12-02T16:00:00Z'), TEST_CONFIG)).toBe(false)
+  })
+
+  it('computes previous calendar month across year boundary and 14-day biweekly windows', () => {
+    const monthly = computeReportWindow('monthly', new Date('2026-01-01T16:00:00Z'))
+    expect(monthly.sinceMs).toBe(Date.UTC(2025, 11, 1, 0, 0, 0, 0))
+    expect(monthly.untilMs).toBe(Date.UTC(2026, 0, 1, 0, 0, 0, 0))
+    expect(monthly.periodLabel).toBe('December 2025')
+    expect(monthly.runKey).toBe('monthly:2025-12')
+
+    const biweekly = computeReportWindow('biweekly', new Date('2026-11-27T16:00:00Z'))
+    expect(biweekly.untilMs - biweekly.sinceMs).toBe(14 * 86_400_000)
+    expect(biweekly.runKey).toBe('biweekly:2026-11-27')
+    expect(biweekly.periodLabel).toContain('Nov 13')
+    expect(biweekly.periodLabel).toContain('Nov 27, 2026')
+  })
+
+  it('builds 2-week and monthly cards with commits, releases, PRs, issues, and Up for grabs', () => {
+    const empty: PeriodReportSnapshot = {
+      kind: 'biweekly',
+      repo: 'docs-plus/docs.plus',
+      periodLabel: 'Nov 13 – Nov 27, 2026',
+      sinceMs: 0,
+      untilMs: 1,
+      starsCount: 100,
+      commitsCount: 0,
+      commitsCapped: false,
+      releases: [],
+      mergedPrsCount: 0,
+      closedIssuesCount: 0,
+      contributors: [],
+      featuredClaimableIssues: []
+    }
+    expect(buildPeriodReportCard(empty, TEST_CONFIG)).toBeNull()
+
+    const monthlyCard = buildPeriodReportCard(
+      {
+        kind: 'monthly',
+        repo: 'docs-plus/docs.plus',
+        periodLabel: 'October 2026',
+        sinceMs: Date.UTC(2026, 9, 1),
+        untilMs: Date.UTC(2026, 10, 1),
+        starsCount: 105,
+        commitsCount: 300,
+        commitsCapped: true,
+        releases: [
+          {
+            tagName: 'v2.4.0',
+            name: 'October Release',
+            url: 'https://github.com/docs-plus/docs.plus/releases/tag/v2.4.0',
+            prerelease: false
+          }
+        ],
+        mergedPrsCount: 18,
+        closedIssuesCount: 24,
+        contributors: ['HMarzban', 'Maya Dev'],
+        featuredClaimableIssues: [
+          {
+            number: 840,
+            title: 'Improve mobile toolbar focus state',
+            url: 'https://github.com/docs-plus/docs.plus/issues/840',
+            labels: ['good first issue']
+          }
+        ]
+      },
+      TEST_CONFIG
+    )!
+
+    expect(monthlyCard.accentColor).toBe(DISCORD_COLORS.VIOLET)
+    expect(monthlyCard.stateBadge).toBe('Monthly Report')
+    expect(monthlyCard.title).toBe('October 2026 recap · docs-plus/docs.plus')
+    expect(monthlyCard.silent).toBe(true)
+    const body = monthlyCard.sections.join('\n')
+    expect(body).toContain('**Commits:** 300+')
+    expect(body).toContain('**Releases:** 1')
+    expect(body).toContain('**Merged PRs:** 18')
+    expect(body).toContain('**Closed issues:** 24')
+    expect(body).toContain('@HMarzban, Maya Dev')
+    expect(body).toContain('[`v2.4.0`](https://github.com/docs-plus/docs.plus/releases/tag/v2.4.0)')
+    expect(body).toContain('**Up for grabs**')
+    expect(body).toContain('#840')
   })
 })

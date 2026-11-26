@@ -1,6 +1,6 @@
 import { DISCORD_COLORS } from '../discord/renderer.ts'
 import { cleanText, truncateTitle } from '../security.ts'
-import type { CardModel, DigestSnapshot, RelayConfig } from '../types.ts'
+import type { CardModel, DigestSnapshot, PeriodReportSnapshot, RelayConfig } from '../types.ts'
 
 export function buildDailyTriageDigest(
   snapshot: DigestSnapshot,
@@ -69,42 +69,141 @@ export function buildDailyTriageDigest(
   }
 }
 
-export function buildWeeklyPulse(snapshot: DigestSnapshot, config: RelayConfig): CardModel | null {
-  if (snapshot.weeklyMergedPrs.length === 0 && snapshot.weeklyClosedIssuesCount === 0) {
+export function isBiweeklyReportDue(now: Date, config: RelayConfig): boolean {
+  if (
+    now.getUTCDay() !== config.biweeklyReportDayUtc ||
+    now.getUTCHours() !== config.biweeklyReportHourUtc
+  ) {
+    return false
+  }
+  const epochDay = Math.floor(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) / 86_400_000
+  )
+  const weekIndex = Math.floor((epochDay - config.biweeklyReportDayUtc) / 7)
+  return ((weekIndex % 2) + 2) % 2 === 0
+}
+
+export function isMonthlyReportDue(now: Date, config: RelayConfig): boolean {
+  return (
+    now.getUTCDate() === config.monthlyReportDayUtc &&
+    now.getUTCHours() === config.monthlyReportHourUtc
+  )
+}
+
+export function computeReportWindow(
+  kind: 'biweekly' | 'monthly',
+  now: Date
+): { sinceMs: number; untilMs: number; periodLabel: string; runKey: string } {
+  if (kind === 'biweekly') {
+    const untilMs = now.getTime()
+    const sinceMs = untilMs - 14 * 86_400_000
+    const start = new Date(sinceMs)
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'UTC'
+    })
+    const startYear = start.getUTCFullYear()
+    const endYear = now.getUTCFullYear()
+    const periodLabel =
+      startYear === endYear
+        ? `${fmt.format(start)} – ${fmt.format(now)}, ${endYear}`
+        : `${fmt.format(start)}, ${startYear} – ${fmt.format(now)}, ${endYear}`
+    return {
+      sinceMs,
+      untilMs,
+      periodLabel,
+      runKey: `biweekly:${now.toISOString().slice(0, 10)}`
+    }
+  }
+
+  const prevStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1, 0, 0, 0, 0))
+  const currStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0))
+  const periodLabel = new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC'
+  }).format(prevStart)
+
+  return {
+    sinceMs: prevStart.getTime(),
+    untilMs: currStart.getTime(),
+    periodLabel,
+    runKey: `monthly:${prevStart.toISOString().slice(0, 7)}`
+  }
+}
+
+export function buildPeriodReportCard(
+  snapshot: PeriodReportSnapshot,
+  config: RelayConfig
+): CardModel | null {
+  if (
+    snapshot.commitsCount === 0 &&
+    snapshot.releases.length === 0 &&
+    snapshot.mergedPrsCount === 0 &&
+    snapshot.closedIssuesCount === 0
+  ) {
     return null
   }
 
-  const contributors = Array.from(
-    new Set(snapshot.weeklyMergedPrs.map((p) => `@${cleanText(p.author)}`))
-  )
+  const isMonthly = snapshot.kind === 'monthly'
+  const commitsLabel = snapshot.commitsCapped
+    ? `${snapshot.commitsCount}+`
+    : String(snapshot.commitsCount)
+
+  const formattedContributors = snapshot.contributors
+    .slice(0, 8)
+    .map((c) => {
+      const cleaned = cleanText(c)
+      if (!cleaned) return ''
+      return cleaned.includes(' ') ? cleaned : `@${cleaned}`
+    })
+    .filter(Boolean)
   const contribLine =
-    contributors.length > 0 ? contributors.slice(0, 8).join(', ') : 'Maintainer team'
+    formattedContributors.length > 0 ? formattedContributors.join(', ') : 'Maintainer team'
 
   const sections: string[] = [
-    `**Merged:** ${snapshot.weeklyMergedPrs.length} PRs · **Closed:** ${snapshot.weeklyClosedIssuesCount} issues · **Contributors:** ${contribLine}`
+    `**Commits:** ${commitsLabel} · **Releases:** ${snapshot.releases.length} · **Merged PRs:** ${snapshot.mergedPrsCount} · **Closed issues:** ${snapshot.closedIssuesCount}\n**Contributors:** ${contribLine}`
   ]
 
+  if (snapshot.releases.length > 0) {
+    const releaseLines = snapshot.releases.slice(0, 5).map((r) => {
+      const tag = cleanText(r.tagName)
+      const name = cleanText(r.name)
+      if (!name || name === tag) {
+        return `- [\`${tag}\`](${r.url})`
+      }
+      return `- [\`${tag}\`](${r.url}) ${truncateTitle(name, 65)}`
+    })
+    if (snapshot.releases.length > 5) {
+      releaseLines.push(`- …and ${snapshot.releases.length - 5} more`)
+    }
+    sections.push(`**Releases**\n${releaseLines.join('\n')}`)
+  }
+
   if (snapshot.featuredClaimableIssues.length > 0) {
-    const lines = snapshot.featuredClaimableIssues.map((item) => {
+    const lines = snapshot.featuredClaimableIssues.slice(0, 4).map((item) => {
       const chips = item.labels
         .slice(0, 2)
         .map((l) => `\`${cleanText(l)}\``)
         .join(' ')
       return `- [#${item.number}](${item.url}) ${truncateTitle(item.title, 70)} ${chips}`.trim()
     })
-    sections.push(`**Featured Up for grabs**\n${lines.join('\n')}`)
+    sections.push(`**Up for grabs**\n${lines.join('\n')}`)
   }
 
   return {
-    accentColor: DISCORD_COLORS.SLATE,
-    stateBadge: 'Weekly Pulse',
-    title: `Weekly shipped recap · ${config.githubRepository}`,
+    accentColor: isMonthly ? DISCORD_COLORS.VIOLET : DISCORD_COLORS.SKY,
+    stateBadge: isMonthly ? 'Monthly Report' : '2-Week Report',
+    title: isMonthly
+      ? `${snapshot.periodLabel} recap · ${config.githubRepository}`
+      : `Shipped recap · ${snapshot.periodLabel}`,
     primaryButton: {
       label: 'Contributors ↗',
       url: `https://github.com/${config.githubRepository}/graphs/contributors`
     },
     sections,
-    footer: `${snapshot.repo} · ${snapshot.starsCount} stars · Auto-skips quiet weeks`,
+    footer: `${snapshot.repo} · ${snapshot.starsCount} stars · ${isMonthly ? 'Monthly recap' : 'Every 2 weeks'}`,
     silent: true
   }
 }

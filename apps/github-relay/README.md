@@ -9,7 +9,7 @@ Production ops paging stays on Telegram. This service sends only repository acti
 - **Ingress:** `POST /webhook/github` verifies `X-Hub-Signature-256` and returns `202` in milliseconds.
 - **State:** SQLite WAL stores webhook delivery IDs, per-channel FIFO queues, batch windows, star cooldowns, and `entity -> message_id` anchors.
 - **Delivery:** One REST-only Discord Bot Token posts new cards, updates anchors with `PATCH`, and threads human updates via `message_reference`.
-- **Digests:** An internal scheduler posts a weekday morning triage digest to `#triage` and a Friday shipped recap to `#github`.
+- **Digests:** An internal scheduler posts a weekday morning triage digest to `#triage`. It also posts 2-week (alternate Fridays) and monthly (1st of month) shipped reports to `#github`.
 
 ## Discord Bot Setup
 
