@@ -26,6 +26,9 @@ case "$STORE" in
     docker exec docsplus-redis redis-cli --rdb - | enc | up "$OBJ" ;;
   certs) OBJ="certs/certs-$TS.tgz.age"; docker run --rm -v docsplus_traefik-certs:/letsencrypt:ro alpine:3.22 tar czf - -C /letsencrypt . | enc | up "$OBJ" ;;
   glitchtip) OBJ="glitchtip/glitchtip-$TS.dump.age"; docker exec docsplus-glitchtip-postgres pg_dump -U glitchtip -Fc glitchtip | enc | up "$OBJ" ;;
+  uptime-kuma)
+    OBJ="uptime-kuma/uptime-kuma-$TS.db.gz.age"
+    docker exec docsplus-uptime-kuma sh -c 'tmp=$(mktemp /tmp/kuma-backup.XXXXXX.db) && trap "rm -f \"$tmp\"" EXIT && sqlite3 /app/data/kuma.db ".timeout 10000" ".backup \"$tmp\"" && gzip -c "$tmp"' | enc | up "$OBJ" ;;
   media) MIRROR=media; "${RCLONE[@]}" sync "media:${MEDIA_BUCKET}" "backup:${BUCKET}/media/" --backup-dir "backup:${BUCKET}/media-deleted/$TS" --max-delete 50 ;;
   supabase-storage) MIRROR=supabase-storage; "${RCLONE[@]}" sync sbstore: "backup:${BUCKET}/supabase-storage/" --backup-dir "backup:${BUCKET}/supabase-storage-deleted/$TS" --max-delete 50 ;;
   *) echo "unknown store: $STORE" >&2; exit 2 ;;
