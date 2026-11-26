@@ -12,7 +12,15 @@ export const documentIdField = z
   .max(100)
   .regex(/^[A-Za-z0-9_-]+$/, 'Invalid document ID')
 
-const plainTitle = (title: string): string => title.replace(/<[^>]*>/g, '')
+const plainTitle = (title: string): string => {
+  let out = title
+  let prev: string
+  do {
+    prev = out
+    out = out.replace(/<[^>]*>/g, '')
+  } while (out !== prev)
+  return out
+}
 
 export const createDocumentSchema = z.object({
   title: z.string().transform(plainTitle).pipe(z.string().min(1, 'Title is required')),

@@ -109,10 +109,8 @@ function makeTriggersIdempotent(sql: string): string {
     }
 
     const tail = out.slice(-5).join('\n')
-    const dropRe = new RegExp(
-      `DROP TRIGGER IF EXISTS\\s+${name}\\s+ON\\s+${table.replace(/\./g, '\\.')}`,
-      'i'
-    )
+    const escapedTable = table.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const dropRe = new RegExp(`DROP TRIGGER IF EXISTS\\s+${name}\\s+ON\\s+${escapedTable}`, 'i')
     if (!dropRe.test(tail)) {
       out.push(`DROP TRIGGER IF EXISTS ${name} ON ${table};`)
     }

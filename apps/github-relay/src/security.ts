@@ -85,16 +85,20 @@ export function stripHtmlAndExtractBanner(markdown: string): {
   const cleanedSegments = segments.map((seg, idx) => {
     if (idx % 2 === 1) return seg
     let prose = seg
-      .replace(/<!--[\s\S]*?-->/g, '')
-      .replace(/<picture[\s\S]*?<\/picture>/gi, '')
-      .replace(
-        /<\/?(?:source|img|div|span|details|summary|table|thead|tbody|tr|th|td|a)[^>]*>/gi,
-        ''
-      )
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/p>/gi, '\n\n')
-      .replace(/<p[^>]*>/gi, '')
-      .replace(/<[^>]+>/g, '')
+    let prev: string
+    do {
+      prev = prose
+      prose = prose.replace(/<!--[\s\S]*?-->/g, '')
+    } while (prose !== prev)
+    do {
+      prev = prose
+      prose = prose.replace(/<picture[\s\S]*?<\/picture>/gi, '')
+    } while (prose !== prev)
+    prose = prose.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n\n')
+    do {
+      prev = prose
+      prose = prose.replace(/<[^>]+>/g, '')
+    } while (prose !== prev)
 
     // Strip control chars and bidi overrides without touching valid markdown links.
     let safe = ''
@@ -166,12 +170,19 @@ export function truncateTitle(input: string, maxLen = 100): string {
 
 export function extractCommentExcerpt(body: string | null | undefined, maxLen = 220): string {
   if (!body) return ''
-  const withoutComments = body
-    .replace(/\r\n/g, '\n')
-    .replace(/<!--[\s\S]*?-->/g, '')
+  let withoutComments = body.replace(/\r\n/g, '\n')
+  let prev: string
+  do {
+    prev = withoutComments
+    withoutComments = withoutComments.replace(/<!--[\s\S]*?-->/g, '')
+  } while (withoutComments !== prev)
+  withoutComments = withoutComments
     .replace(/```[\s\S]*?```/g, '[code]')
     .replace(/!\[[^\]]*\]\([^)]+\)/g, '')
-    .replace(/<[^>]+>/g, '')
+  do {
+    prev = withoutComments
+    withoutComments = withoutComments.replace(/<[^>]+>/g, '')
+  } while (withoutComments !== prev)
 
   const lines = withoutComments
     .split('\n')
