@@ -75,6 +75,9 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - Removed Google Analytics from `apps/webapp/src/pages/privacy.tsx` (dropped the analytics bullet
   and narrowed Google to sign-in only) to match turning `NEXT_PUBLIC_GA_ID` off in production
   ([#741](https://github.com/docs-plus/docs.plus/issues/741)).
+- Upgraded `@tiptap/*` to `3.33.1` and `@tiptap/y-tiptap` to `^3.3.0`, and dropped
+  `patches/@tiptap%2Fy-tiptap@3.0.10.patch`. Added `captureMessageOnce('onContentError', ...)` in
+  `TipTap.tsx` ([#701](https://github.com/docs-plus/docs.plus/issues/701)).
 
 ### Fixed
 
@@ -163,6 +166,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
     replaced the pad slice on Linux. The spec failed 3 of 10 Linux runs before, and 0 of 10 after.
 - `typecheck` runs `bun check --no-script`, not `tsc --noEmit`
   ([#794](https://github.com/docs-plus/docs.plus/issues/794)).
+- Added `apps/webapp/scripts/bench-pad-fill.ts` to time cold `/demo` fills and sum collab
+  WebSocket bytes via CDP ([#738](https://github.com/docs-plus/docs.plus/issues/738)).
 
 ## [2.3.6] — 2026-11-16
 

@@ -79,6 +79,15 @@ This file is the product changelog. Every app, package and extension keeps its o
 - MCP live reads and writes now route directly to the collaboration replica holding the open room
   through a Redis room-owner registry, eliminating stale `rev` conflicts across replicas. Detail:
   `apps/hocuspocus.server/CHANGELOG.md` ([#816](https://github.com/docs-plus/docs.plus/issues/816)).
+- Upgraded all `@tiptap/*` packages to `3.33.1` and `@tiptap/y-tiptap` to `^3.3.0`, and removed
+  the local `3.0.10` patch. Added one-shot `onContentError` GlitchTip reporting so schema-invalid
+  documents cannot fail silently. Detail: `apps/webapp/CHANGELOG.md`
+  ([#701](https://github.com/docs-plus/docs.plus/issues/701)).
+- Server snapshot persistence now clears legacy `@tiptap/y-tiptap` `3.0.10` position-migration
+  maps in place without rebuilding document history. State vectors stay equal and stored heads
+  shrink: a synthetic `12.55 MB` seed drops to `297,365 B` (`97 %` less). Detail:
+  `apps/hocuspocus.server/CHANGELOG.md`
+  ([#738](https://github.com/docs-plus/docs.plus/issues/738)).
 
 ### Fixed
 

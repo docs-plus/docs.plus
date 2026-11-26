@@ -197,6 +197,20 @@ This file is the operator and API changelog. The pad product lives in the [root 
   before and 1 after (50 % fewer). Room-channel publishes for 22 events fell from 44 to none. A
   replica whose subscriber is down now leaves its own clients without these frames until it
   reconnects ([#758](https://github.com/docs-plus/docs.plus/issues/758)).
+- `stripSnapshotMetadata` now calls `clearPositionMigrations` to clear all
+  `__tiptap_position_migrations:*` roots in place in one transaction. State vectors stay
+  byte-equal, and the `Y.Doc` is never rebuilt. On the deterministic `12,551,504 B` seed
+  (`scripts/lib/seed12mb.ts`), stripped head size drops to `297,365 B` (`97 %` less) with
+  identical ProseMirror JSON. Added `scripts/backfill-clear-migration-maps.ts`, which runs in
+  dry-run mode by default. With `--apply`, it skips live rooms via Redis `PUBSUB NUMSUB`, takes
+  the `lockDocumentStore` advisory lock, and checks ProseMirror JSON. It saves per-row
+  `_backfill_738_backup` undo rows for `--restore <rowId>`
+  ([#738](https://github.com/docs-plus/docs.plus/issues/738)).
+- Raised the `realtime-ws-loaded-bytes` Grafana warning threshold from `30e6 B` to `50e6 B` in
+  `rules-realtime.yml`. Production Prometheus reads over 7 and 14 days showed steady resident RSS
+  growing at `5.05x` median (`10.75x` p95, `14.25x` load-spike tail). That stays below the `23.1x`
+  cold load peak, and the 14-day backtest recorded `0` fires
+  ([#842](https://github.com/docs-plus/docs.plus/issues/842)).
 
 ### Fixed
 
