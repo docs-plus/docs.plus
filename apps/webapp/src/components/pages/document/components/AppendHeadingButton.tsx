@@ -1,8 +1,11 @@
 import Button from '@components/ui/Button'
 import { useModal } from '@components/ui/ModalDrawer'
-import { isDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
+import {
+  isDocumentEditingLocked,
+  selectDocumentEditingLocked
+} from '@hooks/isDocumentEditingLocked'
 import { Icons } from '@icons'
-import { useStore } from '@stores'
+import { useAuthStore, useStore } from '@stores'
 import { TIPTAP_NODES } from '@types'
 import { scrollToHeading } from '@utils/scrollToHeading'
 import React, { useCallback } from 'react'
@@ -47,6 +50,8 @@ const findNewHeadingId = (doc: any, insertPosition: number): string | null => {
 
 const AppendHeadingButton = ({ className }: { className: string }) => {
   const isMobile = useStore((state) => state.settings.editor.isMobile)
+  const profileId = useAuthStore((state) => state.profile?.id)
+  const editingLocked = useStore((state) => selectDocumentEditingLocked(state.settings, profileId))
   const closeModal = useModal()?.close
 
   const appendHeadingToEnd = useCallback(() => {
@@ -80,6 +85,8 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
 
     handlePostInsertionActions(editor, selectionPos)
   }, [isMobile, closeModal])
+
+  if (editingLocked) return null
 
   return (
     <div className={`p-3 ${className}`}>

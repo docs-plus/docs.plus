@@ -13,7 +13,7 @@ import {
   type useInteractions
 } from '@floating-ui/react'
 import { twMerge } from '@utils/twMerge'
-import { type ReactNode, useCallback, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useState } from 'react'
 
 import { contextMenuPanelClassName, MenuListProvider, useMenuList } from './ContextMenu'
 import { useOverlayTransition } from './useOverlayTransition'
@@ -36,6 +36,7 @@ export interface DropdownMenuProps {
   /** Merged onto the panel, such as `z-[60]` for a menu stacked on a floating surface. */
   className?: string
   onOpenChange?: (open: boolean) => void
+  disabled?: boolean
   /**
    * Portal target. A menu inside a modal portals into the modal, so its outside-press
    * dismiss counts the menu as inside.
@@ -53,6 +54,7 @@ export function DropdownMenu({
   placement = 'bottom-end',
   className,
   onOpenChange,
+  disabled = false,
   portalRoot
 }: DropdownMenuProps) {
   const [open, setOpenState] = useState(false)
@@ -65,6 +67,10 @@ export function DropdownMenu({
     },
     [onOpenChange]
   )
+
+  useEffect(() => {
+    if (disabled && open) setOpen(false)
+  }, [disabled, open, setOpen])
 
   const { refs, floatingStyles, context } = useFloating({
     placement,
@@ -79,7 +85,7 @@ export function DropdownMenu({
 
   const { isMounted, styles: transitionStyles } = useOverlayTransition(context)
 
-  const click = useClick(context)
+  const click = useClick(context, { enabled: !disabled })
   const dismiss = useDismiss(context)
   const { getReferenceProps, getFloatingProps, listProps } = useMenuList(context, setOpen, [
     click,

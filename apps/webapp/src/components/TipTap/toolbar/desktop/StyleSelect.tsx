@@ -6,12 +6,18 @@ import {
 } from '@components/TipTap/block-style/blockStyle'
 import Select from '@components/ui/Select'
 import { Tooltip } from '@components/ui/Tooltip'
+import {
+  isDocumentEditingLocked,
+  selectDocumentEditingLocked
+} from '@hooks/isDocumentEditingLocked'
+import { useAuthStore, useStore } from '@stores'
 import { Editor } from '@tiptap/core'
 import { twMerge } from '@utils/twMerge'
 import { useCallback } from 'react'
 
 interface StyleSelectProps {
   editor: Editor
+  disabled?: boolean
 }
 
 const BODY_STYLE_OPTIONS = [
@@ -42,11 +48,14 @@ const selectValue = (style: Exclude<BlockStyle, { kind: 'title' }>): string => {
   }
 }
 
-const StyleSelect = ({ editor }: StyleSelectProps) => {
+const StyleSelect = ({ editor, disabled = false }: StyleSelectProps) => {
+  const profileId = useAuthStore((state) => state.profile?.id)
+  const editingLocked = useStore((state) => selectDocumentEditingLocked(state.settings, profileId))
   const style = readBlockStyle(editor)
 
   const handleChange = useCallback(
     (value: string) => {
+      if (disabled || isDocumentEditingLocked()) return
       if (value === 'p') {
         applyBlockStyle(editor, { kind: 'normal' })
         return
@@ -58,15 +67,16 @@ const StyleSelect = ({ editor }: StyleSelectProps) => {
       const level = Number(value)
       if (isHeadingLevel(level)) applyBlockStyle(editor, { kind: 'heading', level })
     },
-    [editor]
+    [disabled, editor]
   )
 
   const isTitle = style.kind === 'title'
+  const isDisabled = isTitle || editingLocked || disabled
 
   // Fixed width, so the slot does not grow with the label (Normal text vs Heading 1).
   // The first line is always the Title: a disabled one-option Select shows the lock.
-  // Select takes no ref, so the span is the Tooltip anchor. On the Title line the
-  // disabled trigger drops pointer events, so hover reaches the span.
+  // Select takes no ref, so the span is the Tooltip anchor. On the Title line or when
+  // editing is locked the disabled trigger drops pointer events, so hover reaches the span.
   return (
     <div className="w-40 max-w-40 min-w-0 shrink-0">
       <Tooltip
@@ -77,13 +87,13 @@ const StyleSelect = ({ editor }: StyleSelectProps) => {
             value={isTitle ? 'title' : selectValue(style)}
             onChange={handleChange}
             options={isTitle ? TITLE_OPTIONS : BODY_STYLE_OPTIONS}
-            disabled={isTitle}
+            disabled={isDisabled}
             ghost
             size="sm"
             aria-label="Block style"
             wrapperClassName={twMerge(
               'w-full min-w-0 max-w-full',
-              isTitle && 'pointer-events-none'
+              isDisabled && 'pointer-events-none'
             )}
             className={twMerge('min-w-0', style.kind !== 'normal' && 'is-active')}
           />

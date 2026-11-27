@@ -12,10 +12,11 @@ export interface MediaUrlFieldProps {
   onSubmit: () => void
   detectedType: MediaNodeType | null
   loading?: boolean
+  disabled?: boolean
 }
 
 const MediaUrlField = forwardRef<HTMLInputElement, MediaUrlFieldProps>(
-  ({ value, onChange, onSubmit, detectedType, loading }, ref) => {
+  ({ value, onChange, onSubmit, detectedType, loading, disabled = false }, ref) => {
     const entry = detectedType ? MEDIA_INSERT_REGISTRY[detectedType] : null
     const Icon = entry?.Icon
 
@@ -24,6 +25,7 @@ const MediaUrlField = forwardRef<HTMLInputElement, MediaUrlFieldProps>(
         className="flex flex-col gap-1"
         onSubmit={(e) => {
           e.preventDefault()
+          if (disabled) return
           onSubmit()
         }}>
         <div className="join w-full">
@@ -33,6 +35,7 @@ const MediaUrlField = forwardRef<HTMLInputElement, MediaUrlFieldProps>(
             aria-label="Media URL"
             placeholder="Paste a link to an image, video, or embed…"
             value={value}
+            disabled={disabled}
             onChange={(e) => onChange(e.target.value)}
             startIcon={Icon ? <Icon size={18} /> : undefined}
             wrapperClassName="flex-1"
@@ -43,7 +46,7 @@ const MediaUrlField = forwardRef<HTMLInputElement, MediaUrlFieldProps>(
             type="submit"
             className="join-item"
             loading={loading}
-            disabled={!value.trim()}>
+            disabled={disabled || !value.trim()}>
             Insert
           </Button>
         </div>

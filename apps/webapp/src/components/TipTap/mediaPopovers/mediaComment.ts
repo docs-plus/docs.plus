@@ -6,6 +6,7 @@ import {
   type MediaActionsResolver,
   type MediaNodeType
 } from '@docs.plus/extension-hypermultimedia'
+import { canCommentInDocument } from '@hooks/isDocumentEditingLocked'
 import {
   buildMediaCommentAnchor,
   publishDocumentComment,
@@ -22,7 +23,7 @@ export function publishMediaComment(
   nodeType: string,
   attrs: Record<string, unknown>
 ): boolean {
-  if (!editor.isEditable) return false
+  if (!canCommentInDocument()) return false
 
   const headingId = resolveHeadingIdForDocPos(editor.state.doc, nodePos)
   if (!headingId) {
@@ -51,7 +52,7 @@ export const MEDIA_COMMENT_ACTION: MediaAction = {
   id: 'comment',
   label: () => 'Comment',
   placement: 'inline',
-  isVisible: (ctx) => ctx.editor.isEditable,
+  isVisible: () => canCommentInDocument(),
   run: publishMediaCommentFromContext
 }
 

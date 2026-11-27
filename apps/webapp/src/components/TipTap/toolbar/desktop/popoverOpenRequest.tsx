@@ -1,4 +1,5 @@
 import { usePopoverState } from '@components/ui/Popover'
+import { isDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { useEffect } from 'react'
 
 export type PopoverOpenRequest = {
@@ -9,14 +10,17 @@ export type PopoverOpenRequest = {
   Listener: () => null
 }
 
-function createPopoverOpenRequest(): PopoverOpenRequest {
+function createPopoverOpenRequest(canOpen?: () => boolean): PopoverOpenRequest {
   let open: (() => void) | null = null
 
   function Listener() {
     const { setOpen } = usePopoverState()
 
     useEffect(() => {
-      const openPanel = () => setOpen(true)
+      const openPanel = () => {
+        if (canOpen && !canOpen()) return
+        setOpen(true)
+      }
       open = openPanel
       return () => {
         if (open === openPanel) open = null
@@ -27,14 +31,17 @@ function createPopoverOpenRequest(): PopoverOpenRequest {
   }
 
   return {
-    canRequest: () => open !== null,
-    request: () => open?.(),
+    canRequest: () => open !== null && (!canOpen || canOpen()),
+    request: () => {
+      if (canOpen && !canOpen()) return
+      open?.()
+    },
     Listener
   }
 }
 
 // These live apart from `EditorToolbar`, so the slash items that `editorConfig` loads
 // do not pull the whole toolbar into every editor bundle.
-export const insertMediaOpenRequest = createPopoverOpenRequest()
+export const insertMediaOpenRequest = createPopoverOpenRequest(() => !isDocumentEditingLocked())
 export const filterOpenRequest = createPopoverOpenRequest()
 export const documentSettingsOpenRequest = createPopoverOpenRequest()

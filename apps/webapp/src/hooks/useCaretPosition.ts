@@ -132,7 +132,7 @@ export const useEnableEditor = () => {
   const enableAndFocus = useCallback(() => {
     const editor = useStore.getState().settings.editor.instance
     if (!editor) return
-    enableEditor()
+    if (!enableEditor()) return
     editor.commands.focus()
     if (isMobile()) {
       scheduleMobileKeyboardNudgeAfterFocus()
@@ -146,7 +146,7 @@ export const useEnableEditor = () => {
     (pos: number) => {
       const editor = useStore.getState().settings.editor.instance
       if (!editor) return
-      enableEditor()
+      if (!enableEditor()) return
       editor.chain().setTextSelection(pos).focus().run()
       if (isMobile()) {
         scheduleMobileKeyboardNudgeAfterFocus()

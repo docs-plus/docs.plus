@@ -1,4 +1,5 @@
 import { isVisitor } from '@components/auth/isVisitor'
+import { isDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
@@ -24,7 +25,9 @@ export function useMediaPasteUpload(editor: Editor | null | undefined): void {
     const handleEditorFileUpload = (event: Event) => {
       if (!(event instanceof CustomEvent)) return
       const { files, editor: eventEditor } = event.detail as EditorFileUploadEventDetail
-      if (eventEditor !== editor || !files?.length || !docMetadata) return
+      if (eventEditor !== editor || !files?.length || !docMetadata || isDocumentEditingLocked()) {
+        return
+      }
       if (isVisitor()) {
         openInlineSignInDialog()
         return

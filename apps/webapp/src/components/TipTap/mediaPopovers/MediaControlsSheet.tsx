@@ -21,8 +21,13 @@ import {
   X_EMBED_THEME_OPTIONS,
   type XEmbedTheme
 } from '@docs.plus/extension-hypermultimedia'
+import {
+  isDocumentEditingLocked,
+  selectCanComment,
+  selectDocumentEditingLocked
+} from '@hooks/isDocumentEditingLocked'
 import { Icons } from '@icons'
-import { type SheetDataMap, useSheetStore } from '@stores'
+import { type SheetDataMap, useAuthStore, useSheetStore, useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
 import type { Transaction } from '@tiptap/pm/state'
 import { type ReactNode, useEffect, useId, useState } from 'react'
@@ -36,6 +41,7 @@ function setMediaAttrs(
   attrs: Record<string, string | number | null>,
   closeSheet: () => void
 ): void {
+  if (isDocumentEditingLocked()) return
   const nodePos = findMediaNodePosByKeyId(editor, keyId)
   if (nodePos == null) {
     closeSheet()
@@ -120,6 +126,9 @@ function ChoiceButton({
 export default function MediaControlsSheet({ data }: { data: SheetDataMap['mediaControls'] }) {
   const { editor, keyId, nodeType } = data
   const closeSheet = useSheetStore((s) => s.closeSheet)
+  const profileId = useAuthStore((state) => state.profile?.id)
+  const editingLocked = useStore((state) => selectDocumentEditingLocked(state.settings, profileId))
+  const canComment = useStore((state) => selectCanComment(state.settings, profileId))
   const [current, setCurrent] = useState<Record<string, unknown>>({})
   const [caption, setCaption] = useState('')
 
@@ -169,7 +178,7 @@ export default function MediaControlsSheet({ data }: { data: SheetDataMap['media
 
   const viewCtx = buildActionContext(editor, keyId, nodeType, closeSheet)
   const showViewOriginal = viewCtx != null && canViewOriginal(viewCtx)
-  const showComment = editor.isEditable
+  const showComment = canComment
 
   const runComment = () =>
     runAction((ctx) => {
@@ -182,58 +191,65 @@ export default function MediaControlsSheet({ data }: { data: SheetDataMap['media
       title={isXEmbed ? 'Post layout' : 'Media layout'}
       onClose={closeSheet}
       body="stack">
-      {isXEmbed && (
+      {!editingLocked && (
         <>
-          <ChoiceGroup label="Size" gridClassName="grid grid-cols-3 gap-2">
-            {X_EMBED_SIZE_OPTIONS.map(({ id, label, maxwidth }) => (
-              <ChoiceButton key={id} active={activeSize === id} onClick={() => apply({ maxwidth })}>
-                {label}
-              </ChoiceButton>
-            ))}
-          </ChoiceGroup>
+          {isXEmbed && (
+            <>
+              <ChoiceGroup label="Size" gridClassName="grid grid-cols-3 gap-2">
+                {X_EMBED_SIZE_OPTIONS.map(({ id, label, maxwidth }) => (
+                  <ChoiceButton
+                    key={id}
+                    active={activeSize === id}
+                    onClick={() => apply({ maxwidth })}>
+                    {label}
+                  </ChoiceButton>
+                ))}
+              </ChoiceGroup>
 
-          <ChoiceGroup label="Theme" gridClassName="grid grid-cols-2 gap-2">
-            {X_EMBED_THEME_OPTIONS.map(({ id, label }) => (
+              <ChoiceGroup label="Theme" gridClassName="grid grid-cols-2 gap-2">
+                {X_EMBED_THEME_OPTIONS.map(({ id, label }) => (
+                  <ChoiceButton
+                    key={id}
+                    active={activeTheme === id}
+                    onClick={() => apply({ theme: id })}>
+                    {label}
+                  </ChoiceButton>
+                ))}
+              </ChoiceGroup>
+            </>
+          )}
+
+          <Textarea
+            label="Caption"
+            labelPosition="above"
+            size="sm"
+            rows={2}
+            placeholder="Add a caption…"
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            onBlur={() => apply({ caption: caption.trim() || null })}
+          />
+
+          <ChoiceGroup label="Placement" gridClassName="grid grid-cols-2 gap-2">
+            {MEDIA_PLACEMENT_OPTIONS.map(({ id, label }) => (
               <ChoiceButton
                 key={id}
-                active={activeTheme === id}
-                onClick={() => apply({ theme: id })}>
+                active={activePlacement === id}
+                onClick={() => apply(getMediaPlacementAttrs(id, currentMargin))}>
                 {label}
               </ChoiceButton>
             ))}
           </ChoiceGroup>
+
+          <Select
+            label="Margin"
+            size="sm"
+            value={currentMargin}
+            onChange={(value) => apply({ margin: value })}
+            options={MEDIA_MARGIN_OPTIONS.map(({ value, label }) => ({ value, label }))}
+          />
         </>
       )}
-
-      <Textarea
-        label="Caption"
-        labelPosition="above"
-        size="sm"
-        rows={2}
-        placeholder="Add a caption…"
-        value={caption}
-        onChange={(e) => setCaption(e.target.value)}
-        onBlur={() => apply({ caption: caption.trim() || null })}
-      />
-
-      <ChoiceGroup label="Placement" gridClassName="grid grid-cols-2 gap-2">
-        {MEDIA_PLACEMENT_OPTIONS.map(({ id, label }) => (
-          <ChoiceButton
-            key={id}
-            active={activePlacement === id}
-            onClick={() => apply(getMediaPlacementAttrs(id, currentMargin))}>
-            {label}
-          </ChoiceButton>
-        ))}
-      </ChoiceGroup>
-
-      <Select
-        label="Margin"
-        size="sm"
-        value={currentMargin}
-        onChange={(value) => apply({ margin: value })}
-        options={MEDIA_MARGIN_OPTIONS.map(({ value, label }) => ({ value, label }))}
-      />
 
       <div className="-mx-2 flex flex-col">
         {showComment && (
@@ -266,14 +282,20 @@ export default function MediaControlsSheet({ data }: { data: SheetDataMap['media
           onClick={() => runAction(copyMediaNode)}>
           Copy
         </ContextMenuRowButton>
-        <ContextMenuDivider as="div" />
-        <ContextMenuRowButton
-          icon={<Icons.trash size={16} />}
-          variant="danger"
-          rowClassName="min-h-12"
-          onClick={() => runAction(removeMediaNode)}>
-          Delete
-        </ContextMenuRowButton>
+        {!editingLocked && (
+          <>
+            <ContextMenuDivider as="div" />
+            <ContextMenuRowButton
+              icon={<Icons.trash size={16} />}
+              variant="danger"
+              rowClassName="min-h-12"
+              onClick={() => {
+                if (!isDocumentEditingLocked()) runAction(removeMediaNode)
+              }}>
+              Delete
+            </ContextMenuRowButton>
+          </>
+        )}
       </div>
     </SheetLayout>
   )

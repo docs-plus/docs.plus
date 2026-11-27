@@ -1,7 +1,8 @@
 import { PanelSurfaceShell } from '@components/PanelSurfaceShell'
 import { PanelTabBar } from '@components/ui/PanelTabBar'
 import { usePopoverState } from '@components/ui/Popover'
-import { useStore } from '@stores'
+import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
+import { useAuthStore, useStore } from '@stores'
 import { useEffect, useRef } from 'react'
 
 import { MEDIA_INSERT_TABS } from './mediaInsert'
@@ -11,15 +12,18 @@ import { useMediaInsert } from './useMediaInsert'
 
 const MediaInsertPanel = () => {
   const editor = useStore((state) => state.settings.editor.instance)
+  const profileId = useAuthStore((state) => state.profile?.id)
+  const editingLocked = useStore((state) => selectDocumentEditingLocked(state.settings, profileId))
   const { close } = usePopoverState()
   const { tab, setTab, url, setUrl, detectedType, inserting, submitUrl, submitFile } =
     useMediaInsert(editor ?? null, { onInserted: close })
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    if (editingLocked) return
     const timer = setTimeout(() => inputRef.current?.focus(), 200)
     return () => clearTimeout(timer)
-  }, [tab])
+  }, [tab, editingLocked])
 
   return (
     <PanelSurfaceShell variant="popover" title="Insert media">
@@ -33,9 +37,10 @@ const MediaInsertPanel = () => {
             onSubmit={submitUrl}
             detectedType={detectedType}
             loading={inserting}
+            disabled={editingLocked}
           />
         ) : (
-          <MediaUploadDropzone onFile={submitFile} />
+          <MediaUploadDropzone onFile={submitFile} disabled={editingLocked} />
         )}
       </div>
     </PanelSurfaceShell>

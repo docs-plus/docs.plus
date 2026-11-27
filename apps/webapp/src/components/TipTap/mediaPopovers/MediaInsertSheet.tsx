@@ -1,6 +1,7 @@
 import { SheetLayout } from '@components/SheetLayout'
 import { PanelTabBar } from '@components/ui/PanelTabBar'
-import { type SheetDataMap, useSheetStore } from '@stores'
+import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
+import { type SheetDataMap, useAuthStore, useSheetStore, useStore } from '@stores'
 import { sheetBodyPadClassName } from '@utils/sheetBodyPadding'
 
 import { MEDIA_INSERT_TABS } from './mediaInsert'
@@ -10,6 +11,8 @@ import { useMediaInsert } from './useMediaInsert'
 
 export default function MediaInsertSheet({ data }: { data: SheetDataMap['mediaInsert'] }) {
   const closeSheet = useSheetStore((s) => s.closeSheet)
+  const profileId = useAuthStore((state) => state.profile?.id)
+  const editingLocked = useStore((state) => selectDocumentEditingLocked(state.settings, profileId))
   const { tab, setTab, url, setUrl, detectedType, inserting, submitUrl, submitFile } =
     useMediaInsert(data.editor, { onInserted: closeSheet })
 
@@ -27,9 +30,10 @@ export default function MediaInsertSheet({ data }: { data: SheetDataMap['mediaIn
             onSubmit={submitUrl}
             detectedType={detectedType}
             loading={inserting}
+            disabled={editingLocked}
           />
         ) : (
-          <MediaUploadDropzone onFile={submitFile} />
+          <MediaUploadDropzone onFile={submitFile} disabled={editingLocked} />
         )}
       </div>
     </SheetLayout>

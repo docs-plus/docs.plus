@@ -10,6 +10,7 @@ import { useReplyInThreadHandler } from '@components/chatroom/components/Message
 import { parseMessageMedias } from '@components/chatroom/utils/messageMediaPaths'
 import { isMessageBookmarked } from '@components/chatroom/utils/messagePresentation'
 import { openMessageReactionAt } from '@components/chatroom/utils/messageReaction'
+import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { Icons } from '@icons'
 import { useAuthStore, useStore } from '@stores'
 import { TMsgRow } from '@types'
@@ -29,6 +30,9 @@ export const useMessageActionMenuItems = (
 ) => {
   const openDialog = useStore((s) => s.openDialog)
   const { profile } = useAuthStore()
+  const editingLocked = useStore((state) =>
+    selectDocumentEditingLocked(state.settings, profile?.id)
+  )
   const { replyInMessageHandler } = useReplyInMessageHandler()
   const { copyMessageToDocHandler } = useCopyMessageToDocHandler()
   const { bookmarkMessageHandler } = useBookmarkMessageHandler()
@@ -103,7 +107,7 @@ export const useMessageActionMenuItems = (
         title: 'Copy to doc',
         icon: <Icons.fileOpen size={MESSAGE_MENU_ICON_SIZE} />,
         onClickFn: () => copyMessageToDocHandler(message),
-        display: true
+        display: !editingLocked
       },
       {
         id: 'reply-in-thread',
@@ -159,6 +163,7 @@ export const useMessageActionMenuItems = (
     copyMessageLinkHandler,
     copyMessageToDocHandler,
     downloadMessageMediaHandler,
+    editingLocked,
     editMessageHandler,
     getMessageUrl,
     includeReaction,

@@ -11,18 +11,19 @@ const ACCEPTED_PREFIXES = ['image/', 'video/', 'audio/']
 
 export interface MediaUploadDropzoneProps {
   onFile: (file: File) => void
+  disabled?: boolean
 }
 
 const isAcceptedMedia = (file: File): boolean =>
   ACCEPTED_PREFIXES.some((prefix) => file.type.startsWith(prefix))
 
-const MediaUploadDropzone = ({ onFile }: MediaUploadDropzoneProps) => {
+const MediaUploadDropzone = ({ onFile, disabled = false }: MediaUploadDropzoneProps) => {
   const inputId = useId()
   const [isDragOver, setIsDragOver] = useState(false)
   const [invalid, setInvalid] = useState<string | null>(null)
 
   const accept = (file: File | undefined) => {
-    if (!file) return
+    if (disabled || !file) return
     if (!isAcceptedMedia(file)) {
       setInvalid('Only image, video, or audio files are supported.')
       return
@@ -35,18 +36,22 @@ const MediaUploadDropzone = ({ onFile }: MediaUploadDropzoneProps) => {
     onFile(file)
   }
 
-  let stateClass = 'border-base-300 bg-base-200 hover:bg-base-300'
-  if (invalid) stateClass = 'border-error bg-error/5'
-  else if (isDragOver) stateClass = 'border-primary bg-primary/5'
+  let stateClass = disabled
+    ? 'border-base-300 bg-base-200 cursor-not-allowed opacity-50'
+    : 'border-base-300 bg-base-200 hover:bg-base-300 cursor-pointer'
+  if (!disabled && invalid) stateClass = 'border-error bg-error/5 cursor-pointer'
+  else if (!disabled && isDragOver) stateClass = 'border-primary bg-primary/5 cursor-pointer'
 
   return (
     <div className="flex w-full items-center justify-center">
       <label
         htmlFor={inputId}
-        className={`rounded-box has-[:focus-visible]:ring-primary relative flex h-36 w-full cursor-pointer flex-col items-center justify-center border-2 border-dashed transition-colors has-[:focus-visible]:ring-2 ${stateClass}`}
+        aria-disabled={disabled || undefined}
+        className={`rounded-box has-[:focus-visible]:ring-primary relative flex h-36 w-full flex-col items-center justify-center border-2 border-dashed transition-colors has-[:focus-visible]:ring-2 ${stateClass}`}
         onDragOver={(e) => {
           e.preventDefault()
           e.stopPropagation()
+          if (disabled) return
           setIsDragOver(true)
         }}
         onDragLeave={(e) => {
@@ -58,11 +63,12 @@ const MediaUploadDropzone = ({ onFile }: MediaUploadDropzoneProps) => {
           e.preventDefault()
           e.stopPropagation()
           setIsDragOver(false)
+          if (disabled) return
           accept(e.dataTransfer.files[0])
         }}>
         <MdCloudUpload
           size={30}
-          className={`mb-2 ${isDragOver ? 'text-primary' : 'text-base-content/50'}`}
+          className={`mb-2 ${isDragOver && !disabled ? 'text-primary' : 'text-base-content/50'}`}
         />
         {/* Both lines sit above /60: that step drops under 4.5:1 on the base-300 hover fill. */}
         <p className="text-base-content text-sm">
@@ -77,6 +83,7 @@ const MediaUploadDropzone = ({ onFile }: MediaUploadDropzoneProps) => {
           type="file"
           className="sr-only"
           accept="image/*,video/*,audio/*"
+          disabled={disabled}
           onChange={(e) => accept(e.target.files?.[0])}
         />
       </label>

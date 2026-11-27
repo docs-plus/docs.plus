@@ -1,9 +1,10 @@
 import { selectPadOwnsKeyboard } from '@components/chatroom/utils/selectPadOwnsKeyboard'
 import { useFadeAfterFirstSync } from '@components/pages/document/hooks/useFadeAfterFirstSync'
 import Button from '@components/ui/Button'
+import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { useEnableEditor } from '@hooks/useCaretPosition'
 import { Icons } from '@icons'
-import { useChatStore } from '@stores'
+import { useAuthStore, useChatStore, useStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
 import React, { useCallback, useRef } from 'react'
 
@@ -13,11 +14,13 @@ import React, { useCallback, useRef } from 'react'
  * path and suppress the follow-up `click`.
  */
 const EditFAB = () => {
+  const profileId = useAuthStore((state) => state.profile?.id)
+  const editingLocked = useStore((state) => selectDocumentEditingLocked(state.settings, profileId))
   const { isKeyboardOpen, enableAndFocus } = useEnableEditor()
   // This control is `fixed`, so without the gate it floats over an open pane.
   const padOwnsKeyboard = useChatStore(selectPadOwnsKeyboard)
   const suppressClickRef = useRef(false)
-  const hidden = isKeyboardOpen || !padOwnsKeyboard
+  const hidden = isKeyboardOpen || !padOwnsKeyboard || editingLocked
   // Also fade in when the FAB comes back after the keyboard or the pane.
   const [fadeIn, setFadeIn] = useFadeAfterFirstSync()
   if (hidden && !fadeIn) setFadeIn(true)

@@ -1,5 +1,6 @@
 import * as toast from '@components/toast'
 import { fitDimensionsToBounds, getEditorContentWidth } from '@docs.plus/extension-hypermultimedia'
+import { isDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import type { Editor } from '@tiptap/core'
 import { supabaseClient } from '@utils/supabase'
 
@@ -138,7 +139,7 @@ export const uploadMediaFile = async (
   file: File,
   docMetadata: DocumentMetadata
 ): Promise<void> => {
-  if (!editor) return
+  if (!editor || isDocumentEditingLocked()) return
 
   if (file.size > MEDIA_MAX_UPLOAD_BYTES) {
     toast.Error(mediaUploadLimitExceededMessage())
@@ -199,6 +200,10 @@ export const uploadMediaFile = async (
     }
 
     if (editor.isDestroyed) return
+    if (isDocumentEditingLocked()) {
+      removeUploadPlaceholder(editor, uploadId)
+      return
+    }
 
     const mediaType = FILE_TYPE_MAP[result.fileType as keyof typeof FILE_TYPE_MAP] || 'image'
     const nodeAttrs: UploadPlaceholderAttributes = { src: mediaURL }

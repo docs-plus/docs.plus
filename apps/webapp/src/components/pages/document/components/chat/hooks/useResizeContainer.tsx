@@ -1,3 +1,4 @@
+import { isDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { closeHeadingChatroom } from '@services/eventsHub'
 import { useChatStore, useStore } from '@stores'
 import { MOTION_OVERLAY_IN_MS, prefersReducedMotion } from '@utils/motion'
@@ -170,7 +171,15 @@ const useResizeContainer = () => {
       }
 
       const abortDrag = () => {
-        if (wasEditable && editor && !editor.isEditable) editor.setEditable(true)
+        if (
+          wasEditable &&
+          editor &&
+          !editor.isDestroyed &&
+          !editor.isEditable &&
+          !isDocumentEditingLocked()
+        ) {
+          editor.setEditable(true)
+        }
         document.body.style.userSelect = ''
         document.body.style.cursor = ''
         document.removeEventListener('mousemove', doDrag)

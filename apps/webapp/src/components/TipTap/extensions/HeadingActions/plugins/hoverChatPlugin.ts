@@ -1,3 +1,4 @@
+import { canCommentInDocument } from '@hooks/isDocumentEditingLocked'
 import { AddCommentSVG, ChatLeftSVG, ChatOutlineSVG } from '@icons'
 import { buildTextCommentAnchor, publishDocumentComment } from '@services/commentAnchor'
 import { CHAT_OPEN } from '@services/eventsHub'
@@ -16,6 +17,7 @@ import {
   isMobileShellEnvironment,
   syncHeadingWrapperA11y
 } from './headingWidgetA11y'
+import { hasActiveSelectionInView } from './selectionChatPlugin'
 
 type WidgetFactory = (view: EditorView, getPos: () => number | undefined) => HTMLElement
 
@@ -84,6 +86,8 @@ const createCommentButton = (headingId: string, editor: Editor): HTMLButtonEleme
   button.addEventListener('click', (e: Event) => {
     e.preventDefault()
     e.stopPropagation()
+
+    if (!canCommentInDocument()) return
 
     const { selection } = editor.state
     if (selection.empty) return
@@ -157,8 +161,11 @@ const createHoverChatDecorations = (doc: ProseMirrorNode, editor: Editor): Decor
 }
 
 const findSelectionHeadingId = (view: EditorView): string | null => {
+  if (!canCommentInDocument()) return null
+
   const { selection } = view.state
   if (selection.empty) return null
+  if (!view.editable && !hasActiveSelectionInView(view)) return null
 
   const { $anchor } = selection
   if ($anchor.parent.type.name === TIPTAP_NODES.HEADING_TYPE) {
@@ -346,9 +353,15 @@ export function createHoverChatPlugin(editor: Editor): Plugin {
         })
       }
 
+      const ownerDoc = editorView.dom.ownerDocument
+      const onSelectionChange = (): void => {
+        if (!editorView.editable) updateSelectionState(editorView)
+      }
+
       editorView.dom.addEventListener('pointermove', onPointerMove)
       editorView.dom.addEventListener('focusin', onFocusChange)
       editorView.dom.addEventListener('focusout', onFocusChange)
+      ownerDoc.addEventListener('selectionchange', onSelectionChange)
 
       return {
         update: (view: EditorView) => {
@@ -358,6 +371,7 @@ export function createHoverChatPlugin(editor: Editor): Plugin {
           editorView.dom.removeEventListener('pointermove', onPointerMove)
           editorView.dom.removeEventListener('focusin', onFocusChange)
           editorView.dom.removeEventListener('focusout', onFocusChange)
+          ownerDoc.removeEventListener('selectionchange', onSelectionChange)
           sheet?.removeEventListener('pointerleave', clearSectionHover)
           activeWrapper = null
           lastActiveWrapperHovered = false

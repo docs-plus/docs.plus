@@ -1,5 +1,6 @@
 import { isVisitor } from '@components/auth/isVisitor'
 import { detectMediaType, type MediaNodeType } from '@docs.plus/extension-hypermultimedia'
+import { isDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
@@ -36,18 +37,24 @@ export function useMediaInsert(
   const detectedType: MediaNodeType | null = url ? (detectMediaType(url) ?? 'image') : null
 
   const submitUrl = async (): Promise<void> => {
-    if (!detectedType || inserting || !editor || !url.trim()) return
+    if (!detectedType || inserting || !editor || !url.trim() || isDocumentEditingLocked()) return
     setInserting(true)
-    const { insert } = MEDIA_INSERT_REGISTRY[detectedType]
-    const payload =
-      detectedType === 'image' ? { src: url, ...(await preloadImageDimensions(url)) } : { src: url }
-    const ok = insert(editor, payload)
-    setInserting(false)
-    if (ok) onInserted()
+    try {
+      const { insert } = MEDIA_INSERT_REGISTRY[detectedType]
+      const payload =
+        detectedType === 'image'
+          ? { src: url, ...(await preloadImageDimensions(url)) }
+          : { src: url }
+      if (isDocumentEditingLocked()) return
+      const ok = insert(editor, payload)
+      if (ok) onInserted()
+    } finally {
+      setInserting(false)
+    }
   }
 
   const submitFile = (file: File): void => {
-    if (!docMetadata) return
+    if (!docMetadata || isDocumentEditingLocked()) return
     // Close the panel first so the sign-in prompt takes focus.
     if (isVisitor()) {
       onInserted()

@@ -1,4 +1,4 @@
-import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
+import { selectCanComment, selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import type { Workspace } from '@stores'
 
 import { canEditDocumentMetadata, isDocumentOwner } from './isDocumentOwner'
@@ -9,6 +9,20 @@ const OTHER = 'user-other'
 const lockFor = (metadata: Workspace['metadata'], profileId?: string) =>
   selectDocumentEditingLocked(
     { metadata, providerStatus: 'saved', authorizedScope: null } as Workspace,
+    profileId
+  )
+
+const canCommentFor = (
+  overrides: Partial<Pick<Workspace, 'metadata' | 'providerStatus' | 'authorizedScope'>>,
+  profileId?: string
+) =>
+  selectCanComment(
+    {
+      metadata: { documentId: 'd', ownerId: ME, readOnly: false },
+      providerStatus: 'saved',
+      authorizedScope: null,
+      ...overrides
+    } as Workspace,
     profileId
   )
 
@@ -48,5 +62,20 @@ describe('Read-only editing lock', () => {
 
   it('does not lock an ownerless pad', () => {
     expect(lockFor({ documentId: 'd', ownerId: null, readOnly: true }, ME)).toBe(false)
+  })
+})
+
+describe('selectCanComment', () => {
+  it('stays enabled on read-only pads for non-owners, visitors, and readonly scopes', () => {
+    const readOnlyMeta = { documentId: 'd', ownerId: ME, readOnly: true }
+    expect(canCommentFor({ metadata: readOnlyMeta }, ME)).toBe(true)
+    expect(canCommentFor({ metadata: readOnlyMeta }, OTHER)).toBe(true)
+    expect(canCommentFor({ metadata: readOnlyMeta }, undefined)).toBe(true)
+    expect(canCommentFor({ metadata: readOnlyMeta, authorizedScope: 'readonly' }, OTHER)).toBe(true)
+  })
+
+  it('blocks commenting during a provider error freeze', () => {
+    expect(canCommentFor({ providerStatus: 'error' }, ME)).toBe(false)
+    expect(canCommentFor({ providerStatus: 'error' }, OTHER)).toBe(false)
   })
 })

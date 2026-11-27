@@ -182,7 +182,7 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
           <DropIndicatorPortal indicatorY={line.y} left={line.left} width={line.width} />
         )}
       </DndContext>
-      <AppendHeadingButton className="mt-4" />
+      {!locked && <AppendHeadingButton className="mt-4" />}
     </div>
   )
 }

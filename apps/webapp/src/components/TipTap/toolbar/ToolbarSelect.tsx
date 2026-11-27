@@ -25,9 +25,18 @@ interface ToolbarSelectProps {
   fallbackIcon: IconType
   /** Specs select the trigger by this, never by its user-facing label. */
   testId: string
+  disabled?: boolean
 }
 
-const ToolbarSelectItems = ({ items, editor }: { items: ToolbarSelectItem[]; editor: Editor }) => {
+const ToolbarSelectItems = ({
+  items,
+  editor,
+  disabled
+}: {
+  items: ToolbarSelectItem[]
+  editor: Editor
+  disabled?: boolean
+}) => {
   const { setIsOpen } = useContextMenuContext()
 
   return items.map((item) => {
@@ -39,6 +48,7 @@ const ToolbarSelectItems = ({ items, editor }: { items: ToolbarSelectItem[]; edi
         aria-checked={active}
         data-testid={item.testId}
         onClick={() => {
+          if (disabled) return
           item.action()
           setIsOpen(false)
         }}>
@@ -57,7 +67,8 @@ const ToolbarSelect = ({
   items,
   tooltip,
   fallbackIcon: FallbackIcon,
-  testId
+  testId,
+  disabled = false
 }: ToolbarSelectProps) => {
   const activeItem = items.find((item) => editor.isActive(item.value, item.attrs))
   const TriggerIcon = activeItem?.icon ?? FallbackIcon
@@ -65,10 +76,12 @@ const ToolbarSelect = ({
   return (
     <DropdownMenu
       placement="bottom-start"
+      disabled={disabled}
       trigger={({ ref, getProps }) => (
         <ToolbarButton
           ref={ref}
           {...getProps()}
+          disabled={disabled}
           isActive={!!activeItem}
           tooltip={tooltip}
           data-testid={testId}
@@ -78,7 +91,7 @@ const ToolbarSelect = ({
           <Icons.chevronDown size={10} className="stroke-currentColor fill-none opacity-40" />
         </ToolbarButton>
       )}>
-      <ToolbarSelectItems items={items} editor={editor} />
+      <ToolbarSelectItems items={items} editor={editor} disabled={disabled} />
     </DropdownMenu>
   )
 }

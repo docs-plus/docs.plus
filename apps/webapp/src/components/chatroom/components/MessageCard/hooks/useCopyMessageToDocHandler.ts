@@ -4,6 +4,7 @@ import {
 } from '@components/chatroom/utils/copyChatMediaToDocument'
 import { computeSection } from '@components/TipTap/extensions/shared'
 import * as toast from '@components/toast'
+import { isDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { padUrl } from '@services/padUrl'
 import { selectDocumentId, useChatStore, useStore } from '@stores'
 import { TIPTAP_NODES, TMsgRow, TRANSACTION_META } from '@types'
@@ -112,7 +113,7 @@ export const useCopyMessageToDocHandler = () => {
   const copyMessageToDocHandler = useCallback(
     (message: TMsgRow) => {
       const editor = useStore.getState().settings.editor.instance
-      if (!message || !editor || !headingId) return
+      if (!message || !editor || !headingId || isDocumentEditingLocked()) return
 
       const insertPosition = findChatroomInsertPosition(editor, headingId)
       if (insertPosition == null) return
@@ -121,6 +122,7 @@ export const useCopyMessageToDocHandler = () => {
         try {
           const paragraphNode = createParagraphNodeJson(message)
           const mediaNodes = await buildCopyToDocContent(message, docMetadata ?? undefined)
+          if (isDocumentEditingLocked()) return
           insertCopyToDocNodes(editor, insertPosition, paragraphNode, mediaNodes)
           editor
             .chain()

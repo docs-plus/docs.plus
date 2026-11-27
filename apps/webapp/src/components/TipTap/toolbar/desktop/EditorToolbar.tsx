@@ -9,6 +9,12 @@ import {
   popoverPanelClassName,
   PopoverTrigger
 } from '@components/ui/Popover'
+import {
+  canCommentInDocument,
+  isDocumentEditingLocked,
+  selectCanComment,
+  selectDocumentEditingLocked
+} from '@hooks/isDocumentEditingLocked'
 import useReRenderOnEditorTransaction from '@hooks/useReRenderOnEditorTransaction'
 import { Icons } from '@icons'
 import useCopyDocumentToClipboard from '@pages/document/hooks/useCopyDocumentToClipboard'
@@ -72,6 +78,9 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
   )
   // The bones and the loaded bar share one rule, so the swap moves no control.
   const isSignedIn = useAuthStore(selectIsSignedIn)
+  const profileId = useAuthStore((state) => state.profile?.id)
+  const editingLocked = useStore((state) => selectDocumentEditingLocked(state.settings, profileId))
+  const canComment = useStore((state) => selectCanComment(state.settings, profileId))
   const inProgressBookmarks = useChatStore(selectInProgressBookmarkCount)
   const settings = useSettingsOpener()
 
@@ -88,6 +97,7 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
       const isMod = event.metaKey || event.ctrlKey
       if (!isMod || !event.altKey) return
       if (event.key.toLowerCase() !== 'm') return
+      if (!canCommentInDocument()) return
 
       event.preventDefault()
       createComment(editor)
@@ -100,6 +110,11 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
   if (loading || providerSyncing || !editor)
     return <ToolbarSkeleton isSignedIn={isSignedIn} hasQr={Boolean(qr)} />
 
+  const runEditCommand = (command: () => void) => {
+    if (isDocumentEditingLocked()) return
+    command()
+  }
+
   return (
     <>
       {/* Pad shell borders: PadTitle `border-b` (header↔toolbar); this row `border-b` only (toolbar↔workspace); sheet top edge is `.tiptap__editor` in _blocks.scss — do not add `border-t` here or you double the header seam. */}
@@ -107,7 +122,7 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
         role="toolbar"
         aria-label="Formatting"
         className="tiptap__toolbar border-base-300 bg-base-100 flex min-w-0 flex-row items-center justify-between gap-0.5 border-b px-3 py-1.5 sm:justify-start">
-        <StyleSelect editor={editor} />
+        <StyleSelect editor={editor} disabled={editingLocked} />
 
         <ToolbarDivider />
 
@@ -117,7 +132,8 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
           editor={editor}
           type="bold"
           data-testid="toolbar-bold"
-          onClick={() => editor.chain().focus().toggleBold().run()}
+          disabled={editingLocked}
+          onClick={() => runEditCommand(() => editor.chain().focus().toggleBold().run())}
           tooltip="Bold (⌘+B)">
           <Icons.bold size={ICON_SIZE} />
         </ToolbarButton>
@@ -126,7 +142,8 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
           editor={editor}
           type="italic"
           data-testid="toolbar-italic"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
+          disabled={editingLocked}
+          onClick={() => runEditCommand(() => editor.chain().focus().toggleItalic().run())}
           tooltip="Italic (⌘+I)">
           <Icons.italic size={ICON_SIZE} />
         </ToolbarButton>
@@ -135,7 +152,8 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
           editor={editor}
           type="underline"
           data-testid="toolbar-underline"
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          disabled={editingLocked}
+          onClick={() => runEditCommand(() => editor.chain().focus().toggleUnderline().run())}
           tooltip="Underline (⌘+U)">
           <Icons.underline size={ICON_SIZE} />
         </ToolbarButton>
@@ -144,7 +162,8 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
           editor={editor}
           type="strike"
           data-testid="toolbar-strike"
-          onClick={() => editor.chain().focus().toggleStrike().run()}
+          disabled={editingLocked}
+          onClick={() => runEditCommand(() => editor.chain().focus().toggleStrike().run())}
           tooltip="Strikethrough (⌘+⇧+S)">
           <Icons.strikethrough size={ICON_SIZE} />
         </ToolbarButton>
@@ -153,7 +172,8 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
           editor={editor}
           type="highlight"
           data-testid="toolbar-highlight"
-          onClick={() => editor.chain().focus().toggleHighlight().run()}
+          disabled={editingLocked}
+          onClick={() => runEditCommand(() => editor.chain().focus().toggleHighlight().run())}
           tooltip="Highlight (⌘+⇧+H)">
           <Icons.highlight size={ICON_SIZE} />
         </ToolbarButton>
@@ -164,19 +184,22 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
 
         <Popover placement="bottom-start">
           <PopoverTrigger asChild>
-            <ToolbarButton tooltip="Insert media">
+            <ToolbarButton disabled={editingLocked} tooltip="Insert media">
               <Icons.image size={ICON_SIZE} />
             </ToolbarButton>
           </PopoverTrigger>
           <PopoverContent className={popoverPanelClassName}>
             <MediaInsertPanel />
           </PopoverContent>
-          <insertMediaOpenRequest.Listener />
+          {!editingLocked && <insertMediaOpenRequest.Listener />}
         </Popover>
 
         <ToolbarButton
           data-testid="toolbar-comment"
-          onClick={() => createComment(editor)}
+          disabled={!canComment}
+          onClick={() => {
+            if (canCommentInDocument()) createComment(editor)
+          }}
           tooltip="Comment (⌘+⌥+M)">
           <Icons.comment size={ICON_SIZE} />
         </ToolbarButton>
@@ -187,7 +210,10 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
           editor={editor}
           type="hyperlink"
           data-testid="toolbar-hyperlink"
-          onClick={() => editor.chain().scrollIntoView().openCreateHyperlinkPopover().run()}
+          disabled={editingLocked}
+          onClick={() =>
+            runEditCommand(() => editor.chain().scrollIntoView().openCreateHyperlinkPopover().run())
+          }
           tooltip="Hyperlink (⌘+K)">
           <Icons.link size={ICON_SIZE} />
         </ToolbarButton>
@@ -198,6 +224,7 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
 
         <ToolbarSelect
           editor={editor}
+          disabled={editingLocked}
           fallbackIcon={Icons.bulletList}
           tooltip="Lists"
           testId="toolbar-lists"
@@ -206,21 +233,21 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
               value: 'bulletList',
               label: 'Bullet list',
               icon: Icons.bulletList,
-              action: () => editor.chain().focus().toggleBulletList().run(),
+              action: () => runEditCommand(() => editor.chain().focus().toggleBulletList().run()),
               testId: 'toolbar-bullet-list'
             },
             {
               value: 'orderedList',
               label: 'Ordered list',
               icon: Icons.orderedList,
-              action: () => editor.chain().focus().toggleOrderedList().run(),
+              action: () => runEditCommand(() => editor.chain().focus().toggleOrderedList().run()),
               testId: 'toolbar-ordered-list'
             },
             {
               value: 'taskList',
               label: 'Task list',
               icon: Icons.taskList,
-              action: () => editor.chain().focus().toggleTaskList().run(),
+              action: () => runEditCommand(() => editor.chain().focus().toggleTaskList().run()),
               testId: 'toolbar-task-list'
             }
           ]}
@@ -232,7 +259,8 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
           editor={editor}
           type="blockquote"
           data-testid="toolbar-blockquote"
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          disabled={editingLocked}
+          onClick={() => runEditCommand(() => editor.chain().focus().toggleBlockquote().run())}
           tooltip="Blockquote">
           <Icons.blockquote size={ICON_SIZE} />
         </ToolbarButton>
@@ -241,6 +269,7 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
 
         <ToolbarSelect
           editor={editor}
+          disabled={editingLocked}
           fallbackIcon={Icons.code}
           tooltip="Code"
           testId="toolbar-code"
@@ -252,16 +281,18 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
               icon: Icons.codeBlock,
               // toggleCodeBlock on a diagram would make a paragraph.
               action: () =>
-                editor.isActive('codeBlock', { language: 'mermaid' })
-                  ? editor.chain().focus().updateAttributes('codeBlock', { language: null }).run()
-                  : editor.chain().focus().toggleCodeBlock().run(),
+                runEditCommand(() =>
+                  editor.isActive('codeBlock', { language: 'mermaid' })
+                    ? editor.chain().focus().updateAttributes('codeBlock', { language: null }).run()
+                    : editor.chain().focus().toggleCodeBlock().run()
+                ),
               testId: 'toolbar-code-block'
             },
             {
               value: 'inlineCode',
               label: 'Inline code',
               icon: Icons.code,
-              action: () => editor.chain().focus().toggleInlineCode().run(),
+              action: () => runEditCommand(() => editor.chain().focus().toggleInlineCode().run()),
               testId: 'toolbar-inline-code'
             },
             {
@@ -270,7 +301,7 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
               label: 'Diagram',
               icon: Icons.diagram,
               // insertMermaid refuses inside a code block, so this row does nothing there (#521).
-              action: () => editor.chain().focus().insertMermaid().run(),
+              action: () => runEditCommand(() => editor.chain().focus().insertMermaid().run()),
               testId: 'toolbar-diagram'
             }
           ]}
@@ -280,9 +311,9 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
 
         <ToolbarButton
           data-testid="toolbar-clear-formatting"
-          disabled={!editor.can().clearFormatting()}
+          disabled={editingLocked || !editor.can().clearFormatting()}
           onMouseDown={(event) => event.preventDefault()}
-          onClick={() => editor.chain().focus().clearFormatting().run()}
+          onClick={() => runEditCommand(() => editor.chain().focus().clearFormatting().run())}
           tooltip={'Clear formatting (⌘+\\)'}>
           <Icons.clearFormatting size={ICON_SIZE} />
         </ToolbarButton>

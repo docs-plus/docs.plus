@@ -1,3 +1,4 @@
+import { canCommentInDocument } from '@hooks/isDocumentEditingLocked'
 import { AddCommentSVG } from '@icons'
 import { buildTextCommentAnchorFromEditor, publishDocumentComment } from '@services/commentAnchor'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
@@ -6,7 +7,24 @@ import { logger } from '@utils/logger'
 
 import { HEADING_ACTIONS_CLASSES } from '../types'
 
-const shouldShow = (editor: Editor, view: EditorView): boolean => {
+/**
+ * Editable pads verify ProseMirror focus; read-only pads (`contenteditable="false"`)
+ * cannot take focus, so `view.hasFocus()` is always false and we check that the
+ * active DOM selection range sits inside `view.dom`.
+ */
+export const hasActiveSelectionInView = (view: EditorView): boolean => {
+  if (view.editable) return view.hasFocus()
+
+  const selection = view.dom.ownerDocument.defaultView?.getSelection()
+  if (!selection || selection.isCollapsed || selection.rangeCount === 0) return false
+
+  const range = selection.getRangeAt(0)
+  return view.dom.contains(range.startContainer) && view.dom.contains(range.endContainer)
+}
+
+const shouldShow = (view: EditorView): boolean => {
+  if (!canCommentInDocument()) return false
+
   const { state } = view
   const { from, to, empty } = state.selection
   if (empty) return false
@@ -15,7 +33,7 @@ const shouldShow = (editor: Editor, view: EditorView): boolean => {
   // Don't show if selection is in a heading (hoverChatPlugin handles that)
   const isInHeading = state.selection.$anchor.parent.type.name === TIPTAP_NODES.HEADING_TYPE
 
-  return view.hasFocus() && editor.isEditable && hasText && !isInHeading
+  return hasActiveSelectionInView(view) && hasText && !isInHeading
 }
 
 const createButton = (
@@ -59,6 +77,8 @@ const updateButtonPosition = (
 }
 
 const openChatComment = (editor: Editor): void => {
+  if (!canCommentInDocument()) return
+
   const anchor = buildTextCommentAnchorFromEditor(editor)
   if (!anchor) {
     logger.error('[selectionChat]: No headingId found')
@@ -67,6 +87,19 @@ const openChatComment = (editor: Editor): void => {
 
   publishDocumentComment(anchor)
   editor.commands.setTextSelection(editor.state.selection.to)
+  // On read-only pads, ProseMirror skips DOM selection sync when activeElement
+  // does not contain view.dom, so collapse the native range inside view.dom too.
+  if (!editor.isEditable) {
+    const domSelection = editor.view.dom.ownerDocument.defaultView?.getSelection()
+    if (
+      domSelection &&
+      !domSelection.isCollapsed &&
+      domSelection.rangeCount > 0 &&
+      editor.view.dom.contains(domSelection.getRangeAt(0).startContainer)
+    ) {
+      domSelection.collapseToEnd()
+    }
+  }
 }
 
 export function createSelectionChatPlugin(editor: Editor): Plugin {
@@ -105,7 +138,7 @@ export function createSelectionChatPlugin(editor: Editor): Plugin {
       }
 
       const reconcile = (view: EditorView): void => {
-        if (isPointerSelecting || !shouldShow(editor, view)) {
+        if (isPointerSelecting || !shouldShow(view)) {
           hideButton()
           return
         }
@@ -133,10 +166,17 @@ export function createSelectionChatPlugin(editor: Editor): Plugin {
         hideButton()
       }
 
+      const onSelectionChange = (): void => {
+        if (!editorView.editable && !isPointerSelecting) {
+          reconcile(editorView)
+        }
+      }
+
       editorView.dom.addEventListener('mousedown', onMouseDown)
       editorView.dom.addEventListener('mouseup', onEditorMouseUp)
       editorView.dom.addEventListener('blur', onEditorBlur)
       ownerDoc.addEventListener('mouseup', onDocumentMouseUp)
+      ownerDoc.addEventListener('selectionchange', onSelectionChange)
 
       return {
         update(view: EditorView) {
@@ -147,6 +187,7 @@ export function createSelectionChatPlugin(editor: Editor): Plugin {
           editorView.dom.removeEventListener('mouseup', onEditorMouseUp)
           editorView.dom.removeEventListener('blur', onEditorBlur)
           ownerDoc.removeEventListener('mouseup', onDocumentMouseUp)
+          ownerDoc.removeEventListener('selectionchange', onSelectionChange)
           if (button) {
             button.removeEventListener('click', onButtonClick)
             button.removeEventListener('blur', onButtonBlur)

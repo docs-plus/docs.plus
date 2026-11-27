@@ -1,4 +1,6 @@
 import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
+import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
+import { useAuthStore, useStore } from '@stores'
 import React from 'react'
 
 import { useToc, useTocAutoScroll } from './hooks'
@@ -13,6 +15,9 @@ interface TocMobileProps {
 function TocMobileComponent({ className = '' }: TocMobileProps) {
   const { items, nested: nestedItems, toggleSection } = useToc()
   useTocAutoScroll()
+
+  const profileId = useAuthStore((s) => s.profile?.id)
+  const locked = useStore((s) => selectDocumentEditingLocked(s.settings, profileId))
 
   return (
     <div className={className}>
@@ -31,7 +36,7 @@ function TocMobileComponent({ className = '' }: TocMobileProps) {
               />
             ))}
           </ul>
-          <AppendHeadingButton className="mt-4" />
+          {!locked && <AppendHeadingButton className="mt-4" />}
         </>
       )}
     </div>
