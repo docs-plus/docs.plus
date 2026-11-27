@@ -135,8 +135,9 @@ This file is the product changelog. Every app, package and extension keeps its o
   `499 CLIENT_CLOSED_REQUEST` instead of `500` and sends no error alert
   ([#803](https://github.com/docs-plus/docs.plus/issues/803)).
 - GlitchTip web and worker containers now share a named `glitchtip-uploads` volume at
-  `/code/uploads`. Uploaded webapp sourcemaps persist across restarts and assemble into
-  `sourcecode_debugsymbolbundle` (`0` to `110` bundles)
+  `/code/uploads`. Uploaded webapp sourcemaps persist across restarts, assemble into
+  `sourcecode_debugsymbolbundle` (`0` to `110` bundles), and symbolicate live production client
+  events back to original `src/` paths and source lines
   ([#841](https://github.com/docs-plus/docs.plus/issues/841)).
 
 ### Security
@@ -236,6 +237,17 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ### Internal
 
+- Guarded the all-zeros `github.event.before` fallback in `.github/workflows/prod.docs.plus.yml`
+  to `push` events so pull requests evaluate change scopes instead of forcing every suite. Live
+  draft-PR checks confirm README media skips extension suites (`1` to `0` jobs, `49 s` wall),
+  docs-only and `.agents/**` skill script PRs pass in `52 s` median (`48–55 s`, `81 %` less time
+  vs `278 s` median, `0 of 3` build/test jobs), and admin-only PRs run `2 of 4` gate jobs
+  ([#562](https://github.com/docs-plus/docs.plus/issues/562),
+  [#563](https://github.com/docs-plus/docs.plus/issues/563),
+  [#759](https://github.com/docs-plus/docs.plus/issues/759)).
+- Isolated `apps/hocuspocus.server/tests/integration/documents.test.ts` from the live Redis
+  duplicate rate limiter via `createDocumentsRouter` so back-to-back `bun run check:ci` runs with
+  local Redis up no longer fail with `429 Too Many Requests`.
 - Replaced the three legacy Discord workflows (`discord-activity.yml`, `discord-github.yml`, `discord-release.yml`) and their webhook secrets with the standalone `@docs.plus/github-relay` Bun and SQLite service (`apps/github-relay/`, `docker-compose.github-relay.yml`, `.github/workflows/github-relay.docs.plus.yml`), posting live-updating Components V2 cards, weekday `#triage` digests, and 2-week and monthly `#github` shipped reports alongside workspace `Dockerfile.bun` manifest copies and the `scripts/check-ci.ts` test gate. Detail: [`apps/github-relay/CHANGELOG.md`](apps/github-relay/CHANGELOG.md) and [`.github/WORKFLOWS.md`](.github/WORKFLOWS.md).
 - Added `scripts/render-star-demo.ts` and `.github/assets/star-demo.source.html` to build the light and dark README star WebP demos offline using workspace Playwright and `img2webp`. Wired the refresh command into `.claude/workflows/release-product.js` and `.agents/skills/release-product/SKILL.md` so product releases keep the counts current.
 - The web app and the admin dashboard keep `@sentry/nextjs` at 11.10.0. From 11.13.0 the package
