@@ -130,5 +130,6 @@ export const runOembed = async (canonicalUrl: string): Promise<StageResult> => {
     return null
   } finally {
     clearTimeout(timer)
+    controller.abort()
   }
 }

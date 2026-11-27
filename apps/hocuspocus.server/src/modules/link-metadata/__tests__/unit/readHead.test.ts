@@ -92,5 +92,37 @@ describe('readHead', () => {
       // Cut, so the html stage gives a card with no facts the short TTL.
       expect(tail.cut).toBe(true)
     })
+
+    test('does not pin an oversized backing buffer when an incoming tail chunk exceeds limit', async () => {
+      const oversizedChunk = 'x'.repeat(64 * 1024)
+      const { readTail } = await readPage(
+        streamOf('<head></head>', oversizedChunk),
+        new AbortController(),
+        1024 * 1024
+      )
+      const tail = await readTail({ bytes: 64, ms: 1000 })
+      expect(tail.cut).toBe(false)
+      expect(tail.bytes.byteLength).toBe(64)
+      expect(tail.bytes.buffer.byteLength).toBe(64)
+      expect(text(tail.bytes)).toBe(`</head>${'x'.repeat(64 - 7)}`)
+    })
+
+    test('returns immediately without reading further or arming timer when initial remainder fills limit', async () => {
+      const hop = new AbortController()
+      const stalledAfterFirst = new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode(`<head></head>${'b'.repeat(100)}`))
+          }
+        })
+      )
+      const { head, readTail } = await readPage(stalledAfterFirst, hop, 1024)
+      expect(text(head)).toBe('<head>')
+      const tail = await readTail({ bytes: 64, ms: 10 })
+      expect(tail.cut).toBe(false)
+      expect(tail.bytes.byteLength).toBe(64)
+      expect(text(tail.bytes)).toBe(`</head>${'b'.repeat(64 - 7)}`)
+      expect(hop.signal.aborted).toBe(false)
+    })
   })
 })

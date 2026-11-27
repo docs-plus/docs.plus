@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import { linkMetadataCacheTimeoutsTotal } from '../../../../lib/metrics'
+import type { RedisClient } from '../../../../types/redis.types'
 import type { StageResult } from '../../domain/types'
 import { CACHE_TIMEOUT_MS, createRedisCache } from '../../infra/redisCache'
 
@@ -67,12 +68,15 @@ describe('createRedisCache', () => {
   })
 
   describe('when Redis stalls', () => {
-    const stalled = { get: () => new Promise(() => {}), set: () => new Promise(() => {}) }
+    const stalled = {
+      get: () => new Promise(() => {}),
+      set: () => new Promise(() => {})
+    } as unknown as RedisClient
 
     test('get is a miss after the bound', async () => {
       const before = await timeouts('read')
       const start = performance.now()
-      expect(await createRedisCache(stalled as any).get('k')).toBeNull()
+      expect(await createRedisCache(stalled).get('k')).toBeNull()
       expect(performance.now() - start).toBeGreaterThanOrEqual(CACHE_TIMEOUT_MS - 5)
       expect(await timeouts('read')).toBe(before + 1)
     }, 1000)
@@ -80,7 +84,7 @@ describe('createRedisCache', () => {
     // A '0' here would serve a narrowed pad's old card; the throw makes the pipeline skip the cache.
     test('generation rejects, never falls back to 0', async () => {
       // Not `.rejects`: on a promise that never settles, it blocks Bun's test timeout.
-      const outcome = await createRedisCache(stalled as any)
+      const outcome = await createRedisCache(stalled)
         .generation('pad')
         .then(
           (value) => value,
@@ -91,7 +95,7 @@ describe('createRedisCache', () => {
 
     test('set resolves after the bound, and counts the timeout', async () => {
       const before = await timeouts('write')
-      await createRedisCache(stalled as any).set('k', sample, 60)
+      await createRedisCache(stalled).set('k', sample, 60)
       expect(await timeouts('write')).toBe(before + 1)
     }, 1000)
   })

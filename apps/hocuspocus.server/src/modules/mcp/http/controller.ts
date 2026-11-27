@@ -2,6 +2,7 @@ import { type AuthInfo, isJsonContentType, type McpHttpHandler } from '@modelcon
 import type { Context, Next } from 'hono'
 
 import { fail } from '../../../http/envelope'
+import { isRecord } from '../../../lib/isRecord'
 import { decodeJwtClaims } from '../../../lib/jwtClaims'
 import { type McpRateLimitDecision, setRateLimitHeaders } from '../../../middleware'
 import { MCP_REQUESTS_PER_MINUTE } from '../infra/toolBudget'
@@ -75,7 +76,7 @@ const INVALID_TOKEN: BearerRefusal = {
 
 const extractBearerToken = (header: string | undefined): string => {
   const match = header?.trim().match(/^bearer\s+(\S.*)$/i)
-  return match?.[1]?.trim() ?? ''
+  return match?.[1] ?? ''
 }
 
 /**
@@ -268,14 +269,8 @@ export const createTransportHandler =
       )
     }
 
-    if (
-      parsed !== null &&
-      typeof parsed === 'object' &&
-      'method' in parsed &&
-      parsed.method === 'subscriptions/listen'
-    ) {
-      const rawId = 'id' in parsed ? parsed.id : null
-      const id = typeof rawId === 'string' || typeof rawId === 'number' ? rawId : null
+    if (isRecord(parsed) && parsed.method === 'subscriptions/listen') {
+      const id = typeof parsed.id === 'string' || typeof parsed.id === 'number' ? parsed.id : null
       return c.json(
         {
           jsonrpc: '2.0',

@@ -13,6 +13,7 @@ interface GrantRedirectsDeps {
   supabaseUrl: string | null
   supabaseAnonKey: string | null
   logger: Logger
+  clientRedirects?: ClientRedirects
   fetchImpl?: GrantFetch
 }
 
@@ -43,24 +44,22 @@ async function grantClientIds(
  * one that only uses a known name. Any failure answers an empty map, so the
  * webapp shows every app as unverified and Disconnect stays visible.
  */
-export const createGrantRedirects =
-  ({
-    supabase,
-    supabaseUrl,
-    supabaseAnonKey,
-    logger,
-    fetchImpl = fetch
-  }: GrantRedirectsDeps): GrantRedirects =>
-  async (token) => {
+export const createGrantRedirects = ({
+  supabase,
+  supabaseUrl,
+  supabaseAnonKey,
+  logger,
+  clientRedirects,
+  fetchImpl = fetch
+}: GrantRedirectsDeps): GrantRedirects => {
+  const readClientRedirects = clientRedirects ?? createClientRedirects({ supabase, logger })
+  const normalizedUrl = supabaseUrl?.replace(/\/+$/, '') ?? null
+
+  return async (token) => {
     const redirects: Record<string, string[]> = {}
-    if (!supabase || !supabaseUrl || !supabaseAnonKey || !token) return redirects
+    if (!supabase || !normalizedUrl || !supabaseAnonKey || !token) return redirects
     try {
-      const clientIds = await grantClientIds(
-        supabaseUrl.replace(/\/+$/, ''),
-        supabaseAnonKey,
-        token,
-        fetchImpl
-      )
+      const clientIds = await grantClientIds(normalizedUrl, supabaseAnonKey, token, fetchImpl)
       const uniqueIds = [...new Set(clientIds)]
       if (uniqueIds.length > MAX_GRANT_CLIENT_LOOKUPS) {
         logger.warn(
@@ -68,7 +67,6 @@ export const createGrantRedirects =
           'Capping connected app redirect lookups'
         )
       }
-      const readClientRedirects = createClientRedirects({ supabase, logger })
       const cappedIds = uniqueIds.slice(0, MAX_GRANT_CLIENT_LOOKUPS)
       let nextIndex = 0
       const workerCount = Math.min(GRANT_LOOKUP_CONCURRENCY, cappedIds.length)
@@ -89,6 +87,7 @@ export const createGrantRedirects =
     }
     return redirects
   }
+}
 
 interface ClientRedirectsDeps {
   supabase: SupabaseClient | null

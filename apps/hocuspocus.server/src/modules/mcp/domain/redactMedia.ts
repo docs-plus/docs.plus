@@ -76,7 +76,7 @@ export const redactMedia = (doc: JSONContent): JSONContent => {
   ]
 
   while (stack.length > 0) {
-    const { source, target } = stack.pop() as Frame
+    const { source, target } = stack.pop()!
     let activeMediaHref: string | null = null
     let runHasText = false
 

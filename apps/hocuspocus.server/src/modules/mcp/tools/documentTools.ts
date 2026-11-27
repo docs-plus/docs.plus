@@ -542,9 +542,8 @@ export const registerDocumentTools = (
     },
     run(
       'replace_text',
-      async ({ slug, section_id: sectionId, rev, old_text: quotedOld, new_text: quotedNew }) => {
+      async ({ slug, section_id: sectionId, rev, old_text: quotedOld, new_text: newText }) => {
         let oldText = quotedOld
-        const newText = quotedNew
         const { doc, body } = await openOwnSection(slug, sectionId, rev)
         const runs = jsonTextRuns(body)
         let match = findUniqueText(runs, oldText)

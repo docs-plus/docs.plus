@@ -125,22 +125,25 @@ export const readPage = async (
 
   const readTail = async (tail: TailLimit) => {
     const limit = Math.min(cap - headEnd, tail.bytes)
-    const chunks = [bytes.subarray(headEnd)]
-    let total = chunks[0].byteLength
+    const initial = bytes.subarray(headEnd, headEnd + limit)
+    if (done || initial.byteLength >= limit) return { bytes: initial, cut: false }
+    const chunks: Uint8Array[] = [initial]
+    let total = initial.byteLength
     let cut = false
     const timer = setTimeout(() => hop.abort(), tail.ms)
     try {
-      while (!done && total < limit) {
+      while (total < limit) {
         const next = await reader.read().catch(() => null)
         if (!next) cut = true
         if (!next || next.done) break
-        chunks.push(next.value)
-        total += next.value.byteLength
+        const chunk = next.value.subarray(0, limit - total)
+        chunks.push(chunk)
+        total += chunk.byteLength
       }
     } finally {
       clearTimeout(timer)
     }
-    return { bytes: Buffer.concat(chunks).subarray(0, limit), cut }
+    return { bytes: Buffer.concat(chunks, total), cut }
   }
 
   return { head: bytes.subarray(0, headEnd), readTail }

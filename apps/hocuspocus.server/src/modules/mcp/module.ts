@@ -42,6 +42,10 @@ export const init = (deps: InitDeps): InitResult => {
       version: deps.version
     })
   })
+  const clientRedirects = createClientRedirects({
+    supabase: deps.supabase,
+    logger: deps.logger
+  })
   return {
     router,
     wellKnownRouter: createWellKnownRouter(endpoint),
@@ -50,11 +54,15 @@ export const init = (deps: InitDeps): InitResult => {
         supabase: deps.supabase,
         supabaseUrl: deps.supabaseUrl,
         supabaseAnonKey: deps.supabaseAnonKey,
-        logger: deps.logger
+        logger: deps.logger,
+        clientRedirects
       }),
-      clientRedirects: createClientRedirects({
-        supabase: deps.supabase,
-        logger: deps.logger
+      clientRedirects,
+      grantRedirectsRateLimit: userRateLimiter({
+        points: 30,
+        duration: 60,
+        keyPrefix: 'mcp-grant-redirects',
+        storeClient: deps.redis
       }),
       clientRedirectsRateLimit: userRateLimiter({
         points: 30,
