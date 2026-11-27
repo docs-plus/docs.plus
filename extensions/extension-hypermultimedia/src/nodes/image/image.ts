@@ -13,6 +13,7 @@ import { EMBED_LAYOUT_ATTR_KEYS } from '../../utils/embedKit'
 import { fitLayoutToEditorColumn } from '../../utils/fitImageDimensions'
 import { mediaLayoutCss } from '../../utils/layoutStyle'
 import { keyIdAttribute } from '../../utils/media-node-attrs'
+import { isSafeMediaSrc } from '../../utils/mediaUrl'
 import { generateShortId } from '../../utils/utils'
 import { inputRegex, isImageElementSrc } from './helper'
 import { createImageNodeView } from './nodeView'
@@ -106,8 +107,9 @@ export const Image = Node.create<ImageOptions>({
   },
 
   parseHTML() {
+    const allowInlineImage = this.options.allowBase64
     const acceptSrc = (src: string | null): boolean =>
-      !!src && (this.options.allowBase64 || !src.startsWith('data:')) && isImageElementSrc(src)
+      isSafeMediaSrc(src, { allowInlineImage }) && isImageElementSrc(src)
     return [
       {
         tag: 'figure[data-hm-figure]',
@@ -117,7 +119,7 @@ export const Image = Node.create<ImageOptions>({
         }
       },
       {
-        tag: this.options.allowBase64 ? 'img[src]' : 'img[src]:not([src^="data:"])',
+        tag: allowInlineImage ? 'img[src]' : 'img[src]:not([src^="data:"])',
         getAttrs: (element) => (acceptSrc(element.getAttribute('src')) ? {} : false)
       }
     ]

@@ -1,6 +1,7 @@
 import { Editor } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 
+import { isSafeMediaSrc } from '../../utils/mediaUrl'
 import { isImageUrl } from './helper'
 
 export const HyperImagePastePlugin = (
@@ -38,37 +39,32 @@ export const HyperImagePastePlugin = (
           }
         }
 
-        const content = slice.content
-        if (content.childCount === 1) {
-          const firstChild = content.firstChild
-
-          if (firstChild?.type.name === 'paragraph' && firstChild.childCount === 1) {
-            const textNode = firstChild.firstChild
-
-            if (textNode?.type.name === 'text' && textNode.text) {
-              const text = textNode.text.trim()
-
-              // Mirror parseHTML's allowBase64 gate: pasted data: URLs are rejected too.
-              if (!options.allowBase64 && text.startsWith('data:')) return false
-
-              if (isImageUrl(text)) {
-                event.preventDefault()
-
-                const imageNode = view.state.schema.nodes[options.nodeName].create({
-                  src: text,
-                  alt: 'Pasted Image'
-                })
-
-                const tr = view.state.tr.replaceSelectionWith(imageNode)
-                view.dispatch(tr)
-
-                return true
-              }
-            }
-          }
+        const firstChild = slice.content.childCount === 1 ? slice.content.firstChild : null
+        const textNode =
+          firstChild?.type.name === 'paragraph' && firstChild.childCount === 1
+            ? firstChild.firstChild
+            : null
+        const text = textNode?.type.name === 'text' ? textNode.text?.trim() : undefined
+        // Mirror parseHTML's scheme + allowBase64 gate: reject data:image/svg+xml,
+        // blob:, and (when allowBase64 is false) inline data: URLs.
+        if (
+          !text ||
+          !isSafeMediaSrc(text, { allowInlineImage: options.allowBase64 }) ||
+          !isImageUrl(text)
+        ) {
+          return false
         }
 
-        return false
+        event.preventDefault()
+
+        const imageNode = view.state.schema.nodes[options.nodeName].create({
+          src: text,
+          alt: 'Pasted Image'
+        })
+
+        view.dispatch(view.state.tr.replaceSelectionWith(imageNode))
+
+        return true
       }
     }
   })
