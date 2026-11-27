@@ -44,6 +44,7 @@
     "Durable persistence is eventual. The collaboration server debounces a save for 10 seconds idle, or 60 seconds while typing continues.",
     "A BullMQ worker writes the version row and publishes `document:saved`. The editor status chip is a local 300 ms timer, not a durable acknowledgement.",
     "Private is owner-only. A signed-in stranger is denied and an anonymous visitor must sign in. An open document has no owner, so it cannot be made private.",
-    "docs.plus has no AI features, no tracked changes and no page layout. Do not generate examples implying any of them exist."
+    "docs.plus has no AI model inside the editor, no tracked changes and no page layout. AI apps such as Claude and ChatGPT connect through the docs.plus MCP connector (see docs/mcp).",
+    "Do not generate examples implying an in-editor AI, tracked changes or page layout."
   ]
 }

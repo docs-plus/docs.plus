@@ -238,7 +238,7 @@ You ask in your own words. To point at one document, paste its link or give its 
 ## Disconnect
 
 1. In docs.plus, open **Settings** and choose **Connected apps**.
-2. Under **Apps with access**, find the AI app and choose **Disconnect**. Choose **Disconnect** again to confirm.
+2. Under **Apps with access**, find the AI app and choose **Disconnect**. Choose **Disconnect app** to confirm.
 3. Remove the docs.plus connector in the AI app too.
 
 The AI app may keep what it already read. To delete that, use the AI app's own settings.

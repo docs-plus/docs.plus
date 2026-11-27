@@ -40,7 +40,7 @@ WWW-Authenticate: Bearer resource_metadata="https://prodback.docs.plus/api/mcp/.
 
 When a token was sent, the header also carries `error="invalid_token"`. Hosts start sign-in from this header. A host that probes the standard RFC 9728 URLs instead finds the same metadata at `https://prodback.docs.plus/.well-known/oauth-protected-resource` and `https://prodback.docs.plus/.well-known/oauth-protected-resource/api/mcp`. The server asks hosts for `openid`, `email` and `profile` only, in `scope` here and in `scopes_supported` below.
 
-The metadata sits under `/api/mcp`, not at the site root, because only `/api` and `/health` are routed publicly. It answers like this.
+All three metadata URLs answer like this.
 
 ```json
 {
@@ -89,7 +89,7 @@ The `title` becomes the `#` heading, and `markdown`, if given, follows it. The M
 - `edit_blocks` refuses to remove a block that holds a picture, a video, an embed, an upload in progress or a file link. An AI app sees media only as a placeholder, so it could never put the media back.
 - `move_block` moves block `from` to stand after block `after_block`, where `0` is right after the heading. Take both numbers from one read. The block moves whole, so a picture keeps its caption and every setting. A block never leaves its section, and a move to where the block already stands is refused.
 - `rewrite_section` replaces the whole section body with its Markdown. The Markdown names each block that holds media by its number alone on a line, such as `[3]`, with a blank line before and after, at the place it should stand. That block stays as it is. The tool refuses a media block that is missing or named twice, a number for a block without media, and a number outside the section. Every other block is written again from the Markdown, so formatting that Markdown cannot express is lost.
-- A new heading must be deeper than the section heading, and it can go only at the end of the section. Anywhere else, it would move the blocks after it into a new subsection. In `rewrite_section`, every media block must stand before the first new heading.
+- A new heading must be deeper than the section heading and no shallower than the next heading, and it can go only at the end of the section. Anywhere else, it would move the blocks after it into a new subsection. In `rewrite_section`, every media block must stand before the first new heading.
 - `replace_text` refuses to remove the name of a file attachment, because the name carries the file link. It may add text next to it.
 - `replace_text` finds `old_text` in the section body and puts `new_text` in its place. `old_text` must appear exactly once, inside one stretch of text. It cannot cross two blocks, a picture or a line break, and it never matches the heading. To insert, repeat the nearby words and add to them. To delete, leave `new_text` empty.
 - `new_text` is plain text. It takes the formatting of the first character it replaces, so bold or a link around it stays. For new paragraphs or new formatting, use `edit_blocks`.
@@ -107,7 +107,7 @@ The check parses only. It does not lay the diagram out. The `markdown` field des
 
 `post_chat_message` only adds a message, so it is not destructive. It reaches other people: room members who follow every message and are away get a notification. Every `@` is removed, so it never sends a mention or `@everyone` notification.
 
-**Server instructions.** The `initialize` result carries `instructions`. They say that these tools act as the signed-in person, and that a browser session is not signed in as them. To start a document, they name `create_document`. To change one, they name `replace_text`, `edit_blocks`, `move_block` and `rewrite_section`. They suggest a `mermaid` diagram where a picture is clearer than text. A host may ignore them. The server info also carries `title`, `websiteUrl`, `description` and `icons`. The one icon is the 192 px docs.plus mark on the web app. Some hosts do not show it.
+**Server instructions.** The `initialize` result carries `instructions`. They say that these tools act as the signed-in person, and that a browser session is not signed in as them. To start a document, they name `create_document`. To change one, they name `read_document` first, then `replace_text`, `edit_blocks`, `move_block` and `rewrite_section`. They suggest a `mermaid` diagram where a picture is clearer than text. A host may ignore them. The server info also carries `title`, `websiteUrl`, `description` and `icons`. The one icon is the 192 px docs.plus mark on the web app. Some hosts do not show it.
 
 ## Limits
 
