@@ -144,6 +144,11 @@ const useYdocAndProvider = ({
       },
       isReadOnly: isReadOnlyConnection,
       hasUnsyncedChanges: () => Boolean(provider?.hasUnsyncedChanges),
+      isSocketActive: () => {
+        if (!provider) return false
+        const ws = provider.configuration?.websocketProvider
+        return ws ? ws.webSocket !== null && String(ws.status) !== 'disconnected' : true
+      },
       onConnect: () => provider?.connect(),
       onDisconnect: () => provider?.disconnect(),
       hasUnpushedLocalState: (serverSV, serverUpdate) =>

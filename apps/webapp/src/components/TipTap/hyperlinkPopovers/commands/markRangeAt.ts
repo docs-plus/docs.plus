@@ -15,7 +15,8 @@ export function markRangeAt(
 ): Range | null {
   const markType = editor.schema.marks[markName]
   if (!markType) return null
-  if (nodePos < 0 || nodePos > editor.state.doc.content.size) return null
+  const docSize = editor.state.doc.content?.size
+  if (nodePos < 0 || (typeof docSize === 'number' && nodePos > docSize)) return null
   const attrs = expectedHref === undefined ? undefined : { href: expectedHref }
   return getMarkRange(editor.state.doc.resolve(nodePos), markType, attrs) ?? null
 }

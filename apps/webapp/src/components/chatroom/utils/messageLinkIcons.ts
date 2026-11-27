@@ -32,9 +32,19 @@ export const stripLinkIconsOnCopy = (
   for (let i = 0; i < selection.rangeCount; i++) {
     const range = selection.getRangeAt(i)
     const ancestor = range.commonAncestorContainer
-    if (root.contains(ancestor) || ancestor.contains(root)) {
-      touchesRoot = true
-      container.appendChild(range.cloneContents())
+    if (!root.contains(ancestor) && !ancestor.contains(root)) continue
+
+    touchesRoot = true
+    const fragment = range.cloneContents()
+    const ancestorEl =
+      ancestor.nodeType === Node.ELEMENT_NODE ? (ancestor as Element) : ancestor.parentElement
+    const enclosingAnchor = ancestorEl?.closest('a')
+    if (enclosingAnchor && root.contains(enclosingAnchor)) {
+      const wrapper = enclosingAnchor.cloneNode(false)
+      wrapper.appendChild(fragment)
+      container.appendChild(wrapper)
+    } else {
+      container.appendChild(fragment)
     }
   }
   if (!touchesRoot) return

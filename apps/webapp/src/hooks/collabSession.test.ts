@@ -301,6 +301,7 @@ function createTestSession(opts?: {
   doc?: Y.Doc
   readOnly?: boolean
   online?: boolean
+  socketActive?: boolean
   onConnect?: jest.Mock
   onDisconnect?: jest.Mock
   onReportIssue?: jest.Mock
@@ -309,6 +310,7 @@ function createTestSession(opts?: {
   let unsyncedCount = 0
   let readOnly = opts?.readOnly ?? false
   let online = opts?.online ?? true
+  let socketActive = opts?.socketActive ?? true
   const onConnect = opts?.onConnect ?? jest.fn()
   const onDisconnect = opts?.onDisconnect ?? jest.fn()
   const onReportIssue = opts?.onReportIssue ?? jest.fn()
@@ -317,6 +319,7 @@ function createTestSession(opts?: {
     isReadOnly: () => readOnly,
     hasUnsyncedChanges: () => unsyncedCount > 0,
     isOnline: () => online,
+    isSocketActive: () => socketActive,
     onConnect,
     onDisconnect,
     hasUnpushedLocalState: (sv, update) => hasUnpushedLocalState(doc, sv, update),
@@ -334,6 +337,9 @@ function createTestSession(opts?: {
     },
     setOnline: (next: boolean) => {
       online = next
+    },
+    setSocketActive: (next: boolean) => {
+      socketActive = next
     },
     startSync: () => {
       unsyncedCount = 1
@@ -710,6 +716,42 @@ describe('CollabSession state machine', () => {
     await pendingDisposed
     expect(h2.session.status).toBe('saved')
     expect(h2.onReportIssue).not.toHaveBeenCalled()
+  })
+
+  it('does not latch rescopePending on pre-connect or inactive-socket SIGNED_IN and clears it onSynced', () => {
+    const h = createTestSession()
+
+    // Pre-connect SIGNED_IN (tokenState === 'none') must not disconnect or latch rescopePending.
+    h.session.onAuthEvent('SIGNED_IN')
+    expect(h.onDisconnect).not.toHaveBeenCalled()
+
+    // A disconnect before any sync must not be swallowed as a rescope reconnect.
+    h.session.onDisconnect(1006)
+    expect(h.onConnect).not.toHaveBeenCalled()
+    jest.advanceTimersByTime(DISCONNECT_ERROR_GRACE_MS)
+    expect(h.session.status).toBe('error')
+
+    // Inactive socket with anon token must not arm rescopePending or call disconnect.
+    h.emitSynced()
+    h.setSocketActive(false)
+    h.session.onTokenResolved(false)
+    h.session.onAuthEvent('SIGNED_IN')
+    expect(h.onDisconnect).not.toHaveBeenCalled()
+    h.session.onDisconnect(1006)
+    expect(h.onConnect).not.toHaveBeenCalled()
+
+    // Active anon socket arms rescopePending, and onSynced clears it if disconnect never ran.
+    h.setSocketActive(true)
+    h.session.onTokenResolved(false)
+    h.session.onAuthEvent('SIGNED_IN')
+    expect(h.onDisconnect).toHaveBeenCalledTimes(1)
+    h.emitSynced()
+    h.session.onDisconnect(1006)
+    expect(h.onConnect).not.toHaveBeenCalled()
+    jest.advanceTimersByTime(DISCONNECT_ERROR_GRACE_MS)
+    expect(h.session.status).toBe('error')
+
+    h.session.dispose()
   })
 })
 

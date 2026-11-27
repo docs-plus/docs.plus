@@ -1,10 +1,15 @@
-import { syncHeadingWrapperA11y } from '@components/TipTap/extensions/HeadingActions/plugins/headingWidgetA11y'
+import {
+  hasFineHoverEnvironment,
+  isMobileShellEnvironment,
+  syncHeadingWrapperA11y
+} from '@components/TipTap/extensions/HeadingActions/plugins/headingWidgetA11y'
 import { HEADING_ACTIONS_CLASSES } from '@components/TipTap/extensions/HeadingActions/types'
 import { useChatStore } from '@stores'
 import { formatCappedCount } from '@utils/formatCappedCount'
 import { resolveHeadingUnreadCount } from '@utils/unreadDisplay'
 
 const headingChatBtnSelector = `.${HEADING_ACTIONS_CLASSES.chatBtn}`
+const syncedWrappers = new WeakSet<HTMLElement>()
 
 export const formatHeadingChatAriaLabel = (count: number): string =>
   count > 0 ? `${formatCappedCount(count)} unread — open chat` : 'Open chat'
@@ -26,23 +31,34 @@ export function syncHeadingWidgetUnread(): void {
       if (!headingId) return
 
       const count = resolveHeadingUnreadCount(headingId, source)
-      const oldCount = parseInt(el.dataset.unreadCount || '0', 10)
-      el.setAttribute('aria-label', formatHeadingChatAriaLabel(count))
+      const prevDisplay = el.dataset.unreadCount ?? ''
+      const nextDisplay = count > 0 ? formatCappedCount(count) : ''
+      const hadUnread = prevDisplay !== ''
+      const hasUnread = nextDisplay !== ''
 
-      if (count > 0) {
-        if (count !== oldCount) {
+      if (prevDisplay !== nextDisplay) {
+        el.setAttribute('aria-label', formatHeadingChatAriaLabel(count))
+
+        if (hasUnread) {
+          const oldCount = parseInt(prevDisplay || '0', 10)
           el.dataset.countDir = count > oldCount ? 'up' : 'down'
           el.style.animation = 'none'
           elementsToRestart.push(el)
+          el.dataset.unreadCount = nextDisplay
+        } else {
+          delete el.dataset.unreadCount
+          delete el.dataset.countDir
         }
-        el.dataset.unreadCount = formatCappedCount(count)
-      } else {
-        delete el.dataset.unreadCount
-        delete el.dataset.countDir
       }
 
       const wrapper = el.closest<HTMLElement>(`.${HEADING_ACTIONS_CLASSES.wrap}`)
-      if (wrapper) wrappersToSync.add(wrapper)
+      if (wrapper) {
+        const isInitial = !syncedWrappers.has(wrapper)
+        if (isInitial || hadUnread !== hasUnread) {
+          syncedWrappers.add(wrapper)
+          wrappersToSync.add(wrapper)
+        }
+      }
     })
 
   if (elementsToRestart.length > 0) {
@@ -53,5 +69,14 @@ export function syncHeadingWidgetUnread(): void {
     }
   }
 
-  wrappersToSync.forEach(syncHeadingWrapperA11y)
+  if (wrappersToSync.size > 0) {
+    const firstWrapper = wrappersToSync.values().next().value
+    const a11yEnv = {
+      isMobileShell: isMobileShellEnvironment(firstWrapper),
+      hasFineHover: hasFineHoverEnvironment()
+    }
+    for (const wrapper of wrappersToSync) {
+      syncHeadingWrapperA11y(wrapper, a11yEnv)
+    }
+  }
 }

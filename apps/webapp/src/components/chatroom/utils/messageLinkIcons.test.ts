@@ -61,4 +61,23 @@ describe('stripLinkIconsOnCopy (#697)', () => {
     expect(event.defaultPrevented).toBe(false)
     expect(data.size).toBe(0)
   })
+
+  test('preserves the enclosing <a> when selecting a single link with its icon', () => {
+    const root = document.createElement('div')
+    root.innerHTML =
+      '<p>See <a href="https://docs.plus"><img class="hyperlink-icon" src="/icon.png" alt="">docs.plus</a> here.</p>'
+    document.body.appendChild(root)
+    const link = root.querySelector('a')!
+    selectNodeContents(link)
+
+    const { event, data } = createCopyEvent()
+    stripLinkIconsOnCopy(event, root)
+
+    expect(event.defaultPrevented).toBe(true)
+    const html = data.get('text/html') ?? ''
+    expect(html).not.toContain('hyperlink-icon')
+    expect(html).not.toContain('<img')
+    expect(html).toBe('<a href="https://docs.plus">docs.plus</a>')
+    expect(data.get('text/plain')).toBe('docs.plus')
+  })
 })

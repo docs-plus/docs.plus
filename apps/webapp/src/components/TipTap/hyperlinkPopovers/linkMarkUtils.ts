@@ -20,13 +20,17 @@ export const hostnameOf = (url: string): string => {
  * The raw `mark.attrs.href` of the live link, read when the edit form opens. Never a
  * normalized or rendered form: `renderHTML` blanks an unsafe href, and `google.com` stays as typed.
  */
-export const storedHrefOf = (opts: EditHyperlinkOptions): string | undefined =>
-  buildPreviewOptionsFromAnchor({
-    editor: opts.editor,
-    link: opts.link,
-    nodePos: opts.nodePos,
-    markName: opts.markName
-  }).attrs.href ?? undefined
+export const storedHrefOf = (opts: EditHyperlinkOptions): string | undefined => {
+  if (opts.editor.isDestroyed) return undefined
+  return (
+    buildPreviewOptionsFromAnchor({
+      editor: opts.editor,
+      link: opts.link,
+      nodePos: opts.nodePos,
+      markName: opts.markName
+    }).attrs.href ?? undefined
+  )
+}
 
 /**
  * Resolves a link's live document position through its connected (or recreated equivalent) `<a>`,
@@ -37,6 +41,7 @@ export const resolveLiveLinkPos = (
   editor: Editor,
   at: { link?: HTMLAnchorElement; nodePos?: number; markName?: string }
 ): number | undefined => {
+  if (editor.isDestroyed) return undefined
   if (at.link) {
     const { nodePos } = buildPreviewOptionsFromAnchor({
       editor,
@@ -59,6 +64,7 @@ export const getHyperlinkDisplayText = (
 ): string => {
   const { link, markName = 'hyperlink' } = at
   const fallback = () => link?.innerText ?? link?.textContent ?? ''
+  if (editor.isDestroyed) return fallback()
   const type = editor.schema.marks[markName]
   const { doc } = editor.state
   let live = -1

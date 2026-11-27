@@ -160,12 +160,22 @@ export const OAuthConsentContent = ({
   const decide = async (action: Decision) => {
     if (!authorizationId || busy) return
     setBusy(action)
+    const isStale = () => !mountedRef.current || requestedIdRef.current !== authorizationId
     const oauth = supabaseClient.auth.oauth
-    const { data, error } =
-      action === 'approve'
-        ? await oauth.approveAuthorization(authorizationId, { skipBrowserRedirect: true })
-        : await oauth.denyAuthorization(authorizationId, { skipBrowserRedirect: true })
-    if (!mountedRef.current) return
+    let result: { data: OAuthRedirect | null; error: AuthError | null }
+    try {
+      result =
+        action === 'approve'
+          ? await oauth.approveAuthorization(authorizationId, { skipBrowserRedirect: true })
+          : await oauth.denyAuthorization(authorizationId, { skipBrowserRedirect: true })
+    } catch {
+      if (isStale()) return
+      setBusy(null)
+      setView({ kind: 'unavailable' })
+      return
+    }
+    if (isStale()) return
+    const { data, error } = result
     if (error || !data?.redirect_url) {
       setBusy(null)
       setView(errorView(error))

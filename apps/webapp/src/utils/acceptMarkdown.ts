@@ -61,22 +61,16 @@ export function prefersMarkdownAccept(acceptHeader: string | string[] | undefine
     let seenQ = false
     let valid = true
 
-    for (const rawParam of segments.slice(1)) {
-      const param = rawParam.trim()
-      if (!param) continue
-      if (/^q=/i.test(param)) {
-        if (seenQ) {
-          valid = false
-          break
-        }
-        seenQ = true
-        const rawQ = param.slice(2)
-        if (!Q_VALUE_RE.test(rawQ)) {
-          valid = false
-          break
-        }
-        q = Number(rawQ)
+    for (let i = 1; i < segments.length; i++) {
+      const param = segments[i].trim()
+      if (!/^q=/i.test(param)) continue
+      const rawQ = param.slice(2)
+      if (seenQ || !Q_VALUE_RE.test(rawQ)) {
+        valid = false
+        break
       }
+      seenQ = true
+      q = Number(rawQ)
     }
 
     if (!valid) continue
@@ -122,13 +116,13 @@ export async function fetchDocumentMarkdown(
       return { status: 200, body: await response.text() }
     }
 
+    await response.body?.cancel?.().catch(() => {})
+
     if (response.status === 404 || response.status === 413) {
-      await response.body?.cancel?.().catch(() => {})
       return { status: response.status, body: '' }
     }
 
     if (response.status === 429) {
-      await response.body?.cancel?.().catch(() => {})
       return {
         status: 429,
         body: '',
@@ -136,7 +130,6 @@ export async function fetchDocumentMarkdown(
       }
     }
 
-    await response.body?.cancel?.().catch(() => {})
     throw new DocumentFetchError(`Failed to fetch document markdown: ${response.status}`, {
       status: response.status
     })

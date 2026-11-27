@@ -152,14 +152,6 @@ const Select = ({
     const selectedIdx = currentOptions.findIndex((o) => o.value === value && !o.disabled)
     const initialIdx = selectedIdx >= 0 ? selectedIdx : currentOptions.findIndex((o) => !o.disabled)
     setHighlightedIndex(initialIdx)
-
-    if (selectedIdx < 0) return
-
-    const rafId = requestAnimationFrame(() => {
-      const el = listRef.current?.children[selectedIdx] as HTMLElement | undefined
-      el?.scrollIntoView({ block: 'nearest' })
-    })
-    return () => cancelAnimationFrame(rafId)
   }, [isOpen, value])
 
   const handleSelect = useCallback(
@@ -237,10 +229,13 @@ const Select = ({
   )
 
   useEffect(() => {
-    if (!isOpen || !listRef.current || highlightedIndex < 0) return
-    const el = listRef.current.children[highlightedIndex] as HTMLElement | undefined
-    el?.scrollIntoView({ block: 'nearest' })
-  }, [highlightedIndex, isOpen])
+    if (!isOpen || highlightedIndex < 0) return
+    const rafId = requestAnimationFrame(() => {
+      const el = listRef.current?.children[highlightedIndex] as HTMLElement | undefined
+      el?.scrollIntoView({ block: 'nearest' })
+    })
+    return () => cancelAnimationFrame(rafId)
+  }, [isOpen, highlightedIndex])
 
   const activeOptionId =
     isOpen && highlightedIndex >= 0 && highlightedIndex < options.length
@@ -259,6 +254,7 @@ const Select = ({
     <button
       ref={refs.setReference}
       type="button"
+      role="combobox"
       id={id}
       disabled={disabled}
       className={twMerge(
@@ -300,11 +296,10 @@ const Select = ({
         id={listboxId}
         style={{ ...floatingStyles, ...transitionStyles }}
         className={twMerge(popoverPanelClassName, 'flex min-h-0 w-auto flex-col')}
-        onKeyDown={handleKeyDown}
         role="listbox"
         aria-labelledby={labelId ?? ariaLabelledBy ?? (!ariaLabel ? id : undefined)}
         aria-label={!labelId && !ariaLabelledBy ? ariaLabel : undefined}
-        {...getFloatingProps()}>
+        {...getFloatingProps({ onKeyDown: handleKeyDown })}>
         <ScrollArea scrollbarSize="thin" preserveWidth={false} className="min-h-0 min-w-0 flex-1">
           <div ref={listRef} className="p-1.5">
             {options.map((option, index) => {

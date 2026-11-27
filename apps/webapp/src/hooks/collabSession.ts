@@ -67,6 +67,7 @@ export interface CollabSessionPorts {
   isReadOnly?: () => boolean
   hasUnsyncedChanges?: () => boolean
   isOnline?: () => boolean
+  isSocketActive?: () => boolean
   onConnect?: () => void
   onDisconnect?: () => void
   hasUnpushedLocalState?: (serverSV: Uint8Array, serverUpdate: Uint8Array) => boolean
@@ -105,13 +106,13 @@ export function resolveSettledStatus({
   hasUnsyncedChanges: boolean
   fallbackIfPendingFlushed: 'saved' | 'synced'
 }): { status: 'saved' | 'saving' | 'synced'; keepPendingLocalEdits: boolean } {
-  if (!isReadOnly && hasPendingLocalEdits) {
-    if (hasUnsyncedChanges) {
-      return { status: 'saving', keepPendingLocalEdits: true }
-    }
-    return { status: fallbackIfPendingFlushed, keepPendingLocalEdits: false }
+  if (isReadOnly || !hasPendingLocalEdits) {
+    return { status: 'saved', keepPendingLocalEdits: false }
   }
-  return { status: 'saved', keepPendingLocalEdits: false }
+  if (hasUnsyncedChanges) {
+    return { status: 'saving', keepPendingLocalEdits: true }
+  }
+  return { status: fallbackIfPendingFlushed, keepPendingLocalEdits: false }
 }
 
 export function isDocumentAccessReadOnly(
@@ -203,7 +204,7 @@ export class CollabSession {
   private authStopped = false
   private authRearmCount = 0
   private authFailedSeq = 0
-  private connectedWithSession = false
+  private tokenState: 'none' | 'anon' | 'session' = 'none'
   private rescopePending = false
   private disposed = false
   private syncedTimer: ReturnType<typeof setTimeout> | null = null
@@ -238,6 +239,10 @@ export class CollabSession {
     return typeof navigator === 'undefined' ? true : navigator.onLine
   }
 
+  private isSocketActive(): boolean {
+    return this.ports.isSocketActive ? this.ports.isSocketActive() : true
+  }
+
   private clearSyncedTimer(): void {
     if (this.syncedTimer) {
       clearTimeout(this.syncedTimer)
@@ -261,12 +266,13 @@ export class CollabSession {
 
   onTokenResolved(hasSession: boolean): void {
     if (this.disposed) return
-    this.connectedWithSession = hasSession
+    this.tokenState = hasSession ? 'session' : 'anon'
   }
 
   onSynced(unsyncedCount: number, hasUnsyncedChanges: boolean): void {
     if (this.disposed) return
     this.isSynced = true
+    this.rescopePending = false
     this.authStopped = false
     this.authRearmCount = 0
     this.authFailedSeq += 1
@@ -287,6 +293,7 @@ export class CollabSession {
   onDisconnect(closeCode?: number): void {
     if (this.disposed) return
     this.isSynced = false
+    this.tokenState = 'none'
     this.lastUnsyncedCount = 0
     this.pendingServerSV = null
     this.clearSyncedTimer()
@@ -351,30 +358,27 @@ export class CollabSession {
 
     this.clearSyncedTimer()
     if (unsyncedCount > 0) {
-      if (currentStatus === 'saving' || unsyncedCount > previousUnsyncedCount) {
-        if (unsyncedCount > previousUnsyncedCount) {
-          this.hasPendingLocalEdits = true
-        }
-        this.setStatus('saving')
-      }
+      const grew = unsyncedCount > previousUnsyncedCount
+      if (grew) this.hasPendingLocalEdits = true
+      if (grew || currentStatus === 'saving') this.setStatus('saving')
       return
     }
 
-    if (currentStatus === 'saving') {
-      this.syncedTimer = setTimeout(() => {
-        this.syncedTimer = null
-        if (this.disposed) return
-        if (
-          this.status === 'saving' &&
-          this.isSynced &&
-          !this.authStopped &&
-          !this.isReadOnly() &&
-          !this.hasUnsyncedChanges()
-        ) {
-          this.setStatus('synced')
-        }
-      }, SYNCED_SETTLE_DELAY_MS)
-    }
+    if (currentStatus !== 'saving') return
+
+    this.syncedTimer = setTimeout(() => {
+      this.syncedTimer = null
+      if (this.disposed) return
+      if (
+        this.status === 'saving' &&
+        this.isSynced &&
+        !this.authStopped &&
+        !this.isReadOnly() &&
+        !this.hasUnsyncedChanges()
+      ) {
+        this.setStatus('synced')
+      }
+    }, SYNCED_SETTLE_DELAY_MS)
   }
 
   onSyncStep(rawData: unknown): void {
@@ -384,16 +388,17 @@ export class CollabSession {
       if (!parsed) return
       if (parsed.syncType === SYNC_STEP_1) {
         this.pendingServerSV = parsed.payload
-      } else if (this.pendingServerSV) {
-        const serverSV = this.pendingServerSV
-        this.pendingServerSV = null
-        if (
-          !this.isReadOnly() &&
-          !this.hasPendingLocalEdits &&
-          this.ports.hasUnpushedLocalState?.(serverSV, parsed.payload)
-        ) {
-          this.hasPendingLocalEdits = true
-        }
+        return
+      }
+      if (!this.pendingServerSV) return
+      const serverSV = this.pendingServerSV
+      this.pendingServerSV = null
+      if (
+        !this.isReadOnly() &&
+        !this.hasPendingLocalEdits &&
+        this.ports.hasUnpushedLocalState?.(serverSV, parsed.payload)
+      ) {
+        this.hasPendingLocalEdits = true
       }
     } catch {
       this.pendingServerSV = null
@@ -495,20 +500,19 @@ export class CollabSession {
     }
 
     // A healthy socket opened anonymously must reopen to pick up the new scope.
-    if (event === 'SIGNED_IN' && !this.connectedWithSession) {
+    if (event === 'SIGNED_IN' && this.tokenState === 'anon' && this.isSocketActive()) {
       this.rescopePending = true
       this.ports.onDisconnect?.()
     }
   }
 
   onFirstSyncTimeout(): void {
-    if (this.disposed) return
+    if (this.disposed || this.isSynced) return
     const current = this.status
-    if (!this.isSynced && current !== 'offline' && current !== 'unauthenticated') {
-      this.clearErrorGraceTimer()
-      this.setStatus('error')
-      this.ports.onReportIssue?.('first-sync-timeout', { timeoutMs: FIRST_SYNC_TIMEOUT_MS })
-    }
+    if (current === 'offline' || current === 'unauthenticated') return
+    this.clearErrorGraceTimer()
+    this.setStatus('error')
+    this.ports.onReportIssue?.('first-sync-timeout', { timeoutMs: FIRST_SYNC_TIMEOUT_MS })
   }
 
   stopReconnect(): void {
@@ -528,7 +532,7 @@ export class CollabSession {
     this.pendingServerSV = null
     this.authStopped = false
     this.authRearmCount = 0
-    this.connectedWithSession = false
+    this.tokenState = 'none'
     this.rescopePending = false
   }
 }

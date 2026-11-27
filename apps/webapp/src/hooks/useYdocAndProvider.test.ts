@@ -602,4 +602,42 @@ describe('useYdocAndProvider lifecycle and wiring', () => {
     expect(useStore.getState().settings.mirrorWriteFailed).toBe(true)
     r4.unmount()
   })
+
+  it('does not disconnect or latch rescopePending on pre-connect SIGNED_IN', async () => {
+    Object.defineProperty(window, 'indexedDB', { configurable: true, value: {} })
+    holdNextIdbSync = true
+
+    const { unmount } = renderHook(() => useYdocAndProvider({ documentId: 'doc-1', slug: 'pad' }))
+    expect(latestProvider).toBeNull()
+
+    // SIGNED_IN before provider exists (during IDB hydration) must not latch rescopePending.
+    act(() => {
+      authStateCallback?.('SIGNED_IN')
+    })
+
+    await act(async () => {
+      latestPersistence!.resolveSynced()
+      await Promise.resolve()
+    })
+    const provider = latestProvider!
+
+    // SIGNED_IN before token() resolves must also not disconnect or latch rescopePending.
+    act(() => {
+      authStateCallback?.('SIGNED_IN')
+    })
+    expect(provider.disconnect).not.toHaveBeenCalled()
+
+    // Let the deferred initial connect() fire, then clear it so only a rescope reconnect would call connect().
+    act(() => jest.advanceTimersByTime(0))
+    provider.connect.mockClear()
+
+    // A disconnect before any sync must still arm error grace instead of reconnecting as a rescope.
+    act(() => {
+      provider.emitDisconnect(1006)
+      jest.advanceTimersByTime(DISCONNECT_ERROR_GRACE_MS)
+    })
+    expect(provider.connect).not.toHaveBeenCalled()
+    expect(status()).toBe('error')
+    unmount()
+  })
 })

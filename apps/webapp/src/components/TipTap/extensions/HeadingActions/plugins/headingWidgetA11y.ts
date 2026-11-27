@@ -37,10 +37,10 @@ const blurIfFocused = (el: HTMLElement): void => {
   }
 }
 
-const hideSingleButton = (singleBtn: HTMLButtonElement): void => {
-  blurIfFocused(singleBtn)
-  singleBtn.setAttribute('aria-hidden', 'true')
-  singleBtn.tabIndex = -1
+const hideButton = (button: HTMLButtonElement): void => {
+  blurIfFocused(button)
+  button.setAttribute('aria-hidden', 'true')
+  button.tabIndex = -1
 }
 
 const hideGroup = (
@@ -65,9 +65,12 @@ const hideGroup = (
  * Sync `aria-hidden`, `tabIndex`, and `inert` on a `.ha-wrap` widget with its visibility.
  * Hidden buttons stay out of the accessibility tree and Tab order.
  */
-export const syncHeadingWrapperA11y = (wrapper: HTMLElement): void => {
-  const isMobileShell = isMobileShellEnvironment(wrapper)
-  const hasFineHover = hasFineHoverEnvironment()
+export const syncHeadingWrapperA11y = (
+  wrapper: HTMLElement,
+  env?: { isMobileShell?: boolean; hasFineHover?: boolean }
+): void => {
+  const isMobileShell = env?.isMobileShell ?? isMobileShellEnvironment(wrapper)
+  const hasFineHover = env?.hasFineHover ?? hasFineHoverEnvironment()
   const hasSelection = wrapper.classList.contains(HEADING_ACTIONS_CLASSES.hasSelection)
   const isSectionHover = wrapper.classList.contains(HEADING_ACTIONS_CLASSES.sectionHover)
   const headingEl = wrapper.closest<HTMLElement>('h1, h2, h3, h4, h5, h6')
@@ -93,7 +96,7 @@ export const syncHeadingWrapperA11y = (wrapper: HTMLElement): void => {
   }
 
   if (hasSelection) {
-    if (singleBtn) hideSingleButton(singleBtn)
+    if (singleBtn) hideButton(singleBtn)
     if (!group) return
 
     group.inert = false
@@ -112,9 +115,7 @@ export const syncHeadingWrapperA11y = (wrapper: HTMLElement): void => {
         groupChatBtn.removeAttribute('aria-hidden')
         groupChatBtn.tabIndex = 0
       } else {
-        blurIfFocused(groupChatBtn)
-        groupChatBtn.setAttribute('aria-hidden', 'true')
-        groupChatBtn.tabIndex = -1
+        hideButton(groupChatBtn)
       }
     }
     return
@@ -133,6 +134,6 @@ export const syncHeadingWrapperA11y = (wrapper: HTMLElement): void => {
     singleBtn.removeAttribute('aria-hidden')
     singleBtn.tabIndex = !hasFineHover || hasUnread || isFocused ? 0 : -1
   } else {
-    hideSingleButton(singleBtn)
+    hideButton(singleBtn)
   }
 }
