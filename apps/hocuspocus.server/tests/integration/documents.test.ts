@@ -28,8 +28,15 @@ import path from 'path'
 import { Hono } from 'hono'
 import pino from 'pino'
 import * as Y from 'yjs'
+import { defaultDocumentsController } from '../../src/api/controllers/documents.controller'
+import {
+  optionalPadReader,
+  optionalUser,
+  requireServiceRoleOrUser,
+  requireUser
+} from '../../src/api/middleware/auth'
+import { createDocumentsRouter } from '../../src/api/routers/documents.router'
 import { searchDocuments } from '../../src/api/services/documentSearch.service'
-import documentsRouter from '../../src/api/routers/documents.router'
 import { config } from '../../src/config/env'
 import { acquireLargeDecode, LARGE_DECODE_BYTES } from '../../src/lib/largeDecodeGate'
 import { setPadCardForgetter } from '../../src/lib/padLinkCards'
@@ -67,7 +74,19 @@ describe('Documents API', () => {
       await next()
     })
 
-    app.route('/api/documents', documentsRouter)
+    // Omit duplicateRateLimit here: the default export wires the live Redis limiter
+    // (10 / 15 min), which trips 429 on back-to-back check:ci runs against local Redis.
+    // Rate-limit enforcement is covered in tests/unit/middleware.test.ts.
+    app.route(
+      '/api/documents',
+      createDocumentsRouter({
+        controller: defaultDocumentsController,
+        optionalUser,
+        optionalPadReader,
+        requireUser,
+        requireServiceRoleOrUser
+      })
+    )
     testServer = new TestServer(app)
   })
 
