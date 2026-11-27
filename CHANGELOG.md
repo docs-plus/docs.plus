@@ -87,6 +87,8 @@ This file is the product changelog. Every app, package and extension keeps its o
   maps in place without rebuilding document history. State vectors stay equal and stored heads
   shrink: a synthetic `12.55 MB` seed drops to `297,365 B` (`97 %` less). In production pass 1,
   the backfill cleared `125` heads (`15,568,003 B` to `4,183,427 B`, `73 %` less, `0` refused).
+  Opening `/demo` (`n = 10`, production) dropped from `2,645,182 B` to `298,505 B` on the collab
+  socket (`88 %` fewer bytes) and from `4,135.5 ms` to `2,852 ms` to fill (`31 %` less time).
   Detail: `apps/hocuspocus.server/CHANGELOG.md`
   ([#738](https://github.com/docs-plus/docs.plus/issues/738)).
 - Upgraded Uptime Kuma to `louislam/uptime-kuma:2.5.12-slim-rootless` (pinned by digest) in a
