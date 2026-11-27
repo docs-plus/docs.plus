@@ -17,7 +17,7 @@ historical Conventional Commits format. The project adheres to
 ### Internal
 
 - Added a gzip byte-budget bench (`scripts/bench/`) wired into PR CI (`starterKitAppGz`:
-  `36,028 B`, `helperOnlyGz`: `123,175 B`)
+  `36,075 B`; `helperOnlyGz` is deferred until pure annotations opt-in)
   ([#784](https://github.com/docs-plus/docs.plus/issues/784)).
 - `typecheck` runs `bun check --no-script`, not `tsc --noEmit`
   ([#794](https://github.com/docs-plus/docs.plus/issues/794)).

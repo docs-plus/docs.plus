@@ -1,34 +1,34 @@
 /**
- * Bytes per variant: the npm ESM file, what a StarterKit app pays for HyperMultimediaKit, and a
- * helper-only import (`isSafeMediaSrc`). esbuild minify, ESM, browser; Bun zlib level 9 gzip.
+ * Bytes per variant: the npm ESM file, what a StarterKit app pays for the extension, and a
+ * helper-only import. esbuild minify, ESM, browser; Bun zlib level 9 gzip.
  */
 import { join } from 'node:path'
 
-import { gzip, loadEsbuild, OUT, PKG, type Variant } from './paths'
+import { gzip, loadEsbuild } from './build'
+import type { Budget, Bytes, ExtensionBenchConfig, Size, Variant } from './types'
 
-const SK = "import {Editor} from '@tiptap/core';import StarterKit from '@tiptap/starter-kit';"
+const STARTER_KIT_BASELINE =
+  "import {Editor} from '@tiptap/core';import StarterKit from '@tiptap/starter-kit';new Editor({extensions:[StarterKit]})"
 
-export type Size = { min: number; gz: number }
-export type Bytes = {
-  distEsm: Size
-  starterKitApp: Size
-  helperOnly: Size
-}
-
-export async function measureBytes(variant: Variant): Promise<Bytes> {
-  const esbuild = await loadEsbuild()
-  const dist = join(OUT, variant, 'dist', 'index.js')
+export async function measureBytes(
+  config: ExtensionBenchConfig,
+  outDir: string,
+  variant: Variant
+): Promise<Bytes> {
+  const esbuild = await loadEsbuild(config.packageRoot)
+  const dist = join(outDir, variant, 'dist', 'index.js')
   const bundle = async (contents: string): Promise<Size> => {
     const result = await esbuild.build({
-      stdin: { contents, resolveDir: PKG, loader: 'js' },
+      stdin: { contents, resolveDir: config.packageRoot, loader: 'js' },
       bundle: true,
       minify: true,
       format: 'esm',
       platform: 'browser',
       write: false,
       logLevel: 'error',
+      ...(config.externalPackages?.length ? { external: config.externalPackages } : {}),
       define: { 'process.env.NODE_ENV': '"production"' },
-      nodePaths: [join(PKG, 'node_modules')],
+      nodePaths: [join(config.packageRoot, 'node_modules')],
       plugins: [
         { name: 'variant', setup: (b) => b.onResolve({ filter: /^EXT$/ }, () => ({ path: dist })) }
       ]
@@ -37,22 +37,17 @@ export async function measureBytes(variant: Variant): Promise<Bytes> {
     return { min: code.length, gz: gzip(code) }
   }
 
-  const starterKit = await bundle(`${SK}new Editor({extensions:[StarterKit]})`)
+  const starterKit = await bundle(STARTER_KIT_BASELINE)
   const pays = (s: Size): Size => ({ min: s.min - starterKit.min, gz: s.gz - starterKit.gz })
   const esm = await Bun.file(dist).bytes()
   return {
     distEsm: { min: esm.length, gz: gzip(esm) },
-    starterKitApp: pays(
-      await bundle(
-        `${SK}import {HyperMultimediaKit} from 'EXT';new Editor({extensions:[StarterKit,HyperMultimediaKit.configure()]})`
-      )
-    ),
-    helperOnly: await bundle("import {isSafeMediaSrc} from 'EXT';console.log(isSafeMediaSrc)")
+    starterKitApp: pays(await bundle(config.starterKitEntry)),
+    helperOnly: await bundle(config.helperEntry)
   }
 }
 
-type Budget = { starterKitAppGz: number | null; helperOnlyGz: number | null }
-
+/** Checks head's gzip bytes against `bytes-budget.json`. A `null` limit reports without failing. */
 export async function checkBudget(
   head: Bytes,
   file: string
@@ -65,7 +60,7 @@ export async function checkBudget(
   let over = false
   const lines = rows.map(([key, gz]) => {
     const limit = budget[key]
-    if (limit === null) return `- ${key}: ${gz} B, no limit set`
+    if (limit == null) return `- ${key}: ${gz} B, no limit set`
     over ||= gz > limit
     return `- ${key}: ${gz} B, limit ${limit} B${gz > limit ? ', OVER' : ''}`
   })
