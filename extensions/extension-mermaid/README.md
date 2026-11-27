@@ -252,3 +252,5 @@ Bug reports and PRs welcome. Setup, test commands, and the playground harness li
 ## License
 
 MIT — see [LICENSE](https://github.com/docs-plus/docs.plus/blob/main/LICENSE).
+
+<!-- ci probe 562 item 3 -->
