@@ -237,6 +237,9 @@ This file is the operator and API changelog. The pad product lives in the [root 
   - Added `requireNonAnonymousUser` and per-user rate limiting to
     `GET /api/connected-apps/redirects`, aborted unconsumed oEmbed streams in `finally`, and
     capped `readHead.ts` `readTail` buffers to `limit`.
+- `createServerFactory` now passes `capabilities: { tools: { listChanged: false } }` to `McpServer`,
+  matching the fixed tool set and stopping clients from opening unused `subscriptions/listen`
+  streams ([#460](https://github.com/docs-plus/docs.plus/issues/460)).
 
 ### Security
 

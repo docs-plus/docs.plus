@@ -155,6 +155,15 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   `useStore.getState()` or isolated hooks (`DesktopLayout`, `BottomSheet`, `MobilePadTitle`,
   `TocModal`, `useResizeContainer`, `useHeadingScrollSpy`, history hooks, `useEnableEditor`,
   `AppendHeadingButton`, and chat message handlers) ([#785](https://github.com/docs-plus/docs.plus/issues/785)).
+- Enforced `selectDocumentEditingLocked` / `isDocumentEditingLocked()` across `EditorToolbar`,
+  `StyleSelect`, `ToolbarSelect`, `DropdownMenu`, `insertMediaOpenRequest`, `MediaInsertPanel`,
+  `MediaInsertSheet`, `useMediaInsert`, `uploadMediaFile`, `useMediaPasteUpload`,
+  `AppendHeadingButton`, `TocDesktop`, `TocMobile`, chat **Copy to doc**
+  (`useMessageActionMenuItems` and `useCopyMessageToDocHandler`), `EditFAB`, `useCaretPosition`,
+  and `useResizeContainer` `abortDrag`. Added `selectCanComment` / `canCommentInDocument()` and
+  DOM-selection focus checks (`hasActiveSelectionInView` + `selectionchange` cleanup) so all four
+  pad comment triggers stay enabled on read-only documents and block during `providerStatus === 'error'`
+  ([#825](https://github.com/docs-plus/docs.plus/issues/825)).
 
 ### Security
 

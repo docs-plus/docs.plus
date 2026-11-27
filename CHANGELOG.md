@@ -159,6 +159,12 @@ This file is the product changelog. Every app, package and extension keeps its o
   TOC, chat, and history hooks ([#785](https://github.com/docs-plus/docs.plus/issues/785)), and
   fixed `Tab` and `Shift-Tab` inside nested mixed lists in `@docs.plus/extension-indent` so
   indenting targets the innermost list item ([#679](https://github.com/docs-plus/docs.plus/issues/679)).
+- Read-only and locked pads now disable editing toolbars, media insert, TOC add-heading, chat
+  **Copy to doc**, and mobile edit controls, while commenting on selected text and media stays
+  enabled on read-only documents. Detail: `apps/webapp/CHANGELOG.md`
+  ([#825](https://github.com/docs-plus/docs.plus/issues/825)).
+- The MCP connector no longer advertises `tools.listChanged`, matching its fixed tool set. Detail:
+  `apps/hocuspocus.server/CHANGELOG.md` ([#460](https://github.com/docs-plus/docs.plus/issues/460)).
 
 ### Security
 
@@ -254,6 +260,10 @@ This file is the product changelog. Every app, package and extension keeps its o
   `bun check --no-script` as the format and type-check commands
   ([#794](https://github.com/docs-plus/docs.plus/issues/794),
   [#795](https://github.com/docs-plus/docs.plus/issues/795)).
+- Corrected MCP documentation (`docs/mcp/`, `apps/hocuspocus.server/API.md`, `ENV.md`) and
+  `context7.json` rules to match shipped code ([#461](https://github.com/docs-plus/docs.plus/issues/461)),
+  and documented `APP_URL` in self-hosting MCP setup
+  ([#337](https://github.com/docs-plus/docs.plus/issues/337)).
 
 ### Internal
 
