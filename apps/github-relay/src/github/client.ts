@@ -1,4 +1,14 @@
+import { hasClaimLabel, isBotUser, isOutsider } from '../projection/helpers.ts'
 import type { DigestSnapshot, PeriodReportSnapshot } from '../types.ts'
+
+const FETCH_TIMEOUT_MS = 15_000
+const FAILED_CHECK_CONCLUSIONS = new Set([
+  'failure',
+  'timed_out',
+  'cancelled',
+  'action_required',
+  'startup_failure'
+])
 
 export interface GitHubApiClient {
   compareCommits(
@@ -24,12 +34,9 @@ export class GitHubHttpClient implements GitHubApiClient {
     this.token = token
   }
 
-  private headers(
-    accept = 'application/vnd.github+json',
-    includeAuth = true
-  ): Record<string, string> {
+  private headers(includeAuth = true): Record<string, string> {
     const out: Record<string, string> = {
-      Accept: accept,
+      Accept: 'application/vnd.github+json',
       'User-Agent': 'docsplus-github-relay/1.0',
       'X-GitHub-Api-Version': '2022-11-28'
     }
@@ -39,25 +46,80 @@ export class GitHubHttpClient implements GitHubApiClient {
     return out
   }
 
+  private async fetchJson<T>(url: string): Promise<T> {
+    let res = await fetch(url, {
+      headers: this.headers(),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+    })
+    if (
+      this.token &&
+      (res.status === 401 || res.status === 403) &&
+      res.headers.get('x-ratelimit-remaining') !== '0'
+    ) {
+      if (!this.warnedTokenFallback) {
+        this.warnedTokenFallback = true
+        console.warn(
+          `[github] Authenticated request returned ${res.status}; retrying unauthenticated`
+        )
+      }
+      res = await fetch(url, {
+        headers: this.headers(false),
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+      })
+    }
+    if (!res.ok) {
+      throw new Error(`GitHub GET ${url} failed (${res.status})`)
+    }
+    return (await res.json()) as T
+  }
+
   private async getJson<T>(url: string): Promise<T | null> {
     try {
-      let res = await fetch(url, { headers: this.headers() })
-      if (this.token && (res.status === 401 || res.status === 403)) {
-        if (!this.warnedTokenFallback) {
-          this.warnedTokenFallback = true
-          console.warn(
-            `[github] Authenticated request returned ${res.status}; retrying unauthenticated`
-          )
-        }
-        res = await fetch(url, {
-          headers: this.headers('application/vnd.github+json', false)
-        })
-      }
-      if (!res.ok) return null
-      return (await res.json()) as T
+      return await this.fetchJson<T>(url)
     } catch {
       return null
     }
+  }
+
+  private async fetchCommitCiStatus(
+    repo: string,
+    sha: string
+  ): Promise<'passed' | 'failed' | 'pending' | 'unknown'> {
+    const [checkRuns, legacyStatus] = await Promise.all([
+      this.getJson<{
+        check_runs?: Array<{ status?: string; conclusion?: string | null }>
+      }>(`https://api.github.com/repos/${repo}/commits/${sha}/check-runs?per_page=50`),
+      this.getJson<{ state?: string; total_count?: number }>(
+        `https://api.github.com/repos/${repo}/commits/${sha}/status`
+      )
+    ])
+
+    let checksState: 'passed' | 'failed' | 'pending' | 'unknown' = 'unknown'
+    const runs = checkRuns?.check_runs ?? []
+    if (runs.length > 0) {
+      const hasFailure = runs.some(
+        (r) =>
+          r.status === 'completed' &&
+          r.conclusion != null &&
+          FAILED_CHECK_CONCLUSIONS.has(r.conclusion)
+      )
+      const hasPending = runs.some((r) => r.status !== 'completed')
+      if (hasFailure) checksState = 'failed'
+      else if (hasPending) checksState = 'pending'
+      else checksState = 'passed'
+    }
+
+    let legacyState: 'passed' | 'failed' | 'pending' | 'unknown' = 'unknown'
+    if (legacyStatus && legacyStatus.total_count !== 0) {
+      if (legacyStatus.state === 'failure' || legacyStatus.state === 'error') legacyState = 'failed'
+      else if (legacyStatus.state === 'pending') legacyState = 'pending'
+      else if (legacyStatus.state === 'success') legacyState = 'passed'
+    }
+
+    if (checksState === 'failed' || legacyState === 'failed') return 'failed'
+    if (checksState === 'pending' || legacyState === 'pending') return 'pending'
+    if (checksState === 'passed' || legacyState === 'passed') return 'passed'
+    return 'unknown'
   }
 
   async compareCommits(
@@ -84,8 +146,8 @@ export class GitHubHttpClient implements GitHubApiClient {
   async fetchDigestSnapshot(repo: string): Promise<DigestSnapshot> {
     const nowMs = Date.now()
     const [repoInfo, openPrs, openIssues] = await Promise.all([
-      this.getJson<{ stargazers_count?: number }>(`https://api.github.com/repos/${repo}`),
-      this.getJson<
+      this.fetchJson<{ stargazers_count?: number }>(`https://api.github.com/repos/${repo}`),
+      this.fetchJson<
         Array<{
           number: number
           title: string
@@ -98,7 +160,7 @@ export class GitHubHttpClient implements GitHubApiClient {
           head?: { sha: string }
         }>
       >(`https://api.github.com/repos/${repo}/pulls?state=open&per_page=50`),
-      this.getJson<
+      this.fetchJson<
         Array<{
           number: number
           title: string
@@ -115,12 +177,18 @@ export class GitHubHttpClient implements GitHubApiClient {
       >(`https://api.github.com/repos/${repo}/issues?state=open&per_page=60`)
     ])
 
-    const awaitingReviewPrs: DigestSnapshot['awaitingReviewPrs'] = []
     const dependabotOpenPrs: number[] = []
+    const candidatePrs: Array<{
+      number: number
+      title: string
+      html_url: string
+      ageHours: number
+      headSha?: string
+      reviewers: string[]
+    }> = []
 
-    for (const pr of openPrs ?? []) {
-      const isBot = pr.user.type === 'Bot' || pr.user.login.endsWith('[bot]')
-      if (isBot) {
+    for (const pr of openPrs) {
+      if (isBotUser(pr.user)) {
         if (pr.user.login.toLowerCase().includes('dependabot')) {
           dependabotOpenPrs.push(pr.number)
         }
@@ -130,41 +198,41 @@ export class GitHubHttpClient implements GitHubApiClient {
       const ageHours = Math.floor((nowMs - Date.parse(pr.updated_at)) / 3600_000)
       if (ageHours < 24) continue
 
-      let ciStatus: 'passed' | 'failed' | 'pending' | 'unknown' = 'unknown'
-      if (pr.head?.sha) {
-        const status = await this.getJson<{ state?: string }>(
-          `https://api.github.com/repos/${repo}/commits/${pr.head.sha}/status`
-        )
-        if (status?.state === 'success') ciStatus = 'passed'
-        else if (status?.state === 'failure' || status?.state === 'error') ciStatus = 'failed'
-        else if (status?.state === 'pending') ciStatus = 'pending'
-      }
-
-      const reviewers = (pr.requested_reviewers ?? []).map((r) => `@${r.login}`)
-      awaitingReviewPrs.push({
+      candidatePrs.push({
         number: pr.number,
         title: pr.title,
-        url: pr.html_url,
+        html_url: pr.html_url,
         ageHours,
-        ciStatus,
-        waitingOn: reviewers.length > 0 ? reviewers.join(', ') : 'Maintainer review'
+        headSha: pr.head?.sha,
+        reviewers: (pr.requested_reviewers ?? []).map((r) => `@${r.login}`)
       })
     }
+
+    const awaitingReviewPrs: DigestSnapshot['awaitingReviewPrs'] = await Promise.all(
+      candidatePrs.slice(0, 8).map(async (pr) => {
+        const ciStatus = pr.headSha ? await this.fetchCommitCiStatus(repo, pr.headSha) : 'unknown'
+        return {
+          number: pr.number,
+          title: pr.title,
+          url: pr.html_url,
+          ageHours: pr.ageHours,
+          ciStatus,
+          waitingOn: pr.reviewers.length > 0 ? pr.reviewers.join(', ') : 'Maintainer review'
+        }
+      })
+    )
 
     const unansweredExternalIssues: DigestSnapshot['unansweredExternalIssues'] = []
     const staleClaimedIssues: DigestSnapshot['staleClaimedIssues'] = []
     const featuredClaimableIssues: DigestSnapshot['featuredClaimableIssues'] = []
 
-    for (const item of openIssues ?? []) {
+    for (const item of openIssues) {
       if (item.pull_request) continue
-      const isBot = item.user.type === 'Bot' || item.user.login.endsWith('[bot]')
-      if (isBot) continue
+      if (isBotUser(item.user)) continue
 
-      const assoc = item.author_association ?? ''
-      const outsider = !['OWNER', 'MEMBER', 'COLLABORATOR'].includes(assoc)
+      const outsider = isOutsider(item.author_association)
       const ageHours = Math.floor((nowMs - Date.parse(item.created_at)) / 3600_000)
       const labels = (item.labels ?? []).map((l) => l.name)
-      const lowerLabels = labels.map((l) => l.toLowerCase())
       const assignees = item.assignees ?? []
 
       if (outsider && item.comments === 0 && ageHours >= 24) {
@@ -189,7 +257,7 @@ export class GitHubHttpClient implements GitHubApiClient {
             ageDays: updatedDays
           })
         }
-      } else if (lowerLabels.includes('good first issue') || lowerLabels.includes('help wanted')) {
+      } else if (hasClaimLabel(labels)) {
         featuredClaimableIssues.push({
           number: item.number,
           title: item.title,
@@ -199,78 +267,89 @@ export class GitHubHttpClient implements GitHubApiClient {
       }
     }
 
-    if (this.token) {
-      const [owner, name] = repo.split('/')
-      if (owner && name) {
-        try {
-          const gql = await fetch('https://api.github.com/graphql', {
-            method: 'POST',
-            headers: {
-              ...this.headers(),
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              query: `query($owner: String!, $name: String!) {
-                repository(owner: $owner, name: $name) {
-                  discussions(first: 15, orderBy: { field: CREATED_AT, direction: DESC }) {
-                    nodes {
-                      number title url createdAt isAnswered
-                      author { login }
-                      comments { totalCount }
-                    }
-                  }
-                }
-              }`,
-              variables: { owner, name }
-            })
-          })
-          if (gql.ok) {
-            const payload = (await gql.json()) as {
-              data?: {
-                repository?: {
-                  discussions?: {
-                    nodes?: Array<{
-                      number: number
-                      title: string
-                      url: string
-                      createdAt: string
-                      isAnswered: boolean
-                      author?: { login?: string }
-                      comments?: { totalCount?: number }
-                    }>
-                  }
-                }
-              }
-            }
-            for (const d of payload.data?.repository?.discussions?.nodes ?? []) {
-              const ageHours = Math.floor((nowMs - Date.parse(d.createdAt)) / 3600_000)
-              if (!d.isAnswered && (d.comments?.totalCount ?? 0) === 0 && ageHours >= 24) {
-                unansweredExternalIssues.push({
-                  number: d.number,
-                  title: d.title,
-                  url: d.url,
-                  author: d.author?.login || 'community',
-                  ageHours,
-                  kind: 'discussion'
-                })
-              }
-            }
-          }
-        } catch {
-          // Discussions query is optional; continue with REST snapshot.
-        }
-      }
-    }
+    const unansweredDiscussions = await this.fetchUnansweredDiscussions(repo, nowMs)
+    unansweredExternalIssues.push(...unansweredDiscussions)
 
     return {
       repo,
       nowMs,
-      starsCount: repoInfo?.stargazers_count ?? 0,
-      awaitingReviewPrs: awaitingReviewPrs.slice(0, 8),
+      starsCount: repoInfo.stargazers_count ?? 0,
+      awaitingReviewPrs,
       unansweredExternalIssues: unansweredExternalIssues.slice(0, 8),
       staleClaimedIssues: staleClaimedIssues.slice(0, 6),
       dependabotOpenPrs,
       featuredClaimableIssues: featuredClaimableIssues.slice(0, 3)
+    }
+  }
+
+  private async fetchUnansweredDiscussions(
+    repo: string,
+    nowMs: number
+  ): Promise<DigestSnapshot['unansweredExternalIssues']> {
+    if (!this.token) return []
+    const [owner, name] = repo.split('/')
+    if (!owner || !name) return []
+
+    try {
+      const gql = await fetch('https://api.github.com/graphql', {
+        method: 'POST',
+        headers: {
+          ...this.headers(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          query: `query($owner: String!, $name: String!) {
+            repository(owner: $owner, name: $name) {
+              discussions(first: 15, orderBy: { field: CREATED_AT, direction: DESC }) {
+                nodes {
+                  number title url createdAt isAnswered
+                  author { login }
+                  comments { totalCount }
+                }
+              }
+            }
+          }`,
+          variables: { owner, name }
+        }),
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+      })
+      if (!gql.ok) return []
+
+      const payload = (await gql.json()) as {
+        data?: {
+          repository?: {
+            discussions?: {
+              nodes?: Array<{
+                number: number
+                title: string
+                url: string
+                createdAt: string
+                isAnswered: boolean
+                author?: { login?: string }
+                comments?: { totalCount?: number }
+              }>
+            }
+          }
+        }
+      }
+
+      const unanswered: DigestSnapshot['unansweredExternalIssues'] = []
+      for (const d of payload.data?.repository?.discussions?.nodes ?? []) {
+        const ageHours = Math.floor((nowMs - Date.parse(d.createdAt)) / 3600_000)
+        if (!d.isAnswered && (d.comments?.totalCount ?? 0) === 0 && ageHours >= 24) {
+          unanswered.push({
+            number: d.number,
+            title: d.title,
+            url: d.url,
+            author: d.author?.login || 'community',
+            ageHours,
+            kind: 'discussion'
+          })
+        }
+      }
+      return unanswered
+    } catch {
+      return []
     }
   }
 
@@ -292,10 +371,10 @@ export class GitHubHttpClient implements GitHubApiClient {
 
     const [repoInfo, releasesRaw, mergedPrsSearch, closedIssuesSearch, openIssues] =
       await Promise.all([
-        this.getJson<{ stargazers_count?: number; default_branch?: string }>(
+        this.fetchJson<{ stargazers_count?: number; default_branch?: string }>(
           `https://api.github.com/repos/${repo}`
         ),
-        this.getJson<
+        this.fetchJson<
           Array<{
             tag_name: string
             name?: string | null
@@ -306,14 +385,14 @@ export class GitHubHttpClient implements GitHubApiClient {
             created_at?: string | null
           }>
         >(`https://api.github.com/repos/${repo}/releases?per_page=30`),
-        this.getJson<{
+        this.fetchJson<{
           total_count?: number
           items?: Array<{ user?: { login?: string; type?: string } }>
         }>(`https://api.github.com/search/issues?q=${prQuery}&per_page=30`),
-        this.getJson<{ total_count?: number }>(
+        this.fetchJson<{ total_count?: number }>(
           `https://api.github.com/search/issues?q=${issueQuery}&per_page=1`
         ),
-        this.getJson<
+        this.fetchJson<
           Array<{
             number: number
             title: string
@@ -326,18 +405,13 @@ export class GitHubHttpClient implements GitHubApiClient {
         >(`https://api.github.com/repos/${repo}/issues?state=open&per_page=50`)
       ])
 
-    const isBotAuthor = (login?: string, type?: string, name?: string): boolean =>
-      type === 'Bot' ||
-      Boolean(login && login.endsWith('[bot]')) ||
-      Boolean(name && name.endsWith('[bot]'))
-
-    const defaultBranch = repoInfo?.default_branch || 'main'
+    const defaultBranch = repoInfo.default_branch || 'main'
     let commitsCount = 0
     let commitsCapped = false
     const contributorSet = new Set<string>()
 
     for (let page = 1; page <= 3; page += 1) {
-      const pageItems = await this.getJson<
+      const pageItems = await this.fetchJson<
         Array<{
           author?: { login?: string; type?: string } | null
           commit?: { author?: { name?: string } }
@@ -345,10 +419,9 @@ export class GitHubHttpClient implements GitHubApiClient {
       >(
         `https://api.github.com/repos/${repo}/commits?sha=${encodeURIComponent(defaultBranch)}&since=${encodeURIComponent(sinceIso)}&until=${encodeURIComponent(untilIso)}&per_page=100&page=${page}`
       )
-      if (!pageItems) break
 
       for (const c of pageItems) {
-        if (isBotAuthor(c.author?.login, c.author?.type, c.commit?.author?.name)) continue
+        if (isBotUser(c.author) || isBotUser({ login: c.commit?.author?.name })) continue
         commitsCount += 1
         const contributor = c.author?.login || c.commit?.author?.name
         if (contributor) contributorSet.add(contributor)
@@ -358,14 +431,14 @@ export class GitHubHttpClient implements GitHubApiClient {
       if (page === 3) commitsCapped = true
     }
 
-    for (const pr of mergedPrsSearch?.items ?? []) {
+    for (const pr of mergedPrsSearch.items ?? []) {
       const login = pr.user?.login
-      if (login && !isBotAuthor(login, pr.user?.type)) {
+      if (login && !isBotUser(pr.user)) {
         contributorSet.add(login)
       }
     }
 
-    const releases = (releasesRaw ?? [])
+    const releases = releasesRaw
       .filter((r) => {
         if (r.draft) return false
         const publishedMs = Date.parse(r.published_at || r.created_at || '')
@@ -379,13 +452,12 @@ export class GitHubHttpClient implements GitHubApiClient {
       }))
 
     const featuredClaimableIssues: PeriodReportSnapshot['featuredClaimableIssues'] = []
-    for (const item of openIssues ?? []) {
+    for (const item of openIssues) {
       if (item.pull_request) continue
-      if (isBotAuthor(item.user.login, item.user.type)) continue
+      if (isBotUser(item.user)) continue
       if ((item.assignees ?? []).length > 0) continue
       const labels = (item.labels ?? []).map((l) => l.name)
-      const lower = labels.map((l) => l.toLowerCase())
-      if (lower.includes('good first issue') || lower.includes('help wanted')) {
+      if (hasClaimLabel(labels)) {
         featuredClaimableIssues.push({
           number: item.number,
           title: item.title,
@@ -401,12 +473,12 @@ export class GitHubHttpClient implements GitHubApiClient {
       periodLabel,
       sinceMs,
       untilMs,
-      starsCount: repoInfo?.stargazers_count ?? 0,
+      starsCount: repoInfo.stargazers_count ?? 0,
       commitsCount,
       commitsCapped,
       releases,
-      mergedPrsCount: mergedPrsSearch?.total_count ?? 0,
-      closedIssuesCount: closedIssuesSearch?.total_count ?? 0,
+      mergedPrsCount: mergedPrsSearch.total_count ?? 0,
+      closedIssuesCount: closedIssuesSearch.total_count ?? 0,
       contributors: Array.from(contributorSet).slice(0, 12),
       featuredClaimableIssues: featuredClaimableIssues.slice(0, 4)
     }

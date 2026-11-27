@@ -4,14 +4,36 @@ import { dirname } from 'path'
 
 import type {
   BatchKind,
+  CardModel,
   ChannelKey,
   EntityRecord,
   EntityState,
   EntityType,
   PendingBatchRecord,
   QueueJobPayload,
-  QueueJobRecord
+  QueueJobRecord,
+  TypedPendingBatch
 } from '../types.ts'
+
+interface BatchRow {
+  batch_key: string
+  channel_key: ChannelKey
+  kind: BatchKind
+  items_json: string
+  flush_at: number
+  updated_at: number
+}
+
+function mapBatchRow<T>(row: BatchRow): PendingBatchRecord<T> {
+  return {
+    batchKey: row.batch_key,
+    channelKey: row.channel_key,
+    kind: row.kind,
+    items: JSON.parse(row.items_json) as T[],
+    flushAt: row.flush_at,
+    updatedAt: row.updated_at
+  }
+}
 
 export class SqliteStore {
   private readonly db: Database
@@ -40,9 +62,9 @@ export class SqliteStore {
         entity_type TEXT NOT NULL,
         channel_key TEXT NOT NULL,
         channel_id TEXT NOT NULL,
-        anchor_message_id TEXT NOT NULL,
+        anchor_message_id TEXT,
         state_json TEXT NOT NULL,
-        timeline_json TEXT NOT NULL,
+        timeline_json TEXT NOT NULL DEFAULT '[]',
         updated_at INTEGER NOT NULL
       );
 
@@ -58,6 +80,8 @@ export class SqliteStore {
       );
       CREATE INDEX IF NOT EXISTS idx_queue_jobs_channel_ready
         ON queue_jobs(channel_key, available_at, id);
+      CREATE INDEX IF NOT EXISTS idx_queue_jobs_channel_id
+        ON queue_jobs(channel_key, id);
 
       CREATE TABLE IF NOT EXISTS pending_batches (
         batch_key TEXT PRIMARY KEY,
@@ -86,6 +110,46 @@ export class SqliteStore {
         merged_at INTEGER NOT NULL
       );
     `)
+
+    // Upgrade existing live DBs where entities.anchor_message_id was created NOT NULL.
+    const cols = this.db.query('PRAGMA table_info(entities)').all() as Array<{
+      name: string
+      notnull: number
+    }>
+    const anchorCol = cols.find((c) => c.name === 'anchor_message_id')
+    if (anchorCol && anchorCol.notnull === 1) {
+      this.runTransaction(() => {
+        this.db.exec(`
+          CREATE TABLE entities_new (
+            entity_key TEXT PRIMARY KEY,
+            entity_type TEXT NOT NULL,
+            channel_key TEXT NOT NULL,
+            channel_id TEXT NOT NULL,
+            anchor_message_id TEXT,
+            state_json TEXT NOT NULL,
+            timeline_json TEXT NOT NULL DEFAULT '[]',
+            updated_at INTEGER NOT NULL
+          );
+          INSERT INTO entities_new (
+            entity_key, entity_type, channel_key, channel_id, anchor_message_id,
+            state_json, timeline_json, updated_at
+          )
+          SELECT
+            entity_key, entity_type, channel_key, channel_id,
+            NULLIF(anchor_message_id, ''),
+            state_json,
+            COALESCE(timeline_json, '[]'),
+            updated_at
+          FROM entities;
+          DROP TABLE entities;
+          ALTER TABLE entities_new RENAME TO entities;
+        `)
+      })
+    }
+  }
+
+  runTransaction<T>(fn: () => T): T {
+    return this.db.transaction(fn)()
   }
 
   close(): void {
@@ -105,7 +169,7 @@ export class SqliteStore {
     const row = this.db
       .query(
         `SELECT entity_key, entity_type, channel_key, channel_id, anchor_message_id,
-                state_json, timeline_json, updated_at
+                state_json, updated_at
          FROM entities WHERE entity_key = ?1`
       )
       .get(entityKey) as {
@@ -113,9 +177,8 @@ export class SqliteStore {
       entity_type: EntityType
       channel_key: ChannelKey
       channel_id: string
-      anchor_message_id: string
+      anchor_message_id: string | null
       state_json: string
-      timeline_json: string
       updated_at: number
     } | null
     if (!row) return null
@@ -124,9 +187,8 @@ export class SqliteStore {
       entityType: row.entity_type,
       channelKey: row.channel_key,
       channelId: row.channel_id,
-      anchorMessageId: row.anchor_message_id,
+      anchorMessageId: row.anchor_message_id || null,
       state: JSON.parse(row.state_json) as EntityState,
-      timeline: JSON.parse(row.timeline_json) as string[],
       updatedAt: row.updated_at
     }
   }
@@ -137,14 +199,13 @@ export class SqliteStore {
         `INSERT INTO entities (
            entity_key, entity_type, channel_key, channel_id, anchor_message_id,
            state_json, timeline_json, updated_at
-         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, '[]', ?7)
          ON CONFLICT(entity_key) DO UPDATE SET
            entity_type = excluded.entity_type,
            channel_key = excluded.channel_key,
            channel_id = excluded.channel_id,
            anchor_message_id = excluded.anchor_message_id,
            state_json = excluded.state_json,
-           timeline_json = excluded.timeline_json,
            updated_at = excluded.updated_at`
       )
       .run(
@@ -154,13 +215,96 @@ export class SqliteStore {
         record.channelId,
         record.anchorMessageId,
         JSON.stringify(record.state),
-        JSON.stringify(record.timeline),
         record.updatedAt
       )
   }
 
-  deleteEntity(entityKey: string): void {
-    this.db.query('DELETE FROM entities WHERE entity_key = ?1').run(entityKey)
+  upsertEntityState(record: {
+    entityKey: string
+    entityType: EntityType
+    channelKey: ChannelKey
+    channelId: string
+    state: EntityState
+    updatedAt: number
+  }): void {
+    this.db
+      .query(
+        `INSERT INTO entities (
+           entity_key, entity_type, channel_key, channel_id, anchor_message_id,
+           state_json, timeline_json, updated_at
+         ) VALUES (?1, ?2, ?3, ?4, NULL, ?5, '[]', ?6)
+         ON CONFLICT(entity_key) DO UPDATE SET
+           entity_type = excluded.entity_type,
+           channel_key = excluded.channel_key,
+           channel_id = excluded.channel_id,
+           anchor_message_id = CASE
+             WHEN entities.channel_id = excluded.channel_id THEN entities.anchor_message_id
+             ELSE NULL
+           END,
+           state_json = excluded.state_json,
+           updated_at = excluded.updated_at`
+      )
+      .run(
+        record.entityKey,
+        record.entityType,
+        record.channelKey,
+        record.channelId,
+        JSON.stringify(record.state),
+        record.updatedAt
+      )
+  }
+
+  updateEntityAnchor(
+    entityKey: string,
+    channelKey: ChannelKey,
+    channelId: string,
+    anchorMessageId: string,
+    updatedAt = Date.now()
+  ): boolean {
+    const res = this.db
+      .query(
+        `UPDATE entities
+         SET channel_key = ?2, channel_id = ?3, anchor_message_id = ?4, updated_at = ?5
+         WHERE entity_key = ?1`
+      )
+      .run(entityKey, channelKey, channelId, anchorMessageId, updatedAt)
+    return res.changes > 0
+  }
+
+  enqueueEntityUpsert(params: {
+    channelKey: ChannelKey
+    channelId: string
+    kind: string
+    entityKey: string
+    entityType: EntityType
+    card: CardModel
+    state: EntityState
+    forceNew?: boolean
+    nowMs?: number
+  }): number {
+    const nowMs = params.nowMs ?? Date.now()
+    return this.runTransaction(() => {
+      this.upsertEntityState({
+        entityKey: params.entityKey,
+        entityType: params.entityType,
+        channelKey: params.channelKey,
+        channelId: params.channelId,
+        state: params.state,
+        updatedAt: nowMs
+      })
+      return this.enqueueJob(
+        params.channelKey,
+        params.kind,
+        {
+          op: 'upsert_entity',
+          entityKey: params.entityKey,
+          entityType: params.entityType,
+          card: params.card,
+          ...(params.forceNew ? { forceNew: true } : {})
+        },
+        { entityKey: params.entityKey, nowMs }
+      )
+    })
   }
 
   enqueueJob(
@@ -180,16 +324,16 @@ export class SqliteStore {
     return Number(res.lastInsertRowid)
   }
 
-  peekNextReadyJob(channelKey: ChannelKey, nowMs = Date.now()): QueueJobRecord | null {
+  peekNextJob(channelKey: ChannelKey): QueueJobRecord | null {
     const row = this.db
       .query(
         `SELECT id, channel_key, kind, entity_key, payload_json, available_at, attempts, created_at
          FROM queue_jobs
-         WHERE channel_key = ?1 AND available_at <= ?2
+         WHERE channel_key = ?1
          ORDER BY id ASC
          LIMIT 1`
       )
-      .get(channelKey, nowMs) as {
+      .get(channelKey) as {
       id: number
       channel_key: ChannelKey
       kind: string
@@ -233,47 +377,18 @@ export class SqliteStore {
         `SELECT batch_key, channel_key, kind, items_json, flush_at, updated_at
          FROM pending_batches WHERE batch_key = ?1`
       )
-      .get(batchKey) as {
-      batch_key: string
-      channel_key: ChannelKey
-      kind: BatchKind
-      items_json: string
-      flush_at: number
-      updated_at: number
-    } | null
-    if (!row) return null
-    return {
-      batchKey: row.batch_key,
-      channelKey: row.channel_key,
-      kind: row.kind,
-      items: JSON.parse(row.items_json) as T[],
-      flushAt: row.flush_at,
-      updatedAt: row.updated_at
-    }
+      .get(batchKey) as BatchRow | null
+    return row ? mapBatchRow<T>(row) : null
   }
 
-  findBatchesByKind(kind: BatchKind): PendingBatchRecord[] {
+  findBatchesByKind<K extends BatchKind>(kind: K): TypedPendingBatch<K>[] {
     const rows = this.db
       .query(
         `SELECT batch_key, channel_key, kind, items_json, flush_at, updated_at
          FROM pending_batches WHERE kind = ?1 ORDER BY flush_at ASC`
       )
-      .all(kind) as Array<{
-      batch_key: string
-      channel_key: ChannelKey
-      kind: BatchKind
-      items_json: string
-      flush_at: number
-      updated_at: number
-    }>
-    return rows.map((row) => ({
-      batchKey: row.batch_key,
-      channelKey: row.channel_key,
-      kind: row.kind,
-      items: JSON.parse(row.items_json) as unknown[],
-      flushAt: row.flush_at,
-      updatedAt: row.updated_at
-    }))
+      .all(kind) as BatchRow[]
+    return rows.map((row) => mapBatchRow(row) as TypedPendingBatch<K>)
   }
 
   upsertBatch<T = unknown>(batch: PendingBatchRecord<T>): void {
@@ -300,34 +415,14 @@ export class SqliteStore {
     this.db.query('DELETE FROM pending_batches WHERE batch_key = ?1').run(batchKey)
   }
 
-  takeExpiredBatches(nowMs = Date.now()): PendingBatchRecord[] {
-    const tx = this.db.transaction((ts: number): PendingBatchRecord[] => {
-      const rows = this.db
-        .query(
-          `SELECT batch_key, channel_key, kind, items_json, flush_at, updated_at
-           FROM pending_batches WHERE flush_at <= ?1 ORDER BY flush_at ASC`
-        )
-        .all(ts) as Array<{
-        batch_key: string
-        channel_key: ChannelKey
-        kind: BatchKind
-        items_json: string
-        flush_at: number
-        updated_at: number
-      }>
-      if (rows.length > 0) {
-        this.db.query('DELETE FROM pending_batches WHERE flush_at <= ?1').run(ts)
-      }
-      return rows.map((row) => ({
-        batchKey: row.batch_key,
-        channelKey: row.channel_key,
-        kind: row.kind,
-        items: JSON.parse(row.items_json) as unknown[],
-        flushAt: row.flush_at,
-        updatedAt: row.updated_at
-      }))
-    })
-    return tx(nowMs)
+  peekExpiredBatches(nowMs = Date.now()): TypedPendingBatch[] {
+    const rows = this.db
+      .query(
+        `SELECT batch_key, channel_key, kind, items_json, flush_at, updated_at
+         FROM pending_batches WHERE flush_at <= ?1 ORDER BY flush_at ASC`
+      )
+      .all(nowMs) as BatchRow[]
+    return rows.map((row) => mapBatchRow(row) as TypedPendingBatch)
   }
 
   isStarOnCooldown(login: string, cooldownMs: number, nowMs = Date.now()): boolean {

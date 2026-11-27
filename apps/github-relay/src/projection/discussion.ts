@@ -8,7 +8,7 @@ import type {
 } from '../types.ts'
 import { appendTimeline, formatSoFar, isBotUser, isOutsider } from './helpers.ts'
 
-export function buildDiscussionCard(
+function buildDiscussionCard(
   state: DiscussionEntityState,
   repo: string,
   silent: boolean

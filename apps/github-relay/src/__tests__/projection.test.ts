@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 
+import { clampRetryMs } from '../discord/client.ts'
 import { DISCORD_COLORS } from '../discord/renderer.ts'
 import {
   buildPeriodReportCard,
@@ -111,6 +112,40 @@ describe('push projection', () => {
     expect(multi?.sections.some((s) => s.includes('Fixes (1)'))).toBe(true)
     expect(multi?.sections.some((s) => s.includes('Closed in this push:'))).toBe(true)
   })
+
+  it('captures breaking bang only before colon and not in commit subject', () => {
+    const nonBreaking = buildPushCard([
+      {
+        repo: 'docs-plus/docs.plus',
+        ref: 'refs/heads/main',
+        before: '1111111',
+        after: '2222222',
+        compareUrl: '',
+        pusher: 'HMarzban',
+        commits: [
+          { id: '2222222', message: 'fix(parser): handle !: token cleanly', author: 'HMarzban' }
+        ],
+        closedIssues: []
+      }
+    ])
+    expect(nonBreaking?.title).toBe('fix(parser): handle !: token cleanly')
+
+    const breaking = buildPushCard([
+      {
+        repo: 'docs-plus/docs.plus',
+        ref: 'refs/heads/main',
+        before: '1111111',
+        after: '3333333',
+        compareUrl: '',
+        pusher: 'HMarzban',
+        commits: [
+          { id: '3333333', message: 'feat(api)!: remove legacy endpoint', author: 'HMarzban' }
+        ],
+        closedIssues: []
+      }
+    ])
+    expect(breaking?.title).toBe('feat(api)!: remove legacy endpoint')
+  })
 })
 
 describe('release projection', () => {
@@ -176,6 +211,26 @@ describe('release projection', () => {
     expect(body).toContain('npm install @docs.plus/extension-hyperlink@4.4.0-rc.1')
     expect(body).not.toContain('@next')
     expect(res?.card.buttons?.some((b) => b.label.includes('View on npm'))).toBe(true)
+  })
+
+  it('sanitizes backticks and control chars from extension release version', () => {
+    const res = buildReleaseProjection(
+      {
+        action: 'published',
+        repository: { full_name: 'docs-plus/docs.plus' },
+        release: {
+          id: 903,
+          tag_name: '@docs.plus/extension-hyperlink@4.4.0\u0007```evil',
+          name: 'Release 4.4.0',
+          html_url: 'https://github.com/docs-plus/docs.plus/releases/tag/ext',
+          body: 'Notes.',
+          author: { login: 'HMarzban' }
+        }
+      },
+      TEST_CONFIG
+    )
+    const installBlock = res?.card.sections.find((s) => s.includes('npm install')) ?? ''
+    expect(installBlock).toBe('```bash\nnpm install @docs.plus/extension-hyperlink@4.4.0 evil\n```')
   })
 })
 
@@ -284,6 +339,77 @@ describe('PR lifecycle projection', () => {
     expect(merged.anchorCard.accentColor).toBe(DISCORD_COLORS.GREEN)
     expect(merged.replyCard?.stateBadge).toBe('Merged')
     expect(merged.mergedCommitSha).toBe('deadbeef')
+  })
+
+  it('preserves changes_requested precedence on approval and uses pr.base.ref on merge', () => {
+    const basePr = {
+      number: 745,
+      title: 'Add sync lock',
+      html_url: 'https://github.com/docs-plus/docs.plus/pull/745',
+      state: 'open' as const,
+      draft: false,
+      base: { ref: 'release/2.4' },
+      user: { login: 'alice', type: 'User' },
+      author_association: 'MEMBER'
+    }
+
+    const opened = projectPullRequestEvent(
+      { action: 'opened', pull_request: basePr, repository: { full_name: 'docs-plus/docs.plus' } },
+      null,
+      TEST_CONFIG
+    )!
+
+    const changesReq = projectPullRequestReviewEvent(
+      {
+        action: 'submitted',
+        review: {
+          state: 'changes_requested',
+          body: 'Fix race.',
+          user: { login: 'bob', type: 'User' }
+        },
+        pull_request: basePr,
+        repository: { full_name: 'docs-plus/docs.plus' }
+      },
+      opened.state,
+      TEST_CONFIG
+    )!
+
+    const secondApproval = projectPullRequestReviewEvent(
+      {
+        action: 'submitted',
+        review: { state: 'approved', body: 'LGTM', user: { login: 'carol', type: 'User' } },
+        pull_request: basePr,
+        repository: { full_name: 'docs-plus/docs.plus' }
+      },
+      changesReq.state,
+      TEST_CONFIG
+    )!
+    expect(secondApproval.state.waitingOn).toBe('@alice (author fix)')
+    expect(secondApproval.anchorCard.stateBadge).toBe('Changes Requested')
+
+    const merged = projectPullRequestEvent(
+      {
+        action: 'closed',
+        pull_request: { ...basePr, state: 'closed', merged: true },
+        sender: { login: 'bob' },
+        repository: { full_name: 'docs-plus/docs.plus' }
+      },
+      secondApproval.state,
+      TEST_CONFIG
+    )!
+    expect(merged.replyCard?.title).toBe('PR #745 merged into release/2.4 by @bob')
+  })
+})
+
+describe('Discord retry clamping', () => {
+  it('clamps retry_after above 30s to 30s instead of falling back to 5s', () => {
+    const ms = clampRetryMs(45)
+    expect(ms).toBeGreaterThanOrEqual(30_050)
+    expect(ms).toBeLessThanOrEqual(30_200)
+
+    const invalid = clampRetryMs(Number.NaN)
+    expect(invalid).toBeGreaterThanOrEqual(5_050)
+    expect(invalid).toBeLessThanOrEqual(5_200)
   })
 })
 

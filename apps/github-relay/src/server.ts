@@ -6,7 +6,7 @@ import { verifyGitHubSignature } from './security.ts'
 import type { SqliteStore } from './store/sqliteStore.ts'
 import type { RelayConfig } from './types.ts'
 
-const MAX_BODY_BYTES = 5 * 1024 * 1024
+export const MAX_BODY_BYTES = 5 * 1024 * 1024
 
 function safeTokenEqual(provided: string, expected: string): boolean {
   const a = Buffer.from(provided, 'utf8')
@@ -63,13 +63,21 @@ export function createRelayHandler(deps: {
       } catch {
         return Response.json({ ok: false, error: 'Invalid JSON' }, { status: 400 })
       }
-
-      const deliveryId = req.headers.get('x-github-delivery') || ''
-      if (deliveryId && !store.recordDeliveryIfNew(deliveryId, eventName)) {
-        return Response.json({ ok: true, duplicate: true }, { status: 202 })
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        return Response.json({ ok: false, error: 'Invalid JSON payload' }, { status: 400 })
       }
 
-      router.route(eventName, payload)
+      const deliveryId = req.headers.get('x-github-delivery') || ''
+      const duplicate = store.runTransaction(() => {
+        if (deliveryId && !store.recordDeliveryIfNew(deliveryId, eventName)) {
+          return true
+        }
+        router.route(eventName, payload)
+        return false
+      })
+      if (duplicate) {
+        return Response.json({ ok: true, duplicate: true }, { status: 202 })
+      }
       return Response.json({ ok: true, queued: true }, { status: 202 })
     }
 
@@ -83,12 +91,16 @@ export function createRelayHandler(deps: {
         return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
       }
 
-      let body: { kind?: string; force?: boolean } = {}
+      let rawBody: unknown
       try {
-        body = (await req.json()) as { kind?: string; force?: boolean }
+        rawBody = await req.json()
       } catch {
         return Response.json({ ok: false, error: 'Invalid JSON' }, { status: 400 })
       }
+      if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+        return Response.json({ ok: false, error: 'Invalid JSON body' }, { status: 400 })
+      }
+      const body = rawBody as { kind?: unknown; force?: unknown }
 
       if (body.kind !== 'daily' && body.kind !== 'biweekly' && body.kind !== 'monthly') {
         return Response.json(

@@ -3,13 +3,28 @@ import { IS_COMPONENTS_V2_FLAG } from './renderer.ts'
 
 const DISCORD_API_BASE = 'https://discord.com/api/v10'
 const MAX_ATTEMPTS = 4
+const FETCH_TIMEOUT_MS = 15_000
+
+export class DiscordApiError extends Error {
+  readonly status: number
+  readonly body: string
+  readonly retryable: boolean
+
+  constructor(method: string, status: number, body: string) {
+    super(`Discord ${method} failed (${status}): ${body}`)
+    this.name = 'DiscordApiError'
+    this.status = status
+    this.body = body
+    this.retryable = status === 429 || status >= 500
+  }
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-function clampRetryMs(seconds: number): number {
-  const safeSec = Number.isFinite(seconds) && seconds > 0 && seconds <= 30 ? seconds : 5
+export function clampRetryMs(seconds: number): number {
+  const safeSec = Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 30) : 5
   const jitter = Math.floor(Math.random() * 150) + 50
   return Math.round(safeSec * 1000) + jitter
 }
@@ -28,7 +43,7 @@ export class DiscordHttpClient implements DiscordTransport {
       payload
     )
     if (!res.ok) {
-      throw new Error(`Discord POST failed (${res.status}): ${res.body}`)
+      throw new DiscordApiError('POST', res.status, res.body)
     }
     const parsed = JSON.parse(res.body) as { id?: string }
     if (!parsed.id) {
@@ -57,7 +72,7 @@ export class DiscordHttpClient implements DiscordTransport {
       return { notFound: true }
     }
     if (!res.ok) {
-      throw new Error(`Discord PATCH failed (${res.status}): ${res.body}`)
+      throw new DiscordApiError('PATCH', res.status, res.body)
     }
     const parsed = JSON.parse(res.body) as { id?: string }
     return { id: parsed.id || messageId }
@@ -80,7 +95,8 @@ export class DiscordHttpClient implements DiscordTransport {
             'Content-Type': 'application/json',
             'User-Agent': 'docsplus-github-relay (https://docs.plus, 1.0)'
           },
-          body: jsonBody
+          body: jsonBody,
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
         })
       } catch (err) {
         if (attempt === MAX_ATTEMPTS) throw err

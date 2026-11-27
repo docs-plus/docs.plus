@@ -91,4 +91,22 @@ describe('HTML stripping and markdown-safe truncation', () => {
     const comment = `<!-- hidden -->\n> Quoted parent line\n\nUpdated Safari scroll guard.\n\n\`\`\`ts\nx()\n\`\`\``
     expect(extractCommentExcerpt(comment, 100)).toBe('Updated Safari scroll guard. [code]')
   })
+
+  it('ignores banner tags in code fences and HTML comments and strips bidi/C0 inside fences', () => {
+    const raw = [
+      '<!-- <img src="https://evil.example/comment-banner.png"> -->',
+      '```html',
+      '<img src="https://evil.example/code-banner.png">\u0007\u202e',
+      '```',
+      '',
+      '<img src="https://docs.plus/real-banner.png">',
+      'Release notes body.'
+    ].join('\n')
+
+    const { text, bannerUrl } = stripHtmlAndExtractBanner(raw)
+    expect(bannerUrl).toBe('https://docs.plus/real-banner.png')
+    expect(text).toContain('<img src="https://evil.example/code-banner.png">')
+    expect(text).not.toContain('\u0007')
+    expect(text).not.toContain('\u202e')
+  })
 })

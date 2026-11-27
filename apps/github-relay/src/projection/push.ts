@@ -11,7 +11,7 @@ interface ParsedCommit {
   group: 'Features' | 'Fixes' | 'Performance' | 'Docs' | 'CI & Tooling' | 'Other'
 }
 
-const CC_RE = /^([a-zA-Z]+)(?:\(([^)]+)\))?!?:(?:\s+(.*))?$/
+const CC_RE = /^([a-zA-Z]+)(?:\(([^)]+)\))?(!)?:(?:\s+(.*))?$/
 
 function isBuildTriggerCommit(message: string): boolean {
   const firstLine = (message || '').split('\n')[0].trim()
@@ -50,8 +50,8 @@ function parseCommit(
   if (match) {
     const rawType = match[1]
     const scope = match[2] ? `(${match[2]})` : ''
-    const bang = firstLine.includes('!:') ? '!' : ''
-    const rest = truncateTitle(match[3] || firstLine, 120)
+    const bang = match[3] ? '!' : ''
+    const rest = truncateTitle(match[4] || firstLine, 120)
     return {
       sha7,
       url,

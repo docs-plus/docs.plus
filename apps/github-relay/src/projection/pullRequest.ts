@@ -124,7 +124,7 @@ export function buildPrCard(state: PrEntityState, repo: string, silent: boolean)
   }
 }
 
-export function buildTriagePrCard(
+function buildTriagePrCard(
   state: PrEntityState,
   repo: string,
   badge: string,
@@ -165,6 +165,31 @@ export function buildTriagePrCard(
   }
 }
 
+function computePrWaitingOn(
+  pr: {
+    merged: boolean
+    closed: boolean
+    author: string
+    reviewers: PrEntityState['reviewers']
+  },
+  fallback = 'Maintainer review'
+): string {
+  if (pr.merged) return 'Merged'
+  if (pr.closed) return 'Closed'
+  const entries = Object.entries(pr.reviewers)
+  if (entries.some(([, status]) => status === 'changes_requested')) {
+    return `@${pr.author} (author fix)`
+  }
+  const pending = entries
+    .filter(([, status]) => status === 'pending')
+    .map(([login]) => `@${cleanText(login)}`)
+  if (pending.length > 0) return pending.join(', ')
+  if (entries.some(([, status]) => status === 'approved')) {
+    return 'Ready to merge'
+  }
+  return fallback
+}
+
 function buildStateFromPr(
   pr: GitHubPullRequest,
   existing: PrEntityState | null,
@@ -185,16 +210,12 @@ function buildStateFromPr(
   }
 
   const timeline = appendTimeline(existing?.timeline ?? ['Opened'], actionStep)
-  const pendingReviewers = Object.entries(reviewers)
-    .filter(([, s]) => s === 'pending')
-    .map(([login]) => `@${cleanText(login)}`)
-  const changesReq = Object.values(reviewers).includes('changes_requested')
-
-  let waitingOn = existing?.waitingOn || 'Maintainer review'
-  if (pr.merged) waitingOn = 'Merged'
-  else if (pr.state === 'closed') waitingOn = 'Closed'
-  else if (changesReq) waitingOn = `@${author} (author fix)`
-  else if (pendingReviewers.length > 0) waitingOn = pendingReviewers.join(', ')
+  const merged = Boolean(pr.merged)
+  const closed = pr.state === 'closed'
+  const waitingOn = computePrWaitingOn(
+    { merged, closed, author, reviewers },
+    existing?.waitingOn || 'Maintainer review'
+  )
 
   return {
     kind: 'pr',
@@ -204,8 +225,8 @@ function buildStateFromPr(
     author,
     outsider,
     draft: Boolean(pr.draft),
-    merged: Boolean(pr.merged),
-    closed: pr.state === 'closed',
+    merged,
+    closed,
     additions: pr.additions ?? existing?.additions ?? 0,
     deletions: pr.deletions ?? existing?.deletions ?? 0,
     changedFiles: pr.changed_files ?? existing?.changedFiles ?? 0,
@@ -241,25 +262,32 @@ export function projectPullRequestEvent(
   if (action === 'opened' && pr.draft) return null
   if (action === 'closed' && !pr.merged && !existing) return null
 
-  const supported = [
-    'opened',
-    'ready_for_review',
-    'converted_to_draft',
-    'review_requested',
-    'reopened',
-    'synchronize',
-    'closed'
-  ]
-  if (!supported.includes(action)) return null
-
-  let stepLabel = 'Updated'
-  if (action === 'opened') stepLabel = 'Opened'
-  else if (action === 'ready_for_review') stepLabel = 'Ready for review'
-  else if (action === 'converted_to_draft') stepLabel = 'Draft'
-  else if (action === 'review_requested') stepLabel = 'Review requested'
-  else if (action === 'reopened') stepLabel = 'Reopened'
-  else if (action === 'synchronize') stepLabel = 'New commits pushed'
-  else if (action === 'closed') stepLabel = pr.merged ? 'Merged' : 'Closed unmerged'
+  let stepLabel: string
+  switch (action) {
+    case 'opened':
+      stepLabel = 'Opened'
+      break
+    case 'ready_for_review':
+      stepLabel = 'Ready for review'
+      break
+    case 'converted_to_draft':
+      stepLabel = 'Draft'
+      break
+    case 'review_requested':
+      stepLabel = 'Review requested'
+      break
+    case 'reopened':
+      stepLabel = 'Reopened'
+      break
+    case 'synchronize':
+      stepLabel = 'New commits pushed'
+      break
+    case 'closed':
+      stepLabel = pr.merged ? 'Merged' : 'Closed unmerged'
+      break
+    default:
+      return null
+  }
 
   const state = buildStateFromPr(pr, existing, stepLabel)
   if (action === 'synchronize') {
@@ -269,10 +297,7 @@ export function projectPullRequestEvent(
         state.reviewers[login] = 'pending'
       }
     }
-    const pending = Object.entries(state.reviewers)
-      .filter(([, s]) => s === 'pending')
-      .map(([login]) => `@${cleanText(login)}`)
-    if (pending.length > 0) state.waitingOn = pending.join(', ')
+    state.waitingOn = computePrWaitingOn(state)
   }
 
   const isLoudAnchor =
@@ -284,6 +309,7 @@ export function projectPullRequestEvent(
 
   let replyCard: CardModel | undefined
   if (action === 'closed' && state.merged && existing) {
+    const baseBranch = cleanText(pr.base?.ref || 'main') || 'main'
     const linked =
       state.linkedIssues.length > 0
         ? `Closes ${state.linkedIssues.map((n) => `#${n}`).join(', ')} · `
@@ -291,7 +317,7 @@ export function projectPullRequestEvent(
     replyCard = {
       accentColor: DISCORD_COLORS.GREEN,
       stateBadge: 'Merged',
-      title: `PR #${state.number} merged into main by @${actor}`,
+      title: `PR #${state.number} merged into ${baseBranch} by @${actor}`,
       primaryButton: { label: 'View Merge ↗', url: state.url },
       sections: [
         `${linked}Duplicate main-push summary suppressed`,
@@ -386,8 +412,12 @@ export function projectPullRequestReviewEvent(
   const outsider = isOutsider(pr.author_association)
   const excerpt = extractCommentExcerpt(review.body, 220)
 
-  if (reviewState !== 'approved' && reviewState !== 'changes_requested') {
-    if (!excerpt || !outsider) return null
+  if (
+    reviewState !== 'approved' &&
+    reviewState !== 'changes_requested' &&
+    (!excerpt || !outsider)
+  ) {
+    return null
   }
 
   const repo = event.repository.full_name
@@ -402,11 +432,7 @@ export function projectPullRequestReviewEvent(
   if (reviewState === 'approved' || reviewState === 'changes_requested') {
     state.reviewers[reviewer] = reviewState
   }
-  if (reviewState === 'changes_requested') {
-    state.waitingOn = `@${state.author} (author fix)`
-  } else if (reviewState === 'approved') {
-    state.waitingOn = `@${reviewer} / merge`
-  }
+  state.waitingOn = computePrWaitingOn(state, state.waitingOn)
 
   const anchorCard = buildPrCard(state, repo, true)
 
@@ -433,10 +459,10 @@ export function projectPullRequestReviewEvent(
   if (excerpt) sections.push(`> "${excerpt}"`)
   sections.push(`**So far:** ${formatSoFar(state.timeline)}`)
 
-  const { mentionIds } =
+  const mentionIds =
     reviewState === 'changes_requested'
-      ? resolveUserMentions([state.author], config.discordUsers)
-      : { mentionIds: [] as string[] }
+      ? resolveUserMentions([state.author], config.discordUsers).mentionIds
+      : []
 
   const replyCard: CardModel = {
     accentColor: replyAccent,

@@ -23,7 +23,7 @@ import {
 const CLAIM_COMMENT_RE =
   /\b(claim|take this|work on|assign me|open a pr|i can reproduce|i'?ll fix|handle this)\b/i
 
-export function stripIssueTemplatePrefix(title: string, labels: string[]): string {
+function stripIssueTemplatePrefix(title: string, labels: string[]): string {
   const lower = labels.map((l) => l.toLowerCase())
   const cleaned = cleanText(title)
   if (lower.includes('bug') && cleaned.toLowerCase().startsWith('[bug]:')) {
@@ -125,7 +125,7 @@ export function buildIssueCard(
   }
 }
 
-export function buildIssueStateFromPayload(
+function buildIssueStateFromPayload(
   issue: GitHubIssue,
   existing: IssueEntityState | null,
   step?: string
@@ -202,7 +202,6 @@ export function projectIssueMutationEvent(
   entityKey: string
   state: IssueEntityState
   anchorCard: CardModel
-  replyCard?: CardModel
   triageCard?: CardModel
 } | null {
   const issue = event.issue
@@ -219,11 +218,13 @@ export function projectIssueMutationEvent(
     stepLabel = `Claimed by @${cleanText(event.assignee.login)}`
   } else if (action === 'unassigned') stepLabel = 'Unassigned'
   else if (action === 'labeled' && event.label) {
-    const added = event.label.name.toLowerCase()
-    if (added === 'good first issue' || added === 'help wanted') stepLabel = 'Up for grabs'
-    else if (hasCriticalLabel([added])) stepLabel = `Labeled ${event.label.name}`
-    else if (!existing) return null
-    else stepLabel = `Labeled ${event.label.name}`
+    if (hasClaimLabel([event.label.name])) {
+      stepLabel = 'Up for grabs'
+    } else if (hasCriticalLabel([event.label.name]) || existing) {
+      stepLabel = `Labeled ${event.label.name}`
+    } else {
+      return null
+    }
   } else if (action === 'unlabeled') {
     if (!existing) return null
     stepLabel = 'Labels updated'

@@ -20,7 +20,7 @@ interface ParsedReleaseTag {
   extensionDir?: string
 }
 
-export function parseReleaseTag(tagName: string, repo: string): ParsedReleaseTag {
+function parseReleaseTag(tagName: string, repo: string): ParsedReleaseTag {
   const pkgMatch = /^(@?[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)?)@(.+)$/.exec(tagName)
   if (pkgMatch) {
     const pkg = pkgMatch[1]
@@ -69,7 +69,8 @@ export function buildReleaseProjection(
 
   if (parsed.kind === 'extension') {
     badge = prerelease ? 'Extension Pre-release' : 'Extension Release'
-    sections.push(`\`\`\`bash\nnpm install ${parsed.pkg}@${parsed.version}\n\`\`\``)
+    const safeVersion = cleanText(parsed.version).replace(/`/g, '')
+    sections.push(`\`\`\`bash\nnpm install ${parsed.pkg}@${safeVersion}\n\`\`\``)
     buttons.push({ label: 'View on npm ↗', url: `https://www.npmjs.com/package/${parsed.pkg}` })
     if (parsed.extensionDir) {
       buttons.push({

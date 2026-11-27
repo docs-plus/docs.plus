@@ -1,4 +1,4 @@
-import { cleanText, isSafeHttpsUrl, truncateMarkdownSafe } from '../security.ts'
+import { cleanText, isDiscordSnowflake, isSafeHttpsUrl, truncateMarkdownSafe } from '../security.ts'
 import type {
   CardButton,
   CardModel,
@@ -25,7 +25,6 @@ export const SUPPRESS_NOTIFICATIONS_FLAG = 1 << 12 // 4096
 
 const MAX_TEXT_TOTAL = 3900
 const MAX_COMPONENTS_TOTAL = 40
-const SNOWFLAKE_RE = /^\d{17,22}$/
 
 function toLinkButton(btn: CardButton): DiscordLinkButtonComponent | null {
   if (!isSafeHttpsUrl(btn.url)) return null
@@ -47,6 +46,8 @@ export function countComponents(node: DiscordContainerComponent): number {
       count += child.components.length + 1
     } else if (child.type === 1) {
       count += child.components.length
+    } else if (child.type === 12) {
+      count += child.items.length
     }
   }
   return count
@@ -66,14 +67,17 @@ export function totalTextLength(node: DiscordContainerComponent): number {
   return total
 }
 
-function enforceTextBudget(container: DiscordContainerComponent): void {
+function enforceTextBudget(
+  container: DiscordContainerComponent,
+  protectedNodes: ReadonlySet<DiscordTextDisplayComponent>
+): void {
   let excess = totalTextLength(container) - MAX_TEXT_TOTAL
   if (excess <= 0) return
 
   // Shrink body TextDisplay nodes first from longest to shortest so headers and footers survive.
   const bodyDisplays: DiscordTextDisplayComponent[] = []
   for (const child of container.components) {
-    if (child.type === 10 && !child.content.startsWith('-# ')) {
+    if (child.type === 10 && !protectedNodes.has(child)) {
       bodyDisplays.push(child)
     }
   }
@@ -118,13 +122,16 @@ export function renderCard(card: CardModel): DiscordV2Payload {
     })
   }
 
+  const bodySections: DiscordTextDisplayComponent[] = []
   for (const section of card.sections) {
     const trimmed = section.trim()
     if (!trimmed) continue
-    children.push({
+    const node: DiscordTextDisplayComponent = {
       type: 10,
       content: truncateMarkdownSafe(trimmed, 3400).text
-    })
+    }
+    bodySections.push(node)
+    children.push(node)
   }
 
   const linkButtons: DiscordLinkButtonComponent[] = []
@@ -142,13 +149,15 @@ export function renderCard(card: CardModel): DiscordV2Payload {
     children.push(row)
   }
 
+  let footerText: DiscordTextDisplayComponent | null = null
   const cleanFooter = cleanText(card.footer)
   if (cleanFooter) {
     children.push({ type: 14, divider: true, spacing: 1 })
-    children.push({
+    footerText = {
       type: 10,
       content: truncateMarkdownSafe(`-# ${cleanFooter}`, 400).text
-    })
+    }
+    children.push(footerText)
   }
 
   const container: DiscordContainerComponent = {
@@ -157,15 +166,19 @@ export function renderCard(card: CardModel): DiscordV2Payload {
     components: children
   }
 
-  // Drop extra middle body sections if a card ever nears the 40-component limit.
-  while (countComponents(container) > MAX_COMPONENTS_TOTAL && container.components.length > 2) {
-    container.components.splice(1, 1)
+  // Trim overflow from the tail of body sections so header, banner, buttons, and footer survive.
+  while (countComponents(container) > MAX_COMPONENTS_TOTAL && bodySections.length > 0) {
+    const tail = bodySections.pop()!
+    const idx = container.components.indexOf(tail)
+    if (idx !== -1) container.components.splice(idx, 1)
   }
 
-  enforceTextBudget(container)
+  const protectedNodes = new Set<DiscordTextDisplayComponent>([headerText])
+  if (footerText) protectedNodes.add(footerText)
+  enforceTextBudget(container, protectedNodes)
 
   const validMentions = Array.from(
-    new Set((card.mentionUserIds ?? []).filter((id) => SNOWFLAKE_RE.test(id)))
+    new Set((card.mentionUserIds ?? []).filter((id) => isDiscordSnowflake(id)))
   )
 
   const payload: DiscordV2Payload = {
@@ -179,7 +192,7 @@ export function renderCard(card: CardModel): DiscordV2Payload {
     }
   }
 
-  if (card.replyToMessageId && SNOWFLAKE_RE.test(card.replyToMessageId)) {
+  if (card.replyToMessageId && isDiscordSnowflake(card.replyToMessageId)) {
     payload.message_reference = {
       message_id: card.replyToMessageId,
       fail_if_not_exists: false

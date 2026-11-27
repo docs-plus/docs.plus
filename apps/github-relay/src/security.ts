@@ -1,5 +1,7 @@
 import { createHmac, timingSafeEqual } from 'crypto'
 
+const SNOWFLAKE_RE = /^\d{17,22}$/
+
 const CTRL_OR_BIDI_INLINE = (cp: number): boolean =>
   cp < 32 || cp === 127 || (cp >= 0x202a && cp <= 0x202e) || (cp >= 0x2066 && cp <= 0x2069)
 
@@ -8,6 +10,51 @@ const CTRL_OR_BIDI_MULTILINE = (cp: number): boolean =>
   cp === 127 ||
   (cp >= 0x202a && cp <= 0x202e) ||
   (cp >= 0x2066 && cp <= 0x2069)
+
+function stripControlChars(input: string, predicate: (cp: number) => boolean): string {
+  let out = ''
+  for (const ch of input) {
+    const cp = ch.codePointAt(0) ?? 32
+    out += predicate(cp) ? ' ' : ch
+  }
+  return out
+}
+
+function stripHtmlComments(input: string): string {
+  let out = input
+  let prev: string
+  do {
+    prev = out
+    out = out.replace(/<!--[\s\S]*?-->/g, '')
+  } while (out !== prev)
+  return out
+}
+
+function stripHtmlCommentsAndTags(
+  input: string,
+  opts?: { preserveBreaks?: boolean; stripPictureBlocks?: boolean }
+): string {
+  let out = stripHtmlComments(input)
+  let prev: string
+  if (opts?.stripPictureBlocks) {
+    do {
+      prev = out
+      out = out.replace(/<picture[\s\S]*?<\/picture>/gi, '')
+    } while (out !== prev)
+  }
+  if (opts?.preserveBreaks) {
+    out = out.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n\n')
+  }
+  do {
+    prev = out
+    out = out.replace(/<[^>]+>/g, '')
+  } while (out !== prev)
+  return out
+}
+
+export function isDiscordSnowflake(value: string | undefined | null): value is string {
+  return typeof value === 'string' && SNOWFLAKE_RE.test(value)
+}
 
 export function verifyGitHubSignature(
   rawBody: Uint8Array,
@@ -26,21 +73,10 @@ export function verifyGitHubSignature(
 
 /** Strips control chars and bidi overrides while keeping Persian ZWNJ and emoji ZWJ intact. */
 export function cleanText(input: string): string {
-  let out = ''
-  for (const ch of input) {
-    const cp = ch.codePointAt(0) ?? 32
-    out += CTRL_OR_BIDI_INLINE(cp) ? ' ' : ch
-  }
-  return out.replace(/\s+/g, ' ').trim().replace(/\]\(/g, '] (')
-}
-
-export function cleanMultilineText(input: string): string {
-  let out = ''
-  for (const ch of input.replace(/\r\n/g, '\n')) {
-    const cp = ch.codePointAt(0) ?? 32
-    out += CTRL_OR_BIDI_MULTILINE(cp) ? ' ' : ch
-  }
-  return out.replace(/\]\(/g, '] (')
+  return stripControlChars(input, CTRL_OR_BIDI_INLINE)
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\]\(/g, '] (')
 }
 
 export function sanitizeChip(label: string): string {
@@ -59,55 +95,48 @@ export function isSafeHttpsUrl(url: string | undefined | null): url is string {
   }
 }
 
-export function stripHtmlAndExtractBanner(markdown: string): {
-  text: string
-  bannerUrl: string | null
-} {
-  let bannerUrl: string | null = null
-
-  const pictureMatch = /<picture[\s\S]*?<\/picture>/i.exec(markdown)
-  if (pictureMatch) {
+function extractBannerUrl(proseSegments: string[]): string | null {
+  for (const prose of proseSegments) {
+    const pictureMatch = /<picture[\s\S]*?<\/picture>/i.exec(prose)
+    if (!pictureMatch) continue
     const block = pictureMatch[0]
     const darkSrc =
       /<source[^>]*prefers-color-scheme:\s*dark[^>]*srcset=["']([^"']+)["']/i.exec(block)?.[1] ??
       /<source[^>]*srcset=["']([^"']+)["']/i.exec(block)?.[1] ??
       /<img[^>]*src=["']([^"']+)["']/i.exec(block)?.[1]
-    if (isSafeHttpsUrl(darkSrc)) bannerUrl = darkSrc.trim()
+    if (isSafeHttpsUrl(darkSrc)) return darkSrc.trim()
   }
 
-  if (!bannerUrl) {
-    const imgSrc = /<img[^>]*src=["']([^"']+)["']/i.exec(markdown)?.[1]
-    if (isSafeHttpsUrl(imgSrc)) bannerUrl = imgSrc.trim()
+  for (const prose of proseSegments) {
+    const imgSrc = /<img[^>]*src=["']([^"']+)["']/i.exec(prose)?.[1]
+    if (isSafeHttpsUrl(imgSrc)) return imgSrc.trim()
   }
 
-  // Protect fenced code blocks before stripping HTML tags from prose.
+  return null
+}
+
+export function stripHtmlAndExtractBanner(markdown: string): {
+  text: string
+  bannerUrl: string | null
+} {
+  // Protect fenced code blocks before inspecting HTML banners or stripping tags from prose.
   const segments = markdown.replace(/\r\n/g, '\n').split(/(```[\s\S]*?```)/g)
-  const cleanedSegments = segments.map((seg, idx) => {
-    if (idx % 2 === 1) return seg
-    let prose = seg
-    let prev: string
-    do {
-      prev = prose
-      prose = prose.replace(/<!--[\s\S]*?-->/g, '')
-    } while (prose !== prev)
-    do {
-      prev = prose
-      prose = prose.replace(/<picture[\s\S]*?<\/picture>/gi, '')
-    } while (prose !== prev)
-    prose = prose.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n\n')
-    do {
-      prev = prose
-      prose = prose.replace(/<[^>]+>/g, '')
-    } while (prose !== prev)
+  const uncommentedProse: string[] = []
+  for (let idx = 0; idx < segments.length; idx += 2) {
+    uncommentedProse.push(stripHtmlComments(segments[idx]))
+  }
 
-    // Strip control chars and bidi overrides without touching valid markdown links.
-    let safe = ''
-    for (const ch of prose) {
-      const cp = ch.codePointAt(0) ?? 32
-      safe += CTRL_OR_BIDI_MULTILINE(cp) ? ' ' : ch
+  const bannerUrl = extractBannerUrl(uncommentedProse)
+
+  const cleanedSegments = segments.map((seg, idx) => {
+    if (idx % 2 === 1) {
+      return stripControlChars(seg, CTRL_OR_BIDI_MULTILINE)
     }
-    prose = safe.replace(/\n{3,}/g, '\n\n')
-    return prose
+    const stripped = stripHtmlCommentsAndTags(seg, {
+      preserveBreaks: true,
+      stripPictureBlocks: true
+    })
+    return stripControlChars(stripped, CTRL_OR_BIDI_MULTILINE).replace(/\n{3,}/g, '\n\n')
   })
 
   return {
@@ -170,21 +199,12 @@ export function truncateTitle(input: string, maxLen = 100): string {
 
 export function extractCommentExcerpt(body: string | null | undefined, maxLen = 220): string {
   if (!body) return ''
-  let withoutComments = body.replace(/\r\n/g, '\n')
-  let prev: string
-  do {
-    prev = withoutComments
-    withoutComments = withoutComments.replace(/<!--[\s\S]*?-->/g, '')
-  } while (withoutComments !== prev)
-  withoutComments = withoutComments
+  const withoutCode = stripHtmlComments(body.replace(/\r\n/g, '\n'))
     .replace(/```[\s\S]*?```/g, '[code]')
     .replace(/!\[[^\]]*\]\([^)]+\)/g, '')
-  do {
-    prev = withoutComments
-    withoutComments = withoutComments.replace(/<[^>]+>/g, '')
-  } while (withoutComments !== prev)
+  const withoutHtml = stripHtmlCommentsAndTags(withoutCode)
 
-  const lines = withoutComments
+  const lines = withoutHtml
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.length > 0 && !line.startsWith('>'))

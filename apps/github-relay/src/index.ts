@@ -3,7 +3,7 @@ import { DiscordHttpClient } from './discord/client.ts'
 import { GitHubHttpClient } from './github/client.ts'
 import { isBiweeklyReportDue, isMonthlyReportDue } from './projection/digest.ts'
 import { ChannelQueue } from './queue/channelQueue.ts'
-import { createRelayHandler } from './server.ts'
+import { createRelayHandler, MAX_BODY_BYTES } from './server.ts'
 import { SqliteStore } from './store/sqliteStore.ts'
 
 async function main(): Promise<void> {
@@ -19,6 +19,7 @@ async function main(): Promise<void> {
   const server = Bun.serve({
     port: config.port,
     hostname: '0.0.0.0',
+    maxRequestBodySize: MAX_BODY_BYTES,
     fetch: handler
   })
 
@@ -47,8 +48,12 @@ async function main(): Promise<void> {
       }
     }
 
-    if (utcHour === 3 && now.getUTCMinutes() === 0) {
-      store.pruneOldRecords()
+    if (utcHour === 3) {
+      const pruneKey = `prune:${now.toISOString().slice(0, 10)}`
+      if (!store.hasRunKey(pruneKey)) {
+        store.pruneOldRecords(now.getTime())
+        store.markRunKey(pruneKey, now.getTime())
+      }
     }
   }, 60_000)
 

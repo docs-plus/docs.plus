@@ -1,9 +1,8 @@
 import { existsSync, readFileSync } from 'fs'
 import { resolve } from 'path'
 
+import { isDiscordSnowflake } from './security.ts'
 import type { ChannelKey, RelayConfig } from './types.ts'
-
-const SNOWFLAKE_RE = /^\d{17,22}$/
 
 function requireEnv(env: NodeJS.ProcessEnv, key: string): string {
   const val = env[key]?.trim()
@@ -13,7 +12,7 @@ function requireEnv(env: NodeJS.ProcessEnv, key: string): string {
 
 function requireSnowflake(env: NodeJS.ProcessEnv, key: string): string {
   const val = requireEnv(env, key)
-  if (!SNOWFLAKE_RE.test(val)) {
+  if (!isDiscordSnowflake(val)) {
     throw new Error(`${key} must be a 17-22 digit Discord numeric ID`)
   }
   return val
@@ -31,7 +30,7 @@ function parseIntBounded(
   return n
 }
 
-export function loadDiscordUsersMap(filePath: string): Record<string, string> {
+function loadDiscordUsersMap(filePath: string): Record<string, string> {
   if (!existsSync(filePath)) return {}
   try {
     const raw = JSON.parse(readFileSync(filePath, 'utf8')) as {
@@ -41,7 +40,7 @@ export function loadDiscordUsersMap(filePath: string): Record<string, string> {
     const out: Record<string, string> = {}
     for (const [login, id] of Object.entries(entries)) {
       if (login.startsWith('_')) continue
-      if (typeof id === 'string' && SNOWFLAKE_RE.test(id.trim())) {
+      if (typeof id === 'string' && isDiscordSnowflake(id.trim())) {
         out[login] = id.trim()
       } else {
         console.warn(`[config] Ignored invalid Discord ID for GitHub user "${login}"`)
@@ -57,7 +56,7 @@ export function loadDiscordUsersMap(filePath: string): Record<string, string> {
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): RelayConfig {
   const githubChannelId = requireSnowflake(env, 'DISCORD_GITHUB_CHANNEL_ID')
   const rawTriageId = env.DISCORD_TRIAGE_CHANNEL_ID?.trim()
-  if (rawTriageId && !SNOWFLAKE_RE.test(rawTriageId)) {
+  if (rawTriageId && !isDiscordSnowflake(rawTriageId)) {
     throw new Error('DISCORD_TRIAGE_CHANNEL_ID must be a 17-22 digit Discord numeric ID')
   }
   const triageChannelId = rawTriageId || githubChannelId

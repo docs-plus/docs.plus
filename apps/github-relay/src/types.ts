@@ -2,8 +2,6 @@ export type ChannelKey = 'github' | 'triage' | 'releases'
 
 export type EntityType = 'pr' | 'issue' | 'discussion' | 'release'
 
-export type Urgency = 'loud' | 'silent'
-
 export interface DiscordTextDisplayComponent {
   type: 10
   content: string
@@ -165,9 +163,8 @@ export interface EntityRecord {
   entityType: EntityType
   channelKey: ChannelKey
   channelId: string
-  anchorMessageId: string
+  anchorMessageId: string | null
   state: EntityState
-  timeline: string[]
   updatedAt: number
 }
 
@@ -181,20 +178,12 @@ export type QueueJobPayload =
       entityKey: string
       entityType: EntityType
       card: CardModel
-      state: EntityState
-      timeline: string[]
       forceNew?: boolean
     }
   | {
       op: 'reply_to_entity'
       entityKey: string
       card: CardModel
-      fallbackAnchor?: {
-        entityType: EntityType
-        card: CardModel
-        state: EntityState
-        timeline: string[]
-      }
     }
 
 export interface QueueJobRecord {
@@ -232,6 +221,7 @@ export interface IssueBatchItem {
   assignees: string[]
   stateReason: string
   closedByPr: number | null
+  receivedAt?: number
 }
 
 export interface StarBatchItem {
@@ -245,6 +235,13 @@ export interface StarBatchItem {
 
 export type BatchKind = 'push' | 'issue_open' | 'issue_close' | 'star'
 
+export interface BatchItemMap {
+  push: PushBatchItem
+  issue_open: IssueBatchItem
+  issue_close: IssueBatchItem
+  star: StarBatchItem
+}
+
 export interface PendingBatchRecord<T = unknown> {
   batchKey: string
   channelKey: ChannelKey
@@ -253,6 +250,10 @@ export interface PendingBatchRecord<T = unknown> {
   flushAt: number
   updatedAt: number
 }
+
+export type TypedPendingBatch<K extends BatchKind = BatchKind> = {
+  [P in K]: PendingBatchRecord<BatchItemMap[P]> & { kind: P }
+}[K]
 
 export interface GitHubUser {
   login: string
@@ -290,6 +291,7 @@ export interface GitHubPullRequest {
   draft?: boolean
   merged?: boolean
   merge_commit_sha?: string | null
+  base?: { ref?: string }
   body?: string | null
   user: GitHubUser
   author_association?: string

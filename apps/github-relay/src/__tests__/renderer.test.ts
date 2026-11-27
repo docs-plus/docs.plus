@@ -60,4 +60,47 @@ describe('Components V2 renderer', () => {
     expect(totalTextLength(payload.components[0])).toBeLessThanOrEqual(4000)
     expect(countComponents(payload.components[0])).toBeLessThanOrEqual(40)
   })
+
+  it('counts MediaGallery items, protects footer by ref, and trims overflow from tail sections', () => {
+    const subtextBody = `-# ${'x'.repeat(3000)}`
+    const sections = [
+      'Top priority section',
+      subtextBody,
+      ...Array.from({ length: 40 }, (_, i) => `Tail ${i}`)
+    ]
+    const payload = renderCard({
+      accentColor: DISCORD_COLORS.SKY,
+      stateBadge: 'Release',
+      title: 'Overflow and subtext budget test',
+      bannerImageUrl: 'https://docs.plus/banner.png',
+      sections,
+      footer: 'docs-plus/docs.plus · preserved footer',
+      silent: false
+    })
+
+    const container = payload.components[0]
+    expect(countComponents(container)).toBeLessThanOrEqual(40)
+    expect(totalTextLength(container)).toBeLessThanOrEqual(4000)
+    // Banner and top body section survive while tail sections are trimmed.
+    expect(container.components.some((c) => c.type === 12)).toBe(true)
+    expect(
+      container.components.some((c) => c.type === 10 && c.content === 'Top priority section')
+    ).toBe(true)
+    // Footer survives untouched even though a body section started with "-# ".
+    const last = container.components[container.components.length - 1]
+    expect(last.type === 10 && last.content).toBe('-# docs-plus/docs.plus · preserved footer')
+
+    // countComponents includes MediaGallery item count.
+    const galleryOnly = renderCard({
+      accentColor: null,
+      stateBadge: '',
+      title: 'Gallery count',
+      bannerImageUrl: 'https://docs.plus/banner.png',
+      sections: [],
+      footer: '',
+      silent: false
+    })
+    // 1 container + 1 header text + 1 media gallery + 1 media item = 4
+    expect(countComponents(galleryOnly.components[0])).toBe(4)
+  })
 })

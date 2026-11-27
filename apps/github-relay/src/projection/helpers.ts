@@ -1,15 +1,14 @@
 import { cleanText, sanitizeChip, truncateTitle } from '../security.ts'
-import type { GitHubUser } from '../types.ts'
 
 const TEAM_ASSOCIATIONS = new Set(['OWNER', 'MEMBER', 'COLLABORATOR'])
 const PRIORITY_LABELS = new Set(['good first issue', 'help wanted'])
 const CRITICAL_LABELS = new Set(['security', 'critical', 'urgent'])
 const LINKED_ISSUE_RE = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi
 
-export function isBotUser(user: GitHubUser | undefined | null): boolean {
+export function isBotUser(user: { login?: string; type?: string } | undefined | null): boolean {
   if (!user) return false
   if (user.type === 'Bot') return true
-  return user.login.endsWith('[bot]')
+  return Boolean(user.login && user.login.endsWith('[bot]'))
 }
 
 export function isOutsider(authorAssociation: string | undefined | null): boolean {

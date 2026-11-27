@@ -1,9 +1,12 @@
-import { DISCORD_COLORS } from '../discord/renderer.ts'
 import type { ChannelQueue } from '../queue/channelQueue.ts'
 import { cleanText } from '../security.ts'
 import type { SqliteStore } from '../store/sqliteStore.ts'
 import type {
+  CardModel,
+  ChannelKey,
   DiscussionEntityState,
+  EntityState,
+  EntityType,
   GitHubDiscussionCommentEvent,
   GitHubDiscussionEvent,
   GitHubIssueCommentEvent,
@@ -23,13 +26,7 @@ import type {
 } from '../types.ts'
 import { projectDiscussionCommentEvent, projectDiscussionEvent } from './discussion.ts'
 import { extractLinkedIssues, isBotUser, isOutsider } from './helpers.ts'
-import {
-  buildIssueCard,
-  buildIssueStateFromPayload,
-  isSpecialIssue,
-  projectIssueCommentEvent,
-  projectIssueMutationEvent
-} from './issue.ts'
+import { buildIssueCard, projectIssueCommentEvent, projectIssueMutationEvent } from './issue.ts'
 import {
   buildPrCard,
   projectPrCommentEvent,
@@ -86,6 +83,122 @@ export class WebhookRouter {
     }
   }
 
+  private getPrState(entityKey: string): PrEntityState | null {
+    const state = this.store.getEntity(entityKey)?.state
+    return state?.kind === 'pr' ? state : null
+  }
+
+  private getIssueState(entityKey: string): IssueEntityState | null {
+    const state = this.store.getEntity(entityKey)?.state
+    return state?.kind === 'issue' ? state : null
+  }
+
+  private getDiscussionState(entityKey: string): DiscussionEntityState | null {
+    const state = this.store.getEntity(entityKey)?.state
+    return state?.kind === 'discussion' ? state : null
+  }
+
+  private enqueueUpsertEntity(
+    channelKey: ChannelKey,
+    kind: string,
+    entityKey: string,
+    entityType: EntityType,
+    card: CardModel,
+    state: EntityState,
+    nowMs: number
+  ): void {
+    this.store.enqueueEntityUpsert({
+      channelKey,
+      channelId: this.config.channels[channelKey],
+      kind,
+      entityKey,
+      entityType,
+      card,
+      state,
+      nowMs
+    })
+  }
+
+  private enqueueReply(
+    channelKey: ChannelKey,
+    kind: string,
+    entityKey: string,
+    card: CardModel,
+    nowMs: number
+  ): void {
+    this.store.enqueueJob(
+      channelKey,
+      kind,
+      { op: 'reply_to_entity', entityKey, card },
+      { entityKey, nowMs }
+    )
+  }
+
+  private updateExistingTriagePr(
+    entityKey: string,
+    kind: string,
+    state: PrEntityState,
+    repo: string,
+    nowMs: number
+  ): void {
+    if (!this.config.hasDistinctTriageChannel) return
+    const triageKey = `triage:${entityKey}`
+    if (!this.store.getEntity(triageKey)) return
+    this.enqueueUpsertEntity(
+      'triage',
+      kind,
+      triageKey,
+      'pr',
+      buildPrCard(state, repo, true),
+      state,
+      nowMs
+    )
+  }
+
+  private updateExistingTriageIssue(
+    entityKey: string,
+    kind: string,
+    state: IssueEntityState,
+    repo: string,
+    nowMs: number
+  ): void {
+    if (!this.config.hasDistinctTriageChannel) return
+    const triageKey = `triage:${entityKey}`
+    if (!this.store.getEntity(triageKey)) return
+    this.enqueueUpsertEntity(
+      'triage',
+      kind,
+      triageKey,
+      'issue',
+      buildIssueCard(state, repo, true, this.config),
+      state,
+      nowMs
+    )
+  }
+
+  private buildIssueBatchItem(
+    event: GitHubIssuesEvent,
+    action: 'opened' | 'closed',
+    nowMs: number
+  ): IssueBatchItem {
+    const issue = event.issue
+    return {
+      repo: event.repository.full_name,
+      action,
+      number: issue.number,
+      title: cleanText(issue.title),
+      url: issue.html_url,
+      author: cleanText(issue.user.login),
+      actor: cleanText(event.sender?.login || issue.user.login),
+      outsider: isOutsider(issue.author_association),
+      labels: (issue.labels ?? []).map((l) => l.name),
+      assignees: (issue.assignees ?? []).map((a) => cleanText(a.login)),
+      stateReason: issue.state_reason ?? '',
+      closedByPr: null,
+      receivedAt: nowMs
+    }
+  }
+
   private handlePush(event: GitHubPushEvent, nowMs: number): void {
     if (isBotUser(event.sender)) return
     const defaultBranch = event.repository.default_branch || 'main'
@@ -114,152 +227,107 @@ export class WebhookRouter {
   }
 
   private handlePullRequest(event: GitHubPullRequestEvent, nowMs: number): void {
-    if (isBotUser(event.sender)) return
     const entityKey = `pr:${event.pull_request.number}`
-    const existing = this.store.getEntity(entityKey)?.state as PrEntityState | undefined
-    const result = projectPullRequestEvent(event, existing ?? null, this.config)
+    const result = projectPullRequestEvent(event, this.getPrState(entityKey), this.config)
     if (!result) return
 
     if (result.mergedCommitSha) {
       this.store.recordRecentMerge(result.mergedCommitSha, result.state.number, nowMs)
     }
 
-    this.store.enqueueJob(
+    this.enqueueUpsertEntity(
       'github',
       `pr.${event.action}`,
-      {
-        op: 'upsert_entity',
-        entityKey: result.entityKey,
-        entityType: 'pr',
-        card: result.anchorCard,
-        state: result.state,
-        timeline: result.state.timeline
-      },
-      { entityKey: result.entityKey, nowMs }
+      result.entityKey,
+      'pr',
+      result.anchorCard,
+      result.state,
+      nowMs
     )
 
     if (result.replyCard) {
-      this.store.enqueueJob(
+      this.enqueueReply(
         'github',
         `pr.reply.${event.action}`,
-        {
-          op: 'reply_to_entity',
-          entityKey: result.entityKey,
-          card: result.replyCard
-        },
-        { entityKey: result.entityKey, nowMs }
+        result.entityKey,
+        result.replyCard,
+        nowMs
       )
     }
 
     if (result.triageCard) {
-      this.store.enqueueJob(
+      this.enqueueUpsertEntity(
         'triage',
         `triage.pr.${event.action}`,
-        {
-          op: 'upsert_entity',
-          entityKey: result.triageCard.entityKey,
-          entityType: 'pr',
-          card: result.triageCard.card,
-          state: result.triageCard.state,
-          timeline: result.triageCard.state.timeline
-        },
-        { entityKey: result.triageCard.entityKey, nowMs }
+        result.triageCard.entityKey,
+        'pr',
+        result.triageCard.card,
+        result.triageCard.state,
+        nowMs
+      )
+    } else {
+      this.updateExistingTriagePr(
+        result.entityKey,
+        `triage.pr.${event.action}`,
+        result.state,
+        event.repository.full_name,
+        nowMs
       )
     }
   }
 
   private handlePullRequestReview(event: GitHubPullRequestReviewEvent, nowMs: number): void {
     const entityKey = `pr:${event.pull_request.number}`
-    const existing = this.store.getEntity(entityKey)?.state as PrEntityState | undefined
-    const result = projectPullRequestReviewEvent(event, existing ?? null, this.config)
+    const result = projectPullRequestReviewEvent(event, this.getPrState(entityKey), this.config)
     if (!result) return
 
-    this.store.enqueueJob(
+    this.enqueueUpsertEntity(
       'github',
       'pr_review.anchor',
-      {
-        op: 'upsert_entity',
-        entityKey: result.entityKey,
-        entityType: 'pr',
-        card: result.anchorCard,
-        state: result.state,
-        timeline: result.state.timeline
-      },
-      { entityKey: result.entityKey, nowMs }
+      result.entityKey,
+      'pr',
+      result.anchorCard,
+      result.state,
+      nowMs
     )
 
-    this.store.enqueueJob(
-      'github',
-      'pr_review.reply',
-      {
-        op: 'reply_to_entity',
-        entityKey: result.entityKey,
-        card: result.replyCard
-      },
-      { entityKey: result.entityKey, nowMs }
-    )
+    this.enqueueReply('github', 'pr_review.reply', result.entityKey, result.replyCard, nowMs)
 
     if (result.triageCard) {
-      this.store.enqueueJob(
+      this.enqueueUpsertEntity(
         'triage',
         'triage.pr_review',
-        {
-          op: 'upsert_entity',
-          entityKey: result.triageCard.entityKey,
-          entityType: 'pr',
-          card: result.triageCard.card,
-          state: result.triageCard.state,
-          timeline: result.triageCard.state.timeline
-        },
-        { entityKey: result.triageCard.entityKey, nowMs }
+        result.triageCard.entityKey,
+        'pr',
+        result.triageCard.card,
+        result.triageCard.state,
+        nowMs
+      )
+    } else {
+      this.updateExistingTriagePr(
+        result.entityKey,
+        'triage.pr_review',
+        result.state,
+        event.repository.full_name,
+        nowMs
       )
     }
   }
 
   private handleIssues(event: GitHubIssuesEvent, nowMs: number): void {
-    if (isBotUser(event.sender) || isBotUser(event.issue.user)) return
+    if (isBotUser(event.issue.user)) return
     const action = event.action
     const issue = event.issue
     const repo = event.repository.full_name
-    const labels = (issue.labels ?? []).map((l) => l.name)
-    const outsider = isOutsider(issue.author_association)
     const entityKey = `issue:${issue.number}`
 
     if (action === 'opened') {
-      const item: IssueBatchItem = {
-        repo,
-        action: 'opened',
-        number: issue.number,
-        title: cleanText(issue.title),
-        url: issue.html_url,
-        author: cleanText(issue.user.login),
-        actor: cleanText(event.sender?.login || issue.user.login),
-        outsider,
-        labels,
-        assignees: (issue.assignees ?? []).map((a) => cleanText(a.login)),
-        stateReason: issue.state_reason ?? '',
-        closedByPr: null
-      }
-      this.queue.addIssueOpenItem(item, nowMs)
+      this.queue.addIssueOpenItem(this.buildIssueBatchItem(event, 'opened', nowMs), nowMs)
       return
     }
 
     if (action === 'closed') {
-      const item: IssueBatchItem = {
-        repo,
-        action: 'closed',
-        number: issue.number,
-        title: cleanText(issue.title),
-        url: issue.html_url,
-        author: cleanText(issue.user.login),
-        actor: cleanText(event.sender?.login || issue.user.login),
-        outsider,
-        labels,
-        assignees: (issue.assignees ?? []).map((a) => cleanText(a.login)),
-        stateReason: issue.state_reason ?? '',
-        closedByPr: null
-      }
-      this.queue.addIssueCloseItem(item, nowMs)
+      this.queue.addIssueCloseItem(this.buildIssueBatchItem(event, 'closed', nowMs), nowMs)
       return
     }
 
@@ -271,37 +339,36 @@ export class WebhookRouter {
       return
     }
 
-    const existing = this.store.getEntity(entityKey)?.state as IssueEntityState | undefined
-    const mutation = projectIssueMutationEvent(event, existing ?? null, this.config)
+    const mutation = projectIssueMutationEvent(event, this.getIssueState(entityKey), this.config)
     if (!mutation) return
 
-    this.store.enqueueJob(
+    this.enqueueUpsertEntity(
       'github',
       `issue.${action}`,
-      {
-        op: 'upsert_entity',
-        entityKey: mutation.entityKey,
-        entityType: 'issue',
-        card: mutation.anchorCard,
-        state: mutation.state,
-        timeline: mutation.state.timeline
-      },
-      { entityKey: mutation.entityKey, nowMs }
+      mutation.entityKey,
+      'issue',
+      mutation.anchorCard,
+      mutation.state,
+      nowMs
     )
 
     if (mutation.triageCard) {
-      this.store.enqueueJob(
+      this.enqueueUpsertEntity(
         'triage',
         `triage.issue.${action}`,
-        {
-          op: 'upsert_entity',
-          entityKey: `triage:${mutation.entityKey}`,
-          entityType: 'issue',
-          card: mutation.triageCard,
-          state: mutation.state,
-          timeline: mutation.state.timeline
-        },
-        { entityKey: `triage:${mutation.entityKey}`, nowMs }
+        `triage:${mutation.entityKey}`,
+        'issue',
+        mutation.triageCard,
+        mutation.state,
+        nowMs
+      )
+    } else {
+      this.updateExistingTriageIssue(
+        mutation.entityKey,
+        `triage.issue.${action}`,
+        mutation.state,
+        repo,
+        nowMs
       )
     }
   }
@@ -309,167 +376,123 @@ export class WebhookRouter {
   private handleIssueComment(event: GitHubIssueCommentEvent, nowMs: number): void {
     if (event.issue.pull_request) {
       const entityKey = `pr:${event.issue.number}`
-      const existing = this.store.getEntity(entityKey)?.state as PrEntityState | undefined
-      const prComment = projectPrCommentEvent(event, existing ?? null, this.config)
+      const prComment = projectPrCommentEvent(event, this.getPrState(entityKey), this.config)
       if (!prComment) return
 
-      this.store.enqueueJob(
+      this.enqueueUpsertEntity(
         'github',
         'pr_comment.anchor',
-        {
-          op: 'upsert_entity',
-          entityKey: prComment.entityKey,
-          entityType: 'pr',
-          card: prComment.anchorCard,
-          state: prComment.state,
-          timeline: prComment.state.timeline
-        },
-        { entityKey: prComment.entityKey, nowMs }
+        prComment.entityKey,
+        'pr',
+        prComment.anchorCard,
+        prComment.state,
+        nowMs
       )
-      this.store.enqueueJob(
+      this.enqueueReply(
         'github',
         'pr_comment.reply',
-        {
-          op: 'reply_to_entity',
-          entityKey: prComment.entityKey,
-          card: prComment.replyCard
-        },
-        { entityKey: prComment.entityKey, nowMs }
+        prComment.entityKey,
+        prComment.replyCard,
+        nowMs
+      )
+      this.updateExistingTriagePr(
+        prComment.entityKey,
+        'triage.pr_comment.anchor',
+        prComment.state,
+        event.repository.full_name,
+        nowMs
       )
       if (prComment.triageReplyCard) {
-        this.store.enqueueJob(
+        this.enqueueReply(
           'triage',
           'triage.pr_comment',
-          {
-            op: 'reply_to_entity',
-            entityKey: `triage:${prComment.entityKey}`,
-            card: prComment.triageReplyCard
-          },
-          { entityKey: `triage:${prComment.entityKey}`, nowMs }
+          `triage:${prComment.entityKey}`,
+          prComment.triageReplyCard,
+          nowMs
         )
       }
       return
     }
 
     const entityKey = `issue:${event.issue.number}`
-    const existing = this.store.getEntity(entityKey)?.state as IssueEntityState | undefined
-    const issueComment = projectIssueCommentEvent(event, existing ?? null, this.config)
+    const issueComment = projectIssueCommentEvent(event, this.getIssueState(entityKey), this.config)
     if (!issueComment) return
 
-    const fallbackState = buildIssueStateFromPayload(event.issue, existing ?? null, 'Opened')
-    const fallbackCard = buildIssueCard(
-      fallbackState,
-      event.repository.full_name,
-      !isSpecialIssue(fallbackState.labels, fallbackState.outsider),
-      this.config
-    )
-
-    this.store.enqueueJob(
+    this.enqueueUpsertEntity(
       'github',
       'issue_comment.anchor',
-      {
-        op: 'upsert_entity',
-        entityKey: issueComment.entityKey,
-        entityType: 'issue',
-        card: issueComment.anchorCard,
-        state: issueComment.state,
-        timeline: issueComment.state.timeline
-      },
-      { entityKey: issueComment.entityKey, nowMs }
+      issueComment.entityKey,
+      'issue',
+      issueComment.anchorCard,
+      issueComment.state,
+      nowMs
     )
-    this.store.enqueueJob(
+    this.enqueueReply(
       'github',
       'issue_comment.reply',
-      {
-        op: 'reply_to_entity',
-        entityKey: issueComment.entityKey,
-        card: issueComment.replyCard,
-        fallbackAnchor: {
-          entityType: 'issue',
-          card: fallbackCard,
-          state: fallbackState,
-          timeline: fallbackState.timeline
-        }
-      },
-      { entityKey: issueComment.entityKey, nowMs }
+      issueComment.entityKey,
+      issueComment.replyCard,
+      nowMs
+    )
+    this.updateExistingTriageIssue(
+      issueComment.entityKey,
+      'triage.issue_comment.anchor',
+      issueComment.state,
+      event.repository.full_name,
+      nowMs
     )
     if (issueComment.triageReplyCard) {
-      this.store.enqueueJob(
+      this.enqueueReply(
         'triage',
         'triage.issue_comment',
-        {
-          op: 'reply_to_entity',
-          entityKey: `triage:${issueComment.entityKey}`,
-          card: issueComment.triageReplyCard
-        },
-        { entityKey: `triage:${issueComment.entityKey}`, nowMs }
+        `triage:${issueComment.entityKey}`,
+        issueComment.triageReplyCard,
+        nowMs
       )
     }
   }
 
   private handleDiscussion(event: GitHubDiscussionEvent, nowMs: number): void {
     const entityKey = `discussion:${event.discussion.number}`
-    const existing = this.store.getEntity(entityKey)?.state as DiscussionEntityState | undefined
-    const result = projectDiscussionEvent(event, existing ?? null)
+    const result = projectDiscussionEvent(event, this.getDiscussionState(entityKey))
     if (!result) return
 
-    this.store.enqueueJob(
+    this.enqueueUpsertEntity(
       'github',
       `discussion.${event.action}`,
-      {
-        op: 'upsert_entity',
-        entityKey: result.entityKey,
-        entityType: 'discussion',
-        card: result.anchorCard,
-        state: result.state,
-        timeline: result.state.timeline
-      },
-      { entityKey: result.entityKey, nowMs }
+      result.entityKey,
+      'discussion',
+      result.anchorCard,
+      result.state,
+      nowMs
     )
 
     if (result.replyCard) {
-      this.store.enqueueJob(
-        'github',
-        'discussion.answer',
-        {
-          op: 'reply_to_entity',
-          entityKey: result.entityKey,
-          card: result.replyCard
-        },
-        { entityKey: result.entityKey, nowMs }
-      )
+      this.enqueueReply('github', 'discussion.answer', result.entityKey, result.replyCard, nowMs)
     }
   }
 
   private handleDiscussionComment(event: GitHubDiscussionCommentEvent, nowMs: number): void {
     const entityKey = `discussion:${event.discussion.number}`
-    const existing = this.store.getEntity(entityKey)?.state as DiscussionEntityState | undefined
-    const result = projectDiscussionCommentEvent(event, existing ?? null)
+    const result = projectDiscussionCommentEvent(event, this.getDiscussionState(entityKey))
     if (!result) return
 
-    this.store.enqueueJob(
+    this.enqueueUpsertEntity(
       'github',
       'discussion_comment.anchor',
-      {
-        op: 'upsert_entity',
-        entityKey: result.entityKey,
-        entityType: 'discussion',
-        card: result.anchorCard,
-        state: result.state,
-        timeline: result.state.timeline
-      },
-      { entityKey: result.entityKey, nowMs }
+      result.entityKey,
+      'discussion',
+      result.anchorCard,
+      result.state,
+      nowMs
     )
 
-    this.store.enqueueJob(
+    this.enqueueReply(
       'github',
       'discussion_comment.reply',
-      {
-        op: 'reply_to_entity',
-        entityKey: result.entityKey,
-        card: result.replyCard
-      },
-      { entityKey: result.entityKey, nowMs }
+      result.entityKey,
+      result.replyCard,
+      nowMs
     )
   }
 
@@ -477,18 +500,14 @@ export class WebhookRouter {
     const projection = buildReleaseProjection(event, this.config)
     if (!projection) return
 
-    this.store.enqueueJob(
+    this.enqueueUpsertEntity(
       'releases',
       `release.${event.action}`,
-      {
-        op: 'upsert_entity',
-        entityKey: projection.entityKey,
-        entityType: 'release',
-        card: projection.card,
-        state: projection.state,
-        timeline: [event.action]
-      },
-      { entityKey: projection.entityKey, nowMs }
+      projection.entityKey,
+      'release',
+      projection.card,
+      projection.state,
+      nowMs
     )
   }
 
@@ -537,21 +556,21 @@ export class WebhookRouter {
       }
 
       const card = buildPrCard(updatedState, event.repository.full_name, true)
-      if (ciStatus === 'failed') {
-        card.accentColor = DISCORD_COLORS.RED
-      }
-      this.store.enqueueJob(
+      this.enqueueUpsertEntity(
         'github',
         'workflow_run.ci_update',
-        {
-          op: 'upsert_entity',
-          entityKey,
-          entityType: 'pr',
-          card,
-          state: updatedState,
-          timeline: updatedState.timeline
-        },
-        { entityKey, nowMs }
+        entityKey,
+        'pr',
+        card,
+        updatedState,
+        nowMs
+      )
+      this.updateExistingTriagePr(
+        entityKey,
+        'triage.workflow_run.ci_update',
+        updatedState,
+        event.repository.full_name,
+        nowMs
       )
     }
   }
