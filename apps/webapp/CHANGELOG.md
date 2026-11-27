@@ -150,6 +150,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   fixed `Select` listbox `onKeyDown` merging and `role="combobox"`, stopped `99+` unread badge
   reflow loops in `headingWidgetUnread.ts`, and guarded OAuth `decide()` against stale
   authorization IDs and unhandled rejections.
+- Audited `71` webapp components and hooks for V8 render-closure retention of `editor`,
+  `hocuspocusProvider`, and `sheetData`: moved `15` render reads to call-time
+  `useStore.getState()` or isolated hooks (`DesktopLayout`, `BottomSheet`, `MobilePadTitle`,
+  `TocModal`, `useResizeContainer`, `useHeadingScrollSpy`, history hooks, `useEnableEditor`,
+  `AppendHeadingButton`, and chat message handlers) ([#785](https://github.com/docs-plus/docs.plus/issues/785)).
 
 ### Security
 

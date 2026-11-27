@@ -155,6 +155,10 @@ This file is the product changelog. Every app, package and extension keeps its o
   badge reflow loops on headings, prevented pre-connect `SIGNED_IN` from latching collab
   disconnect state, and guarded OAuth consent actions against stale authorization IDs. Detail:
   `apps/webapp/CHANGELOG.md`.
+- Removed `15` render-closure captures of editors and providers across webapp layouts, sheets,
+  TOC, chat, and history hooks ([#785](https://github.com/docs-plus/docs.plus/issues/785)), and
+  fixed `Tab` and `Shift-Tab` inside nested mixed lists in `@docs.plus/extension-indent` so
+  indenting targets the innermost list item ([#679](https://github.com/docs-plus/docs.plus/issues/679)).
 
 ### Security
 
