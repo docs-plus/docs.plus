@@ -52,3 +52,5 @@ export default function App({ Component, pageProps }: AppProps) {
     </QueryClientProvider>
   )
 }
+
+// ci probe 563 admin-only
