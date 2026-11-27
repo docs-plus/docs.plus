@@ -128,7 +128,7 @@ export default function MediaControlsSheet({ data }: { data: SheetDataMap['media
   const closeSheet = useSheetStore((s) => s.closeSheet)
   const profileId = useAuthStore((state) => state.profile?.id)
   const editingLocked = useStore((state) => selectDocumentEditingLocked(state.settings, profileId))
-  const canComment = useStore((state) => selectCanComment(state.settings, profileId))
+  const canComment = useStore((state) => selectCanComment(state.settings))
   const [current, setCurrent] = useState<Record<string, unknown>>({})
   const [caption, setCaption] = useState('')
 
@@ -178,7 +178,6 @@ export default function MediaControlsSheet({ data }: { data: SheetDataMap['media
 
   const viewCtx = buildActionContext(editor, keyId, nodeType, closeSheet)
   const showViewOriginal = viewCtx != null && canViewOriginal(viewCtx)
-  const showComment = canComment
 
   const runComment = () =>
     runAction((ctx) => {
@@ -191,34 +190,31 @@ export default function MediaControlsSheet({ data }: { data: SheetDataMap['media
       title={isXEmbed ? 'Post layout' : 'Media layout'}
       onClose={closeSheet}
       body="stack">
+      {!editingLocked && isXEmbed && (
+        <>
+          <ChoiceGroup label="Size" gridClassName="grid grid-cols-3 gap-2">
+            {X_EMBED_SIZE_OPTIONS.map(({ id, label, maxwidth }) => (
+              <ChoiceButton key={id} active={activeSize === id} onClick={() => apply({ maxwidth })}>
+                {label}
+              </ChoiceButton>
+            ))}
+          </ChoiceGroup>
+
+          <ChoiceGroup label="Theme" gridClassName="grid grid-cols-2 gap-2">
+            {X_EMBED_THEME_OPTIONS.map(({ id, label }) => (
+              <ChoiceButton
+                key={id}
+                active={activeTheme === id}
+                onClick={() => apply({ theme: id })}>
+                {label}
+              </ChoiceButton>
+            ))}
+          </ChoiceGroup>
+        </>
+      )}
+
       {!editingLocked && (
         <>
-          {isXEmbed && (
-            <>
-              <ChoiceGroup label="Size" gridClassName="grid grid-cols-3 gap-2">
-                {X_EMBED_SIZE_OPTIONS.map(({ id, label, maxwidth }) => (
-                  <ChoiceButton
-                    key={id}
-                    active={activeSize === id}
-                    onClick={() => apply({ maxwidth })}>
-                    {label}
-                  </ChoiceButton>
-                ))}
-              </ChoiceGroup>
-
-              <ChoiceGroup label="Theme" gridClassName="grid grid-cols-2 gap-2">
-                {X_EMBED_THEME_OPTIONS.map(({ id, label }) => (
-                  <ChoiceButton
-                    key={id}
-                    active={activeTheme === id}
-                    onClick={() => apply({ theme: id })}>
-                    {label}
-                  </ChoiceButton>
-                ))}
-              </ChoiceGroup>
-            </>
-          )}
-
           <Textarea
             label="Caption"
             labelPosition="above"
@@ -252,7 +248,7 @@ export default function MediaControlsSheet({ data }: { data: SheetDataMap['media
       )}
 
       <div className="-mx-2 flex flex-col">
-        {showComment && (
+        {canComment && (
           <ContextMenuRowButton
             rowClassName="min-h-12"
             icon={<Icons.comment size={16} />}

@@ -19,8 +19,7 @@ export const isDocumentEditingLocked = (): boolean =>
  * editing is locked; Phase 2 #826 will refine this once 4-tier roles exclude
  * `Can view`). Blocked during an unrecoverable provider error / content-fork freeze.
  */
-export const selectCanComment = (settings: Workspace, _profileId?: string): boolean =>
+export const selectCanComment = (settings: Workspace): boolean =>
   settings.providerStatus !== 'error'
 
-export const canCommentInDocument = (): boolean =>
-  selectCanComment(useStore.getState().settings, authStore.getState().profile?.id)
+export const canCommentInDocument = (): boolean => selectCanComment(useStore.getState().settings)

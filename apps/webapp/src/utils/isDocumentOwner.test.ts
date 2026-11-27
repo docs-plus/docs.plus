@@ -13,18 +13,14 @@ const lockFor = (metadata: Workspace['metadata'], profileId?: string) =>
   )
 
 const canCommentFor = (
-  overrides: Partial<Pick<Workspace, 'metadata' | 'providerStatus' | 'authorizedScope'>>,
-  profileId?: string
+  overrides: Partial<Pick<Workspace, 'metadata' | 'providerStatus' | 'authorizedScope'>>
 ) =>
-  selectCanComment(
-    {
-      metadata: { documentId: 'd', ownerId: ME, readOnly: false },
-      providerStatus: 'saved',
-      authorizedScope: null,
-      ...overrides
-    } as Workspace,
-    profileId
-  )
+  selectCanComment({
+    metadata: { documentId: 'd', ownerId: ME, readOnly: false },
+    providerStatus: 'saved',
+    authorizedScope: null,
+    ...overrides
+  } as Workspace)
 
 describe('pre-sync: the store seeds metadata without a documentId', () => {
   // A yes here flashed an editable title or owner controls on a pad the reader cannot change.
@@ -66,16 +62,13 @@ describe('Read-only editing lock', () => {
 })
 
 describe('selectCanComment', () => {
-  it('stays enabled on read-only pads for non-owners, visitors, and readonly scopes', () => {
+  it('stays enabled on read-only pads and readonly scopes', () => {
     const readOnlyMeta = { documentId: 'd', ownerId: ME, readOnly: true }
-    expect(canCommentFor({ metadata: readOnlyMeta }, ME)).toBe(true)
-    expect(canCommentFor({ metadata: readOnlyMeta }, OTHER)).toBe(true)
-    expect(canCommentFor({ metadata: readOnlyMeta }, undefined)).toBe(true)
-    expect(canCommentFor({ metadata: readOnlyMeta, authorizedScope: 'readonly' }, OTHER)).toBe(true)
+    expect(canCommentFor({ metadata: readOnlyMeta })).toBe(true)
+    expect(canCommentFor({ metadata: readOnlyMeta, authorizedScope: 'readonly' })).toBe(true)
   })
 
   it('blocks commenting during a provider error freeze', () => {
-    expect(canCommentFor({ providerStatus: 'error' }, ME)).toBe(false)
-    expect(canCommentFor({ providerStatus: 'error' }, OTHER)).toBe(false)
+    expect(canCommentFor({ providerStatus: 'error' })).toBe(false)
   })
 })

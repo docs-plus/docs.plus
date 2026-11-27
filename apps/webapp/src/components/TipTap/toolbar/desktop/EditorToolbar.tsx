@@ -80,7 +80,7 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
   const isSignedIn = useAuthStore(selectIsSignedIn)
   const profileId = useAuthStore((state) => state.profile?.id)
   const editingLocked = useStore((state) => selectDocumentEditingLocked(state.settings, profileId))
-  const canComment = useStore((state) => selectCanComment(state.settings, profileId))
+  const canComment = useStore((state) => selectCanComment(state.settings))
   const inProgressBookmarks = useChatStore(selectInProgressBookmarkCount)
   const settings = useSettingsOpener()
 
@@ -197,9 +197,7 @@ const EditorToolbar = ({ qr }: EditorToolbarProps) => {
         <ToolbarButton
           data-testid="toolbar-comment"
           disabled={!canComment}
-          onClick={() => {
-            if (canCommentInDocument()) createComment(editor)
-          }}
+          onClick={() => createComment(editor)}
           tooltip="Comment (⌘+⌥+M)">
           <Icons.comment size={ICON_SIZE} />
         </ToolbarButton>

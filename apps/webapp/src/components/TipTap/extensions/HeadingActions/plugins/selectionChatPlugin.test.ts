@@ -1,13 +1,10 @@
-import type { EditorView } from '@types'
-
 import { hasActiveSelectionInView } from './selectionChatPlugin'
 
-const makeView = (dom: HTMLElement, opts: { editable: boolean; hasFocus: boolean }) =>
-  ({
-    dom,
-    editable: opts.editable,
-    hasFocus: () => opts.hasFocus
-  }) as unknown as EditorView
+const makeView = (dom: HTMLElement, opts: { editable: boolean; hasFocus: boolean }) => ({
+  dom,
+  editable: opts.editable,
+  hasFocus: () => opts.hasFocus
+})
 
 describe('hasActiveSelectionInView', () => {
   afterEach(() => {

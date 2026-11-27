@@ -6,11 +6,7 @@ import {
 } from '@components/TipTap/block-style/blockStyle'
 import Select from '@components/ui/Select'
 import { Tooltip } from '@components/ui/Tooltip'
-import {
-  isDocumentEditingLocked,
-  selectDocumentEditingLocked
-} from '@hooks/isDocumentEditingLocked'
-import { useAuthStore, useStore } from '@stores'
+import { isDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { Editor } from '@tiptap/core'
 import { twMerge } from '@utils/twMerge'
 import { useCallback } from 'react'
@@ -49,8 +45,6 @@ const selectValue = (style: Exclude<BlockStyle, { kind: 'title' }>): string => {
 }
 
 const StyleSelect = ({ editor, disabled = false }: StyleSelectProps) => {
-  const profileId = useAuthStore((state) => state.profile?.id)
-  const editingLocked = useStore((state) => selectDocumentEditingLocked(state.settings, profileId))
   const style = readBlockStyle(editor)
 
   const handleChange = useCallback(
@@ -71,7 +65,7 @@ const StyleSelect = ({ editor, disabled = false }: StyleSelectProps) => {
   )
 
   const isTitle = style.kind === 'title'
-  const isDisabled = isTitle || editingLocked || disabled
+  const isDisabled = isTitle || disabled
 
   // Fixed width, so the slot does not grow with the label (Normal text vs Heading 1).
   // The first line is always the Title: a disabled one-option Select shows the lock.

@@ -85,7 +85,7 @@ export const useReplyInThreadHandler = () => {
       const searchStart = Math.max(0, insertPosition - 10)
       const searchEnd = Math.min(doc.content.size, insertPosition + messageContent.length + 100)
 
-      doc.nodesBetween(searchStart, searchEnd, (node: any) => {
+      doc.nodesBetween(searchStart, searchEnd, (node) => {
         if (
           node.type.name === TIPTAP_NODES.HEADING_TYPE &&
           node.textContent.trim() === messageContent &&

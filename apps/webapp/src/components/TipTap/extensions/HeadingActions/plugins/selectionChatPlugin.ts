@@ -12,7 +12,9 @@ import { HEADING_ACTIONS_CLASSES } from '../types'
  * cannot take focus, so `view.hasFocus()` is always false and we check that the
  * active DOM selection range sits inside `view.dom`.
  */
-export const hasActiveSelectionInView = (view: EditorView): boolean => {
+export const hasActiveSelectionInView = (
+  view: Pick<EditorView, 'dom' | 'editable' | 'hasFocus'>
+): boolean => {
   if (view.editable) return view.hasFocus()
 
   const selection = view.dom.ownerDocument.defaultView?.getSelection()
@@ -87,18 +89,14 @@ const openChatComment = (editor: Editor): void => {
 
   publishDocumentComment(anchor)
   editor.commands.setTextSelection(editor.state.selection.to)
+  if (editor.isEditable) return
+
   // On read-only pads, ProseMirror skips DOM selection sync when activeElement
   // does not contain view.dom, so collapse the native range inside view.dom too.
-  if (!editor.isEditable) {
-    const domSelection = editor.view.dom.ownerDocument.defaultView?.getSelection()
-    if (
-      domSelection &&
-      !domSelection.isCollapsed &&
-      domSelection.rangeCount > 0 &&
-      editor.view.dom.contains(domSelection.getRangeAt(0).startContainer)
-    ) {
-      domSelection.collapseToEnd()
-    }
+  const domSelection = editor.view.dom.ownerDocument.defaultView?.getSelection()
+  if (!domSelection || domSelection.isCollapsed || domSelection.rangeCount === 0) return
+  if (editor.view.dom.contains(domSelection.getRangeAt(0).startContainer)) {
+    domSelection.collapseToEnd()
   }
 }
 

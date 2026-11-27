@@ -17,10 +17,7 @@ function createPopoverOpenRequest(canOpen?: () => boolean): PopoverOpenRequest {
     const { setOpen } = usePopoverState()
 
     useEffect(() => {
-      const openPanel = () => {
-        if (canOpen && !canOpen()) return
-        setOpen(true)
-      }
+      const openPanel = () => setOpen(true)
       open = openPanel
       return () => {
         if (open === openPanel) open = null

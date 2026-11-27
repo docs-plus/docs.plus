@@ -116,7 +116,6 @@ const padEditControls = (options: PreviewHyperlinkOptions): HTMLElement[] => {
 
   removeButton.addEventListener('click', () => {
     getDefaultController().close()
-    if (editor.isDestroyed) return
     const livePos = resolveLiveLinkPos(editor, { link, nodePos })
     if (livePos === undefined) return
     removeHyperlinkAtPos({

@@ -36,11 +36,10 @@ const MediaUploadDropzone = ({ onFile, disabled = false }: MediaUploadDropzonePr
     onFile(file)
   }
 
-  let stateClass = disabled
-    ? 'border-base-300 bg-base-200 cursor-not-allowed opacity-50'
-    : 'border-base-300 bg-base-200 hover:bg-base-300 cursor-pointer'
-  if (!disabled && invalid) stateClass = 'border-error bg-error/5 cursor-pointer'
-  else if (!disabled && isDragOver) stateClass = 'border-primary bg-primary/5 cursor-pointer'
+  let stateClass = 'border-base-300 bg-base-200 hover:bg-base-300 cursor-pointer'
+  if (disabled) stateClass = 'border-base-300 bg-base-200 cursor-not-allowed opacity-50'
+  else if (invalid) stateClass = 'border-error bg-error/5 cursor-pointer'
+  else if (isDragOver) stateClass = 'border-primary bg-primary/5 cursor-pointer'
 
   return (
     <div className="flex w-full items-center justify-center">
