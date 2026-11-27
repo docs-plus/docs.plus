@@ -4,6 +4,12 @@ All notable changes to `@docs.plus/extension-indent` are documented here. The fo
 
 ## [Unreleased]
 
+### Fixed
+
+- `Tab` and `Shift-Tab` inside nested mixed lists (for example a `taskItem` inside a `listItem`)
+  now target the innermost ancestor list item first instead of always checking `listItem` before
+  `taskItem` ([#679](https://github.com/docs-plus/docs.plus/issues/679)).
+
 ### Internal
 
 - `typecheck` runs `bun check --no-script` on `tsconfig.json` and `tsconfig.test.json`, not

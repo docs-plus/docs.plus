@@ -7,6 +7,7 @@ import {
   Editor,
   Extension,
   type JSONContent,
+  Node,
   type RawCommands
 } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
@@ -424,5 +425,134 @@ describe('@docs.plus/extension-indent', () => {
     const t = editor.getText()
     expect(t).toContain('  AA')
     expect(t).toContain('  BB')
+  })
+
+  const MinimalTaskList = Node.create({
+    name: 'taskList',
+    group: 'block list',
+    content: 'taskItem+',
+    parseHTML: () => [{ tag: 'ul[data-type="taskList"]' }],
+    renderHTML: () => ['ul', { 'data-type': 'taskList' }, 0]
+  })
+  const MinimalTaskItem = Node.create({
+    name: 'taskItem',
+    content: 'paragraph block*',
+    defining: true,
+    parseHTML: () => [{ tag: 'li[data-type="taskItem"]' }],
+    renderHTML: () => ['li', { 'data-type': 'taskItem' }, 0]
+  })
+
+  it('Shift-Tab inside a taskItem nested under a listItem lifts the inner taskItem, not the outer listItem (#679)', () => {
+    const doc: JSONContent = {
+      type: 'doc',
+      content: [
+        {
+          type: 'orderedList',
+          content: [
+            {
+              type: 'listItem',
+              content: [
+                { type: 'paragraph', content: [{ type: 'text', text: 'Main numbered item' }] },
+                {
+                  type: 'taskList',
+                  content: [
+                    {
+                      type: 'taskItem',
+                      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Task 1' }] }]
+                    },
+                    {
+                      type: 'taskItem',
+                      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Task 2' }] }]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+
+    const editor = track(
+      new Editor({
+        extensions: [StarterKit, MinimalTaskList, MinimalTaskItem, Indent],
+        content: doc,
+        element: document.createElement('div')
+      })
+    )
+
+    let task2Pos = 0
+    editor.state.doc.descendants((node, pos) => {
+      if (node.isText && node.text === 'Task 2') task2Pos = pos
+    })
+    editor.commands.setTextSelection(task2Pos)
+
+    expect(pressTab(editor, true)).toBe(true)
+    const firstBlock = editor.state.doc.child(0)
+    // Outer orderedList must survive with 'Main numbered item' still inside its listItem.
+    expect(firstBlock.type.name).toBe('orderedList')
+    expect(firstBlock.child(0).type.name).toBe('listItem')
+    expect(firstBlock.child(0).child(0).textContent).toBe('Main numbered item')
+  })
+
+  it('Tab inside a taskItem nested under a listItem sinks the inner taskItem, not the outer listItem (#679)', () => {
+    const doc: JSONContent = {
+      type: 'doc',
+      content: [
+        {
+          type: 'orderedList',
+          content: [
+            {
+              type: 'listItem',
+              content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Outer 1' }] }]
+            },
+            {
+              type: 'listItem',
+              content: [
+                { type: 'paragraph', content: [{ type: 'text', text: 'Outer 2' }] },
+                {
+                  type: 'taskList',
+                  content: [
+                    {
+                      type: 'taskItem',
+                      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Task 1' }] }]
+                    },
+                    {
+                      type: 'taskItem',
+                      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Task 2' }] }]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+
+    const editor = track(
+      new Editor({
+        extensions: [StarterKit, MinimalTaskList, MinimalTaskItem, Indent],
+        content: doc,
+        element: document.createElement('div')
+      })
+    )
+
+    let task2Pos = 0
+    editor.state.doc.descendants((node, pos) => {
+      if (node.isText && node.text === 'Task 2') task2Pos = pos
+    })
+    editor.commands.setTextSelection(task2Pos)
+
+    expect(pressTab(editor)).toBe(true)
+    const orderedList = editor.state.doc.child(0)
+    // Both top-level orderedList items must stay at depth 1 (Outer 2 was NOT sunk into Outer 1).
+    expect(orderedList.childCount).toBe(2)
+    // Task 2 was sunk into a nested taskList inside Task 1.
+    const outer2TaskList = orderedList.child(1).child(1)
+    expect(outer2TaskList.type.name).toBe('taskList')
+    const task1 = outer2TaskList.child(0)
+    expect(task1.child(1).type.name).toBe('taskList')
+    expect(task1.child(1).child(0).textContent).toBe('Task 2')
   })
 })

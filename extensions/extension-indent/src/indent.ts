@@ -22,12 +22,47 @@ function tryGoToPreviousCell(editor: Editor): boolean {
   return false
 }
 
+const LIST_ITEM_NAMES = ['listItem', 'taskItem'] as const
+
+function ancestorListItemNames(editor: Editor): string[] {
+  const { $from } = editor.state.selection
+  const ordered: string[] = []
+  for (let d = $from.depth; d > 0; d--) {
+    const name = $from.node(d).type.name
+    if ((name === 'listItem' || name === 'taskItem') && !ordered.includes(name)) {
+      ordered.push(name)
+    }
+  }
+  return ordered
+}
+
 function listItemTypeNames(editor: Editor): string[] {
   const { nodes } = editor.state.schema
-  const out: string[] = []
-  if (nodes.listItem) out.push('listItem')
-  if (nodes.taskItem) out.push('taskItem')
-  return out
+  const present = LIST_ITEM_NAMES.filter((name) => Boolean(nodes[name]))
+  if (present.length <= 1) return present
+
+  const ordered = ancestorListItemNames(editor)
+  for (const name of present) {
+    if (!ordered.includes(name)) ordered.push(name)
+  }
+  return ordered
+}
+
+function tryInnermostListItem(editor: Editor, dir: 'forward' | 'back'): boolean {
+  const ancestors = ancestorListItemNames(editor)
+  if (ancestors.length < 2) return false
+  const innermost = ancestors[0]
+  if (dir === 'forward') {
+    if (editor.can().sinkListItem(innermost)) {
+      return editor.commands.sinkListItem(innermost)
+    }
+    // Block an outer listItem/taskItem shortcut from hijacking Tab on the first nested item.
+    return true
+  }
+  if (editor.can().liftListItem(innermost)) {
+    return editor.commands.liftListItem(innermost)
+  }
+  return false
 }
 
 function trySinkListItem(editor: Editor): boolean {
@@ -299,6 +334,24 @@ export const Indent = Extension.create<IndentOptions>({
           return true
         }
     }
+  },
+
+  addExtensions() {
+    const getEnabled = () => this.options.enabled
+    // Runs ahead of StarterKit's ListItem and TaskItem (both priority 100) only when
+    // mixed list types are nested, so Tab / Shift-Tab targets the innermost item (#679).
+    return [
+      Extension.create({
+        name: 'indentNestedListPriority',
+        priority: 101,
+        addKeyboardShortcuts() {
+          return {
+            Tab: () => (getEnabled() ? tryInnermostListItem(this.editor, 'forward') : false),
+            'Shift-Tab': () => (getEnabled() ? tryInnermostListItem(this.editor, 'back') : false)
+          }
+        }
+      })
+    ]
   },
 
   addKeyboardShortcuts() {
