@@ -292,6 +292,8 @@ The answer must list `registration_endpoint`. If it is missing, the OAuth server
 
 **Match the two addresses.** The connector's address is `PUBLIC_RESTAPI_URL` plus `/api/mcp`. The Settings page copies `NEXT_PUBLIC_RESTAPI_URL` plus `/mcp`. The two must match exactly, so `NEXT_PUBLIC_RESTAPI_URL` must equal `PUBLIC_RESTAPI_URL` plus `/api`. When `PUBLIC_RESTAPI_URL` is unset, the server uses the request origin. Behind the proxy, that origin can start with `http`. [ENV.md](../../apps/hocuspocus.server/ENV.md#public-origin) defines the value.
 
+**Set `APP_URL`.** Set `APP_URL` to your webapp address. Emails, the `create_document` link, and the connector's website and icon use it. If it is unset, they point at `https://docs.plus`.
+
 **Check the endpoint.** Run this from any directory.
 
 ```bash
