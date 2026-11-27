@@ -33,7 +33,9 @@ export const createServerFactory =
           }
         ]
       },
-      { instructions: INSTRUCTIONS }
+      // The tool set never changes. The SDK default (true) invites a
+      // subscriptions/listen stream that would never carry a message.
+      { instructions: INSTRUCTIONS, capabilities: { tools: { listChanged: false } } }
     )
     registerDocumentTools(server, deps, context)
     registerChatTools(server, deps, context)
