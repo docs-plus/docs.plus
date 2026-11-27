@@ -49,6 +49,7 @@ while IFS= read -r f; do
     apps/hocuspocus.server/*|packages/email-templates/*|packages/pad-url/*|packages/supabase/*|packages/floating-*|extensions/extension-hyperlink/*|extensions/extension-hypermultimedia/*|extensions/extension-inline-code/*)
       backend=true; hit=true ;;
   esac
+  case "${f}" in apps/github-relay/*) hit=true ;; esac
   if [ "${hit}" = true ]; then
     echo "scoped    ${f}" >&2
   else

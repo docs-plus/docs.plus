@@ -10,10 +10,12 @@ type OutputFormat = 'webp' | 'gif'
 
 interface DemoMeta {
   durationMs: number
-  fps: number
-  width: number
-  height: number
   zoomWindows?: [number, number][]
+}
+
+type DemoWindow = Window & {
+  __demoMeta: DemoMeta
+  __renderFrame(ms: number): void
 }
 
 interface CapturedFrame {
@@ -29,7 +31,6 @@ interface PlaywrightPage {
   addStyleTag(options: { content: string }): Promise<void>
   evaluate<T, A = undefined>(fn: (arg: A) => T, arg?: A): Promise<T>
   screenshot(options: {
-    path?: string
     type: 'png'
     omitBackground?: boolean
     animations?: 'disabled'
@@ -125,21 +126,15 @@ function parseCli(): CliConfig {
     process.exit(0)
   }
 
-  const themes: Theme[] =
-    values.theme === 'both'
-      ? ['light', 'dark']
-      : values.theme === 'light' || values.theme === 'dark'
-        ? [values.theme]
-        : (() => {
-            throw new Error(`Invalid --theme value: ${values.theme}`)
-          })()
+  let themes: Theme[]
+  if (values.theme === 'both') themes = ['light', 'dark']
+  else if (values.theme === 'light' || values.theme === 'dark') themes = [values.theme]
+  else throw new Error(`Invalid --theme value: ${values.theme}`)
 
-  const format: OutputFormat =
-    values.format === 'webp' || values.format === 'gif'
-      ? values.format
-      : (() => {
-          throw new Error(`Invalid --format value: ${values.format}`)
-        })()
+  if (values.format !== 'webp' && values.format !== 'gif') {
+    throw new Error(`Invalid --format value: ${values.format}`)
+  }
+  const format: OutputFormat = values.format
 
   return {
     stars: parsePositiveInt(values.stars, '--stars', true),
@@ -310,9 +305,7 @@ async function renderTheme(
       })
     }
 
-    const meta = await page.evaluate(() => {
-      return (window as unknown as { __demoMeta: DemoMeta }).__demoMeta
-    })
+    const meta = await page.evaluate(() => (window as unknown as DemoWindow).__demoMeta)
 
     const tickMs = Math.round(1000 / config.fps)
     const frames: CapturedFrame[] = []
@@ -324,10 +317,7 @@ async function renderTheme(
       const stepDuration = Math.min(tickMs, meta.durationMs - ms)
       totalTicks += 1
 
-      await page.evaluate((t) => {
-        const w = window as unknown as { __renderFrame(ms: number): void }
-        w.__renderFrame(t)
-      }, ms)
+      await page.evaluate((t) => (window as unknown as DemoWindow).__renderFrame(t), ms)
       await page.evaluate(
         () =>
           new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())))
@@ -341,7 +331,7 @@ async function renderTheme(
       const hash = Bun.hash(png)
 
       // Merge identical consecutive static frames so holds cost one frame without timing drift.
-      if (prevPng && prevHash === hash && Buffer.compare(prevPng, png) === 0 && frames.length > 0) {
+      if (prevPng && prevHash === hash && Buffer.compare(prevPng, png) === 0) {
         frames[frames.length - 1].durationMs += stepDuration
         continue
       }

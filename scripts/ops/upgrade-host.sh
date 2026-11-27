@@ -24,7 +24,7 @@ RUNNER_TODAY=/opt/projects/prod.docs.plus # the runner root until #743 moves it 
 APP_HELD=(hocuspocus-worker hocuspocus-server rest-api) # start order, as the deploy job
 APP_ALL=(webapp rest-api hocuspocus-server hocuspocus-worker admin-dashboard)
 STORE_Q=store-documents
-BACKUP_TIMERS=7
+BACKUP_TIMERS=8
 REQUIRE_BACKUPS=yes # "no" needs a maintainer ruling; #747 ran with "no" on 2026-11-18, before #748
 RUNNER_PM2_APP=prod.docs.plus-runner # the runner's PM2 name until #743 moves it to svc.sh
 HOP=$HOME/upgrade-hop.env         # the open hop: OLD, NEW, TARGET, STATE
@@ -249,7 +249,7 @@ preflight() {
   if [ "$mode" = window ]; then
     local t; t=$(timer_count)
     if [ "$REQUIRE_BACKUPS" = yes ]; then
-      [ "$t" = "$BACKUP_TIMERS" ] && ok "$t backup timers (#748)" || bad "$t backup timers, want $BACKUP_TIMERS: do #748 first"
+      [ "$t" -ge "$BACKUP_TIMERS" ] && ok "$t backup timers (#748)" || bad "$t backup timers, want at least $BACKUP_TIMERS: do #748 first"
     else
       info "#748 backups waived (maintainer, 2026-11-18): $t backup timers. The rollback is the pre-hop snapshot."
       fact "backups_waived=yes"
@@ -265,7 +265,11 @@ preflight() {
   fi
   sudo sshd -t && ok "sshd config is valid" || bad "'sudo sshd -t' fails: fix /etc/ssh/sshd_config"
   [ "$mode" != window ] || { [ -s "$HOME/containers-before.txt" ] && ok "inventory saved" || bad "no inventory: run $0 inventory"; }
-  ! grep -rqs yarnpkg $(sources) || info "a yarn source remains (#747 step 4). Its old key can fail apt on hop 2."
+  local -a src_files=()
+  mapfile -t src_files < <(sources)
+  if [ "${#src_files[@]}" -gt 0 ] && grep -rqs yarnpkg "${src_files[@]}"; then
+    info "a yarn source remains (#747 step 4). Its old key can fail apt on hop 2."
+  fi
   [ "$FAILS" = 0 ] || die "$FAILS preflight check(s) failed. Nothing was stopped." "fix each FAIL above, then run $0 $STAGE again"
 }
 
@@ -323,7 +327,11 @@ cmd_inventory() {
   fi
   info "runner: $(runner_mode)$( [ "$(runner_mode)" != unit ] || echo " $(runner_unit) $(systemctl is-enabled "$(runner_unit)" 2>/dev/null)")"
   step "apt"
-  grep -h '^[^#]' $(sources) | sed 's/^/  info  /' || true
+  local -a src_files=()
+  mapfile -t src_files < <(sources)
+  if [ "${#src_files[@]}" -gt 0 ]; then
+    grep -h '^[^#]' "${src_files[@]}" | sed 's/^/  info  /' || true
+  fi
   info "holds: $(apt-mark showhold | xargs), dpkg audit lines: $(dpkg --audit | wc -l)"
   info "grub-pc install device: $(sudo debconf-show grub-pc 2>/dev/null | sed -n 's/^[* ]*grub-pc\/install_devices: *//p')"
   step "reads for #747 steps 3 and 4"
@@ -459,12 +467,19 @@ cmd_hop() {
 
   step "switch the apt sources $old -> $new"
   [ -d "$HOME/apt-$old.bak" ] || sudo cp -a /etc/apt "$HOME/apt-$old.bak"
-  local f; for f in $(sources); do ! sudo grep -q "$old" "$f" || sudo sed -i "s/$old/$new/g" "$f"; done
-  if [ "$new" = bookworm ]; then
-    for f in $(sources); do ! sudo grep -q download.docker.com/linux/ubuntu "$f" || sudo sed -i 's#download.docker.com/linux/ubuntu#download.docker.com/linux/debian#' "$f"; done
+  local -a src_files=()
+  mapfile -t src_files < <(sources)
+  if [ "${#src_files[@]}" -gt 0 ]; then
+    local f
+    for f in "${src_files[@]}"; do ! sudo grep -q "$old" "$f" || sudo sed -i "s/$old/$new/g" "$f"; done
+    if [ "$new" = bookworm ]; then
+      for f in "${src_files[@]}"; do ! sudo grep -q download.docker.com/linux/ubuntu "$f" || sudo sed -i 's#download.docker.com/linux/ubuntu#download.docker.com/linux/debian#' "$f"; done
+    fi
+    for f in "${src_files[@]}"; do ! sudo grep -q apt-archive.postgresql.org "$f" || sudo sed -i 's#://apt-archive\.postgresql\.org/#://apt.postgresql.org/#' "$f"; done # $new is live there
+    ! grep -rn "$old" "${src_files[@]}" && ok "no source names $old" || die "a source still names $old"
+  else
+    ok "no source names $old"
   fi
-  for f in $(sources); do ! sudo grep -q apt-archive.postgresql.org "$f" || sudo sed -i 's#://apt-archive\.postgresql\.org/#://apt.postgresql.org/#' "$f"; done # $new is live there
-  ! grep -rn "$old" $(sources) && ok "no source names $old" || die "a source still names $old"
   info "the old sources are saved in $HOME/apt-$old.bak"
 
   step "refresh the package lists"
@@ -514,7 +529,15 @@ cmd_check() {
   local vid; vid=$(. /etc/os-release && echo "$VERSION_ID")
   [ "$vid" = "$target" ] && ok "Debian $vid" || bad "Debian $vid, want $target"
   [ "$(apt-cache policy | grep -c "$new-security" || true)" -ge 1 ] && ok "$new-security source" || bad "no $new-security source"
-  [ -z "$old" ] || { ! grep -rqn "$old" $(sources) && ok "no source names $old" || bad "a source still names $old"; }
+  if [ -n "$old" ]; then
+    local -a src_files=()
+    mapfile -t src_files < <(sources)
+    if [ "${#src_files[@]}" -eq 0 ] || ! grep -rqn "$old" "${src_files[@]}"; then
+      ok "no source names $old"
+    else
+      bad "a source still names $old"
+    fi
+  fi
   [[ $(uname -r) == "$(kernel_for "$target")".* ]] && ok "kernel $(uname -r)" || bad "kernel $(uname -r) is not the Debian $target kernel"
 
   step "containers (wait up to 3 min for 'starting')"
@@ -650,7 +673,12 @@ cmd_sources() {
     sudo sed -i 's#://apt\.postgresql\.org/#://apt-archive.postgresql.org/#' "$f"; ok "pgdg uses the archive (hop 1 moves it back to the live repo)"
   else info "nothing to do"; fi
   step "Docker source"
-  f=$(grep -rl 'download.docker.com/linux/ubuntu' $(sources) || true)
+  local -a src_files=()
+  mapfile -t src_files < <(sources)
+  f=""
+  if [ "${#src_files[@]}" -gt 0 ]; then
+    f=$(grep -rl 'download.docker.com/linux/ubuntu' "${src_files[@]}" || true)
+  fi
   if [ -n "$f" ]; then
     info "it names the Ubuntu repo, which has no $c. The installed Docker is a Debian build."
     confirm "Point $f at download.docker.com/linux/debian?"

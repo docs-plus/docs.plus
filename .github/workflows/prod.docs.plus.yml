@@ -903,9 +903,21 @@ jobs:
                 *) NEW_IDS+=("${id}") ;;
               esac
             done
+            cleanup_new() {
+              if [ "${#NEW_IDS[@]}" -eq 0 ]; then return 0; fi
+              local cid cname
+              for cid in "${NEW_IDS[@]}"; do
+                cname=$(docker inspect -f '{{.Name}}' "${cid}" 2>/dev/null || echo "${cid}")
+                echo "🧹 Removing failed new container ${cname}..."
+                docker stop "${cid}" >/dev/null || true
+                docker rm "${cid}" >/dev/null || true
+              done
+            }
+
             if [ "${#NEW_IDS[@]}" -ne "${TARGET}" ]; then
               echo "::error::Expected ${TARGET} new ${SERVICE} containers, found ${#NEW_IDS[@]}. Retiring nothing."
               "${COMPOSE[@]}" ps "${SERVICE}"
+              cleanup_new
               return 1
             fi
 
@@ -926,6 +938,7 @@ jobs:
             if [ "${READY}" -ne 1 ]; then
               echo "::error::New ${SERVICE} replicas never reported healthy after 120s. Old replicas left running — no traffic was drained."
               "${COMPOSE[@]}" ps "${SERVICE}"
+              cleanup_new
               return 1
             fi
             echo "✅ ${#NEW_IDS[@]} new ${SERVICE} replicas healthy"
@@ -1079,16 +1092,18 @@ jobs:
             fi
           done
 
-          # Service running + healthy check
+          # Service running + healthy check (exact target replica count)
           echo "📊 Services:"
-          for svc in webapp rest-api hocuspocus-server hocuspocus-worker admin-dashboard; do
+          for spec in webapp:2 rest-api:2 hocuspocus-server:2 hocuspocus-worker:2 admin-dashboard:1; do
+            svc="${spec%%:*}"
+            TARGET="${spec##*:}"
             RUNNING=$(docker ps --filter "label=com.docker.compose.service=${svc}" --filter "status=running" --format "{{.Names}}" | wc -l)
             HEALTHY=$(docker ps --filter "label=com.docker.compose.service=${svc}" --filter "health=healthy" --format "{{.Names}}" | wc -l)
 
-            if [ "${RUNNING}" -gt 0 ]; then
-              echo "  ✅ ${svc}: ${RUNNING} running, ${HEALTHY} healthy"
+            if [ "${RUNNING}" -eq "${TARGET}" ] && [ "${HEALTHY}" -eq "${TARGET}" ]; then
+              echo "  ✅ ${svc}: ${RUNNING}/${TARGET} running, ${HEALTHY}/${TARGET} healthy"
             else
-              echo "  ❌ ${svc}: NOT running"
+              echo "  ❌ ${svc}: expected ${TARGET} running and healthy, got ${RUNNING} running, ${HEALTHY} healthy"
               exit 1
             fi
           done
@@ -1248,14 +1263,64 @@ jobs:
           fi
           source "${RUNNER_TEMP}/deploy-service.sh"
 
+          # Clean up stray non-PREVIOUS_TAG containers and skip services that
+          # already have all TARGET healthy replicas running PREVIOUS_TAG.
+          rollback_service() {
+            local SERVICE="$1" TARGET="$2"
+            local -a COMPOSE=(docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}")
+            local -a ALL_IDS=() STRAY_IDS=() UNHEALTHY_STRAYS=()
+            local id img status health prev_running=0 prev_healthy=0
+
+            mapfile -t ALL_IDS < <("${COMPOSE[@]}" ps -aq "${SERVICE}")
+            for id in "${ALL_IDS[@]}"; do
+              [ -n "${id}" ] || continue
+              img=$(docker inspect -f '{{.Config.Image}}' "${id}" 2>/dev/null || true)
+              status=$(docker inspect -f '{{.State.Status}}' "${id}" 2>/dev/null || true)
+              health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "${id}" 2>/dev/null || true)
+              if [[ "${img}" == *":${PREVIOUS_TAG}" ]]; then
+                if [ "${status}" = running ]; then
+                  prev_running=$((prev_running + 1))
+                  [ "${health}" = healthy ] && prev_healthy=$((prev_healthy + 1))
+                fi
+              else
+                STRAY_IDS+=("${id}")
+                if [ "${status}" != running ] || [ "${health}" != healthy ]; then
+                  UNHEALTHY_STRAYS+=("${id}")
+                fi
+              fi
+            done
+
+            if [ "${prev_running}" -eq "${TARGET}" ] && [ "${prev_healthy}" -eq "${TARGET}" ]; then
+              if [ "${#STRAY_IDS[@]}" -gt 0 ]; then
+                echo "🧹 Removing ${#STRAY_IDS[@]} stray non-${PREVIOUS_TAG} ${SERVICE} container(s)..."
+                for id in "${STRAY_IDS[@]}"; do
+                  docker stop "${id}" >/dev/null || true
+                  docker rm "${id}" >/dev/null || true
+                done
+              fi
+              echo "⏭️  ${SERVICE} already has ${prev_healthy}/${TARGET} healthy replicas at ${PREVIOUS_TAG}; skipping"
+              return 0
+            fi
+
+            if [ "${#UNHEALTHY_STRAYS[@]}" -gt 0 ]; then
+              echo "🧹 Removing ${#UNHEALTHY_STRAYS[@]} unhealthy stray non-${PREVIOUS_TAG} ${SERVICE} container(s)..."
+              for id in "${UNHEALTHY_STRAYS[@]}"; do
+                docker stop "${id}" >/dev/null || true
+                docker rm "${id}" >/dev/null || true
+              done
+            fi
+
+            deploy_service "${SERVICE}" "${TARGET}"
+          }
+
           # Keep going past a failed service so the rest still get their old
           # image back; the smoke tests below decide the step's exit code.
           ROLLBACK_OK=1
-          deploy_service "hocuspocus-worker" 2 || ROLLBACK_OK=0
-          deploy_service "webapp" 2 || ROLLBACK_OK=0
-          deploy_service "hocuspocus-server" 2 || ROLLBACK_OK=0
-          deploy_service "rest-api" 2 || ROLLBACK_OK=0
-          deploy_service "admin-dashboard" 1 || ROLLBACK_OK=0
+          rollback_service "hocuspocus-worker" 2 || ROLLBACK_OK=0
+          rollback_service "webapp" 2 || ROLLBACK_OK=0
+          rollback_service "hocuspocus-server" 2 || ROLLBACK_OK=0
+          rollback_service "rest-api" 2 || ROLLBACK_OK=0
+          rollback_service "admin-dashboard" 1 || ROLLBACK_OK=0
 
           # Post-rollback verification (A3). Give containers a moment to bind
           # ports + pass first healthcheck, then run the same internal smoke

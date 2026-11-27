@@ -34,7 +34,6 @@ interface DirectionState {
 
 interface SocketData {
   connId: number
-  role: 'client' | 'upstream'
 }
 
 type ProxySocket = Bun.Socket<SocketData>
@@ -199,11 +198,7 @@ async function main(): Promise<void> {
 
       const now = Date.now()
       if (head.deliverAt > now) {
-        if (
-          dir.timer !== null &&
-          dir.timerDeliverAt !== null &&
-          dir.timerDeliverAt <= head.deliverAt
-        ) {
+        if (dir.timerDeliverAt !== null && dir.timerDeliverAt <= head.deliverAt) {
           return
         }
         clearDirTimer(dir)
@@ -350,7 +345,7 @@ async function main(): Promise<void> {
         }
         const connId = nextConnId++
         totalConnections += 1
-        clientSocket.data = { connId, role: 'client' }
+        clientSocket.data = { connId }
         const state: ConnState = {
           id: connId,
           client: clientSocket,
@@ -373,7 +368,7 @@ async function main(): Promise<void> {
                 upstreamSocket.end()
                 return
               }
-              upstreamSocket.data = { connId, role: 'upstream' }
+              upstreamSocket.data = { connId }
               state.upstream = upstreamSocket
               flushDir(state, 'c2s')
             },

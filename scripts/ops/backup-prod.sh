@@ -4,7 +4,18 @@
 set -euo pipefail
 STORE="${1:?usage: backup-prod.sh <store>}"
 E=/opt/docsplus-backup/.env.backup
-eval "$(grep -E '^(AGE_RECIPIENT|BUCKET|MEDIA_BUCKET)=' "$E")"
+while IFS='=' read -r k v || [ -n "$k" ]; do
+  v="${v%$'\r'}"
+  case "$v" in
+    \"*\") v="${v#\"}"; v="${v%\"}" ;;
+    \'*\') v="${v#\'}"; v="${v%\'}" ;;
+  esac
+  case "$k" in
+    AGE_RECIPIENT) AGE_RECIPIENT="$v" ;;
+    BUCKET) BUCKET="$v" ;;
+    MEDIA_BUCKET) MEDIA_BUCKET="$v" ;;
+  esac
+done < "$E"
 TS=$(date -u +%Y%m%dT%H%MZ)
 START=$(date +%s)
 RCLONE=(docker run --rm -i --env-file "$E" rclone/rclone:1.75.2)
@@ -20,6 +31,10 @@ case "$STORE" in
   redis)
     OBJ="redis/redis-$TS.rdb.age"
     USED=$(docker exec docsplus-redis redis-cli INFO memory | sed -n 's/^used_memory:\([0-9]*\).*/\1/p')
+    if ! { [[ "$USED" =~ ^[0-9]+$ ]] && [ "$USED" -gt 0 ]; }; then
+      echo "redis: failed to read used_memory (got '$USED')" >&2
+      exit 1
+    fi
     AVAIL=$(( $(awk '/^MemAvailable:/ {print $2}' /proc/meminfo) * 1024 ))
     FREE=$(( $(df -Pk / | awk 'NR == 2 {print $4}') * 1024 ))
     if [ "$AVAIL" -lt $(( 2 * USED )) ] || [ "$FREE" -lt $(( 3 * USED )) ]; then echo "redis: skipped, low memory or disk" >&2; exit 3; fi
@@ -43,6 +58,7 @@ if [ -n "${MIRROR:-}" ]; then
   OBJECTS=$("${RCLONE[@]}" size --json "backup:${BUCKET}/$MIRROR/" | sed -E 's/.*"count":([0-9]+).*/\1/')
 fi
 D=/var/lib/node_exporter/textfile
+mkdir -p "$D"
 {
   printf 'backup_last_success_timestamp_seconds{store="%s"} %s\n' "$STORE" "$(date +%s)"
   printf 'backup_last_duration_seconds{store="%s"} %s\n' "$STORE" "$(( $(date +%s) - START ))"

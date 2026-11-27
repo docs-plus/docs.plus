@@ -8,10 +8,6 @@
 
 FROM oven/bun:1-slim AS deps
 
-RUN rm -rf /var/lib/apt/lists/* && \
-    apt-get update && apt-get install -y --no-install-recommends ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
 COPY package.json bun.lock* bunfig.toml ./
@@ -42,7 +38,7 @@ COPY extensions/extension-placeholder/package.json ./extensions/extension-placeh
 COPY extensions/extension-mermaid/package.json ./extensions/extension-mermaid/
 COPY packages/supabase/package.json ./packages/supabase/
 
-RUN bun install --frozen-lockfile --ignore-scripts
+# No install here on purpose: builder copies only manifests and installs for itself.
 
 # -----------------------------------------------------------------------------
 # Build
@@ -77,9 +73,14 @@ COPY --from=deps /app/packages ./packages
 # apps/* + extensions/* package.json — all workspace members must exist for --frozen-lockfile
 COPY --from=deps /app/apps ./apps
 COPY --from=deps /app/extensions ./extensions
-COPY apps/admin-dashboard ./apps/admin-dashboard
 
 RUN bun install --frozen-lockfile --ignore-scripts
+
+# Below the install: source changes on nearly every deploy and the install never
+# reads it. COPY --from=deps above already supplies apps/admin-dashboard/package.json,
+# so a manifest change still invalidates the install. COPY merges into the existing
+# directory so apps/admin-dashboard/node_modules survives. Never add --link here.
+COPY apps/admin-dashboard ./apps/admin-dashboard
 
 # Declared below the install, not above: an ENV enters a later RUN's cache key,
 # an unchanged COPY does not. Warm deploy 32946907649: the COPY above was CACHED,

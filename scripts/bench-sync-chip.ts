@@ -73,7 +73,9 @@ const parsePosInt = (raw: string, flag: string) => {
   return n
 }
 
-export function parseCli(defaultMode: 'bench' | 'checks' | 'all' = 'bench') {
+export type BenchMode = 'bench' | 'checks' | 'all'
+
+export function parseCli(defaultMode: BenchMode = 'bench') {
   const s = (d: string) => ({ type: 'string' as const, default: d })
   const b = () => ({ type: 'boolean' as const, default: false })
   const { values: v } = parseArgs({
@@ -99,9 +101,9 @@ export function parseCli(defaultMode: 'bench' | 'checks' | 'all' = 'bench') {
     )
     process.exit(0)
   }
-  const mode = v.mode
-  if (mode !== 'bench' && mode !== 'checks' && mode !== 'all')
-    throw new Error(`Invalid --mode value: ${mode}`)
+  if (v.mode !== 'bench' && v.mode !== 'checks' && v.mode !== 'all')
+    throw new Error(`Invalid --mode value: ${v.mode}`)
+  const mode: BenchMode = v.mode
   return {
     baseUrl: v['base-url'].replace(/\/$/, ''),
     restUrl: v['rest-url'].replace(/\/$/, ''),
@@ -312,12 +314,12 @@ async function runSingleBench(
       const baselineIdx = frames.length
       await installPageObservers(page)
 
-      const typingStartWallMs = Date.now(),
-        startPerf = performance.now()
+      const typingStartWallMs = Date.now()
+      const startPerf = performance.now()
       for (let i = 0; i < config.chars; i += 1) {
         const waitMs = startPerf + i * config.intervalMs - performance.now()
         if (waitMs > 1) await Bun.sleep(waitMs)
-        await page.keyboard.type('abcdefghij'[i % 10] ?? 'a', { delay: 0 })
+        await page.keyboard.type('abcdefghij'[i % 10], { delay: 0 })
       }
       const typingEndWallMs = Date.now()
       const { keyEvents: initialKeys } = await readPageEvents(page)
@@ -336,10 +338,10 @@ async function runSingleBench(
       if (!settled)
         throw new Error(`Run ${runIndex} (${slug}) timed out waiting for SyncStatus & chip settle`)
 
-      const { chipEvents, keyEvents } = await readPageEvents(page),
-        post = frames.slice(baselineIdx)
-      const syncUpdates = post.filter((f) => c.isSyncUpdateFrame(f, documentId)),
-        syncAcks = post.filter((f) => c.isSyncAckFrame(f, documentId))
+      const { chipEvents, keyEvents } = await readPageEvents(page)
+      const post = frames.slice(baselineIdx)
+      const syncUpdates = post.filter((f) => c.isSyncUpdateFrame(f, documentId))
+      const syncAcks = post.filter((f) => c.isSyncAckFrame(f, documentId))
       const typingStartBrowserWallMs = keyEvents[0]?.wallMs ?? typingStartWallMs
       const lastKeystrokeWallMs = keyEvents.at(-1)?.wallMs ?? settleKeystrokeWallMs
       const finalAckWallMs = syncAcks.at(-1)?.wallMs ?? null
@@ -399,8 +401,8 @@ export async function runMain(defaultMode: CliConfig['mode'] = 'bench'): Promise
   }
 
   const browser = await playwright.chromium.launch({ headless: config.headless })
-  const browserVersion = browser.version(),
-    executablePath = playwright.chromium.executablePath()
+  const browserVersion = browser.version()
+  const executablePath = playwright.chromium.executablePath()
   console.log(
     `[bench-sync-chip] Chromium ${browserVersion} (${executablePath}), mode=${config.mode}, runs=${config.runs}, chars=${config.chars}, interval=${config.intervalMs}ms, cpuThrottle=${config.cpuThrottle}x`
   )
@@ -446,11 +448,11 @@ export async function runMain(defaultMode: CliConfig['mode'] = 'bench'): Promise
   const med = (xs: number[]) => (xs.length ? median(xs) : null)
   const rng = (xs: number[]): [number, number] | null =>
     xs.length ? [Math.min(...xs), Math.max(...xs)] : null
-  const m2 = nonNull(benchRuns.map((r) => r.metric2DeltaMs)),
-    rtt = nonNull(benchRuns.map((r) => r.lastKeystrokeToFinalSyncStatusMs))
-  const syn = nonNull(benchRuns.map((r) => r.finalKeystrokeToSyncedMs)),
-    upd = benchRuns.map((r) => r.typingUpdateFrames),
-    ws = benchRuns.map((r) => r.totalWsFrames)
+  const m2 = nonNull(benchRuns.map((r) => r.metric2DeltaMs))
+  const rtt = nonNull(benchRuns.map((r) => r.lastKeystrokeToFinalSyncStatusMs))
+  const syn = nonNull(benchRuns.map((r) => r.finalKeystrokeToSyncedMs))
+  const upd = benchRuns.map((r) => r.typingUpdateFrames)
+  const ws = benchRuns.map((r) => r.totalWsFrames)
   const aggregates = benchRuns.length
     ? {
         metric1PrematureCount: benchRuns.filter((r) => r.metric1PrematureSynced).length,

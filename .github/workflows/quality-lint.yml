@@ -40,3 +40,7 @@ jobs:
       # The pad link format the webapp and the server both build from.
       - name: 🧪 Pad URL unit tests
         run: bun run --filter @docs.plus/pad-url test
+
+      # Standalone GitHub webhook relay (deployed by its own workflow).
+      - name: 🧪 GitHub relay unit tests
+        run: bun run --filter @docs.plus/github-relay test

@@ -102,8 +102,24 @@ export async function waitForPayloadAcks(
 const safeIdent = (s: string) => s.replace(/[^a-zA-Z0-9_-]/g, '')
 
 function runPsql(sql: string): string {
-  const cmd = 'docker exec -i docsy-postgres-local psql -U docsplus -d docsplus -t -A'.split(' ')
-  const proc = Bun.spawnSync([...cmd, '-c', sql], { stdout: 'pipe', stderr: 'pipe' })
+  const proc = Bun.spawnSync(
+    [
+      'docker',
+      'exec',
+      '-i',
+      'docsy-postgres-local',
+      'psql',
+      '-U',
+      'docsplus',
+      '-d',
+      'docsplus',
+      '-t',
+      '-A',
+      '-c',
+      sql
+    ],
+    { stdout: 'pipe', stderr: 'pipe' }
+  )
   if (proc.exitCode !== 0) throw new Error(`psql failed: ${new TextDecoder().decode(proc.stderr)}`)
   return new TextDecoder().decode(proc.stdout).trim()
 }
@@ -143,8 +159,10 @@ async function pollRestPadForText(
   }
   let last = first
   const hit = await b.pollUntil(
-    async () =>
-      (last = await fetchRestPadText(restUrl, docId, key)).content.includes(needle) ? last : false,
+    async () => {
+      last = await fetchRestPadText(restUrl, docId, key)
+      return last.content.includes(needle) ? last : false
+    },
     timeoutMs,
     1000
   )
@@ -157,8 +175,8 @@ async function pollRestPadForText(
 }
 
 async function execRestartCmd(cmd: string): Promise<number> {
-  const start = Date.now(),
-    proc = Bun.spawn(['/bin/sh', '-c', cmd], { stdout: 'pipe', stderr: 'pipe' })
+  const start = Date.now()
+  const proc = Bun.spawn(['/bin/sh', '-c', cmd], { stdout: 'pipe', stderr: 'pipe' })
   if ((await proc.exited) !== 0)
     throw new Error(`ws-restart-cmd failed: ${await new Response(proc.stderr).text()}`)
   return Date.now() - start
@@ -369,10 +387,10 @@ export async function runContentSafetyChecks(
 
     await openPad('c8', async ({ page, frames, slug }) => {
       await b.installPageObservers(page)
-      const baseIdx = frames.length,
-        tStart = Date.now(),
-        restartCmdDurationMs = await execRestartCmd(wsRestartCmd),
-        tDone = Date.now()
+      const baseIdx = frames.length
+      const tStart = Date.now()
+      const restartCmdDurationMs = await execRestartCmd(wsRestartCmd)
+      const tDone = Date.now()
       let ackMs: number | null = null
       await b.pollUntil(
         async () => {
