@@ -296,6 +296,9 @@ export class EventBatcher {
     const pushers = new Set(items.map((p) => p.pusher))
     const explicitClosed = new Set(items.flatMap((p) => p.closedIssues))
     const correlatedNumbers: number[] = []
+    const isCorrelated = (closeItem: IssueBatchItem): boolean =>
+      closeItem.repo === items[0].repo &&
+      (explicitClosed.has(closeItem.number) || pushers.has(closeItem.actor))
 
     // Absorb matching pending issue_close batches still waiting in SQLite.
     const pendingCloseBatches = this.store.findBatchesByKind('issue_close')
@@ -304,28 +307,21 @@ export class EventBatcher {
       const keep: IssueBatchItem[] = []
       const absorb: IssueBatchItem[] = []
       for (const closeItem of batch.items) {
-        if (
-          closeItem.repo === items[0].repo &&
-          (explicitClosed.has(closeItem.number) || pushers.has(closeItem.actor))
-        ) {
+        if (isCorrelated(closeItem)) {
           absorb.push(closeItem)
           correlatedNumbers.push(closeItem.number)
         } else {
           keep.push(closeItem)
         }
       }
-      if (absorb.length > 0) {
-        this.updateAnchoredClosures(absorb, nowMs)
-        if (keep.length === 0) this.store.deleteBatch(batch.batchKey)
-        else this.store.upsertBatch({ ...batch, items: keep, updatedAt: nowMs })
-      }
+      if (absorb.length === 0) continue
+      this.updateAnchoredClosures(absorb, nowMs)
+      if (keep.length === 0) this.store.deleteBatch(batch.batchKey)
+      else this.store.upsertBatch({ ...batch, items: keep, updatedAt: nowMs })
     }
 
     for (const closeItem of expiredCloses) {
-      if (
-        closeItem.repo === items[0].repo &&
-        (explicitClosed.has(closeItem.number) || pushers.has(closeItem.actor))
-      ) {
+      if (isCorrelated(closeItem)) {
         correlatedNumbers.push(closeItem.number)
       }
     }
@@ -364,10 +360,10 @@ export class EventBatcher {
       if (card) {
         this.store.enqueueJob('github', 'issues.open_batch', { op: 'post', card }, { nowMs })
       }
-    } else {
-      for (const item of routine) {
-        this.enqueueSingleIssueOpen(item, nowMs)
-      }
+      return
+    }
+    for (const item of routine) {
+      this.enqueueSingleIssueOpen(item, nowMs)
     }
   }
 
@@ -441,35 +437,35 @@ export class EventBatcher {
       if (card) {
         this.store.enqueueJob('github', 'issues.close_batch', { op: 'post', card }, { nowMs })
       }
-    } else {
-      for (const item of unanchored) {
-        const state: IssueEntityState = {
-          kind: 'issue',
-          number: item.number,
-          title: item.title,
-          url: item.url,
-          author: item.author,
-          outsider: item.outsider,
-          state: 'closed',
-          stateReason: item.stateReason,
-          labels: item.labels,
-          assignees: item.assignees,
-          commentCount: 0,
-          linkedPrNumber: item.closedByPr,
-          timeline: ['Closed']
-        }
-        const card = buildIssueCard(state, item.repo, true, this.config)
-        this.store.enqueueEntityUpsert({
-          channelKey: 'github',
-          channelId: this.config.channels.github,
-          kind: 'issue.closed',
-          entityKey: `issue:${item.number}`,
-          entityType: 'issue',
-          card,
-          state,
-          nowMs
-        })
+      return
+    }
+    for (const item of unanchored) {
+      const state: IssueEntityState = {
+        kind: 'issue',
+        number: item.number,
+        title: item.title,
+        url: item.url,
+        author: item.author,
+        outsider: item.outsider,
+        state: 'closed',
+        stateReason: item.stateReason,
+        labels: item.labels,
+        assignees: item.assignees,
+        commentCount: 0,
+        linkedPrNumber: item.closedByPr,
+        timeline: ['Closed']
       }
+      const card = buildIssueCard(state, item.repo, true, this.config)
+      this.store.enqueueEntityUpsert({
+        channelKey: 'github',
+        channelId: this.config.channels.github,
+        kind: 'issue.closed',
+        entityKey: `issue:${item.number}`,
+        entityType: 'issue',
+        card,
+        state,
+        nowMs
+      })
     }
   }
 

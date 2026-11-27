@@ -8,6 +8,7 @@ import {
 } from '../projection/digest.ts'
 import type { SqliteStore } from '../store/sqliteStore.ts'
 import type {
+  CardModel,
   ChannelKey,
   DigestKind,
   DiscordTransport,
@@ -214,61 +215,54 @@ export class ChannelQueue {
 
   async runDigest(kind: DigestKind, opts?: { force?: boolean; now?: Date }): Promise<boolean> {
     const now = opts?.now ?? new Date()
+    let runKey: string
+    let channelKey: ChannelKey
+    let fetchCard: () => Promise<CardModel | null>
 
     if (kind === 'daily') {
-      const runKey = `daily:${now.toISOString().slice(0, 10)}`
-      if (this.inFlightDigests.has(runKey)) return false
-      if (!opts?.force && this.store.hasRunKey(runKey)) return false
-
-      this.inFlightDigests.add(runKey)
-      try {
-        const snapshot = await this.github.fetchDigestSnapshot(this.config.githubRepository)
-        const card = buildDailyTriageDigest(snapshot, this.config)
-
-        if (!card) {
-          this.store.markRunKey(runKey, now.getTime())
-          return false
-        }
-
-        this.store.runTransaction(() => {
-          this.store.enqueueJob('triage', 'digest.daily', { op: 'post', card })
-          this.store.markRunKey(runKey, now.getTime())
-        })
-        await this.drainChannel('triage', Date.now())
-        return true
-      } finally {
-        this.inFlightDigests.delete(runKey)
-      }
+      runKey = `daily:${now.toISOString().slice(0, 10)}`
+      channelKey = 'triage'
+      fetchCard = async () =>
+        buildDailyTriageDigest(
+          await this.github.fetchDigestSnapshot(this.config.githubRepository),
+          this.config
+        )
+    } else {
+      const window = computeReportWindow(kind, now)
+      runKey = window.runKey
+      channelKey = 'github'
+      fetchCard = async () =>
+        buildPeriodReportCard(
+          await this.github.fetchPeriodReport(
+            this.config.githubRepository,
+            kind,
+            window.sinceMs,
+            window.untilMs,
+            window.periodLabel
+          ),
+          this.config
+        )
     }
 
-    const window = computeReportWindow(kind, now)
-    if (this.inFlightDigests.has(window.runKey)) return false
-    if (!opts?.force && this.store.hasRunKey(window.runKey)) return false
+    if (this.inFlightDigests.has(runKey)) return false
+    if (!opts?.force && this.store.hasRunKey(runKey)) return false
 
-    this.inFlightDigests.add(window.runKey)
+    this.inFlightDigests.add(runKey)
     try {
-      const report = await this.github.fetchPeriodReport(
-        this.config.githubRepository,
-        kind,
-        window.sinceMs,
-        window.untilMs,
-        window.periodLabel
-      )
-      const card = buildPeriodReportCard(report, this.config)
-
+      const card = await fetchCard()
       if (!card) {
-        this.store.markRunKey(window.runKey, now.getTime())
+        this.store.markRunKey(runKey, now.getTime())
         return false
       }
 
       this.store.runTransaction(() => {
-        this.store.enqueueJob('github', `digest.${kind}`, { op: 'post', card })
-        this.store.markRunKey(window.runKey, now.getTime())
+        this.store.enqueueJob(channelKey, `digest.${kind}`, { op: 'post', card })
+        this.store.markRunKey(runKey, now.getTime())
       })
-      await this.drainChannel('github', Date.now())
+      await this.drainChannel(channelKey, Date.now())
       return true
     } finally {
-      this.inFlightDigests.delete(window.runKey)
+      this.inFlightDigests.delete(runKey)
     }
   }
 }
