@@ -138,11 +138,18 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   and `c#`, and `useNewDocumentTip` skips scheduling when `navigator.webdriver` is true
   ([#818](https://github.com/docs-plus/docs.plus/issues/818)).
 - Chat `HTMLBody` strips `.hyperlink-icon` spans from the copied `text/html` clipboard fragment
-  while keeping plain text and visible DOM unchanged (`stripLinkIconsOnCopy`)
+  while preserving wrapping `<a>` elements on single-link selections and leaving plain text and
+  visible DOM unchanged (`stripLinkIconsOnCopy`)
   ([#697](https://github.com/docs-plus/docs.plus/issues/697)).
 - Phone link Edit/Remove and desktop link Remove resolve the live anchor position via
-  `resolveLiveLinkPos` and `removeHyperlinkAtPos` instead of relying on stale sheet positions or
-  the current editor selection ([#696](https://github.com/docs-plus/docs.plus/issues/696)).
+  `resolveLiveLinkPos` and `removeHyperlinkAtPos` (with destroyed-editor and doc-bounds guards)
+  instead of relying on stale sheet positions or the current editor selection
+  ([#696](https://github.com/docs-plus/docs.plus/issues/696)).
+- Tracked explicit collab `tokenState` in `collabSession.ts` so pre-connect `SIGNED_IN` cannot
+  latch `rescopePending`, hoisted `syncScope` to module scope in `useEditorEditableState.ts`,
+  fixed `Select` listbox `onKeyDown` merging and `role="combobox"`, stopped `99+` unread badge
+  reflow loops in `headingWidgetUnread.ts`, and guarded OAuth `decide()` against stale
+  authorization IDs and unhandled rejections.
 
 ### Security
 

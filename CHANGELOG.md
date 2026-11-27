@@ -139,11 +139,22 @@ This file is the product changelog. Every app, package and extension keeps its o
   `sourcecode_debugsymbolbundle` (`0` to `110` bundles), and symbolicate live production client
   events back to original `src/` paths and source lines
   ([#841](https://github.com/docs-plus/docs.plus/issues/841)).
-- Copying chat messages to another app no longer includes decorative link icons
+- Copying chat messages to another app no longer includes decorative link icons, and copying a
+  single chat link preserves its `<a href>` link target
   ([#697](https://github.com/docs-plus/docs.plus/issues/697)).
 - Editing a link on phones or removing a link on desktop and phones now targets the live link even
   after a co-editor shifts text above it
   ([#696](https://github.com/docs-plus/docs.plus/issues/696)).
+- Hardened rolling deploys and core API paths: in-flight MCP calls now drain before `mcpModule`
+  closes, `shutdown()` ignores duplicate signals, document search no longer crashes on `%` or
+  returns every document on punctuation-only queries, corrupt `.docx` DEFLATE streams return
+  `422`, `GET /export` enforces the large-decode gate, and `GET /api/connected-apps/redirects`
+  requires a non-anonymous user with per-user rate limiting. Detail:
+  `apps/hocuspocus.server/CHANGELOG.md`.
+- Fixed webapp `Select` listbox keyboard handling and `role="combobox"`, stopped `99+` unread
+  badge reflow loops on headings, prevented pre-connect `SIGNED_IN` from latching collab
+  disconnect state, and guarded OAuth consent actions against stale authorization IDs. Detail:
+  `apps/webapp/CHANGELOG.md`.
 
 ### Security
 
@@ -242,9 +253,16 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ### Internal
 
-- Added gzip byte-budget checks for `@docs.plus/extension-hypermultimedia` and
-  `@docs.plus/extension-mermaid` in PR CI alongside `@docs.plus/extension-hyperlink`
-  ([#784](https://github.com/docs-plus/docs.plus/issues/784)).
+- Shared the extension byte-budget bench runner under `scripts/lib/extension-bench/`, added PR CI
+  checks for `@docs.plus/extension-hypermultimedia` and `@docs.plus/extension-mermaid` alongside
+  `@docs.plus/extension-hyperlink`, and deferred `helperOnlyGz` limits on the two new benches
+  until pure-annotation opt-in ([#784](https://github.com/docs-plus/docs.plus/issues/784)).
+- Fixed rolling-deploy rollback deadlocks in `.github/workflows/prod.docs.plus.yml` (clean up
+  failed `NEW_IDS`, assert `HEALTHY == TARGET`), wired `@docs.plus/github-relay` tests into
+  `quality-lint.yml` with scoped path detection, hardened `apps/github-relay` (atomic batching,
+  strict FIFO retries, 15 s fetch timeouts, live triage updates), cleaned
+  `apps/admin-dashboard/docker/Dockerfile.bun`, and hardened `backup-prod.sh` and
+  `upgrade-host.sh`.
 - Guarded the all-zeros `github.event.before` fallback in `.github/workflows/prod.docs.plus.yml`
   to `push` events so pull requests evaluate change scopes instead of forcing every suite. Live
   draft-PR checks confirm README media skips extension suites (`1` to `0` jobs, `49 s` wall),

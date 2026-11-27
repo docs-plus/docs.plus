@@ -226,6 +226,17 @@ This file is the operator and API changelog. The pad product lives in the [root 
   `applyContentToDoc.ts` and `sections.ts`
   ([#813](https://github.com/docs-plus/docs.plus/issues/813),
   [#814](https://github.com/docs-plus/docs.plus/issues/814)).
+- Hardened server shutdown, search, conversion, MCP, and link-metadata boundaries:
+  - Moved `mcpModule.close()` after `server.stop()` drain and made `shutdown()` idempotent in both
+    `src/index.ts` and `src/hocuspocus.server.ts`.
+  - Removed double `decodeURIComponent` in `documentSearch.service.ts` (avoiding `500` on `%`) and
+    returned empty results on punctuation-only queries.
+  - Returned `422` for corrupt DEFLATE streams in `zipInflateSize.ts`, blocked anonymous ownership
+    on `PUT /api/documents/:docId`, gated `GET /:documentId/export` behind `acquireLargeDecode`,
+    and reused `withinTimeout` with DNS failure backoff in `roomRegistry.ts`.
+  - Added `requireNonAnonymousUser` and per-user rate limiting to
+    `GET /api/connected-apps/redirects`, aborted unconsumed oEmbed streams in `finally`, and
+    capped `readHead.ts` `readTail` buffers to `limit`.
 
 ### Security
 

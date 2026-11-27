@@ -11,8 +11,10 @@ historical Conventional Commits format. The project adheres to
 ### Security
 
 - Replaced the backtracking image-URL regex in `isImageUrl` with WHATWG `URL` parsing and an
-  anchored extension check, and escaped backslashes alongside brackets when serializing image alt
-  text to Markdown.
+  anchored extension check, replaced overlapping wildcards in `inputRegex` with linear character
+  classes, excluded `data:image/svg+xml` in `isImageUrl`, gated `Image.parseHTML` and
+  `HyperImagePastePlugin` through `isSafeMediaSrc`, and escaped backslashes alongside brackets
+  when serializing image alt text to Markdown.
 
 ### Internal
 
