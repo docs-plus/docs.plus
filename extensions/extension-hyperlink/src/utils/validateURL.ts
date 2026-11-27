@@ -30,14 +30,7 @@ const STANDARD_WEB_SCHEMES = new Set(['http', 'https', 'ftp', 'ftps'])
 /** IPv4 dotted quad. Deliberately loose on octet range — we only need a shape check. */
 const IPV4_RE = /^\d{1,3}(\.\d{1,3}){3}$/
 
-const TRAILING_PUNCTUATION_CHARS = '.,;:!?)]}'
-
-const isAllTrailingPunctuation = (text: string): boolean => {
-  for (let i = 0; i < text.length; i++) {
-    if (!TRAILING_PUNCTUATION_CHARS.includes(text[i])) return false
-  }
-  return true
-}
+const NON_TRAILING_PUNCTUATION_RE = /[^.,;:!?)\]}]/
 
 const OPENER_OF: Record<string, string> = { ')': '(', ']': '[', '}': '{' }
 
@@ -52,7 +45,7 @@ export const stripTrailingPunctuation = (text: string): string => {
     if ('()[]{}'.includes(char)) counts.set(char, (counts.get(char) ?? 0) + 1)
   }
   let end = text.length
-  while (end > 0 && TRAILING_PUNCTUATION_CHARS.includes(text[end - 1])) {
+  while (end > 0 && !NON_TRAILING_PUNCTUATION_RE.test(text[end - 1])) {
     const char = text[end - 1]
     const opener = OPENER_OF[char]
     if (opener) {
@@ -111,7 +104,9 @@ const linkifyWhole = (trimmed: string) => {
   const lead = trimmed.startsWith('//') ? 2 : 0
   const link = find(trimmed).find(
     (found) =>
-      found.isLink && found.start === lead && isAllTrailingPunctuation(trimmed.slice(found.end))
+      found.isLink &&
+      found.start === lead &&
+      !NON_TRAILING_PUNCTUATION_RE.test(trimmed.slice(found.end))
   )
   return link ? { link, text: trimmed.slice(0, link.end) } : null
 }
