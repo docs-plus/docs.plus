@@ -179,3 +179,5 @@ docs.plus is a free and open-source project by [Newspeak House](https://newspeak
 ## License
 
 [MIT](LICENSE) © 2023-2026 Harvey Marzban
+
+<!-- ci probe 563 docs -->
