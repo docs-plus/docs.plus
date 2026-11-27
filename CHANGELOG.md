@@ -85,8 +85,9 @@ This file is the product changelog. Every app, package and extension keeps its o
   ([#701](https://github.com/docs-plus/docs.plus/issues/701)).
 - Server snapshot persistence now clears legacy `@tiptap/y-tiptap` `3.0.10` position-migration
   maps in place without rebuilding document history. State vectors stay equal and stored heads
-  shrink: a synthetic `12.55 MB` seed drops to `297,365 B` (`97 %` less). Detail:
-  `apps/hocuspocus.server/CHANGELOG.md`
+  shrink: a synthetic `12.55 MB` seed drops to `297,365 B` (`97 %` less). In production pass 1,
+  the backfill cleared `125` heads (`15,568,003 B` to `4,183,427 B`, `73 %` less, `0` refused).
+  Detail: `apps/hocuspocus.server/CHANGELOG.md`
   ([#738](https://github.com/docs-plus/docs.plus/issues/738)).
 - Upgraded Uptime Kuma to `louislam/uptime-kuma:2.5.12-slim-rootless` (pinned by digest) in a
   dedicated `docker-compose.uptime-kuma.yml` stack behind Traefik (`status.docs.plus`), with a
@@ -131,6 +132,10 @@ This file is the product changelog. Every app, package and extension keeps its o
 - When a client closes a media upload before the body finishes, the server now logs
   `499 CLIENT_CLOSED_REQUEST` instead of `500` and sends no error alert
   ([#803](https://github.com/docs-plus/docs.plus/issues/803)).
+- GlitchTip web and worker containers now share a named `glitchtip-uploads` volume at
+  `/code/uploads`. Uploaded webapp sourcemaps persist across restarts and assemble into
+  `sourcecode_debugsymbolbundle` (`0` to `110` bundles)
+  ([#841](https://github.com/docs-plus/docs.plus/issues/841)).
 
 ### Security
 
@@ -174,6 +179,9 @@ This file is the product changelog. Every app, package and extension keeps its o
 - The production deploy now writes its env files as owner-only, with `install -m 600`. `cp` kept
   an existing copy's mode, so a `chmod` on the host source never reached the copies. Plain `cp`
   copy sites fall from 4 to none ([#742](https://github.com/docs-plus/docs.plus/issues/742)).
+- The production deploy runner now runs in `/opt/actions-runner/prod` under its `svc.sh` systemd
+  unit with a runner-only `.env`. Deploy jobs no longer inherit production app secrets (`74` to
+  `0` keys in `Runner.Worker`) ([#743](https://github.com/docs-plus/docs.plus/issues/743)).
 - Production SSH is now keys-only (`PasswordAuthentication no`, offered auth methods `2` to `1`:
   `publickey`), with `fail2ban` protecting `sshd` through the `systemd` backend and an out-of-band
   Recovery Console path proven ([#744](https://github.com/docs-plus/docs.plus/issues/744)).

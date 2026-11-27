@@ -204,7 +204,8 @@ This file is the operator and API changelog. The pad product lives in the [root 
   identical ProseMirror JSON. Added `scripts/backfill-clear-migration-maps.ts`, which runs in
   dry-run mode by default. With `--apply`, it skips live rooms via Redis `PUBSUB NUMSUB`, takes
   the `lockDocumentStore` advisory lock, and checks ProseMirror JSON. It saves per-row
-  `_backfill_738_backup` undo rows for `--restore <rowId>`
+  `_backfill_738_backup` undo rows for `--restore <rowId>`. Production pass 1 cleared `125` heads
+  (`15,568,003 B` to `4,183,427 B`, `73 %` less, `5` active rooms skipped, `0` refused)
   ([#738](https://github.com/docs-plus/docs.plus/issues/738)).
 - Raised the `realtime-ws-loaded-bytes` Grafana warning threshold from `30e6 B` to `50e6 B` in
   `rules-realtime.yml`. Production Prometheus reads over 7 and 14 days showed steady resident RSS
