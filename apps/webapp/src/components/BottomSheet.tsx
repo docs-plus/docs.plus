@@ -261,11 +261,11 @@ const BottomSheet = () => {
   // called here or from inside sheet content — see useHistoryDismiss.
   useHistoryDismiss(isOpen, closeSheet)
 
-  const content = useMemo((): React.ReactNode => {
-    if (!activeSheet) return null
-    const renderer = SHEETS[activeSheet].render as (data: SheetData) => React.ReactNode
-    return renderer(sheetData)
-  }, [activeSheet, sheetData])
+  // Computed inline (not in useMemo) so no closure captures `sheetData` (which can hold `editor`)
+  // in the render Closure Context shared with `focusSheet` and `closeFromBackdrop` (#785).
+  const content: React.ReactNode = activeSheet
+    ? (SHEETS[activeSheet].render as (data: SheetData) => React.ReactNode)(sheetData)
+    : null
 
   const sheetProps = useMemo<Partial<SheetProps>>(() => {
     if (!activeSheet) return DEFAULT_SHEET_PROPS

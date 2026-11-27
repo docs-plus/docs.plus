@@ -46,11 +46,11 @@ const findNewHeadingId = (doc: any, insertPosition: number): string | null => {
 }
 
 const AppendHeadingButton = ({ className }: { className: string }) => {
-  const editor = useStore((state) => state.settings.editor.instance)
   const isMobile = useStore((state) => state.settings.editor.isMobile)
   const closeModal = useModal()?.close
 
   const appendHeadingToEnd = useCallback(() => {
+    const editor = useStore.getState().settings.editor.instance
     if (!editor) return
     // insertContentAt mutates even a non-editable editor, so bail before it
     // when read-only enforcement or the content-fork freeze has locked the doc.
@@ -79,7 +79,7 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
     editor?.setEditable(true)
 
     handlePostInsertionActions(editor, selectionPos)
-  }, [editor, isMobile, closeModal])
+  }, [isMobile, closeModal])
 
   return (
     <div className={`p-3 ${className}`}>

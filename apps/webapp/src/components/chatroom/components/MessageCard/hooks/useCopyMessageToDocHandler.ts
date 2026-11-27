@@ -105,13 +105,13 @@ const findChatroomInsertPosition = (
 }
 
 export const useCopyMessageToDocHandler = () => {
-  const editor = useStore((state) => state.settings.editor.instance)
   const docMetadata = useStore((state) => state.settings.metadata)
   // The open room's heading. A channel id is not a toc-id (#402).
   const headingId = useChatStore((state) => state.chatRoom.headingId)
 
   const copyMessageToDocHandler = useCallback(
     (message: TMsgRow) => {
+      const editor = useStore.getState().settings.editor.instance
       if (!message || !editor || !headingId) return
 
       const insertPosition = findChatroomInsertPosition(editor, headingId)
@@ -136,7 +136,7 @@ export const useCopyMessageToDocHandler = () => {
         }
       })()
     },
-    [editor, headingId, docMetadata]
+    [headingId, docMetadata]
   )
 
   return {

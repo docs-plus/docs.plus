@@ -21,92 +21,88 @@ const createHeadingNodeJson = (messageContent: string, headingLevel: number) => 
 }
 
 export const useReplyInThreadHandler = () => {
-  const editor = useStore((state) => state.settings.editor.instance)
+  const replyInThreadHandler = useCallback((message: TMsgRow) => {
+    const editor = useStore.getState().settings.editor.instance
+    if (!editor || !message) return
 
-  const replyInThreadHandler = useCallback(
-    (message: TMsgRow) => {
-      if (!editor || !message) return
+    const messageContent = message.content?.trim() || ''
+    // The open room's heading. A channel id is not a toc-id (#402).
+    const headingId = useChatStore.getState().chatRoom.headingId
 
-      const messageContent = message.content?.trim() || ''
-      // The open room's heading. A channel id is not a toc-id (#402).
-      const headingId = useChatStore.getState().chatRoom.headingId
+    const { doc } = editor.state
+    let headingPos: number | null = null
+    let headingLevel = 1
+    let headingChildIndex = -1
+    let offset = 0
 
-      const { doc } = editor.state
-      let headingPos: number | null = null
-      let headingLevel = 1
-      let headingChildIndex = -1
-      let offset = 0
+    for (let i = 0; i < doc.content.childCount; i++) {
+      const child = doc.content.child(i)
+      const pos = offset
+      offset += child.nodeSize
 
-      for (let i = 0; i < doc.content.childCount; i++) {
-        const child = doc.content.child(i)
-        const pos = offset
-        offset += child.nodeSize
-
-        if (
-          child.type.name === TIPTAP_NODES.HEADING_TYPE &&
-          (child.attrs['toc-id'] as string) === headingId
-        ) {
-          headingPos = pos
-          headingLevel = child.attrs.level as number
-          headingChildIndex = i
-          break
-        }
+      if (
+        child.type.name === TIPTAP_NODES.HEADING_TYPE &&
+        (child.attrs['toc-id'] as string) === headingId
+      ) {
+        headingPos = pos
+        headingLevel = child.attrs.level as number
+        headingChildIndex = i
+        break
       }
+    }
 
-      let insertPosition: number
-      if (headingPos !== null && headingChildIndex >= 0) {
-        const section = computeSection(doc, headingPos, headingLevel, headingChildIndex)
-        insertPosition = section.to
-      } else {
-        insertPosition = doc.content.size || 0
-      }
+    let insertPosition: number
+    if (headingPos !== null && headingChildIndex >= 0) {
+      const section = computeSection(doc, headingPos, headingLevel, headingChildIndex)
+      insertPosition = section.to
+    } else {
+      insertPosition = doc.content.size || 0
+    }
 
-      const newNodes = createHeadingNodeJson(
-        messageContent,
-        headingPos !== null ? headingLevel + 1 : 1
-      )
+    const newNodes = createHeadingNodeJson(
+      messageContent,
+      headingPos !== null ? headingLevel + 1 : 1
+    )
 
-      const insertAndUpdate = () => {
-        editor
-          .chain()
-          .focus()
-          .insertContentAt(Number(insertPosition), newNodes, { updateSelection: true })
-          .command(({ tr }) => {
-            tr.setMeta(TRANSACTION_META.RENDER_TOC, true)
-            return true
-          })
-          .run()
-      }
-
-      insertAndUpdate()
-
-      setTimeout(() => {
-        const { doc } = editor.state
-        let newHeadingId: string | null = null
-
-        const searchStart = Math.max(0, insertPosition - 10)
-        const searchEnd = Math.min(doc.content.size, insertPosition + messageContent.length + 100)
-
-        doc.nodesBetween(searchStart, searchEnd, (node: any) => {
-          if (
-            node.type.name === TIPTAP_NODES.HEADING_TYPE &&
-            node.textContent.trim() === messageContent &&
-            node.attrs['toc-id']
-          ) {
-            newHeadingId = node.attrs['toc-id']
-            return false
-          }
+    const insertAndUpdate = () => {
+      editor
+        .chain()
+        .focus()
+        .insertContentAt(Number(insertPosition), newNodes, { updateSelection: true })
+        .command(({ tr }) => {
+          tr.setMeta(TRANSACTION_META.RENDER_TOC, true)
+          return true
         })
+        .run()
+    }
 
-        if (newHeadingId) {
-          PubSub.publish(CHAT_OPEN, {
-            headingId: newHeadingId
-          })
+    insertAndUpdate()
+
+    setTimeout(() => {
+      const { doc } = editor.state
+      let newHeadingId: string | null = null
+
+      const searchStart = Math.max(0, insertPosition - 10)
+      const searchEnd = Math.min(doc.content.size, insertPosition + messageContent.length + 100)
+
+      doc.nodesBetween(searchStart, searchEnd, (node: any) => {
+        if (
+          node.type.name === TIPTAP_NODES.HEADING_TYPE &&
+          node.textContent.trim() === messageContent &&
+          node.attrs['toc-id']
+        ) {
+          newHeadingId = node.attrs['toc-id']
+          return false
         }
-      }, 150)
-    },
-    [editor]
-  )
+      })
+
+      if (newHeadingId) {
+        PubSub.publish(CHAT_OPEN, {
+          headingId: newHeadingId
+        })
+      }
+    }, 150)
+  }, [])
 
   return {
     replyInThreadHandler

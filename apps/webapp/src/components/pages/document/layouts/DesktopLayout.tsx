@@ -10,16 +10,19 @@ import React, { useCallback } from 'react'
 import DesktopEditor from '../components/DesktopEditor'
 import SkipToPadMain from '../components/SkipToPadMain'
 
+// Toolbar / pad-title popovers must not let FloatingFocusManager stamp `inert`
+// inside the editor — that recreates media node views. Keep the editor root inside.
+// Module-scoped so DesktopLayout does not capture `editor` in the render closure (#785).
+const insideEditor = () => {
+  const dom = useStore.getState().settings.editor.instance?.view.dom
+  return dom ? [dom] : []
+}
+
 const DesktopLayout = () => {
   const isMobile = useStore((state) => state.settings.editor.isMobile)
-  const editor = useStore((state) => state.settings.editor.instance)
 
   const deviceClass = isMobile ? 'm_mobile' : 'm_desktop'
   const { isHistory } = useHistoryHash()
-
-  // Toolbar / pad-title popovers must not let FloatingFocusManager stamp `inert`
-  // inside the editor — that recreates media node views. Keep the editor root inside.
-  const insideEditor = useCallback(() => (editor?.view.dom ? [editor.view.dom] : []), [editor])
 
   // Desktop picker has two roles (react to message vs. insert into editor)
   // discriminated by `emojiPicker.eventType`; read fresh at click-time so

@@ -15,7 +15,6 @@ import { countVersionsAfter } from '../helpers'
 const RESTORE_TIMEOUT_MS = 30_000
 
 export const useVersionRestore = () => {
-  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
   const providerStatus = useStore((state) => state.settings.providerStatus)
   const documentId = useStore((state) => state.settings.metadata?.documentId)
   const loadingHistory = useStore((state) => state.loadingHistory)
@@ -75,6 +74,7 @@ export const useVersionRestore = () => {
     // A frame sent on a closed socket is QUEUED by the provider and flushed on
     // reconnect. An unguarded click can therefore replace the document minutes later
     // against content that has moved on, with nobody watching.
+    const hocuspocusProvider = useStore.getState().settings.hocuspocusProvider
     if (!hocuspocusProvider || isProviderDisconnected(providerStatus)) {
       toast.Error('You are not connected to this document. Reconnect, then try again.')
       return
@@ -99,7 +99,6 @@ export const useVersionRestore = () => {
     activeHistory?.version,
     clearTimer,
     documentId,
-    hocuspocusProvider,
     providerStatus,
     allowRestore,
     pendingWatchVersion,

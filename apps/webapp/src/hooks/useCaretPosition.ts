@@ -102,11 +102,11 @@ const ensureCaretVisible = (editor: Editor): void => {
  * Used by EditorContent (double-tap) and EditFAB (button tap).
  */
 export const useEnableEditor = () => {
-  const editor = useStore((state) => state.settings.editor.instance)
   const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
 
   const enableEditor = useCallback(() => {
+    const editor = useStore.getState().settings.editor.instance
     if (!editor) return false
     // Read-only enforcement / content-fork freeze disabled this editor on purpose;
     // both the EditFAB tap and the double-tap route here, so gate them together.
@@ -126,10 +126,11 @@ export const useEnableEditor = () => {
     setWorkspaceEditorSetting('isEditable', true)
     editor.setEditable(true)
     return true
-  }, [editor, isKeyboardOpen, setWorkspaceEditorSetting])
+  }, [isKeyboardOpen, setWorkspaceEditorSetting])
 
   /** Double-tap path: the caret already sits at the tap position. */
   const enableAndFocus = useCallback(() => {
+    const editor = useStore.getState().settings.editor.instance
     if (!editor) return
     enableEditor()
     editor.commands.focus()
@@ -138,11 +139,12 @@ export const useEnableEditor = () => {
     } else {
       ensureCaretVisible(editor)
     }
-  }, [editor, enableEditor])
+  }, [enableEditor])
 
   /** Button-tap path: nothing placed the caret, so set it explicitly. */
   const enableAndFocusAt = useCallback(
     (pos: number) => {
+      const editor = useStore.getState().settings.editor.instance
       if (!editor) return
       enableEditor()
       editor.chain().setTextSelection(pos).focus().run()
@@ -152,15 +154,15 @@ export const useEnableEditor = () => {
         ensureCaretVisible(editor)
       }
     },
-    [editor, enableEditor]
+    [enableEditor]
   )
 
   const ensureVisible = useCallback(() => {
+    const editor = useStore.getState().settings.editor.instance
     if (editor) ensureCaretVisible(editor)
-  }, [editor])
+  }, [])
 
   return {
-    editor,
     isKeyboardOpen,
     enableEditor,
     enableAndFocus,

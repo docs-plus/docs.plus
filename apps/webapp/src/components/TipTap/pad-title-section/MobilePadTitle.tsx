@@ -246,9 +246,9 @@ const MobilePadTitle = () => {
   // Settings is navigation, not a typing continuation — drop the keyboard before the takeover.
   const dropKeyboard = useCallback(() => {
     if (isKeyboardOpen) {
-      setTimeout(() => editor?.view.dom.blur(), 50)
+      setTimeout(() => useStore.getState().settings.editor.instance?.view.dom.blur(), 50)
     }
-  }, [isKeyboardOpen, editor])
+  }, [isKeyboardOpen])
   const settings = useSettingsOpener({
     hashIntake: { notifications: openNotificationsSheet },
     beforeOpen: dropKeyboard

@@ -9,7 +9,6 @@ export type WatchVersionContentOptions = {
 }
 
 export const useVersionContent = () => {
-  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
   const documentId = useStore((state) => state.settings.metadata?.documentId)
 
   const setLoadingHistory = useStore((state) => state.setLoadingHistory)
@@ -17,6 +16,7 @@ export const useVersionContent = () => {
 
   const watchVersionContent = useCallback(
     (version: number, options: WatchVersionContentOptions = {}) => {
+      const hocuspocusProvider = useStore.getState().settings.hocuspocusProvider
       if (!hocuspocusProvider) return
 
       const { updateUrl = true } = options
@@ -28,7 +28,7 @@ export const useVersionContent = () => {
 
       sendHistoryWatchRequest(hocuspocusProvider, version, documentId)
     },
-    [hocuspocusProvider, documentId, setLoadingHistory, setPendingWatchVersion]
+    [documentId, setLoadingHistory, setPendingWatchVersion]
   )
 
   return { watchVersionContent }

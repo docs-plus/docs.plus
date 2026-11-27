@@ -57,14 +57,16 @@ function scanVisibleHeadings(container: HTMLElement): Array<{ id: string; el: El
   return out
 }
 
-export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | null>) {
-  const observerRef = useRef<IntersectionObserver | null>(null)
-  const visibleHeadingsRef = useRef<Map<string, Element>>(new Map())
-  const observedRef = useRef<ObservedHeadings | null>(null)
-  const rafRef = useRef<number | null>(null)
-  const setupRafIdsRef = useRef<number[]>([])
-
-  const editor = useStore((state) => state.settings.editor.instance)
+/**
+ * Kept separate from `useHeadingScrollSpy` so scroll/ResizeObserver callbacks do not
+ * share a V8 render closure context with `editor` (#785).
+ */
+function useScrollFocusScheduler(
+  scrollContainerRef: RefObject<HTMLElement | null>,
+  visibleHeadingsRef: RefObject<Map<string, Element>>,
+  observedRef: RefObject<ObservedHeadings | null>,
+  rafRef: RefObject<number | null>
+) {
   const setFocusedHeadingId = useFocusedHeadingStore((s) => s.setFocusedHeadingId)
 
   const updateFocus = useCallback(() => {
@@ -116,7 +118,7 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
     if (best && best.id !== currentId) {
       setFocusedHeadingId(best.id)
     }
-  }, [scrollContainerRef, setFocusedHeadingId])
+  }, [observedRef, scrollContainerRef, setFocusedHeadingId, visibleHeadingsRef])
 
   const scheduleUpdateFocus = useCallback(() => {
     if (useFocusedHeadingStore.getState().isScrollLocked) return
@@ -126,7 +128,58 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
       // A TOC click can set the lock after this frame was queued.
       if (!useFocusedHeadingStore.getState().isScrollLocked) updateFocus()
     })
-  }, [updateFocus])
+  }, [rafRef, updateFocus])
+
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const onScroll = () => {
+      if (!useFocusedHeadingStore.getState().isScrollLocked) scheduleUpdateFocus()
+    }
+    container.addEventListener('scroll', onScroll, { passive: true })
+
+    let resizeRafId: number | null = null
+    const ro = new ResizeObserver(() => {
+      if (resizeRafId !== null) return
+      resizeRafId = window.requestAnimationFrame(() => {
+        resizeRafId = null
+        scheduleUpdateFocus()
+      })
+    })
+    ro.observe(container)
+
+    return () => {
+      container.removeEventListener('scroll', onScroll)
+      if (rafRef.current !== null) {
+        window.cancelAnimationFrame(rafRef.current)
+        rafRef.current = null
+      }
+      if (resizeRafId !== null) {
+        window.cancelAnimationFrame(resizeRafId)
+        resizeRafId = null
+      }
+      ro.disconnect()
+    }
+  }, [rafRef, scrollContainerRef, scheduleUpdateFocus])
+
+  return scheduleUpdateFocus
+}
+
+export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | null>) {
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const visibleHeadingsRef = useRef<Map<string, Element>>(new Map())
+  const observedRef = useRef<ObservedHeadings | null>(null)
+  const rafRef = useRef<number | null>(null)
+  const setupRafIdsRef = useRef<number[]>([])
+
+  const editor = useStore((state) => state.settings.editor.instance)
+  const scheduleUpdateFocus = useScrollFocusScheduler(
+    scrollContainerRef,
+    visibleHeadingsRef,
+    observedRef,
+    rafRef
+  )
 
   const setupObserver = useCallback(() => {
     const container = scrollContainerRef.current
@@ -223,39 +276,6 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
       setupRafIdsRef.current = []
     }
   }, [editor, debouncedRebuild])
-
-  useEffect(() => {
-    const container = scrollContainerRef.current
-    if (!container) return
-
-    const onScroll = () => {
-      if (!useFocusedHeadingStore.getState().isScrollLocked) scheduleUpdateFocus()
-    }
-    container.addEventListener('scroll', onScroll, { passive: true })
-
-    let resizeRafId: number | null = null
-    const ro = new ResizeObserver(() => {
-      if (resizeRafId !== null) return
-      resizeRafId = window.requestAnimationFrame(() => {
-        resizeRafId = null
-        scheduleUpdateFocus()
-      })
-    })
-    ro.observe(container)
-
-    return () => {
-      container.removeEventListener('scroll', onScroll)
-      if (rafRef.current !== null) {
-        window.cancelAnimationFrame(rafRef.current)
-        rafRef.current = null
-      }
-      if (resizeRafId !== null) {
-        window.cancelAnimationFrame(resizeRafId)
-        resizeRafId = null
-      }
-      ro.disconnect()
-    }
-  }, [scrollContainerRef, scheduleUpdateFocus])
 }
 
 /** Scroll the row, not the whole `li`. Parent items wrap a tall nested `ul`, so

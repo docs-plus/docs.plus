@@ -8,7 +8,6 @@ import { useCallback } from 'react'
  * tells the two slots apart.
  */
 export const useHistoryCompare = () => {
-  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
   const documentId = useStore((state) => state.settings.metadata?.documentId)
   const activeHistory = useStore((state) => state.activeHistory)
   const historyList = useStore((state) => state.historyList)
@@ -27,24 +26,25 @@ export const useHistoryCompare = () => {
 
   const selectCompareBase = useCallback(
     (version: number) => {
+      const hocuspocusProvider = useStore.getState().settings.hocuspocusProvider
       if (!hocuspocusProvider) return
       if (activeHistory?.version === version) return
       setPendingCompareVersion(version)
       sendHistoryWatchRequest(hocuspocusProvider, version, documentId)
     },
-    [activeHistory?.version, documentId, hocuspocusProvider, setPendingCompareVersion]
+    [activeHistory?.version, documentId, setPendingCompareVersion]
   )
 
   /** Mobile picker: turn compare on and watch A. No-ops when A is the viewed version. */
   const enterCompare = useCallback(
     (version: number) => {
-      if (!hocuspocusProvider) return false
+      if (!useStore.getState().settings.hocuspocusProvider) return false
       if (activeHistory?.version === version) return false
       setCompareMode(true)
       selectCompareBase(version)
       return true
     },
-    [activeHistory?.version, hocuspocusProvider, selectCompareBase, setCompareMode]
+    [activeHistory?.version, selectCompareBase, setCompareMode]
   )
 
   const exitCompare = useCallback(() => {

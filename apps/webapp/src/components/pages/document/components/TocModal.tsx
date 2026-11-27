@@ -57,7 +57,7 @@ const TocModal = () => {
   const openSheet = useSheetStore((state) => state.openSheet)
   const loading = useStore((state) => state.settings.editor.loading)
   const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
-  const editor = useStore((state) => state.settings.editor.instance)
+  const hasEditor = useStore((state) => Boolean(state.settings.editor.instance))
   // The drawer mounts only in MobileLayout, so this is always the phone rule.
   const findAllowed = canOpenFind(true, useChatStore(selectPadOwnsKeyboard))
   const inProgressBookmarks = useChatStore(selectInProgressBookmarkCount)
@@ -74,7 +74,7 @@ const TocModal = () => {
     [closeModal]
   )
 
-  const showLoader = loading || !editor || providerSyncing
+  const showLoader = loading || !hasEditor || providerSyncing
 
   return (
     <div className="bg-base-100 z-30 flex h-dvh max-h-dvh w-full max-w-[80%] min-w-[80%] flex-col overflow-hidden">
@@ -123,8 +123,12 @@ const TocModal = () => {
               <TocModalIconButton
                 aria-label="Find in document"
                 // Disabled, not hidden, so the tray does not shift when the editor arrives.
-                disabled={!editor}
-                onClick={() => closeTocThen(() => editor?.commands.openCaretFind())}
+                disabled={!hasEditor}
+                onClick={() =>
+                  closeTocThen(() =>
+                    useStore.getState().settings.editor.instance?.commands.openCaretFind()
+                  )
+                }
                 startIcon={Icons.search}
               />
             )}

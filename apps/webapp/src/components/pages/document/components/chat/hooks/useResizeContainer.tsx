@@ -46,7 +46,6 @@ const useResizeContainer = () => {
   const [paint, setPaint] = useState(storeHeight)
   const [mode, setMode] = useState<ChatSashMode>('open')
   const [isOvershoot, setIsOvershoot] = useState(false)
-  const editor = useStore((state) => state.settings.editor.instance)
   const dragCleanupRef = useRef<(() => void) | null>(null)
   const overshootRef = useRef(false)
   const isSettling = mode === 'settle-to-min' || mode === 'settle-to-close'
@@ -148,6 +147,7 @@ const useResizeContainer = () => {
       document.body.style.userSelect = 'none'
       document.body.style.cursor = 'row-resize'
 
+      const editor = useStore.getState().settings.editor.instance
       const wasEditable = Boolean(editor?.isEditable)
       if (wasEditable) editor?.setEditable(false)
 
@@ -233,7 +233,7 @@ const useResizeContainer = () => {
       document.addEventListener('mouseup', stopDrag)
       document.addEventListener('pointercancel', stopDrag)
     },
-    [editor, isSettling, setOrUpdateChatPanelHeight]
+    [isSettling, setOrUpdateChatPanelHeight]
   )
 
   useEffect(() => {
