@@ -137,6 +137,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   exits into a new paragraph (`code-block-lowlight.ts`), opening fences accept tags such as `c++`
   and `c#`, and `useNewDocumentTip` skips scheduling when `navigator.webdriver` is true
   ([#818](https://github.com/docs-plus/docs.plus/issues/818)).
+- Chat `HTMLBody` strips `.hyperlink-icon` spans from the copied `text/html` clipboard fragment
+  while keeping plain text and visible DOM unchanged (`stripLinkIconsOnCopy`)
+  ([#697](https://github.com/docs-plus/docs.plus/issues/697)).
+- Phone link Edit/Remove and desktop link Remove resolve the live anchor position via
+  `resolveLiveLinkPos` and `removeHyperlinkAtPos` instead of relying on stale sheet positions or
+  the current editor selection ([#696](https://github.com/docs-plus/docs.plus/issues/696)).
 
 ### Security
 

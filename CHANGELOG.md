@@ -139,6 +139,11 @@ This file is the product changelog. Every app, package and extension keeps its o
   `sourcecode_debugsymbolbundle` (`0` to `110` bundles), and symbolicate live production client
   events back to original `src/` paths and source lines
   ([#841](https://github.com/docs-plus/docs.plus/issues/841)).
+- Copying chat messages to another app no longer includes decorative link icons
+  ([#697](https://github.com/docs-plus/docs.plus/issues/697)).
+- Editing a link on phones or removing a link on desktop and phones now targets the live link even
+  after a co-editor shifts text above it
+  ([#696](https://github.com/docs-plus/docs.plus/issues/696)).
 
 ### Security
 
@@ -237,6 +242,9 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ### Internal
 
+- Added gzip byte-budget checks for `@docs.plus/extension-hypermultimedia` and
+  `@docs.plus/extension-mermaid` in PR CI alongside `@docs.plus/extension-hyperlink`
+  ([#784](https://github.com/docs-plus/docs.plus/issues/784)).
 - Guarded the all-zeros `github.event.before` fallback in `.github/workflows/prod.docs.plus.yml`
   to `push` events so pull requests evaluate change scopes instead of forcing every suite. Live
   draft-PR checks confirm README media skips extension suites (`1` to `0` jobs, `49 s` wall),
