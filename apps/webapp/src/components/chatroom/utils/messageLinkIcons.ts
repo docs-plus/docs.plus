@@ -13,3 +13,37 @@ export const addMessageLinkIcons = (root: HTMLElement): void => {
     if (icon) link.prepend(icon)
   }
 }
+
+/**
+ * Strips `.hyperlink-icon` elements from clipboard HTML when copying posted chat messages so
+ * external apps (mail, notes) receive plain `<a>` links instead of inline 16px icons (#697).
+ * Leaves native copy untouched when the selection contains no link icons.
+ */
+export const stripLinkIconsOnCopy = (
+  event: Pick<ClipboardEvent, 'clipboardData' | 'preventDefault'>,
+  root: HTMLElement
+): void => {
+  const selection = window.getSelection()
+  if (!selection || selection.isCollapsed || selection.rangeCount === 0) return
+  if (!event.clipboardData) return
+
+  const container = document.createElement('div')
+  let touchesRoot = false
+  for (let i = 0; i < selection.rangeCount; i++) {
+    const range = selection.getRangeAt(i)
+    const ancestor = range.commonAncestorContainer
+    if (root.contains(ancestor) || ancestor.contains(root)) {
+      touchesRoot = true
+      container.appendChild(range.cloneContents())
+    }
+  }
+  if (!touchesRoot) return
+
+  const icons = container.querySelectorAll('.hyperlink-icon')
+  if (icons.length === 0) return
+
+  for (const icon of icons) icon.remove()
+  event.preventDefault()
+  event.clipboardData.setData('text/html', container.innerHTML)
+  event.clipboardData.setData('text/plain', selection.toString())
+}

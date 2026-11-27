@@ -1,4 +1,7 @@
-import { addMessageLinkIcons } from '@components/chatroom/utils/messageLinkIcons'
+import {
+  addMessageLinkIcons,
+  stripLinkIconsOnCopy
+} from '@components/chatroom/utils/messageLinkIcons'
 import { padNavigate } from '@components/TipTap/hyperlinkPopovers/hrefEventHandler'
 import { previewLinkOutsideEditor } from '@components/TipTap/hyperlinkPopovers/previewHyperlink'
 import { hasMod, isSafeHref } from '@docs.plus/extension-hyperlink'
@@ -59,6 +62,9 @@ export const HTMLBody = () => {
       dir="auto"
       onClick={onLinkClick}
       onAuxClick={onLinkAuxClick}
+      onCopy={(event) => {
+        if (bodyRef.current) stripLinkIconsOnCopy(event.nativeEvent, bodyRef.current)
+      }}
       dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
     />
   )
