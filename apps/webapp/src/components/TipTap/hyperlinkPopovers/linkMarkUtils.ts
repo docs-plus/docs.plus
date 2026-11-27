@@ -29,6 +29,27 @@ export const storedHrefOf = (opts: EditHyperlinkOptions): string | undefined =>
   }).attrs.href ?? undefined
 
 /**
+ * Resolves a link's live document position through its connected (or recreated equivalent) `<a>`,
+ * falling back to `nodePos`. The live DOM node moves with a co-editor's edits above it; a stored
+ * `nodePos` does not (#643, #696).
+ */
+export const resolveLiveLinkPos = (
+  editor: Editor,
+  at: { link?: HTMLAnchorElement; nodePos?: number; markName?: string }
+): number | undefined => {
+  if (at.link) {
+    const { nodePos } = buildPreviewOptionsFromAnchor({
+      editor,
+      link: at.link,
+      nodePos: at.nodePos,
+      markName: at.markName
+    })
+    return nodePos >= 0 ? nodePos : undefined
+  }
+  return typeof at.nodePos === 'number' && at.nodePos >= 0 ? at.nodePos : undefined
+}
+
+/**
  * Link text from the document. The live <a> wins over a stale nodePos; the href match stops a neighbour's text.
  * DOM text is the last resort. Keep the body equal to the extension's internal copy; change both together.
  */

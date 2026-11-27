@@ -22,7 +22,8 @@ export interface SheetDataMap {
    * the pad (a chat message) has no `nodePos`, so the sheet offers no Edit or Remove.
    */
   linkPreview: { href: string; isAllowedUri?: (uri: string) => boolean } & (
-    { editor: Editor; nodePos: number } | { editor: Editor | null; nodePos?: undefined }
+    | { editor: Editor; nodePos: number; link?: HTMLAnchorElement }
+    | { editor: Editor | null; nodePos?: undefined; link?: undefined }
   )
   linkEditor: {
     mode: 'create' | 'edit'

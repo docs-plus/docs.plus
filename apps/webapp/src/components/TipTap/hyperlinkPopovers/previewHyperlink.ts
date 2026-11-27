@@ -14,8 +14,10 @@ import type { Editor } from '@tiptap/core'
 import { lucideSvgString } from '@utils/lucideSvgString'
 import { COPY_FADE_HOLD_MS, prefersReducedMotion } from '@utils/motion'
 
+import { removeHyperlinkAtPos } from './commands/removeHyperlinkAtPos'
 import { navigateHref } from './hrefEventHandler'
 import { describeDestination, linkDestination } from './internalDocumentLink'
+import { resolveLiveLinkPos, storedHrefOf } from './linkMarkUtils'
 import {
   createInternalLinkChip,
   createLinkChip,
@@ -59,9 +61,10 @@ export default function previewHyperlink(options: PreviewHyperlinkOptions): HTML
 
   if (isMobile) {
     useSheetStore.getState().openSheet('linkPreview', {
-      href,
+      href: storedHrefOf(options) ?? href,
       editor,
       nodePos,
+      link,
       isAllowedUri: options.isAllowedUri
     })
     dismissSoftKeyboard(editor)
@@ -92,6 +95,7 @@ const buildAndObserveDesktopPopover = (
 const padEditControls = (options: PreviewHyperlinkOptions): HTMLElement[] => {
   const { link, editor, nodePos, validate, isAllowedUri } = options
   if (!editor.view.editable) return []
+  const expectedHref = storedHrefOf(options)
 
   const editButton = createHTMLElement('button', {
     className: 'edit',
@@ -112,7 +116,15 @@ const padEditControls = (options: PreviewHyperlinkOptions): HTMLElement[] => {
 
   removeButton.addEventListener('click', () => {
     getDefaultController().close()
-    editor.chain().focus().unsetHyperlink().run()
+    if (editor.isDestroyed) return
+    const livePos = resolveLiveLinkPos(editor, { link, nodePos })
+    if (livePos === undefined) return
+    removeHyperlinkAtPos({
+      editor,
+      nodePos: livePos,
+      expectedHref,
+      focus: true
+    })
   })
 
   return [editButton, removeButton]

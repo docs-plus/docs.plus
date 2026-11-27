@@ -10,7 +10,7 @@ import { applyEdit } from './commands/applyEdit'
 import { removeHyperlinkAtPos } from './commands/removeHyperlinkAtPos'
 import { navigateHref } from './hrefEventHandler'
 import { runInternalDocumentLink } from './internalDocumentLinkActions'
-import { getHyperlinkDisplayText } from './linkMarkUtils'
+import { getHyperlinkDisplayText, resolveLiveLinkPos } from './linkMarkUtils'
 import type { LinkDestination } from './types'
 
 const ICON_SIZE = 16
@@ -38,7 +38,7 @@ export function buildLinkPreviewActions({
   switchSheet,
   onCopySuccess
 }: BuildLinkPreviewActionsArgs): LinkPreviewAction[] {
-  const { href, editor, nodePos, isAllowedUri } = payload
+  const { href, editor, nodePos, link, isAllowedUri } = payload
   const internalLink = destination.kind === 'here' ? destination.link : null
 
   const openAction: LinkPreviewAction = {
@@ -75,6 +75,8 @@ export function buildLinkPreviewActions({
   // Not `view.editable`: phone read mode turns it off for every reader. The durable lock marks a read-only document.
   if (isDocumentEditingLocked()) return actions
 
+  const liveNodePos = () => resolveLiveLinkPos(editor, { link, nodePos })
+
   return [
     ...actions,
     {
@@ -82,13 +84,26 @@ export function buildLinkPreviewActions({
       label: 'Edit link',
       icon: <Icons.pencil size={ICON_SIZE} />,
       onClick: () => {
+        const currentPos = liveNodePos() ?? nodePos
         switchSheet('linkEditor', {
           mode: 'edit',
           editor,
           initialHref: href,
-          initialText: getHyperlinkDisplayText(editor, { nodePos, href }),
-          onSubmit: (result) => applyEdit({ editor, nodePos, expectedHref: href }, result),
-          onBack: () => switchSheet('linkPreview', { href, editor, nodePos, isAllowedUri })
+          initialText: getHyperlinkDisplayText(editor, { nodePos: currentPos, link, href }),
+          onSubmit: (result) => {
+            const pos = liveNodePos()
+            return (
+              pos !== undefined && applyEdit({ editor, nodePos: pos, expectedHref: href }, result)
+            )
+          },
+          onBack: () =>
+            switchSheet('linkPreview', {
+              href,
+              editor,
+              nodePos: liveNodePos() ?? nodePos,
+              link,
+              isAllowedUri
+            })
         })
       }
     },
@@ -98,7 +113,8 @@ export function buildLinkPreviewActions({
       icon: <Icons.unlink size={ICON_SIZE} />,
       danger: true,
       onClick: () => {
-        removeHyperlinkAtPos({ editor, nodePos, expectedHref: href })
+        const pos = liveNodePos()
+        if (pos !== undefined) removeHyperlinkAtPos({ editor, nodePos: pos, expectedHref: href })
         closeSheet()
       }
     }

@@ -7,11 +7,14 @@ export function removeHyperlinkAtPos(deps: {
   editor: Editor
   nodePos: number
   expectedHref: string | undefined
+  markName?: string
+  focus?: boolean
 }): boolean {
-  const { editor, nodePos, expectedHref } = deps
+  const { editor, nodePos, expectedHref, markName = 'hyperlink', focus = false } = deps
   if (editor.isDestroyed) return false
-  const range = markRangeAt(editor, { nodePos, markName: 'hyperlink', expectedHref })
+  const range = markRangeAt(editor, { nodePos, markName, expectedHref })
   if (!range) return false
-  // Refocus after remove is owned by store `close({ refocus })` when the keyboard was open at open.
-  return editor.chain().setTextSelection(range).unsetHyperlink().run()
+  // Mobile refocus is owned by store `close({ refocus })`; desktop passes `focus: true`.
+  const chain = focus ? editor.chain().focus() : editor.chain()
+  return chain.setTextSelection(range).unsetHyperlink().run()
 }
