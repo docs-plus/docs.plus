@@ -137,12 +137,12 @@ export const zipInflateSize = (
           maxOutputLength: Math.max(1, wordCapped ? wordBudget - words : budget - total)
         })
       } catch (error) {
-        if (wordCapped && (error as { code?: string }).code === 'ERR_BUFFER_TOO_LARGE') {
-          return PART_TOO_LARGE
+        if ((error as { code?: string }).code === 'ERR_BUFFER_TOO_LARGE') {
+          return wordCapped ? PART_TOO_LARGE : budget + 1
         }
-        // Either the entry alone blew the remaining budget or the stream is corrupt.
-        // Both are refusals, and the caller reads any over-budget total the same way.
-        return budget + 1
+        // Corrupt or truncated DEFLATE stream (e.g. Z_DATA_ERROR, Z_BUF_ERROR):
+        // unreadable container, not an over-budget bomb, so the caller returns 422.
+        return null
       }
     } else {
       return null

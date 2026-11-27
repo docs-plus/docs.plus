@@ -103,10 +103,7 @@ export const config = {
   },
 
   mcp: {
-    authIssuer: (env.MCP_AUTH_ISSUER ?? `${env.SUPABASE_URL.replace(/\/+$/, '')}/auth/v1`).replace(
-      /\/+$/,
-      ''
-    )
+    authIssuer: env.MCP_AUTH_ISSUER ?? `${env.SUPABASE_URL.replace(/\/+$/, '')}/auth/v1`
   },
 
   security: {

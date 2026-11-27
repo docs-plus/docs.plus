@@ -215,14 +215,19 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
     if (title || reqKeywords || description) {
       // to_tsquery (the `search` clauses) throws a 500 on operator punctuation
       // like `C++` or `foo)`. Reduce each token to bare word characters, so bad
-      // input returns no matches instead of crashing the endpoint.
+      // input returns no matches instead of crashing the endpoint. Hono already
+      // percent-decodes query params, so decodeURIComponent here would throw on `%`.
       const searchTokens = [
-        ...(title ? decodeURIComponent(title).split(' ') : []),
-        ...(reqKeywords ? decodeURIComponent(reqKeywords).split(' ') : []),
-        ...(description ? decodeURIComponent(description).split(' ') : [])
+        ...(title ? title.split(' ') : []),
+        ...(reqKeywords ? reqKeywords.split(' ') : []),
+        ...(description ? description.split(' ') : [])
       ]
         .map((t) => t.replace(/[^\p{L}\p{N}]+/gu, ''))
         .filter((x) => x && x !== 'undefined')
+
+      if (searchTokens.length === 0) {
+        return { docs: [], total: 0 }
+      }
 
       const searchQuery = searchTokens.join(' & ')
       searchClauses = [

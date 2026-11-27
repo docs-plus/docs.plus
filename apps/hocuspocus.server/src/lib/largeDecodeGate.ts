@@ -39,7 +39,8 @@ export const acquireLargeDecode = (
       resolve(release)
     }
     const timer = setTimeout(() => {
-      waiters.splice(waiters.indexOf(waiter), 1)
+      const idx = waiters.indexOf(waiter)
+      if (idx !== -1) waiters.splice(idx, 1)
       resolve(null)
     }, waitMs)
     waiters.push(waiter)

@@ -335,6 +335,57 @@ describe('createPeerUrlValidator — SSRF allowlist & zero-overhead single-repli
     expect(await validator.validate('http://127.0.0.1:41003')).toBeNull()
     expect(await validator.validate('http://169.254.169.254:41001')).toBeNull()
   })
+
+  test('backs off failed and timed-out DNS lookups for DNS_MISS_REFRESH_COOLDOWN_MS', async () => {
+    let clock = 10_000
+    let dnsCalls = 0
+    let shouldFail = true
+
+    const validator = createPeerUrlValidator({
+      baseUrl: 'http://hocuspocus-server:4003',
+      dnsLookup: async () => {
+        dnsCalls += 1
+        if (shouldFail) throw new Error('EAI_AGAIN')
+        return ['172.18.0.5', '172.18.0.6']
+      },
+      now: () => clock,
+      logger: silentLogger
+    })
+
+    expect(await validator.isRoutingActive()).toBe(false)
+    expect(await validator.isRoutingActive()).toBe(false)
+    expect(await validator.validate('http://172.18.0.5:4003')).toBeNull()
+    expect(dnsCalls).toBe(1)
+
+    // After cooldown expires, DNS is retried and recovers.
+    clock += DNS_MISS_REFRESH_COOLDOWN_MS + 1
+    shouldFail = false
+    expect(await validator.isRoutingActive()).toBe(true)
+    expect(dnsCalls).toBe(2)
+
+    // A hung DNS lookup respects ROOM_REGISTRY_OP_TIMEOUT_MS and also backs off.
+    let slowClock = 20_000
+    let slowCalls = 0
+    const slowValidator = createPeerUrlValidator({
+      baseUrl: 'http://hocuspocus-server:4003',
+      dnsLookup: async () => {
+        slowCalls += 1
+        await new Promise((r) => setTimeout(r, 500))
+        return ['172.18.0.5', '172.18.0.6']
+      },
+      now: () => slowClock,
+      logger: silentLogger
+    })
+
+    const started = Date.now()
+    expect(await slowValidator.isRoutingActive()).toBe(false)
+    expect(Date.now() - started).toBeLessThan(400)
+    expect(await slowValidator.isRoutingActive()).toBe(false)
+    expect(slowCalls).toBe(1)
+    slowClock += DNS_MISS_REFRESH_COOLDOWN_MS + 1
+    expect(await slowValidator.isRoutingActive()).toBe(false)
+    expect(slowCalls).toBe(2)
+  })
 })
 
 describe('roomRegistry writer & reader — ZSET lifecycle, staleness, chunking, and fail-open', () => {

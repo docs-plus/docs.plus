@@ -478,6 +478,7 @@ const roomRegistry = roomRegistryAdvertiseUrl
   : null
 
 let shuttingDown = false
+let shutdownExitCode = 0
 
 const roomRegistryExtension = roomRegistry
   ? {
@@ -805,8 +806,13 @@ const SERVER_DESTROY_TIMEOUT_MS = 25_000
 // cleanly then exiting 0 hid every crash from Docker's restart policy and from
 // `concurrently --kill-others-on-fail` in local development.
 const shutdown = async (exitCode = 0) => {
-  wsLogger.info('Shutting down WebSocket server gracefully...')
+  if (shuttingDown) {
+    shutdownExitCode = Math.max(shutdownExitCode, exitCode)
+    return
+  }
   shuttingDown = true
+  shutdownExitCode = Math.max(shutdownExitCode, exitCode)
+  wsLogger.info('Shutting down WebSocket server gracefully...')
 
   try {
     clearInterval(stateKeyTtlRefresh)
@@ -859,7 +865,7 @@ const shutdown = async (exitCode = 0) => {
 
     wsLogger.info('✅ WebSocket server shutdown complete')
     await flushObservability()
-    process.exit(exitCode)
+    process.exit(shutdownExitCode)
   } catch (err) {
     wsLogger.error({ err }, '❌ Error during shutdown')
     captureUnknown(err)

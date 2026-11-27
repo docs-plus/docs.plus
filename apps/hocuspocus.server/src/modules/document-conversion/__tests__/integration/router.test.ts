@@ -15,6 +15,7 @@ import type { Logger } from 'pino'
 import * as Y from 'yjs'
 
 import { createMockPrisma, stubGetUser, TestServer } from '../../../../../tests/helpers/test-server'
+import { acquireLargeDecode, LARGE_DECODE_BYTES } from '../../../../lib/largeDecodeGate'
 import { migrationExtensions } from '../../../../lib/migration-extensions'
 import { createRouter } from '../../http/router'
 import { MAX_IMPORT_BYTES } from '../../types'
@@ -478,6 +479,48 @@ describe('GET /api/documents/:slug/markdown (#822)', () => {
     for (const text of texts) {
       expect(text).toContain('# Hot Pad')
       expect(text).toContain('Shared flight body.')
+    }
+  })
+})
+
+describe('GET /api/documents/:documentId/export — large decode gate', () => {
+  test('returns 503 SERVICE_UNAVAILABLE with Retry-After: 10 when large decode slot is busy', async () => {
+    const prisma = createMockPrisma() as any
+    prisma.documentMetadata.findUnique = async () => ({ ...privateMeta, isPrivate: false })
+    prisma.documents.findFirst = async () => ({
+      version: 1,
+      data: new Uint8Array(LARGE_DECODE_BYTES)
+    })
+
+    const app = new Hono()
+    app.route(
+      '/api/documents',
+      createRouter({
+        prisma,
+        logger: silentLogger,
+        mediaPublicBaseUrl: null,
+        mediaCookieFor: () => null
+      })
+    )
+    const server = new TestServer(app)
+
+    const release = await acquireLargeDecode(LARGE_DECODE_BYTES, 0)
+    expect(release).not.toBeNull()
+    try {
+      const response = await server.get(`/api/documents/${DOCUMENT_ID}/export?format=md`, OWNER)
+      expect(response.status).toBe(503)
+      expect(response.headers.get('Retry-After')).toBe('10')
+      expect((await response.json()).error).toHaveProperty('code', 'SERVICE_UNAVAILABLE')
+
+      // Small snapshots bypass the large-decode gate and still export while the slot is held.
+      prisma.documents.findFirst = async () => ({
+        version: 1,
+        data: makeSnapshot('Small Doc', 'Body')
+      })
+      const small = await server.get(`/api/documents/${DOCUMENT_ID}/export?format=md`, OWNER)
+      expect(small.status).toBe(200)
+    } finally {
+      release?.()
     }
   })
 })

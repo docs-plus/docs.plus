@@ -16,6 +16,7 @@ import {
   signMediaSession,
   verifyMediaSession
 } from '../../lib/mediaSession'
+import { firstEditOwner } from '../../lib/ownerAccess'
 import { resolvePrivateAccess } from '../../lib/privateAccess'
 import { getOwnerProfile } from '../../lib/profiles'
 import { createDocumentWithContent } from '../../modules/document-content'
@@ -282,10 +283,20 @@ export const updateDocument = async (c: AppContext): Promise<Response> => {
   const docId = c.req.param('docId')
   if (docId === undefined) return c.json({ error: 'Missing document id' }, 400)
   const body = getValidJson<UpdateDocumentMetadataInput>(c)
+  const user = c.get('user')
   const requesterId = c.get('userId')
+  // An anonymous Supabase session carries a `sub`, so it must not claim ownership
+  // or flip Private/Read-only on create (same rule as firstEditOwner).
+  const createOwnerId = user ? firstEditOwner(user).ownerId : (requesterId ?? null)
 
   try {
-    const doc = await documentsService.updateDocument(prisma, docId, body, requesterId)
+    const doc = await documentsService.updateDocument(
+      prisma,
+      docId,
+      body,
+      requesterId,
+      createOwnerId
+    )
     return ok(c, doc)
   } catch (error) {
     return handleError(c, error, { docId })

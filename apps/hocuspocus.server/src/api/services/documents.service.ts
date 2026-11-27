@@ -175,7 +175,8 @@ export const updateDocument = async (
   prisma: PrismaClient,
   documentId: string,
   params: UpdateDocumentParams,
-  requesterId?: string
+  requesterId?: string,
+  createOwnerId: string | null = requesterId ?? null
 ) => {
   const { title, description, keywords, readOnly, isPrivate, slug } = params
 
@@ -221,11 +222,11 @@ export const updateDocument = async (
     if (title !== undefined) updateData.title = title
     if (keywords !== undefined) updateData.keywords = keywords.join(',')
 
-    // On create the row does not exist yet, and the `ownerId` below decides it. An authed
-    // creator may therefore set the locks in the same request. An open document may not.
-    // With no owner, resolvePrivateAccess answers sign-in-required to everyone, so a flip
-    // would seal the row against the world with nothing able to undo it.
-    const ownerAfterWrite = existing ? existing.ownerId : (requesterId ?? null)
+    // On create the row does not exist yet, and `createOwnerId` decides it. A signed-in,
+    // non-anonymous creator may therefore set the locks in the same request. An open or
+    // anonymous document may not. With no owner, resolvePrivateAccess answers
+    // sign-in-required to everyone, so a flip would seal the row with nothing able to undo it.
+    const ownerAfterWrite = existing ? existing.ownerId : createOwnerId
     const mayMutateAccess = ownerAfterWrite != null && ownerAfterWrite === requesterId
 
     const readOnlyChanged = readOnly !== undefined && (!existing || readOnly !== existing.readOnly)
@@ -269,7 +270,7 @@ export const updateDocument = async (
         title: title || documentId,
         description: description || '',
         keywords: keywords ? keywords.join(',') : '',
-        ownerId: requesterId || null,
+        ownerId: createOwnerId,
         ...updateData
       },
       select: PUBLIC_METADATA_SELECT

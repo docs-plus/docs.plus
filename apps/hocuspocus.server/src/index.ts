@@ -294,14 +294,22 @@ restApiLogger.info({
 // 30s stop_grace_period for the DB close and the 2s Sentry flush below.
 const DRAIN_TIMEOUT_MS = 10_000
 
+let shuttingDown = false
+let shutdownExitCode = 0
+
 // exitCode is 1 on a crash. A crash that drained cleanly still exited 0, so
 // `concurrently --kill-others-on-fail` never fired and the rest of the dev stack
 // stayed up against a dead REST. Docker's restart policy reads the same code.
 const shutdown = async (exitCode = 0) => {
+  if (shuttingDown) {
+    shutdownExitCode = Math.max(shutdownExitCode, exitCode)
+    return
+  }
+  shuttingDown = true
+  shutdownExitCode = Math.max(shutdownExitCode, exitCode)
   restApiLogger.info('Shutting down REST API gracefully...')
 
   try {
-    await mcpModule.close()
     // Stop accepting new requests, then wait for the in-flight ones. A bare
     // stop() drops that promise. An export or import was therefore cut on every
     // rolling deploy — work that holds no pooled Prisma client to delay the tail.
@@ -325,6 +333,9 @@ const shutdown = async (exitCode = 0) => {
       )
     }
 
+    // Close MCP after in-flight HTTP requests drain so active MCP tool calls finish
+    // cleanly during rolling deploys instead of failing mid-request.
+    await mcpModule.close()
     await emailGateway.shutdown()
     await pushGateway.shutdown()
     await shutdownDatabase()
@@ -332,7 +343,7 @@ const shutdown = async (exitCode = 0) => {
 
     restApiLogger.info('✅ REST API shutdown complete')
     await flushObservability()
-    process.exit(exitCode)
+    process.exit(shutdownExitCode)
   } catch (err) {
     restApiLogger.error({ err }, '❌ Error during shutdown')
     captureUnknown(err)

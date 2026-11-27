@@ -133,6 +133,8 @@ export interface ExportControllerDeps {
   mediaCookieFor: (uid: string) => string | null
 }
 
+const EXPORT_BUSY_RETRY_SECONDS = '10'
+
 export const createGetExportHandler =
   (deps: ExportControllerDeps) =>
   async (c: Context): Promise<Response> => {
@@ -149,7 +151,28 @@ export const createGetExportHandler =
     // exports as an empty file rather than a 404 — same rule as GET /content.
     let doc: TiptapDocJson = { type: 'doc', content: [] }
     if (head) {
-      const decoded = ydocToPmJson(head.data)
+      // Gate snapshots at or above LARGE_DECODE_BYTES behind the process-wide decode slot
+      // (zero cost below 4 MiB) so concurrent large exports cannot OOM rest-api's 512M cgroup.
+      const release = await acquireLargeDecode(head.data.byteLength, 0)
+      if (!release) {
+        deps.logger.warn(
+          { documentId, headBytes: head.data.byteLength, format },
+          'Export refused: large decode slot busy'
+        )
+        c.header('Retry-After', EXPORT_BUSY_RETRY_SECONDS)
+        return fail(
+          c,
+          503,
+          'SERVICE_UNAVAILABLE',
+          'Another large document is being processed on this server. Try again in a few seconds.'
+        )
+      }
+      let decoded: ReturnType<typeof ydocToPmJson>
+      try {
+        decoded = ydocToPmJson(head.data)
+      } finally {
+        release()
+      }
       if (!decoded.ok) {
         deps.logger.error(
           { err: decoded.error, documentId, version: head.version },

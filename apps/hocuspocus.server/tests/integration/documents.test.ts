@@ -143,6 +143,27 @@ describe('Documents API', () => {
       expect(data.success).toBe(true)
     })
 
+    test('handles literal % in search query without URIError and returns empty for punctuation-only queries', async () => {
+      let queryCalls = 0
+      mockPrisma.documentMetadata.findMany = async () => {
+        queryCalls += 1
+        return []
+      }
+      mockPrisma.documentMetadata.count = async () => 0
+
+      // `%25` decodes to literal `%` in Hono; a second decodeURIComponent crashed with 500.
+      const percentRes = await testServer.get('/api/documents?title=100%25')
+      expect(percentRes.status).toBe(200)
+      expect(queryCalls).toBe(1)
+
+      // Punctuation-only search yields zero tokens and short-circuits without querying Prisma.
+      const punctRes = await testServer.get('/api/documents?title=+++')
+      const punctData = await punctRes.json()
+      expect(punctRes.status).toBe(200)
+      expect(punctData.data).toEqual({ docs: [], total: 0 })
+      expect(queryCalls).toBe(1)
+    })
+
     test('should return empty array when no documents found', async () => {
       mockPrisma.documentMetadata.findMany = async () => []
       mockPrisma.documentMetadata.count = async () => 0
@@ -986,6 +1007,63 @@ describe('Documents API', () => {
       expect(response.status).toBe(200)
       expect(data.success).toBe(true)
       // A signed-out create has no owner, so the lock is dropped, never written.
+      for (const payload of [upsertArgs.update, upsertArgs.create]) {
+        expect(payload).not.toHaveProperty('readOnly')
+        expect(payload).not.toHaveProperty('isPrivate')
+      }
+    })
+
+    test('prevents an anonymous Supabase session from claiming ownerId or setting locks on create', async () => {
+      let upsertArgs: any
+      const anonPrisma = createMockPrisma() as any
+      anonPrisma.documentMetadata.upsert = async (data: any) => {
+        upsertArgs = data
+        return {
+          id: 1,
+          documentId: 'anon-doc-1',
+          slug: data.create.slug,
+          title: data.create.title,
+          description: '',
+          keywords: '',
+          ownerId: data.create.ownerId,
+          readOnly: false,
+          isPrivate: false
+        }
+      }
+
+      const anonApp = new Hono()
+      anonApp.use('*', async (c, next) => {
+        c.set('prisma', anonPrisma)
+        c.set('redis', createMockRedis())
+        await next()
+      })
+      const anonOptionalUser = async (c: any, next: any) => {
+        c.set('user', { sub: 'anon-user-99', is_anonymous: true })
+        c.set('userId', 'anon-user-99')
+        await next()
+      }
+      anonApp.route(
+        '/api/documents',
+        createDocumentsRouter({
+          controller: defaultDocumentsController,
+          optionalUser: anonOptionalUser,
+          optionalPadReader: anonOptionalUser,
+          requireUser,
+          requireServiceRoleOrUser
+        })
+      )
+      const anonServer = new TestServer(anonApp)
+
+      const response = await anonServer.put('/api/documents/anon-doc-1', {
+        title: 'Anon Draft',
+        isPrivate: true,
+        readOnly: true
+      })
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+      expect(upsertArgs.create.ownerId).toBeNull()
       for (const payload of [upsertArgs.update, upsertArgs.create]) {
         expect(payload).not.toHaveProperty('readOnly')
         expect(payload).not.toHaveProperty('isPrivate')

@@ -142,6 +142,30 @@ describe('zipInflateSize', () => {
       name: 'returns null with no EOCD record',
       zip: () => Buffer.from('PK\x03\x04 no end'),
       expected: null
+    },
+    {
+      name: 'returns null for a corrupt DEFLATE stream (Z_DATA_ERROR)',
+      zip: () => {
+        const zip = createZip([{ name: 'word/document.xml', data: 'x'.repeat(200) }])
+        const cd = centralDirectory(zip)
+        const compressed = zip.readUInt32LE(cd + 20)
+        const localAt = zip.readUInt32LE(cd + 42)
+        const start = localAt + 30 + zip.readUInt16LE(localAt + 26) + zip.readUInt16LE(localAt + 28)
+        zip.fill(0xff, start, start + compressed)
+        return zip
+      },
+      expected: null
+    },
+    {
+      name: 'returns null for a truncated DEFLATE stream (Z_BUF_ERROR)',
+      zip: () => {
+        const zip = createZip([{ name: 'word/document.xml', data: 'hello world '.repeat(50) }])
+        const cd = centralDirectory(zip)
+        const compressed = zip.readUInt32LE(cd + 20)
+        zip.writeUInt32LE(Math.max(1, Math.floor(compressed / 2)), cd + 20)
+        return zip
+      },
+      expected: null
     }
   ]
 

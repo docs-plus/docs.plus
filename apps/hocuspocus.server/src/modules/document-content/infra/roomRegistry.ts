@@ -24,6 +24,7 @@ import {
   type ParsedOrigin
 } from '../../../lib/httpOrigin'
 import { createSingleFlight } from '../../../lib/singleFlight'
+import { TIMED_OUT, withinTimeout } from '../../../lib/withinTimeout'
 import type { RedisClient } from '../../../types'
 import type { RoomRegistryReader, RoomRegistryWriter } from '../types'
 
@@ -56,8 +57,6 @@ export const DNS_CACHE_TTL_MS = 10_000
 /** Minimum interval between forced DNS refreshes on allowlist miss (stops amplification). */
 export const DNS_MISS_REFRESH_COOLDOWN_MS = 2_000
 
-const TIMED_OUT = Symbol('room-registry-timed-out')
-
 export type DnsIpLookup = (hostname: string) => Promise<string[]>
 
 /** Raw case-sensitive room-owner ZSET key. */
@@ -76,11 +75,7 @@ export const isBlockedPeerIp = (host: string): boolean => {
   const ip = normalizeHost(host)
   const family = isIP(ip)
   if (family === 4) {
-    const octets = ip.split('.').map(Number)
-    if (octets.length !== 4 || octets.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) {
-      return true
-    }
-    const [a, b] = octets
+    const [a, b] = ip.split('.').map(Number)
     if (a === 0) return true // 0.0.0.0/8 unspecified
     if (a === 169 && b === 254) return true // 169.254.0.0/16 cloud metadata / link-local
     if (a >= 224) return true // 224.0.0.0/4 multicast + 240.0.0.0/4 reserved/broadcast
@@ -176,14 +171,8 @@ const withinBudget = async <T>(
   logger: Logger,
   run: () => Promise<T>
 ): Promise<{ ok: true; value: T } | { ok: false }> => {
-  let timer: ReturnType<typeof setTimeout> | undefined
   try {
-    const raced = await Promise.race([
-      run(),
-      new Promise<typeof TIMED_OUT>((resolve) => {
-        timer = setTimeout(() => resolve(TIMED_OUT), timeoutMs)
-      })
-    ])
+    const raced = await withinTimeout(run(), timeoutMs)
     if (raced === TIMED_OUT) {
       logger.warn({ op, timeoutMs }, 'Room registry Redis call timed out')
       return { ok: false }
@@ -192,8 +181,6 @@ const withinBudget = async <T>(
   } catch (err) {
     logger.warn({ err, op }, 'Room registry Redis call failed')
     return { ok: false }
-  } finally {
-    clearTimeout(timer)
   }
 }
 
@@ -394,11 +381,15 @@ export const createPeerUrlValidator = (deps: PeerUrlValidatorDeps): PeerUrlValid
   let cachedIps: Set<string> | null = null
   let fetchedAt = 0
   let lastMissRefreshAt = 0
+  let lastFailureAt: number | null = null
 
   const resolveAllowedIps = async (forceOnMiss: boolean): Promise<Set<string>> => {
     const current = now()
     if (cachedIps !== null && !forceOnMiss && current - fetchedAt < DNS_CACHE_TTL_MS) {
       return cachedIps
+    }
+    if (lastFailureAt !== null && current - lastFailureAt < DNS_MISS_REFRESH_COOLDOWN_MS) {
+      return cachedIps ?? new Set()
     }
     if (forceOnMiss && current - lastMissRefreshAt < DNS_MISS_REFRESH_COOLDOWN_MS) {
       return cachedIps ?? new Set()
@@ -407,7 +398,15 @@ export const createPeerUrlValidator = (deps: PeerUrlValidatorDeps): PeerUrlValid
 
     return dnsFlight(base.host, async () => {
       try {
-        const ips = await dnsLookup(base.host)
+        const ips = await withinTimeout(dnsLookup(base.host), ROOM_REGISTRY_OP_TIMEOUT_MS)
+        if (ips === TIMED_OUT) {
+          lastFailureAt = now()
+          logger.warn(
+            { host: base.host, timeoutMs: ROOM_REGISTRY_OP_TIMEOUT_MS },
+            'DNS lookup for collab peer allowlist timed out'
+          )
+          return cachedIps ?? new Set()
+        }
         const next = new Set<string>()
         for (const ip of ips) {
           const normalized = normalizeHost(ip)
@@ -421,8 +420,10 @@ export const createPeerUrlValidator = (deps: PeerUrlValidatorDeps): PeerUrlValid
         }
         cachedIps = next
         fetchedAt = now()
+        lastFailureAt = null
         return next
       } catch (err) {
+        lastFailureAt = now()
         logger.warn({ err, host: base.host }, 'DNS lookup for collab peer allowlist failed')
         return cachedIps ?? new Set()
       }
@@ -498,7 +499,7 @@ export const createRoomRegistryReader = (deps: RoomRegistryReaderDeps): RoomRegi
     const cutoff = now() - ROOM_OWNER_STALE_MS
     const read = await withinBudget('lookup', ROOM_REGISTRY_OP_TIMEOUT_MS, logger, async () => {
       const members = await redis.zrevrangebyscore(key, '+inf', `(${cutoff}`)
-      return Array.isArray(members) ? (members as string[]) : []
+      return Array.isArray(members) ? members : []
     })
 
     if (!read.ok || read.value.length === 0) return []
