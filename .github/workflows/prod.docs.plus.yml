@@ -192,7 +192,7 @@ jobs:
           # Covers manual dispatch AND a first push / history rewrite (before == all-zeros SHA).
           # `schedule` is deliberate, not a fallback: the weekly cron is the only
           # automatic run that is not path-filtered, so it exercises every extension.
-          FORCE_ALL: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event.before == '0000000000000000000000000000000000000000' || steps.gap.outputs.force == 'true' }}
+          FORCE_ALL: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || (github.event_name == 'push' && github.event.before == '0000000000000000000000000000000000000000') || steps.gap.outputs.force == 'true' }}
           R_INDENT: ${{ steps.filter.outputs.extension-indent }}
           R_HYPERLINK: ${{ steps.filter.outputs.extension-hyperlink }}
           R_HMM: ${{ steps.filter.outputs.extension-hypermultimedia }}
@@ -228,7 +228,7 @@ jobs:
         env:
           # The `assemble` fallback, plus every `(build):` push: scopes never
           # narrow a deploy push's gate set.
-          ALL_SCOPES: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event.before == '0000000000000000000000000000000000000000' || steps.gap.outputs.force == 'true' || (github.event_name == 'push' && needs.triage.outputs.triggered == 'true') }}
+          ALL_SCOPES: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || (github.event_name == 'push' && github.event.before == '0000000000000000000000000000000000000000') || steps.gap.outputs.force == 'true' || (github.event_name == 'push' && needs.triage.outputs.triggered == 'true') }}
           FILE_COUNT: ${{ steps.files.outputs.all_count }}
           # Over 500 paths the list could pass the env size limit; the script turns every scope on.
           FILES_JSON: ${{ fromJSON(steps.files.outputs.all_count || '0') <= 500 && steps.files.outputs.all_files || '[]' }}
