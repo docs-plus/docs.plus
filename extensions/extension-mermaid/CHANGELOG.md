@@ -14,6 +14,9 @@ All notable changes to `@docs.plus/extension-mermaid` are documented here. The f
 
 ### Internal
 
+- Added a gzip byte-budget bench (`scripts/bench/`) wired into PR CI (`starterKitAppGz`:
+  `5,330 B`, `helperOnlyGz`: `91,563 B`, keeping lazy-loaded `pele` external)
+  ([#784](https://github.com/docs-plus/docs.plus/issues/784)).
 - The renderer no longer moves Pele's error line down past front matter, directives and comments. Pele `1.10.0` and later count those lines itself ([#805](https://github.com/docs-plus/docs.plus/issues/805)).
 
 - `typecheck` runs `bun check --no-script` on `tsconfig.json` and `tsconfig.test.json`, not

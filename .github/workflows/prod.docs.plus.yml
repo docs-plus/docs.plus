@@ -152,6 +152,7 @@ jobs:
       actions: read # the gap step reads the previous push run's jobs
     outputs:
       changed_extensions: ${{ steps.assemble.outputs.list }}
+      changed_byte_extensions: ${{ steps.assemble.outputs.byte_list }}
       webapp: ${{ steps.scopes.outputs.webapp }}
       admin: ${{ steps.scopes.outputs.admin }}
       backend: ${{ steps.scopes.outputs.backend }}
@@ -202,16 +203,24 @@ jobs:
         run: |
           set -euo pipefail
           all='["extension-indent","extension-hyperlink","extension-hypermultimedia","extension-inline-code","extension-placeholder","extension-mermaid"]'
-          if [ "${FORCE_ALL}" = "true" ]; then echo "list=${all}" >> "$GITHUB_OUTPUT"; exit 0; fi
+          all_bytes='["extension-hyperlink","extension-hypermultimedia","extension-mermaid"]'
+          if [ "${FORCE_ALL}" = "true" ]; then
+            echo "list=${all}" >> "$GITHUB_OUTPUT"
+            echo "byte_list=${all_bytes}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           sel=()
+          bsel=()
           [ "${R_INDENT}" = "true" ] && sel+=('"extension-indent"')
-          [ "${R_HYPERLINK}" = "true" ] && sel+=('"extension-hyperlink"')
-          [ "${R_HMM}" = "true" ] && sel+=('"extension-hypermultimedia"')
+          if [ "${R_HYPERLINK}" = "true" ]; then sel+=('"extension-hyperlink"'); bsel+=('"extension-hyperlink"'); fi
+          if [ "${R_HMM}" = "true" ]; then sel+=('"extension-hypermultimedia"'); bsel+=('"extension-hypermultimedia"'); fi
           [ "${R_INLINE}" = "true" ] && sel+=('"extension-inline-code"')
           [ "${R_PLACEHOLDER}" = "true" ] && sel+=('"extension-placeholder"')
-          [ "${R_MERMAID}" = "true" ] && sel+=('"extension-mermaid"')
+          if [ "${R_MERMAID}" = "true" ]; then sel+=('"extension-mermaid"'); bsel+=('"extension-mermaid"'); fi
           if [ "${#sel[@]}" -eq 0 ]; then echo "list=[]" >> "$GITHUB_OUTPUT"; else
             IFS=,; echo "list=[${sel[*]}]" >> "$GITHUB_OUTPUT"; fi
+          if [ "${#bsel[@]}" -eq 0 ]; then echo "byte_list=[]" >> "$GITHUB_OUTPUT"; else
+            IFS=,; echo "byte_list=[${bsel[*]}]" >> "$GITHUB_OUTPUT"; fi
 
       # Every changed path, for the scope map. Its own step: the extension filter
       # above has its own predicate quantifier. A `(build):` push needs no list.
@@ -374,15 +383,19 @@ jobs:
         run: bash scripts/extension-preflight.sh
 
   # Bytes are exact, so one run per PR is enough; timings never run in CI.
-  # Fails when head is above a scripts/bench/bytes-budget.json limit (maintainer ruling, 2026-11-13).
+  # Fails when head is above a scripts/bench/bytes-budget.json limit (maintainer ruling, 2026-11-13; #784).
   extension-bytes:
-    name: 📏 Ext bytes (extension-hyperlink)
+    name: 📏 Ext bytes (${{ matrix.ext }})
     needs: [triage, changes]
     if: |
       github.event_name == 'pull_request' &&
       needs.triage.outputs.skip_app_ci != 'true' &&
       needs.changes.outputs.docs_only != 'true' &&
-      contains(fromJson(needs.changes.outputs.changed_extensions || '[]'), 'extension-hyperlink')
+      needs.changes.outputs.changed_byte_extensions != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        ext: ${{ fromJson(needs.changes.outputs.changed_byte_extensions || '[]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -393,21 +406,21 @@ jobs:
       # The bench builds src/ itself, but src/ imports the floating packages through their dist/.
       - uses: ./.github/actions/build-extensions
         with:
-          extensions: extension-hyperlink
+          extensions: ${{ matrix.ext }}
       - name: 📏 Bytes against main
-        working-directory: extensions/extension-hyperlink
+        working-directory: extensions/${{ matrix.ext }}
         run: |
           # A PR checkout has no local main; the bench reads main's src/ with git archive.
           git fetch --no-tags --depth=1 origin +refs/heads/main:refs/heads/main
           set -o pipefail
           NODE_ENV=production bun scripts/bench/run.ts --ref main --bytes-only \
             --budget scripts/bench/bytes-budget.json \
-            --save "${RUNNER_TEMP}/extension-bytes.json" | tee -a "${GITHUB_STEP_SUMMARY}"
+            --save "${RUNNER_TEMP}/extension-bytes-${{ matrix.ext }}.json" | tee -a "${GITHUB_STEP_SUMMARY}"
       - name: 📤 Upload byte rows
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: extension-bytes-${{ github.sha }}
-          path: ${{ runner.temp }}/extension-bytes.json
+          name: extension-bytes-${{ matrix.ext }}-${{ github.sha }}
+          path: ${{ runner.temp }}/extension-bytes-${{ matrix.ext }}.json
           retention-days: 30
           overwrite: true
 

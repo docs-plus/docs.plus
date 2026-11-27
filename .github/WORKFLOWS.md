@@ -124,16 +124,16 @@ The script classes each changed path by the first row that matches.
 
 `docs_only` is `true` only when every path is in row 2. Row 2 comes before row 4, so `.github/WORKFLOWS.md` and `.github/PULL_REQUEST_TEMPLATE.md` count as docs. `.agents/**` is docs because no gate except lint reads it, and lint always runs ([#759](https://github.com/docs-plus/docs.plus/issues/759)).
 
-| Job                                    | Runs when                                                             |
-| -------------------------------------- | --------------------------------------------------------------------- |
-| triage, Detect Changes, lint, security | Always                                                                |
-| Type Check                             | `webapp`, `admin` or `backend` is on                                  |
-| Backend Validation                     | Pull request: `backend` is on. Push without `(build):`: never.        |
-| Ext suites                             | The extension filter selects the suite, and `docs_only` is not `true` |
-| Ext bytes                              | Pull request only, when the filter selects `extension-hyperlink`      |
-| Webapp Unit Tests                      | `webapp` is on                                                        |
-| Build Verification                     | `webapp` or `admin` is on, and every gate passed or was skipped       |
-| deploy, observability, Uptime Kuma     | Unchanged                                                             |
+| Job                                    | Runs when                                                                                                             |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| triage, Detect Changes, lint, security | Always                                                                                                                |
+| Type Check                             | `webapp`, `admin` or `backend` is on                                                                                  |
+| Backend Validation                     | Pull request: `backend` is on. Push without `(build):`: never.                                                        |
+| Ext suites                             | The extension filter selects the suite, and `docs_only` is not `true`                                                 |
+| Ext bytes                              | Pull request only, when the filter selects `extension-hyperlink`, `extension-hypermultimedia`, or `extension-mermaid` |
+| Webapp Unit Tests                      | `webapp` is on                                                                                                        |
+| Build Verification                     | `webapp` or `admin` is on, and every gate passed or was skipped                                                       |
+| deploy, observability, Uptime Kuma     | Unchanged                                                                                                             |
 
 Every scope is on for a `(build):` push, a `workflow_dispatch`, the weekly cron, a missing diff base, more than 500 files, a missing file count, an empty list, or a list whose length differs from the count. The `scopes` step logs one class line per path and a `reason` line.
 

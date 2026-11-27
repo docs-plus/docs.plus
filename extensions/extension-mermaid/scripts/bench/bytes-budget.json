@@ -1,0 +1,5 @@
+{
+  "note": "Gzip byte limits for head, set to the measured head on 2026-11-27 (#784). Raise a limit only on purpose, in the same change. null means no limit.",
+  "starterKitAppGz": 5330,
+  "helperOnlyGz": 91563
+}
