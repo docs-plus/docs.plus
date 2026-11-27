@@ -219,6 +219,10 @@ services:
     container_name: docsplus-glitchtip-web
     restart: unless-stopped
     environment: *glitchtip-env
+    # Shared with glitchtip-worker so uploaded sourcemap FileBlobs survive restarts and
+    # Celery can assemble release-artifacts.zip into sourcecode_debugsymbolbundle (#841).
+    volumes:
+      - glitchtip-uploads:/code/uploads
     depends_on:
       glitchtip-postgres: { condition: service_healthy }
       glitchtip-redis: { condition: service_healthy }
@@ -253,6 +257,8 @@ services:
     restart: unless-stopped
     command: ./bin/run-celery-with-beat.sh
     environment: *glitchtip-env
+    volumes:
+      - glitchtip-uploads:/code/uploads
     depends_on:
       glitchtip-postgres: { condition: service_healthy }
       glitchtip-redis: { condition: service_healthy }
@@ -304,6 +310,7 @@ volumes:
   prometheus-data:
   grafana-data:
   glitchtip-pg-data:
+  glitchtip-uploads:
 
 networks:
   docsplus-network:
