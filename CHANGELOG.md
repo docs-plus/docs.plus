@@ -30,6 +30,12 @@ This file is the product changelog. Every app, package and extension keeps its o
 
 ### Changed
 
+- `rest-api` now runs one large snapshot decode (`>= 4 MiB`) at a time across export, duplicate,
+  content read, version read, version diff, and MCP cold read, and raises its memory limit from
+  `512M` to `768M`. A second large read waits up to `10 s` and returns `503` (`Retry-After: 10`)
+  if the slot stays busy; the pad shows `"This document is busy. Try again in a few seconds."`.
+  Detail: `apps/hocuspocus.server/CHANGELOG.md`
+  ([#754](https://github.com/docs-plus/docs.plus/issues/754)).
 - An AI app's edit returns sooner. The server no longer waits 1 s after each of the two saves in
   one edit. Estimate, not measured: about 2 s less per edit; the local after will measure it
   ([#726](https://github.com/docs-plus/docs.plus/issues/726)).

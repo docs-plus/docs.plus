@@ -32,6 +32,9 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- `conversionErrors.ts` now maps HTTP `503` to `"This document is busy. Try again in a few
+seconds."` when a large snapshot decode times out waiting for the `rest-api` decode slot
+  ([#754](https://github.com/docs-plus/docs.plus/issues/754)).
 - The app now says TOC, not "outline", for the heading list. An empty TOC reads "Add headings to
   build a TOC.", and the install screenshot label reads "Find any section from the TOC".
 - The pad and the chat composer load `HyperlinkBase`, so they no longer ship the extension's

@@ -12,6 +12,10 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Added
 
+- `large_decode_total{route, outcome}` counts large snapshot decodes (`>= 4 MiB`) in `rest-api`
+  across `export`, `import`, `duplicate`, `content-read`, `version-read`, `version-diff`, and
+  `mcp-cold-read` with outcomes `run`, `waited`, and `refused`
+  ([#754](https://github.com/docs-plus/docs.plus/issues/754)).
 - `GET /api/documents/:slug/markdown` serves raw `text/markdown; charset=utf-8` for readable
   public documents (`Vary: Accept`, `X-Robots-Tag: noindex, nofollow`, `Cache-Control: no-store`).
   It never creates drafts, fails closed with `404` on missing, trashed, Private, or unpersisted
@@ -71,6 +75,15 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Changed
 
+- `rest-api` now gates every snapshot decode at or above `4 MiB` through `acquireLargeDecode`
+  (one slot at a time, `10 s` FIFO wait, `503 SERVICE_UNAVAILABLE` with `Retry-After: 10` on
+  timeout) across `export`, `duplicate`, `content-read`, `version-read`, `version-diff` (using
+  `Math.max` of both snapshot sizes), and `mcp-cold-read`. `docker-compose.prod.yml` raises
+  `rest-api` from `512M` to `768M`, and `incident-rss-peak` updates its `rest-api` arm to `80 %`
+  of `768 MiB` (`644245094 B`). In local `n = 5` benchmarks on a `12.55 MB` snapshot, two
+  concurrent `docx` exports serialized (`run: 1, waited: 1` on `5 of 5` runs) and dropped peak
+  RSS from `821.8 MiB` to `769.4 MiB` (`-52.4 MiB`; `md` dropped `700.2 -> 672.4 MiB`,
+  `-27.8 MiB`) ([#754](https://github.com/docs-plus/docs.plus/issues/754)).
 - A content write on a direct connection, such as an MCP edit, no longer sleeps 1 s after each
   of its two saves. The `@hocuspocus/extension-redis` 3.4.4 patch gains a `storeDelay` option for
   the wait after a direct-connection store. It defaults to `disconnectDelay`, and
