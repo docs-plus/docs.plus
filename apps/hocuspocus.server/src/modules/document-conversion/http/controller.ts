@@ -6,7 +6,12 @@ import slugify from 'slugify'
 import type { PrismaClient } from '../../../generated/prisma/client'
 import { fail, ok } from '../../../http/envelope'
 import { decideDocumentAccess } from '../../../lib/documentAccess'
-import { acquireLargeDecode, LARGE_DECODE_BYTES } from '../../../lib/largeDecodeGate'
+import {
+  acquireLargeDecode,
+  LARGE_DECODE_BYTES,
+  LARGE_DECODE_WAIT_MS
+} from '../../../lib/largeDecodeGate'
+import { largeDecodeTotal } from '../../../lib/metrics'
 import { ydocToPmJson } from '../../../lib/nested-flat-migration'
 import { isDocumentOwner } from '../../../lib/ownerAccess'
 import { createSingleFlight } from '../../../lib/singleFlight'
@@ -131,6 +136,7 @@ export interface ExportControllerDeps {
   /** Doubles as the DOCX image allowlist — see `renderDocumentHtml`. */
   mediaPublicBaseUrl: string | null
   mediaCookieFor: (uid: string) => string | null
+  largeDecodeWaitMs?: number
 }
 
 const EXPORT_BUSY_RETRY_SECONDS = '10'
@@ -149,11 +155,13 @@ export const createGetExportHandler =
     const head = await findHeadRow(deps.prisma, documentId)
     // Metadata without a snapshot is a document nobody has persisted yet, which
     // exports as an empty file rather than a 404 — same rule as GET /content.
-    let doc: TiptapDocJson = { type: 'doc', content: [] }
+    let release: (() => void) | null = null
     if (head) {
-      // Gate snapshots at or above LARGE_DECODE_BYTES behind the process-wide decode slot
-      // (zero cost below 4 MiB) so concurrent large exports cannot OOM rest-api's 512M cgroup.
-      const release = await acquireLargeDecode(head.data.byteLength, 0)
+      release = await acquireLargeDecode(
+        head.data.byteLength,
+        deps.largeDecodeWaitMs ?? LARGE_DECODE_WAIT_MS,
+        (outcome) => largeDecodeTotal.inc({ route: 'export', outcome })
+      )
       if (!release) {
         deps.logger.warn(
           { documentId, headBytes: head.data.byteLength, format },
@@ -164,40 +172,49 @@ export const createGetExportHandler =
           c,
           503,
           'SERVICE_UNAVAILABLE',
-          'Another large document is being processed on this server. Try again in a few seconds.'
+          'A large document is being read. Try again shortly.'
         )
       }
-      let decoded: ReturnType<typeof ydocToPmJson>
-      try {
-        decoded = ydocToPmJson(head.data)
-      } finally {
-        release()
-      }
-      if (!decoded.ok) {
-        deps.logger.error(
-          { err: decoded.error, documentId, version: head.version },
-          'Snapshot decode failed'
-        )
-        return fail(c, 500, 'INTERNAL_SERVER_ERROR', 'Stored document content could not be decoded')
-      }
-      doc = decoded.json as unknown as TiptapDocJson
     }
 
-    const title = titleHeadingText(doc) || meta.slug
-    // The gate above already allowed this read. The media route still needs the
-    // owner's cookie, or a Private document exports with no images.
-    const mediaCookie = meta.isPrivate && meta.ownerId ? deps.mediaCookieFor(meta.ownerId) : null
+    let doc: TiptapDocJson = { type: 'doc', content: [] }
     let bytes: Uint8Array
+    let title: string
     try {
-      bytes = await renderExport(format, doc, title, deps.mediaPublicBaseUrl, mediaCookie)
-    } catch (error) {
-      deps.logger.error({ err: error, documentId, format }, 'Document export failed')
-      return fail(
-        c,
-        500,
-        'INTERNAL_SERVER_ERROR',
-        `The document could not be converted to ${format}`
-      )
+      if (head) {
+        const decoded = ydocToPmJson(head.data)
+        if (!decoded.ok) {
+          deps.logger.error(
+            { err: decoded.error, documentId, version: head.version },
+            'Snapshot decode failed'
+          )
+          return fail(
+            c,
+            500,
+            'INTERNAL_SERVER_ERROR',
+            'Stored document content could not be decoded'
+          )
+        }
+        doc = decoded.json as unknown as TiptapDocJson
+      }
+
+      title = titleHeadingText(doc) || meta.slug
+      // The gate above already allowed this read. The media route still needs the
+      // owner's cookie, or a Private document exports with no images.
+      const mediaCookie = meta.isPrivate && meta.ownerId ? deps.mediaCookieFor(meta.ownerId) : null
+      try {
+        bytes = await renderExport(format, doc, title, deps.mediaPublicBaseUrl, mediaCookie)
+      } catch (error) {
+        deps.logger.error({ err: error, documentId, format }, 'Document export failed')
+        return fail(
+          c,
+          500,
+          'INTERNAL_SERVER_ERROR',
+          `The document could not be converted to ${format}`
+        )
+      }
+    } finally {
+      release?.()
     }
 
     // Only the 200 leaves the house envelope — a binary body cannot carry it.
@@ -442,7 +459,11 @@ export const createPostImportHandler =
 
     // A 306 KiB upload can unpack to 40 MiB, so every import takes the slot. No
     // queue: a second import answers at once instead of stacking loop blocks.
-    const release = await acquireLargeDecode(Math.max(LARGE_DECODE_BYTES, buffer.length), 0)
+    const release = await acquireLargeDecode(
+      Math.max(LARGE_DECODE_BYTES, buffer.length),
+      0,
+      (outcome) => largeDecodeTotal.inc({ route: 'import', outcome })
+    )
     if (!release) {
       deps.logger.warn({ code: 'IMPORT_BUSY', uploadBytes: buffer.length }, 'Import refused')
       c.header('Retry-After', IMPORT_BUSY_RETRY_SECONDS)

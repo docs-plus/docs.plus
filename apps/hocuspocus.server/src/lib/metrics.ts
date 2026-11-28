@@ -774,6 +774,15 @@ export const mediaWorkspaceMaxUsagePercent = new Gauge({
   registers: [register]
 })
 
+// Tracks the single-slot large-decode gate (>= 4 MiB) in rest-api (#754).
+// rest-api runs at LOG_LEVEL=error, so this counter is the observable record.
+export const largeDecodeTotal = new Counter({
+  name: 'large_decode_total',
+  help: 'Large document decode gate attempts, by route and outcome',
+  labelNames: ['route', 'outcome'] as const,
+  registers: [register]
+})
+
 export const metricsContentType = register.contentType
 
 export const metricsText = (): Promise<string> => register.metrics()

@@ -43,6 +43,7 @@ type DocumentHandler = (c: AppContext) => Promise<Response>
 export interface DocumentsControllerDeps {
   notifyNewDocument: typeof sendNewDocumentNotification
   getOwnerProfile: typeof getOwnerProfile
+  largeDecodeWaitMs?: number
 }
 
 export interface DocumentsHandlers {
@@ -430,33 +431,43 @@ export const touchDocumentOpened = async (c: AppContext): Promise<Response> => {
 
 const DUPLICATE_BUSY_RETRY_SECONDS = '10'
 
-export const duplicateDocument = async (c: AppContext): Promise<Response> => {
-  const prisma = c.get('prisma')
-  const documentId = c.req.param('documentId')
-  if (documentId === undefined) return c.json({ error: 'Missing document id' }, 400)
-  const user = c.get('user')
-  // Guaranteed by requireUser + requireNonAnonymousUser in documents.router.ts.
-  const requesterId = c.get('userId') as string
+const buildDuplicateDocument =
+  (largeDecodeWaitMs?: number): DocumentHandler =>
+  async (c: AppContext): Promise<Response> => {
+    const prisma = c.get('prisma')
+    const documentId = c.req.param('documentId')
+    if (documentId === undefined) return c.json({ error: 'Missing document id' }, 400)
+    const user = c.get('user')
+    // Guaranteed by requireUser + requireNonAnonymousUser in documents.router.ts.
+    const requesterId = c.get('userId') as string
 
-  try {
-    const result = await duplicateDocumentService(prisma, documentId, requesterId, user?.email)
-    if (result.status === 'not-found') {
-      return fail(c, 404, 'NOT_FOUND', 'Document not found')
-    }
-    if (result.status === 'busy') {
-      c.header('Retry-After', DUPLICATE_BUSY_RETRY_SECONDS)
-      return fail(
-        c,
-        503,
-        'SERVICE_UNAVAILABLE',
-        'Another large document is being processed on this server. Try again in a few seconds.'
+    try {
+      const result = await duplicateDocumentService(
+        prisma,
+        documentId,
+        requesterId,
+        user?.email,
+        largeDecodeWaitMs
       )
+      if (result.status === 'not-found') {
+        return fail(c, 404, 'NOT_FOUND', 'Document not found')
+      }
+      if (result.status === 'busy') {
+        c.header('Retry-After', DUPLICATE_BUSY_RETRY_SECONDS)
+        return fail(
+          c,
+          503,
+          'SERVICE_UNAVAILABLE',
+          'A large document is being read. Try again shortly.'
+        )
+      }
+      return ok(c, result.document)
+    } catch (error) {
+      return handleError(c, error, { documentId })
     }
-    return ok(c, result.document)
-  } catch (error) {
-    return handleError(c, error, { documentId })
   }
-}
+
+export const duplicateDocument = buildDuplicateDocument()
 
 export const getMedia = async (c: AppContext): Promise<Response> => {
   const { documentId, mediaId } = c.req.param()
@@ -588,7 +599,7 @@ export const createDocumentsController = (deps: DocumentsControllerDeps): Docume
   restoreTrash,
   setDocumentFavorite,
   touchDocumentOpened,
-  duplicateDocument
+  duplicateDocument: buildDuplicateDocument(deps.largeDecodeWaitMs)
 })
 
 export const defaultDocumentsController = createDocumentsController({

@@ -6,6 +6,8 @@ import type { PrismaClient } from '../../../generated/prisma/client'
 import { fail, ok } from '../../../http/envelope'
 import { type ClientAuthorBinding, resolveClientAuthors } from '../../../lib/client-authors'
 import { captureUnknown } from '../../../lib/instrument'
+import { acquireLargeDecode, LARGE_DECODE_WAIT_MS } from '../../../lib/largeDecodeGate'
+import { largeDecodeTotal } from '../../../lib/metrics'
 import { distinctUserIds } from '../../../lib/profiles'
 import { readContent } from '../../document-content/domain/readContent'
 import { findDocumentMeta } from '../../document-content/infra/contentStore'
@@ -145,7 +147,24 @@ export const createGetVersionHandler =
     const row = await findVersionRow(deps.prisma, documentId, version)
     if (!row) return fail(c, 404, 'NOT_FOUND', 'Version not found')
 
-    const read = readContent(row.data, format)
+    const release = await acquireLargeDecode(row.data.byteLength, LARGE_DECODE_WAIT_MS, (outcome) =>
+      largeDecodeTotal.inc({ route: 'version-read', outcome })
+    )
+    if (!release) {
+      c.header('Retry-After', '10')
+      return fail(
+        c,
+        503,
+        'SERVICE_UNAVAILABLE',
+        'A large document is being read. Try again shortly.'
+      )
+    }
+    let read: ReturnType<typeof readContent>
+    try {
+      read = readContent(row.data, format)
+    } finally {
+      release()
+    }
     if (!read.ok) {
       deps.logger.error({ err: read.error, documentId, version }, 'Version snapshot decode failed')
       captureUnknown(read.error, { extra: { documentId, version } })
@@ -242,7 +261,25 @@ export const createDiffHandler =
       return ok(c, identicalDiff(documentId, before.version, after.version))
     }
 
-    const diff = diffBlocks(before, after)
+    const largestBytes = Math.max(before?.data.byteLength ?? 0, after.data.byteLength)
+    const release = await acquireLargeDecode(largestBytes, LARGE_DECODE_WAIT_MS, (outcome) =>
+      largeDecodeTotal.inc({ route: 'version-diff', outcome })
+    )
+    if (!release) {
+      c.header('Retry-After', '10')
+      return fail(
+        c,
+        503,
+        'SERVICE_UNAVAILABLE',
+        'A large document is being read. Try again shortly.'
+      )
+    }
+    let diff: ReturnType<typeof diffBlocks>
+    try {
+      diff = diffBlocks(before, after)
+    } finally {
+      release()
+    }
     if (!diff.ok) {
       deps.logger.error(
         { err: diff.error, documentId, version, base: before?.version ?? 0 },

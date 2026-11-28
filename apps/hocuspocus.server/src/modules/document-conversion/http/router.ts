@@ -25,6 +25,7 @@ export interface RouterDeps {
   logger: Logger
   mediaPublicBaseUrl: string | null
   mediaCookieFor: (uid: string) => string | null
+  largeDecodeWaitMs?: number
 }
 
 /**
@@ -52,7 +53,8 @@ export const createRouter = (deps: RouterDeps): Hono => {
       prisma: deps.prisma,
       logger: deps.logger,
       mediaPublicBaseUrl: deps.mediaPublicBaseUrl,
-      mediaCookieFor: deps.mediaCookieFor
+      mediaCookieFor: deps.mediaCookieFor,
+      largeDecodeWaitMs: deps.largeDecodeWaitMs
     })
   )
 

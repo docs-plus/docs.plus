@@ -5,6 +5,8 @@ import type { PrismaClient } from '../../../generated/prisma/client'
 import { parseBareHttpOrigin } from '../../../lib/httpOrigin'
 import { internalHop } from '../../../lib/internalHop'
 import { isRecord } from '../../../lib/isRecord'
+import { acquireLargeDecode, LARGE_DECODE_WAIT_MS } from '../../../lib/largeDecodeGate'
+import { largeDecodeTotal } from '../../../lib/metrics'
 import type { RedisClient } from '../../../types'
 import { emptyContent, readContent } from '../domain/readContent'
 import type { ApplyRequest, ContentReadOutcome, RoomRegistryReader, WsApplyOutcome } from '../types'
@@ -319,7 +321,18 @@ export const createContentClient = (deps: ContentClientDeps): ContentClient => {
     if (live.status !== 'not-loaded') return live
     const head = await findHeadRow(deps.prisma, documentId)
     if (!head) return { status: 'ok', content: emptyContent('json') as JSONContent }
-    const decoded = readContent(head.data, 'json')
+    const release = await acquireLargeDecode(
+      head.data.byteLength,
+      LARGE_DECODE_WAIT_MS,
+      (outcome) => largeDecodeTotal.inc({ route: 'mcp-cold-read', outcome })
+    )
+    if (!release) return { status: 'unavailable' }
+    let decoded: ReturnType<typeof readContent>
+    try {
+      decoded = readContent(head.data, 'json')
+    } finally {
+      release()
+    }
     if (decoded.ok) return { status: 'ok', content: decoded.content as JSONContent }
     deps.logger.error(
       { err: decoded.error, documentId, version: head.version },

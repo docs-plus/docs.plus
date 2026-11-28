@@ -56,7 +56,8 @@ describe('Document conversion routes — a non-owner on a Private document', () 
         prisma,
         logger: silentLogger,
         mediaPublicBaseUrl: null,
-        mediaCookieFor: () => null
+        mediaCookieFor: () => null,
+        largeDecodeWaitMs: 25
       })
     )
     server = new TestServer(app)
@@ -114,7 +115,8 @@ describe('Document conversion import — caps and size guards', () => {
         prisma,
         logger: silentLogger,
         mediaPublicBaseUrl: null,
-        mediaCookieFor: () => null
+        mediaCookieFor: () => null,
+        largeDecodeWaitMs: 25
       })
     )
   })
@@ -312,7 +314,8 @@ describe('GET /api/documents/:slug/markdown (#822)', () => {
         prisma,
         logger: silentLogger,
         mediaPublicBaseUrl: null,
-        mediaCookieFor: () => null
+        mediaCookieFor: () => null,
+        largeDecodeWaitMs: 25
       })
     )
     return new TestServer(app)
@@ -499,7 +502,8 @@ describe('GET /api/documents/:documentId/export — large decode gate', () => {
         prisma,
         logger: silentLogger,
         mediaPublicBaseUrl: null,
-        mediaCookieFor: () => null
+        mediaCookieFor: () => null,
+        largeDecodeWaitMs: 25
       })
     )
     const server = new TestServer(app)

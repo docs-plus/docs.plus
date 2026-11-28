@@ -6,6 +6,8 @@ import type { Logger } from 'pino'
 import type { PrismaClient } from '../../../generated/prisma/client'
 import { fail, ok } from '../../../http/envelope'
 import { captureUnknown } from '../../../lib/instrument'
+import { acquireLargeDecode, LARGE_DECODE_WAIT_MS } from '../../../lib/largeDecodeGate'
+import { largeDecodeTotal } from '../../../lib/metrics'
 import { emptyContent, liveDocJson, readContent } from '../domain/readContent'
 import type { ContentClient } from '../infra/contentClient'
 import { findDocumentMeta, findHeadRow } from '../infra/contentStore'
@@ -135,7 +137,26 @@ export const createGetContentHandler =
       return ok(c, empty)
     }
 
-    const read = readContent(head.data, format)
+    const release = await acquireLargeDecode(
+      head.data.byteLength,
+      LARGE_DECODE_WAIT_MS,
+      (outcome) => largeDecodeTotal.inc({ route: 'content-read', outcome })
+    )
+    if (!release) {
+      c.header('Retry-After', '10')
+      return fail(
+        c,
+        503,
+        'SERVICE_UNAVAILABLE',
+        'A large document is being read. Try again shortly.'
+      )
+    }
+    let read: ReturnType<typeof readContent>
+    try {
+      read = readContent(head.data, format)
+    } finally {
+      release()
+    }
     if (!read.ok) {
       deps.logger.error(
         { err: read.error, documentId, version: head.version },

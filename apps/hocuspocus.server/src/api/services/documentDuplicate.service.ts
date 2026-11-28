@@ -9,8 +9,9 @@ import {
   PayloadTooLargeError,
   ValidationError
 } from '../../lib/errors'
-import { acquireLargeDecode } from '../../lib/largeDecodeGate'
+import { acquireLargeDecode, LARGE_DECODE_WAIT_MS } from '../../lib/largeDecodeGate'
 import { documentsServiceLogger } from '../../lib/logger'
+import { largeDecodeTotal } from '../../lib/metrics'
 import { resolvePrivateAccess } from '../../lib/privateAccess'
 import { rehostMediaUrls } from '../../lib/rehostMediaUrls'
 import { normalizeSlug, withUniqueSlug } from '../../lib/slug'
@@ -34,7 +35,8 @@ export const duplicateDocument = async (
   prisma: PrismaClient,
   sourceDocumentId: string,
   requesterId: string,
-  email?: string | null
+  email?: string | null,
+  largeDecodeWaitMs: number = LARGE_DECODE_WAIT_MS
 ): Promise<DuplicateDocumentResult> => {
   if (!sourceDocumentId || sourceDocumentId.trim().length === 0) {
     throw new ValidationError('Document ID is required and cannot be empty')
@@ -78,10 +80,12 @@ export const duplicateDocument = async (
     // no-media path writes the source bytes untouched. Objects before rows: a throw here
     // leaves only orphans, which the catch removes.
     // Gate snapshots at or above LARGE_DECODE_BYTES behind the process-wide decode slot
-    // (zero cost below 4 MiB) so concurrent large duplicates cannot OOM rest-api's 512M cgroup.
+    // (zero cost below 4 MiB) so concurrent large duplicates cannot OOM rest-api (#754).
     let rehosted: ReturnType<typeof rehostMediaUrls> | null = null
     if (bytes) {
-      const release = await acquireLargeDecode(bytes.byteLength, 0)
+      const release = await acquireLargeDecode(bytes.byteLength, largeDecodeWaitMs, (outcome) =>
+        largeDecodeTotal.inc({ route: 'duplicate', outcome })
+      )
       if (!release) return { status: 'busy' }
       try {
         rehosted = rehostMediaUrls(bytes, documentId)

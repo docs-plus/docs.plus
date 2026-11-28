@@ -28,7 +28,12 @@ import path from 'path'
 import { Hono } from 'hono'
 import pino from 'pino'
 import * as Y from 'yjs'
-import { defaultDocumentsController } from '../../src/api/controllers/documents.controller'
+import {
+  createDocumentsController,
+  defaultDocumentsController
+} from '../../src/api/controllers/documents.controller'
+import { sendNewDocumentNotification } from '../../src/lib/email/document-notification'
+import { getOwnerProfile } from '../../src/lib/profiles'
 import {
   optionalPadReader,
   optionalUser,
@@ -80,7 +85,11 @@ describe('Documents API', () => {
     app.route(
       '/api/documents',
       createDocumentsRouter({
-        controller: defaultDocumentsController,
+        controller: createDocumentsController({
+          notifyNewDocument: sendNewDocumentNotification,
+          getOwnerProfile,
+          largeDecodeWaitMs: 25
+        }),
         optionalUser,
         optionalPadReader,
         requireUser,
