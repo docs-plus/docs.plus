@@ -110,8 +110,7 @@ describe('List Edge Cases', () => {
     cy.get('.docy_editor .tiptap.ProseMirror > ul').should('contain', 'Nested item 2.1')
   })
 
-  // Mod+Shift+9 on items 2-3 moves item 1 out of the ol; cause unknown. https://github.com/docs-plus/docs.plus/issues/679
-  it.skip('converts only a selected subset of ordered items into task list items', () => {
+  it('converts an ordered list into a task list when toggling task list on selected items', () => {
     cy.createDocument(SimpleDocument)
     cy.wait(150)
 
@@ -135,19 +134,18 @@ describe('List Edge Cases', () => {
     })
     cy.get('.docy_editor').realPress([MOD, 'Shift', '9'])
 
+    // TipTap 3.32+ converts the whole containing list when switching list types (#679 ruling, 2026-11-28).
+    cy.get('.docy_editor ol').should('not.exist')
+    cy.get('.docy_editor ul[data-type="taskList"] > li').should('have.length', 4)
+    cy.get('.docy_editor ul[data-type="taskList"] input[type="checkbox"]').should('have.length', 4)
+    cy.contains('.docy_editor ul[data-type="taskList"] > li', 'Step 1 keep ordered').should('exist')
     cy.contains('.docy_editor ul[data-type="taskList"] > li', 'Step 2 convert to task').should(
       'exist'
     )
     cy.contains('.docy_editor ul[data-type="taskList"] > li', 'Step 3 convert to task').should(
       'exist'
     )
-    cy.get('.docy_editor ul[data-type="taskList"] input[type="checkbox"]').should(
-      'have.length.at.least',
-      2
-    )
-
-    cy.contains('.docy_editor ol > li', 'Step 1 keep ordered').should('exist')
-    cy.contains('.docy_editor ol > li', 'Step 4 keep ordered').should('exist')
+    cy.contains('.docy_editor ul[data-type="taskList"] > li', 'Step 4 keep ordered').should('exist')
   })
 
   it('creates list content inside deep heading in a 7-section hierarchy', () => {

@@ -199,8 +199,7 @@ describe('Combined Lists', { testIsolation: false }, () => {
       cy.get('.docy_editor ul > li > ol > li').eq(1).should('contain', 'Ordered sub-item 2')
     })
 
-    // After Shift+Tab out of the nested task list, only 1 ol item remains; cause unknown. https://github.com/docs-plus/docs.plus/issues/679
-    it.skip('should support ordered list with nested task list', () => {
+    it('should support ordered list with nested task list', () => {
       // Get the paragraph element
       cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
@@ -228,13 +227,12 @@ describe('Combined Lists', { testIsolation: false }, () => {
       cy.get('.docy_editor ul[data-type="taskList"] > li').realPress('Enter')
       cy.get('.docy_editor ul[data-type="taskList"] > li').last().realType('Task sub-item 2')
 
-      // Go back to main level
+      // Go back to main level (Shift+Tab lifts the empty task item into a sibling ordered item)
       cy.get('.docy_editor ul[data-type="taskList"] > li').last().realPress('Enter')
       cy.get('.docy_editor').realPress(['Shift', 'Tab'])
 
       // Add another ordered item
-      cy.get('.docy_editor ol > li').click().realPress('Enter')
-      cy.get('.docy_editor ol > li').last().realType('Second numbered item')
+      cy.get('.docy_editor ol > li').eq(1).realType('Second numbered item')
 
       // Verify the mixed list structure
       cy.get('.docy_editor ol').should('exist')
@@ -242,13 +240,19 @@ describe('Combined Lists', { testIsolation: false }, () => {
       cy.get('.docy_editor ol > li').eq(0).should('contain', 'Main numbered item')
       cy.get('.docy_editor ol > li').eq(1).should('contain', 'Second numbered item')
 
-      // Verify task sub-list
-      // NOTE: this is not working as expected, the task list is block level node and can not be nested with order and bullet lists
-      // cy.get('.docy_editor ol > li > ul').should('exist')
-      // cy.get('.docy_editor ol > li > ul > li').should('have.length', 2)
-      // cy.get('.docy_editor ol > li > ul > li').eq(0).should('contain', 'Task sub-item 1')
-      // cy.get('.docy_editor ol > li > ul > li').eq(1).should('contain', 'Task sub-item 2')
-      // cy.get('.docy_editor ol > li > ul > li input[type="checkbox"]').should('have.length', 2)
+      // Verify task sub-list stays nested under the first ordered item
+      cy.get('.docy_editor ol > li > ul[data-type="taskList"]').should('exist')
+      cy.get('.docy_editor ol > li > ul[data-type="taskList"] > li').should('have.length', 2)
+      cy.get('.docy_editor ol > li > ul[data-type="taskList"] > li')
+        .eq(0)
+        .should('contain', 'Task sub-item 1')
+      cy.get('.docy_editor ol > li > ul[data-type="taskList"] > li')
+        .eq(1)
+        .should('contain', 'Task sub-item 2')
+      cy.get('.docy_editor ol > li > ul[data-type="taskList"] > li input[type="checkbox"]').should(
+        'have.length',
+        2
+      )
     })
   })
 
@@ -257,8 +261,7 @@ describe('Combined Lists', { testIsolation: false }, () => {
       cy.createDocument(DocumentStructure)
     })
 
-    // Back at level 1, no taskList item is found; cause unknown. https://github.com/docs-plus/docs.plus/issues/679
-    it.skip('should support three levels of different list types', () => {
+    it('should support three levels of different list types', () => {
       // Get the paragraph element
       cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
@@ -296,15 +299,14 @@ describe('Combined Lists', { testIsolation: false }, () => {
       cy.get('.docy_editor').realPress(['Shift', 'Tab'])
 
       // Add another ordered item at level 2
-      cy.get('.docy_editor  ol li').eq(2).realType('Step 3')
+      cy.get('.docy_editor ol > li').eq(2).realType('Step 3')
 
-      // Go back to level 1
-      cy.get('.docy_editor  ol li').eq(2).realPress('Enter')
+      // Go back to level 1 (Shift+Tab lifts the empty ordered item into a sibling task item)
+      cy.get('.docy_editor ol > li').eq(2).realPress('Enter')
       cy.get('.docy_editor').realPress(['Shift', 'Tab'])
 
       // Add another task at level 1
-      cy.get('.docy_editor ul[data-type="taskList"] > li').click().realPress('Enter')
-      cy.get('.docy_editor ul[data-type="taskList"] > li').last().realType('Second main task')
+      cy.get('.docy_editor ul[data-type="taskList"] > li').eq(1).realType('Second main task')
 
       // Verify the complex mixed list structure
       cy.get('.docy_editor ul[data-type="taskList"] > li').should('have.length.at.least', 2)
