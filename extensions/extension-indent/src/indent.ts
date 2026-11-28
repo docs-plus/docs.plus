@@ -1,5 +1,5 @@
 import { type CommandProps, type Editor, Extension } from '@tiptap/core'
-import type { Node } from '@tiptap/pm/model'
+import { Fragment, type Node } from '@tiptap/pm/model'
 import type { EditorState } from '@tiptap/pm/state'
 import { TextSelection } from '@tiptap/pm/state'
 
@@ -48,6 +48,99 @@ function listItemTypeNames(editor: Editor): string[] {
   return ordered
 }
 
+/**
+ * Lift a nested list item into a sibling of its immediately enclosing outer list item when the two
+ * use different node types (`listItem` vs `taskItem`). ProseMirror's `liftListItem` only splits a
+ * parent item of the exact same type, otherwise dumping bare paragraphs inside the parent item.
+ */
+function tryLiftToOuterMixedListItem(
+  editor: Editor,
+  innerName: string,
+  outerName: string
+): boolean {
+  const { state } = editor
+  const innerType = state.schema.nodes[innerName]
+  const outerType = state.schema.nodes[outerName]
+  if (!innerType || !outerType) return false
+
+  const { $from, $to } = state.selection
+  const range = $from.blockRange(
+    $to,
+    (node) => node.childCount > 0 && node.firstChild!.type === innerType
+  )
+  if (!range || range.depth < 2) return false
+
+  const outerItemDepth = range.depth - 1
+  const outerItem = $from.node(outerItemDepth)
+  if (outerItem.type !== outerType) return false
+
+  const innerListIndexInOuter = $from.index(outerItemDepth)
+  if (innerListIndexInOuter === 0) return false
+
+  const outerList = $from.node(outerItemDepth - 1)
+  const sampleOuter = outerType.createAndFill()
+  if (!sampleOuter || !outerList.type.validContent(Fragment.from(sampleOuter))) return false
+
+  const innerList = range.parent
+  const lifted: Node[] = []
+  for (let i = range.startIndex; i < range.endIndex; i++) {
+    const child = innerList.child(i)
+    if (!outerType.validContent(child.content)) return false
+    lifted.push(outerType.create(null, child.content))
+  }
+
+  const trailingInner: Node[] = []
+  for (let i = range.endIndex; i < innerList.childCount; i++) {
+    trailingInner.push(innerList.child(i))
+  }
+
+  const trailingOuter: Node[] = []
+  for (let i = innerListIndexInOuter + 1; i < outerItem.childCount; i++) {
+    trailingOuter.push(outerItem.child(i))
+  }
+
+  const extraChildren: Node[] = []
+  if (trailingInner.length > 0) {
+    extraChildren.push(innerList.copy(Fragment.from(trailingInner)))
+  }
+  extraChildren.push(...trailingOuter)
+
+  if (extraChildren.length > 0) {
+    const last = lifted[lifted.length - 1]
+    const mergedContent = last.content.append(Fragment.from(extraChildren))
+    if (!outerType.validContent(mergedContent)) return false
+    lifted[lifted.length - 1] = outerType.create(last.attrs, mergedContent)
+  }
+
+  const fromOffset = $from.pos - range.start
+  const toOffset = $to.pos - range.start
+  const tr = state.tr
+  const outerItemEnd = $from.after(outerItemDepth)
+  const innerListPos = $from.before(range.depth)
+
+  if (trailingOuter.length > 0) {
+    tr.delete($from.after(range.depth), outerItemEnd - 1)
+  }
+
+  if (range.startIndex === 0) {
+    tr.delete(innerListPos, innerListPos + innerList.nodeSize)
+  } else {
+    tr.delete(range.start, $from.end(range.depth))
+  }
+
+  const insertPos = tr.mapping.map(outerItemEnd)
+  tr.insert(insertPos, Fragment.from(lifted))
+  tr.setSelection(
+    TextSelection.create(
+      tr.doc,
+      Math.min(insertPos + fromOffset, tr.doc.content.size),
+      Math.min(insertPos + toOffset, tr.doc.content.size)
+    )
+  )
+  editor.view.dispatch(tr.scrollIntoView())
+  return true
+}
+
 function tryInnermostListItem(editor: Editor, dir: 'forward' | 'back'): boolean {
   const ancestors = ancestorListItemNames(editor)
   if (ancestors.length < 2) return false
@@ -57,6 +150,9 @@ function tryInnermostListItem(editor: Editor, dir: 'forward' | 'back'): boolean 
       return editor.commands.sinkListItem(innermost)
     }
     // Block an outer listItem/taskItem shortcut from hijacking Tab on the first nested item.
+    return true
+  }
+  if (tryLiftToOuterMixedListItem(editor, innermost, ancestors[1])) {
     return true
   }
   if (editor.can().liftListItem(innermost)) {

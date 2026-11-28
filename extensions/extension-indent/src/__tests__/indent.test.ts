@@ -489,10 +489,77 @@ describe('@docs.plus/extension-indent', () => {
 
     expect(pressTab(editor, true)).toBe(true)
     const firstBlock = editor.state.doc.child(0)
-    // Outer orderedList must survive with 'Main numbered item' still inside its listItem.
+    // Outer orderedList survives and the lifted taskItem becomes a sibling ordered list item.
     expect(firstBlock.type.name).toBe('orderedList')
+    expect(firstBlock.childCount).toBe(2)
     expect(firstBlock.child(0).type.name).toBe('listItem')
     expect(firstBlock.child(0).child(0).textContent).toBe('Main numbered item')
+    expect(firstBlock.child(0).child(1).type.name).toBe('taskList')
+    expect(firstBlock.child(0).child(1).childCount).toBe(1)
+    expect(firstBlock.child(1).type.name).toBe('listItem')
+    expect(firstBlock.child(1).textContent).toBe('Task 2')
+  })
+
+  it('Shift-Tab inside an ordered list item nested under a taskItem lifts it into a sibling taskItem and keeps trailing siblings (#679)', () => {
+    const doc: JSONContent = {
+      type: 'doc',
+      content: [
+        {
+          type: 'taskList',
+          content: [
+            {
+              type: 'taskItem',
+              content: [
+                { type: 'paragraph', content: [{ type: 'text', text: 'Main task' }] },
+                {
+                  type: 'orderedList',
+                  content: [
+                    {
+                      type: 'listItem',
+                      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Step 1' }] }]
+                    },
+                    {
+                      type: 'listItem',
+                      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Step 2' }] }]
+                    },
+                    {
+                      type: 'listItem',
+                      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Step 3' }] }]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+
+    const editor = track(
+      new Editor({
+        extensions: [StarterKit, MinimalTaskList, MinimalTaskItem, Indent],
+        content: doc,
+        element: document.createElement('div')
+      })
+    )
+
+    let step2Pos = 0
+    editor.state.doc.descendants((node, pos) => {
+      if (node.isText && node.text === 'Step 2') step2Pos = pos
+    })
+    editor.commands.setTextSelection(step2Pos)
+
+    expect(pressTab(editor, true)).toBe(true)
+    const taskList = editor.state.doc.child(0)
+    expect(taskList.type.name).toBe('taskList')
+    expect(taskList.childCount).toBe(2)
+    expect(taskList.child(0).child(0).textContent).toBe('Main task')
+    expect(taskList.child(0).child(1).childCount).toBe(1)
+    expect(taskList.child(0).child(1).child(0).textContent).toBe('Step 1')
+    expect(taskList.child(1).type.name).toBe('taskItem')
+    expect(taskList.child(1).child(0).textContent).toBe('Step 2')
+    expect(taskList.child(1).child(1).type.name).toBe('orderedList')
+    expect(taskList.child(1).child(1).child(0).textContent).toBe('Step 3')
   })
 
   it('Tab inside a taskItem nested under a listItem sinks the inner taskItem, not the outer listItem (#679)', () => {

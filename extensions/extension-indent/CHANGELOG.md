@@ -6,9 +6,10 @@ All notable changes to `@docs.plus/extension-indent` are documented here. The fo
 
 ### Fixed
 
-- `Tab` and `Shift-Tab` inside nested mixed lists (for example a `taskItem` inside a `listItem`)
-  now target the innermost ancestor list item first instead of always checking `listItem` before
-  `taskItem` ([#679](https://github.com/docs-plus/docs.plus/issues/679)).
+- `Tab` and `Shift-Tab` inside nested mixed lists (for example a `taskItem` inside a `listItem`,
+  or a `listItem` inside a `taskItem`) now target the innermost ancestor list item first, and
+  `Shift-Tab` lifts the inner item into a sibling of its immediately enclosing outer list item
+  while keeping trailing siblings nested ([#679](https://github.com/docs-plus/docs.plus/issues/679)).
 
 ### Internal
 
