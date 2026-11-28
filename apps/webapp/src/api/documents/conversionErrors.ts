@@ -21,7 +21,8 @@ const BY_STATUS: Record<number, string> = {
   404: 'This document no longer exists. Reload the page.',
   413: `That file is too big. The document owner can import Word files up to ${OWNER_WORD_IMPORT_MB} MB, and everyone else up to ${WORD_IMPORT_MB} MB. Markdown is capped at ${formatCount(MARKDOWN_IMPORT_CHARS)} characters.`,
   415: 'Old .doc files aren’t supported. Open it in Word, save it as .docx, and try again.',
-  422: 'That file couldn’t be read. It may be damaged, or not a Word or Markdown file.'
+  422: 'That file couldn’t be read. It may be damaged, or not a Word or Markdown file.',
+  503: 'This document is busy. Try again in a few seconds.'
 }
 
 const SPLIT_IT = 'Split the file and import each part into its own document.'
