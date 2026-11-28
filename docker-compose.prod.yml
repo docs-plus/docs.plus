@@ -292,7 +292,7 @@ services:
           # Ceilings sized for burst, not steady state — idle services yield
           # via CPU shares; quotas only stop one container monopolizing.
           cpus: '1.0'
-          memory: 512M
+          memory: 768M
         reservations:
           cpus: '0.25'
           memory: 256M
